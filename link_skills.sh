@@ -1,6 +1,6 @@
 #!/bin/sh
 # 把本仓库 skills/ 下的当前 MDF skill set 软链到各类 AI Agent 的 skills 目录。
-# 每次安装前清除目标目录中的全部 mdf-* Skill；不触碰目标仓库的 .mdf/ 或 docs/。
+# 每次安装前清除目标目录中的旧 mdf-* Skill 和 mdf；不触碰目标仓库的 .mdf/ 或 docs/。
 #
 # 用法示例：
 #   /path/to/link_skills.sh                # 链接到当前所在的本地仓库
@@ -9,7 +9,7 @@
 #   ./link_skills.sh --global              # 链接到所有已知 agent（全局 ~/.xxx/skills）
 #   ./link_skills.sh cursor --project DIR  # 链到指定项目的 .<agent>/skills
 #   ./link_skills.sh --dry-run             # 只预览，不实际操作
-#   ./link_skills.sh --unlink              # 移除目标范围内全部 mdf-* Skill
+#   ./link_skills.sh --unlink              # 移除目标范围内全部 MDF Skill
 #   ./link_skills.sh --list                # 列出已知 agent 与目标目录
 #
 # 兼容 POSIX sh（无需 Python、无需 bash 关联数组）。
@@ -116,15 +116,11 @@ fi
 # 未指定则全部
 [ -n "$SELECTED" ] || SELECTED="$ALL_AGENTS"
 
-# ---- 收集 skills（含 SKILL.md 的子目录）----
+# ---- 收集唯一 MDF Skill ----
 [ -d "$SKILLS_SRC" ] || die "找不到 skills 源目录: $SKILLS_SRC"
-SKILLS=""
-for d in "$SKILLS_SRC"/*/; do
-    [ -f "${d}SKILL.md" ] || continue
-    name=$(basename "$d")
-    SKILLS="$SKILLS $name"
-done
-[ -n "$SKILLS" ] || die "$SKILLS_SRC 下没有发现任何含 SKILL.md 的技能"
+SKILLS="mdf"
+[ -f "$SKILLS_SRC/$SKILLS/SKILL.md" ] || \
+    die "$SKILLS_SRC/$SKILLS 下没有发现 SKILL.md"
 
 # ---- 提示 ----
 if [ "$UNLINK" -eq 1 ]; then verb="移除软链"; else verb="创建软链"; fi
@@ -144,7 +140,7 @@ purge_mdf_skills() {
     target_dir="$1"
     [ -d "$target_dir" ] || return
     found=0
-    for installed in "$target_dir"/mdf-*; do
+    for installed in "$target_dir"/mdf-* "$target_dir"/mdf; do
         [ -e "$installed" ] || [ -L "$installed" ] || continue
         found=1
         if [ "$DRY_RUN" -eq 1 ]; then

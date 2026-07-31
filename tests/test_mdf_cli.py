@@ -7,11 +7,11 @@ from mdf_test_support import *  # noqa: F403
 
 def test_info_reports_protocol_versions(python_exe: str):
     result = run(
-        [python_exe, str(skill_dir("mdf-core") / "scripts" / "mdf.py"), "info"]
+        [python_exe, str(skill_dir("mdf") / "scripts" / "mdf.py"), "info"]
     )
     data = payload(result)
     assert data["ok"] is True
-    assert data["tool"] == "mdf-core"
+    assert data["tool"] == "mdf"
     assert data["protocol_version"] == 2
     assert data["tool_version"] == 2
     assert data["schema_version"] == 2
@@ -118,18 +118,15 @@ def test_removed_verify_command_argument_is_a_hard_failure(
     assert "unrecognized arguments" in result.stderr
 
 
-def test_mdf_grill_is_chinese_copy_and_mdf_keeps_using_it():
-    grill = (skill_dir("mdf-grill") / "SKILL.md").read_text(encoding="utf-8")
-    review = (skill_dir("mdf-review-doc") / "SKILL.md").read_text(
-        encoding="utf-8"
-    )
-    init = (skill_dir("mdf-init-repo") / "SKILL.md").read_text(encoding="utf-8")
+def test_mdf_grill_is_internal_workflow_copy():
+    skill = skill_dir("mdf")
+    grill = (skill / "workflows" / "grill.md").read_text(encoding="utf-8")
+    review = (skill / "workflows" / "review-doc.md").read_text(encoding="utf-8")
+    init = (skill / "workflows" / "init-repo.md").read_text(encoding="utf-8")
 
-    assert "disable-model-invocation" not in grill
     assert "持续、深入地追问" in grill
     assert "一次只问一个问题" in grill
-    assert "如果某个**事实**可以通过探索环境" in grill
-    assert "在我确认我们已达成共同理解之前，不要据此采取行动" in grill
-    assert "mdf-grill" in review and "mdf-grill" in init
-    assert "用户对这份具体 Requirement/Bug 内容明确确认" in review
-    assert "仅由 mdf-init-repo 或 mdf-review-doc 显式委托" not in grill
+    assert "查证的事实自行查证" in grill
+    assert "不要据此采取行动" in grill
+    assert "内部 grill 工作流" in review and "内部 grill 工作流" in init
+    assert "明确确认才转" in review

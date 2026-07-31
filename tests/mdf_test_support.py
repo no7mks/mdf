@@ -1,4 +1,4 @@
-"""Mars Docs Flow 的确定性协议与事务测试。"""
+"""Mars Development Flow 的确定性协议与事务测试。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ ID_RE = re.compile(r"^(req|bug)-[0-9a-hjkmnp-tv-z]{26}$")
 
 
 def mdf(python_exe: str, *args: str, cwd: Path | None = None):
-    cli = skill_dir("mdf-core") / "scripts" / "mdf.py"
+    cli = skill_dir("mdf") / "scripts" / "mdf.py"
     return run([python_exe, str(cli), *args], cwd=cwd)
 
 
@@ -60,7 +60,7 @@ def init_git(repo: Path) -> None:
 
 
 def load_core_module():
-    scripts = skill_dir("mdf-core") / "scripts"
+    scripts = skill_dir("mdf") / "scripts"
     scripts_str = str(scripts.resolve())
     if scripts_str not in sys.path:
         sys.path.insert(0, scripts_str)

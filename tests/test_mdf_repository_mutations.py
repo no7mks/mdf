@@ -1,4 +1,4 @@
-"""Mars Docs Flow 归档、写入与 worktree 纪律测试。"""
+"""Mars Development Flow 归档、写入与 worktree 纪律测试。"""
 
 from __future__ import annotations
 

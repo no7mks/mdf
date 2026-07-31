@@ -155,7 +155,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
 
 
 def test_bug_template_uses_a_bare_found_in_sentinel():
-    template = skill_dir("mdf-core") / "assets" / "templates" / "bug.md"
+    template = skill_dir("mdf") / "assets" / "templates" / "bug.md"
     text = template.read_text(encoding="utf-8")
 
     assert "found_in: {{FOUND_IN}}" in text
@@ -183,7 +183,7 @@ def test_change_evidence_requires_non_empty_string_elements(
 
 
 def test_change_contract_uses_the_supported_evidence_mapping_example():
-    contract = skill_dir("mdf-core") / "references" / "object-contract.md"
+    contract = skill_dir("mdf") / "references" / "object-contract.md"
     text = contract.read_text(encoding="utf-8")
 
     assert "evidence: {tests:" not in text

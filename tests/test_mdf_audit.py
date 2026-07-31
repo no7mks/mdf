@@ -1,16 +1,16 @@
-"""Mars Docs Flow 的确定性协议与事务测试。"""
+"""Mars Development Flow 的确定性协议与事务测试。"""
 
 from __future__ import annotations
 
 from mdf_test_support import *  # noqa: F403
 
 
-def test_core_full_audit_works_without_site_packages(
+def test_full_audit_works_without_site_packages(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    cli = skill_dir("mdf-core") / "scripts" / "mdf.py"
+    cli = skill_dir("mdf") / "scripts" / "mdf.py"
     result = run(
         [
             python_exe,

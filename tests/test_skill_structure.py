@@ -121,15 +121,16 @@ def test_invoked_scripts_exist(skill: Skill):
 MDF_LINE_LIMIT = 500
 MDF_TEXT_GLOBS = (
     "SKILL.md",
+    "workflows/*.md",
     "references/*.md",
     "scripts/**/*.py",
 )
 
 
 def test_mdf_skill_files_respect_line_limit(skill: Skill):
-    """mdf-* skills keep checked text files below the hard line cap."""
-    if not skill.name.startswith("mdf-"):
-        pytest.skip("line limit applies only to mdf-* skills")
+    """MDF skill keeps checked text files below the hard line cap."""
+    if skill.name != "mdf":
+        pytest.skip("line limit applies only to mdf")
     offenders: list[str] = []
     for pattern in MDF_TEXT_GLOBS:
         for path in sorted(skill.path.glob(pattern)):

@@ -1,4 +1,4 @@
-"""Mars Docs Flow 的确定性协议与事务测试。"""
+"""Mars Development Flow 的确定性协议与事务测试。"""
 
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ def test_init_writes_files_from_assets_templates(
     dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
     payload(mdf(python_exe, *arguments))
 
-    templates = skill_dir("mdf-core") / "assets" / "templates"
+    templates = skill_dir("mdf") / "assets" / "templates"
     docs_index = (repo / "docs" / "index.md").read_text(encoding="utf-8")
     expected_index = (templates / "docs-index.md").read_text(encoding="utf-8")
     # all_not_applicable baselines 移除 system boundary 与 deviations 两行

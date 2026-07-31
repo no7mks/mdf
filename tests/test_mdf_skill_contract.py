@@ -1,55 +1,57 @@
-"""MDF 入口工作流的文本契约测试。"""
+"""唯一 MDF Skill 的入口与内部工作流契约测试。"""
 
 from __future__ import annotations
 
 from conftest import skill_dir
 
 
-def skill_text(name: str) -> str:
-    return (skill_dir(name) / "SKILL.md").read_text(encoding="utf-8")
+def workflow(name: str) -> str:
+    return (skill_dir("mdf") / "workflows" / f"{name}.md").read_text(
+        encoding="utf-8"
+    )
 
 
-def test_audit_contract_has_business_tiers_branch_bases_and_clean_start() -> (
-    None
-):
-    audit = skill_text("mdf-audit")
+def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
+    skill = skill_dir("mdf")
+    entry = (skill / "SKILL.md").read_text(encoding="utf-8")
 
-    assert "release" in audit and "audit" in audit
-    assert "change" in audit and "audit" in audit
-    assert "develop...HEAD" in audit
-    assert "master...HEAD" in audit
-    assert "`clean` 必须为 `true`" in audit
-    assert "浅模式" not in audit
-    assert "深模式" not in audit
-
-
-def test_finish_contract_requires_manual_commit_and_branch_closeout() -> None:
-    finish = skill_text("mdf-finish")
-
-    assert "不要自动 commit" in finish
-    assert "feature、bugfix、hotfix" in finish
-    assert "change audit" in finish
-    assert "release" in finish and "audit" in finish
-    assert "用户在成功后自行复查并 commit" in finish
-    assert "停止" in finish
-    assert "summary" in finish
+    assert [path.name for path in skill.parent.iterdir() if path.is_dir()] == [
+        "mdf"
+    ]
+    for command in (
+        "init-repo",
+        "start",
+        "review-doc",
+        "finish",
+        "audit",
+        "archive",
+        "grill <议题>",
+    ):
+        assert command in entry
+    assert "裸 `$mdf`" in entry
+    assert "workflows/<command>.md" in entry
 
 
-def test_init_and_review_contract_cover_existing_paths_and_object_state() -> (
-    None
-):
-    init = skill_text("mdf-init-repo")
-    review = skill_text("mdf-review-doc")
+def test_init_and_review_load_internal_contracts() -> None:
+    init = workflow("init-repo")
+    review = workflow("review-doc")
 
+    assert "repository-contract.md" in init
+    assert "workflows.md" in init
     assert "完整写入方案" in init
-    assert "明确确认" in init
-    assert "再次显式调用" in init
-    assert "$mdf-init-repo" in init
-    assert "只接受一个 finding" in init
-    assert "既有事实页在本次完全未改动" in init
-    assert "canonical" in review
-    assert "仓库相对路径" in review
-    assert "立即转为" in review and "`draft`" in review
-    assert "保留" in review and "`draft`" in review
-    assert "closed 或 archive" in review
-    assert "canonical 可以仍为 ready" in review
+    assert "再次显式调用 `$mdf init-repo`" in init
+    assert "object-contract.md" in review
+    assert "内部 grill 工作流" in review
+    assert "closed 或 archive 对象拒绝修改" in review
+
+
+def test_start_and_finish_define_strict_gitflow_operations() -> None:
+    start = workflow("start")
+    finish = workflow("finish")
+
+    assert "master" in start and "develop" in start
+    assert "推送到 origin 并设置 upstream" in start
+    assert "no-ff 合并到 develop" in finish
+    assert "no-ff 合并到" in finish and "master" in finish
+    assert "原子 push" in finish
+    assert "v<semver>" in finish

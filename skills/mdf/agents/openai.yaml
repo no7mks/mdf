@@ -1,0 +1,6 @@
+interface:
+  display_name: "MDF"
+  short_description: "以 $mdf <command> 管理 Mars Development Flow 文档工作流"
+  default_prompt: "使用 $mdf 显示可用命令与调用示例。"
+policy:
+  allow_implicit_invocation: false

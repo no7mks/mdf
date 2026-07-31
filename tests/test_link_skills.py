@@ -16,7 +16,7 @@ def test_install_replaces_mdf_skills_and_preserves_repository_artifacts(
     retired = skills_dir / "mdf-retired"
     retired.mkdir()
     (retired / "old.txt").write_text("retired\n", encoding="utf-8")
-    (skills_dir / "mdf-core").write_text("stale\n", encoding="utf-8")
+    (skills_dir / "mdf").write_text("stale\n", encoding="utf-8")
     (skills_dir / "other-skill").mkdir()
 
     manifest = target_repo / ".mdf" / "manifest.yaml"
@@ -36,15 +36,10 @@ def test_install_replaces_mdf_skills_and_preserves_repository_artifacts(
     installed = run(command)
     assert installed.returncode == 0, installed.stderr
     assert not retired.exists()
+    assert (skills_dir / "mdf").is_symlink()
     assert (skills_dir / "other-skill").is_dir()
 
-    expected = sorted(
-        path.name
-        for path in (REPO_ROOT / "skills").iterdir()
-        if (path / "SKILL.md").is_file()
-    )
-    for name in expected:
-        assert (skills_dir / name).is_symlink()
+    assert sorted(path.name for path in skills_dir.glob("mdf*")) == ["mdf"]
     assert manifest.read_text(encoding="utf-8") == "state: ready\n"
     assert fact.read_text(encoding="utf-8") == "# Product\n"
 

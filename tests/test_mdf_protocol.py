@@ -1,4 +1,4 @@
-"""Mars Docs Flow 的确定性协议与事务测试。"""
+"""Mars Development Flow 的确定性协议与事务测试。"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def test_make_id_uses_lowercase_ulid_and_normalized_slug(
 
 
 def test_new_id_alias_no_longer_exists(python_exe: str):
-    cli = skill_dir("mdf-core") / "scripts" / "mdf.py"
+    cli = skill_dir("mdf") / "scripts" / "mdf.py"
     result = run(
         [python_exe, str(cli), "new-id", "--type", "bug", "--slug", "x"]
     )
