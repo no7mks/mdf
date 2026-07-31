@@ -1,0 +1,43 @@
+# Schema scaffold only. `mdf.py init` is the authoritative renderer.
+# For each baseline, keep `path` only when documented or `reason` only when
+# not_applicable, then remove every {{...}} marker before writing.
+schema_version: 2
+state: initializing
+versioning:
+  strategy: semver
+  latest_release: {{QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
+verification:
+  commands: []
+baselines:
+  glossary:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  product_reference:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  system_boundary:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  architecture:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  interfaces:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  data:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  operations:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+  deviations:
+    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{REASON_IF_NOT_APPLICABLE}}"

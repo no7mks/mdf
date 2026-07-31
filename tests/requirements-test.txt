@@ -1,0 +1,2 @@
+# MDF 测试仅需 pytest；被测 CLI 本身只依赖 Python 标准库和 Git。
+pytest>=8.0

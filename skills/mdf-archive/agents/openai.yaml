@@ -1,0 +1,6 @@
+interface:
+  display_name: "MDF Archive"
+  short_description: "直接归档 closed Requirement 与 Bug 并重写引用"
+  default_prompt: "使用 $mdf-archive 归档 closed Requirement 与 Bug；如需预览再请求 dry-run。"
+policy:
+  allow_implicit_invocation: false

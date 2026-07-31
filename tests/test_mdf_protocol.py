@@ -1,0 +1,391 @@
+"""Mars Docs Flow 的确定性协议与事务测试。"""
+
+from __future__ import annotations
+
+from mdf_test_support import *  # noqa: F403
+
+
+@pytest.mark.parametrize(
+    ("command", "object_type", "prefix"),
+    [
+        ("make-id", "requirement", "req"),
+        ("make-id", "bug", "bug"),
+    ],
+)
+def test_make_id_uses_lowercase_ulid_and_normalized_slug(
+    python_exe: str, command: str, object_type: str, prefix: str
+):
+    result = mdf(
+        python_exe,
+        command,
+        "--type",
+        object_type,
+        "--slug",
+        "  Audit Ready 42!  ",
+    )
+    data = payload(result)
+
+    assert ID_RE.fullmatch(data["id"])
+    assert data["id"].startswith(f"{prefix}-")
+    assert data["filename"] == f"{data['id']}-audit-ready-42.md"
+
+
+def test_new_id_alias_no_longer_exists(python_exe: str):
+    cli = skill_dir("mdf-core") / "scripts" / "mdf.py"
+    result = run(
+        [python_exe, str(cli), "new-id", "--type", "bug", "--slug", "x"]
+    )
+    assert result.returncode != 0
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1.2",
+        "v1.2.3",
+        "01.2.3",
+        "1.02.3",
+        "1.2.03",
+        "1.2.3-rc.1",
+        "1.2.3+build",
+        "0.0.0-unreleased",
+    ],
+)
+def test_release_versions_are_strict_stable_semver(
+    python_exe: str, version: str
+):
+    result = mdf(
+        python_exe,
+        "semver-check",
+        "--previous",
+        "1.2.2",
+        "--candidate",
+        version,
+        "--categories",
+        "Fixed",
+    )
+    assert result.returncode != 0
+    assert "invalid_semver" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("previous", "candidate", "categories", "breaking", "expected_ok"),
+    [
+        ("1.2.3", "1.2.4", "Fixed", False, True),
+        ("1.2.3", "1.2.4", "Added", False, False),
+        ("1.2.3", "1.3.0", "Added,Fixed", False, True),
+        ("1.2.3", "2.0.0", "Added", False, True),
+        ("1.2.3", "1.3.0", "Changed", True, False),
+        ("1.2.3", "2.0.0", "Changed", True, True),
+        ("1.2.3", "1.3.0", "Removed", False, False),
+        ("1.2.3", "2.0.0", "Removed", False, False),
+        ("0.2.7", "0.2.8", "Fixed", True, False),
+        ("0.2.7", "0.3.0", "Fixed", True, True),
+    ],
+)
+def test_minimum_semver_bump(
+    python_exe: str,
+    previous: str,
+    candidate: str,
+    categories: str,
+    breaking: bool,
+    expected_ok: bool,
+):
+    args = [
+        "semver-check",
+        "--previous",
+        previous,
+        "--candidate",
+        candidate,
+        "--categories",
+        categories,
+    ]
+    if breaking:
+        args.append("--breaking")
+    result = mdf(python_exe, *args)
+    assert (
+        result.returncode == 0
+    ) is expected_ok, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+
+
+def test_removed_category_requires_explicit_breaking_flag(python_exe: str):
+    rejected = mdf(
+        python_exe,
+        "semver-check",
+        "--previous",
+        "1.2.3",
+        "--candidate",
+        "2.0.0",
+        "--categories",
+        "Removed",
+    )
+    assert rejected.returncode != 0
+    assert (
+        payload(
+            mdf(
+                python_exe,
+                "semver-check",
+                "--previous",
+                "1.2.3",
+                "--candidate",
+                "2.0.0",
+                "--categories",
+                "Removed",
+                "--breaking",
+            )
+        )["breaking_declared"]
+        is True
+    )
+
+
+@pytest.mark.parametrize(
+    ("branch", "kind", "slug", "version"),
+    [
+        ("feature/api/user_auth", "feature", "api-user-auth", None),
+        ("bugfix/timeout-fix", "bugfix", "timeout-fix", None),
+        ("release/1.4.0", "release", None, "1.4.0"),
+        ("hotfix/1.4.1", "hotfix", None, "1.4.1"),
+    ],
+)
+def test_gitflow_branch_classification(
+    python_exe: str,
+    branch: str,
+    kind: str,
+    slug: str | None,
+    version: str | None,
+):
+    data = payload(mdf(python_exe, "branch", "--name", branch))
+    assert data["kind"] == kind
+    if slug is not None:
+        assert data["slug"] == slug
+    if version is not None:
+        assert data["version"] == version
+
+
+@pytest.mark.parametrize(
+    "branch",
+    [
+        "release/1.2",
+        "release/1.2.3-rc.1",
+        "hotfix/0.0.0-unreleased",
+    ],
+)
+def test_non_delivery_or_invalid_version_branch_is_rejected(
+    python_exe: str, branch: str
+):
+    result = mdf(python_exe, "branch", "--name", branch)
+    assert result.returncode != 0
+    assert "bad_release_branch" in result.stderr
+
+
+@pytest.mark.parametrize("branch", ["main", "develop", "feature/"])
+def test_non_delivery_branch_is_classified_as_unsupported(
+    python_exe: str, branch: str
+):
+    data = payload(mdf(python_exe, "branch", "--name", branch))
+    assert data["supported"] is False
+    assert data["kind"] == "unsupported"
+
+
+def test_branch_reads_current_git_branch(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    git(repo, "checkout", "-b", "bugfix/unreleased-timeout")
+
+    data = payload(mdf(python_exe, "branch", "--repo", str(repo)))
+    assert data["kind"] == "bugfix"
+    assert data["slug"] == "unreleased-timeout"
+
+
+def test_manifest_and_work_objects_validate(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert_ok(result)
+
+
+def test_manifest_not_applicable_baseline_requires_reason(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    manifest = repo / ".mdf" / "manifest.yaml"
+    documented = (
+        "  operations:\n"
+        "    status: documented\n"
+        "    path: docs/system/operations/runbook.md"
+    )
+    not_applicable = (
+        "  operations:\n"
+        "    status: not_applicable\n"
+        "    reason: 该仓库不交付运行时服务"
+    )
+    replace(manifest, documented, not_applicable)
+    (repo / "docs" / "system" / "operations" / "runbook.md").unlink()
+    init_git(repo)
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    replace(manifest, "    reason: 该仓库不交付运行时服务\n", "")
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+
+
+def test_audit_rejects_manifest_latest_release_that_disagrees_with_changelog(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    replace(
+        repo / ".mdf" / "manifest.yaml",
+        'latest_release: "1.2.0"',
+        'latest_release: "9.9.9"',
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    assert result.returncode != 0
+    assert "latest_release" in result.stdout
+    assert "9.9.9" in result.stdout
+
+
+def test_invalid_object_status_is_rejected(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    bug = repo / "bugs" / BUG_NAME
+    replace(bug, "status: ready", "status: in_progress")
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert BUG_NAME in result.stdout
+
+
+def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    requirement = repo / "requirements" / REQ_NAME
+    replace(
+        requirement,
+        "## Desired Outcome\n\n调用方能取得稳定的健康状态。",
+        "## Desired Outcome\n\n",
+    )
+    replace(
+        requirement,
+        "### Out\n\n- 不提供远程监控。",
+        "### Outside\n\n- 不提供远程监控。",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "object.section_empty" in result.stdout
+    assert "requirement.scope" in result.stdout
+
+
+def test_invalid_related_type_returns_findings_json_without_traceback(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    replace(repo / "requirements" / REQ_NAME, "related: []", "related: null")
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "Traceback" not in result.stderr
+    data = json.loads(result.stdout)
+    assert any(
+        finding["code"] == "object.related" for finding in data["findings"]
+    )
+
+
+def test_bug_rejects_generic_related_and_requires_severity(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    bug = repo / "bugs" / BUG_NAME
+    replace(bug, "severity: major", "related: []")
+    init_git(repo)
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    data = json.loads(result.stdout)
+    codes = {finding["code"] for finding in data["findings"]}
+    assert {"bug.related_forbidden", "bug.severity_required"} <= codes
+
+
+def test_bug_found_in_accepts_unreleased_sentinel(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
+def test_misplaced_object_prefix_is_rejected(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    misplaced = repo / "bugs" / REQ_NAME
+    misplaced.write_text(
+        (repo / "requirements" / REQ_NAME).read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    data = json.loads(result.stdout)
+    assert any(
+        finding["code"] == "object.filename"
+        and finding["path"] == f"bugs/{REQ_NAME}"
+        for finding in data["findings"]
+    )
+
+
+def test_validation_rejects_local_link_outside_repository(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    outside = tmp_path / "outside.md"
+    outside.write_text("# Outside\n", encoding="utf-8")
+    index = repo / "docs" / "index.md"
+    index.write_text(
+        index.read_text(encoding="utf-8") + "\n[Outside](../../outside.md)\n",
+        encoding="utf-8",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "link.outside_repo" in result.stdout
+
+
+def test_validation_rejects_symlink_in_managed_docs(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    outside = tmp_path / "outside.md"
+    outside.write_text("# Outside\n", encoding="utf-8")
+    (repo / "docs" / "system" / "escape.md").symlink_to(outside)
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "path.symlink" in result.stdout
+
+
+def test_validation_rejects_duplicate_id_across_active_and_archive(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    source = repo / "requirements" / REQ_NAME
+    archived = repo / "requirements" / "archive" / "1.2" / REQ_NAME
+    archived.parent.mkdir(parents=True)
+    archived.write_text(
+        source.read_text(encoding="utf-8").replace(
+            "status: ready\nrelated: []",
+            (
+                "status: closed\nrelated: []\n"
+                "resolution: fulfilled\n"
+                "fulfilled_in: 1.2.0"
+            ),
+        ),
+        encoding="utf-8",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "object.id_duplicate" in result.stdout

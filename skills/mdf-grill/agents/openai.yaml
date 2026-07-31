@@ -1,0 +1,4 @@
+interface:
+  display_name: "MDF Grill"
+  short_description: "通过逐题提问持续压力测试计划、决策或想法，并澄清关键取舍"
+  default_prompt: "使用 $mdf-grill 持续追问并压力测试我的计划、决策或想法。"

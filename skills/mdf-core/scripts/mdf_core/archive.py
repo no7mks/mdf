@@ -1,0 +1,190 @@
+from pathlib import Path
+
+from .constants import EPOCH_RE, PLANNING_ROOTS
+from .errors import MDFError, serialize_findings
+from .moves import replacement_plan
+from .paths import relative
+from .textutil import slugify
+from .validate_changes import validate_change_file
+from .validate_objects import iter_object_files
+from .yamlutil import read_frontmatter
+
+
+def archive_plan(
+    repo: Path, epoch: str
+) -> tuple[dict[Path, Path], dict[Path, str]]:
+    if not EPOCH_RE.fullmatch(epoch):
+        raise MDFError("Archive epoch must be MAJOR.MINOR", code="bad_epoch")
+    moves: dict[Path, Path] = {}
+    records: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for kind, directory in (("requirement", "requirements"), ("bug", "bugs")):
+        for path in iter_object_files(repo, kind):
+            records_path_parts = path.relative_to(repo).parts
+            try:
+                metadata, _ = read_frontmatter(path)
+            except MDFError as exc:
+                raise MDFError(
+                    f"Cannot archive invalid object {relative(repo, path)}: {exc}",
+                    code="invalid_object",
+                ) from exc
+            identifier = metadata.get("id")
+            if isinstance(identifier, str):
+                records[identifier] = (path, metadata)
+            if len(records_path_parts) != 2:
+                continue
+            if metadata.get("status") != "closed":
+                continue
+            root = repo / directory
+            target = root / "archive" / epoch / path.name
+            if target.exists():
+                raise MDFError(
+                    f"Archive destination already exists: {relative(repo, target)}",
+                    code="collision",
+                )
+            moves[path] = target
+    # A duplicate is an archive-group member, never an independent record.
+    # The canonical Bug must already be closed; otherwise closeout/audit must
+    # stop instead of silently splitting the group across archive epochs.
+    for path, metadata in list(records.values()):
+        if (
+            metadata.get("type") != "bug"
+            or metadata.get("resolution") != "duplicate"
+        ):
+            continue
+        primary_id = metadata.get("duplicate_of")
+        primary = (
+            records.get(primary_id) if isinstance(primary_id, str) else None
+        )
+        if primary is None:
+            continue
+        primary_path, primary_metadata = primary
+        if primary_metadata.get("status") != "closed":
+            raise MDFError(
+                f"Duplicate archive group is not closed: {relative(repo, primary_path)}",
+                code="duplicate_group_open",
+            )
+        primary_parts = primary_path.relative_to(repo).parts
+        group_epoch = (
+            primary_parts[2]
+            if len(primary_parts) == 4 and primary_parts[1] == "archive"
+            else epoch
+        )
+        if len(primary_parts) == 2:
+            target = repo / "bugs" / "archive" / group_epoch / primary_path.name
+            if target.exists() and primary_path not in moves:
+                raise MDFError(
+                    f"Archive destination already exists: {relative(repo, target)}",
+                    code="collision",
+                )
+            moves.setdefault(primary_path, target)
+        if len(path.relative_to(repo).parts) == 2:
+            target = repo / "bugs" / "archive" / group_epoch / path.name
+            if target.exists() and path not in moves:
+                raise MDFError(
+                    f"Archive destination already exists: {relative(repo, target)}",
+                    code="collision",
+                )
+            moves[path] = target
+    rewrites = replacement_plan(repo, moves)
+    return moves, rewrites
+
+
+def change_move_plan(
+    repo: Path, source: Path | None, branch_slug: str
+) -> tuple[dict[Path, Path], dict[Path, str], Path]:
+    slug = slugify(branch_slug)
+    target = repo / "changes" / "unreleased" / slug
+    moves: dict[Path, Path] = {}
+    if target.exists():
+        if source is None or source.resolve() != target.resolve():
+            raise MDFError(
+                f"Change directory already exists: {target}", code="collision"
+            )
+    elif source is not None:
+        source = source.expanduser().resolve()
+        try:
+            source.relative_to(repo)
+        except ValueError as exc:
+            raise MDFError("源路径必须位于仓库内", code="outside_repo") from exc
+        if not source.is_dir():
+            raise MDFError(f"源目录不存在: {source}", code="missing_source")
+        matched_root: Path | None = None
+        for root_name in PLANNING_ROOTS:
+            planning_root = (repo / root_name).resolve()
+            if planning_root in source.parents:
+                matched_root = planning_root
+                break
+        if matched_root is None:
+            raise MDFError(
+                "源路径必须位于受支持的外部 planning 根目录下",
+                code="protected_source",
+            )
+        try:
+            source_slug = slugify(source.relative_to(matched_root).as_posix())
+        except MDFError as exc:
+            raise MDFError(
+                "Source has no valid branch slug",
+                code="source_slug",
+            ) from exc
+        if source_slug != slug:
+            raise MDFError(
+                "Source path does not match the requested branch slug",
+                code="source_slug",
+                details={"expected": slug, "actual": source_slug},
+            )
+        source_symlinks = sorted(
+            path for path in source.rglob("*") if path.is_symlink()
+        )
+        if source_symlinks:
+            raise MDFError(
+                "External planning source contains symbolic links",
+                code="source_symlink",
+                details={
+                    "paths": [
+                        path.relative_to(repo).as_posix()
+                        for path in source_symlinks
+                    ]
+                },
+            )
+        reserved_change = source / "CHANGE.md"
+        if reserved_change.exists():
+            reserved_findings: list[Finding] = []
+            validate_change_file(
+                repo,
+                reserved_change,
+                reserved_findings,
+                expected_slug=slug,
+            )
+            if reserved_findings:
+                raise MDFError(
+                    "Source contains a non-canonical file at reserved name CHANGE.md",
+                    code="reserved_change",
+                    details={"findings": serialize_findings(reserved_findings)},
+                )
+        if source == target or source in target.parents:
+            raise MDFError(
+                "Source cannot contain the target change directory",
+                code="recursive_move",
+            )
+        moves[source] = target
+    rewrites = replacement_plan(repo, moves, rewrite_inside_sources=False)
+    return moves, rewrites, target
+
+
+def find_planning_candidates(repo: Path, branch_slug: str) -> list[Path]:
+    slug = slugify(branch_slug)
+    candidates: set[Path] = set()
+    for root_name in PLANNING_ROOTS:
+        root = repo / root_name
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_dir() or path.is_symlink():
+                continue
+            try:
+                relative_slug = slugify(path.relative_to(root).as_posix())
+            except MDFError:
+                continue
+            if relative_slug == slug:
+                candidates.add(path.resolve())
+    return sorted(candidates)

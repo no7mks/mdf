@@ -1,0 +1,6 @@
+interface:
+  display_name: "MDF Review Doc"
+  short_description: "追问并确认新建或修订 active Requirement / Bug 文档"
+  default_prompt: "使用 $mdf-review-doc 对单个 Requirement 或 Bug 进行追问、澄清并确认成稿。"
+policy:
+  allow_implicit_invocation: false

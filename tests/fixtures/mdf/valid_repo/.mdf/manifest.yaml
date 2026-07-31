@@ -1,0 +1,33 @@
+schema_version: 2
+state: ready
+versioning:
+  strategy: semver
+  latest_release: "1.2.0"
+verification:
+  commands:
+    - "true"
+baselines:
+  glossary:
+    status: documented
+    path: CONTEXT.md
+  product_reference:
+    status: documented
+    path: docs/product/reference/capabilities.md
+  system_boundary:
+    status: documented
+    path: docs/system/overview.md
+  architecture:
+    status: documented
+    path: docs/system/architecture/current.md
+  interfaces:
+    status: documented
+    path: docs/system/interfaces/api.md
+  data:
+    status: documented
+    path: docs/system/data/model.md
+  operations:
+    status: documented
+    path: docs/system/operations/runbook.md
+  deviations:
+    status: documented
+    path: docs/system/deviations.md

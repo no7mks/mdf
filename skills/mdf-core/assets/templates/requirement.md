@@ -1,0 +1,30 @@
+---
+id: "{{REQUIREMENT_ID}}"
+type: requirement
+status: draft
+related: []
+---
+
+# {{TITLE}}
+
+## Problem
+
+{{CURRENT_PROBLEM}}
+
+## Desired Outcome
+
+{{DESIRED_OUTCOME}}
+
+## Scope
+
+### In
+
+- {{IN_SCOPE_ITEM}}
+
+### Out
+
+- {{OUT_OF_SCOPE_ITEM}}
+
+## Acceptance Criteria
+
+- [ ] {{VERIFIABLE_CRITERION}}
