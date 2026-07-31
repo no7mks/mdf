@@ -7,9 +7,9 @@
 `references/repository-contract.md`、`references/object-contract.md` 与
 `references/workflows.md`。
 
-1. 在 clean worktree 运行 `doctor` 与 `branch`。manifest 非 ready、detached
-   HEAD 或非 Gitflow 分支均停止。分支只可为 `feature/*`、`bugfix/*`、
-   `release/<semver>`、`hotfix/<semver>`。
+1. 运行 `doctor` 与 `branch`。manifest 非 ready、detached HEAD 或非 Gitflow
+   分支均停止。分支只可为 `feature/*`、`bugfix/*`、`release/<semver>`、
+   `hotfix/<semver>`。
 2. 在任何写入前内部执行 audit：release 用 release audit，其他支持分支用
    change audit。
 3. feature/bugfix：无未解决 finding 时，使用 `planning-candidates`、
@@ -27,7 +27,7 @@
 ## Gitflow 合并续办
 
 若本次写入了事实或 Change，展示结果、验证通过后停止；用户复核并 commit，再次
-显式调用 `$mdf finish`。续办从 clean worktree 开始，调用：
+显式调用 `$mdf finish`。续办时调用：
 
 ```bash
 python3 "$MDF_ROOT/scripts/mdf.py" finish-gitflow --repo "$REPO_ROOT"

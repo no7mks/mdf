@@ -38,9 +38,24 @@ disable-model-invocation: true
    要求 `protocol_version`、`tool_version` 与 `schema_version` 均为数字 `2`。
    命令失败或版本不符时停止；不要模拟脚本行为。
 2. 仅完整读取 `workflows/<command>.md`，并遵循其按需读取公共引用的说明。
-3. 所有脚本均以 `python3 "$MDF_ROOT/scripts/mdf.py"` 调用。解析目标 Git 根，
-   不假设当前目录就是目标仓库。
+3. `$mdf <command>` 是用户触发的工作流命令；
+   `python3 "$MDF_ROOT/scripts/mdf.py" <action>` 是工作流内部调用的
+   确定性 CLI 动作。两者不要求一一对应：`init-repo` 可调用
+   `doctor` 与 `init`，`finish` 可调用 `finish-gitflow`。所有 CLI
+   动作均由统一入口调用，解析目标 Git 根；不假设当前目录就是目标仓库。
 
-内部材料不是可单独调用的 Skill：公共契约在 `references/`，模板在 `assets/`，
-确定性 CLI 在 `scripts/`。每次外层流程开始时均要求 clean worktree；写入失败
-时保留现场并报告 findings。
+## 内部材料
+
+| 材料 | 位置 | 用途 |
+| --- | --- | --- |
+| 工作流 | `workflows/` | 定义各 workflow command 的语义步骤 |
+| 公共契约 | `references/` | 由工作流按需读取 |
+| 模板 | `assets/` | 供 CLI 写入仓库产出物 |
+| 确定性 CLI | `scripts/` | 供工作流执行确定性操作 |
+
+上述材料均不是可单独调用的 Skill。
+
+## 执行约束
+
+- 每次外层工作流开始时，目标仓库必须为 clean worktree。
+- 写入失败时保留现场，并报告 findings。

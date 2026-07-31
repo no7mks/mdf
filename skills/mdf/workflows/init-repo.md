@@ -6,7 +6,7 @@
 完整读取 `workflows/common.md`、`workflows/grill.md`、
 `references/repository-contract.md` 与 `references/workflows.md`。
 
-1. 解析目标 Git 根为 `REPO_ROOT`，要求 clean worktree，然后运行：
+1. 解析目标 Git 根为 `REPO_ROOT`，然后运行：
 
    ```bash
    python3 "$MDF_ROOT/scripts/mdf.py" doctor --repo "$REPO_ROOT"
@@ -40,8 +40,8 @@
 3. 比较本次调用前后的 `CONTEXT.md`、`docs/product/**`、`docs/system/**`。
    任一事实页新增或修改时，manifest 必须保持 `initializing`；展示 diff 并停止，
    要求用户复核、commit 后再次显式调用 `$mdf init-repo`。
-4. 续办从 clean worktree 开始，且本次不得再改事实页。运行 full validation，
-   只接受 `manifest.initializing` finding；没有其他 finding 时才改为 `ready`，
-   并再次运行 full validation。
+4. 续办时本次不得再改事实页。运行 full validation，只接受
+   `manifest.initializing` finding；没有其他 finding 时才改为 `ready`，并再次
+   运行 full validation。
 5. 既有事实页本次完全未改、八项基线和非空验证命令都可验证时，可直接执行
    上一步。任何失败均保留现场并报告 findings。

@@ -1,9 +1,8 @@
 # MDF 工作流契约
 
-所有命令均由 `$mdf <command>` 显式调用；内部材料不是独立 Skill。`init-repo` 与
-`review-doc` 在需要逐题澄清时使用内部 grill 工作流。每个 outer workflow 开始前
-要求 clean worktree；入口可产生改动，但绝不自动
-`git commit`，用户须在下一次入口前自行复查并提交。
+所有命令均由 `$mdf <command>` 显式调用；内部材料不是独立 Skill。`init-repo`
+与 `review-doc` 在需要逐题澄清时使用内部 grill 工作流。入口可产生改动，
+但绝不自动 `git commit`；用户须在下一次入口前自行复查并提交。
 
 ## init 与 review
 
