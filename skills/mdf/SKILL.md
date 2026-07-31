@@ -27,7 +27,7 @@ disable-model-invocation: true
 不写入任何内容。`grill` 必须携带非空议题；其他命令所需的对象、版本或取舍
 在流程中一次一题澄清。
 
-## 分发
+## 运行约定
 
 1. 解析本文件的绝对路径为 `MDF_ROOT`，确认 `scripts/mdf.py` 存在，运行：
 
