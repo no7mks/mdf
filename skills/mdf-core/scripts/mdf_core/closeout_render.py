@@ -4,142 +4,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .constants import (
-    BUG_RESOLUTIONS,
-    BUG_SEVERITIES,
     CHANGELOG_CATEGORIES,
-    UNRELEASED_FOUND_IN_RE,
 )
 from .errors import MDFError
-from .validate_objects import iter_object_files
-from .yamlutil import frontmatter_span, read_frontmatter
-
-
-def active_objects(repo: Path) -> dict[str, tuple[str, Path, dict[str, Any]]]:
-    result: dict[str, tuple[str, Path, dict[str, Any]]] = {}
-    for kind in ("requirement", "bug"):
-        for path in iter_object_files(repo, kind):
-            if len(path.relative_to(repo).parts) != 2:
-                continue
-            metadata, _ = read_frontmatter(path)
-            identifier = metadata.get("id")
-            if isinstance(identifier, str):
-                result[identifier] = (kind, path, metadata)
-    return result
-
-
-def close_object_text(
-    text: str,
-    *,
-    kind: str,
-    closure: dict[str, Any],
-    version: str,
-) -> str:
-    start, end, _ = frontmatter_span(text)
-    frontmatter = text[start:end]
-    if not re.search(r"^status:\s*ready\s*$", frontmatter, re.MULTILINE):
-        raise MDFError(
-            f"Object {closure['id']} is not ready", code="invalid_closure"
-        )
-    resolution = closure["resolution"]
-
-    def set_field(raw: str, key: str, value: str) -> str:
-        pattern = rf"^{re.escape(key)}:\s*.*$"
-        updated, count = re.subn(
-            pattern, f"{key}: {value}", raw, count=1, flags=re.MULTILINE
-        )
-        return updated if count else raw + f"\n{key}: {value}"
-
-    def remove_field(raw: str, key: str) -> str:
-        return re.sub(
-            rf"^{re.escape(key)}:\s*.*\n?", "", raw, count=1, flags=re.MULTILINE
-        )
-
-    if kind == "requirement":
-        if resolution not in {"fulfilled", "rejected", "duplicate", "obsolete"}:
-            raise MDFError(
-                f"Invalid Requirement resolution: {resolution}",
-                code="invalid_closure",
-            )
-        expected_version = closure.get("fulfilled_in")
-        if resolution == "fulfilled":
-            if expected_version != version or "fixed_in" in closure:
-                raise MDFError(
-                    "fulfilled closure requires fulfilled_in equal to release version",
-                    code="invalid_closure",
-                )
-        elif "fulfilled_in" in closure or "fixed_in" in closure:
-            raise MDFError(
-                "Non-fulfilled Requirement closure must not declare a version",
-                code="invalid_closure",
-            )
-        extra = [f"resolution: {resolution}"]
-        if resolution == "fulfilled":
-            extra.append(f"fulfilled_in: {version}")
-        replacement = "status: closed\n" + "\n".join(extra)
-        updated_frontmatter, count = re.subn(
-            r"^status:\s*ready\s*$",
-            replacement,
-            frontmatter,
-            count=1,
-            flags=re.MULTILINE,
-        )
-        if count != 1:
-            raise MDFError(
-                "Could not update object status", code="invalid_closure"
-            )
-        return text[:start] + updated_frontmatter + text[end:]
-
-    if resolution == "deferred":
-        severity = re.search(
-            r"^severity:\s*([^\s#]+)", frontmatter, re.MULTILINE
-        )
-        if severity is None or severity.group(1) not in BUG_SEVERITIES:
-            raise MDFError(
-                "Deferred Bugs require critical, major, or trivial severity",
-                code="invalid_closure",
-            )
-        if UNRELEASED_FOUND_IN_RE.search(frontmatter):
-            frontmatter = set_field(frontmatter, "found_in", version)
-        return text[:start] + frontmatter + text[end:]
-
-    if resolution not in BUG_RESOLUTIONS:
-        raise MDFError(
-            f"Invalid Bug resolution: {resolution}", code="invalid_closure"
-        )
-    if resolution == "duplicate":
-        primary = closure.get("duplicate_of")
-        if not isinstance(primary, str) or not primary.startswith("bug-"):
-            raise MDFError(
-                "Duplicate closure requires duplicate_of",
-                code="invalid_closure",
-            )
-        frontmatter = remove_field(frontmatter, "found_in")
-        frontmatter = remove_field(frontmatter, "fixed_in")
-        frontmatter = set_field(frontmatter, "duplicate_of", primary)
-        extra = "status: closed\nresolution: duplicate"
-    else:
-        if resolution == "fixed":
-            if closure.get("fixed_in") != version or "fulfilled_in" in closure:
-                raise MDFError(
-                    "fixed closure requires fixed_in equal to release version",
-                    code="invalid_closure",
-                )
-        elif "fixed_in" in closure or "fulfilled_in" in closure:
-            raise MDFError(
-                "Non-fixed Bug closure must not declare a version",
-                code="invalid_closure",
-            )
-        if UNRELEASED_FOUND_IN_RE.search(frontmatter):
-            frontmatter = set_field(frontmatter, "found_in", version)
-        extra = f"status: closed\nresolution: {resolution}"
-        if resolution == "fixed":
-            extra += f"\nfixed_in: {version}"
-    updated_frontmatter, count = re.subn(
-        r"^status:\s*ready\s*$", extra, frontmatter, count=1, flags=re.MULTILINE
-    )
-    if count != 1:
-        raise MDFError("Could not update object status", code="invalid_closure")
-    return text[:start] + updated_frontmatter + text[end:]
+from .yamlutil import read_frontmatter
 
 
 def aggregate_release_changes(
@@ -154,6 +22,7 @@ def aggregate_release_changes(
     set[str],
     set[str],
     dict[str, str],
+    dict[str, list[str]],
 ]:
     notes = {category: [] for category in CHANGELOG_CATEGORIES}
     breaking = False
@@ -163,6 +32,7 @@ def aggregate_release_changes(
     deferred: set[str] = set()
     adrs: set[str] = set()
     closed_resolutions: dict[str, str] = {}
+    evidence_sources: list[dict[str, Any]] = []
     for slug in sorted(slugs):
         change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
         metadata, _ = read_frontmatter(change)
@@ -181,6 +51,9 @@ def aggregate_release_changes(
                 values = release_notes.get(category, [])
                 if isinstance(values, list):
                     notes[category].extend(values)
+        raw_evidence = metadata.get("evidence")
+        if isinstance(raw_evidence, dict):
+            evidence_sources.append(raw_evidence)
     return (
         notes,
         breaking,
@@ -190,7 +63,29 @@ def aggregate_release_changes(
         deferred,
         adrs,
         closed_resolutions,
+        merge_evidence(*evidence_sources),
     )
+
+
+def merge_evidence(
+    *sources: dict[str, Any],
+) -> dict[str, list[str]]:
+    """Merge evidence in source order while retaining each first occurrence."""
+    merged = {"tests": [], "commands": [], "artifacts": []}
+    seen = {key: set() for key in merged}
+    for source in sources:
+        for key in merged:
+            values = source.get(key, []) if isinstance(source, dict) else []
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                if not isinstance(value, str) or not value.strip():
+                    continue
+                if value in seen[key]:
+                    continue
+                seen[key].add(value)
+                merged[key].append(value)
+    return merged
 
 
 def render_version_change(
@@ -203,7 +98,7 @@ def render_version_change(
     breaking: bool,
     minimum_bump: str,
     actual_bump: str,
-    commands: list[str],
+    validation_commands: list[str],
     requirements: set[str],
     fixed: set[str],
     closed: set[str],
@@ -215,6 +110,7 @@ def render_version_change(
     deferred_acceptance: dict[str, Any],
     hotfix_body: str | None = None,
     release_notes: dict[str, list[str]] | None = None,
+    evidence: dict[str, list[str]] | None = None,
     *,
     verify_command_results: list[dict[str, Any]] | None = None,
     semantic_summary: str | None = None,
@@ -247,14 +143,37 @@ def render_version_change(
     previous_value = previous if previous is not None else "none"
     commands_text = "".join(
         f"    - {json.dumps(str(command), ensure_ascii=False)}\n"
-        for command in commands
+        for command in validation_commands
     )
+
+    def evidence_yaml() -> str:
+        lines = ["evidence:"]
+        for key in ("tests", "commands", "artifacts"):
+            values = evidence.get(key, []) if evidence else []
+            if not values:
+                lines.append(f"  {key}: []")
+                continue
+            lines.append(f"  {key}:")
+            lines.extend(
+                f"    - {json.dumps(value, ensure_ascii=False)}"
+                for value in values
+            )
+        return "\n".join(lines) + "\n"
+
+    def closed_resolution_yaml(identifier: str) -> str:
+        resolution = closed_resolutions.get(identifier, "wont-fix")
+        return json.dumps(str(resolution), ensure_ascii=False)
+
+
     transition_lines = (
         "\n".join(f"- {line}" for line in found_in_transitions) or "None."
     )
     if deferred_acceptance:
         acceptance_lines = "\n".join(
-            f"- `{identifier}`: {value.get('reason', 'accepted')}; follow-up: {value.get('follow_up', 'none')}"
+            (
+                f"- `{identifier}`: {value.get('reason', 'accepted')}; "
+                f"follow-up: {value.get('follow_up', 'none')}"
+            )
             for identifier, value in sorted(deferred_acceptance.items())
             if isinstance(value, dict)
         )
@@ -275,7 +194,7 @@ def render_version_change(
             "closed_resolutions:\n"
             + "".join(
                 f"  {identifier}: "
-                f"{json.dumps(str(closed_resolutions.get(identifier, 'wont-fix')), ensure_ascii=False)}\n"
+                f"{closed_resolution_yaml(identifier)}\n"
                 for identifier in sorted(closed)
             )
             if closed
@@ -285,11 +204,7 @@ def render_version_change(
         f"included_changes: {yaml_list(slugs)}\n"
         + notes_yaml()
         + f"breaking: {'true' if breaking else 'false'}\n"
-        + "evidence:\n"
-        + "  tests: []\n"
-        + "  commands:\n"
-        + commands_text
-        + "  artifacts: []\n"
+        + evidence_yaml()
         + "audit: passed\n"
         + "---\n\n"
         f"# {mode.title()} {version}\n\n"
@@ -299,7 +214,6 @@ def render_version_change(
         + child_lines
         + "\n\n## Current Docs Updated\n\n"
         + "CHANGELOG.md and the version-root CHANGE.md were generated.\n\n"
-        + "## Migration\n\nNot required.\n\n"
         + "## Known Deviations\n\nNone.\n\n"
         + "## Closeout Outcomes\n\n"
         + "### Requirements\n\n"
@@ -327,12 +241,13 @@ def render_version_change(
         )
         + "\n\n### Deferred Bugs\n\n"
         + (chr(10).join(f"- `{item}`" for item in sorted(deferred)) or "None.")
-        + "## Found-in Transitions\n\n"
+        + "\n\n## Found-in Transitions\n\n"
         + transition_lines
         + "\n\n## Deferred Acceptance\n\n"
         + acceptance_lines
         + "\n\n## SemVer Decision\n\n"
-        + f"- Observed categories: {', '.join(sorted(categories)) if categories else 'none'}\n"
+        + "- Observed categories: "
+        + f"{', '.join(sorted(categories)) if categories else 'none'}\n"
         + f"- Breaking: {'true' if breaking else 'false'}\n"
         + f"- Minimum bump: {minimum_bump}\n"
         + f"- Actual bump: {actual_bump}\n"
@@ -356,12 +271,13 @@ def render_version_change(
             for item in (
                 verify_command_results
                 or [
-                    {"command": command, "exit_code": 0} for command in commands
+                    {"command": command, "exit_code": 0}
+                    for command in validation_commands
                 ]
             )
         )
         + "\n## Validation Commands\n\n```text\n"
-        + "\n".join(commands)
+        + "\n".join(validation_commands)
         + "\n```\n"
     )
 

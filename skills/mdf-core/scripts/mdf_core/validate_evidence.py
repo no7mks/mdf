@@ -218,7 +218,8 @@ def validate_evidence(
                     add_finding(
                         findings,
                         "generated.outside_repo",
-                        f"Generated source must be repository-relative: {source}",
+                        "Generated source must be repository-relative: "
+                        f"{source}",
                         rel,
                     )
                     source_path = None

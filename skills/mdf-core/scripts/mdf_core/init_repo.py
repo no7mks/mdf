@@ -4,7 +4,6 @@ from pathlib import Path
 from .constants import (
     BASELINES,
     BASELINE_PATHS,
-    LEGACY_MDF_BLOCK_START,
     MDF_BLOCK_END,
     MDF_BLOCK_START,
     SCHEMA_VERSION,
@@ -136,9 +135,9 @@ def init_files(
     latest_release: str | None,
 ) -> dict[Path, str]:
     files = {
-        repo
-        / ".mdf"
-        / "manifest.yaml": render_manifest(baselines, latest_release)
+        repo / ".mdf" / "manifest.yaml": render_manifest(
+            baselines, latest_release
+        )
     }
     docs_index = repo / "docs" / "index.md"
     if not docs_index.exists():
@@ -152,7 +151,7 @@ def init_files(
     agents_block = template_text(
         "agents-managed-block.md",
         f"{MDF_BLOCK_START}\n"
-        "Use the repository-local Mars Docs Flow records as versioned context.\n"
+        "Use repository-local Mars Docs Flow records as versioned context.\n"
         f"{MDF_BLOCK_END}\n",
     ).strip()
     agents = repo / "AGENTS.md"
@@ -162,24 +161,22 @@ def init_files(
         else "# AGENTS.md\n"
     )
     starts = current.count(MDF_BLOCK_START)
-    legacy_starts = current.count(LEGACY_MDF_BLOCK_START)
     ends = current.count(MDF_BLOCK_END)
-    if starts == 0 and legacy_starts == 0 and ends == 0:
+    if starts == 0 and ends == 0:
         separator = (
             ""
             if current.endswith("\n\n")
-            else "\n" if current.endswith("\n") else "\n\n"
+            else "\n"
+            if current.endswith("\n")
+            else "\n\n"
         )
         files[agents] = current + separator + agents_block + "\n"
     elif (
-        starts + legacy_starts == 1
+        starts == 1
         and ends == 1
-        and current.index(MDF_BLOCK_START if starts else LEGACY_MDF_BLOCK_START)
-        < current.index(MDF_BLOCK_END)
+        and current.index(MDF_BLOCK_START) < current.index(MDF_BLOCK_END)
     ):
-        start = current.index(
-            MDF_BLOCK_START if starts else LEGACY_MDF_BLOCK_START
-        )
+        start = current.index(MDF_BLOCK_START)
         end = current.index(MDF_BLOCK_END) + len(MDF_BLOCK_END)
         files[agents] = current[:start] + agents_block + current[end:]
     else:

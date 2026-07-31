@@ -1,6 +1,7 @@
 interface:
   display_name: "MDF Finish"
   short_description: "按当前 Gitflow 分支收口变更、发布与事实文档"
-  default_prompt: "使用 $mdf-finish 按当前 Gitflow 分支完成 Mars Docs Flow 文档收口。"
+  default_prompt:
+    "使用 $mdf-finish 按当前 Gitflow 分支完成 Mars Docs Flow 文档收口。"
 policy:
   allow_implicit_invocation: false

@@ -1,34 +1,21 @@
 from pathlib import Path
 from typing import Any
 
-from .archive import archive_plan
+from .closeout_commit import apply_version_closeout
+from .closeout_objects import active_objects, close_object_text
 from .closeout_render import (
-    active_objects,
     aggregate_release_changes,
-    close_object_text,
-    render_version_change,
-    update_changelog_text,
-    update_manifest_release,
 )
 from .constants import (
     BUG_SEVERITIES,
     BUG_TERMINAL_RESOLUTIONS,
     CHANGELOG_CATEGORIES,
-    OBJECT_FILE_RE,
     REQUIREMENT_CLOSED_RESOLUTIONS,
     is_unreleased_sentinel,
 )
 from .errors import Finding, MDFError, add_finding, serialize_findings
-from .moves import (
-    apply_moves_and_rewrites,
-    moved_destination,
-    opaque_links_survive_move,
-    replacement_plan,
-)
-from .paths import manifest_path, relative
-from .semver import bump_kind, required_bump
 from .closeout_summary import summarize_closeout
-from .validate_changes import validate_change_file
+from .validate_change_schema import validate_change_file
 from .validate_links import validate_links
 from .validate_records import validate_record_references
 from .yamlutil import read_frontmatter
@@ -78,6 +65,7 @@ def apply_closeout(
                 values = raw_notes.get(category, [])
                 if isinstance(values, list):
                     notes[category] = [str(value) for value in values]
+        evidence = dict(hotfix_change.get("evidence", {}))
         breaking = hotfix_change.get("breaking") is True
         requirement_ids = set(hotfix_change.get("requirements", []))
         fixed_ids = set(hotfix_change.get("fixed", []))
@@ -117,6 +105,7 @@ def apply_closeout(
             deferred_ids,
             adrs,
             closed_resolutions,
+            evidence,
         ) = aggregate_release_changes(repo, all_slugs)
         hotfix_body = None
     if (
@@ -167,7 +156,8 @@ def apply_closeout(
             and resolution not in BUG_TERMINAL_RESOLUTIONS
         ):
             raise MDFError(
-                f"Closed Bug must use a terminal non-fixed resolution: {identifier}",
+                "Closed Bug must use a terminal non-fixed resolution: "
+                f"{identifier}",
                 code="invalid_closure",
             )
         if identifier not in baseline_closures:
@@ -192,7 +182,8 @@ def apply_closeout(
                 closed_resolutions.setdefault(identifier, resolution)
             else:
                 raise MDFError(
-                    f"Supplemental closure has unsupported resolution: {identifier}",
+                    "Supplemental closure has unsupported resolution: "
+                    f"{identifier}",
                     code="invalid_closure",
                 )
     unreleased_ready = sorted(
@@ -224,7 +215,8 @@ def apply_closeout(
         record = objects.get(identifier)
         if record is None:
             raise MDFError(
-                f"Closure object is not an active canonical object: {identifier}",
+                "Closure object is not an active canonical object: "
+                f"{identifier}",
                 code="invalid_closure",
             )
         kind, path, metadata = record
@@ -286,172 +278,21 @@ def apply_closeout(
         )
         path.write_text(updated, encoding="utf-8")
 
-    # A deferred Bug remains ready and is intentionally not archived.  All
-    # other processed objects are closed by close_object_text above.
-
-    categories = {
-        category for category in CHANGELOG_CATEGORIES if notes[category]
-    }
-    previous_tuple = context["previous_tuple"]
-    candidate = context["candidate"]
-    actual_bump = bump_kind(previous_tuple, candidate)
-    minimum_bump = required_bump(
-        previous_tuple,
-        categories or {"none"},
-        breaking,
-    )
-    rank = {"patch": 1, "minor": 2, "major": 3}
-    if rank[actual_bump] < rank[minimum_bump]:
-        raise MDFError(
-            (
-                f"Release uses a {actual_bump} bump but the Change set "
-                f"requires at least {minimum_bump}"
-            ),
-            code="insufficient_bump",
-        )
-
-    release_dir = repo / "changes" / context["version"]
-    moves: dict[Path, Path] = {}
-    move_records: list[dict[str, Any]] = []
-    for item in context["release_items"]:
-        source = repo / item["source"]
-        destination = release_dir / item["slug"]
-        broken = opaque_links_survive_move(repo, source, destination)
-        if broken:
-            raise MDFError(
-                "Moving the Change would break an opaque Markdown link",
-                code="opaque_link_would_break",
-                details={"links": broken},
-            )
-        moves[source] = destination
-        move_records.append(
-            {
-                "kind": "repo",
-                "from": item["source"],
-                "to": relative(repo, destination),
-            }
-        )
-    epoch = ".".join(context["version"].split(".")[:2])
-    archive_moves, _ = archive_plan(repo, epoch)
-    archived: list[tuple[str, str]] = []
-    for source, destination in archive_moves.items():
-        metadata, _ = read_frontmatter(source)
-        identifier = metadata.get("id")
-        if isinstance(identifier, str):
-            archived.append((identifier, relative(repo, destination)))
-        moves[source] = destination
-        move_records.append(
-            {
-                "kind": "repo",
-                "from": relative(repo, source),
-                "to": relative(repo, destination),
-            }
-        )
-
-    rewrites = replacement_plan(
+    return apply_version_closeout(
         repo,
-        moves,
-        rewrite_inside_sources=False,
-        rewrite_inside_filter=lambda path: (
-            path.name == "CHANGE.md"
-            or (
-                path.relative_to(repo).parts[0] in {"requirements", "bugs"}
-                and OBJECT_FILE_RE.fullmatch(path.name) is not None
-            )
-        ),
+        context,
+        all_slugs=all_slugs,
+        notes=notes,
+        breaking=breaking,
+        evidence=evidence,
+        requirement_ids=requirement_ids,
+        fixed_ids=fixed_ids,
+        closed_ids=closed_ids,
+        deferred_ids=deferred_ids,
+        adrs=adrs,
+        closed_resolutions=closed_resolutions,
+        closed_requirement_resolutions=closed_requirement_resolutions,
+        objects=objects,
+        closures=closures,
+        hotfix_body=hotfix_body,
     )
-    apply_moves_and_rewrites(moves, rewrites)
-
-    release_dir.mkdir(parents=True, exist_ok=True)
-    release_path = release_dir / "CHANGE.md"
-    found_in_transitions: list[str] = []
-    for closure in closures:
-        if (
-            not closure["id"].startswith("bug-")
-            or closure["resolution"] == "duplicate"
-        ):
-            continue
-        record = objects.get(closure["id"])
-        if record is not None and is_unreleased_sentinel(
-            record[2].get("found_in")
-        ):
-            found_in_transitions.append(
-                f"{closure['id']}: unreleased -> {context['version']}"
-            )
-    release_path.write_text(
-        render_version_change(
-            context["version"],
-            context["previous"],
-            context["release_date"],
-            context["mode"],
-            all_slugs,
-            categories,
-            breaking,
-            minimum_bump,
-            actual_bump,
-            context["attestation"]["validation_commands"],
-            requirement_ids,
-            fixed_ids,
-            closed_ids,
-            deferred_ids,
-            adrs,
-            closed_resolutions,
-            closed_requirement_resolutions,
-            found_in_transitions,
-            context.get("deferred_acceptance", {}),
-            hotfix_body,
-            release_notes=notes,
-            verify_command_results=context.get("verify_command_results") or [],
-            semantic_summary=(
-                context["attestation"].get("summary")
-                if isinstance(context.get("attestation"), dict)
-                else None
-            ),
-        ),
-        encoding="utf-8",
-    )
-    changelog_path = repo / "CHANGELOG.md"
-    changelog_path.write_text(
-        update_changelog_text(
-            changelog_path.read_text(encoding="utf-8"),
-            version=context["version"],
-            release_date=context["release_date"],
-            notes=notes,
-        ),
-        encoding="utf-8",
-    )
-    manifest = manifest_path(repo)
-    manifest.write_text(
-        update_manifest_release(
-            manifest.read_text(encoding="utf-8"),
-            context["version"],
-        ),
-        encoding="utf-8",
-    )
-
-    return {
-        "slugs": sorted(all_slugs),
-        "moves": sorted(move_records, key=lambda item: item["to"]),
-        "archived": [
-            {"id": identifier, "path": path}
-            for identifier, path in sorted(archived)
-        ],
-        "semver": {
-            "categories": sorted(categories),
-            "breaking": breaking,
-            "required_bump": minimum_bump,
-            "actual_bump": actual_bump,
-        },
-        "rewrites": [
-            relative(repo, moved_destination(path, moves))
-            for path in sorted(rewrites)
-        ],
-        "outcomes": {
-            "requirements": sorted(requirement_ids),
-            "fixed": sorted(fixed_ids),
-            "closed": sorted(closed_ids),
-            "deferred": sorted(deferred_ids),
-            "closed_resolutions": closed_resolutions,
-            "closed_requirements": closed_requirement_resolutions,
-        },
-    }

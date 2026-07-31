@@ -1,0 +1,61 @@
+"""安装器的当前 skill set 替换行为。"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from _support import REPO_ROOT, run
+
+
+def test_install_replaces_mdf_skills_and_preserves_repository_artifacts(
+    tmp_path: Path,
+):
+    target_repo = tmp_path / "target"
+    skills_dir = target_repo / ".codex" / "skills"
+    skills_dir.mkdir(parents=True)
+    retired = skills_dir / "mdf-retired"
+    retired.mkdir()
+    (retired / "old.txt").write_text("retired\n", encoding="utf-8")
+    (skills_dir / "mdf-core").write_text("stale\n", encoding="utf-8")
+    (skills_dir / "other-skill").mkdir()
+
+    manifest = target_repo / ".mdf" / "manifest.yaml"
+    manifest.parent.mkdir()
+    manifest.write_text("state: ready\n", encoding="utf-8")
+    fact = target_repo / "docs" / "product.md"
+    fact.parent.mkdir()
+    fact.write_text("# Product\n", encoding="utf-8")
+
+    command = [
+        "sh",
+        str(REPO_ROOT / "link_skills.sh"),
+        "codex",
+        "--project",
+        str(target_repo),
+    ]
+    installed = run(command)
+    assert installed.returncode == 0, installed.stderr
+    assert not retired.exists()
+    assert (skills_dir / "other-skill").is_dir()
+
+    expected = sorted(
+        path.name
+        for path in (REPO_ROOT / "skills").iterdir()
+        if (path / "SKILL.md").is_file()
+    )
+    for name in expected:
+        assert (skills_dir / name).is_symlink()
+    assert manifest.read_text(encoding="utf-8") == "state: ready\n"
+    assert fact.read_text(encoding="utf-8") == "# Product\n"
+
+    upgraded = run(command)
+    assert upgraded.returncode == 0, upgraded.stderr
+    assert "已卸载" in upgraded.stdout
+
+
+def test_list_works_from_the_skill_source_repository():
+    listed = run(["sh", "./link_skills.sh", "--list"], cwd=REPO_ROOT)
+
+    assert listed.returncode == 0, listed.stderr
+    assert "已知 agent" in listed.stdout
+    assert "codex" in listed.stdout

@@ -1,6 +1,8 @@
 interface:
   display_name: "MDF Init Repo"
-  short_description: "确认迁移方案并收敛基线、版本和验证配置后接入 MDF V2"
-  default_prompt: "使用 $mdf-init-repo 通过 mdf-grill 初始化或迁移本 Git 仓库的 Mars Docs Flow 文档系统。"
+  short_description: "确认写入方案并收敛基线、版本和验证配置后初始化 MDF"
+  default_prompt:
+    "使用 $mdf-init-repo 通过 mdf-grill 初始化本 Git 仓库的 Mars Docs Flow
+    文档系统。"
 policy:
   allow_implicit_invocation: false

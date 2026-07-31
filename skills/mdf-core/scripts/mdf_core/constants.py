@@ -67,9 +67,6 @@ def is_unreleased_heading(value: str) -> bool:
     return value.lower() == UNRELEASED_SENTINEL
 
 
-UNRELEASED_FOUND_IN_RE = re.compile(
-    rf"^found_in:\s*{re.escape(UNRELEASED_SENTINEL)}\s*$", re.MULTILINE
-)
 CHANGELOG_UNRELEASED_HEADING_RE = re.compile(
     rf"^##+\s+\[?{re.escape(UNRELEASED_SENTINEL)}]?\s*$",
     re.MULTILINE | re.IGNORECASE,
@@ -120,11 +117,11 @@ BASELINE_DOC_TYPES = {
 STABLE_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 EPOCH_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 OBJECT_FILE_RE = re.compile(
-    r"^(req|bug)-([0-9a-hjkmnp-tv-z]{26})-([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.md$"
+    r"^(req|bug)-([0-9a-hjkmnp-tv-z]{26})-"
+    r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.md$"
 )
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
-LEGACY_MDF_BLOCK_START = "<!-- MDF:START -->"
 MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)
 ALL_MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]]*]\(([^()]*(?:\([^()]*\)[^()]*)*)\)"

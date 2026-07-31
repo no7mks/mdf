@@ -1,5 +1,6 @@
 #!/bin/sh
-# 把本仓库 skills/ 下的每个 skill 软链到各类 AI Agent 的 skills 目录。
+# 把本仓库 skills/ 下的当前 MDF skill set 软链到各类 AI Agent 的 skills 目录。
+# 每次安装前清除目标目录中的全部 mdf-* Skill；不触碰目标仓库的 .mdf/ 或 docs/。
 #
 # 用法示例：
 #   /path/to/link_skills.sh                # 链接到当前所在的本地仓库
@@ -8,7 +9,7 @@
 #   ./link_skills.sh --global              # 链接到所有已知 agent（全局 ~/.xxx/skills）
 #   ./link_skills.sh cursor --project DIR  # 链到指定项目的 .<agent>/skills
 #   ./link_skills.sh --dry-run             # 只预览，不实际操作
-#   ./link_skills.sh --unlink              # 移除本仓库创建的软链
+#   ./link_skills.sh --unlink              # 移除目标范围内全部 mdf-* Skill
 #   ./link_skills.sh --list                # 列出已知 agent 与目标目录
 #
 # 兼容 POSIX sh（无需 Python、无需 bash 关联数组）。
@@ -83,11 +84,6 @@ done
 # --global 与 --project 指向不同安装范围，不能同时使用
 [ "$GLOBAL" -eq 0 ] || [ -z "$PROJECT" ] || die "--global 与 --project 不能同时使用"
 
-# 默认安装到命令执行目录，但不能把 skill 源仓库安装回自身
-if [ "$GLOBAL" -eq 0 ] && [ -z "$PROJECT" ] && [ "$CURRENT_DIR" = "$SCRIPT_DIR" ]; then
-    die "不能把 skill 安装回源仓库自身。请切换到目标仓库后执行 $SCRIPT_DIR/link_skills.sh，或使用 --project DIR / --global"
-fi
-
 # 目标基目录：默认命令执行目录；--project 指定其他仓库；--global 使用 home
 target_base() {
     if [ "$GLOBAL" -eq 1 ]; then
@@ -108,6 +104,13 @@ if [ "$LIST" -eq 1 ]; then
     done
     echo "别名：龙虾=openclaw"
     exit 0
+fi
+
+# 默认安装到命令执行目录，但不能把 skill 源仓库安装回自身。
+if [ "$GLOBAL" -eq 0 ] && [ -z "$PROJECT" ] && \
+    [ "$CURRENT_DIR" = "$SCRIPT_DIR" ]; then
+    die "不能把 skill 安装回源仓库自身。请切换到目标仓库后执行 \
+$SCRIPT_DIR/link_skills.sh，或使用 --project DIR / --global"
 fi
 
 # 未指定则全部
@@ -137,34 +140,30 @@ echo "$verb · 范围: $scope · $mode"
 echo "发现 skill:$SKILLS"
 echo
 
-# ---- 处理单个 skill ----
+purge_mdf_skills() {
+    target_dir="$1"
+    [ -d "$target_dir" ] || return
+    found=0
+    for installed in "$target_dir"/mdf-*; do
+        [ -e "$installed" ] || [ -L "$installed" ] || continue
+        found=1
+        if [ "$DRY_RUN" -eq 1 ]; then
+            echo "  - 将卸载 $installed"
+        else
+            rm -rf "$installed"
+            echo "  - 已卸载 $installed"
+        fi
+    done
+    [ "$found" -eq 1 ] || echo "  · 未发现已安装的 MDF Skill"
+}
+
+# ---- 安装单个 skill ----
 link_one() {
     src="$1"; dst="$2"; name=$(basename "$src")
 
-    if [ "$UNLINK" -eq 1 ]; then
-        if [ -L "$dst" ]; then
-            if [ "$(readlink "$dst")" = "$src" ]; then
-                [ "$DRY_RUN" -eq 1 ] || rm "$dst"
-                echo "  - 移除 $dst"
-            else
-                echo "  ~ 跳过 ${dst}（指向其他位置，非本仓库）"
-            fi
-        elif [ -e "$dst" ]; then
-            echo "  ~ 跳过 ${dst}（是真实目录/文件，非软链）"
-        else
-            echo "  · 无软链 $name"
-        fi
-        return
-    fi
-
-    # 创建
     if [ -L "$dst" ]; then
-        if [ "$(readlink "$dst")" = "$src" ]; then
-            echo "  = 已存在 $name"
-        else
-            [ "$DRY_RUN" -eq 1 ] || { rm "$dst"; ln -s "$src" "$dst"; }
-            echo "  ↻ 更新 $name"
-        fi
+        [ "$DRY_RUN" -eq 1 ] || { rm "$dst"; ln -s "$src" "$dst"; }
+        echo "  ↻ 更新 $name"
     elif [ -e "$dst" ]; then
         echo "  ! 跳过 ${name}（$dst 已存在且不是软链，请手动处理）"
     else
@@ -181,6 +180,11 @@ base=$(target_base)
 for agent in $SELECTED; do
     tdir="$base/$(agent_dir "$agent")"
     echo "[$agent] $tdir"
+    if [ "$UNLINK" -eq 0 ] && [ "$DRY_RUN" -eq 0 ]; then
+        mkdir -p "$tdir"
+    fi
+    purge_mdf_skills "$tdir"
+    [ "$UNLINK" -eq 0 ] || continue
     for name in $SKILLS; do
         link_one "$SKILLS_SRC/$name" "$tdir/$name"
     done

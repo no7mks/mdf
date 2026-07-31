@@ -123,7 +123,7 @@ def command_init(args: argparse.Namespace) -> None:
     ]
     update = [relative(repo, path) for path in sorted(files) if path.exists()]
     plan = {
-        "mode": "migration" if existing_manifest else "initialization",
+        "mode": "update" if existing_manifest else "initialization",
         "create": create,
         "update": update,
         "state": "initializing",
@@ -148,7 +148,10 @@ def command_init(args: argparse.Namespace) -> None:
                 key=lambda item: relative(repo, item[0]),
             )
         ],
-        "next": "Write every confirmed documented baseline, set state to ready, then run full validation.",
+        "next": (
+            "Write every confirmed documented baseline, set state to ready, "
+            "then run full validation."
+        ),
     }
     if not args.dry_run:
         write_files(
@@ -310,7 +313,8 @@ def command_archive(args: argparse.Namespace) -> None:
         post_findings = doctor.collect_findings(repo, full=True)
         if post_findings:
             raise MDFError(
-                "Archive post-validation failed; leave the git worktree for manual inspection",
+                "Archive post-validation failed; leave the git worktree for "
+                "manual inspection",
                 code="post_validation_failed",
                 details={"findings": serialize_findings(post_findings)},
             )
@@ -352,7 +356,9 @@ def command_planning_candidates(args: argparse.Namespace) -> None:
     state = (
         "none"
         if not candidates
-        else "unique" if len(candidates) == 1 else "ambiguous"
+        else "unique"
+        if len(candidates) == 1
+        else "ambiguous"
     )
     emit(
         {

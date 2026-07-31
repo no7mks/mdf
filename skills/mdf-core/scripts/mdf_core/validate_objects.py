@@ -240,7 +240,8 @@ def validate_object(
         add_finding(
             findings,
             "object.path",
-            f"{expected_type} must be directly active or in archive/MAJOR.MINOR",
+            f"{expected_type} must be directly active or in "
+            "archive/MAJOR.MINOR",
             rel,
         )
 

@@ -1,8 +1,9 @@
 # MDF 测试
 
-本目录验证 Mars Docs Flow V2 的技能契约和确定性 CLI。测试在临时 Git 仓库中
-运行，覆盖 manifest、ID、SemVer、Gitflow、工作对象、审计、归档、链接重写和
-release/hotfix closeout。
+本目录验证 Mars Docs
+Flow 的技能契约和确定性 CLI。测试在临时 Git 仓库中运行，覆盖 manifest、ID、SemVer、Gitflow、工作对象、审计、归档、
+链接重写和 release/hotfix
+closeout。
 
 ## 运行
 

@@ -5,7 +5,7 @@ from .errors import MDFError, serialize_findings
 from .moves import replacement_plan
 from .paths import relative
 from .textutil import slugify
-from .validate_changes import validate_change_file
+from .validate_change_schema import validate_change_file
 from .validate_objects import iter_object_files
 from .yamlutil import read_frontmatter
 
@@ -24,7 +24,8 @@ def archive_plan(
                 metadata, _ = read_frontmatter(path)
             except MDFError as exc:
                 raise MDFError(
-                    f"Cannot archive invalid object {relative(repo, path)}: {exc}",
+                    "Cannot archive invalid object "
+                    f"{relative(repo, path)}: {exc}",
                     code="invalid_object",
                 ) from exc
             identifier = metadata.get("id")
@@ -38,7 +39,8 @@ def archive_plan(
             target = root / "archive" / epoch / path.name
             if target.exists():
                 raise MDFError(
-                    f"Archive destination already exists: {relative(repo, target)}",
+                    "Archive destination already exists: "
+                    f"{relative(repo, target)}",
                     code="collision",
                 )
             moves[path] = target
@@ -60,7 +62,8 @@ def archive_plan(
         primary_path, primary_metadata = primary
         if primary_metadata.get("status") != "closed":
             raise MDFError(
-                f"Duplicate archive group is not closed: {relative(repo, primary_path)}",
+                "Duplicate archive group is not closed: "
+                f"{relative(repo, primary_path)}",
                 code="duplicate_group_open",
             )
         primary_parts = primary_path.relative_to(repo).parts
@@ -73,7 +76,8 @@ def archive_plan(
             target = repo / "bugs" / "archive" / group_epoch / primary_path.name
             if target.exists() and primary_path not in moves:
                 raise MDFError(
-                    f"Archive destination already exists: {relative(repo, target)}",
+                    "Archive destination already exists: "
+                    f"{relative(repo, target)}",
                     code="collision",
                 )
             moves.setdefault(primary_path, target)
@@ -81,7 +85,8 @@ def archive_plan(
             target = repo / "bugs" / "archive" / group_epoch / path.name
             if target.exists() and path not in moves:
                 raise MDFError(
-                    f"Archive destination already exists: {relative(repo, target)}",
+                    "Archive destination already exists: "
+                    f"{relative(repo, target)}",
                     code="collision",
                 )
             moves[path] = target
@@ -157,7 +162,8 @@ def change_move_plan(
             )
             if reserved_findings:
                 raise MDFError(
-                    "Source contains a non-canonical file at reserved name CHANGE.md",
+                    "Source contains a non-canonical file at reserved name "
+                    "CHANGE.md",
                     code="reserved_change",
                     details={"findings": serialize_findings(reserved_findings)},
                 )

@@ -14,7 +14,7 @@ PYTHON = sys.executable
 
 
 def skill_dir(name: str) -> Path:
-    """Absolute path to a skill directory by name (used inside functional tests)."""
+    """Return a skill directory's absolute path for functional tests."""
     for skill in discover_skills():
         if skill.name == name:
             return skill.path

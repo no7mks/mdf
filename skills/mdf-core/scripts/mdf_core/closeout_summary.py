@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Any
 
-from .closeout_render import active_objects
+from .closeout_objects import active_objects
 from .errors import Finding, MDFError, add_finding, serialize_findings
 from .paths import relative
-from .validate_changes import validate_change_file
+from .validate_change_schema import validate_change_file
 from .validate_links import validate_links
 from .validate_records import validate_record_references
 

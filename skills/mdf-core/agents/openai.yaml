@@ -1,6 +1,7 @@
 interface:
   display_name: "MDF Core"
   short_description: "Mars Docs Flow 的共享协议与确定性工具"
-  default_prompt: "仅在其他 Mars Docs Flow 入口 Skill 显式委托时使用 $mdf-core 作为基础设施。"
+  default_prompt:
+    "仅在其他 Mars Docs Flow 入口 Skill 显式委托时使用 $mdf-core 作为基础设施。"
 policy:
   allow_implicit_invocation: false

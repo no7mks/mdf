@@ -176,7 +176,8 @@ def validate_manifest(
                 add_finding(
                     findings,
                     "baseline.path",
-                    f"{name} requires a repository-relative path when documented",
+                    f"{name} requires a repository-relative path when "
+                    "documented",
                     ".mdf/manifest.yaml",
                 )
                 resolved = False
@@ -228,7 +229,8 @@ def validate_manifest(
                         add_finding(
                             findings,
                             "baseline.doc_type",
-                            f"{name} baseline requires doc_type {expected_type}",
+                            f"{name} baseline requires doc_type "
+                            f"{expected_type}",
                             declared_path,
                         )
                         resolved = False

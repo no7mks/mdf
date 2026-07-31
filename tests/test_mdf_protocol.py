@@ -42,7 +42,7 @@ def test_new_id_alias_no_longer_exists(python_exe: str):
     "version",
     [
         "1.2",
-        "v1.2.3",
+        "version-1.2.3",
         "01.2.3",
         "1.02.3",
         "1.2.03",
@@ -103,9 +103,9 @@ def test_minimum_semver_bump(
     if breaking:
         args.append("--breaking")
     result = mdf(python_exe, *args)
-    assert (
-        result.returncode == 0
-    ) is expected_ok, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    assert (result.returncode == 0) is expected_ok, (
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
 
 
 def test_removed_category_requires_explicit_breaking_flag(python_exe: str):

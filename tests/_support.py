@@ -33,16 +33,16 @@ EXTRA_SKILL_ROOTS = [REPO_ROOT / ".kiro" / "skills"]
 class Skill:
     """A discovered skill: a directory that contains a SKILL.md."""
 
-    name: str          # directory name (e.g. "docx")
-    path: Path         # skill directory
-    skill_md: Path     # path to SKILL.md
+    name: str  # directory name (e.g. "docx")
+    path: Path  # skill directory
+    skill_md: Path  # path to SKILL.md
 
     def __str__(self) -> str:  # nicer pytest test ids
         return self.name
 
 
 def discover_skills() -> list[Skill]:
-    """Find top-level skill directories containing a SKILL.md, sorted by name."""
+    """Find top-level skill directories containing a SKILL.md, sorted."""
     roots = [SKILLS_DIR, *EXTRA_SKILL_ROOTS]
     found: dict[str, Skill] = {}
     for root in roots:

@@ -1,4 +1,4 @@
-"""MDF V2 release-closeout 协议测试。"""
+"""MDF release-closeout 协议测试。"""
 
 from __future__ import annotations
 
@@ -242,6 +242,11 @@ def test_hotfix_closeout_uses_manifest_commands(
             "fixed": [BUG_ID],
             "release_notes": {"Fixed": ["修复调用超时"]},
             "body": "调用超时已经修复。",
+            "evidence": {
+                "tests": ["tests/test_timeout.py"],
+                "commands": ["python -m pytest tests/test_timeout.py"],
+                "artifacts": [],
+            },
         },
         ensure_ascii=False,
     )

@@ -14,7 +14,9 @@ def stable_semver(value: Any) -> tuple[int, int, int] | None:
     match = STABLE_SEMVER_RE.fullmatch(value)
     if not match:
         return None
-    return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
+    return tuple(  # type: ignore[return-value]
+        int(part) for part in match.groups()
+    )
 
 
 def slugify(value: str) -> str:

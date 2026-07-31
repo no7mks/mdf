@@ -52,7 +52,11 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
         key, value = m.group(1), m.group(2).strip()
         if BLOCK_SCALAR_RE.match(value):
             block: list[str] = []
-            while i < len(lines) and lines[i].strip() and lines[i][0] in (" ", "\t"):
+            while (
+                i < len(lines)
+                and lines[i].strip()
+                and lines[i][0] in (" ", "\t")
+            ):
                 block.append(lines[i].strip())
                 i += 1
             joiner = "\n" if value.startswith("|") else " "
@@ -67,13 +71,17 @@ def test_skill_md_exists(skill: Skill):
 
 def test_frontmatter_present(skill: Skill):
     fm = parse_frontmatter(skill.skill_md.read_text(encoding="utf-8"))
-    assert fm is not None, f"{skill.name}/SKILL.md has no YAML front-matter block"
+    assert fm is not None, (
+        f"{skill.name}/SKILL.md has no YAML front-matter block"
+    )
 
 
 def test_description_non_empty(skill: Skill):
     fm = parse_frontmatter(skill.skill_md.read_text(encoding="utf-8")) or {}
     description = fm.get("description", "")
-    assert description, f"{skill.name}/SKILL.md front-matter needs a description"
+    assert description, (
+        f"{skill.name}/SKILL.md front-matter needs a description"
+    )
     assert len(description) >= 10, (
         f"{skill.name} description looks too short to be useful"
     )
@@ -105,7 +113,9 @@ def test_invoked_scripts_exist(skill: Skill):
     text = skill.skill_md.read_text(encoding="utf-8")
     referenced = sorted(set(INVOCATION_RE.findall(text)))
     missing = [ref for ref in referenced if not (skill.path / ref).is_file()]
-    assert not missing, f"{skill.name}/SKILL.md invokes missing scripts: {missing}"
+    assert not missing, (
+        f"{skill.name}/SKILL.md invokes missing scripts: {missing}"
+    )
 
 
 MDF_LINE_LIMIT = 500
@@ -117,7 +127,7 @@ MDF_TEXT_GLOBS = (
 
 
 def test_mdf_skill_files_respect_line_limit(skill: Skill):
-    """mdf-* skills keep SKILL/references/scripts files within the hard line cap."""
+    """mdf-* skills keep checked text files below the hard line cap."""
     if not skill.name.startswith("mdf-"):
         pytest.skip("line limit applies only to mdf-* skills")
     offenders: list[str] = []

@@ -1,12 +1,12 @@
 import argparse
-import datetime as dt
 import json
 from pathlib import Path
 from typing import Any
 
 from . import doctor
 from .closeout_stage import apply_closeout, summarize_closeout
-from .closeout_validate import run_verify_commands
+from .closeout_shape import validate_closeout_shape
+from .closeout_validate import normalize_hotfix_change, run_verify_commands
 from .errors import MDFError, emit, serialize_findings
 from .gitutil import (
     branch_details,
@@ -68,7 +68,12 @@ def derive_closeout_spec(
         if isinstance(versioning, dict)
         else None
     )
-    release_date = args.release_date or dt.date.today().isoformat()
+    release_date = args.release_date
+    if not isinstance(release_date, str) or not release_date.strip():
+        raise MDFError(
+            "必须显式提供 --release-date",
+            code="invalid_closeout_spec",
+        )
     if mode == "release":
         slugs = (
             sorted(
@@ -98,26 +103,16 @@ def derive_closeout_spec(
         hotfix_change = None
     else:
         raw_hotfix = _json_argument(
-            args.hotfix_change_json, name="--hotfix-change-json", default={}
+            args.hotfix_change_json,
+            name="--hotfix-change-json",
+            default=None,
         )
-        if not isinstance(raw_hotfix, dict):
+        if raw_hotfix is None:
             raise MDFError(
-                "--hotfix-change-json 必须是对象", code="invalid_closeout_spec"
+                "hotfix 必须显式提供 --hotfix-change-json",
+                code="invalid_closeout_spec",
             )
-        hotfix_change = dict(raw_hotfix)
-        hotfix_change.setdefault("source_branch", f"hotfix/{version}")
-        hotfix_change.setdefault("change_kind", "hotfix")
-        hotfix_change.setdefault("requirements", [])
-        hotfix_change.setdefault("fixed", [])
-        hotfix_change.setdefault("closed", [])
-        hotfix_change.setdefault("deferred", [])
-        hotfix_change.setdefault("adrs", [])
-        hotfix_change.setdefault("release_notes", "none")
-        hotfix_change.setdefault("breaking", False)
-        hotfix_change.setdefault(
-            "evidence", {"tests": [], "commands": [], "artifacts": []}
-        )
-        hotfix_change.setdefault("body", "Hotfix result verified.")
+        hotfix_change = normalize_hotfix_change(raw_hotfix, version)
         requirements = set(hotfix_change["requirements"])
         fixed = set(hotfix_change["fixed"])
         closed = set(hotfix_change["closed"])
@@ -245,8 +240,6 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             details={"findings": serialize_findings(pre_findings)},
         )
     spec = derive_closeout_spec(repo, args)
-    from .closeout_validate import validate_closeout_shape
-
     context = validate_closeout_shape(repo, spec)
     if args.dry_run:
         emit(

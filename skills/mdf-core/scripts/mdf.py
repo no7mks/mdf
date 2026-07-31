@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Deterministic local tooling for Mars Docs Flow."""
+
 from __future__ import annotations
 
 import sys

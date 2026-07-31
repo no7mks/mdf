@@ -75,7 +75,7 @@ def load_core_module():
         init_repo,
         moves,
     )
-    from mdf_core import closeout_stage, closeout_validate
+    from mdf_core import closeout_objects, closeout_shape, closeout_stage
 
     return SimpleNamespace(
         os=os,
@@ -83,8 +83,9 @@ def load_core_module():
         MDFError=errors.MDFError,
         Finding=errors.Finding,
         apply_closeout=closeout_stage.apply_closeout,
+        close_object_text=closeout_objects.close_object_text,
         summarize_closeout=closeout_stage.summarize_closeout,
-        validate_closeout_shape=closeout_validate.validate_closeout_shape,
+        validate_closeout_shape=closeout_shape.validate_closeout_shape,
         collect_findings=doctor.collect_findings,
         command_archive=commands_misc.command_archive,
         git_directory=gitutil.git_directory,
@@ -182,8 +183,6 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "服务健康能力已经交付。\n\n"
             "## Current Docs Updated\n\n"
             "- docs/product/reference/capabilities.md\n\n"
-            "## Migration\n\n"
-            "Not required.\n\n"
             "## Known Deviations\n\n"
             "None.\n"
         ),

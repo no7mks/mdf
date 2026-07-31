@@ -151,14 +151,8 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                     add_finding(
                         findings,
                         "bug.duplicate_chain",
-                        "Duplicate Bugs must point directly to a canonical non-duplicate Bug",
-                        relative(repo, path),
-                    )
-                if primary_metadata.get("status") != "closed":
-                    add_finding(
-                        findings,
-                        "bug.duplicate_primary_open",
-                        "A duplicate and its canonical Bug must be closed as one archive group",
+                        "Duplicate Bugs must point directly to a canonical "
+                        "non-duplicate Bug",
                         relative(repo, path),
                     )
 
@@ -206,8 +200,9 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                             add_finding(
                                 findings,
                                 "change.duplicate_in_outcome",
-                                f"Duplicate Bug {identifier} must be excluded from Change "
-                                "outcomes; use its canonical Bug ID",
+                                f"Duplicate Bug {identifier} must be excluded "
+                                "from Change outcomes; use its canonical Bug "
+                                "ID",
                                 relative(repo, path),
                             )
         closed_resolutions = metadata.get("closed_resolutions")
@@ -235,7 +230,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                         add_finding(
                             findings,
                             "change.duplicate_in_outcome",
-                            f"Duplicate Bug {identifier} must be excluded from Change "
-                            "outcomes; use its canonical Bug ID",
+                            f"Duplicate Bug {identifier} must be excluded from "
+                            "Change outcomes; use its canonical Bug ID",
                             relative(repo, path),
                         )

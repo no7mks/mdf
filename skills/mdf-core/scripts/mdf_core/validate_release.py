@@ -151,7 +151,8 @@ def validate_release_history(
         add_finding(
             findings,
             "manifest.latest_release_history",
-            "versioning.latest_release is null but stable release records exist",
+            "versioning.latest_release is null but stable release records "
+            "exist",
             ".mdf/manifest.yaml",
         )
     elif stable_semver(latest_release) is not None:
@@ -159,7 +160,8 @@ def validate_release_history(
             add_finding(
                 findings,
                 "manifest.latest_release_history",
-                f"latest_release {latest_release} has no CHANGELOG or version CHANGE record",
+                f"latest_release {latest_release} has no CHANGELOG or "
+                "version CHANGE record",
                 ".mdf/manifest.yaml",
             )
         else:

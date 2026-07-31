@@ -29,10 +29,6 @@ evidence:
 
 - {{UPDATED_CURRENT_FACT_PATH}}
 
-## Migration
-
-Not required.
-
 ## Known Deviations
 
 None.

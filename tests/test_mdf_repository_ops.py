@@ -76,9 +76,7 @@ def test_archive_never_rewrites_external_url_path_text(
         "status: ready\nrelated: []",
         "status: closed\nrelated: []\nresolution: rejected",
     )
-    external_url = (
-        "https://example.invalid/repository/" f"requirements/{REQ_NAME}"
-    )
+    external_url = f"https://example.invalid/repository/requirements/{REQ_NAME}"
     index = repo / "docs" / "index.md"
     index.write_text(
         index.read_text(encoding="utf-8")
@@ -196,16 +194,10 @@ def test_init_writes_files_from_assets_templates(
     assert block in agents
 
 
-def test_init_migrates_manifest_and_legacy_managed_block(
+def test_init_updates_existing_manifest_and_managed_block(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(
-        repo / ".mdf" / "manifest.yaml",
-        "schema_version: 2",
-        "schema_version: 1",
-    )
-    replace(repo / "AGENTS.md", "<!-- MDF:BEGIN -->", "<!-- MDF:START -->")
     init_git(repo)
     arguments = [
         "init",
@@ -218,7 +210,7 @@ def test_init_migrates_manifest_and_legacy_managed_block(
 
     dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
     plan = dry_run["plan"]
-    assert plan["mode"] == "migration"
+    assert plan["mode"] == "update"
     assert ".mdf/manifest.yaml" in plan["update"]
     payload(mdf(python_exe, *arguments))
 
@@ -226,7 +218,6 @@ def test_init_migrates_manifest_and_legacy_managed_block(
     assert "schema_version: 2" in manifest
     assert 'latest_release: "1.2.0"' in manifest
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
-    assert "<!-- MDF:START -->" not in agents
     assert agents.count("<!-- MDF:BEGIN -->") == 1
     assert 'path: "docs/product/reference/capabilities.md"' in manifest
     assert 'path: "docs/system/architecture/current.md"' in manifest

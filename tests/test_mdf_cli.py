@@ -1,11 +1,11 @@
-"""MDF V2 CLI 与 doctor 协议测试。"""
+"""MDF CLI 与 doctor 协议测试。"""
 
 from __future__ import annotations
 
 from mdf_test_support import *  # noqa: F403
 
 
-def test_info_reports_v2_protocol_versions(python_exe: str):
+def test_info_reports_protocol_versions(python_exe: str):
     result = run(
         [python_exe, str(skill_dir("mdf-core") / "scripts" / "mdf.py"), "info"]
     )
@@ -54,12 +54,14 @@ def test_doctor_disallows_dirty_worktree(python_exe: str, tmp_path: Path):
     assert data["normal_workflows_allowed"] is False
 
 
-def test_validate_rejects_v1_manifest_schema(python_exe: str, tmp_path: Path):
+def test_validate_rejects_noncurrent_manifest_schema(
+    python_exe: str, tmp_path: Path
+):
     repo = copy_fixture(tmp_path)
     replace(
         repo / ".mdf" / "manifest.yaml",
         "schema_version: 2",
-        "schema_version: 1",
+        "schema_version: 3",
     )
     init_git(repo)
 

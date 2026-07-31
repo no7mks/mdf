@@ -3,7 +3,7 @@ id: "{{BUG_ID}}"
 type: bug
 status: draft
 severity: major
-found_in: "{{FOUND_IN}}"
+found_in: {{FOUND_IN}}
 ---
 
 # {{TITLE}}

@@ -1,13 +1,13 @@
-import datetime as dt
 import subprocess
 from pathlib import Path
 from typing import Any
 
-from .constants import BUG_TERMINAL_RESOLUTIONS, REQUIREMENT_CLOSED_RESOLUTIONS
+from .constants import (
+    BUG_TERMINAL_RESOLUTIONS,
+    CHANGELOG_CATEGORIES,
+    REQUIREMENT_CLOSED_RESOLUTIONS,
+)
 from .errors import MDFError
-from .gitutil import current_branch
-from .paths import load_manifest, relative
-from .textutil import stable_semver
 
 
 def require_exact_keys(
@@ -42,6 +42,158 @@ CLOSURE_RESOLUTIONS = {
     *REQUIREMENT_CLOSED_RESOLUTIONS,
     *BUG_TERMINAL_RESOLUTIONS,
 }
+
+HOTFIX_REQUIRED_FIELDS = {"body", "evidence", "release_notes"}
+HOTFIX_OPTIONAL_FIELDS = {
+    "requirements",
+    "fixed",
+    "closed",
+    "deferred",
+    "closed_resolutions",
+    "adrs",
+    "breaking",
+}
+
+
+def _string_list(raw: Any, context: str) -> list[str]:
+    if not isinstance(raw, list) or any(
+        not isinstance(value, str) or not value.strip() for value in raw
+    ):
+        raise MDFError(
+            f"{context} 必须是非空字符串元素组成的列表",
+            code="invalid_closeout_spec",
+        )
+    return list(raw)
+
+
+def _hotfix_release_notes(raw: Any) -> dict[str, list[str]]:
+    if not isinstance(raw, dict):
+        raise MDFError(
+            "hotfix release_notes 必须是类别映射",
+            code="invalid_closeout_spec",
+        )
+    unknown = sorted(set(raw) - set(CHANGELOG_CATEGORIES))
+    if unknown:
+        raise MDFError(
+            "hotfix release_notes 含未知类别",
+            code="invalid_closeout_spec",
+            details={"unknown": unknown},
+        )
+    notes: dict[str, list[str]] = {}
+    for category, values in raw.items():
+        if category not in CHANGELOG_CATEGORIES:
+            continue
+        notes[category] = _string_list(
+            values,
+            f"hotfix release_notes.{category}",
+        )
+    if not any(notes.values()):
+        raise MDFError(
+            "hotfix release_notes 至少需要一条非空 release note",
+            code="invalid_closeout_spec",
+        )
+    return notes
+
+
+def _hotfix_evidence(raw: Any) -> dict[str, list[str]]:
+    evidence = require_exact_keys(
+        raw,
+        {"tests", "commands", "artifacts"},
+        set(),
+        "hotfix evidence",
+    )
+    normalized = {
+        key: _string_list(evidence[key], f"hotfix evidence.{key}")
+        for key in ("tests", "commands", "artifacts")
+    }
+    if not any(normalized.values()):
+        raise MDFError(
+            "hotfix evidence 至少需要一条证据",
+            code="invalid_closeout_spec",
+        )
+    return normalized
+
+
+def normalize_hotfix_change(raw: Any, version: str) -> dict[str, Any]:
+    """Validate user JSON and add only Core-owned hotfix identity fields."""
+    change = require_exact_keys(
+        raw,
+        HOTFIX_REQUIRED_FIELDS,
+        HOTFIX_OPTIONAL_FIELDS,
+        "--hotfix-change-json",
+    )
+    body = change["body"]
+    if not isinstance(body, str) or not body.strip():
+        raise MDFError(
+            "hotfix body 必须是非空字符串",
+            code="invalid_closeout_spec",
+        )
+    breaking = change.get("breaking", False)
+    if not isinstance(breaking, bool):
+        raise MDFError(
+            "hotfix breaking 必须是布尔值",
+            code="invalid_closeout_spec",
+        )
+    release_notes = _hotfix_release_notes(change["release_notes"])
+    if "Removed" in release_notes and breaking is not True:
+        raise MDFError(
+            "hotfix Removed release note 要求 breaking 为 true",
+            code="invalid_closeout_spec",
+        )
+    normalized: dict[str, Any] = {
+        "change_kind": "hotfix",
+        "source_branch": f"hotfix/{version}",
+        "body": body,
+        "requirements": _string_list(
+            change.get("requirements", []),
+            "hotfix requirements",
+        ),
+        "fixed": _string_list(change.get("fixed", []), "hotfix fixed"),
+        "closed": _string_list(change.get("closed", []), "hotfix closed"),
+        "deferred": _string_list(
+            change.get("deferred", []),
+            "hotfix deferred",
+        ),
+        "adrs": _string_list(change.get("adrs", []), "hotfix adrs"),
+        "release_notes": release_notes,
+        "breaking": breaking,
+        "evidence": _hotfix_evidence(change["evidence"]),
+    }
+    closed = normalized["closed"]
+    if len(closed) != len(set(closed)):
+        raise MDFError(
+            "hotfix closed 不能包含重复 Bug ID",
+            code="invalid_closeout_spec",
+        )
+    outcomes = [
+        identifier
+        for key in ("fixed", "closed", "deferred")
+        for identifier in normalized[key]
+    ]
+    if len(outcomes) != len(set(outcomes)):
+        raise MDFError(
+            "hotfix 的每个 Bug 只能有一个 outcome",
+            code="invalid_closeout_spec",
+        )
+    raw_resolutions = change.get("closed_resolutions", {})
+    if not isinstance(raw_resolutions, dict) or any(
+        not isinstance(identifier, str)
+        or not identifier.strip()
+        or not isinstance(resolution, str)
+        or resolution not in BUG_TERMINAL_RESOLUTIONS
+        for identifier, resolution in raw_resolutions.items()
+    ):
+        raise MDFError(
+            "hotfix closed_resolutions 必须是终态 Bug resolution 映射",
+            code="invalid_closeout_spec",
+        )
+    if set(raw_resolutions) != set(closed):
+        raise MDFError(
+            "hotfix closed_resolutions 必须精确覆盖 closed Bug ID",
+            code="invalid_closeout_spec",
+        )
+    normalized["closed_resolutions"] = dict(raw_resolutions)
+    return normalized
 
 
 def require_spec_key(spec: dict[str, Any], key: str) -> Any:
@@ -141,169 +293,3 @@ def run_verify_commands(
                 },
             )
     return results
-
-
-def validate_closeout_shape(
-    repo: Path,
-    spec: dict[str, Any],
-) -> dict[str, Any]:
-    if (
-        type(spec.get("schema_version")) is not int
-        or spec.get("schema_version") != 2
-    ):
-        raise MDFError(
-            "closeout payload 的 schema_version 必须为 2",
-            code="invalid_closeout_spec",
-        )
-    mode = require_spec_key(spec, "mode")
-    if mode not in {"release", "hotfix"}:
-        raise MDFError(
-            "closeout mode 必须是 release 或 hotfix",
-            code="invalid_closeout_spec",
-        )
-    version = require_spec_key(spec, "version")
-    candidate = stable_semver(version)
-    if candidate is None:
-        raise MDFError(
-            "closeout version 必须是稳定 SemVer",
-            code="invalid_closeout_spec",
-        )
-    expected_branch = f"{mode}/{version}"
-    if spec.get("expected_branch") != expected_branch:
-        raise MDFError(
-            f"expected_branch must equal {expected_branch}",
-            code="invalid_closeout_spec",
-        )
-    actual_branch = current_branch(repo)
-    if actual_branch != expected_branch:
-        raise MDFError(
-            f"Current branch is {actual_branch}; expected {expected_branch}",
-            code="branch_mismatch",
-        )
-    release_date_raw = require_spec_key(spec, "release_date")
-    try:
-        release_date = dt.date.fromisoformat(release_date_raw)
-    except (TypeError, ValueError) as exc:
-        raise MDFError(
-            "release_date 必须使用 YYYY-MM-DD",
-            code="invalid_closeout_spec",
-        ) from exc
-    if release_date.isoformat() != release_date_raw:
-        raise MDFError(
-            "release_date 必须使用规范 YYYY-MM-DD",
-            code="invalid_closeout_spec",
-        )
-
-    manifest = load_manifest(repo)
-    versioning = manifest.get("versioning")
-    manifest_previous = (
-        versioning.get("latest_release")
-        if isinstance(versioning, dict)
-        else None
-    )
-    previous = require_spec_key(spec, "previous_version")
-    if previous is not None and stable_semver(previous) is None:
-        raise MDFError(
-            "previous_version 必须为 null 或稳定 SemVer",
-            code="invalid_closeout_spec",
-        )
-    if previous != manifest_previous:
-        raise MDFError(
-            "previous_version 与 manifest latest_release 不一致",
-            code="release_history_mismatch",
-            details={"manifest": manifest_previous, "spec": previous},
-        )
-    previous_tuple = (0, 0, 0) if previous is None else stable_semver(previous)
-    if previous_tuple is None or candidate <= previous_tuple:
-        raise MDFError(
-            "closeout version 必须大于 previous_version",
-            code="not_increasing",
-        )
-    target = repo / "changes" / version
-    if target.exists():
-        raise MDFError(
-            f"Release directory already exists: {relative(repo, target)}",
-            code="collision",
-        )
-
-    unreleased = repo / "changes" / "unreleased"
-    actual_slugs = (
-        sorted(
-            path.name
-            for path in unreleased.iterdir()
-            if path.is_dir() and not path.is_symlink()
-        )
-        if unreleased.is_dir()
-        else []
-    )
-    release_items = [
-        {"slug": slug, "source": f"changes/unreleased/{slug}"}
-        for slug in actual_slugs
-    ]
-    slugs = actual_slugs
-    if mode == "release":
-        if not slugs:
-            raise MDFError(
-                "release 模式至少需要一个 unreleased feature/bugfix Change",
-                code="invalid_closeout_spec",
-            )
-    else:
-        if slugs:
-            raise MDFError(
-                "hotfix 分支跳过 unreleased Change；closeout 前须清空 unreleased",
-                code="hotfix_unreleased_present",
-            )
-
-    raw_closures = require_spec_key(spec, "closures")
-    if not isinstance(raw_closures, list):
-        raise MDFError(
-            "closures must be a list",
-            code="invalid_closeout_spec",
-        )
-    closures: list[dict[str, Any]] = []
-    closure_ids: set[str] = set()
-    for index, raw_closure in enumerate(raw_closures):
-        closure = require_exact_keys(
-            raw_closure,
-            {"id", "resolution"},
-            {"fulfilled_in", "fixed_in"},
-            f"closures[{index}]",
-        )
-        identifier = closure["id"]
-        if not isinstance(identifier, str) or identifier in closure_ids:
-            raise MDFError(
-                "closure IDs must be unique strings",
-                code="invalid_closeout_spec",
-            )
-        resolution = closure["resolution"]
-        if (
-            not isinstance(resolution, str)
-            or resolution not in CLOSURE_RESOLUTIONS
-        ):
-            raise MDFError(
-                f"closures[{index}].resolution 必须是受支持的 resolution",
-                code="invalid_closeout_spec",
-                details={
-                    "id": identifier,
-                    "resolution": resolution,
-                    "allowed": sorted(CLOSURE_RESOLUTIONS),
-                },
-            )
-        closure_ids.add(identifier)
-        closures.append(dict(closure))
-    attestation = validate_closeout_attestation(spec.get("audit_attestation"))
-    return {
-        "mode": mode,
-        "version": version,
-        "candidate": candidate,
-        "previous": previous,
-        "previous_tuple": previous_tuple,
-        "release_date": release_date.isoformat(),
-        "release_items": release_items,
-        "hotfix": None,
-        "hotfix_change": spec.get("hotfix_change"),
-        "closures": closures,
-        "attestation": attestation,
-        "deferred_acceptance": spec.get("deferred_acceptance", {}),
-        "verify_command_results": spec.get("verify_command_results") or [],
-    }
