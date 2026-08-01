@@ -9,5 +9,13 @@
 - `references/object-contract.md`：Requirement、Bug、Change 与 closeout 规则；
 - `references/workflows.md`：各命令的跨流程约束。
 
-任何写入前都要求 clean worktree。入口可产生改动但绝不自动 commit；用户须自行
-复查并提交，下一次 MDF 调用从 clean worktree 开始。
+## Clean worktree
+
+- 任何写入前都要求 clean worktree。
+- 按 Git 语义判断 clean：被 `.gitignore` 忽略的文件不构成 dirty worktree。
+- Skill 运行写入 `.lark/` 的令牌文件属于上述允许情况。
+
+## 写入后的工作区
+
+- 入口可产生改动，但绝不自动 commit。
+- 用户须自行复查并提交；下一次 MDF 调用从 clean worktree 开始。

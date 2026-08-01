@@ -54,6 +54,20 @@ def test_doctor_disallows_dirty_worktree(python_exe: str, tmp_path: Path):
     assert data["normal_workflows_allowed"] is False
 
 
+def test_doctor_allows_ignored_runtime_files(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    (repo / ".gitignore").write_text(".lark/\n", encoding="utf-8")
+    init_git(repo)
+    token_dir = repo / ".lark"
+    token_dir.mkdir()
+    (token_dir / "token.json").write_text("{}\n", encoding="utf-8")
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["clean"] is True
+
+
 def test_validate_rejects_noncurrent_manifest_schema(
     python_exe: str, tmp_path: Path
 ):
