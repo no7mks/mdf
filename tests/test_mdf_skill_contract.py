@@ -29,7 +29,9 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
-    assert "workflows/<command>.md" in entry
+    assert "workflows/<intent>.md" in entry
+    assert "$mdf <intent>" in entry
+    assert "mdf.py\" <command>" in entry
     assert "版本化文档与交付流程" in entry
     assert "已确认决策与`当前事实文档`分开" in entry
     assert "可验证的演进记录" in entry
