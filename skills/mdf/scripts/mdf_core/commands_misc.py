@@ -153,20 +153,18 @@ def command_init(args: argparse.Namespace) -> None:
             "then run full validation."
         ),
     }
-    if not args.dry_run:
-        write_files(
-            files,
-            replace_allowed={
-                path
-                for path in (repo / "AGENTS.md", manifest_path(repo))
-                if path.exists()
-            },
-        )
+    write_files(
+        files,
+        replace_allowed={
+            path
+            for path in (repo / "AGENTS.md", manifest_path(repo))
+            if path.exists()
+        },
+    )
     emit(
         {
             "ok": True,
             "operation": "init",
-            "dry_run": args.dry_run,
             "repo": str(repo),
             "plan": plan,
         }

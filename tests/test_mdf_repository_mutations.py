@@ -245,10 +245,8 @@ def test_init_allows_dirty_worktree_for_active_continuation(
         *all_not_applicable_baselines(),
     ]
 
-    preview = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert preview["dry_run"] is True
     applied = payload(mdf(python_exe, *arguments))
-    assert applied["dry_run"] is False
+    assert applied["operation"] == "init"
     assert (repo / ".mdf" / "manifest.yaml").is_file()
 
 

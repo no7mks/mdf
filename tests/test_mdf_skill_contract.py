@@ -46,8 +46,14 @@ def test_init_and_review_load_internal_contracts() -> None:
     assert "再次显式调用 `$mdf init`" in init
     assert "docs/research/" in init
     assert "## 1. 入口检查" in init
+    assert "## 2. 盘点与归类" in init
     assert "## 5. 续办" in init
     assert "没有未说明的遗留文件" in init
+    inventory = init.split("## 2. 盘点与归类", maxsplit=1)[1].split(
+        "## 3. 建立初始化态", maxsplit=1
+    )[0]
+    assert "不做`事实复核`" in inventory
+    assert "`evidence`" not in inventory
     assert "仅在外层工作流入口检查一次" in common
     assert "不得重复 clean 检查而拒绝修改" in common
     assert "object-contract.md" in review

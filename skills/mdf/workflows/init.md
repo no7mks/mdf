@@ -18,10 +18,10 @@
 3. 本次写入会使 worktree 变 dirty。用户对中间结果提出反馈时，继续当前流程，
    不得重复入口检查。
 
-## 2. 盘点现状
+## 2. 盘点与归类
 
-1. 检查 README 与现有 Markdown，按仓库契约区分`当前事实文档`、已确认决策和
-   其他材料。`当前事实文档`必须有仓库内 `evidence`；未知内容不写成事实。
+1. 检查 README 与现有 Markdown，按仓库契约提出`当前事实文档`、已确认决策和
+   其他材料的归类。此步骤只确定材料去处，不做`事实复核`或事实正确性判断。
 2. 将非事实材料归入契约规定的位置。例如调研材料属于 `docs/research/`，已确认
    决策属于 `docs/adr/`。无法分类时一次只询问一个问题。
 3. 通过内部 grill 工作流一次一题收敛需用户决定的事项，并从仓库证据收敛八项
@@ -36,9 +36,9 @@
 
 ## 3. 建立初始化态
 
-1. 仅在用户要求预览时运行 `init --dry-run`；预览不替代方案确认。CLI `init`
-   不接收`验证命令`参数。
-2. 用户确认后执行 `init`，建立完整 scaffold。`manifest` 保持 `initializing`，
+1. 用户确认后执行 `init`，建立完整 scaffold。CLI `init` 不接收`验证命令`参数，
+   也不提供 `--dry-run`；需要回退时使用 Git。
+2. `manifest` 保持 `initializing`，
    `verification.commands` 初始为空，并保留 `AGENTS.md` 的非 MDF 托管块。
 3. 按确认方案完成材料归位、`当前事实文档`、ADR、README 导航和`验证命令`。
    README 只作导航，链接 `CONTEXT.md`、`docs/index.md` 及仓库已有的相关文档类别。

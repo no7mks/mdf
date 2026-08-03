@@ -98,7 +98,7 @@ def test_archive_never_rewrites_external_url_path_text(
     assert external_url in index.read_text(encoding="utf-8")
 
 
-def test_init_dry_run_then_apply_preserves_existing_agents_content(
+def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     python_exe: str, tmp_path: Path
 ):
     repo = tmp_path / "repo"
@@ -120,14 +120,11 @@ def test_init_dry_run_then_apply_preserves_existing_agents_content(
     sentinel_arguments = [
         "0.0.0-unreleased" if value == "none" else value for value in arguments
     ]
-    sentinel_result = mdf(python_exe, *sentinel_arguments, "--dry-run")
+    sentinel_result = mdf(python_exe, *sentinel_arguments)
     assert sentinel_result.returncode != 0
 
-    dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert dry_run["plan"]["mode"] == "initialization"
-    assert ".mdf/manifest.yaml" in dry_run["plan"]["create"]
-    assert "plan_digest" not in dry_run
-    assert "repository_state" not in dry_run["plan"]
+    preview = mdf(python_exe, *arguments, "--dry-run")
+    assert preview.returncode != 0
     assert not (repo / ".mdf").exists()
 
     payload(mdf(python_exe, *arguments))
@@ -165,7 +162,6 @@ def test_init_writes_files_from_assets_templates(
         "none",
         *all_not_applicable_baselines(),
     ]
-    dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
     payload(mdf(python_exe, *arguments))
 
     templates = skill_dir("mdf") / "assets" / "templates"
@@ -210,10 +206,6 @@ def test_init_updates_existing_manifest_and_managed_block(
         *fixture_documented_baselines(),
     ]
 
-    dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
-    plan = dry_run["plan"]
-    assert plan["mode"] == "update"
-    assert ".mdf/manifest.yaml" in plan["update"]
     payload(mdf(python_exe, *arguments))
 
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
@@ -241,7 +233,7 @@ def test_init_executes_directly_without_plan_digest(
         *all_not_applicable_baselines(),
     ]
     applied = payload(mdf(python_exe, *arguments))
-    assert applied["dry_run"] is False
+    assert "dry_run" not in applied
     assert "plan_digest" not in applied
     assert (repo / ".mdf" / "manifest.yaml").is_file()
 
