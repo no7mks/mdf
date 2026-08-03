@@ -36,7 +36,8 @@ def test_install_replaces_mdf_skills_and_preserves_repository_artifacts(
     installed = run(command)
     assert installed.returncode == 0, installed.stderr
     assert not retired.exists()
-    assert (skills_dir / "mdf").is_symlink()
+    assert (skills_dir / "mdf").is_dir()
+    assert not (skills_dir / "mdf").is_symlink()
     assert (skills_dir / "other-skill").is_dir()
 
     assert sorted(path.name for path in skills_dir.glob("mdf*")) == ["mdf"]
@@ -72,4 +73,6 @@ def test_kimi_install_uses_project_skill_directory(tmp_path: Path):
     )
 
     assert installed.returncode == 0, installed.stderr
-    assert (target_repo / ".kimi-code" / "skills" / "mdf").is_symlink()
+    installed_skill = target_repo / ".agents" / "skills" / "mdf"
+    assert installed_skill.is_dir()
+    assert not installed_skill.is_symlink()

@@ -13,12 +13,10 @@ description: >-
 
 1. 由本文件路径向上三级确定仓库根目录，命名为 `MDF_REPO_ROOT`，确认存在
    `redeploy_mdf.sh`、`link_skills.sh` 和 `skills/mdf/SKILL.md`；缺失时停止。
-2. 先取得目标项目的绝对路径并命名为 `TARGET_REPO`，再取得目标 Agent。
-   目标 Agent 只可为 `codex`、
-   `claude`、`cursor`、`kiro`、`kimi` 或 `openclaw`；用户未指定时一次询问一个
-   问题。
-3. 此流程只处理目标 Agent skills 目录里的 `mdf-*` 与 `mdf`。绝不删除目标项目
-   的 `.mdf/`、`docs/` 或业务文件。
+2. 先取得目标项目的绝对路径并命名为 `TARGET_REPO`。脚本扫描其中已有的受支持
+   Skills 目录；未找到时停止。
+3. 此流程只处理已找到的 Skills 目录中的 `mdf-*` 与 `mdf`。绝不删除目标项目的
+   `.mdf/`、`docs/` 或业务文件。
 
 ## 只读审查
 
@@ -26,7 +24,7 @@ description: >-
 
 ```bash
 sh "$MDF_REPO_ROOT/redeploy_mdf.sh" report \
-  --target "$TARGET_REPO" --agent "$AGENT"
+  --target "$TARGET_REPO"
 ```
 
 然后按需读取目标仓库的 staged、unstaged 和未跟踪改动，以及已安装 `mdf` 的具体
@@ -48,8 +46,8 @@ sh "$MDF_REPO_ROOT/redeploy_mdf.sh" report \
 
 ```bash
 sh "$MDF_REPO_ROOT/redeploy_mdf.sh" deploy \
-  --target "$TARGET_REPO" --agent "$AGENT" --yes
+  --target "$TARGET_REPO" --yes
 ```
 
 `--yes` 只表示用户已经确认本次结论；脚本不会再次询问。报告部署结果并验证目标
-`mdf` 指向当前 `skills/mdf`；不要自动 commit。
+`mdf` 与当前 `skills/mdf` 内容一致；不要自动 commit。

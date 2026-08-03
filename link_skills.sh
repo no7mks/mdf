@@ -1,13 +1,13 @@
 #!/bin/sh
-# 把本仓库 skills/ 下的当前 MDF skill set 软链到各类 AI Agent 的 skills 目录。
+# 把本仓库 skills/ 下的当前 MDF skill set 深拷贝到各类 AI Agent 的 skills 目录。
 # 每次安装前清除目标目录中的旧 mdf-* Skill 和 mdf；不触碰目标仓库的 .mdf/ 或 docs/。
 #
 # 用法示例：
-#   /path/to/link_skills.sh                # 链接到当前所在的本地仓库
-#   /path/to/link_skills.sh cursor claude  # 只链接指定 agent
+#   /path/to/link_skills.sh                # 安装到当前所在的本地仓库
+#   /path/to/link_skills.sh cursor claude  # 只安装到指定 agent
 #   /path/to/link_skills.sh 龙虾            # 支持中文别名
-#   ./link_skills.sh --global              # 链接到所有已知 agent（全局 ~/.xxx/skills）
-#   ./link_skills.sh cursor --project DIR  # 链到指定项目的 .<agent>/skills
+#   ./link_skills.sh --global              # 安装到所有已知 agent（全局 ~/.xxx/skills）
+#   ./link_skills.sh cursor --project DIR  # 安装到指定项目的 .<agent>/skills
 #   ./link_skills.sh --dry-run             # 只预览，不实际操作
 #   ./link_skills.sh --unlink              # 移除目标范围内全部 MDF Skill
 #   ./link_skills.sh --list                # 列出已知 agent 与目标目录
@@ -31,7 +31,7 @@ agent_dir() {
         cursor)   echo ".cursor/skills" ;;    # Cursor（个人级，跨项目）
         kiro)     echo ".kiro/skills" ;;      # Kiro
         codex)    echo ".codex/skills" ;;     # OpenAI Codex CLI
-        kimi)     echo ".kimi-code/skills" ;; # Kimi Code
+        kimi)     echo ".agents/skills" ;; # Kimi Code
         openclaw) echo ".openclaw/skills" ;;  # OpenClaw（龙虾）全局共享
         *)        return 1 ;;
     esac
@@ -125,7 +125,7 @@ SKILLS="mdf"
     die "$SKILLS_SRC/$SKILLS 下没有发现 SKILL.md"
 
 # ---- 提示 ----
-if [ "$UNLINK" -eq 1 ]; then verb="移除软链"; else verb="创建软链"; fi
+if [ "$UNLINK" -eq 1 ]; then verb="移除 MDF Skill"; else verb="深拷贝 MDF Skill"; fi
 if [ "$GLOBAL" -eq 1 ]; then
     scope="全局 (home)"
 elif [ -n "$PROJECT" ]; then
@@ -156,21 +156,14 @@ purge_mdf_skills() {
 }
 
 # ---- 安装单个 skill ----
-link_one() {
+copy_one() {
     src="$1"; dst="$2"; name=$(basename "$src")
 
-    if [ -L "$dst" ]; then
-        [ "$DRY_RUN" -eq 1 ] || { rm "$dst"; ln -s "$src" "$dst"; }
-        echo "  ↻ 更新 $name"
-    elif [ -e "$dst" ]; then
-        echo "  ! 跳过 ${name}（$dst 已存在且不是软链，请手动处理）"
-    else
-        if [ "$DRY_RUN" -eq 0 ]; then
-            mkdir -p "$(dirname "$dst")"
-            ln -s "$src" "$dst"
-        fi
-        echo "  + 链接 $name -> $dst"
+    if [ "$DRY_RUN" -eq 0 ]; then
+        mkdir -p "$(dirname "$dst")"
+        cp -R "$src" "$dst"
     fi
+    echo "  + 复制 $name -> $dst"
 }
 
 # ---- 主循环 ----
@@ -184,7 +177,7 @@ for agent in $SELECTED; do
     purge_mdf_skills "$tdir"
     [ "$UNLINK" -eq 0 ] || continue
     for name in $SKILLS; do
-        link_one "$SKILLS_SRC/$name" "$tdir/$name"
+        copy_one "$SKILLS_SRC/$name" "$tdir/$name"
     done
     echo
 done

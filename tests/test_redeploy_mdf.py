@@ -14,19 +14,8 @@ SCRIPT = REPO_ROOT / "redeploy_mdf.sh"
 SKILL = REPO_ROOT / ".agents" / "skills" / "mdf-redeploy" / "SKILL.md"
 
 
-def command(target: Path, action: str, *extra: str, agent: str = "codex"):
-    return run(
-        [
-            "sh",
-            str(SCRIPT),
-            action,
-            "--target",
-            str(target),
-            "--agent",
-            agent,
-            *extra,
-        ]
-    )
+def command(target: Path, action: str, *extra: str):
+    return run(["sh", str(SCRIPT), action, "--target", str(target), *extra])
 
 
 def test_internal_skill_controls_review_and_confirmation() -> None:
@@ -34,15 +23,27 @@ def test_internal_skill_controls_review_and_confirmation() -> None:
 
     assert "name: mdf-redeploy" in text
     assert "redeploy_mdf.sh" in text
-    assert "`kimi`" in text
     assert "用户明确确认" in text
     assert "不 patch、不部署" in text
+
+
+def test_report_requires_an_existing_skill_directory(tmp_path: Path):
+    target = tmp_path / "target"
+    target.mkdir()
+    (target / "README.md").write_text("# target\n", encoding="utf-8")
+    init_git(target)
+
+    result = command(target, "report")
+
+    assert result.returncode != 0
+    assert "未检测到受支持的 skills 目录" in result.stderr
 
 
 def test_report_lists_target_changes_and_skill_difference(tmp_path: Path):
     target = tmp_path / "target"
     target.mkdir()
     (target / "README.md").write_text("# target\n", encoding="utf-8")
+    (target / ".agents" / "skills").mkdir(parents=True)
     init_git(target)
     (target / "README.md").write_text("# changed\n", encoding="utf-8")
     (target / ".codex" / "skills" / "mdf").mkdir(parents=True)
@@ -63,6 +64,7 @@ def test_deploy_requires_explicit_confirmation_flag(tmp_path: Path):
     target = tmp_path / "target"
     target.mkdir()
     (target / "README.md").write_text("# target\n", encoding="utf-8")
+    (target / ".agents" / "skills").mkdir(parents=True)
     init_git(target)
 
     result = command(target, "deploy")
@@ -72,15 +74,9 @@ def test_deploy_requires_explicit_confirmation_flag(tmp_path: Path):
     assert not (target / ".codex" / "skills" / "mdf").exists()
 
 
-@pytest.mark.parametrize(
-    ("agent", "skills_path"),
-    [
-        ("codex", ".codex/skills"),
-        ("kimi-code", ".kimi-code/skills"),
-    ],
-)
+@pytest.mark.parametrize("skills_path", [".codex/skills", ".agents/skills"])
 def test_deploy_replaces_all_mdf_skills_and_preserves_artifacts(
-    tmp_path: Path, agent: str, skills_path: str
+    tmp_path: Path, skills_path: str
 ):
     target = tmp_path / "target"
     target.mkdir()
@@ -99,11 +95,29 @@ def test_deploy_replaces_all_mdf_skills_and_preserves_artifacts(
     fact.parent.mkdir()
     fact.write_text("# current\n", encoding="utf-8")
 
-    result = command(target, "deploy", "--yes", agent=agent)
+    result = command(target, "deploy", "--yes")
 
     assert result.returncode == 0, result.stderr
     assert not (skills / "mdf-retired").exists()
-    assert (skills / "mdf").is_symlink()
+    assert (skills / "mdf").is_dir()
+    assert not (skills / "mdf").is_symlink()
     assert (skills / "other-skill").is_dir()
     assert artifact.read_text(encoding="utf-8") == "state: ready\n"
     assert fact.read_text(encoding="utf-8") == "# current\n"
+
+
+def test_deploys_to_every_existing_skill_directory(tmp_path: Path):
+    target = tmp_path / "target"
+    target.mkdir()
+    (target / "README.md").write_text("# target\n", encoding="utf-8")
+    for skills_path in (".agents/skills", ".kiro/skills"):
+        (target / skills_path).mkdir(parents=True)
+    init_git(target)
+
+    result = command(target, "deploy", "--yes")
+
+    assert result.returncode == 0, result.stderr
+    for skills_path in (".agents/skills", ".kiro/skills"):
+        installed_skill = target / skills_path / "mdf"
+        assert installed_skill.is_dir()
+        assert not installed_skill.is_symlink()
