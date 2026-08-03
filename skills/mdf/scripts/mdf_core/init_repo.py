@@ -192,6 +192,7 @@ def init_files(
         repo / "docs" / "product" / "how-to",
         repo / "docs" / "product" / "reference",
         repo / "docs" / "product" / "explanation",
+        repo / "docs" / "research",
         repo / "docs" / "system" / "architecture",
         repo / "docs" / "system" / "interfaces",
         repo / "docs" / "system" / "data",

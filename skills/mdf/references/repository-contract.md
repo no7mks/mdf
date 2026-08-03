@@ -9,6 +9,10 @@
 ├── CONTEXT.md
 ├── CHANGELOG.md
 ├── docs/
+│   ├── research/
+│   ├── product/
+│   ├── system/
+│   └── adr/
 ├── requirements/
 │   ├── req-<ulid>-<slug>.md
 │   └── archive/<major.minor>/
@@ -84,6 +88,12 @@ closeout 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready
 一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。产品和系统页面表达当前 checkout 的实际行为，并用代码、配置、schema、
 测试或生成物作为 evidence。计划、Requirement、Bug、Iteration 和 Change 不得冒充当前事实；MDF 不管理 PR、RFC、
 外部 tracker、owner、priority、Task 或迭代。
+
+## 调研材料
+
+`docs/research/` 保存调研原文、候选方案、对比和尚未确认的结论。它们不是当前
+事实页，不填入事实基线，也不要求 fact frontmatter。已确认的决策另建 ADR；实现
+后的当前行为另写产品或系统事实页。README 仅作导航，应链接文档入口、调研和 ADR。
 
 ## Fact frontmatter：evidence 与 generated
 

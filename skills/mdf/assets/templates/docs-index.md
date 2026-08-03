@@ -19,6 +19,10 @@
 - [Known deviations](system/deviations.md)
 - [Architecture decisions](adr/)
 
+## Research
+
+- [Research notes](research/)
+
 ## Work
 
 - [Requirements](../requirements/)

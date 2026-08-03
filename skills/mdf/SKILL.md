@@ -15,7 +15,7 @@ disable-model-invocation: true
 
 | 命令 | 用途 |
 | --- | --- |
-| `init-repo` | 初始化或更新仓库的 MDF 文档系统 |
+| `init` | 初始化或更新仓库的 MDF 文档系统 |
 | `start` | 按 Gitflow 创建并推送交付分支 |
 | `review-doc` | 新建或修订单个 active Requirement / Bug |
 | `finish` | 按 Gitflow 分支完成文档收口 |
@@ -40,7 +40,7 @@ disable-model-invocation: true
 2. 仅完整读取 `workflows/<command>.md`，并遵循其按需读取公共引用的说明。
 3. `$mdf <command>` 是用户触发的工作流命令；
    `python3 "$MDF_ROOT/scripts/mdf.py" <action>` 是工作流内部调用的
-   确定性 CLI 动作。两者不要求一一对应：`init-repo` 可调用
+   确定性 CLI 动作。两者不要求一一对应：`init` 可调用
    `doctor` 与 `init`，`finish` 可调用 `finish-gitflow`。所有 CLI
    动作均由统一入口调用，解析目标 Git 根；不假设当前目录就是目标仓库。
 
@@ -57,5 +57,6 @@ disable-model-invocation: true
 
 ## 执行约束
 
-- 每次外层工作流开始时，目标仓库必须为 clean worktree。
+- 仅在每次外层工作流入口检查目标仓库为 clean worktree。
+- 同一次工作流写入后，可按用户反馈继续修改，不得再次以 dirty 拒绝。
 - 写入失败时保留现场，并报告 findings。

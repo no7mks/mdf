@@ -8,7 +8,7 @@
 `references/workflows.md`。
 
 1. 解析目标 Git 根 `REPO_ROOT` 后运行 `doctor`。只有 manifest 为 `ready`
-   才继续；否则提示 `$mdf init-repo`。一次只评审一个 Requirement 或 Bug。
+   才继续；否则提示 `$mdf init`。一次只评审一个 Requirement 或 Bug。
 2. 新对象由用户指定 Requirement/Bug 类型与 slug，收敛后用 CLI `make-id`
    创建 draft。修订既有对象时必须提供 canonical ID（`req-`/`bug-`）或仓库
    相对路径；缺失或歧义时一次只问一个消歧问题。closed 或 archive 对象拒绝修改。

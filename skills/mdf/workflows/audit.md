@@ -7,7 +7,7 @@
 `references/object-contract.md` 与 `references/workflows.md`。
 
 1. 解析 `REPO_ROOT` 并运行 `doctor`。`clean` 必须为 `true`、manifest 必须为
-   `ready`；否则停止，未初始化时仅建议 `$mdf init-repo`。
+   `ready`；否则停止，未初始化时仅建议 `$mdf init`。
 2. 运行 `branch --repo`：`release/<semver>` 执行 release audit；
    `feature/*`、`bugfix/*`、`hotfix/<semver>` 执行 change audit；其他分支停止。
    记录 HEAD、分支与 status，审计期间任一变化则废弃结果。

@@ -19,7 +19,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "mdf"
     ]
     for command in (
-        "init-repo",
+        "init",
         "start",
         "review-doc",
         "finish",
@@ -33,13 +33,19 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
 
 
 def test_init_and_review_load_internal_contracts() -> None:
-    init = workflow("init-repo")
+    init = workflow("init")
     review = workflow("review-doc")
+    common = workflow("common")
 
     assert "repository-contract.md" in init
     assert "workflows.md" in init
     assert "完整写入方案" in init
-    assert "再次显式调用 `$mdf init-repo`" in init
+    assert "再次显式调用 `$mdf init`" in init
+    assert "docs/research/" in init
+    assert "每个已确认决策均有" in init
+    assert "README 链接" in init
+    assert "仅在外层工作流入口检查一次" in common
+    assert "不得重复 clean 检查而拒绝修改" in common
     assert "object-contract.md" in review
     assert "内部 grill 工作流" in review
     assert "closed 或 archive 对象拒绝修改" in review

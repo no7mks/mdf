@@ -49,7 +49,7 @@ def collect_findings(
         add_finding(
             findings,
             "manifest.initializing",
-            "manifest 未 ready 前只允许 $mdf init-repo",
+            "manifest 未 ready 前只允许 $mdf init",
             ".mdf/manifest.yaml",
         )
     return findings

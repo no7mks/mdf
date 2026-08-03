@@ -136,7 +136,7 @@ def test_mdf_grill_is_internal_workflow_copy():
     skill = skill_dir("mdf")
     grill = (skill / "workflows" / "grill.md").read_text(encoding="utf-8")
     review = (skill / "workflows" / "review-doc.md").read_text(encoding="utf-8")
-    init = (skill / "workflows" / "init-repo.md").read_text(encoding="utf-8")
+    init = (skill / "workflows" / "init.md").read_text(encoding="utf-8")
 
     assert "持续、深入地追问" in grill
     assert "一次只问一个问题" in grill

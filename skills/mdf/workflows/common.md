@@ -11,11 +11,13 @@
 
 ## Clean worktree
 
-- 任何写入前都要求 clean worktree。
+- 仅在外层工作流入口检查一次 clean worktree。
 - 按 Git 语义判断 clean：被 `.gitignore` 忽略的文件不构成 dirty worktree。
 - Skill 运行写入 `.lark/` 的令牌文件属于上述允许情况。
+- 同一次工作流的写入会使工作区变 dirty；用户针对中间产物提出反馈时，
+  必须继续该工作流，不得重复 clean 检查而拒绝修改。
 
 ## 写入后的工作区
 
 - 入口可产生改动，但绝不自动 commit。
-- 用户须自行复查并提交；下一次 MDF 调用从 clean worktree 开始。
+- 用户须自行复查并提交；下一次独立 MDF 调用从 clean worktree 开始。

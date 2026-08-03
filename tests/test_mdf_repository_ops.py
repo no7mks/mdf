@@ -180,6 +180,8 @@ def test_init_writes_files_from_assets_templates(
     )
     assert docs_index == expected_index
     assert docs_index != "# Documentation\n"
+    assert (repo / "docs" / "research" / ".gitkeep").is_file()
+    assert "[Research notes](research/)" in docs_index
 
     changelog = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
     assert changelog == (templates / "changelog.md").read_text(encoding="utf-8")

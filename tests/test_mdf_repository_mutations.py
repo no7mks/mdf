@@ -228,7 +228,7 @@ def test_move_change_rewrites_links_pointing_outside_moved_tree(
     assert "link.broken" not in audit.stdout
 
 
-def test_init_requires_clean_worktree_for_preview_and_apply(
+def test_init_allows_dirty_worktree_for_active_continuation(
     python_exe: str, tmp_path: Path
 ):
     repo = tmp_path / "repo"
@@ -245,10 +245,11 @@ def test_init_requires_clean_worktree_for_preview_and_apply(
         *all_not_applicable_baselines(),
     ]
 
-    for suffix in ([], ["--dry-run"]):
-        result = mdf(python_exe, *arguments, *suffix)
-        assert result.returncode != 0
-        assert "dirty_worktree" in result.stderr
+    preview = payload(mdf(python_exe, *arguments, "--dry-run"))
+    assert preview["dry_run"] is True
+    applied = payload(mdf(python_exe, *arguments))
+    assert applied["dry_run"] is False
+    assert (repo / ".mdf" / "manifest.yaml").is_file()
 
 
 def test_archive_and_move_change_require_clean_worktree(

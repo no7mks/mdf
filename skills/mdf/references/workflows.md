@@ -1,19 +1,21 @@
 # MDF 工作流契约
 
-所有命令均由 `$mdf <command>` 显式调用；内部材料不是独立 Skill。`init-repo`
+所有命令均由 `$mdf <command>` 显式调用；内部材料不是独立 Skill。`init`
 与 `review-doc` 在需要逐题澄清时使用内部 grill 工作流。入口可产生改动，
 但绝不自动 `git commit`；用户须在下一次入口前自行复查并提交。
 
 ## init 与 review
 
-- `$mdf init-repo` 先通过内部 grill 工作流收敛八项基线、最近稳定版本和
-  `verification.commands`。canonical路径已有内容时必须先展示完整写入方案并取得确认。Core
-  `init` 只创建 `initializing` scaffold，不接收验证命令参数。若本次新增或修改
-  `CONTEXT.md`、`docs/product/**` 或 `docs/system/**`，入口必须保留
-  `initializing`、停止并要求用户复核提交；下一次必须显式重新调用
-  `$mdf init-repo`。续办时 full validation 只允许 `manifest.initializing`
-  这一项 finding，入口才可写 ready 并再次 full
-  validate。既有事实页未改动时可在本次直接完成该步骤。
+- `$mdf init` 先完成现有材料分类：当前事实、ADR 和调研材料分别写入
+  canonical 位置；再通过内部 grill 工作流收敛八项基线、最近稳定版本和
+  `verification.commands`。canonical 路径已有内容时必须先展示完整写入方案并
+  取得确认。Core `init` 只创建 `initializing` scaffold，不接收验证命令参数。
+  首次停止前，README 必须链接 MDF 文档入口、调研和 ADR，且全部既有材料均已
+  分类或获用户明确保留。若本次新增或修改 `CONTEXT.md`、`docs/product/**` 或
+  `docs/system/**`，入口必须保留 `initializing`、停止并要求用户复核提交；下一次
+  必须显式重新调用 `$mdf init`。续办时 full validation 只允许
+  `manifest.initializing` 这一项 finding，入口才可写 ready 并再次 full validate。
+  既有事实页未改动时可在本次直接完成该步骤。
 - `$mdf review-doc` 通过内部 grill 工作流新建或修订一个 active
   Requirement/Bug。既有对象以 canonical
   ID 或路径定位；ready 对象开始评审即转 draft，未确认时保留 draft，确认后才定向验证并转 ready。closed/archived

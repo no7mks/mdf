@@ -100,7 +100,6 @@ def command_doctor(args: argparse.Namespace) -> None:
 def command_init(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
-    ensure_clean(repo)
     require_master_default(repo)
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)

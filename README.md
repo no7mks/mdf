@@ -9,7 +9,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 | 命令 | 用途 |
 | --- | --- |
-| `$mdf init-repo` | 初始化或更新仓库的 MDF 文档系统 |
+| `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
 | `$mdf review-doc` | 新建或修订单个 active Requirement / Bug |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
