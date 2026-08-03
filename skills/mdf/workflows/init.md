@@ -1,56 +1,64 @@
 # Init
 
-只在用户显式调用 `$mdf init` 时执行。将为当前 Git 仓库建立或更新 MDF
-文档系统；我会先检查仓库证据，再一次确认一个必要事实。不要自动 commit。
+只在用户显式调用 `$mdf init` 时执行。它将仓库现有材料收敛到 MDF 的当前
+结构，并在`事实复核`后使 `manifest` 进入 `ready`。不要自动 commit。
 
 完整读取 `workflows/common.md`、`workflows/grill.md`、
-`references/repository-contract.md` 与 `references/workflows.md`。
+`references/repository-contract.md`。
 
-1. 解析目标 Git 根为 `REPO_ROOT`，然后运行：
+## 1. 入口检查
+
+1. 在外层工作流入口确认 worktree clean，解析 Git 根为 `REPO_ROOT`，运行：
 
    ```bash
    python3 "$MDF_ROOT/scripts/mdf.py" doctor --repo "$REPO_ROOT"
    ```
 
-   若远端默认分支为 `main`，停止并要求用户先将其改为 `master`；不得自动改名。
+2. 若远端默认分支为 `main`，停止并要求用户先将其改为 `master`；不得自动改名。
+3. 本次写入会使 worktree 变 dirty。用户对中间结果提出反馈时，继续当前流程，
+   不得重复入口检查。
 
-2. 先对现有 Markdown 和 README 完成分类：当前事实写入 canonical fact page，
-   已确认决策写为 ADR，调研材料移入 `docs/research/`。无法分类的材料逐项
-   询问用户；不得将计划或未知内容写成当前事实。
-3. 展示完整写入方案：受影响路径、每项移动、保留内容、拟补字段、八项基线、
-   最近稳定版本、验证命令和预期 validation。只有用户明确确认后才可写入；
-   不得覆盖既有内容。仅当方案明确列出源、目标和无信息损失的理由时，才能移动
-   或删除既有内容。
-4. 通过内部 grill 工作流一次一题收敛以下信息，并先从仓库证据确认事实：
-   - 八项基线：glossary、product reference、system boundary、architecture、
-     interfaces、data、operations、deviations；每项为已验证的
-     `documented:<repo-relative-path>`，或有明确理由的
-     `not_applicable:<reason>`；
-   - 最近稳定版本：交叉核对既有材料、稳定版本根 CHANGE 与 CHANGELOG；
-     从未发布则为 `none`；
-   - `verification.commands`：在目标仓库运行的非空受信任命令列表；其产物必须
-     自行清理或被 `.gitignore` 忽略。
+## 2. 盘点现状
 
-不把未知或未来计划写成当前事实。ADR 只记录已确认的决策；尚未确认的
-候选和调研结论留在 `docs/research/`。任何配置调整均须重新显式调用
-`$mdf init`，不得绕过本工作流直接改 manifest。
+1. 检查 README 与现有 Markdown，按仓库契约区分`当前事实文档`、已确认决策和
+   其他材料。`当前事实文档`必须有仓库内 `evidence`；未知内容不写成事实。
+2. 将非事实材料归入契约规定的位置。例如调研材料属于 `docs/research/`，已确认
+   决策属于 `docs/adr/`。无法分类时一次只询问一个问题。
+3. 通过内部 grill 工作流一次一题收敛需用户决定的事项，并从仓库证据收敛八项
+   `基线`、最近稳定版本和非空 `verification.commands`。从未发布时最近稳定版本
+   为 `none`。
+4. 形成完整写入方案：受影响路径、材料的去处、保留内容、拟补字段、`基线`、
+   `验证命令`和预期 `validation`。只有用户明确确认后才可写入。
 
-## 初始化与续办
+移动或删除既有内容时，方案必须列出源、目标和无信息损失的理由；不得覆盖既有
+内容。任何配置调整均须重新显式调用 `$mdf init`，不得绕过本工作流直接改
+`manifest`。
 
-1. 用户要求预览时才运行 `init --dry-run`；预览不替代写入方案确认。CLI `init`
-   不接收验证命令参数。
-2. 用户确认后执行 `init`。它先写完整 scaffold（包括 `docs/research/`），
-   manifest 保持 `initializing` 且 `verification.commands: []`；再按确认方案
-   写入事实页、ADR、调研材料、README 导航和验证命令，并保留 `AGENTS.md` 的
-   非 MDF 托管块。
-3. 在首次停止前检查：所有既有材料均已归类或获用户明确保留；调研位于
-   `docs/research/`；每个已确认决策均有 `docs/adr/NNNN-slug.md`；README 链接
-   `CONTEXT.md`、`docs/index.md`、`docs/research/` 和 `docs/adr/`。
-4. 比较本次调用前后的 `CONTEXT.md`、`docs/product/**`、`docs/system/**`。
-   任一事实页新增或修改时，manifest 必须保持 `initializing`；展示 diff 并停止，
-   要求用户复核、commit 后再次显式调用 `$mdf init`。
-5. 续办时本次不得再改事实页。运行 full validation，只接受
-   `manifest.initializing` finding；没有其他 finding 时才改为 `ready`，并再次
-   运行 full validation。
-6. 既有事实页本次完全未改、八项基线和非空验证命令都可验证时，可直接执行
-   上一步。任何失败均保留现场并报告 findings。
+## 3. 建立初始化态
+
+1. 仅在用户要求预览时运行 `init --dry-run`；预览不替代方案确认。CLI `init`
+   不接收`验证命令`参数。
+2. 用户确认后执行 `init`，建立完整 scaffold。`manifest` 保持 `initializing`，
+   `verification.commands` 初始为空，并保留 `AGENTS.md` 的非 MDF 托管块。
+3. 按确认方案完成材料归位、`当前事实文档`、ADR、README 导航和`验证命令`。
+   README 只作导航，链接 `CONTEXT.md`、`docs/index.md` 及仓库已有的相关文档类别。
+4. 停止前逐项核对：每份既有材料均已归位、保留或获用户明确排除；固定布局完整；
+   README 与文档入口可达；没有未说明的遗留文件。
+
+## 4. 审计当前事实
+
+比较本次调用前后的 `CONTEXT.md`、`docs/product/**` 与 `docs/system/**`。内部委托
+`audit` 执行`全量审阅`；它执行双向`事实复核`和 `full validation`。此时允许唯一的
+`manifest.initializing` finding。
+
+若任一`当前事实文档`新增或修改，`manifest` 必须保持 `initializing`；展示 audit
+结果与 diff 并停止，要求用户复核、commit 后再次显式调用 `$mdf init`。
+
+## 5. 续办
+
+1. 续办时不得再改`当前事实文档`。运行 `full validation`，只接受
+   `manifest.initializing` finding。
+2. 没有其他 finding 时才改为 `ready`，并再次运行 `full validation`。
+3. 若本次完全未改`当前事实文档`、八项`基线`和非空`验证命令`均可验证，可直接
+   执行本节。
+   任何失败均保留现场并报告 findings。

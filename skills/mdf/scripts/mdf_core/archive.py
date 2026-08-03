@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .constants import EPOCH_RE, PLANNING_ROOTS
+from .constants import EPOCH_RE
 from .errors import MDFError, serialize_findings
 from .moves import replacement_plan
 from .paths import relative
@@ -113,22 +113,11 @@ def change_move_plan(
             raise MDFError("源路径必须位于仓库内", code="outside_repo") from exc
         if not source.is_dir():
             raise MDFError(f"源目录不存在: {source}", code="missing_source")
-        matched_root: Path | None = None
-        for root_name in PLANNING_ROOTS:
-            planning_root = (repo / root_name).resolve()
-            if planning_root in source.parents:
-                matched_root = planning_root
-                break
-        if matched_root is None:
-            raise MDFError(
-                "源路径必须位于受支持的外部 planning 根目录下",
-                code="protected_source",
-            )
         try:
-            source_slug = slugify(source.relative_to(matched_root).as_posix())
+            source_slug = slugify(source.name)
         except MDFError as exc:
             raise MDFError(
-                "Source has no valid branch slug",
+                "Source directory has no valid branch slug",
                 code="source_slug",
             ) from exc
         if source_slug != slug:
@@ -175,22 +164,3 @@ def change_move_plan(
         moves[source] = target
     rewrites = replacement_plan(repo, moves, rewrite_inside_sources=False)
     return moves, rewrites, target
-
-
-def find_planning_candidates(repo: Path, branch_slug: str) -> list[Path]:
-    slug = slugify(branch_slug)
-    candidates: set[Path] = set()
-    for root_name in PLANNING_ROOTS:
-        root = repo / root_name
-        if not root.is_dir():
-            continue
-        for path in root.rglob("*"):
-            if not path.is_dir() or path.is_symlink():
-                continue
-            try:
-                relative_slug = slugify(path.relative_to(root).as_posix())
-            except MDFError:
-                continue
-            if relative_slug == slug:
-                candidates.add(path.resolve())
-    return sorted(candidates)

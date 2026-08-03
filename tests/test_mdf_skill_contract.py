@@ -30,6 +30,9 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         assert command in entry
     assert "裸 `$mdf`" in entry
     assert "workflows/<command>.md" in entry
+    assert "版本化文档与交付流程" in entry
+    assert "已确认决策与`当前事实文档`分开" in entry
+    assert "可验证的演进记录" in entry
 
 
 def test_init_and_review_load_internal_contracts() -> None:
@@ -38,17 +41,86 @@ def test_init_and_review_load_internal_contracts() -> None:
     common = workflow("common")
 
     assert "repository-contract.md" in init
-    assert "workflows.md" in init
+    assert "workflows.md" not in init
     assert "完整写入方案" in init
     assert "再次显式调用 `$mdf init`" in init
     assert "docs/research/" in init
-    assert "每个已确认决策均有" in init
-    assert "README 链接" in init
+    assert "## 1. 入口检查" in init
+    assert "## 5. 续办" in init
+    assert "没有未说明的遗留文件" in init
     assert "仅在外层工作流入口检查一次" in common
     assert "不得重复 clean 检查而拒绝修改" in common
     assert "object-contract.md" in review
     assert "内部 grill 工作流" in review
     assert "closed 或 archive 对象拒绝修改" in review
+
+
+def test_repository_contract_defines_static_core_terms() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+    init = workflow("init")
+
+    assert "## 核心术语" in contract
+    for term in (
+        "`当前事实文档`",
+        "`事实复核`",
+        "`审阅`",
+        "`validation`",
+        "`evidence`",
+        "`基线`",
+        "`验证命令`",
+        "`initializing`",
+        "`ready`",
+    ):
+        assert term in contract
+    terms = contract.split("## 固定布局", maxsplit=1)[0]
+    assert "`audit`" not in terms
+    assert "`init`" not in terms
+    assert "`finish`" not in terms
+    assert "closeout 时执行" not in terms
+    assert "`全量审阅`" not in contract
+    assert "`范围审阅`" not in contract
+    assert "`当前事实文档`" in init
+    assert "`validation`" in init
+    assert "`全量审阅`" in init
+
+
+def test_contracts_do_not_duplicate_workflow_steps() -> None:
+    skill = skill_dir("mdf")
+    object_contract = (skill / "references" / "object-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert not (skill / "references" / "workflows.md").exists()
+    assert "$mdf " not in object_contract
+    assert "release-closeout" not in object_contract
+    assert "finish 时" not in object_contract
+
+
+def test_audit_is_reused_without_delivery_logic() -> None:
+    audit = workflow("audit")
+    init = workflow("init")
+    finish = workflow("finish")
+
+    assert "只读" in audit
+    assert "执行`全量审阅`" in audit
+    assert "`事实复核`" in audit
+    assert "从文档到实现" in audit
+    assert "从实现到文档" in audit
+    assert "## 审阅类型" in audit
+    assert "`全量审阅`：从文档和实现两个方向" in audit
+    assert "`范围审阅`：从文档和实现两个方向" in audit
+    assert "`全量审阅`" in audit
+    assert "`范围审阅`" in audit
+    assert "`develop...HEAD`" not in audit
+    assert "`master...HEAD`" not in audit
+    assert "`release-closeout`" not in audit
+    assert "`audit` 执行`全量审阅`" in init
+    assert "## 交付前检查" in finish
+    assert "内部委托 `audit`" in finish
+    assert "release 执行`全量审阅`" in finish
 
 
 def test_start_and_finish_define_strict_gitflow_operations() -> None:

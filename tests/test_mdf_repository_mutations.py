@@ -196,7 +196,7 @@ def test_move_change_rewrites_links_pointing_outside_moved_tree(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    source = repo / ".scratch" / "api-user-auth"
+    source = repo / "working-notes" / "api-user-auth"
     source.mkdir(parents=True)
     target_doc = "docs/product/reference/capabilities.md"
     (source / "notes.md").write_text(
@@ -216,7 +216,7 @@ def test_move_change_rewrites_links_pointing_outside_moved_tree(
     ]
 
     dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert ".scratch/api-user-auth/notes.md" in dry_run["rewrites"]
+    assert "working-notes/api-user-auth/notes.md" in dry_run["rewrites"]
     payload(mdf(python_exe, *arguments))
 
     moved = repo / "changes" / "unreleased" / "api-user-auth" / "notes.md"
@@ -282,7 +282,7 @@ def test_archive_and_move_change_require_clean_worktree(
     move_root = tmp_path / "move"
     move_root.mkdir()
     move_repo = copy_fixture(move_root)
-    source = move_repo / ".scratch" / "api-user-auth"
+    source = move_repo / "working-notes" / "api-user-auth"
     source.mkdir(parents=True)
     (source / "notes.md").write_text("# Notes\n", encoding="utf-8")
     init_git(move_repo)

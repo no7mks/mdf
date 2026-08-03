@@ -1,4 +1,21 @@
-# 仓库与当前事实契约
+# 仓库与当前事实文档契约
+
+## 核心术语
+
+- `当前事实文档`：描述当前 checkout 已成立行为的版本化 Markdown 文档。它只能
+  陈述可由仓库内 `evidence` 支持的内容，不包含计划、候选方案或工作状态。
+- `事实复核`：人基于 `evidence` 判断 `当前事实文档` 是否准确、完整且未将未知
+  内容写成事实的语义判断。
+- `审阅`：基于`事实复核`的人工语义检查。
+- `validation`（契约校验）：对目录、`manifest`、文档结构、链接、对象关系与
+  `evidence`执行的确定性检查，输出 findings。它只校验`验证命令`的配置，不执行
+  命令，也不替代`事实复核`。
+- `evidence`：`当前事实文档` 中指向仓库内已跟踪证据及其验证方式的元数据。
+- `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
+  或带理由的 `not_applicable`。
+- `验证命令`：`manifest.verification.commands` 中由仓库执行的非空命令列表。
+- `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
+- `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。
 
 ## 固定布局
 
@@ -20,15 +37,14 @@
 │   ├── bug-<ulid>-<slug>.md
 │   └── archive/<major.minor>/
 └── changes/
-    ├── unreleased/<feature-or-bugfix-slug>/CHANGE.md
+    ├── unreleased/<slug>/CHANGE.md
     └── <major.minor.patch>/
         ├── CHANGE.md
-        └── <feature-or-bugfix-slug>/CHANGE.md
+        └── <slug>/CHANGE.md
 ```
 
-`changes/unreleased/`
-只保存 feature/bugfix 完成后的待发布快照。hotfix 不创建该阶段；hotfix
-closeout 直接生成版本根 `CHANGE.md`。每个稳定版本始终只有一个根 `CHANGE.md`。
+`changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
+`CHANGE.md`。
 
 ## 模板映射
 
@@ -38,19 +54,17 @@ closeout 直接生成版本根 `CHANGE.md`。每个稳定版本始终只有一�
 | `context.md`                        | `CONTEXT.md`                     |
 | `agents-managed-block.md`           | `AGENTS.md` MDF marker           |
 | `changelog.md`                      | `CHANGELOG.md`                   |
-| `docs-*` / `product-*` / `system-*` | 当前事实页面                     |
+| `docs-*` / `product-*` / `system-*` | `当前事实文档`                   |
 | `adr.md`                            | `docs/adr/NNNN-slug.md`          |
 | `requirement.md`                    | Requirement                      |
 | `bug.md`                            | Bug                              |
-| `change.md`                         | unreleased feature/bugfix Change |
-
-版本根 Change 由 MDF closeout 直接在目标仓库生成，不要求用户复制模板。
+| `change.md`                         | unreleased 子 Change             |
 
 ## Manifest
 
 `.mdf/manifest.yaml` 是控制面。`schema_version` 必须为
 `2`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased`
-不是版本线值。它还包含共享验证配置：
+不是版本线值。它还包含共享`验证命令`：
 
 ```yaml
 verification:
@@ -58,13 +72,13 @@ verification:
     - "python3 -m pytest -q"
 ```
 
-初始化态可使用空列表；ready、full
-validation 与 closeout 要求非空的字符串列表。命令在目标仓库执行，产物必须自行清理或被
+`initializing` 可使用空列表；`ready` 要求非空字符串列表。命令在目标仓库执行，
+产物必须自行清理或被
 `.gitignore` 忽略。
 
 ## YAML 子集
 
-Core 用内置解析器（`scripts/mdf_core/yamlutil.py`）解析 manifest 与全部 MDF 文档 frontmatter，
+Core 用内置解析器（`scripts/mdf_core/yamlutil.py`）解析 `manifest` 与全部 MDF 文档 frontmatter，
 不依赖 PyYAML。只支持以下子集，写法不要超出：
 
 - 空格缩进的映射与 `- ` 列表；缩进含 tab 报 `invalid_yaml`。
@@ -79,25 +93,24 @@ Core 用内置解析器（`scripts/mdf_core/yamlutil.py`）解析 manifest 与�
 - 不支持 block
   scalar（`|`、`>`）、多行字符串、锚点与别名；多行内容用列表或多个字段表达。
 
-closeout 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # note`
-和 `found_in: 'unreleased' # note`
-与裸值语义相同；closeout 写回这些字段时使用规范裸值。
+Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # note` 和
+`found_in: 'unreleased' # note` 与裸值语义相同；Core 写回这些字段时使用规范裸值。
 
-## 当前事实
+## 当前事实文档
 
-一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。产品和系统页面表达当前 checkout 的实际行为，并用代码、配置、schema、
-测试或生成物作为 evidence。计划、Requirement、Bug、Iteration 和 Change 不得冒充当前事实；MDF 不管理 PR、RFC、
-外部 tracker、owner、priority、Task 或迭代。
+一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。产品和系统页面表达当前
+checkout 的实际行为，并用代码、配置、schema、测试或生成物作为 `evidence`。
+计划、Requirement、Bug、Iteration 和 Change 不得冒充`当前事实文档`。
 
 ## 调研材料
 
-`docs/research/` 保存调研原文、候选方案、对比和尚未确认的结论。它们不是当前
-事实页，不填入事实基线，也不要求 fact frontmatter。已确认的决策另建 ADR；实现
-后的当前行为另写产品或系统事实页。README 仅作导航，应链接文档入口、调研和 ADR。
+`docs/research/` 保存调研原文、候选方案、对比和尚未确认的结论。它们不是
+`当前事实文档`，不填入`基线`，也不要求 fact frontmatter。已确认的决策另建 ADR；
+实现后的当前行为另写产品或系统`当前事实文档`。
 
 ## Fact frontmatter：evidence 与 generated
 
-每个当前事实文档至少声明一条 evidence，支持两种形态：
+每个`当前事实文档`至少声明一条 `evidence`，支持两种形态：
 
 ```yaml
 # 形态一：逐条 evidence，各自带验证方式
@@ -110,9 +123,9 @@ evidence:
   verification: "<如何验证>"
 ```
 
-evidence 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式（裸字符串列表形态缺 verification 会报
-finding）；full
-audit 下 evidence 在文档之后变更会报 `evidence.stale`。
+`evidence` 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式（裸字符串
+列表形态缺 verification 会报 finding）；`full validation` 下 `evidence` 在文档之后变更
+会报 `evidence.stale`。
 
 由脚本生成的文档额外声明 `generated`：
 
@@ -123,25 +136,11 @@ generated:
 ```
 
 `source` 必须是仓库内存在且被跟踪的文件；`generator`
-必须是仓库内可执行文件。full
-audit 校验这些元数据及 Git 陈旧性，但不复制仓库、不运行 generator，也不自动比较生成内容；内容一致性属于语义审计。模板见
+必须是仓库内可执行文件。`full validation` 校验这些元数据及 Git 陈旧性，但不复制
+仓库、不运行 generator，也不自动比较生成内容；内容一致性属于`事实复核`。模板见
 `assets/templates/generated-fact.md`。
-
-## Planning 根目录与 move-change
-
-外部 planning 目录只认三个根：`.scratch/`、`.iterations/`、`iterations/`。
-
-- `planning-candidates --branch-slug <slug>`
-  在三个根下递归匹配相对路径 slug 相同的目录，报告 `none`/
-  `unique`/`ambiguous`。
-- `move-change --source <path>`
-  的源必须位于某个 planning 根之内、其相对该根的路径 slug 与 `--branch-slug`
-  一致，且不含符号链接；源中的保留名 `CHANGE.md`
-  必须是合法 Change 文件，否则拒绝。目标是
-  `changes/unreleased/<slug>`；目标已存在且来源不同、或源包含目标时拒绝。移动后重写仓库内 Markdown 链接，
-但不改写源树内部的 opaque 文件。
 
 ## CHANGELOG
 
 根 `CHANGELOG.md` 只列稳定版本，不含 Unreleased 章节。版本目录的根 `CHANGE.md`
-是详细 closeout、结果、outcome、found-in 转换、SemVer 和审计记录；CHANGELOG 只做读者索引。
+记录该版本的结果、outcome、found-in 转换、SemVer 和审阅结果；CHANGELOG 只做读者索引。

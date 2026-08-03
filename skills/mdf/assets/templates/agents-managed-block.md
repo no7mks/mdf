@@ -2,7 +2,7 @@
 
 ## Mars Development Flow
 
-- 本仓库使用 `.mdf/manifest.yaml` 描述 MDF schema、状态和事实基线。
+- 本仓库使用 `.mdf/manifest.yaml` 描述 MDF schema、状态和`基线`。
 - “当前”只指 checkout 的 Git
   revision；计划写入 Requirement/Bug/Change，已实现事实写入 `docs/product/` 或
   `docs/system/`。

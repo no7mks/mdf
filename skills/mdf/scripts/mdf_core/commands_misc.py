@@ -3,9 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from . import doctor
-from .archive import archive_plan, change_move_plan, find_planning_candidates
+from .archive import archive_plan, change_move_plan
 from .constants import (
-    PLANNING_ROOTS,
     PROTOCOL_VERSION,
     SCHEMA_VERSION,
     TOOL_VERSION,
@@ -347,27 +346,3 @@ def command_move_change(args: argparse.Namespace) -> None:
         elif not target.exists():
             target.mkdir(parents=True, exist_ok=False)
     emit(payload)
-
-
-def command_planning_candidates(args: argparse.Namespace) -> None:
-    repo = repo_path(args.repo)
-    require_git_root(repo)
-    slug = slugify(args.branch_slug)
-    candidates = find_planning_candidates(repo, slug)
-    state = (
-        "none"
-        if not candidates
-        else "unique"
-        if len(candidates) == 1
-        else "ambiguous"
-    )
-    emit(
-        {
-            "ok": True,
-            "operation": "planning-candidates",
-            "branch_slug": slug,
-            "roots": list(PLANNING_ROOTS),
-            "state": state,
-            "candidates": [relative(repo, path) for path in candidates],
-        }
-    )

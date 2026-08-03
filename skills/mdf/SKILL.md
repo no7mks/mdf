@@ -8,6 +8,11 @@ disable-model-invocation: true
 
 # Mars Development Flow
 
+MDF 是面向 Git 仓库的版本化文档与交付流程。它管理`当前事实文档`、ADR、调研、
+Requirement、Bug 和 Change，并以 `manifest` 约束`validation`与发布状态。它不替代
+任务管理。它将调研、已确认决策与`当前事实文档`分开，避免将候选方案误作已实现行为。
+从初始化到归档，MDF 以仓库内的 Markdown 和 `manifest` 留下可验证的演进记录。
+
 只在用户显式调用 `$mdf <command>` 时执行。不要因仓库缺少文档、代码完成、
 测试通过或对话上下文而隐式选择或运行工作流；绝不自动 commit。
 
@@ -19,7 +24,7 @@ disable-model-invocation: true
 | `start` | 按 Gitflow 创建并推送交付分支 |
 | `review-doc` | 新建或修订单个 active Requirement / Bug |
 | `finish` | 按 Gitflow 分支完成文档收口 |
-| `audit` | 执行 change audit 或 release audit |
+| `audit` | 审阅当前文档与实现是否相符 |
 | `archive` | 归档 closed Requirement 与 Bug |
 | `grill <议题>` | 逐题压力测试计划、决策或想法 |
 

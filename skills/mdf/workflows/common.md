@@ -5,9 +5,8 @@
 
 按操作需要读取：
 
-- `references/repository-contract.md`：仓库目录、manifest 与基线规则；
-- `references/object-contract.md`：Requirement、Bug、Change 与 closeout 规则；
-- `references/workflows.md`：各命令的跨流程约束。
+- `references/repository-contract.md`：仓库目录、`manifest` 与`基线`规则；
+- `references/object-contract.md`：Requirement、Bug 与 Change 的 schema 和不变量。
 
 ## Clean worktree
 

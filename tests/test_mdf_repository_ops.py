@@ -256,12 +256,12 @@ def test_move_change_dry_run_preserves_source_then_moves_tree(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    source = repo / ".scratch" / "api-user-auth"
+    source = repo / "working-notes" / "api-user-auth"
     source.mkdir(parents=True)
     artifact = source / "notes.md"
     artifact.write_text("# External planning artifact\n", encoding="utf-8")
     git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 准备外部 planning 工件")
+    git(repo, "commit", "-m", "test: 准备外部材料")
     arguments = [
         "move-change",
         "--repo",
@@ -285,71 +285,27 @@ def test_move_change_dry_run_preserves_source_then_moves_tree(
     assert not source.exists()
 
 
-def test_planning_candidates_reports_none_unique_and_ambiguous(
+def test_move_change_rejects_source_with_mismatched_slug(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-
-    none = payload(
-        mdf(
-            python_exe,
-            "planning-candidates",
-            "--repo",
-            str(repo),
-            "--branch-slug",
-            "api-user-auth",
-        )
-    )
-    assert none["state"] == "none"
-
-    (repo / ".scratch" / "api" / "user_auth").mkdir(parents=True)
-    unique = payload(
-        mdf(
-            python_exe,
-            "planning-candidates",
-            "--repo",
-            str(repo),
-            "--branch-slug",
-            "api-user-auth",
-        )
-    )
-    assert unique["state"] == "unique"
-    assert unique["candidates"] == [".scratch/api/user_auth"]
-
-    (repo / "iterations" / "api-user-auth").mkdir(parents=True)
-    ambiguous = payload(
-        mdf(
-            python_exe,
-            "planning-candidates",
-            "--repo",
-            str(repo),
-            "--branch-slug",
-            "api-user-auth",
-        )
-    )
-    assert ambiguous["state"] == "ambiguous"
-    assert len(ambiguous["candidates"]) == 2
-
-
-def test_move_change_rejects_source_outside_planning_roots(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
+    source = repo / "working-notes" / "different-change"
+    source.mkdir(parents=True)
     result = mdf(
         python_exe,
         "move-change",
         "--repo",
         str(repo),
         "--source",
-        str(repo / "src"),
+        str(source),
         "--branch-slug",
-        "src",
+        "api-user-auth",
         "--dry-run",
     )
     assert result.returncode != 0
-    assert (repo / "src" / "service.py").is_file()
+    assert "source_slug" in result.stderr
+    assert source.is_dir()
 
 
 def test_move_change_never_overwrites_opaque_reserved_change(
@@ -357,7 +313,7 @@ def test_move_change_never_overwrites_opaque_reserved_change(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    source = repo / ".scratch" / "api-user-auth"
+    source = repo / "working-notes" / "api-user-auth"
     source.mkdir(parents=True)
     reserved = source / "CHANGE.md"
     reserved.write_text(

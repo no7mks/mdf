@@ -10,7 +10,6 @@ from .commands_misc import (
     command_init,
     command_make_id,
     command_move_change,
-    command_planning_candidates,
     command_semver,
     command_validate,
 )
@@ -87,11 +86,6 @@ def build_parser() -> argparse.ArgumentParser:
     closeout.add_argument("--semantic-attestation-json")
     closeout.add_argument("--dry-run", action="store_true")
     closeout.set_defaults(func=command_release_closeout)
-
-    planning = subparsers.add_parser("planning-candidates")
-    planning.add_argument("--repo", required=True)
-    planning.add_argument("--branch-slug", required=True)
-    planning.set_defaults(func=command_planning_candidates)
 
     start = subparsers.add_parser("start")
     start.add_argument("--repo", required=True)

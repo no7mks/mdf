@@ -127,7 +127,6 @@ ALL_MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]]*]\(([^()]*(?:\([^()]*\)[^()]*)*)\)"
 )
 FACT_ROOTS = ("docs/product", "docs/system")
-PLANNING_ROOTS = (".scratch", ".iterations", "iterations")
 MANAGED_ROOTS = (
     ".mdf",
     "AGENTS.md",
