@@ -22,7 +22,7 @@ SKILLS_SRC="$SCRIPT_DIR/skills"
 CURRENT_DIR=$(pwd -P)
 
 # 已知 agent 列表；调整/新增 agent 时改这两处：ALL_AGENTS 和 agent_dir()
-ALL_AGENTS="claude cursor kiro codex openclaw"
+ALL_AGENTS="claude cursor kiro codex kimi openclaw"
 
 # agent -> 相对 home（或 --project）的 skills 目录
 agent_dir() {
@@ -31,6 +31,7 @@ agent_dir() {
         cursor)   echo ".cursor/skills" ;;    # Cursor（个人级，跨项目）
         kiro)     echo ".kiro/skills" ;;      # Kiro
         codex)    echo ".codex/skills" ;;     # OpenAI Codex CLI
+        kimi)     echo ".kimi-code/skills" ;; # Kimi Code
         openclaw) echo ".openclaw/skills" ;;  # OpenClaw（龙虾）全局共享
         *)        return 1 ;;
     esac
@@ -40,6 +41,7 @@ agent_dir() {
 resolve_alias() {
     case "$1" in
         龙虾) echo "openclaw" ;;
+        kimi-code) echo "kimi" ;;
         *)    echo "$1" ;;
     esac
 }
@@ -73,7 +75,7 @@ while [ $# -gt 0 ]; do
         *)
             key=$(resolve_alias "$1")
             if ! agent_dir "$key" >/dev/null 2>&1; then
-                die "未知 agent: $1（可用: $ALL_AGENTS；别名: 龙虾=openclaw）"
+                die "未知 agent: $1（可用: $ALL_AGENTS；别名: 龙虾、kimi-code）"
             fi
             SELECTED="$SELECTED $key"
             ;;
@@ -102,7 +104,7 @@ if [ "$LIST" -eq 1 ]; then
     for a in $ALL_AGENTS; do
         printf '  %-10s -> %s/%s\n' "$a" "$base" "$(agent_dir "$a")"
     done
-    echo "别名：龙虾=openclaw"
+    echo "别名：龙虾=openclaw，kimi-code=kimi"
     exit 0
 fi
 

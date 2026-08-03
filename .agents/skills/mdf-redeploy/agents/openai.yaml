@@ -1,0 +1,4 @@
+interface:
+  display_name: "MDF Redeploy"
+  short_description: "审查外部项目改动并确认后重新部署 MDF Skill"
+  default_prompt: "使用 $mdf-redeploy 审查外部项目测试结果，确认需要带回的 patch 后重新部署。"

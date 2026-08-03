@@ -26,7 +26,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
 # Skills that live outside the public `skills/` tree but still ship a SKILL.md.
-EXTRA_SKILL_ROOTS = [REPO_ROOT / ".kiro" / "skills"]
+EXTRA_SKILL_ROOTS = [
+    REPO_ROOT / ".agents" / "skills",
+    REPO_ROOT / ".kiro" / "skills",
+]
 
 
 @dataclass(frozen=True)

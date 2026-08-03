@@ -14,8 +14,13 @@ HARD_LINE_WIDTH = 120
 SOFT_FILE_LINES = 400
 HARD_FILE_LINES = 500
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml", ".yml"}
-TEXT_ROOTS = ("skills", "tests", "internal")
-ROOT_TEXT_FILES = ("AGENTS.md", "README.md", "link_skills.sh")
+TEXT_ROOTS = (".agents", "skills", "tests", "internal")
+ROOT_TEXT_FILES = (
+    "AGENTS.md",
+    "README.md",
+    "link_skills.sh",
+    "redeploy_mdf.sh",
+)
 
 
 def checked_files() -> Iterator[Path]:

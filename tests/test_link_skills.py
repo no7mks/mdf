@@ -54,3 +54,22 @@ def test_list_works_from_the_skill_source_repository():
     assert listed.returncode == 0, listed.stderr
     assert "已知 agent" in listed.stdout
     assert "codex" in listed.stdout
+    assert "kimi" in listed.stdout
+
+
+def test_kimi_install_uses_project_skill_directory(tmp_path: Path):
+    target_repo = tmp_path / "target"
+    target_repo.mkdir()
+
+    installed = run(
+        [
+            "sh",
+            str(REPO_ROOT / "link_skills.sh"),
+            "kimi-code",
+            "--project",
+            str(target_repo),
+        ]
+    )
+
+    assert installed.returncode == 0, installed.stderr
+    assert (target_repo / ".kimi-code" / "skills" / "mdf").is_symlink()
