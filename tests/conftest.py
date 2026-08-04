@@ -37,3 +37,11 @@ def pytest_generate_tests(metafunc):
     if "skill" in metafunc.fixturenames:
         skills = discover_skills()
         metafunc.parametrize("skill", skills, ids=[s.name for s in skills])
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Make skipped tests fail the suite."""
+    terminal = session.config.pluginmanager.get_plugin("terminalreporter")
+    skipped = terminal.stats.get("skipped", []) if terminal else []
+    if skipped and exitstatus == pytest.ExitCode.OK:
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED

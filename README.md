@@ -20,6 +20,10 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 裸 `$mdf` 只显示帮助。所有工作流都必须显式调用，入口可写入但绝不自动 commit；
 用户须复查并提交，下一次调用从 clean worktree 开始。
 
+供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
+记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，
+不会随 Skill 安装。
+
 MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。协议、工具与
 schema 版本均为数字 `2`。
 
@@ -45,11 +49,12 @@ Requirement/Bug 是计划与偏差，完成后不会自动成为当前事实。�
 
 ```bash
 ./link_skills.sh --project /absolute/path/to/target-repository
-./link_skills.sh codex --global
+./link_skills.sh --global
 ```
 
 每次安装或升级都会先卸载目标 Agent skills 目录中的旧 `mdf-*` Skill 和 `mdf`，
 再安装当前 `mdf`；不会修改目标仓库的 `.mdf/` 或 `docs/` 产出物。
+不指定 Agent 时会覆盖所有已知 Agent；只需安装到特定 Agent 时，再将其名称置于选项前。
 
 ## 测试
 

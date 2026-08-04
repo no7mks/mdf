@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from _support import REPO_ROOT, run
@@ -56,6 +57,19 @@ def test_list_works_from_the_skill_source_repository():
     assert "已知 agent" in listed.stdout
     assert "codex" in listed.stdout
     assert "kimi" in listed.stdout
+
+
+def test_global_dry_run_visits_every_known_agent(tmp_path: Path):
+    env = dict(os.environ)
+    env["HOME"] = str(tmp_path)
+    preview = run(
+        ["sh", str(REPO_ROOT / "link_skills.sh"), "--global", "--dry-run"],
+        env=env,
+    )
+
+    assert preview.returncode == 0, preview.stderr
+    for agent in ("claude", "cursor", "kiro", "codex", "kimi", "openclaw"):
+        assert f"[{agent}]" in preview.stdout
 
 
 def test_kimi_install_uses_project_skill_directory(tmp_path: Path):

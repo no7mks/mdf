@@ -140,7 +140,7 @@ echo
 
 purge_mdf_skills() {
     target_dir="$1"
-    [ -d "$target_dir" ] || return
+    [ -d "$target_dir" ] || return 0
     found=0
     for installed in "$target_dir"/mdf-* "$target_dir"/mdf; do
         [ -e "$installed" ] || [ -L "$installed" ] || continue

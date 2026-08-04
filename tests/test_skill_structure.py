@@ -16,8 +16,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 from _support import Skill
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -91,8 +89,9 @@ def test_name_matches_directory(skill: Skill):
     """If a `name` field is present it must match the directory name."""
     fm = parse_frontmatter(skill.skill_md.read_text(encoding="utf-8")) or {}
     name = fm.get("name")
-    if name is None:
-        pytest.skip(f"{skill.name} declares no explicit `name` field")
+    assert name is not None, (
+        f"{skill.name}/SKILL.md must declare an explicit name"
+    )
     assert name == skill.name, (
         f"{skill.name}/SKILL.md declares name={name!r}, expected {skill.name!r}"
     )
@@ -127,10 +126,13 @@ MDF_TEXT_GLOBS = (
 )
 
 
-def test_mdf_skill_files_respect_line_limit(skill: Skill):
+def test_mdf_skill_files_respect_line_limit():
     """MDF skill keeps checked text files below the hard line cap."""
-    if skill.name != "mdf":
-        pytest.skip("line limit applies only to mdf")
+    skill = Skill(
+        name="mdf",
+        path=Path(__file__).parent.parent / "skills" / "mdf",
+        skill_md=Path(__file__).parent.parent / "skills" / "mdf" / "SKILL.md",
+    )
     offenders: list[str] = []
     for pattern in MDF_TEXT_GLOBS:
         for path in sorted(skill.path.glob(pattern)):
