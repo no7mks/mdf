@@ -9,7 +9,8 @@ from .paths import path_stays_in_repo, relative
 
 def managed_markdown(repo: Path) -> Iterable[Path]:
     roots = (
-        repo / "CONTEXT.md",
+        repo / "PROJECT.md",
+        repo / "GLOSSARY.md",
         repo / "CHANGELOG.md",
         repo / "docs",
         repo / "requirements",

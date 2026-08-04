@@ -122,7 +122,7 @@ def all_not_applicable_baselines() -> list[str]:
 
 def fixture_documented_baselines() -> list[str]:
     values = {
-        "glossary": "CONTEXT.md",
+        "glossary": "GLOSSARY.md",
         "product_reference": "docs/product/reference/capabilities.md",
         "system_boundary": "docs/system/overview.md",
         "architecture": "docs/system/architecture/current.md",

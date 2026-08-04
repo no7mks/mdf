@@ -1,7 +1,7 @@
 # Audit
 
-只在用户显式调用 `$mdf audit`，或被同一次 `$mdf init`、`$mdf finish` 内部委托时
-执行。它只读，不写入、移动、提交或生成持久报告。
+可由同一次 `$mdf init`、`$mdf finish` 内部委托。它只读，不写入、移动、提交或
+生成持久报告。
 
 完整读取 `workflows/common.md` 与 `references/repository-contract.md`。
 

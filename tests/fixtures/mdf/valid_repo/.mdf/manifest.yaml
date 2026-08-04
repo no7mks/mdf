@@ -9,7 +9,7 @@ verification:
 baselines:
   glossary:
     status: documented
-    path: CONTEXT.md
+    path: GLOSSARY.md
   product_reference:
     status: documented
     path: docs/product/reference/capabilities.md

@@ -183,6 +183,12 @@ def test_init_writes_files_from_assets_templates(
     assert changelog == (templates / "changelog.md").read_text(encoding="utf-8")
     assert changelog != "# Changelog\n\nReleased versions are recorded here.\n"
 
+    glossary = (repo / "GLOSSARY.md").read_text(encoding="utf-8")
+    assert glossary == (templates / "glossary.md").read_text(encoding="utf-8")
+
+    project = (repo / "PROJECT.md").read_text(encoding="utf-8")
+    assert project == (templates / "project.md").read_text(encoding="utf-8")
+
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
     block = (
         (templates / "agents-managed-block.md")

@@ -1,7 +1,7 @@
 # MDF 公共规则
 
-所有 workflow intent 都由 `$mdf <intent>` 显式触发。需要确定性操作时使用
-`python3 "$MDF_ROOT/scripts/mdf.py"`；CLI 只做确定性工作，工作流负责语义判断。
+需要确定性操作时使用 `python3 "$MDF_ROOT/scripts/mdf.py"`；CLI 只做确定性工作，
+工作流负责语义判断。
 
 按操作需要读取：
 

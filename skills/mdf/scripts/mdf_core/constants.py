@@ -96,7 +96,7 @@ BASELINES = (
     "deviations",
 )
 BASELINE_PATHS = {
-    "glossary": "CONTEXT.md",
+    "glossary": "GLOSSARY.md",
     "product_reference": "docs/product/reference/index.md",
     "system_boundary": "docs/system/overview.md",
     "architecture": "docs/system/architecture/index.md",
@@ -130,7 +130,8 @@ FACT_ROOTS = ("docs/product", "docs/system")
 MANAGED_ROOTS = (
     ".mdf",
     "AGENTS.md",
-    "CONTEXT.md",
+    "PROJECT.md",
+    "GLOSSARY.md",
     "CHANGELOG.md",
     "docs",
     "requirements",

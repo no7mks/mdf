@@ -44,15 +44,20 @@ def test_init_and_review_load_internal_contracts() -> None:
 
     assert "repository-contract.md" in init
     assert "workflows.md" not in init
-    assert "完整写入方案" in init
+    assert "形成`初始化方案`" in init
     assert "再次显式调用 `$mdf init`" in init
     assert "docs/research/" in init
     assert "## 1. 入口检查" in init
     assert "## 2. 盘点与归类" in init
     assert "## 5. 续办" in init
     assert "没有未说明的遗留文件" in init
+    assert "README 只作导航" not in init
+    assert "`README.md`、`PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md`" in init
+    assert "各自符合`根文档职责`" in init
+    assert "检查项目原有的全部文档" in init
+    assert "项目原有文档\n   仅可按`初始化方案`归位、保留或排除" in init
     inventory = init.split("## 2. 盘点与归类", maxsplit=1)[1].split(
-        "## 3. 建立初始化态", maxsplit=1
+        "## 3. 落地初始化方案", maxsplit=1
     )[0]
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
@@ -93,6 +98,20 @@ def test_repository_contract_defines_static_core_terms() -> None:
     assert "`当前事实文档`" in init
     assert "`validation`" in init
     assert "`全量审阅`" in init
+
+
+def test_repository_contract_defines_root_document_responsibilities() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## 根文档职责" in contract
+    assert "`README.md` 面向项目用户与维护者" in contract
+    assert "`PROJECT.md` 仅面向项目维护者" in contract
+    assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
+    assert "要求 Agent 先读 `README.md`" in contract
+    assert "`GLOSSARY.md` 面向所有读者维护稳定的领域词典" in contract
 
 
 def test_contracts_do_not_duplicate_workflow_steps() -> None:

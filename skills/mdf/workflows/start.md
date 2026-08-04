@@ -1,7 +1,6 @@
 # Start
 
-只在用户显式调用 `$mdf start` 时执行。完整读取 `workflows/common.md`。一次只启动
-一个分支，不自动 commit。
+完整读取 `workflows/common.md`。一次只启动一个分支，不自动 commit。
 
 1. 询问分支类型和必要标识：feature/bugfix 需要 slug；release/hotfix 需要稳定
    SemVer。不得从自然语言猜测版本。

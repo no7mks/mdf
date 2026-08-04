@@ -1,7 +1,6 @@
 # Finish
 
-只在用户显式调用 `$mdf finish` 时运行。不要因代码完成、测试通过、分支合并或
-定时任务隐式触发；不要自动 commit。
+不要自动 commit。
 
 完整读取 `workflows/common.md`、`workflows/audit.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。

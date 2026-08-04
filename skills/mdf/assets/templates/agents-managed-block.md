@@ -2,11 +2,13 @@
 
 ## Mars Development Flow
 
+- 开始工作时先读取 `README.md`；维护工作再读取 `PROJECT.md`，领域术语见
+  `GLOSSARY.md`。
 - 本仓库使用 `.mdf/manifest.yaml` 描述 MDF schema、状态和`基线`。
 - “当前”只指 checkout 的 Git
   revision；计划写入 Requirement/Bug/Change，已实现事实写入 `docs/product/` 或
   `docs/system/`。
-- `CONTEXT.md` 只维护领域词典；重要且已决定的长期取舍写入 `docs/adr/`。
+- `GLOSSARY.md` 只维护领域词典；重要且已决定的长期取舍写入 `docs/adr/`。
 - 工作项状态只使用
   `draft`、`ready`、`closed`；feature/bugfix 完成时不得提前关闭。
 - 只有用户显式调用 `$mdf <intent>` 时才执行对应工作流；不得隐式接单。

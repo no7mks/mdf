@@ -148,6 +148,13 @@ def init_files(
             "changelog.md",
             "# Changelog\n\nReleased versions are recorded here.\n",
         )
+    for name, fallback in (
+        ("GLOSSARY.md", "# Glossary\n"),
+        ("PROJECT.md", "# Project\n"),
+    ):
+        path = repo / name
+        if not path.exists():
+            files[path] = template_text(name.lower(), fallback)
     agents_block = template_text(
         "agents-managed-block.md",
         f"{MDF_BLOCK_START}\n"

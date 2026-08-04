@@ -1,7 +1,6 @@
 # Review Doc
 
-只在用户显式调用 `$mdf review-doc` 时执行。不要在普通需求讨论、Bug 排查或
-编码任务中接管文档评审；不要自动 commit。
+不要自动 commit。
 
 完整读取 `workflows/common.md`、`workflows/grill.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。

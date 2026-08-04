@@ -18,6 +18,8 @@ TEXT_ROOTS = (".agents", "skills", "tests", "internal")
 ROOT_TEXT_FILES = (
     "AGENTS.md",
     "README.md",
+    "PROJECT.md",
+    "GLOSSARY.md",
     "link_skills.sh",
     "redeploy_mdf.sh",
 )

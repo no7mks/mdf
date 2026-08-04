@@ -23,7 +23,8 @@
 /
 ├── .mdf/manifest.yaml
 ├── AGENTS.md
-├── CONTEXT.md
+├── PROJECT.md
+├── GLOSSARY.md
 ├── CHANGELOG.md
 ├── docs/
 │   ├── research/
@@ -46,12 +47,27 @@
 `changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
 
+## 根文档职责
+
+- `README.md` 面向项目用户与维护者，说明项目定位、用户使用起点和维护者的文档入口。
+  它可保留服务于这些目的的概览，但不重复`当前事实文档`中的详细产品或系统说明。
+- `PROJECT.md` 仅面向项目维护者，记录项目专属的开发、验证与维护手册，包括环境、
+  lint、test、build、CI 等价检查、生成物与目录约定。命令的可执行事实来源始终是
+  仓库配置与脚本；生产运行和运维事实属于 `docs/system/operations/`。
+- `AGENTS.md` 仅面向在仓库中工作的 Agent，记录 Agent 的行为准则与必要的项目
+  例外，不重复面向用户或维护者的材料。它要求 Agent 先读 `README.md`，再按工作
+  需要读取 `PROJECT.md` 与 `GLOSSARY.md`。MDF 只维护其中带 marker 的区块，其余
+  内容由仓库维护者负责。
+- `GLOSSARY.md` 面向所有读者维护稳定的领域词典，包括术语、同义词和易混淆概念；
+  不记录实现细节、计划或工作状态。
+
 ## 模板映射
 
 | 模板                                | 用途                             |
 | ----------------------------------- | -------------------------------- |
 | `manifest.yaml`                     | `.mdf/manifest.yaml` scaffold    |
-| `context.md`                        | `CONTEXT.md`                     |
+| `glossary.md`                       | `GLOSSARY.md`                    |
+| `project.md`                        | `PROJECT.md`                     |
 | `agents-managed-block.md`           | `AGENTS.md` MDF marker           |
 | `changelog.md`                      | `CHANGELOG.md`                   |
 | `docs-*` / `product-*` / `system-*` | `当前事实文档`                   |

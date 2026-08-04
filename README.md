@@ -35,7 +35,9 @@ schema 版本均为数字 `2`。
 | 意图与工作 | Requirement、Bug、unreleased Change |
 | 决策 | `docs/adr/` |
 | 证据 | 测试、契约、生成物、配置和命令 |
-| Agent 控制面 | `AGENTS.md`、`.mdf/manifest.yaml` |
+| 项目维护 | `PROJECT.md` |
+| Agent 指令 | `AGENTS.md`、`.mdf/manifest.yaml` |
+| 领域术语 | `GLOSSARY.md` |
 
 Requirement/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
 验证，且不得混写未来计划。
@@ -56,13 +58,7 @@ Requirement/Bug 是计划与偏差，完成后不会自动成为当前事实。�
 再安装当前 `mdf`；不会修改目标仓库的 `.mdf/` 或 `docs/` 产出物。
 不指定 Agent 时会覆盖所有已知 Agent；只需安装到特定 Agent 时，再将其名称置于选项前。
 
-## 测试
+## 维护
 
-MDF 测试只依赖 Python 标准库、Git 和 pytest：
-
-```bash
-python -m pip install -r tests/requirements-test.txt
-python -m pytest
-```
-
-测试范围和说明见 [tests/README.md](./tests/README.md)。
+维护环境、验证命令与仓库约束见 [`PROJECT.md`](PROJECT.md)；测试范围和说明见
+[tests/README.md](./tests/README.md)。
