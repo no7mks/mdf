@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Iterator
 from pathlib import Path
 
 from _support import REPO_ROOT
 
 
-SOFT_LINE_WIDTH = 80
-HARD_LINE_WIDTH = 120
-SOFT_FILE_LINES = 400
-HARD_FILE_LINES = 500
+MAX_LINE_WIDTH = 80
+MAX_FILE_LINES = 400
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml", ".yml"}
 TEXT_ROOTS = (".agents", "skills", "tests", "internal")
 ROOT_TEXT_FILES = (
@@ -20,8 +17,7 @@ ROOT_TEXT_FILES = (
     "README.md",
     "PROJECT.md",
     "GLOSSARY.md",
-    "link_skills.sh",
-    "redeploy_mdf.sh",
+    "mdf-deploy.sh",
 )
 
 
@@ -46,7 +42,7 @@ def file_measurement(path: Path) -> tuple[int, list[tuple[int, int]]]:
     widths = [
         (number, len(line))
         for number, line in enumerate(lines, start=1)
-        if len(line) > SOFT_LINE_WIDTH
+        if len(line) > MAX_LINE_WIDTH
     ]
     return len(lines), widths
 
@@ -62,28 +58,10 @@ def describe(path: Path, line_count: int, widths: list[tuple[int, int]]) -> str:
     return f"{relative_path} ({'; '.join(details)})"
 
 
-def test_file_limits_fail_at_hard_thresholds():
+def test_file_limits():
     failures: list[str] = []
     for path in checked_files():
         line_count, widths = file_measurement(path)
-        hard_widths = [
-            (number, width)
-            for number, width in widths
-            if width > HARD_LINE_WIDTH
-        ]
-        if line_count > HARD_FILE_LINES or hard_widths:
-            failures.append(describe(path, line_count, hard_widths))
-    assert not failures, "Hard file limits exceeded:\n" + "\n".join(failures)
-
-
-def test_file_limits_warn_at_soft_thresholds():
-    warnings_to_report: list[str] = []
-    for path in checked_files():
-        line_count, widths = file_measurement(path)
-        if line_count > SOFT_FILE_LINES or widths:
-            warnings_to_report.append(describe(path, line_count, widths))
-    if warnings_to_report:
-        warnings.warn(
-            "Soft file-limit warnings:\n" + "\n".join(warnings_to_report),
-            stacklevel=1,
-        )
+        if line_count > MAX_FILE_LINES or widths:
+            failures.append(describe(path, line_count, widths))
+    assert not failures, "File limits exceeded:\n" + "\n".join(failures)

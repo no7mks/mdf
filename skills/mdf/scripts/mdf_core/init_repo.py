@@ -158,7 +158,8 @@ def init_files(
     agents_block = template_text(
         "agents-managed-block.md",
         f"{MDF_BLOCK_START}\n"
-        "Use repository-local Mars Development Flow records as versioned context.\n"
+        "Use repository-local Mars Development Flow records "
+        "as versioned context.\n"
         f"{MDF_BLOCK_END}\n",
     ).strip()
     agents = repo / "AGENTS.md"

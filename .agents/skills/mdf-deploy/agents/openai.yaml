@@ -1,0 +1,4 @@
+interface:
+  display_name: "MDF Deploy"
+  short_description: "比较、带回、安装或卸载外部项目的 MDF Skill"
+  default_prompt: "使用 $mdf-deploy 维护外部项目的 MDF Skill。"

@@ -47,16 +47,17 @@ Requirement/Bug 是计划与偏差，完成后不会自动成为当前事实。�
 
 ## 安装
 
-请从 MDF 仓库获取完整技能集。克隆后用根目录 `link_skills.sh` 安装：
+请从 MDF 仓库获取完整技能集。先在目标仓库创建 Agent 的 Skills 目录，例如
+`.codex/skills`，确认 MDF 源仓库工作区干净后安装：
 
 ```bash
-./link_skills.sh --project /absolute/path/to/target-repository
-./link_skills.sh --global
+mkdir -p /absolute/path/to/target-repository/.codex/skills
+./mdf-deploy.sh install --target /absolute/path/to/target-repository
 ```
 
-每次安装或升级都会先卸载目标 Agent skills 目录中的旧 `mdf-*` Skill 和 `mdf`，
-再安装当前 `mdf`；不会修改目标仓库的 `.mdf/` 或 `docs/` 产出物。
-不指定 Agent 时会覆盖所有已知 Agent；只需安装到特定 Agent 时，再将其名称置于选项前。
+`install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
+目标已有 `mdf` 时终止；升级时先运行 `unistall`，再运行 `install`。`diff` 分别显示
+本地与目标相对该基线的改动。脚本不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
 
 ## 维护
 
