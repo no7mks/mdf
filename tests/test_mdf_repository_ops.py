@@ -188,6 +188,8 @@ def test_init_writes_files_from_assets_templates(
 
     project = (repo / "PROJECT.md").read_text(encoding="utf-8")
     assert project == (templates / "project.md").read_text(encoding="utf-8")
+    assert "## 目录约定" in project
+    assert "允许处于仓库顶层" in project
 
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
     block = (

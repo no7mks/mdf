@@ -52,10 +52,19 @@ def test_init_and_review_load_internal_contracts() -> None:
     assert "## 5. 续办" in init
     assert "没有未说明的遗留文件" in init
     assert "README 只作导航" not in init
-    assert "`README.md`、`PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md`" in init
+    for root_document in (
+        "`README.md`",
+        "`PROJECT.md`",
+        "`AGENTS.md`",
+        "`GLOSSARY.md`",
+    ):
+        assert root_document in init
     assert "各自符合`根文档职责`" in init
     assert "检查项目原有的全部文档" in init
-    assert "项目原有文档\n   仅可按`初始化方案`归位、保留或排除" in init
+    assert "盘点全部顶层项目项" in init
+    assert "顶层允许清单" in init
+    assert "业务实现、测试和生成物不得\n   自动迁移" in init
+    assert "项目原有文档\n   与经确认迁移的顶层项目项" in init
     inventory = init.split("## 2. 盘点与归类", maxsplit=1)[1].split(
         "## 3. 落地初始化方案", maxsplit=1
     )[0]
@@ -112,6 +121,19 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
     assert "要求 Agent 先读 `README.md`" in contract
     assert "`GLOSSARY.md` 面向所有读者维护稳定的领域词典" in contract
+
+
+def test_repository_contract_defines_top_level_layout() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## 顶层布局" in contract
+    assert "顶层只保留项目入口" in contract
+    assert "MDF 不固定业务目录名" in contract
+    assert "顶层允许" in contract
+    assert "清单、每项的理由" in contract
 
 
 def test_contracts_do_not_duplicate_workflow_steps() -> None:
