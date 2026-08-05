@@ -67,7 +67,8 @@ def test_init_and_review_load_internal_contracts() -> None:
     assert "业务实现目录" in init
     assert "`src/<目录>`" in init
     assert "`tests/<目录>`" in init
-    assert "不得自动迁移或删除" in init
+    assert "迁移目标已有实际内容时，\n   在同一方案中移除 `.gitkeep`" in init
+    assert "不得在未经确认时迁移或删除" in init
     assert "项目原有文档\n   与经确认迁移的顶层项目项" in init
     inventory = init.split("## 2. 盘点与归类", maxsplit=1)[1].split(
         "## 3. 落地初始化方案", maxsplit=1
