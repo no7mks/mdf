@@ -1,6 +1,6 @@
 ---
-id: "{{REQUIREMENT_ID}}"
-type: requirement
+id: "{{PROPOSAL_ID}}"
+type: proposal
 status: draft
 related: []
 ---

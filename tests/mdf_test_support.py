@@ -16,10 +16,11 @@ from _support import run
 from conftest import skill_dir
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mdf" / "valid_repo"
-REQ_NAME = "req-01arz3ndektsv4rrffq69g5fav-service-health.md"
+PRP_NAME = "prp-01arz3ndektsv4rrffq69g5fav-service-health.md"
 BUG_NAME = "bug-01arz3ndektsv4rrffq69g5faw-unreleased-timeout.md"
 BUG_ID = "bug-01arz3ndektsv4rrffq69g5faw"
-ID_RE = re.compile(r"^(req|bug)-[0-9a-hjkmnp-tv-z]{26}$")
+ID_RE = re.compile(r"^(prp|bug)-[0-9a-hjkmnp-tv-z]{26}$")
+JOT_ID_RE = re.compile(r"^jot-[0-9a-hjkmnp-tv-z]{26}$")
 
 
 def mdf(python_exe: str, *args: str, cwd: Path | None = None):
@@ -163,7 +164,7 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "---\n"
             "change_kind: feature\n"
             f"source_branch: feature/{slug}\n"
-            f"requirements: [req-01arz3ndektsv4rrffq69g5fav]\n"
+            f"proposals: [prp-01arz3ndektsv4rrffq69g5fav]\n"
             "fixed: [bug-01arz3ndektsv4rrffq69g5faw]\n"
             "closed: []\n"
             "deferred: []\n"
@@ -202,7 +203,7 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
                 "release_date": "2026-07-29",
                 "closures": [
                     {
-                        "id": "req-01arz3ndektsv4rrffq69g5fav",
+                        "id": "prp-01arz3ndektsv4rrffq69g5fav",
                         "resolution": "fulfilled",
                         "fulfilled_in": version,
                     },

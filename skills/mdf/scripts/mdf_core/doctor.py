@@ -4,6 +4,7 @@ from .errors import Finding, add_finding
 from .paths import managed_symlinks
 from .validate_changes import validate_changes
 from .validate_evidence import validate_agents_block, validate_evidence
+from .validate_jots import validate_jots
 from .validate_links import validate_links
 from .validate_manifest import validate_manifest
 from .validate_objects import iter_object_files, validate_object
@@ -30,8 +31,9 @@ def collect_findings(
         require_verification_commands=full,
     )
     validate_agents_block(repo, findings)
-    for path in iter_object_files(repo, "requirement"):
-        validate_object(repo, path, "requirement", findings)
+    validate_jots(repo, findings)
+    for path in iter_object_files(repo, "proposal"):
+        validate_object(repo, path, "proposal", findings)
     for path in iter_object_files(repo, "bug"):
         validate_object(repo, path, "bug", findings)
     validate_links(repo, findings)

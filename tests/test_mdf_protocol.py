@@ -8,7 +8,7 @@ from mdf_test_support import *  # noqa: F403
 @pytest.mark.parametrize(
     ("command", "object_type", "prefix"),
     [
-        ("make-id", "requirement", "req"),
+        ("make-id", "proposal", "prp"),
         ("make-id", "bug", "bug"),
     ],
 )
@@ -258,14 +258,14 @@ def test_invalid_object_status_is_rejected(python_exe: str, tmp_path: Path):
 
 def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
-    requirement = repo / "requirements" / REQ_NAME
+    proposal = repo / "proposals" / PRP_NAME
     replace(
-        requirement,
+        proposal,
         "## Desired Outcome\n\n调用方能取得稳定的健康状态。",
         "## Desired Outcome\n\n",
     )
     replace(
-        requirement,
+        proposal,
         "### Out\n\n- 不提供远程监控。",
         "### Outside\n\n- 不提供远程监控。",
     )
@@ -274,14 +274,14 @@ def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert result.returncode != 0
     assert "object.section_empty" in result.stdout
-    assert "requirement.scope" in result.stdout
+    assert "proposal.scope" in result.stdout
 
 
 def test_invalid_related_type_returns_findings_json_without_traceback(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(repo / "requirements" / REQ_NAME, "related: []", "related: null")
+    replace(repo / "proposals" / PRP_NAME, "related: []", "related: null")
     init_git(repo)
 
     result = mdf(python_exe, "validate", "--repo", str(repo))
@@ -317,9 +317,9 @@ def test_bug_found_in_accepts_unreleased_sentinel(
 
 def test_misplaced_object_prefix_is_rejected(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
-    misplaced = repo / "bugs" / REQ_NAME
+    misplaced = repo / "bugs" / PRP_NAME
     misplaced.write_text(
-        (repo / "requirements" / REQ_NAME).read_text(encoding="utf-8"),
+        (repo / "proposals" / PRP_NAME).read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     init_git(repo)
@@ -329,7 +329,7 @@ def test_misplaced_object_prefix_is_rejected(python_exe: str, tmp_path: Path):
     data = json.loads(result.stdout)
     assert any(
         finding["code"] == "object.filename"
-        and finding["path"] == f"bugs/{REQ_NAME}"
+        and finding["path"] == f"bugs/{PRP_NAME}"
         for finding in data["findings"]
     )
 
@@ -370,8 +370,8 @@ def test_validation_rejects_duplicate_id_across_active_and_archive(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    source = repo / "requirements" / REQ_NAME
-    archived = repo / "requirements" / "archive" / "1.2" / REQ_NAME
+    source = repo / "proposals" / PRP_NAME
+    archived = repo / "proposals" / "archive" / "1.2" / PRP_NAME
     archived.parent.mkdir(parents=True)
     archived.write_text(
         source.read_text(encoding="utf-8").replace(

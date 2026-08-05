@@ -55,7 +55,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     release_dir = repo / "changes" / "1.3.0"
     assert (release_dir / "CHANGE.md").is_file()
     assert (release_dir / "service-health" / "CHANGE.md").is_file()
-    assert (repo / "requirements" / "archive" / "1.3" / REQ_NAME).is_file()
+    assert (repo / "proposals" / "archive" / "1.3" / PRP_NAME).is_file()
     assert (repo / "bugs" / "archive" / "1.3" / BUG_NAME).is_file()
     assert "- Semantic summary: semantic audit completed in test" in (
         release_dir / "CHANGE.md"

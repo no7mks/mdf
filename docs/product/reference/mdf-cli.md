@@ -15,7 +15,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 
 - 成功时命令向 stdout 输出 JSON；业务规则拒绝时输出 JSON 错误，
   并以非零状态退出。
-- `--repo` 接受目标仓库路径。除 `info`、`make-id`、`branch --name` 和
+- `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
   `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
   clean worktree。
 - 写入类命令不会创建 Git commit；调用方必须展示结果，并由用户复核、提交。
@@ -30,6 +30,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `init` | 初始化写入 |
 | `validate` | 确定性校验 |
 | `make-id` | 对象 ID |
+| `make-jot-id` | Jot ID |
 | `branch` | 分支解析 |
 | `semver-check` | 版本校验 |
 | `archive` | 对象归档 |
@@ -75,12 +76,21 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 
 ```bash
 python3 skills/mdf/scripts/mdf.py make-id \
-  --type requirement --slug service-health
+  --type proposal --slug service-health
 ```
 
-`--type` 只能是 `requirement` 或 `bug`。命令生成新的 ULID，并输出相应的
-`req-...` 或 `bug-...` 标识符，以及用 slug 规范化后的 Markdown 文件名。
+`--type` 只能是 `proposal` 或 `bug`。命令生成新的 ULID，并输出相应的
+`prp-...` 或 `bug-...` 标识符，以及用 slug 规范化后的 Markdown 文件名。
 它不创建对象文件。
+
+### `make-jot-id`
+
+```bash
+python3 skills/mdf/scripts/mdf.py make-jot-id
+```
+
+生成一个 `jot-...` 标识符，供 `$mdf jot` 在 `JOTS.md` 中定位原始记录。它不创建或
+修改文件。
 
 ### `branch`
 
@@ -139,7 +149,7 @@ python3 skills/mdf/scripts/mdf.py archive --repo /path/to/repository \
 ```
 
 要求 Git 根、有效 manifest、clean worktree 和零个 full-validation finding。
-`--epoch` 指定一个发布切片。命令计算 Requirement/Bug 的移动，以及仓库内
+`--epoch` 指定一个发布切片。命令计算 Proposal/Bug 的移动，以及仓库内
 canonical 链接重写。`--dry-run` 仅返回计划；正常运行会应用移动与重写，随后再次
 full validate。后校验失败时保留现场，供人工检查。
 
@@ -208,8 +218,9 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 ## 与 workflow 的关系
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 workflow 在完成这些判断后
-调用：`init` workflow 使用 `doctor` 与 `init`；`review-doc` 使用 `make-id`；
-`archive` workflow 使用 `archive`；`start` workflow 使用 `start`；
+调用：`init` workflow 使用 `doctor` 与 `init`；`doc create` 使用 `make-id`；
+`jot` 使用 `make-jot-id`；
+`doc archive` workflow 使用 `archive`；`start` workflow 使用 `start`；
 `finish` workflow 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 

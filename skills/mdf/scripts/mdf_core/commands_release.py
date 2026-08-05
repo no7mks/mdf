@@ -84,7 +84,7 @@ def derive_closeout_spec(
             if (repo / "changes" / "unreleased").is_dir()
             else []
         )
-        requirements: set[str] = set()
+        proposals: set[str] = set()
         fixed: set[str] = set()
         closed: set[str] = set()
         deferred: set[str] = set()
@@ -93,7 +93,7 @@ def derive_closeout_spec(
             metadata, _ = read_frontmatter(
                 repo / "changes" / "unreleased" / slug / "CHANGE.md"
             )
-            requirements.update(metadata.get("requirements", []))
+            proposals.update(metadata.get("proposals", []))
             fixed.update(metadata.get("fixed", []))
             closed.update(metadata.get("closed", []))
             deferred.update(metadata.get("deferred", []))
@@ -113,7 +113,7 @@ def derive_closeout_spec(
                 code="invalid_closeout_spec",
             )
         hotfix_change = normalize_hotfix_change(raw_hotfix, version)
-        requirements = set(hotfix_change["requirements"])
+        proposals = set(hotfix_change["proposals"])
         fixed = set(hotfix_change["fixed"])
         closed = set(hotfix_change["closed"])
         deferred = set(hotfix_change["deferred"])
@@ -130,7 +130,7 @@ def derive_closeout_spec(
                 "resolution": "fulfilled",
                 "fulfilled_in": version,
             }
-            for identifier in sorted(requirements)
+            for identifier in sorted(proposals)
         )
         closures.extend(
             {"id": identifier, "resolution": "fixed", "fixed_in": version}

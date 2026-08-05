@@ -18,14 +18,14 @@ from .yamlutil import read_frontmatter
 
 
 def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
-    root = repo / ("requirements" if kind == "requirement" else "bugs")
+    root = repo / ("proposals" if kind == "proposal" else "bugs")
     if (
         not root.is_dir()
         or root.is_symlink()
         or not path_stays_in_repo(repo, root)
     ):
         return []
-    # Collect every Markdown candidate so a misplaced req-*/bug-* file is
+    # Collect every Markdown candidate so a misplaced prp-*/bug-* file is
     # validated (and rejected) instead of being silently ignored.
     return sorted(
         path
@@ -56,7 +56,7 @@ def validate_object(
 ) -> None:
     rel = relative(repo, path)
     filename = OBJECT_FILE_RE.fullmatch(path.name)
-    expected_prefix = "req" if expected_type == "requirement" else "bug"
+    expected_prefix = "prp" if expected_type == "proposal" else "bug"
     if not filename or filename.group(1) != expected_prefix:
         add_finding(
             findings,
@@ -86,13 +86,13 @@ def validate_object(
             rel,
         )
 
-    if expected_type == "requirement":
+    if expected_type == "proposal":
         related = metadata.get("related")
         if not isinstance(related, list):
             add_finding(
                 findings,
                 "object.related",
-                "Requirement related must be a list",
+                "Proposal related must be a list",
                 rel,
             )
         elif len(related) != len(set(map(str, related))):
@@ -119,7 +119,7 @@ def validate_object(
         )
     required_headings = (
         ("Problem", "Desired Outcome", "Scope", "Acceptance Criteria")
-        if expected_type == "requirement"
+        if expected_type == "proposal"
         else (
             "Observed Behavior",
             "Expected Behavior",
@@ -153,7 +153,7 @@ def validate_object(
                 f"Required section is empty: {heading}",
                 rel,
             )
-    if expected_type == "requirement":
+    if expected_type == "proposal":
         scope_match = re.search(r"^##+\s+Scope\s*$", body, re.MULTILINE)
         if scope_match:
             next_heading = re.search(
@@ -172,7 +172,7 @@ def validate_object(
                 if not subsection_match:
                     add_finding(
                         findings,
-                        "requirement.scope",
+                        "proposal.scope",
                         f"Scope requires a {subsection} subsection",
                         rel,
                     )
@@ -192,7 +192,7 @@ def validate_object(
                 ].strip():
                     add_finding(
                         findings,
-                        "requirement.scope_empty",
+                        "proposal.scope_empty",
                         f"Scope {subsection} subsection is empty",
                         rel,
                     )
@@ -214,7 +214,7 @@ def validate_object(
         )
 
     rel_parts = Path(rel).parts
-    expected_root = "requirements" if expected_type == "requirement" else "bugs"
+    expected_root = "proposals" if expected_type == "proposal" else "bugs"
     if len(rel_parts) == 2 and rel_parts[0] == expected_root:
         pass
     elif (
@@ -245,34 +245,34 @@ def validate_object(
             rel,
         )
 
-    if expected_type == "requirement":
+    if expected_type == "proposal":
         allowed = {"fulfilled", "rejected", "duplicate", "obsolete"}
         if resolution is not None and resolution not in allowed:
             add_finding(
                 findings,
-                "requirement.resolution",
-                f"Unsupported requirement resolution: {resolution}",
+                "proposal.resolution",
+                f"Unsupported proposal resolution: {resolution}",
                 rel,
             )
         fulfilled_in = metadata.get("fulfilled_in")
         if resolution == "fulfilled" and stable_semver(fulfilled_in) is None:
             add_finding(
                 findings,
-                "requirement.fulfilled_in",
-                "A fulfilled requirement needs a stable SemVer fulfilled_in",
+                "proposal.fulfilled_in",
+                "A fulfilled proposal needs a stable SemVer fulfilled_in",
                 rel,
             )
         if fulfilled_in is not None and stable_semver(fulfilled_in) is None:
             add_finding(
                 findings,
-                "requirement.version",
+                "proposal.version",
                 "fulfilled_in must be a stable SemVer",
                 rel,
             )
         if resolution != "fulfilled" and fulfilled_in is not None:
             add_finding(
                 findings,
-                "requirement.fulfilled_in",
+                "proposal.fulfilled_in",
                 "fulfilled_in is allowed only with resolution fulfilled",
                 rel,
             )

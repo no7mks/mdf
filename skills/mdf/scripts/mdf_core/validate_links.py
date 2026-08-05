@@ -13,7 +13,7 @@ def managed_markdown(repo: Path) -> Iterable[Path]:
         repo / "GLOSSARY.md",
         repo / "CHANGELOG.md",
         repo / "docs",
-        repo / "requirements",
+        repo / "proposals",
         repo / "bugs",
         repo / "changes",
     )

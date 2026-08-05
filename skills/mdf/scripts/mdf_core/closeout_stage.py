@@ -10,7 +10,7 @@ from .constants import (
     BUG_SEVERITIES,
     BUG_TERMINAL_RESOLUTIONS,
     CHANGELOG_CATEGORIES,
-    REQUIREMENT_CLOSED_RESOLUTIONS,
+    PROPOSAL_CLOSED_RESOLUTIONS,
     is_unreleased_sentinel,
 )
 from .errors import Finding, MDFError, add_finding, serialize_findings
@@ -67,7 +67,7 @@ def apply_closeout(
                     notes[category] = [str(value) for value in values]
         evidence = dict(hotfix_change.get("evidence", {}))
         breaking = hotfix_change.get("breaking") is True
-        requirement_ids = set(hotfix_change.get("requirements", []))
+        proposal_ids = set(hotfix_change.get("proposals", []))
         fixed_ids = set(hotfix_change.get("fixed", []))
         closed_ids = set(hotfix_change.get("closed", []))
         deferred_ids = set(hotfix_change.get("deferred", []))
@@ -99,7 +99,7 @@ def apply_closeout(
         (
             notes,
             breaking,
-            requirement_ids,
+            proposal_ids,
             fixed_ids,
             closed_ids,
             deferred_ids,
@@ -118,12 +118,12 @@ def apply_closeout(
             code="change_outcome_overlap",
         )
     bug_ids = fixed_ids | closed_ids | deferred_ids
-    baseline_closures = requirement_ids | bug_ids
+    baseline_closures = proposal_ids | bug_ids
     closures = context["closures"]
     closure_ids = {closure["id"] for closure in closures}
     if not baseline_closures.issubset(closure_ids):
         raise MDFError(
-            "closures 必须覆盖 Change 声明的全部 Requirement 与 Bug outcome",
+            "closures 必须覆盖 Change 声明的全部 Proposal 与 Bug outcome",
             code="closure_set_mismatch",
             details={
                 "expected_minimum": sorted(baseline_closures),
@@ -132,13 +132,13 @@ def apply_closeout(
             },
         )
     objects = active_objects(repo)
-    closed_requirement_resolutions: dict[str, str] = {}
+    closed_proposal_resolutions: dict[str, str] = {}
     for closure in closures:
         identifier = closure["id"]
         resolution = closure.get("resolution")
-        if identifier in requirement_ids and resolution != "fulfilled":
+        if identifier in proposal_ids and resolution != "fulfilled":
             raise MDFError(
-                f"Requirement closeout must use fulfilled: {identifier}",
+                f"Proposal closeout must use fulfilled: {identifier}",
                 code="invalid_closure",
             )
         if identifier in fixed_ids and resolution != "fixed":
@@ -168,15 +168,15 @@ def apply_closeout(
             elif resolution == "deferred":
                 deferred_ids.add(identifier)
             elif resolution == "fulfilled":
-                requirement_ids.add(identifier)
+                proposal_ids.add(identifier)
             elif (
-                resolution in REQUIREMENT_CLOSED_RESOLUTIONS
-                and object_kind == "requirement"
+                resolution in PROPOSAL_CLOSED_RESOLUTIONS
+                and object_kind == "proposal"
             ):
-                closed_requirement_resolutions[identifier] = resolution
+                closed_proposal_resolutions[identifier] = resolution
             elif (
                 resolution in BUG_TERMINAL_RESOLUTIONS
-                and object_kind != "requirement"
+                and object_kind != "proposal"
             ):
                 closed_ids.add(identifier)
                 closed_resolutions.setdefault(identifier, resolution)
@@ -221,9 +221,9 @@ def apply_closeout(
             )
         kind, path, metadata = record
         expected_kind = (
-            "requirement"
-            if identifier in requirement_ids
-            or identifier in closed_requirement_resolutions
+            "proposal"
+            if identifier in proposal_ids
+            or identifier in closed_proposal_resolutions
             else "bug"
         )
         if kind != expected_kind or metadata.get("status") != "ready":
@@ -285,13 +285,13 @@ def apply_closeout(
         notes=notes,
         breaking=breaking,
         evidence=evidence,
-        requirement_ids=requirement_ids,
+        proposal_ids=proposal_ids,
         fixed_ids=fixed_ids,
         closed_ids=closed_ids,
         deferred_ids=deferred_ids,
         adrs=adrs,
         closed_resolutions=closed_resolutions,
-        closed_requirement_resolutions=closed_requirement_resolutions,
+        closed_proposal_resolutions=closed_proposal_resolutions,
         objects=objects,
         closures=closures,
         hotfix_body=hotfix_body,

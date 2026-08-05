@@ -9,9 +9,9 @@ def test_archive_accepts_closed_non_delivery_resolution(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    requirement = repo / "requirements" / REQ_NAME
+    proposal = repo / "proposals" / PRP_NAME
     replace(
-        requirement,
+        proposal,
         "status: ready\nrelated: []",
         "status: closed\nrelated: []\nresolution: rejected",
     )
@@ -27,7 +27,7 @@ def test_archive_accepts_closed_non_delivery_resolution(
     dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
     assert "plan_digest" not in dry_run
     assert_ok(mdf(python_exe, *arguments))
-    assert (repo / "requirements" / "archive" / "2.0" / REQ_NAME).is_file()
+    assert (repo / "proposals" / "archive" / "2.0" / PRP_NAME).is_file()
 
 
 def test_archive_post_validation_failure_leaves_worktree(
@@ -36,7 +36,7 @@ def test_archive_post_validation_failure_leaves_worktree(
     core = load_core_module()
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "requirements" / REQ_NAME,
+        repo / "proposals" / PRP_NAME,
         "status: ready\nrelated: []",
         (
             "status: closed\nrelated: []\n"
@@ -61,8 +61,8 @@ def test_archive_post_validation_failure_leaves_worktree(
     with pytest.raises(core.MDFError) as caught:
         core.command_archive(args)
     assert caught.value.code == "post_validation_failed"
-    assert not (repo / "requirements" / REQ_NAME).exists()
-    assert (repo / "requirements" / "archive" / "1.2" / REQ_NAME).is_file()
+    assert not (repo / "proposals" / PRP_NAME).exists()
+    assert (repo / "proposals" / "archive" / "1.2" / PRP_NAME).is_file()
     assert git(repo, "status", "--porcelain").stdout
 
 
@@ -118,14 +118,14 @@ def test_move_rewrite_failure_leaves_partial_changes(
 ):
     core = load_core_module()
     repo = tmp_path / "repo"
-    source = repo / "requirements" / "record"
+    source = repo / "proposals" / "record"
     source.mkdir(parents=True)
     (source / "item.md").write_text("# Item\n", encoding="utf-8")
     reference = repo / "reference.md"
     reference.write_text(
-        "[Item](requirements/record/item.md)\n", encoding="utf-8"
+        "[Item](proposals/record/item.md)\n", encoding="utf-8"
     )
-    destination = repo / "requirements" / "archive" / "1.0" / "record"
+    destination = repo / "proposals" / "archive" / "1.0" / "record"
     moves = {source: destination}
     rewrites = core.replacement_plan(repo, moves)
 
@@ -143,9 +143,9 @@ def test_move_rewrite_failure_leaves_partial_changes(
     assert not source.exists()
     assert (destination / "item.md").is_file()
     assert reference.read_text(encoding="utf-8") == (
-        "[Item](requirements/record/item.md)\n"
+        "[Item](proposals/record/item.md)\n"
     )
-    assert (repo / "requirements" / "archive").is_dir()
+    assert (repo / "proposals" / "archive").is_dir()
 
 
 def test_init_refuses_to_overwrite_unexpected_files(tmp_path: Path):
@@ -248,6 +248,7 @@ def test_init_allows_dirty_worktree_for_active_continuation(
     applied = payload(mdf(python_exe, *arguments))
     assert applied["operation"] == "init"
     assert (repo / ".mdf" / "manifest.yaml").is_file()
+    assert (repo / "JOTS.md").read_text(encoding="utf-8") == "# Jots\n"
 
 
 def test_archive_and_move_change_require_clean_worktree(
@@ -256,9 +257,9 @@ def test_archive_and_move_change_require_clean_worktree(
     archive_root = tmp_path / "archive"
     archive_root.mkdir()
     archive_repo = copy_fixture(archive_root)
-    requirement = archive_repo / "requirements" / REQ_NAME
+    proposal = archive_repo / "proposals" / PRP_NAME
     replace(
-        requirement,
+        proposal,
         "status: ready\nrelated: []",
         "status: closed\nrelated: []\nresolution: rejected",
     )

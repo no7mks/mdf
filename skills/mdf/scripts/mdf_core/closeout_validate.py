@@ -5,7 +5,7 @@ from typing import Any
 from .constants import (
     BUG_TERMINAL_RESOLUTIONS,
     CHANGELOG_CATEGORIES,
-    REQUIREMENT_CLOSED_RESOLUTIONS,
+    PROPOSAL_CLOSED_RESOLUTIONS,
 )
 from .errors import MDFError
 
@@ -39,13 +39,13 @@ CLOSURE_RESOLUTIONS = {
     "fulfilled",
     "fixed",
     "deferred",
-    *REQUIREMENT_CLOSED_RESOLUTIONS,
+    *PROPOSAL_CLOSED_RESOLUTIONS,
     *BUG_TERMINAL_RESOLUTIONS,
 }
 
 HOTFIX_REQUIRED_FIELDS = {"body", "evidence", "release_notes"}
 HOTFIX_OPTIONAL_FIELDS = {
-    "requirements",
+    "proposals",
     "fixed",
     "closed",
     "deferred",
@@ -144,9 +144,9 @@ def normalize_hotfix_change(raw: Any, version: str) -> dict[str, Any]:
         "change_kind": "hotfix",
         "source_branch": f"hotfix/{version}",
         "body": body,
-        "requirements": _string_list(
-            change.get("requirements", []),
-            "hotfix requirements",
+        "proposals": _string_list(
+            change.get("proposals", []),
+            "hotfix proposals",
         ),
         "fixed": _string_list(change.get("fixed", []), "hotfix fixed"),
         "closed": _string_list(change.get("closed", []), "hotfix closed"),

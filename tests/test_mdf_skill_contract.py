@@ -21,15 +21,21 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     for command in (
         "init",
         "start",
-        "review-doc",
+        "jot",
+        "jot promote",
+        "doc create",
+        "doc review",
+        "doc archive",
         "finish",
         "audit",
-        "archive",
         "grill <议题>",
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
-    assert "workflows/<intent>.md" in entry
+    assert "workflows/doc-create.md" in entry
+    assert "workflows/doc-review.md" in entry
+    assert "workflows/doc-archive.md" in entry
+    assert "workflows/jot.md" in entry
     assert "$mdf <intent>" in entry
     assert "mdf.py\" <command>" in entry
     assert "版本化文档与交付流程" in entry
@@ -37,9 +43,11 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "可验证的演进记录" in entry
 
 
-def test_init_and_review_load_internal_contracts() -> None:
+def test_init_and_doc_workflows_load_internal_contracts() -> None:
     init = workflow("init")
-    review = workflow("review-doc")
+    create = workflow("doc-create")
+    review = workflow("doc-review")
+    archive = workflow("doc-archive")
     common = workflow("common")
 
     assert "repository-contract.md" in init
@@ -77,9 +85,24 @@ def test_init_and_review_load_internal_contracts() -> None:
     assert "`evidence`" not in inventory
     assert "仅在外层工作流入口检查一次" in common
     assert "不得重复 clean 检查而拒绝修改" in common
-    assert "object-contract.md" in review
-    assert "内部 grill 工作流" in review
+    for document in (create, review):
+        assert "object-contract.md" in document
+        assert "内部 grill 工作流" in document
+        assert "normal_workflows_allowed" in document
+        assert "先在 `draft` 状态运行 `targeted validation`" in document
+    assert "生成 ID 与规范化文件名" in create
     assert "closed 或 archive 对象拒绝修改" in review
+    assert "closed Proposal/Bug" in archive
+
+
+def test_jot_workflow_preserves_raw_input_until_promotion() -> None:
+    jot = workflow("jot")
+
+    assert "make-jot-id" in jot
+    assert "JOTS.md" in jot
+    assert "完整 marker 条目" in jot
+    assert "draft 和原 Jot" in jot
+    assert "同一个独立 commit" in jot
 
 
 def test_repository_contract_defines_static_core_terms() -> None:

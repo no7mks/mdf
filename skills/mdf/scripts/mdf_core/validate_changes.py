@@ -109,7 +109,7 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
             aggregate: dict[str, set[str]] = {
                 key: set()
                 for key in (
-                    "requirements",
+                    "proposals",
                     "fixed",
                     "closed",
                     "deferred",

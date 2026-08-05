@@ -25,6 +25,7 @@
 
 ## Work
 
-- [Requirements](../requirements/)
+- [Jots](../JOTS.md)
+- [Proposals](../proposals/)
 - [Bugs](../bugs/)
 - [Changes](../changes/)

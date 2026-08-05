@@ -9,6 +9,7 @@ from .commands_misc import (
     command_info,
     command_init,
     command_make_id,
+    command_make_jot_id,
     command_move_change,
     command_semver,
     command_validate,
@@ -46,10 +47,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     make_id = subparsers.add_parser("make-id")
     make_id.add_argument(
-        "--type", choices=("requirement", "bug"), required=True
+        "--type", choices=("proposal", "bug"), required=True
     )
     make_id.add_argument("--slug", required=True)
     make_id.set_defaults(func=command_make_id)
+
+    make_jot_id = subparsers.add_parser("make-jot-id")
+    make_jot_id.set_defaults(func=command_make_jot_id)
 
     branch = subparsers.add_parser("branch")
     branch.add_argument("--repo")

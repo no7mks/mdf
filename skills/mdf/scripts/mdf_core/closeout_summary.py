@@ -50,7 +50,7 @@ def summarize_closeout(repo: Path, context: dict[str, Any]) -> dict[str, Any]:
         if record is None:
             continue
         kind, path, _metadata = record
-        root = "requirements" if kind == "requirement" else "bugs"
+        root = "proposals" if kind == "proposal" else "bugs"
         target = f"{root}/archive/{epoch}/{path.name}"
         moves.append({"from": relative(repo, path), "to": target})
     affected = {

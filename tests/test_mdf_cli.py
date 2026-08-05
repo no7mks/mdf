@@ -135,12 +135,18 @@ def test_removed_verify_command_argument_is_a_hard_failure(
 def test_mdf_grill_is_internal_workflow_copy():
     skill = skill_dir("mdf")
     grill = (skill / "workflows" / "grill.md").read_text(encoding="utf-8")
-    review = (skill / "workflows" / "review-doc.md").read_text(encoding="utf-8")
+    create = (skill / "workflows" / "doc-create.md").read_text(
+        encoding="utf-8"
+    )
+    review = (skill / "workflows" / "doc-review.md").read_text(
+        encoding="utf-8"
+    )
     init = (skill / "workflows" / "init.md").read_text(encoding="utf-8")
 
     assert "持续、深入地追问" in grill
     assert "一次只问一个问题" in grill
     assert "查证的事实自行查证" in grill
     assert "不要据此采取行动" in grill
+    assert "内部 grill 工作流" in create
     assert "内部 grill 工作流" in review and "内部 grill 工作流" in init
     assert "明确确认才转" in review

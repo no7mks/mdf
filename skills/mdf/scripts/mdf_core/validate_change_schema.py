@@ -121,7 +121,7 @@ def validate_change_file(
                 "included_changes must be a string list",
                 rel,
             )
-    for key in ("requirements", "fixed", "closed", "deferred", "adrs"):
+    for key in ("proposals", "fixed", "closed", "deferred", "adrs"):
         if not isinstance(metadata.get(key), list):
             add_finding(
                 findings,

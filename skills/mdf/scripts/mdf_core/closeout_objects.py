@@ -14,7 +14,7 @@ from .yamlutil import frontmatter_span, parse_yaml
 
 def active_objects(repo: Path) -> dict[str, tuple[str, Path, dict[str, Any]]]:
     result: dict[str, tuple[str, Path, dict[str, Any]]] = {}
-    for kind in ("requirement", "bug"):
+    for kind in ("proposal", "bug"):
         for path in iter_object_files(repo, kind):
             if len(path.relative_to(repo).parts) != 2:
                 continue
@@ -71,11 +71,11 @@ def close_object_text(
     _require_ready(metadata, str(identifier))
     resolution = closure["resolution"]
 
-    if kind == "requirement":
+    if kind == "proposal":
         allowed = {"fulfilled", "rejected", "duplicate", "obsolete"}
         if resolution not in allowed:
             raise MDFError(
-                f"Invalid Requirement resolution: {resolution}",
+                f"Invalid Proposal resolution: {resolution}",
                 code="invalid_closure",
             )
         expected_version = closure.get("fulfilled_in")
@@ -88,7 +88,7 @@ def close_object_text(
                 )
         elif "fulfilled_in" in closure or "fixed_in" in closure:
             raise MDFError(
-                "Non-fulfilled Requirement closure must not declare a version",
+                "Non-fulfilled Proposal closure must not declare a version",
                 code="invalid_closure",
             )
         frontmatter = _set_field(frontmatter, "status", "closed")

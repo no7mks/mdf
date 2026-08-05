@@ -1,17 +1,17 @@
 # 工作对象与 Change Schema
 
-本文只定义 Requirement、Bug 和 Change 的持久化 schema、允许值与对象间不变量。
+本文只定义 Proposal、Bug 和 Change 的持久化 schema、允许值与对象间不变量。
 创建、评审、状态转换、版本收口和归档的时机与步骤由各工作流定义。
 
-## Requirement
+## Proposal
 
-Requirement 使用 Markdown + YAML frontmatter：`id`、`type: requirement`、`status`、
+Proposal 使用 Markdown + YAML frontmatter：`id`、`type: proposal`、`status`、
 `related`。状态只允许 `draft`、`ready`、`closed`。
 
 正文必须包含 Problem、Desired Outcome、Scope、Acceptance Criteria 四个非空章节；
 Scope 必须含非空的 `### In` 与 `### Out` 子节。
 
-合法 Requirement resolution：`fulfilled`（必须写稳定 SemVer `fulfilled_in`）、
+合法 Proposal resolution：`fulfilled`（必须写稳定 SemVer `fulfilled_in`）、
 `rejected`、`obsolete`、`duplicate`；非 `fulfilled` 不得写 `fulfilled_in`。
 
 ## Bug
@@ -57,7 +57,7 @@ duplicate。duplicate 不需要 `found_in`/`fixed_in`，也不得出现在 Chang
 ```yaml
 change_kind: feature | bugfix
 source_branch: feature/<slug> | bugfix/<slug>
-requirements: [req-...]
+proposals: [prp-...]
 fixed: [bug-...]
 closed: [bug-...]
 deferred: [bug-...]
@@ -83,7 +83,7 @@ evidence:
 ## 版本根 Change
 
 `changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
-`version`、`previous_version`、`included_changes`、Requirement/Bug outcomes、release
+`version`、`previous_version`、`included_changes`、Proposal/Bug outcomes、release
 notes、`evidence`、审阅记录，以及 Result、Included Changes、Closeout Outcomes、
 Found-in Transitions、SemVer Decision、Audit、Validation Commands 等章节。每个稳定版本
 只有一个版本根 Change。

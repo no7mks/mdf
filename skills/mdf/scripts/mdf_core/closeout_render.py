@@ -26,7 +26,7 @@ def aggregate_release_changes(
 ]:
     notes = {category: [] for category in CHANGELOG_CATEGORIES}
     breaking = False
-    requirements: set[str] = set()
+    proposals: set[str] = set()
     fixed: set[str] = set()
     closed: set[str] = set()
     deferred: set[str] = set()
@@ -36,7 +36,7 @@ def aggregate_release_changes(
     for slug in sorted(slugs):
         change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
         metadata, _ = read_frontmatter(change)
-        requirements.update(metadata.get("requirements", []))
+        proposals.update(metadata.get("proposals", []))
         fixed.update(metadata.get("fixed", []))
         closed.update(metadata.get("closed", []))
         deferred.update(metadata.get("deferred", []))
@@ -57,7 +57,7 @@ def aggregate_release_changes(
     return (
         notes,
         breaking,
-        requirements,
+        proposals,
         fixed,
         closed,
         deferred,
@@ -99,13 +99,13 @@ def render_version_change(
     minimum_bump: str,
     actual_bump: str,
     validation_commands: list[str],
-    requirements: set[str],
+    proposals: set[str],
     fixed: set[str],
     closed: set[str],
     deferred: set[str],
     adrs: set[str],
     closed_resolutions: dict[str, str],
-    closed_requirement_resolutions: dict[str, str],
+    closed_proposal_resolutions: dict[str, str],
     found_in_transitions: list[str],
     deferred_acceptance: dict[str, Any],
     hotfix_body: str | None = None,
@@ -186,7 +186,7 @@ def render_version_change(
         f'date: "{release_date}"\n'
         f"change_kind: {mode}\n"
         f"source_branch: {mode}/{version}\n"
-        f"requirements: {yaml_list(requirements)}\n"
+        f"proposals: {yaml_list(proposals)}\n"
         f"fixed: {yaml_list(fixed)}\n"
         f"closed: {yaml_list(closed)}\n"
         f"deferred: {yaml_list(deferred)}\n"
@@ -216,16 +216,16 @@ def render_version_change(
         + "CHANGELOG.md and the version-root CHANGE.md were generated.\n\n"
         + "## Known Deviations\n\nNone.\n\n"
         + "## Closeout Outcomes\n\n"
-        + "### Requirements\n\n"
+        + "### Proposals\n\n"
         + (
-            chr(10).join(f"- `{item}`" for item in sorted(requirements))
+            chr(10).join(f"- `{item}`" for item in sorted(proposals))
             or "None."
         )
-        + "\n\n### Closed Requirements\n\n"
+        + "\n\n### Closed Proposals\n\n"
         + (
             chr(10).join(
-                f"- `{item}` ({closed_requirement_resolutions[item]})"
-                for item in sorted(closed_requirement_resolutions)
+                f"- `{item}` ({closed_proposal_resolutions[item]})"
+                for item in sorted(closed_proposal_resolutions)
             )
             or "None."
         )

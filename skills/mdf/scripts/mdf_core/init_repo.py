@@ -148,6 +148,9 @@ def init_files(
             "changelog.md",
             "# Changelog\n\nReleased versions are recorded here.\n",
         )
+    jots = repo / "JOTS.md"
+    if not jots.exists():
+        files[jots] = template_text("jots.md", "# Jots\n")
     for name, fallback in (
         ("GLOSSARY.md", "# Glossary\n"),
         ("PROJECT.md", "# Project\n"),
@@ -193,7 +196,7 @@ def init_files(
             code="invalid_managed_block",
         )
     for path in (
-        repo / "requirements",
+        repo / "proposals",
         repo / "bugs",
         repo / "changes" / "unreleased",
         repo / "docs" / "product" / "tutorials",

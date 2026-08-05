@@ -68,7 +68,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
     known: set[str] = set()
     identifier_paths: dict[str, Path] = {}
     object_paths: list[Path] = []
-    for kind in ("requirement", "bug"):
+    for kind in ("proposal", "bug"):
         for path in iter_object_files(repo, kind):
             object_paths.append(path)
             try:
@@ -104,7 +104,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
             metadata, _ = read_frontmatter(path)
         except MDFError:
             continue
-        if metadata.get("type") == "requirement":
+        if metadata.get("type") == "proposal":
             related = metadata.get("related")
             if not isinstance(related, list):
                 continue
@@ -167,7 +167,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
         except MDFError:
             continue
         for key, prefix in (
-            ("requirements", "req-"),
+            ("proposals", "prp-"),
             ("fixed", "bug-"),
             ("closed", "bug-"),
             ("deferred", "bug-"),

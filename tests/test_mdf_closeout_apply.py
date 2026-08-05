@@ -19,7 +19,7 @@ def test_closeout_apply_executes_directly_without_staged_repository(
     assert (release_dir / "CHANGE.md").is_file()
     assert (release_dir / "service-health" / "CHANGE.md").is_file()
     assert not (repo / "changes" / "unreleased" / "service-health").exists()
-    assert (repo / "requirements" / "archive" / "1.3" / REQ_NAME).is_file()
+    assert (repo / "proposals" / "archive" / "1.3" / PRP_NAME).is_file()
     assert (repo / "bugs" / "archive" / "1.3" / BUG_NAME).is_file()
     assert 'latest_release: "1.3.0"' in (
         repo / ".mdf" / "manifest.yaml"
@@ -38,8 +38,8 @@ def test_closeout_apply_failure_preserves_written_state(tmp_path: Path):
         core.apply_closeout(repo.resolve(), context)
 
     assert caught.value.code == "collision"
-    requirement = repo / "requirements" / REQ_NAME
-    assert "status: closed" in requirement.read_text(encoding="utf-8")
+    proposal = repo / "proposals" / PRP_NAME
+    assert "status: closed" in proposal.read_text(encoding="utf-8")
     assert git(repo, "status", "--porcelain").stdout
 
 

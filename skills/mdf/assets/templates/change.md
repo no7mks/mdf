@@ -1,7 +1,7 @@
 ---
 change_kind: "{{CHANGE_KIND}}"
 source_branch: "{{SOURCE_BRANCH}}"
-requirements: []
+proposals: []
 fixed: []
 closed: []
 deferred: []

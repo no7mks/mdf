@@ -9,7 +9,7 @@
    构建元数据和 `unreleased`。解析 `REPO_ROOT` 并运行 `doctor`，只有 `ready` 与
    clean 时继续。
 2. 用户要求预览时才运行 `archive --epoch "$RELEASE_EPOCH" --dry-run`；预览
-   只检查 closed Requirement/Bug 的稳定移动和仓库内 canonical 引用重写，
+   只检查 closed Proposal/Bug 的稳定移动和仓库内 canonical 引用重写，
    不构成确认或参数绑定。
 3. closed duplicate 永远随 canonical 组成 archive group。canonical 仍为 `ready`
    时 CLI 返回 `duplicate_group_open`，不得单独移动 duplicate。

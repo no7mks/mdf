@@ -194,7 +194,7 @@ def command_validate(args: argparse.Namespace) -> None:
 
 
 def command_make_id(args: argparse.Namespace) -> None:
-    prefix = "req" if args.type == "requirement" else "bug"
+    prefix = "prp" if args.type == "proposal" else "bug"
     identifier = f"{prefix}-{new_ulid()}"
     slug = slugify(args.slug)
     emit(
@@ -204,6 +204,16 @@ def command_make_id(args: argparse.Namespace) -> None:
             "type": args.type,
             "id": identifier,
             "filename": f"{identifier}-{slug}.md",
+        }
+    )
+
+
+def command_make_jot_id(_: argparse.Namespace) -> None:
+    emit(
+        {
+            "ok": True,
+            "operation": "make-jot-id",
+            "id": f"jot-{new_ulid()}",
         }
     )
 

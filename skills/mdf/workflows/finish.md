@@ -12,7 +12,7 @@
    `hotfix/<semver>`。
 2. 在任何写入前，按分支计算交付范围：feature/bugfix 使用 `develop...HEAD`，
    hotfix 使用 `master...HEAD`；release 要求本地 `develop`。检查该范围涉及的代码、
-   配置、schema、测试、`当前事实文档`、Requirement、Bug 与 Change，并识别需要更新
+   配置、schema、测试、`当前事实文档`、Proposal、Bug 与 Change，并识别需要更新
    的`当前事实文档`。这是`交付前检查`，不是 `audit`。
 3. feature/bugfix：需要迁入仓库内既有材料时，要求用户明确给出来源目录；展示来源、
    `changes/unreleased/<slug>` 目标及链接重写，并取得确认后才以 `move-change`
@@ -33,7 +33,7 @@
    evidence 为字符串列表且合计至少一条，release notes 至少有一条非空类别。Core 注入
    `change_kind` 与 `source_branch`；未知字段、空字符串或缺失必填字段均停止。
 7. 调用 `release-closeout` 时，`--closures-json` 覆盖每个 child Change 声明的
-   outcome，并可补录未写入 child Change 的 Requirement/Bug。每个 `ready` 且
+   outcome，并可补录未写入 child Change 的 Proposal/Bug。每个 `ready` 且
    `found_in: unreleased` 的 Bug 必须分类：`fixed` 关闭并写 `fixed_in`；`closed`
    只写非 fixed 终态；`deferred` 保持 `ready`。critical 只能 `fixed`；major
    deferred/wont-fix 必须有用户接受、理由和 follow-up；duplicate 不进入 outcome。

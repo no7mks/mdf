@@ -82,8 +82,8 @@ BUG_TERMINAL_RESOLUTIONS = {
     "obsolete",
 }
 BUG_RESOLUTIONS = {"fixed", "duplicate", *BUG_TERMINAL_RESOLUTIONS}
-# Requirement 的非交付终态；与 validate_objects 的 Requirement resolution 集合对齐。
-REQUIREMENT_CLOSED_RESOLUTIONS = {"rejected", "duplicate", "obsolete"}
+# Proposal 的非交付终态；与 validate_objects 的 Proposal resolution 集合对齐。
+PROPOSAL_CLOSED_RESOLUTIONS = {"rejected", "duplicate", "obsolete"}
 CHANGE_KINDS = {"feature", "bugfix", "release", "hotfix"}
 BASELINES = (
     "glossary",
@@ -117,9 +117,10 @@ BASELINE_DOC_TYPES = {
 STABLE_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 EPOCH_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 OBJECT_FILE_RE = re.compile(
-    r"^(req|bug)-([0-9a-hjkmnp-tv-z]{26})-"
+    r"^(prp|bug)-([0-9a-hjkmnp-tv-z]{26})-"
     r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.md$"
 )
+JOT_ID_RE = re.compile(r"^jot-[0-9a-hjkmnp-tv-z]{26}$")
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
 MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)
@@ -132,9 +133,10 @@ MANAGED_ROOTS = (
     "AGENTS.md",
     "PROJECT.md",
     "GLOSSARY.md",
+    "JOTS.md",
     "CHANGELOG.md",
     "docs",
-    "requirements",
+    "proposals",
     "bugs",
     "changes",
 )

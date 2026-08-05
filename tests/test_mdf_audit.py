@@ -46,12 +46,12 @@ def test_bug_found_in_accepts_only_bare_unreleased_or_stable(
     assert "bug.found_in" in result.stdout
 
 
-def test_unreleased_sentinel_is_rejected_in_requirement_found_in(
+def test_unreleased_sentinel_is_rejected_in_proposal_found_in(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "requirements" / REQ_NAME,
+        repo / "proposals" / PRP_NAME,
         "status: ready\nrelated: []",
         "status: ready\nrelated: []\nfound_in: unreleased",
     )

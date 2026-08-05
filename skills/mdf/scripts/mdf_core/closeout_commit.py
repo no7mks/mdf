@@ -33,13 +33,13 @@ def apply_version_closeout(
     notes: dict[str, list[str]],
     breaking: bool,
     evidence: dict[str, list[str]],
-    requirement_ids: set[str],
+    proposal_ids: set[str],
     fixed_ids: set[str],
     closed_ids: set[str],
     deferred_ids: set[str],
     adrs: set[str],
     closed_resolutions: dict[str, str],
-    closed_requirement_resolutions: dict[str, str],
+    closed_proposal_resolutions: dict[str, str],
     objects: dict[str, tuple[str, Path, dict[str, Any]]],
     closures: list[dict[str, Any]],
     hotfix_body: str | None,
@@ -107,7 +107,7 @@ def apply_version_closeout(
         rewrite_inside_filter=lambda path: (
             path.name == "CHANGE.md"
             or (
-                path.relative_to(repo).parts[0] in {"requirements", "bugs"}
+                path.relative_to(repo).parts[0] in {"proposals", "bugs"}
                 and OBJECT_FILE_RE.fullmatch(path.name) is not None
             )
         ),
@@ -145,13 +145,13 @@ def apply_version_closeout(
             minimum_bump,
             actual_bump,
             validation_commands,
-            requirement_ids,
+            proposal_ids,
             fixed_ids,
             closed_ids,
             deferred_ids,
             adrs,
             closed_resolutions,
-            closed_requirement_resolutions,
+            closed_proposal_resolutions,
             found_in_transitions,
             context.get("deferred_acceptance", {}),
             hotfix_body,
@@ -202,11 +202,11 @@ def apply_version_closeout(
             for path in sorted(rewrites)
         ],
         "outcomes": {
-            "requirements": sorted(requirement_ids),
+            "proposals": sorted(proposal_ids),
             "fixed": sorted(fixed_ids),
             "closed": sorted(closed_ids),
             "deferred": sorted(deferred_ids),
             "closed_resolutions": closed_resolutions,
-            "closed_requirements": closed_requirement_resolutions,
+            "closed_proposals": closed_proposal_resolutions,
         },
     }

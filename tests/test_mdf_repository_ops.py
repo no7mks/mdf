@@ -9,9 +9,9 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    requirement = repo / "requirements" / REQ_NAME
+    proposal = repo / "proposals" / PRP_NAME
     replace(
-        requirement,
+        proposal,
         "status: ready\nrelated: []",
         (
             "status: closed\nrelated: []\n"
@@ -19,8 +19,8 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
             "fulfilled_in: 1.2.0"
         ),
     )
-    requirement.write_text(
-        requirement.read_text(encoding="utf-8")
+    proposal.write_text(
+        proposal.read_text(encoding="utf-8")
         + f'\n[Known bug](../bugs/{BUG_NAME}#impact "Regression context")\n',
         encoding="utf-8",
     )
@@ -36,10 +36,10 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
         "--dry-run",
     )
     assert_ok(dry_run)
-    assert REQ_NAME in dry_run.stdout
+    assert PRP_NAME in dry_run.stdout
     assert "plan_digest" not in json.loads(dry_run.stdout)
-    assert requirement.is_file(), "dry-run 不得移动文件"
-    assert not (repo / "requirements" / "archive" / "1.2" / REQ_NAME).exists()
+    assert proposal.is_file(), "dry-run 不得移动文件"
+    assert not (repo / "proposals" / "archive" / "1.2" / PRP_NAME).exists()
     assert not git(repo, "status", "--porcelain").stdout
 
     applied = mdf(
@@ -51,9 +51,9 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
         "1.2",
     )
     assert_ok(applied)
-    archived = repo / "requirements" / "archive" / "1.2" / REQ_NAME
+    archived = repo / "proposals" / "archive" / "1.2" / PRP_NAME
     assert archived.is_file()
-    assert not requirement.exists()
+    assert not proposal.exists()
     archived_text = archived.read_text(encoding="utf-8")
     assert (
         f'../../../bugs/{BUG_NAME}#impact "Regression context"' in archived_text
@@ -62,25 +62,25 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     reference = (
         repo / "docs" / "product" / "reference" / "capabilities.md"
     ).read_text(encoding="utf-8")
-    assert f"../../../requirements/archive/1.2/{REQ_NAME}" in reference
-    assert f"../../../requirements/{REQ_NAME}" not in reference
+    assert f"../../../proposals/archive/1.2/{PRP_NAME}" in reference
+    assert f"../../../proposals/{PRP_NAME}" not in reference
 
 
 def test_archive_never_rewrites_external_url_path_text(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    requirement = repo / "requirements" / REQ_NAME
+    proposal = repo / "proposals" / PRP_NAME
     replace(
-        requirement,
+        proposal,
         "status: ready\nrelated: []",
         "status: closed\nrelated: []\nresolution: rejected",
     )
-    external_url = f"https://example.invalid/repository/requirements/{REQ_NAME}"
+    external_url = f"https://example.invalid/repository/proposals/{PRP_NAME}"
     index = repo / "docs" / "index.md"
     index.write_text(
         index.read_text(encoding="utf-8")
-        + f"\n[External requirement]({external_url})\n",
+        + f"\n[External proposal]({external_url})\n",
         encoding="utf-8",
     )
     init_git(repo)

@@ -36,5 +36,5 @@
 4. 返回会话内结构化摘要：审阅类型、实现范围、文档范围、已复核文档、语义
    findings、`validation` findings 与未触及理由。
 
-`audit` 不检查 Gitflow 分支、变更 diff、Requirement、Bug、Change、release 输入、
+`audit` 不检查 Gitflow 分支、变更 diff、Proposal、Bug、Change、release 输入、
 closeout 或 merge 条件；这些属于 `$mdf finish` 的`交付前检查`。

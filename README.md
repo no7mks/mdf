@@ -11,10 +11,13 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | --- | --- |
 | `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
-| `$mdf review-doc` | 新建或修订单个 active Requirement / Bug |
+| `$mdf jot` | 追加一条未分诊的随手记录 |
+| `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
+| `$mdf doc create` | 新建单个 active Proposal 或 Bug |
+| `$mdf doc review` | 修订单个 active Proposal 或 Bug |
+| `$mdf doc archive` | 归档 closed Proposal 或 Bug |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf audit` | 执行 change audit 或 release audit |
-| `$mdf archive` | 归档 closed Requirement 与 Bug |
 | `$mdf grill <议题>` | 逐题压力测试计划、决策或想法 |
 
 裸 `$mdf` 只显示帮助。所有工作流都必须显式调用，入口可写入但绝不自动 commit；
@@ -32,15 +35,19 @@ schema 版本均为数字 `2`。
 | 类型 | 载体 |
 | --- | --- |
 | 当前事实 | `docs/product/`、`docs/system/`、配置、schema、测试 |
-| 意图与工作 | Requirement、Bug、unreleased Change |
+| 未分诊记录 | `JOTS.md` |
+| 意图与工作 | Proposal、Bug、unreleased Change |
 | 决策 | `docs/adr/` |
 | 证据 | 测试、契约、生成物、配置和命令 |
 | 项目维护 | `PROJECT.md` |
 | Agent 指令 | `AGENTS.md`、`.mdf/manifest.yaml` |
 | 领域术语 | `GLOSSARY.md` |
 
-Requirement/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
+Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
 验证，且不得混写未来计划。
+
+`JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
+Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
 具体工作流、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的
 `workflows/`、`references/`、`assets/` 与 `scripts/`。

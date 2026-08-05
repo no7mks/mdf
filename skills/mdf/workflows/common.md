@@ -6,7 +6,7 @@
 按操作需要读取：
 
 - `references/repository-contract.md`：仓库目录、`manifest` 与`基线`规则；
-- `references/object-contract.md`：Requirement、Bug 与 Change 的 schema 和不变量。
+- `references/object-contract.md`：Proposal、Bug 与 Change 的 schema 和不变量。
 
 ## Clean worktree
 

@@ -2,16 +2,22 @@
 
 ## Mars Development Flow
 
-- 开始工作时先读取 `README.md`；维护工作再读取 `PROJECT.md`，领域术语见
-  `GLOSSARY.md`。
-- 本仓库使用 `.mdf/manifest.yaml` 描述 MDF schema、状态和`基线`。
-- “当前”只指 checkout 的 Git
-  revision；计划写入 Requirement/Bug/Change，已实现事实写入 `docs/product/` 或
-  `docs/system/`。
-- `GLOSSARY.md` 只维护领域词典；重要且已决定的长期取舍写入 `docs/adr/`。
-- 工作项状态只使用
-  `draft`、`ready`、`closed`；feature/bugfix 完成时不得提前关闭。
-- 只有用户显式调用 `$mdf <intent>` 时才执行对应工作流；不得隐式接单。
-- release/hotfix 前必须通过零 finding 的 MDF 全量审计。
-- MDF 只维护本 marker 块；不要让 MDF 工作流覆盖本文件其他规则。
+- 阅读与信息分层
+  - 开始工作时先读取 `README.md`；维护工作再读取 `PROJECT.md`；遇到领域术语时
+    查阅 `GLOSSARY.md`。
+  - 当前事实只描述当前 checkout，写入 `docs/product/` 或 `docs/system/`。
+  - 待实现意图写入 Proposal；已观察到的偏差写入 Bug。
+  - Change 记录交付单元的结果、关联对象和证据；它不替代当前事实文档。
+  - 未定性的随手记录写入 `JOTS.md`；它们不是 Proposal、Bug 或 Change。
+  - `GLOSSARY.md` 只维护领域词典；重要且已决定的长期取舍写入 `docs/adr/`。
+
+- 工作流与状态
+  - 仅在用户显式调用 `$mdf …` 时执行 MDF workflow，包括 `$mdf doc create` 与
+    `$mdf doc review`；不得隐式接单或自动 commit。
+  - Proposal/Bug 状态只使用 `draft`、`ready`、`closed`；feature/bugfix 不得提前
+    关闭。
+  - release/hotfix 收口前必须通过零 finding 的 MDF 全量审计。
+
+- 托管边界
+  - MDF 只管理本 marker 块，不得覆盖 `AGENTS.md` 的其他规则。
 <!-- MDF:END -->

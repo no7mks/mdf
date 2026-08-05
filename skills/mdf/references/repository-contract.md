@@ -25,14 +25,15 @@
 ├── AGENTS.md
 ├── PROJECT.md
 ├── GLOSSARY.md
+├── JOTS.md
 ├── CHANGELOG.md
 ├── docs/
 │   ├── research/
 │   ├── product/
 │   ├── system/
 │   └── adr/
-├── requirements/
-│   ├── req-<ulid>-<slug>.md
+├── proposals/
+│   ├── prp-<ulid>-<slug>.md
 │   └── archive/<major.minor>/
 ├── bugs/
 │   ├── bug-<ulid>-<slug>.md
@@ -46,6 +47,24 @@
 
 `changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
+
+## Jots
+
+`JOTS.md` 是未分诊的随手记录本。每条 Jot 可保留任意 Markdown 正文，尚不属于
+Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
+
+每条 Jot 使用不可变 ID 与成对 marker，以便提升为 Proposal 或 Bug 后可精确删除：
+
+```markdown
+<!-- jot: jot-<ulid> -->
+## <短标题>
+
+<自由正文>
+<!-- /jot -->
+```
+
+文件可为空，但非空内容必须位于上述条目中。`jot-<ulid>` 只用于定位和 Git
+追溯，不是工作对象 ID。
 
 ## 顶层布局
 
@@ -78,10 +97,11 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 | `glossary.md`                       | `GLOSSARY.md`                    |
 | `project.md`                        | `PROJECT.md`                     |
 | `agents-managed-block.md`           | `AGENTS.md` MDF marker           |
+| `jots.md`                           | `JOTS.md` 草稿本                 |
 | `changelog.md`                      | `CHANGELOG.md`                   |
 | `docs-*` / `product-*` / `system-*` | `当前事实文档`                   |
 | `adr.md`                            | `docs/adr/NNNN-slug.md`          |
-| `requirement.md`                    | Requirement                      |
+| `proposal.md`                       | Proposal                      |
 | `bug.md`                            | Bug                              |
 | `change.md`                         | unreleased 子 Change             |
 
@@ -125,7 +145,7 @@ Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # 
 
 一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。产品和系统页面表达当前
 checkout 的实际行为，并用代码、配置、schema、测试或生成物作为 `evidence`。
-计划、Requirement、Bug、Iteration 和 Change 不得冒充`当前事实文档`。
+计划、Proposal、Bug、Iteration 和 Change 不得冒充`当前事实文档`。
 
 ## 调研材料
 

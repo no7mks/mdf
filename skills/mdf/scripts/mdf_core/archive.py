@@ -17,7 +17,7 @@ def archive_plan(
         raise MDFError("Archive epoch must be MAJOR.MINOR", code="bad_epoch")
     moves: dict[Path, Path] = {}
     records: dict[str, tuple[Path, dict[str, Any]]] = {}
-    for kind, directory in (("requirement", "requirements"), ("bug", "bugs")):
+    for kind, directory in (("proposal", "proposals"), ("bug", "bugs")):
         for path in iter_object_files(repo, kind):
             records_path_parts = path.relative_to(repo).parts
             try:
