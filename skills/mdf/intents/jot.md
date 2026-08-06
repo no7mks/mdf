@@ -2,7 +2,7 @@
 
 不要自动 commit。
 
-完整读取 `workflows/common.md`、`workflows/grill.md`、
+完整读取 `intents/common.md`、`intents/grill.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 `$mdf jot` 追加一条 Jot；`$mdf jot promote` 提升一条既有 Jot。不要接受其他子动作。
@@ -32,7 +32,7 @@
 
 1. 用户必须提供一个 existing `jot-` ID。缺失或歧义时一次只问一个消歧问题；读取
    对应完整 marker 条目，并保留其正文作为成稿输入。
-2. 使用内部 grill 工作流一次只澄清一个影响成稿的事实或取舍，并先查仓库证据。
+2. 使用内部 grill intent 一次只澄清一个影响成稿的事实或取舍，并先查仓库证据。
    收敛 Proposal 的 Problem、Desired Outcome、Scope 与可验证 Acceptance Criteria，
    或 Bug 的 Observed/Expected Behavior、Reproduction、Impact、Regression Evidence
    Required、`found_in` 与 active severity。

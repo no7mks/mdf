@@ -2,7 +2,7 @@
 
 不要自动 commit。
 
-完整读取 `workflows/common.md`、`workflows/audit.md`、
+完整读取 `intents/common.md`、`intents/audit.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 ## 交付前检查

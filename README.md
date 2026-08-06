@@ -1,6 +1,6 @@
 # Mars Development Flow（MDF）
 
-MDF 是一套本地优先的 Agent 文档工作流。它使用版本化文件管理当前事实、工作
+MDF 是一套本地优先的 Agent 文档流程。它使用版本化文件管理当前事实、工作
 意图、重要决策、可执行证据和 Agent 控制面。
 
 ## 使用
@@ -10,6 +10,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | 命令 | 用途 |
 | --- | --- |
 | `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
+| `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
+| `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
@@ -20,7 +22,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf audit` | 执行 change audit 或 release audit |
 | `$mdf grill <议题>` | 逐题压力测试计划、决策或想法 |
 
-裸 `$mdf` 只显示帮助。所有工作流都必须显式调用，入口可写入但绝不自动 commit；
+裸 `$mdf` 只显示帮助。所有意图都必须显式调用，入口可写入但绝不自动 commit；
 用户须复查并提交，下一次调用从 clean worktree 开始。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
@@ -35,6 +37,7 @@ schema 版本均为数字 `2`。
 | 类型 | 载体 |
 | --- | --- |
 | 当前事实 | `docs/product/`、`docs/system/`、配置、schema、测试 |
+| 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新 |
 | 未分诊记录 | `JOTS.md` |
 | 意图与工作 | Proposal、Bug、unreleased Change |
 | 决策 | `docs/adr/` |
@@ -49,8 +52,8 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当�
 `JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
-具体工作流、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的
-`workflows/`、`references/`、`assets/` 与 `scripts/`。
+具体 intent、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的
+`intents/`、`references/`、`assets/` 与 `scripts/`。
 
 ## 安装
 

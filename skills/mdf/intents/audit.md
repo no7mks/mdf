@@ -3,7 +3,7 @@
 可由同一次 `$mdf init`、`$mdf finish` 内部委托。它只读，不写入、移动、提交或
 生成持久报告。
 
-完整读取 `workflows/common.md` 与 `references/repository-contract.md`。
+完整读取 `intents/common.md` 与 `references/repository-contract.md`。
 
 ## 审阅类型
 
@@ -16,7 +16,7 @@
 ## 调用与状态
 
 - 用户直接调用 `$mdf audit` 时，执行`全量审阅`。要求 `manifest` 为 `ready`，并在
-  外层工作流入口检查 clean worktree。
+  外层 intent 入口检查 clean worktree。
 - `$mdf init` 内部委托时，执行`全量审阅`。允许 `manifest` 为 `initializing`，且
   不得重复检查 clean worktree。
 - `$mdf finish` 内部委托时，release 执行`全量审阅`；feature、bugfix、hotfix 执行

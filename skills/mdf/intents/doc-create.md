@@ -2,7 +2,7 @@
 
 不要自动 commit。
 
-完整读取 `workflows/common.md`、`workflows/grill.md`、
+完整读取 `intents/common.md`、`intents/grill.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 1. 解析目标 Git 根 `REPO_ROOT` 后运行 `doctor`。只有
@@ -11,7 +11,7 @@
 2. 用户指定 Proposal/Bug 类型与 slug；缺失或歧义时一次只问一个消歧问题。用 CLI
    `make-id` 生成 ID 与规范化文件名，以相应模板在 `proposals/` 或 `bugs/` 写入对象
    文件，初始状态为 `draft`。
-3. 使用内部 grill 工作流一次只澄清一个影响成稿的事实或取舍，并先查仓库证据。
+3. 使用内部 grill intent 一次只澄清一个影响成稿的事实或取舍，并先查仓库证据。
    Proposal 收敛 Problem、Desired Outcome、Scope 和可验证 Acceptance
    Criteria；Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、
    Regression Evidence Required、`found_in` 与 active severity。

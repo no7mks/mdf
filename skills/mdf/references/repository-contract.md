@@ -31,7 +31,8 @@
 │   ├── research/
 │   ├── product/
 │   ├── system/
-│   └── adr/
+│   ├── adr/
+│   └── repowiki/             # 可选；CodeWiki 受管生成物
 ├── proposals/
 │   ├── prp-<ulid>-<slug>.md
 │   └── archive/<major.minor>/
@@ -47,6 +48,10 @@
 
 `changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
+
+`docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量
+metadata。它不是`当前事实文档`、调研或 ADR，不填入`基线`，也不要求 fact
+frontmatter。该目录由 CodeWiki intent 受管，项目其他文档仍可按各自契约人工维护。
 
 ## Jots
 

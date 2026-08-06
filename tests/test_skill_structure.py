@@ -117,10 +117,10 @@ def test_invoked_scripts_exist(skill: Skill):
     )
 
 
-MDF_LINE_LIMIT = 500
+MDF_LINE_LIMIT = 400
 MDF_TEXT_GLOBS = (
     "SKILL.md",
-    "workflows/*.md",
+    "intents/*.md",
     "references/*.md",
     "scripts/**/*.py",
 )

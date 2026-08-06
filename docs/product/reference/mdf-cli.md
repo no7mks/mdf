@@ -1,11 +1,11 @@
 # MDF 确定性 CLI 参考
 
-`skills/mdf/scripts/mdf.py` 是 MDF workflow 调用的确定性 CLI。
+`skills/mdf/scripts/mdf.py` 是 MDF intent 调用的确定性 CLI。
 本文件列出当前命令、参数和实际效果，供 MDF 仓库维护者审阅与测试。
 
 它不是安装后交付给最终用户的 Skill 材料，也不是
-`$mdf <intent>` 的用户帮助。后者是 workflow intent；本文件中的 command
-是 workflow 在需要确定性操作时调用的内部接口。
+`$mdf <intent>` 的用户帮助。后者是用户 intent；本文件中的 command
+是 intent 在需要确定性操作时调用的内部接口。
 
 ## 调用约定
 
@@ -48,7 +48,7 @@ python3 skills/mdf/scripts/mdf.py info
 ```
 
 输出 `tool_version`、`protocol_version` 和 `schema_version`。当前三者都必须为
-数字 `2`；workflow 以此拒绝错误或不兼容的 CLI。
+数字 `2`；intent 以此拒绝错误或不兼容的 CLI。
 
 ### `doctor`
 
@@ -139,7 +139,7 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
 `AGENTS.md` 区块和文档骨架。输出会列出拟创建或更新的文件和 diff；实际写入后
 manifest 保持 `initializing`，不会填写 verification commands，也不会切换到
-`ready`。workflow 必须在事实复核后补齐材料并完成后续校验。
+`ready`。intent 必须在事实复核后补齐材料并完成后续校验。
 
 ### `archive`
 
@@ -215,14 +215,14 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
 
-## 与 workflow 的关系
+## 与 intent 的关系
 
-CLI 不负责询问用户、判定文档语义或决定交付范围。它由 workflow 在完成这些判断后
-调用：`init` workflow 使用 `doctor` 与 `init`；`doc create` 使用 `make-id`；
+CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
+调用：`init` intent 使用 `doctor` 与 `init`；`doc create` 使用 `make-id`；
 `jot` 使用 `make-jot-id`；
-`doc archive` workflow 使用 `archive`；`start` workflow 使用 `start`；
-`finish` workflow 还会调用 `branch`、`move-change`、`release-closeout` 和
+`doc archive` intent 使用 `archive`；`start` intent 使用 `start`；
+`finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 
 `validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是
-workflow 和测试的确定性基础，不是面向最终用户的直接产品入口。
+intent 和测试的确定性基础，不是面向最终用户的直接产品入口。

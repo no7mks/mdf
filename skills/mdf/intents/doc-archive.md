@@ -2,7 +2,7 @@
 
 不要自动 commit。
 
-完整读取 `workflows/common.md`、`references/repository-contract.md`、
+完整读取 `intents/common.md`、`references/repository-contract.md`、
 `references/object-contract.md`。
 
 1. 用户提供精确 `MAJOR.MINOR` 切片 `RELEASE_EPOCH`；拒绝 patch、预发布、

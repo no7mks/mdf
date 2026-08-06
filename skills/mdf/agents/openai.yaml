@@ -1,6 +1,6 @@
 interface:
   display_name: "MDF"
-  short_description: "以 $mdf <command> 管理 Mars Development Flow 文档工作流"
-  default_prompt: "使用 $mdf 显示可用命令与调用示例。"
+  short_description: "以显式意图管理仓库文档、交付与 CodeWiki Wiki"
+  default_prompt: "使用 $mdf codewiki generate，为当前仓库生成结构 Wiki。"
 policy:
   allow_implicit_invocation: false

@@ -1,12 +1,12 @@
-"""唯一 MDF Skill 的入口与内部工作流契约测试。"""
+"""唯一 MDF Skill 的入口与内部 intent 契约测试。"""
 
 from __future__ import annotations
 
 from conftest import skill_dir
 
 
-def workflow(name: str) -> str:
-    return (skill_dir("mdf") / "workflows" / f"{name}.md").read_text(
+def intent(name: str) -> str:
+    return (skill_dir("mdf") / "intents" / f"{name}.md").read_text(
         encoding="utf-8"
     )
 
@@ -18,8 +18,11 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert [path.name for path in skill.parent.iterdir() if path.is_dir()] == [
         "mdf"
     ]
+    assert not (skill / "workflows").exists()
     for command in (
         "init",
+        "codewiki generate",
+        "codewiki update",
         "start",
         "jot",
         "jot promote",
@@ -32,10 +35,12 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
-    assert "workflows/doc-create.md" in entry
-    assert "workflows/doc-review.md" in entry
-    assert "workflows/doc-archive.md" in entry
-    assert "workflows/jot.md" in entry
+    assert "intents/doc-create.md" in entry
+    assert "intents/doc-review.md" in entry
+    assert "intents/doc-archive.md" in entry
+    assert "intents/codewiki-generate.md" in entry
+    assert "intents/codewiki-update.md" in entry
+    assert "intents/jot.md" in entry
     assert "$mdf <intent>" in entry
     assert "mdf.py\" <command>" in entry
     assert "版本化文档与交付流程" in entry
@@ -43,15 +48,15 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "可验证的演进记录" in entry
 
 
-def test_init_and_doc_workflows_load_internal_contracts() -> None:
-    init = workflow("init")
-    create = workflow("doc-create")
-    review = workflow("doc-review")
-    archive = workflow("doc-archive")
-    common = workflow("common")
+def test_init_and_doc_intents_load_internal_contracts() -> None:
+    init = intent("init")
+    create = intent("doc-create")
+    review = intent("doc-review")
+    archive = intent("doc-archive")
+    common = intent("common")
 
     assert "repository-contract.md" in init
-    assert "workflows.md" not in init
+    assert "intents.md" not in init
     assert "形成`初始化方案`" in init
     assert "再次显式调用 `$mdf init`" in init
     assert "docs/research/" in init
@@ -69,6 +74,7 @@ def test_init_and_doc_workflows_load_internal_contracts() -> None:
         assert root_document in init
     assert "各自符合`根文档职责`" in init
     assert "检查项目原有的全部文档" in init
+    assert "符合 CodeWiki 契约的 `docs/repowiki/`" in init
     assert "盘点全部顶层项目项" in init
     assert "顶层允许清单" in init
     assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in init
@@ -83,11 +89,11 @@ def test_init_and_doc_workflows_load_internal_contracts() -> None:
     )[0]
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
-    assert "仅在外层工作流入口检查一次" in common
+    assert "仅在外层 intent 入口检查一次" in common
     assert "不得重复 clean 检查而拒绝修改" in common
     for document in (create, review):
         assert "object-contract.md" in document
-        assert "内部 grill 工作流" in document
+        assert "内部 grill intent" in document
         assert "normal_workflows_allowed" in document
         assert "先在 `draft` 状态运行 `targeted validation`" in document
     assert "生成 ID 与规范化文件名" in create
@@ -95,8 +101,8 @@ def test_init_and_doc_workflows_load_internal_contracts() -> None:
     assert "closed Proposal/Bug" in archive
 
 
-def test_jot_workflow_preserves_raw_input_until_promotion() -> None:
-    jot = workflow("jot")
+def test_jot_intent_preserves_raw_input_until_promotion() -> None:
+    jot = intent("jot")
 
     assert "make-jot-id" in jot
     assert "JOTS.md" in jot
@@ -110,7 +116,7 @@ def test_repository_contract_defines_static_core_terms() -> None:
     contract = (skill / "references" / "repository-contract.md").read_text(
         encoding="utf-8"
     )
-    init = workflow("init")
+    init = intent("init")
 
     assert "## 核心术语" in contract
     for term in (
@@ -163,24 +169,26 @@ def test_repository_contract_defines_top_level_layout() -> None:
     assert "MDF 不自动迁移或删除顶层项目项" in contract
     assert "顶层允许清单、" in contract
     assert "每项的理由" in contract
+    assert "`docs/repowiki/` 存在时" in contract
+    assert "不填入`基线`" in contract
 
 
-def test_contracts_do_not_duplicate_workflow_steps() -> None:
+def test_contracts_do_not_duplicate_intent_steps() -> None:
     skill = skill_dir("mdf")
     object_contract = (skill / "references" / "object-contract.md").read_text(
         encoding="utf-8"
     )
 
-    assert not (skill / "references" / "workflows.md").exists()
+    assert not (skill / "references" / "intents.md").exists()
     assert "$mdf " not in object_contract
     assert "release-closeout" not in object_contract
     assert "finish 时" not in object_contract
 
 
 def test_audit_is_reused_without_delivery_logic() -> None:
-    audit = workflow("audit")
-    init = workflow("init")
-    finish = workflow("finish")
+    audit = intent("audit")
+    init = intent("init")
+    finish = intent("finish")
 
     assert "只读" in audit
     assert "执行`全量审阅`" in audit
@@ -202,8 +210,8 @@ def test_audit_is_reused_without_delivery_logic() -> None:
 
 
 def test_start_and_finish_define_strict_gitflow_operations() -> None:
-    start = workflow("start")
-    finish = workflow("finish")
+    start = intent("start")
+    finish = intent("finish")
 
     assert "master" in start and "develop" in start
     assert "推送到 origin 并设置 upstream" in start
@@ -211,3 +219,34 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "no-ff 合并到" in finish and "master" in finish
     assert "原子 push" in finish
     assert "v<semver>" in finish
+
+
+def test_codewiki_intents_use_a_managed_mcp_wiki_contract() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "codewiki-contract.md").read_text(
+        encoding="utf-8"
+    )
+    generate = intent("codewiki-generate")
+    update = intent("codewiki-update")
+
+    assert "docs/repowiki/" in contract
+    assert "metadata.json" in contract
+    assert "module_tree.json" in contract
+    assert "first_module_tree.json" in contract
+    assert "mdf-codewiki: managed" in contract
+    assert "provider" in contract and "API key" in contract
+    assert "CodeWiki CLI" in contract
+    assert "hacks.md" in contract
+    assert "偏离同类功能的普通路径" in contract
+    assert "V2" not in contract
+    assert "analyze_repo" in generate
+    assert "save_module_tree" in generate
+    assert "close_session" in generate
+    assert "待确认" in generate
+    assert "$mdf codewiki update" in generate
+    assert "no_changes: true" in update
+    assert "不调用 `analyze_repo`" in update
+    assert "$mdf codewiki generate" in update
+    assert "MCP-only" in update
+    assert "在 `overview.md` 加入链接" in update
+    assert "V2" not in generate and "V2" not in update
