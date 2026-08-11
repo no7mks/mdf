@@ -29,12 +29,15 @@
 3. 检查项目原有的全部文档，按仓库契约提出`当前事实文档`、已确认决策和其他材料的
    归类。符合 CodeWiki 契约的 `docs/repowiki/` 是可选受管生成物，保留在原处且不纳入
    `当前事实文档`、ADR 或调研分类。此步骤只确定材料去处，不做`事实复核`或事实正确性判断。
-4. 将非事实材料归入契约规定的位置。例如调研材料属于 `docs/research/`，已确认
+4. 将非事实材料归入契约规定的位置。外部需求来源属于
+   `context/requirements/`，本地或外部调研材料属于 `context/research/`，已确认
    决策属于 `docs/adr/`。无法分类时一次只询问一个问题。
 5. 通过内部 grill intent 一次一题收敛需用户决定的事项，并从仓库证据收敛八项
-   `基线`、最近稳定版本和非空 `verification.commands`。从未发布时最近稳定版本
-   为 `none`。
-6. 形成`初始化方案`：受影响路径、材料的去处、保留内容、顶层允许清单、业务实现与
+   `基线`、最近稳定版本和非空 `verification.commands`。没有业务检查的空仓库
+   建议使用 `git diff --check`；从未发布时最近稳定版本为 `none`。
+6. 用户提供需求来源时，先将原文归档至 `context/requirements/`。`init` 不确认
+   MVP、不拆分或创建 Proposal；初始化完成后，用户可显式调用 `$mdf doc derive`。
+7. 形成`初始化方案`：受影响路径、材料的去处、保留内容、顶层允许清单、业务实现与
    测试目录、拟补字段、`基线`、`验证命令`和预期 `validation`。只有用户明确确认
    后才可写入。
 
@@ -45,9 +48,10 @@
 ## 3. 落地初始化方案
 
 1. 用户确认后执行 `init`，建立完整 scaffold。需要回退时使用 Git。
-2. `manifest` 保持 `initializing`，`verification.commands` 初始为空。项目原有文档
-   与经确认迁移的顶层项目项仅可按`初始化方案`归位、保留或排除；保留 `AGENTS.md`
-   的非 MDF 托管块。
+2. `manifest` 保持 `initializing`，并写入初始化方案确认的
+   `verification.commands`。项目原有文档
+   与经确认迁移的顶层项目项仅可按
+   `初始化方案`归位、保留或排除；保留 `AGENTS.md` 的非 MDF 托管块。
 3. 按确认方案处理项目原有文档和顶层项目项，完成材料归位、`当前事实文档`、ADR、
    `README.md`、`PROJECT.md` 和`验证命令`。在 `PROJECT.md` 记录仅含例外的顶层
    允许清单及业务实现、测试和生成物目录。按`根文档职责`补齐或修订 `README.md`、
@@ -72,7 +76,9 @@
 
 1. 续办时不得再改`当前事实文档`。运行 `full validation`，只接受
    `manifest.initializing` finding。
-2. 没有其他 finding 时才改为 `ready`，并再次运行 `full validation`。
-3. 若本次完全未改`当前事实文档`、八项`基线`和非空`验证命令`均可验证，可直接
-   执行本节。
+2. 没有其他 finding 时，展示就绪核对表：当前事实复核结果、八项`基线`与
+   `verification.commands`。只有用户明确确认“结束初始化并
+   启用正常工作流”后才改为 `ready`，并再次运行 `full validation`。
+3. 若本次完全未改`当前事实文档`、八项`基线`和非空`验证命令`均可验证，仍须展示
+   核对表并取得该确认后才可执行本节。
    任何失败均保留现场并报告 findings。

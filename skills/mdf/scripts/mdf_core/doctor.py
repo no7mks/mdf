@@ -25,11 +25,7 @@ def collect_findings(
             "MDF-managed paths must not be symbolic links",
             path.relative_to(repo).as_posix(),
         )
-    manifest = validate_manifest(
-        repo,
-        findings,
-        require_verification_commands=full,
-    )
+    manifest = validate_manifest(repo, findings)
     validate_agents_block(repo, findings)
     validate_jots(repo, findings)
     for path in iter_object_files(repo, "proposal"):

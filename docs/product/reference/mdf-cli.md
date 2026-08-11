@@ -79,8 +79,8 @@ python3 skills/mdf/scripts/mdf.py make-id \
   --type proposal --slug service-health
 ```
 
-`--type` 只能是 `proposal` 或 `bug`。命令生成新的 ULID，并输出相应的
-`prp-...` 或 `bug-...` 标识符，以及用 slug 规范化后的 Markdown 文件名。
+`--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case；命令生成
+新的 ULID，并输出相应的 `prp-...` 或 `bug-...` 标识符和 Markdown 文件名。
 它不创建对象文件。
 
 ### `make-jot-id`
@@ -120,6 +120,7 @@ python3 skills/mdf/scripts/mdf.py semver-check \
 ```bash
 python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   --latest-release 1.2.3 \
+  --verification-command "python3 -m pytest -q" \
   --baseline 'glossary=documented' \
   --baseline 'product_reference=documented' \
   --baseline 'system_boundary=documented' \
@@ -135,11 +136,13 @@ SemVer 或 `none`。必须提供 glossary、product_reference、system_boundary�
 architecture、interfaces、data、operations、deviations 这八项 baseline。
 每项格式为 `NAME=documented[:仓库相对路径]` 或
 `NAME=not_applicable:原因`。
+至少提供一次 `--verification-command`；可重复提供。没有业务检查的空仓库可使用
+`git diff --check`。
 
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
 `AGENTS.md` 区块和文档骨架。输出会列出拟创建或更新的文件和 diff；实际写入后
-manifest 保持 `initializing`，不会填写 verification commands，也不会切换到
-`ready`。intent 必须在事实复核后补齐材料并完成后续校验。
+manifest 保持 `initializing`，但会写入提供的 verification commands，不会切换到
+`ready`。intent 必须在事实复核与显式就绪确认后完成后续校验。
 
 ### `archive`
 

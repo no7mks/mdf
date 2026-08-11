@@ -15,6 +15,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
+| `$mdf doc derive` | 从需求来源确认 MVP 并拆分 Proposal 候选 |
 | `$mdf doc create` | 新建单个 active Proposal 或 Bug |
 | `$mdf doc review` | 修订单个 active Proposal 或 Bug |
 | `$mdf doc archive` | 归档 closed Proposal 或 Bug |
@@ -37,6 +38,7 @@ schema 版本均为数字 `2`。
 | 类型 | 载体 |
 | --- | --- |
 | 当前事实 | `docs/product/`、`docs/system/`、配置、schema、测试 |
+| 工作上下文 | `context/requirements/`、`context/research/`、`context/planning/` |
 | 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新 |
 | 未分诊记录 | `JOTS.md` |
 | 意图与工作 | Proposal、Bug、unreleased Change |

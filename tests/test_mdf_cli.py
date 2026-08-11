@@ -84,7 +84,7 @@ def test_validate_rejects_noncurrent_manifest_schema(
     assert "manifest.schema" in result.stdout
 
 
-def test_verification_commands_are_optional_only_while_initializing(
+def test_verification_commands_are_required_while_initializing(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -101,7 +101,7 @@ def test_verification_commands_are_optional_only_while_initializing(
     targeted = mdf(python_exe, "validate", "--repo", str(repo))
     assert targeted.returncode != 0
     assert "manifest.initializing" in targeted.stdout
-    assert "manifest.verification" not in targeted.stdout
+    assert "manifest.verification" in targeted.stdout
 
     full = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
     assert full.returncode != 0
@@ -113,6 +113,41 @@ def test_verification_commands_are_optional_only_while_initializing(
     ready = mdf(python_exe, "validate", "--repo", str(repo))
     assert ready.returncode != 0
     assert "manifest.verification" in ready.stdout
+
+
+def test_init_requires_a_non_empty_verification_command(
+    python_exe: str, tmp_path: Path
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "README.md").write_text("# demo\n", encoding="utf-8")
+    init_git(repo)
+    result = mdf(
+        python_exe,
+        "init",
+        "--repo",
+        str(repo),
+        "--latest-release",
+        "none",
+        *all_not_applicable_baselines(),
+    )
+
+    assert result.returncode != 0
+    assert "--verification-command" in result.stderr
+
+    empty = mdf(
+        python_exe,
+        "init",
+        "--repo",
+        str(repo),
+        "--latest-release",
+        "none",
+        *all_not_applicable_baselines(),
+        "--verification-command",
+        "  ",
+    )
+    assert empty.returncode != 0
+    assert "invalid_verification_command" in empty.stderr
 
 
 def test_removed_verify_command_argument_is_a_hard_failure(

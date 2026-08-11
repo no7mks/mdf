@@ -7,7 +7,8 @@ versioning:
   strategy: semver
   latest_release: {{QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
 verification:
-  commands: []
+  commands:
+    - "{{NON_EMPTY_VERIFICATION_COMMAND}}"
 baselines:
   glossary:
     status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"

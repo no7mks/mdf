@@ -27,8 +27,11 @@
 ├── GLOSSARY.md
 ├── JOTS.md
 ├── CHANGELOG.md
-├── docs/
+├── context/
+│   ├── requirements/
 │   ├── research/
+│   └── planning/
+├── docs/
 │   ├── product/
 │   ├── system/
 │   ├── adr/
@@ -50,7 +53,7 @@
 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量
-metadata。它不是`当前事实文档`、调研或 ADR，不填入`基线`，也不要求 fact
+metadata。它不是`当前事实文档`、工作上下文或 ADR，不填入`基线`，也不要求 fact
 frontmatter。该目录由 CodeWiki intent 受管，项目其他文档仍可按各自契约人工维护。
 
 ## Jots
@@ -73,7 +76,8 @@ Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
 
 ## 顶层布局
 
-顶层只保留项目入口、构建或包管理或部署配置、仓库治理文件和 MDF 固定项。业务实现
+顶层只保留项目入口、构建或包管理或部署配置、仓库治理文件和 MDF 固定项。`context/`
+是 MDF 固定项，保存非 SSOT 的工作上下文。业务实现
 应归入 `src/`，测试应归入 `tests/`；生成物应归入名称明确的子目录。生态惯例要求
 其他目录名时，须在 `PROJECT.md` 中说明。
 
@@ -122,9 +126,9 @@ verification:
     - "python3 -m pytest -q"
 ```
 
-`initializing` 可使用空列表；`ready` 要求非空字符串列表。命令在目标仓库执行，
-产物必须自行清理或被
-`.gitignore` 忽略。
+`initializing` 与 `ready` 都要求非空字符串列表。初始化时通过 CLI 的
+`--verification-command` 提供；没有业务检查的空仓库可使用 `git diff --check`。
+命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 ## YAML 子集
 
@@ -152,11 +156,13 @@ Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # 
 checkout 的实际行为，并用代码、配置、schema、测试或生成物作为 `evidence`。
 计划、Proposal、Bug、Iteration 和 Change 不得冒充`当前事实文档`。
 
-## 调研材料
+## 工作上下文
 
-`docs/research/` 保存调研原文、候选方案、对比和尚未确认的结论。它们不是
-`当前事实文档`，不填入`基线`，也不要求 fact frontmatter。已确认的决策另建 ADR；
-实现后的当前行为另写产品或系统`当前事实文档`。
+`context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
+`context/requirements/` 保存外部需求来源、链接和受控快照；
+`context/research/` 保存本地或外部调研报告、候选方案和对比；
+`context/planning/` 保存已确认的 MVP、Proposal 拆分和依赖。已确认的长期取舍另建
+ADR；实现后的当前行为另写产品或系统`当前事实文档`。
 
 ## Fact frontmatter：evidence 与 generated
 

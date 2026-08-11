@@ -71,7 +71,9 @@ def parse_baselines(values: list[str]) -> dict[str, dict[str, str]]:
 
 
 def render_manifest(
-    baselines: dict[str, dict[str, str]], latest_release: str | None
+    baselines: dict[str, dict[str, str]],
+    latest_release: str | None,
+    verification_commands: list[str],
 ) -> str:
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
@@ -84,7 +86,8 @@ def render_manifest(
             else "  latest_release: null"
         ),
         "verification:",
-        "  commands: []",
+        "  commands:",
+        *[f"    - {yaml_quote(command)}" for command in verification_commands],
         "baselines:",
     ]
     for name in BASELINES:
@@ -133,10 +136,13 @@ def init_files(
     baselines: dict[str, dict[str, str]],
     *,
     latest_release: str | None,
+    verification_commands: list[str],
 ) -> dict[Path, str]:
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
-            baselines, latest_release
+            baselines,
+            latest_release,
+            verification_commands,
         )
     }
     docs_index = repo / "docs" / "index.md"
@@ -203,7 +209,9 @@ def init_files(
         repo / "docs" / "product" / "how-to",
         repo / "docs" / "product" / "reference",
         repo / "docs" / "product" / "explanation",
-        repo / "docs" / "research",
+        repo / "context" / "requirements",
+        repo / "context" / "research",
+        repo / "context" / "planning",
         repo / "docs" / "system" / "architecture",
         repo / "docs" / "system" / "interfaces",
         repo / "docs" / "system" / "data",

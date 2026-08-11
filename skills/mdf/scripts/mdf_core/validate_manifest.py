@@ -16,8 +16,6 @@ from .yamlutil import read_frontmatter
 def validate_manifest(
     repo: Path,
     findings: list[Finding],
-    *,
-    require_verification_commands: bool = False,
 ) -> dict[str, Any] | None:
     path = manifest_path(repo)
     if not path.is_file():
@@ -77,13 +75,11 @@ def validate_manifest(
                 "verification.commands must be a list of non-empty strings",
                 ".mdf/manifest.yaml",
             )
-        elif (
-            manifest.get("state") == "ready" or require_verification_commands
-        ) and not commands:
+        elif not commands:
             add_finding(
                 findings,
                 "manifest.verification",
-                "state ready and full validation require verification.commands",
+                "verification.commands must not be empty",
                 ".mdf/manifest.yaml",
             )
     versioning = manifest.get("versioning")

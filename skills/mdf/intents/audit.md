@@ -32,7 +32,8 @@
    实现是否已有`当前事实文档`。报告未记录的实现、过时或错误陈述、无法验证的
    `evidence`，以及把计划、候选或调研结论写成当前事实的内容。
 3. 运行 `full validation`。`$mdf init` 的内部委托只允许
-   `manifest.initializing` finding；其他 finding 一律报告。
+   `manifest.initializing` finding；初始化前必须已写入非空验证命令，其他 finding
+   一律报告。
 4. 返回会话内结构化摘要：审阅类型、实现范围、文档范围、已复核文档、语义
    findings、`validation` findings 与未触及理由。
 

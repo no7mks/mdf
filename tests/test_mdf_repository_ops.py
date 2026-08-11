@@ -116,6 +116,8 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
+        "--verification-command",
+        "true",
     ]
     sentinel_arguments = [
         "0.0.0-unreleased" if value == "none" else value for value in arguments
@@ -135,14 +137,21 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
     assert "state: initializing" in manifest
     assert "latest_release: null" in manifest
+    assert '    - "true"' in manifest
+    full = mdf(
+        python_exe,
+        "validate",
+        "--repo",
+        str(repo),
+        "--scope",
+        "full",
+    )
+    assert full.returncode != 0
+    assert "manifest.initializing" in full.stdout
+    assert "manifest.verification" not in full.stdout
 
     replace(
         repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready"
-    )
-    replace(
-        repo / ".mdf" / "manifest.yaml",
-        "  commands: []",
-        '  commands:\n    - "true"',
     )
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
 
@@ -161,6 +170,8 @@ def test_init_writes_files_from_assets_templates(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
+        "--verification-command",
+        "true",
     ]
     payload(mdf(python_exe, *arguments))
 
@@ -176,8 +187,8 @@ def test_init_writes_files_from_assets_templates(
     )
     assert docs_index == expected_index
     assert docs_index != "# Documentation\n"
-    assert (repo / "docs" / "research" / ".gitkeep").is_file()
-    assert "[Research notes](research/)" in docs_index
+    for name in ("requirements", "research", "planning"):
+        assert (repo / "context" / name / ".gitkeep").is_file()
 
     changelog = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
     assert changelog == (templates / "changelog.md").read_text(encoding="utf-8")
@@ -213,6 +224,8 @@ def test_init_updates_existing_manifest_and_managed_block(
         "--latest-release",
         "1.2.0",
         *fixture_documented_baselines(),
+        "--verification-command",
+        "true",
     ]
 
     payload(mdf(python_exe, *arguments))
@@ -240,6 +253,8 @@ def test_init_executes_directly_without_plan_digest(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
+        "--verification-command",
+        "true",
     ]
     applied = payload(mdf(python_exe, *arguments))
     assert "dry_run" not in applied

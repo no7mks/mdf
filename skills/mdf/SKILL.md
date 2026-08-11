@@ -26,6 +26,7 @@ Proposal、Bug 和 Change，并以 `manifest` 约束`validation`与发布状态�
 | `start` | 按 Gitflow 创建并推送交付分支 |
 | `jot` | 追加一条未分诊的随手记录 |
 | `jot promote` | 将一条 Jot 提升为 ready Proposal 或 Bug 并移除原条目 |
+| `doc derive` | 从需求来源确认 MVP 并拆分 Proposal 候选 |
 | `doc create` | 新建单个 active Proposal 或 Bug |
 | `doc review` | 修订单个 active Proposal 或 Bug |
 | `doc archive` | 归档 closed Proposal 或 Bug |
@@ -47,8 +48,8 @@ Proposal、Bug 和 Change，并以 `manifest` 约束`validation`与发布状态�
 
    要求 `protocol_version`、`tool_version` 与 `schema_version` 均为数字 `2`。
    命令失败或版本不符时停止；不要模拟脚本行为。
-2. `doc create`、`doc review`、`doc archive` 分别读取
-   `intents/doc-create.md`、`intents/doc-review.md` 与
+2. `doc derive`、`doc create`、`doc review`、`doc archive` 分别读取
+   `intents/doc-derive.md`、`intents/doc-create.md`、`intents/doc-review.md` 与
    `intents/doc-archive.md`。`codewiki generate` 与 `codewiki update` 分别读取
    `intents/codewiki-generate.md` 与 `intents/codewiki-update.md`。`jot` 与
    `jot promote` 都读取 `intents/jot.md`；其他意图仅完整读取

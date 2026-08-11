@@ -26,6 +26,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "start",
         "jot",
         "jot promote",
+        "doc derive",
         "doc create",
         "doc review",
         "doc archive",
@@ -36,6 +37,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         assert command in entry
     assert "裸 `$mdf`" in entry
     assert "intents/doc-create.md" in entry
+    assert "intents/doc-derive.md" in entry
     assert "intents/doc-review.md" in entry
     assert "intents/doc-archive.md" in entry
     assert "intents/codewiki-generate.md" in entry
@@ -59,7 +61,9 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "intents.md" not in init
     assert "形成`初始化方案`" in init
     assert "再次显式调用 `$mdf init`" in init
-    assert "docs/research/" in init
+    assert "context/research/" in init
+    assert "context/requirements/" in init
+    assert "$mdf doc derive" in init
     assert "## 1. 入口检查" in init
     assert "## 2. 盘点与归类" in init
     assert "## 5. 续办" in init
@@ -97,6 +101,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
         assert "normal_workflows_allowed" in document
         assert "先在 `draft` 状态运行 `targeted validation`" in document
     assert "生成 ID 与规范化文件名" in create
+    assert "英文 ASCII kebab-case slug" in create
     assert "closed 或 archive 对象拒绝修改" in review
     assert "closed Proposal/Bug" in archive
 

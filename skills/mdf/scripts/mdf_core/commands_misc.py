@@ -102,6 +102,14 @@ def command_init(args: argparse.Namespace) -> None:
     require_master_default(repo)
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)
+    verification_commands = list(args.verification_command)
+    if not verification_commands or any(
+        not command.strip() for command in verification_commands
+    ):
+        raise MDFError(
+            "--verification-command must be a non-empty command",
+            code="invalid_verification_command",
+        )
     existing_manifest = manifest_path(repo).is_file()
     latest_release: str | None
     if args.latest_release == "none":
@@ -117,6 +125,7 @@ def command_init(args: argparse.Namespace) -> None:
         repo,
         baselines,
         latest_release=latest_release,
+        verification_commands=verification_commands,
     )
     create = [
         relative(repo, path) for path in sorted(files) if not path.exists()
@@ -129,6 +138,7 @@ def command_init(args: argparse.Namespace) -> None:
         "state": "initializing",
         "latest_release": latest_release,
         "baselines": baselines,
+        "verification_commands": verification_commands,
         "files": [
             {
                 "path": relative(repo, path),
@@ -149,8 +159,8 @@ def command_init(args: argparse.Namespace) -> None:
             )
         ],
         "next": (
-            "Write every confirmed documented baseline, set state to ready, "
-            "then run full validation."
+            "Review current facts, then explicitly confirm readiness before "
+            "setting state to ready and running full validation."
         ),
     }
     write_files(
@@ -197,13 +207,14 @@ def command_make_id(args: argparse.Namespace) -> None:
     prefix = "prp" if args.type == "proposal" else "bug"
     identifier = f"{prefix}-{new_ulid()}"
     slug = slugify(args.slug)
+    filename = f"{identifier}-{slug}.md"
     emit(
         {
             "ok": True,
             "operation": "make-id",
             "type": args.type,
             "id": identifier,
-            "filename": f"{identifier}-{slug}.md",
+            "filename": filename,
         }
     )
 

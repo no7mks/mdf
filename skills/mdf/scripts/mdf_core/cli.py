@@ -36,6 +36,12 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--repo", required=True)
     init.add_argument("--latest-release", required=True)
     init.add_argument("--baseline", action="append", default=[], required=True)
+    init.add_argument(
+        "--verification-command",
+        action="append",
+        default=[],
+        required=True,
+    )
     init.set_defaults(func=command_init)
 
     validate = subparsers.add_parser("validate")

@@ -243,6 +243,8 @@ def test_init_allows_dirty_worktree_for_active_continuation(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
+        "--verification-command",
+        "true",
     ]
 
     applied = payload(mdf(python_exe, *arguments))
