@@ -27,6 +27,171 @@ def test_full_audit_works_without_site_packages(
     assert json.loads(result.stdout)["finding_count"] == 0
 
 
+def test_audit_reports_evidence_mapping_without_running_commands(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    replace(
+        repo / ".mdf" / "manifest.yaml", '- "true"', '- "touch audit-ran"'
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "audit", "--repo", str(repo))
+    data = payload(result)
+
+    assert data["finding_count"] == 0
+    assert data["warning_count"] == 0
+    assert data["implementation_paths"] == ["src/service.py"]
+    assert any(
+        item["evidence"] == ["src/service.py"] for item in data["mappings"]
+    )
+    assert not (repo / "audit-ran").exists()
+
+
+def test_audit_uncovered_file_is_warning_and_ignorelist_can_cover_it(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    generated = repo / "src" / "generated"
+    generated.mkdir()
+    (generated / "client.py").write_text("VALUE = 1\n", encoding="utf-8")
+    init_git(repo)
+
+    data = payload(mdf(python_exe, "audit", "--repo", str(repo)))
+    assert data["finding_count"] == 0
+    assert [item["path"] for item in data["warnings"]] == [
+        "src/generated/client.py"
+    ]
+
+    (repo / ".mdf" / "audit-ignore.yaml").write_text(
+        "ignored:\n  - path: src/generated\n    reason: generated client\n",
+        encoding="utf-8",
+    )
+    git(repo, "add", ".mdf/audit-ignore.yaml")
+    git(repo, "commit", "-m", "test: 忽略生成客户端")
+    data = payload(mdf(python_exe, "audit", "--repo", str(repo)))
+    assert data["warning_count"] == 0
+    assert data["ignored"] == [
+        {
+            "path": "src/generated/client.py",
+            "ignore_path": "src/generated",
+            "reason": "generated client",
+        }
+    ]
+
+
+def test_audit_rejects_invalid_ignore_and_scope_paths(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    (repo / ".mdf" / "audit-ignore.yaml").write_text(
+        "ignored:\n  - path: src/nope.py\n    reason: stale rule\n",
+        encoding="utf-8",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "audit", "--repo", str(repo))
+    assert result.returncode == 2
+    assert "audit.ignore_rule" in result.stdout
+
+    result = mdf(
+        python_exe,
+        "audit",
+        "--repo",
+        str(repo),
+        "--scope",
+        "paths",
+        "--implementation-path",
+        "docs/system/overview.md",
+    )
+    assert result.returncode == 2
+    assert "audit.scope_path" in result.stdout
+
+
+def test_audit_rejects_missing_or_overlapping_implementation_roots(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    replace(
+        repo / ".mdf" / "manifest.yaml", "implementation_roots: [src]\n", ""
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "audit", "--repo", str(repo))
+    assert result.returncode == 2
+    assert "manifest.implementation_roots" in result.stdout
+
+
+def test_audit_rejects_overlapping_implementation_roots(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    (repo / "src" / "nested").mkdir()
+    replace(
+        repo / ".mdf" / "manifest.yaml",
+        "implementation_roots: [src]\n",
+        "implementation_roots: [src, src/nested]\n",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "audit", "--repo", str(repo))
+    assert result.returncode == 2
+    assert "manifest.implementation_root_overlap" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        (
+            "ignored:\n  - path: src/service.py\n    reason: one\n"
+            "  - path: src/service.py\n    reason: two\n",
+            "audit.ignore_duplicate",
+        ),
+        (
+            "ignored:\n  - path: src/empty\n    reason: intentionally empty\n",
+            "audit.ignore_empty",
+        ),
+    ],
+)
+def test_audit_rejects_duplicate_or_empty_ignore_rules(
+    python_exe: str, tmp_path: Path, content: str, expected: str
+):
+    repo = copy_fixture(tmp_path)
+    (repo / "src" / "empty").mkdir()
+    (repo / ".mdf" / "audit-ignore.yaml").write_text(
+        content, encoding="utf-8"
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "audit", "--repo", str(repo))
+    assert result.returncode == 2
+    assert expected in result.stdout
+
+
+def test_audit_accepts_exact_range_paths(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+
+    data = payload(
+        mdf(
+            python_exe,
+            "audit",
+            "--repo",
+            str(repo),
+            "--scope",
+            "paths",
+            "--implementation-path",
+            "src/service.py",
+            "--document-path",
+            "docs/system/interfaces/api.md",
+        )
+    )
+    assert data["implementation_paths"] == ["src/service.py"]
+    assert data["document_paths"] == ["docs/system/interfaces/api.md"]
+
+
 @pytest.mark.parametrize(
     "bad_value", ["0.0.0-unreleased", "0.0.0-dev", "1.2.3-rc.1"]
 )

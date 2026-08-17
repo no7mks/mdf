@@ -57,7 +57,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert (release_dir / "service-health" / "CHANGE.md").is_file()
     assert (repo / "proposals" / "archive" / "1.3" / PRP_NAME).is_file()
     assert (repo / "bugs" / "archive" / "1.3" / BUG_NAME).is_file()
-    assert "- Semantic summary: semantic audit completed in test" in (
+    assert "Semantic audit" not in (
         release_dir / "CHANGE.md"
     ).read_text(encoding="utf-8")
     assert_ok(
@@ -65,7 +65,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     )
 
 
-def test_closeout_preview_requires_semantic_attestation(
+def test_closeout_rejects_removed_semantic_attestation_argument(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -78,35 +78,11 @@ def test_closeout_preview_requires_semantic_attestation(
         str(repo),
         "--release-date",
         "2026-07-30",
-        "--dry-run",
+        "--semantic-attestation-json",
+        "{}",
     )
     assert result.returncode != 0
-    assert "invalid_closeout_spec" in result.stderr
-
-
-def test_closeout_rejects_missing_or_blank_semantic_summary(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    prepare_release(repo)
-
-    for attestation in (
-        json.dumps({"semantic": "passed", "finding_count": 0}),
-        semantic_attestation_json(summary="   "),
-    ):
-        result = mdf(
-            python_exe,
-            "release-closeout",
-            "--repo",
-            str(repo),
-            "--release-date",
-            "2026-07-30",
-            "--dry-run",
-            "--semantic-attestation-json",
-            attestation,
-        )
-        assert result.returncode != 0
-        assert "invalid_closeout_spec" in result.stderr
+    assert "unrecognized arguments" in result.stderr
 
 
 def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(

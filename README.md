@@ -20,7 +20,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf doc review` | 修订单个 active Proposal 或 Bug |
 | `$mdf doc archive` | 归档 closed Proposal 或 Bug |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
-| `$mdf audit` | 执行 change audit 或 release audit |
+| `$mdf audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf grill <议题>` | 逐题压力测试计划、决策或想法 |
 
 裸 `$mdf` 只显示帮助。所有意图都必须显式调用，入口可写入但绝不自动 commit；

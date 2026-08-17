@@ -32,6 +32,7 @@ from .paths import (
     ensure_safe_managed_paths,
     load_manifest,
     manifest_path,
+    path_stays_in_repo,
     relative,
 )
 from .semver import bump_kind, required_bump
@@ -103,6 +104,28 @@ def command_init(args: argparse.Namespace) -> None:
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)
     verification_commands = list(args.verification_command)
+    implementation_roots = list(args.implementation_root) or ["src"]
+    root_paths: list[Path] = []
+    for raw in implementation_roots:
+        candidate = Path(raw)
+        target = (repo / candidate).resolve()
+        if (
+            not raw.strip()
+            or candidate.is_absolute()
+            or not path_stays_in_repo(repo, target)
+            or target == repo
+            or target in root_paths
+            or any(
+                target in item.parents or item in target.parents
+                for item in root_paths
+            )
+        ):
+            raise MDFError(
+                "--implementation-root must use unique in-repository "
+                "directories",
+                code="invalid_implementation_root",
+            )
+        root_paths.append(target)
     if not verification_commands or any(
         not command.strip() for command in verification_commands
     ):
@@ -126,6 +149,7 @@ def command_init(args: argparse.Namespace) -> None:
         baselines,
         latest_release=latest_release,
         verification_commands=verification_commands,
+        implementation_roots=implementation_roots,
     )
     create = [
         relative(repo, path) for path in sorted(files) if not path.exists()
@@ -139,6 +163,7 @@ def command_init(args: argparse.Namespace) -> None:
         "latest_release": latest_release,
         "baselines": baselines,
         "verification_commands": verification_commands,
+        "implementation_roots": implementation_roots,
         "files": [
             {
                 "path": relative(repo, path),

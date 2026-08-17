@@ -6,6 +6,7 @@ versioning:
 verification:
   commands:
     - "true"
+implementation_roots: [src]
 baselines:
   glossary:
     status: documented

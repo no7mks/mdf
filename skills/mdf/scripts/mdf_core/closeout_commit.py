@@ -127,7 +127,7 @@ def apply_version_closeout(
             found_in_transitions.append(
                 f"{identifier}: unreleased -> {context['version']}"
             )
-    validation_commands = context["attestation"]["validation_commands"]
+    validation_commands = context["validation_commands"]
     root_evidence = merge_evidence(
         evidence,
         {"commands": validation_commands},
@@ -158,11 +158,6 @@ def apply_version_closeout(
             release_notes=notes,
             evidence=root_evidence,
             verify_command_results=context.get("verify_command_results") or [],
-            semantic_summary=(
-                context["attestation"].get("summary")
-                if isinstance(context.get("attestation"), dict)
-                else None
-            ),
         ),
         encoding="utf-8",
     )

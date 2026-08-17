@@ -22,12 +22,13 @@
    `changes/unreleased/<slug>/CHANGE.md`。对象保持 `ready`，不创建版本目录或
    closeout 根文件。
 4. 内部委托 `audit`：release 执行`全量审阅`；其他分支对本次实现变更与受影响文档
-   执行`范围审阅`。若 audit 有 finding，可修复文档但必须停止；用户复核、commit
-   后再次调用 `$mdf finish`。
+   执行`范围审阅`。范围审阅必须传入本节计算的精确实现和文档路径。若 audit 有
+   finding，或用户未当场确认其 warning 与语义摘要，可修复文档但必须停止；用户复核、
+   commit 后再次调用 `$mdf finish`。
 5. release/hotfix 在 audit 零 finding 后执行版本收口。release 读取并移动全部
    unreleased child Change；hotfix 必须无 unreleased Change，并提供实际结果 JSON。两者
-   都提供规范 `--release-date`、非空 summary 且 `passed: true` 的 semantic attestation；
-   attestation 不得含 `waivers`。用户要求预览时才加 `--dry-run`。
+   都提供规范 `--release-date`。Core 只记录已验证的确定性审计；语义审阅由本次
+   `finish` 中已确认的 audit 负责。用户要求预览时才加 `--dry-run`。
 6. hotfix 的 `--hotfix-change-json` 只允许 body、outcome、ADR、
    `closed_resolutions`、`release_notes`、`breaking` 与 `evidence`；body 非空，三类
    evidence 为字符串列表且合计至少一条，release notes 至少有一条非空类别。Core 注入

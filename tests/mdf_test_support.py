@@ -138,22 +138,8 @@ def fixture_documented_baselines() -> list[str]:
     return result
 
 
-def semantic_attestation_json(**extra: object) -> str:
-    payload = {
-        "semantic": "passed",
-        "finding_count": 0,
-        "summary": "semantic audit completed in test",
-    }
-    payload.update(extra)
-    return json.dumps(payload, ensure_ascii=False)
-
-
 def closeout_cli_args(*extra: str) -> list[str]:
-    return [
-        *extra,
-        "--semantic-attestation-json",
-        semantic_attestation_json(),
-    ]
+    return list(extra)
 
 
 def write_unreleased_change(repo: Path, slug: str) -> None:
@@ -213,13 +199,7 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
                         "fixed_in": version,
                     },
                 ],
-                "audit_attestation": {
-                    "deterministic": "passed",
-                    "semantic": "passed",
-                    "finding_count": 0,
-                    "summary": "semantic audit completed in test",
-                    "validation_commands": ["true"],
-                },
+                "validation_commands": ["true"],
             },
             ensure_ascii=False,
             indent=2,

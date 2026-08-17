@@ -13,6 +13,66 @@ from .textutil import stable_semver
 from .yamlutil import read_frontmatter
 
 
+def implementation_roots(
+    repo: Path, manifest: dict[str, Any], findings: list[Finding]
+) -> list[Path]:
+    raw_roots = manifest.get("implementation_roots")
+    if not isinstance(raw_roots, list) or not raw_roots:
+        add_finding(
+            findings,
+            "manifest.implementation_roots",
+            "implementation_roots must be a non-empty path list",
+            ".mdf/manifest.yaml",
+        )
+        return []
+    roots: list[Path] = []
+    for raw in raw_roots:
+        if (
+            not isinstance(raw, str)
+            or not raw.strip()
+            or Path(raw).is_absolute()
+        ):
+            add_finding(
+                findings,
+                "manifest.implementation_root",
+                "implementation roots must be non-empty repository-relative "
+                "paths",
+                ".mdf/manifest.yaml",
+            )
+            continue
+        path = (repo / raw).resolve()
+        if (
+            not path_stays_in_repo(repo, path)
+            or not path.is_dir()
+            or path.is_symlink()
+        ):
+            add_finding(
+                findings,
+                "manifest.implementation_root",
+                "implementation root must be a regular in-repository directory",
+                raw,
+            )
+            continue
+        if path in roots:
+            add_finding(
+                findings,
+                "manifest.implementation_root_duplicate",
+                "implementation roots must not repeat", raw,
+            )
+            continue
+        if any(
+            path in other.parents or other in path.parents for other in roots
+        ):
+            add_finding(
+                findings,
+                "manifest.implementation_root_overlap",
+                "implementation roots must not overlap", raw,
+            )
+            continue
+        roots.append(path)
+    return roots
+
+
 def validate_manifest(
     repo: Path,
     findings: list[Finding],
@@ -48,6 +108,7 @@ def validate_manifest(
             f"schema_version must be {SCHEMA_VERSION}",
             ".mdf/manifest.yaml",
         )
+    implementation_roots(repo, manifest, findings)
     if manifest.get("state") not in ("initializing", "ready"):
         add_finding(
             findings,

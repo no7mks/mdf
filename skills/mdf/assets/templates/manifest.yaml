@@ -9,6 +9,8 @@ versioning:
 verification:
   commands:
     - "{{NON_EMPTY_VERIFICATION_COMMAND}}"
+implementation_roots:
+  - "{{REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
 baselines:
   glossary:
     status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"

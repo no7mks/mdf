@@ -1,0 +1,3 @@
+# Files or directories that intentionally have no current-fact evidence.
+# Every entry uses a repository-relative path and a non-empty reason.
+ignored: []

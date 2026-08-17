@@ -113,7 +113,6 @@ def render_version_change(
     evidence: dict[str, list[str]] | None = None,
     *,
     verify_command_results: list[dict[str, Any]] | None = None,
-    semantic_summary: str | None = None,
 ) -> str:
     def yaml_list(values: Iterable[str]) -> str:
         return "[" + ", ".join(sorted(values)) + "]"
@@ -254,13 +253,6 @@ def render_version_change(
         + f"- Selected version: `{version}`\n\n"
         + "## Audit\n\n"
         + "- Deterministic full audit: passed (verified by Core).\n"
-        + "- Semantic audit: passed (attested by `$mdf finish`; "
-        + "Core did not independently verify semantics).\n"
-        + (
-            f"- Semantic summary: {semantic_summary}\n"
-            if isinstance(semantic_summary, str) and semantic_summary.strip()
-            else ""
-        )
         + "- Verify commands:\n"
         + "".join(
             (

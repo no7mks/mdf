@@ -75,6 +75,7 @@ def render_manifest(
     latest_release: str | None,
     verification_commands: list[str],
 ) -> str:
+    implementation_roots: list[str],
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",
@@ -88,6 +89,8 @@ def render_manifest(
         "verification:",
         "  commands:",
         *[f"    - {yaml_quote(command)}" for command in verification_commands],
+        "implementation_roots:",
+        *[f"  - {yaml_quote(root)}" for root in implementation_roots],
         "baselines:",
     ]
     for name in BASELINES:
@@ -139,6 +142,7 @@ def init_files(
     verification_commands: list[str],
 ) -> dict[Path, str]:
     files = {
+    implementation_roots: list[str],
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
             latest_release,
@@ -146,9 +150,17 @@ def init_files(
         )
     }
     docs_index = repo / "docs" / "index.md"
+            implementation_roots,
     if not docs_index.exists():
         files[docs_index] = render_docs_index(baselines)
     changelog = repo / "CHANGELOG.md"
+    ignore = repo / ".mdf" / "audit-ignore.yaml"
+    if not ignore.exists():
+        files[ignore] = template_text("audit-ignore.yaml", "ignored: []\n")
+    for root in implementation_roots:
+        path = repo / root / ".gitkeep"
+        if not path.exists():
+            files[path] = ""
     if not changelog.exists():
         files[changelog] = template_text(
             "changelog.md",

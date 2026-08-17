@@ -31,7 +31,7 @@ Proposal、Bug 和 Change，并以 `manifest` 约束`validation`与发布状态�
 | `doc review` | 修订单个 active Proposal 或 Bug |
 | `doc archive` | 归档 closed Proposal 或 Bug |
 | `finish` | 按 Gitflow 分支完成文档收口 |
-| `audit` | 审阅当前文档与实现是否相符 |
+| `audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `grill <议题>` | 逐题压力测试计划、决策或想法 |
 
 裸 `$mdf`、裸 `$mdf doc`、裸 `$mdf codewiki` 或未知意图时，只展示本表和调用示例，

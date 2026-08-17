@@ -29,6 +29,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `doctor` | 仓库状态 |
 | `init` | 初始化写入 |
 | `validate` | 确定性校验 |
+| `audit` | 确定性审计 |
 | `make-id` | 对象 ID |
 | `make-jot-id` | Jot ID |
 | `branch` | 分支解析 |
@@ -71,6 +72,25 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 `--scope` 可为 `targeted`（默认）或 `full`。两者都校验 MDF 确定性契约；
 `full` 额外执行全量检查。存在 finding 时仍输出完整 JSON 结果，
 但以状态码 `2` 失败。
+
+### `audit`
+
+```bash
+python3 skills/mdf/scripts/mdf.py audit --repo /path/to/repository
+```
+
+全量审计遍历 manifest 的 `implementation_roots` 与全部当前事实文档，输出实现范围、
+文档—`evidence` 映射、ignore 匹配、warnings 和 findings。未被 evidence 覆盖的实现
+文件是 warning，不会令命令失败；结构、范围、证据与 ignorelist 错误是 finding，并以
+状态码 `2` 失败。它不执行 `verification.commands`，不判断文本语义，也不写入文件。
+
+范围审计使用精确路径清单：
+
+```bash
+python3 skills/mdf/scripts/mdf.py audit --repo /path/to/repository \
+  --scope paths --implementation-path src/service.py \
+  --document-path docs/system/interfaces/api.md
+```
 
 ### `make-id`
 
@@ -121,6 +141,7 @@ python3 skills/mdf/scripts/mdf.py semver-check \
 python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   --latest-release 1.2.3 \
   --verification-command "python3 -m pytest -q" \
+  --implementation-root src \
   --baseline 'glossary=documented' \
   --baseline 'product_reference=documented' \
   --baseline 'system_boundary=documented' \
@@ -134,6 +155,8 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
 仅接受 Git 根目录，且远端默认分支不能是 `main`。`--latest-release` 为稳定
 SemVer 或 `none`。必须提供 glossary、product_reference、system_boundary、
 architecture、interfaces、data、operations、deviations 这八项 baseline。
+`--implementation-root` 可重复，默认 `src`；每个根目录都会写入 manifest，并在首次
+初始化时建立为空目录。
 每项格式为 `NAME=documented[:仓库相对路径]` 或
 `NAME=not_applicable:原因`。
 至少提供一次 `--verification-command`；可重复提供。没有业务检查的空仓库可使用
@@ -172,16 +195,13 @@ python3 skills/mdf/scripts/mdf.py move-change --repo /path/to/repository \
 
 ```bash
 python3 skills/mdf/scripts/mdf.py release-closeout \
-  --repo /path/to/repository --release-date 2026-08-04 \
-  --semantic-attestation-json \
-  '{"semantic":"passed","finding_count":0,"summary":"已完成审阅"}' \
-  --dry-run
+  --repo /path/to/repository --release-date 2026-08-04 --dry-run
 ```
 
 仅接受 `release/<version>` 或 `hotfix/<version>` 当前分支；要求 Git 根、
 clean worktree、`manifest.state: ready` 与 full validation 零 finding。
-必须提供 `--release-date` 和不含 `waivers` 的语义 attestation JSON，其中
-`semantic` 为 `passed`、`finding_count` 为 `0`，并有非空 `summary`。
+必须提供 `--release-date`。Core 只验证确定性审计；同次 `$mdf finish` 的语义审阅
+与用户确认属于 intent 的职责。
 
 release 会从所有 `changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
 提供 `--hotfix-change-json`。可用 `--closures-json` 覆盖或补充收口结果，
@@ -227,5 +247,5 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 `finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 
-`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是
+`audit`、`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是
 intent 和测试的确定性基础，不是面向最终用户的直接产品入口。

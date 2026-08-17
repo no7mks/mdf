@@ -1,7 +1,7 @@
 # Audit
 
 可由同一次 `$mdf init`、`$mdf finish` 内部委托。它只读，不写入、移动、提交或
-生成持久报告。
+生成持久报告，也不执行 `verification.commands`。
 
 完整读取 `intents/common.md` 与 `references/repository-contract.md`。
 
@@ -25,17 +25,23 @@
 
 ## 审阅步骤
 
-1. 从文档到实现：对范围内每份`当前事实文档`执行`事实复核`，检查陈述是否匹配
+1. 先调用 `audit` CLI。全量审阅不带路径；范围审阅传入调用方已计算的精确实现与
+   当前事实文档路径。CLI 输出范围、文档—`evidence` 映射、ignore 匹配、warnings
+   和确定性 findings。任何确定性 finding 一律停止。
+2. 从文档到实现：对 CLI 列出的范围内每份`当前事实文档`执行`事实复核`，检查陈述是否匹配
    当前 checkout 的代码、配置、schema、测试或生成物，且每项陈述都有有效
    `evidence`。
-2. 从实现到文档：检查范围内的产品行为、系统边界、架构组件、接口、数据与运维
+3. 从实现到文档：检查 CLI 列出的实现范围内的产品行为、系统边界、架构组件、接口、数据与运维
    实现是否已有`当前事实文档`。报告未记录的实现、过时或错误陈述、无法验证的
    `evidence`，以及把计划、候选或调研结论写成当前事实的内容。
-3. 运行 `full validation`。`$mdf init` 的内部委托只允许
+4. 审阅 CLI 的每条 warning（未被 `evidence` 引用且未被 ignorelist 覆盖的实现文件）。
+   warning 不是 finding，但必须列入会话摘要并由用户当场确认。
+5. 运行 `full validation`。它只做确定性契约校验，不运行验证命令。`$mdf init` 的内部委托只允许
    `manifest.initializing` finding；初始化前必须已写入非空验证命令，其他 finding
    一律报告。
-4. 返回会话内结构化摘要：审阅类型、实现范围、文档范围、已复核文档、语义
-   findings、`validation` findings 与未触及理由。
+6. 返回会话内结构化摘要：审阅类型、实现范围、文档范围、映射、warnings、已复核
+   文档、语义 findings、`validation` findings 与未触及理由。零 finding 后必须由用户
+   当场确认才可称审阅通过；该确认不会跨调用复用。
 
 `audit` 不检查 Gitflow 分支、变更 diff、Proposal、Bug、Change、release 输入、
 closeout 或 merge 条件；这些属于 `$mdf finish` 的`交付前检查`。

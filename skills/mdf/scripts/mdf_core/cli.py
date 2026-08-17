@@ -14,6 +14,7 @@ from .commands_misc import (
     command_semver,
     command_validate,
 )
+from .audit import command_audit
 from .commands_release import command_release_closeout
 from .errors import MDFError
 from .gitflow import command_finish_gitflow, command_start
@@ -42,6 +43,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         required=True,
     )
+    init.add_argument(
+        "--implementation-root", action="append", default=[]
+    )
     init.set_defaults(func=command_init)
 
     validate = subparsers.add_parser("validate")
@@ -50,6 +54,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--scope", choices=("targeted", "full"), default="targeted"
     )
     validate.set_defaults(func=command_validate)
+
+    audit = subparsers.add_parser("audit")
+    audit.add_argument("--repo", required=True)
+    audit.add_argument("--scope", choices=("full", "paths"), default="full")
+    audit.add_argument("--implementation-path", action="append", default=[])
+    audit.add_argument("--document-path", action="append", default=[])
+    audit.set_defaults(func=command_audit)
 
     make_id = subparsers.add_parser("make-id")
     make_id.add_argument(
@@ -92,7 +103,6 @@ def build_parser() -> argparse.ArgumentParser:
     closeout.add_argument("--closures-json")
     closeout.add_argument("--deferred-acceptance-json")
     closeout.add_argument("--hotfix-change-json")
-    closeout.add_argument("--semantic-attestation-json")
     closeout.add_argument("--dry-run", action="store_true")
     closeout.set_defaults(func=command_release_closeout)
 

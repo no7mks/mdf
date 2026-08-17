@@ -164,43 +164,6 @@ def derive_closeout_spec(
             code="invalid_closeout_spec",
         )
     commands = manifest_verification_commands(manifest)
-    semantic = _json_argument(
-        getattr(args, "semantic_attestation_json", None),
-        name="--semantic-attestation-json",
-        default=None,
-    )
-    if semantic is None:
-        raise MDFError(
-            "必须提供 --semantic-attestation-json",
-            code="invalid_closeout_spec",
-        )
-    if not isinstance(semantic, dict):
-        raise MDFError(
-            "--semantic-attestation-json 必须是对象",
-            code="invalid_closeout_spec",
-        )
-    if "waivers" in semantic:
-        raise MDFError(
-            "语义 attestation 禁止 waivers 字段",
-            code="invalid_closeout_spec",
-            details={"attestation": semantic},
-        )
-    if (
-        semantic.get("semantic") != "passed"
-        or semantic.get("finding_count") != 0
-    ):
-        raise MDFError(
-            "语义 attestation 必须声明 semantic 为 passed 且 finding_count 为 0",
-            code="audit_not_passed",
-            details={"attestation": semantic},
-        )
-    summary = semantic.get("summary")
-    if not isinstance(summary, str) or not summary.strip():
-        raise MDFError(
-            "语义 attestation 必须提供非空 summary",
-            code="invalid_closeout_spec",
-            details={"attestation": semantic},
-        )
     return {
         "schema_version": 2,
         "mode": mode,
@@ -211,13 +174,7 @@ def derive_closeout_spec(
         "closures": closures,
         "deferred_acceptance": acceptance,
         "hotfix_change": hotfix_change,
-        "audit_attestation": {
-            "deterministic": "passed",
-            "semantic": "passed",
-            "finding_count": 0,
-            "validation_commands": commands,
-            "summary": summary,
-        },
+        "validation_commands": commands,
     }
 
 
@@ -254,7 +211,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
 
     command_results = run_verify_commands(
         repo,
-        context["attestation"]["validation_commands"],
+        context["validation_commands"],
     )
     ensure_clean(repo)
     spec["verify_command_results"] = command_results
@@ -280,9 +237,9 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             "semver": result["semver"],
             "rewrites": result["rewrites"],
             "verification": {
-                "commands": context["attestation"]["validation_commands"],
+                "commands": context["validation_commands"],
                 "results": command_results,
             },
-            "audit_attestation": context["attestation"],
+            "audit": {"deterministic": "passed"},
         }
     )

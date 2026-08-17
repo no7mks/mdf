@@ -6,7 +6,6 @@ from .closeout_validate import (
     CLOSURE_RESOLUTIONS,
     require_exact_keys,
     require_spec_key,
-    validate_closeout_attestation,
 )
 from .errors import MDFError
 from .gitutil import current_branch
@@ -162,7 +161,19 @@ def validate_closeout_shape(
             )
         closure_ids.add(identifier)
         closures.append(dict(closure))
-    attestation = validate_closeout_attestation(spec.get("audit_attestation"))
+    validation_commands = require_spec_key(spec, "validation_commands")
+    if (
+        not isinstance(validation_commands, list)
+        or not validation_commands
+        or any(
+            not isinstance(command, str) or not command.strip()
+            for command in validation_commands
+        )
+    ):
+        raise MDFError(
+            "validation_commands 必须是非空字符串列表",
+            code="invalid_closeout_spec",
+        )
     return {
         "mode": mode,
         "version": version,
@@ -174,7 +185,7 @@ def validate_closeout_shape(
         "hotfix": None,
         "hotfix_change": spec.get("hotfix_change"),
         "closures": closures,
-        "attestation": attestation,
+        "validation_commands": list(validation_commands),
         "deferred_acceptance": spec.get("deferred_acceptance", {}),
         "verify_command_results": spec.get("verify_command_results") or [],
     }

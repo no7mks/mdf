@@ -205,50 +205,6 @@ def require_spec_key(spec: dict[str, Any], key: str) -> Any:
     return spec[key]
 
 
-def validate_closeout_attestation(raw: Any) -> dict[str, Any]:
-    attestation = require_exact_keys(
-        raw,
-        {
-            "deterministic",
-            "semantic",
-            "finding_count",
-            "validation_commands",
-            "summary",
-        },
-        set(),
-        "audit_attestation",
-    )
-    if (
-        attestation["deterministic"] != "passed"
-        or attestation["semantic"] != "passed"
-        or attestation["finding_count"] != 0
-    ):
-        raise MDFError(
-            "release closeout 要求确定性与语义 attestation 均为零 finding",
-            code="audit_not_passed",
-        )
-    commands = attestation["validation_commands"]
-    if (
-        not isinstance(commands, list)
-        or not commands
-        or any(
-            not isinstance(command, str) or not command.strip()
-            for command in commands
-        )
-    ):
-        raise MDFError(
-            "audit_attestation.validation_commands 必须是非空字符串列表",
-            code="invalid_closeout_spec",
-        )
-    summary = attestation["summary"]
-    if not isinstance(summary, str) or not summary.strip():
-        raise MDFError(
-            "audit_attestation.summary 必须是非空字符串",
-            code="invalid_closeout_spec",
-        )
-    return attestation
-
-
 def run_verify_commands(
     repo: Path, commands: list[str]
 ) -> list[dict[str, Any]]:

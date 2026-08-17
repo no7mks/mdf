@@ -128,6 +128,21 @@ verification:
 
 `initializing` 与 `ready` 都要求非空字符串列表。初始化时通过 CLI 的
 `--verification-command` 提供；没有业务检查的空仓库可使用 `git diff --check`。
+`implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、
+不为符号链接且位于仓库内。`audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
+
+`.mdf/audit-ignore.yaml` 是受 Git 跟踪的 audit 例外清单：
+
+```yaml
+ignored:
+  - path: src/generated
+    reason: "由上游工具受管"
+```
+
+每项只能包含仓库相对的 `path` 与非空 `reason`。路径须位于实现根目录，且必须匹配
+至少一个被跟踪实现文件；目录递归匹配。未被 `evidence` 引用的实现文件会产生
+warning，不阻断 audit，但必须在语义审阅中由用户确认。
+
 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 ## YAML 子集
