@@ -6,7 +6,9 @@
 ## Proposal
 
 Proposal 使用 Markdown + YAML frontmatter：`id`、`type: proposal`、`status`、
-`related`。状态只允许 `draft`、`ready`、`closed`。
+`related`。状态只允许 `draft`、`ready`、`closed`。`related` 是当前 Proposal 的
+直接依赖列表，只能包含其他 `draft` 或 `ready` Proposal 的 ID；不得包含重复、
+自指、循环、Bug、ADR 或已关闭 Proposal。
 
 正文必须包含 Problem、Desired Outcome、Scope、Acceptance Criteria 四个非空章节；
 Scope 必须含非空的 `### In` 与 `### Out` 子节。

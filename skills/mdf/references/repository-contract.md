@@ -28,9 +28,7 @@
 ├── JOTS.md
 ├── CHANGELOG.md
 ├── context/
-│   ├── requirements/
-│   ├── research/
-│   └── planning/
+│   └── research/
 ├── docs/
 │   ├── product/
 │   ├── system/
@@ -77,7 +75,7 @@ Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
 ## 顶层布局
 
 顶层只保留项目入口、构建或包管理或部署配置、仓库治理文件和 MDF 固定项。`context/`
-是 MDF 固定项，保存非 SSOT 的工作上下文。业务实现
+是 MDF 固定项，保存非 SSOT 的调研上下文。业务实现
 应归入 `src/`，测试应归入 `tests/`；生成物应归入名称明确的子目录。生态惯例要求
 其他目录名时，须在 `PROJECT.md` 中说明。
 
@@ -128,6 +126,8 @@ verification:
 
 `initializing` 与 `ready` 都要求非空字符串列表。初始化时通过 CLI 的
 `--verification-command` 提供；没有业务检查的空仓库可使用 `git diff --check`。
+命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
+
 `implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、
 不为符号链接且位于仓库内。`audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
 
@@ -142,8 +142,6 @@ ignored:
 每项只能包含仓库相对的 `path` 与非空 `reason`。路径须位于实现根目录，且必须匹配
 至少一个被跟踪实现文件；目录递归匹配。未被 `evidence` 引用的实现文件会产生
 warning，不阻断 audit，但必须在语义审阅中由用户确认。
-
-命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 ## YAML 子集
 
@@ -174,10 +172,9 @@ checkout 的实际行为，并用代码、配置、schema、测试或生成物�
 ## 工作上下文
 
 `context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
-`context/requirements/` 保存外部需求来源、链接和受控快照；
-`context/research/` 保存本地或外部调研报告、候选方案和对比；
-`context/planning/` 保存已确认的 MVP、Proposal 拆分和依赖。已确认的长期取舍另建
-ADR；实现后的当前行为另写产品或系统`当前事实文档`。
+`context/research/` 保存本地或外部调研报告、候选方案和对比。`doc create` 的来源
+只用于本次创建，不保存为工作上下文。已确认的长期取舍另建 ADR；实现后的当前行为
+另写产品或系统`当前事实文档`。
 
 ## Fact frontmatter：evidence 与 generated
 

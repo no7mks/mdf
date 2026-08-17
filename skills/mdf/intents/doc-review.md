@@ -12,7 +12,7 @@
    只问一个消歧问题。closed 或 archive 对象拒绝修改；既有 `ready` 对象开始评审时
    立即转为 `draft`。取消、暂停或未确认最终内容时保持 `draft`；用户可 commit 后在
    后续调用继续。
-3. 使用内部 grill intent 一次只澄清一个影响成稿的事实或取舍，并先查仓库证据。
+3. 使用内部 grill intent 按轮次澄清影响成稿的事实或取舍，并先查仓库证据。
    Proposal 收敛 Problem、Desired Outcome、Scope 和可验证 Acceptance
    Criteria；Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、
    Regression Evidence Required、`found_in` 与 active severity。

@@ -74,8 +74,8 @@ def render_manifest(
     baselines: dict[str, dict[str, str]],
     latest_release: str | None,
     verification_commands: list[str],
-) -> str:
     implementation_roots: list[str],
+) -> str:
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",
@@ -140,20 +140,16 @@ def init_files(
     *,
     latest_release: str | None,
     verification_commands: list[str],
+    implementation_roots: list[str],
 ) -> dict[Path, str]:
     files = {
-    implementation_roots: list[str],
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
             latest_release,
             verification_commands,
+            implementation_roots,
         )
     }
-    docs_index = repo / "docs" / "index.md"
-            implementation_roots,
-    if not docs_index.exists():
-        files[docs_index] = render_docs_index(baselines)
-    changelog = repo / "CHANGELOG.md"
     ignore = repo / ".mdf" / "audit-ignore.yaml"
     if not ignore.exists():
         files[ignore] = template_text("audit-ignore.yaml", "ignored: []\n")
@@ -161,6 +157,10 @@ def init_files(
         path = repo / root / ".gitkeep"
         if not path.exists():
             files[path] = ""
+    docs_index = repo / "docs" / "index.md"
+    if not docs_index.exists():
+        files[docs_index] = render_docs_index(baselines)
+    changelog = repo / "CHANGELOG.md"
     if not changelog.exists():
         files[changelog] = template_text(
             "changelog.md",
@@ -221,9 +221,7 @@ def init_files(
         repo / "docs" / "product" / "how-to",
         repo / "docs" / "product" / "reference",
         repo / "docs" / "product" / "explanation",
-        repo / "context" / "requirements",
         repo / "context" / "research",
-        repo / "context" / "planning",
         repo / "docs" / "system" / "architecture",
         repo / "docs" / "system" / "interfaces",
         repo / "docs" / "system" / "data",

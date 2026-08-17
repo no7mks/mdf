@@ -32,7 +32,7 @@
 
 1. 用户必须提供一个 existing `jot-` ID。缺失或歧义时一次只问一个消歧问题；读取
    对应完整 marker 条目，并保留其正文作为成稿输入。
-2. 使用内部 grill intent 一次只澄清一个影响成稿的事实或取舍，并先查仓库证据。
+2. 使用内部 grill intent 按轮次澄清影响成稿的事实或取舍，并先查仓库证据。
    收敛 Proposal 的 Problem、Desired Outcome、Scope 与可验证 Acceptance Criteria，
    或 Bug 的 Observed/Expected Behavior、Reproduction、Impact、Regression Evidence
    Required、`found_in` 与 active severity。

@@ -26,7 +26,6 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "start",
         "jot",
         "jot promote",
-        "doc derive",
         "doc create",
         "doc review",
         "doc archive",
@@ -37,7 +36,8 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         assert command in entry
     assert "裸 `$mdf`" in entry
     assert "intents/doc-create.md" in entry
-    assert "intents/doc-derive.md" in entry
+    assert "doc derive" not in entry
+    assert not (skill / "intents" / "doc-derive.md").exists()
     assert "intents/doc-review.md" in entry
     assert "intents/doc-archive.md" in entry
     assert "intents/codewiki-generate.md" in entry
@@ -62,8 +62,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "形成`初始化方案`" in init
     assert "再次显式调用 `$mdf init`" in init
     assert "context/research/" in init
-    assert "context/requirements/" in init
-    assert "$mdf doc derive" in init
+    assert "context/requirements/" not in init
+    assert "$mdf doc create" in init
     assert "## 1. 入口检查" in init
     assert "## 2. 盘点与归类" in init
     assert "## 5. 续办" in init
@@ -95,13 +95,24 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "`evidence`" not in inventory
     assert "仅在外层 intent 入口检查一次" in common
     assert "不得重复 clean 检查而拒绝修改" in common
-    for document in (create, review):
+    for document in (review,):
         assert "object-contract.md" in document
         assert "内部 grill intent" in document
         assert "normal_workflows_allowed" in document
         assert "先在 `draft` 状态运行 `targeted validation`" in document
+    assert "object-contract.md" in create
+    assert "内部 grill intent" in create
+    assert "normal_workflows_allowed" in create
     assert "生成 ID 与规范化文件名" in create
     assert "英文 ASCII kebab-case slug" in create
+    assert "一句话、当前聊天上下文或外部文档" in create
+    assert "一个 Bug 和一个或多个 Proposal" in create
+    assert "不得复制、归档或链接到仓库" in create
+    assert "必填事实仍无法确认时停止，不得写入任何对象" in create
+    assert "只有用户明确确认清单才继续" in create
+    assert "直接依赖的 draft/ready Proposal ID" in create
+    assert "初始状态为 `draft`" in create
+    assert "后续\n   显式调用 `$mdf doc review`" in create
     assert "closed 或 archive 对象拒绝修改" in review
     assert "closed Proposal/Bug" in archive
 
@@ -146,6 +157,8 @@ def test_repository_contract_defines_static_core_terms() -> None:
     assert "`当前事实文档`" in init
     assert "`validation`" in init
     assert "`全量审阅`" in init
+    assert "context/requirements/" not in contract
+    assert "context/planning/" not in contract
 
 
 def test_repository_contract_defines_root_document_responsibilities() -> None:

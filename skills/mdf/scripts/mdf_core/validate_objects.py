@@ -92,21 +92,21 @@ def validate_object(
             add_finding(
                 findings,
                 "object.related",
-                "Proposal related must be a list",
+                "Proposal related must be a list of dependency IDs",
                 rel,
             )
         elif len(related) != len(set(map(str, related))):
             add_finding(
                 findings,
                 "object.related_duplicate",
-                "related must not contain duplicate IDs",
+                "Proposal dependencies must not contain duplicate IDs",
                 rel,
             )
     elif "related" in metadata:
         add_finding(
             findings,
             "bug.related_forbidden",
-            "Bug 不得声明通用 related；请使用 duplicate_of",
+            "Bug 不得声明 Proposal related；请使用 duplicate_of",
             rel,
         )
 

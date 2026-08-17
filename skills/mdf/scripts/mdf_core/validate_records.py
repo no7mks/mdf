@@ -67,6 +67,7 @@ def validate_adrs(repo: Path, findings: list[Finding]) -> None:
 def validate_record_references(repo: Path, findings: list[Finding]) -> None:
     known: set[str] = set()
     identifier_paths: dict[str, Path] = {}
+    proposals: dict[str, dict] = {}
     object_paths: list[Path] = []
     for kind in ("proposal", "bug"):
         for path in iter_object_files(repo, kind):
@@ -89,6 +90,8 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                     )
                 else:
                     identifier_paths[identifier] = path
+                    if metadata.get("type") == "proposal":
+                        proposals[identifier] = metadata
                 known.add(identifier)
     adr_root = repo / "docs" / "adr"
     if adr_root.is_dir():
@@ -99,24 +102,20 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
             if match:
                 known.add(f"adr-{match.group(1)}")
 
+    validate_proposal_dependencies(
+        repo,
+        known,
+        proposals,
+        identifier_paths,
+        findings,
+    )
+
     for path in object_paths:
         try:
             metadata, _ = read_frontmatter(path)
         except MDFError:
             continue
-        if metadata.get("type") == "proposal":
-            related = metadata.get("related")
-            if not isinstance(related, list):
-                continue
-            for identifier in related:
-                if not isinstance(identifier, str) or identifier not in known:
-                    add_finding(
-                        findings,
-                        "object.related_missing",
-                        f"Unknown related record: {identifier}",
-                        relative(repo, path),
-                    )
-        elif metadata.get("resolution") == "duplicate":
+        if metadata.get("resolution") == "duplicate":
             identifier = metadata.get("id")
             primary = metadata.get("duplicate_of")
             if not isinstance(primary, str) or primary not in known:
@@ -234,3 +233,90 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                             "Change outcomes; use its canonical Bug ID",
                             relative(repo, path),
                         )
+
+
+def validate_proposal_dependencies(
+    repo: Path,
+    known: set[str],
+    proposals: dict[str, dict],
+    identifier_paths: dict[str, Path],
+    findings: list[Finding],
+) -> None:
+    dependencies: dict[str, set[str]] = {}
+    for identifier, metadata in proposals.items():
+        path = identifier_paths[identifier]
+        rel = relative(repo, path)
+        related = metadata.get("related")
+        if not isinstance(related, list):
+            continue
+        dependencies[identifier] = set()
+        for dependency in related:
+            if not isinstance(dependency, str):
+                add_finding(
+                    findings,
+                    "proposal.depends_on_type",
+                    "Proposal related entries must be Proposal IDs",
+                    rel,
+                )
+                continue
+            if dependency == identifier:
+                add_finding(
+                    findings,
+                    "proposal.depends_on_self",
+                    "A Proposal cannot depend on itself",
+                    rel,
+                )
+                continue
+            target = proposals.get(dependency)
+            if target is None:
+                code = (
+                    "object.related_missing"
+                    if dependency not in known
+                    else "proposal.depends_on_type"
+                )
+                add_finding(
+                    findings,
+                    code,
+                    "Proposal dependency must be an active Proposal: "
+                    f"{dependency}",
+                    rel,
+                )
+                continue
+            if target.get("status") not in {"draft", "ready"}:
+                add_finding(
+                    findings,
+                    "proposal.depends_on_inactive",
+                    f"Proposal dependency must be draft or ready: {dependency}",
+                    rel,
+                )
+                continue
+            dependencies[identifier].add(dependency)
+    for identifier in sorted(cyclic_proposals(dependencies)):
+        add_finding(
+            findings,
+            "proposal.depends_on_cycle",
+            "Proposal dependencies must not form a cycle",
+            relative(repo, identifier_paths[identifier]),
+        )
+
+
+def cyclic_proposals(dependencies: dict[str, set[str]]) -> set[str]:
+    state: dict[str, int] = {}
+    stack: list[str] = []
+    cycles: set[str] = set()
+
+    def visit(identifier: str) -> None:
+        state[identifier] = 1
+        stack.append(identifier)
+        for dependency in sorted(dependencies.get(identifier, set())):
+            if state.get(dependency) == 1:
+                cycles.update(stack[stack.index(dependency) :])
+            elif state.get(dependency, 0) == 0:
+                visit(dependency)
+        stack.pop()
+        state[identifier] = 2
+
+    for identifier in sorted(dependencies):
+        if state.get(identifier, 0) == 0:
+            visit(identifier)
+    return cycles
