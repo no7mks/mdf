@@ -1,62 +1,60 @@
 # Finish
 
-不要自动 commit。
+绝不自动 commit。
 
 完整读取 `intents/common.md`、`intents/audit.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
-## 交付前检查
+## 决策树
 
-1. 运行 `doctor` 与 `branch`。`manifest` 非 `ready`、detached HEAD 或非 Gitflow
-   分支均停止。分支只可为 `feature/*`、`bugfix/*`、`release/<semver>`、
-   `hotfix/<semver>`。
-2. 在任何写入前，按分支计算交付范围：feature/bugfix 使用 `develop...HEAD`，
-   hotfix 使用 `master...HEAD`；release 要求本地 `develop`。检查该范围涉及的代码、
-   配置、schema、测试、`当前事实文档`、Proposal、Bug 与 Change，并识别需要更新
-   的`当前事实文档`。这是`交付前检查`，不是 `audit`。
-3. feature/bugfix：需要迁入仓库内既有材料时，要求用户明确给出来源目录；展示来源、
-   `changes/unreleased/<slug>` 目标及链接重写，并取得确认后才以 `move-change`
-   迁入。来源目录名的 slug 必须等于分支 slug，且不得含符号链接；目标冲突、来源含有
-   目标或非 canonical `CHANGE.md` 时停止。没有既有材料时创建最小 Change 目录。完成
-   必要的`当前事实文档`修复与
-   `changes/unreleased/<slug>/CHANGE.md`。对象保持 `ready`，不创建版本目录或
-   closeout 根文件。
-4. 内部委托 `audit`：release 执行`全量审阅`；其他分支对本次实现变更与受影响文档
-   执行`范围审阅`。范围审阅必须传入本节计算的精确实现和文档路径。若 audit 有
-   finding，或用户未当场确认其 warning 与语义摘要，可修复文档但必须停止；用户复核、
-   commit 后再次调用 `$mdf finish`。
-5. release/hotfix 在 audit 零 finding 后执行版本收口。release 读取并移动全部
-   unreleased child Change；hotfix 必须无 unreleased Change，并提供实际结果 JSON。两者
-   都提供规范 `--release-date`。Core 只记录已验证的确定性审计；语义审阅由本次
-   `finish` 中已确认的 audit 负责。用户要求预览时才加 `--dry-run`。
-6. hotfix 的 `--hotfix-change-json` 只允许 body、outcome、ADR、
-   `closed_resolutions`、`release_notes`、`breaking` 与 `evidence`；body 非空，三类
-   evidence 为字符串列表且合计至少一条，release notes 至少有一条非空类别。Core 注入
-   `change_kind` 与 `source_branch`；未知字段、空字符串或缺失必填字段均停止。
-7. 调用 `release-closeout` 时，`--closures-json` 覆盖每个 child Change 声明的
-   outcome，并可补录未写入 child Change 的 Proposal/Bug。每个 `ready` 且
-   `found_in: unreleased` 的 Bug 必须分类：`fixed` 关闭并写 `fixed_in`；`closed`
-   只写非 fixed 终态；`deferred` 保持 `ready`。critical 只能 `fixed`；major
-   deferred/wont-fix 必须有用户接受、理由和 follow-up；duplicate 不进入 outcome。
-   canonical 与 duplicate 作为一个 archive group 一并归档。
-8. 版本根 Change 聚合 child Change 的 outcomes 与 `evidence`；每类 evidence 按首次
-   出现顺序去重，并追加 `manifest.verification.commands`。preview 不执行命令；apply
-   在目标仓库执行命令后必须保持 clean worktree，随后写入。失败现场保留给用户检查。
-
-## Gitflow 合并续办
-
-若本次写入了`当前事实文档`或 Change，展示结果、验证通过后停止；用户复核并 commit，再次
-显式调用 `$mdf finish`。续办时调用：
-
-```bash
-python3 "$MDF_ROOT/scripts/mdf.py" finish-gitflow --repo "$REPO_ROOT"
+```text
+doctor + Gitflow 分支 → 交付范围与当前事实检查 → feature/bugfix：Change + 范围 audit
+                                             └→ release：全量 audit；hotfix：范围 audit
+→ 有写入或 audit 未确认？是：用户复核、commit、重调；否 → finish-gitflow
 ```
 
-CLI 先 fetch，并要求当前源分支及所有参与的 master/develop 分支与 upstream 完全
-一致。feature/bugfix 以 no-ff 合并到 develop；release/hotfix 以 no-ff 合并到
-master，再以 no-ff 将 master 合并到 develop。release/hotfix 创建带注释的
-`v<semver>` tag。随后以原子 push 推送目标分支和 tag、删除远端源分支，并删除本地
-源分支。
+## 工作流（唯一执行契约）
 
-冲突时 CLI 立即 abort 并恢复 merge 前状态，不推送、不删分支。询问用户如何继续，
-并建议由 MDF 分析和解决；涉及写入时仍须复核、commit 后再次调用 finish。
+## 交付前检查
+
+1. **脚本**；运行 `doctor` 与 `branch`；证据：manifest `ready`、非 detached、Gitflow
+   分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或 `hotfix/<semver>`；
+   通过 → 2；失败 → 停止。
+2. **约束**；写入前计算交付范围：feature/bugfix 为 `develop...HEAD`，hotfix 为
+   `master...HEAD`，release 要求本地 develop；检查范围内代码、配置、schema、测试、
+   当前事实、Proposal、Bug、Change，并识别应更新的当前事实文档；证据：精确实现与文档
+   路径；通过 → 3；失败 → 停止。这是交付前检查，不是 audit。
+3. **约束**；feature/bugfix 迁入既有材料时，要求用户提供来源目录并确认来源、目标
+   `changes/unreleased/<slug>` 与链接重写；证据：确认与合法源；通过 → 4；失败 → 无
+   材料时创建最小 Change 目录，否则停止。源 slug 须等于分支 slug 且不得含符号链接；
+   目标冲突、来源含有目标或非 canonical `CHANGE.md` 时停止；只可用 `move-change`。补齐必要当前事实和 child
+   Change；对象保持 ready，不建版本目录或 closeout 根文件。
+4. **约束**；内部委托 `audit`：release 执行`全量审阅`，其他分支仅审阅步骤 2 的精确范围；
+   证据：零 finding、用户当场确认 warning 和语义摘要；通过 → feature/bugfix 到 9，
+   release/hotfix 到 5；失败 → 可修复文档但停止，要求用户复核、commit 后重调 finish。
+5. **约束**；release 读取并移动全部 unreleased child Change；hotfix 必须没有 child
+   Change 且提供实际结果 JSON；两者均提供规范 `--release-date`，仅用户要求预览时加
+   `--dry-run`；证据：版本收口输入；通过 → release 到 7，hotfix 到 6；失败 → 停止。
+   Core 仅记录已验证的确定性审计，语义审阅使用本次已确认 audit。
+6. **约束**；验证 hotfix `--hotfix-change-json` 只含 body、outcome、ADR、
+   `closed_resolutions`、`release_notes`、`breaking`、`evidence`；body 非空，
+   三类 evidence 字符串列表合计至少一条，release notes 至少一项非空；证据：有效 JSON；
+   通过 → 7；失败 → 未知字段、空字符串或缺字段时停止。Core 注入 `change_kind` 与
+   `source_branch`。
+7. **约束**；以 `--closures-json` 覆盖每个 child Change outcome，并可补录未写 child
+   Change 的对象；对每个 ready 且 `found_in: unreleased` 的 Bug 分类：fixed 关闭并写
+   `fixed_in`，closed 仅写非 fixed 终态，deferred 保持 ready；critical 仅 fixed；
+   major deferred/wont-fix 要用户接受、理由和 follow-up；duplicate 不进 outcome；
+   canonical 与 duplicate 一并归档；证据：完整 closures；通过 → 8；失败 → 停止。
+8. **脚本**；调用 `release-closeout`；版本根 Change 聚合 child outcomes/evidence，
+   evidence 按首次出现顺序去重并追加 manifest 验证命令；apply 在目标仓库执行命令且必须
+   保持 clean 后写入，preview 不执行命令；证据：命令结果和 clean；通过 → 9；
+   失败 → 保留现场供用户检查。
+9. **约束**；本次写入当前事实或 Change 时展示结果、验证并停止，要求用户复核、commit
+   后重调；否则调用 `finish-gitflow --repo "$REPO_ROOT"`；证据：已提交的复查结果；
+   通过 → 10；失败 → 停止。
+10. **脚本**；CLI fetch 后要求源分支及参与的 master/develop 与 upstream 完全一致；
+    feature/bugfix no-ff 合并到 develop；release/hotfix no-ff 合并到 master 后 no-ff 合并
+    master 到 develop，并创建注释 `v<semver>` tag，原子 push、删远端及本地源分支；
+    证据：合并、tag 和推送结果；通过 → 结束；失败 → 冲突时 CLI abort 并恢复 merge 前状态，
+    不推送/删分支；询问用户如何继续，并建议由 MDF 分析解决；写入仍需复核、commit 后重调。

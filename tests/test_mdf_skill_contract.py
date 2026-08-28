@@ -94,7 +94,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
     assert "仅在外层 intent 入口检查一次" in common
-    assert "不得重复 clean 检查而拒绝修改" in common
+    assert "不得重复" in common
+    assert "clean 检查而拒绝修改" in common
     for document in (review,):
         assert "object-contract.md" in document
         assert "内部 grill intent" in document
@@ -106,7 +107,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "生成 ID 与规范化文件名" in create
     assert "英文 ASCII kebab-case slug" in create
     assert "一句话、当前聊天上下文或外部文档" in create
-    assert "一个 Bug 和一个或多个 Proposal" in create
+    assert "偏差建 Bug" in create
+    assert "待实现意图建一个或多个 Proposal" in create
     assert "不得复制、归档或链接到仓库" in create
     assert "必填事实仍无法确认时停止，不得写入任何对象" in create
     assert "只有用户明确确认清单才继续" in create
@@ -123,7 +125,7 @@ def test_jot_intent_preserves_raw_input_until_promotion() -> None:
     assert "make-jot-id" in jot
     assert "JOTS.md" in jot
     assert "完整 marker 条目" in jot
-    assert "draft 和原 Jot" in jot
+    assert "保留 draft、原 Jot" in jot
     assert "同一个独立 commit" in jot
 
 

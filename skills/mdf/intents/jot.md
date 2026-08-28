@@ -1,45 +1,39 @@
 # Jot
 
-不要自动 commit。
+`$mdf jot` 追加一条 Jot；`$mdf jot promote` 提升一条既有 Jot；不接受其他子动作，
+且绝不自动 commit。
 
 完整读取 `intents/common.md`、`intents/grill.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
-`$mdf jot` 追加一条 Jot；`$mdf jot promote` 提升一条既有 Jot。不要接受其他子动作。
+## 决策树
 
-## 1. 入口检查
+```text
+doctor → 可用？否：停止；是 → jot：追加并校验
+                         └→ promote：选一个 ID → grill → 确认 → 建对象 → 校验与移除
+```
 
-1. 解析目标 Git 根 `REPO_ROOT` 后运行 `doctor`。只有
-   `normal_workflows_allowed` 为 `true` 才继续；`manifest` 未就绪时提示
-   `$mdf init`，其他 findings 则报告并停止。
-2. 同一次调用只处理一个 Jot。保留 Jot 原文；不得把它重写为当前事实、Proposal、
-   Bug 或任务。
+## 工作流（唯一执行契约）
 
-## 2. 记录
-
-仅在用户调用 `$mdf jot` 时执行。
-
-1. 要求用户提供要记录的内容；缺失时一次只问一个问题。内容可以是想法、优化、
-   小问题、观察或其他未定性信息，不要求先判断类型、优先级或可行性。
-2. 调用 `make-jot-id` 生成 ID。为该条目生成简短标题，但正文必须保留用户输入的
-   原始含义和细节。在 `JOTS.md` 末尾追加完整 marker 条目。
-3. 运行 `targeted validation`。成功后展示新增条目与 diff，提醒用户自行复查并
-   commit；失败时保留现场并报告 findings。
-
-## 3. 提升
-
-仅在用户调用 `$mdf jot promote` 时执行。
-
-1. 用户必须提供一个 existing `jot-` ID。缺失或歧义时一次只问一个消歧问题；读取
-   对应完整 marker 条目，并保留其正文作为成稿输入。
-2. 使用内部 grill intent 按轮次澄清影响成稿的事实或取舍，并先查仓库证据。
-   收敛 Proposal 的 Problem、Desired Outcome、Scope 与可验证 Acceptance Criteria，
-   或 Bug 的 Observed/Expected Behavior、Reproduction、Impact、Regression Evidence
-   Required、`found_in` 与 active severity。
-3. 展示完整 Proposal 或 Bug draft、确认事实与排除范围。只有用户明确确认才调用
-   `make-id`、写入目标对象，并在 `draft` 状态运行 `targeted validation`。失败时保留
-   draft 和原 Jot；不得删除原 Jot。
-4. draft 校验通过后，将对象转为 `ready`，再从 `JOTS.md` 删除所选 marker 条目，
-   并再次运行 `targeted validation`。任何失败都保留现场并报告 findings；绝不自动
-   commit。成功时展示两个文件的完整 diff，提醒用户将“创建 Proposal/Bug 与移除
-   Jot”提交为同一个独立 commit。
+1. **脚本**；解析 `REPO_ROOT` 并运行 `doctor`；证据：
+   `normal_workflows_allowed: true`；通过 → 按调用进入 2 或 4；失败 → manifest 未就绪时
+   提示 `$mdf init`，其他 findings 报告后停止。同次仅处理一个 Jot，且保留其原文。
+2. **约束**；仅对裸 `$mdf jot` 要求用户提供内容；证据：完整输入；通过 → 3；
+   失败 → 一次只问一个问题。内容可为任何未定性信息，不要求预判类型、优先级或可行性。
+3. **脚本**；调用 `make-jot-id`、生成简短标题、在 `JOTS.md` 末尾追加完整 marker 条目，
+   保留原始含义和细节，再运行 `targeted validation`；证据：新增条目和 diff；
+   通过 → 结束；失败 → 保留现场并报告 findings。
+4. **约束**；仅对 `$mdf jot promote` 要求一个既有 `jot-` ID，读取完整 marker；
+   证据：唯一条目与其正文；通过 → 5；失败 → 一次只问一个消歧问题。
+5. **约束**；先查仓库证据，使用内部 grill intent 按轮次将正文收敛为 Proposal 或 Bug；
+   Proposal 收敛 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；
+   Bug 收敛
+   Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、
+   `found_in` 与 active severity；证据：完整 draft；通过 → 6；失败 → 停止，不得改写 Jot。
+6. **约束**；展示 draft、确认事实与排除范围，并要求用户明确确认；证据：确认；
+   通过 → 7；失败 → 停止，保留 Jot。
+7. **脚本**；调用 `make-id`、写入 draft 对象并运行 `targeted validation`；证据：
+   draft 与首次 validation；通过 → 8；失败 → 保留 draft、原 Jot 与现场，并报告 findings。
+8. **脚本**；将对象转为 `ready`，删除选中 Jot marker，再运行 `targeted validation`；
+   证据：两个文件完整 diff 与两次验证；通过 → 结束；失败 → 保留现场并报告 findings。
+   成功时提醒用户将创建与移除作为同一个独立 commit；绝不自动 commit。

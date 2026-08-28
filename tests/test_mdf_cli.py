@@ -182,7 +182,7 @@ def test_mdf_grill_is_internal_intent_copy():
     assert "展示简明的决策树" in grill
     assert "预计总题量" in grill
     assert "当前题号/总题量" in grill
-    assert "一轮可包含多个\n问题" in grill
+    assert "一轮可包含多个问题" in grill
     assert "查证的事实自行查证" in grill
     assert "不要据此采取行动" in grill
     assert "内部 grill intent" in create

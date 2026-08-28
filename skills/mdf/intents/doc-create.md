@@ -1,29 +1,35 @@
 # Doc Create
 
-不要自动 commit。
-
 完整读取 `intents/common.md`、`intents/grill.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
-1. 解析目标 Git 根 `REPO_ROOT` 后运行 `doctor`。只有
-   `normal_workflows_allowed` 为 `true` 才继续；`manifest` 未就绪时提示
-   `$mdf init`，其他 findings 则报告并停止。
-2. 接收一句话、当前聊天上下文或外部文档作为来源。来源只用于本次创建；除非用户
-   明确要求保留，否则不得复制、归档或链接到仓库。一次只问一个问题，确认来源采用
-   范围及尚不明确的关键事实或取舍。
-3. 根据来源与仓库证据判断对象类型和数量。一个来源可同时包含已观察到的行为偏差和
-   待实现意图，分别创建一个 Bug 和一个或多个 Proposal；多个 Proposal 按可独立
-   交付的范围拆分。
-4. 使用内部 grill intent 按轮次澄清影响成稿的事实或取舍。Proposal 收敛
-   Problem、Desired Outcome、Scope 和可验证 Acceptance Criteria；Bug 收敛
+## 决策树
+
+```text
+doctor → 允许正常流程？否：停止；是 → 来源澄清 → 对象拆分 → grill
+→ 用户确认清单？否：继续澄清；是 → slug/ID → 写 draft → 展示结果
+```
+
+## 工作流（唯一执行契约）
+
+1. **脚本**；解析 `REPO_ROOT` 并运行 `doctor`；证据：
+   `normal_workflows_allowed: true`；通过 → 2；失败 → manifest 未就绪时提示
+   `$mdf init`，其他 findings 报告后停止。
+2. **约束**；接收一句话、当前聊天上下文或外部文档为一次性来源；一次只问一个问题，
+   确认范围、关键事实与取舍；除非用户明确要求保留，不得复制、归档或链接到仓库；
+   证据：确认的来源采用范围；通过 → 3；失败 → 等待澄清。
+3. **约束**；从来源和仓库证据判定对象类型、数量与独立交付边界；偏差建 Bug，
+   待实现意图建一个或多个 Proposal；证据：对象清单；通过 → 4；失败 → 回到 2。
+4. **约束**；使用内部 grill intent 按轮次澄清成稿必要事实；Proposal 收敛
+   Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；Bug 收敛
    Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、
-   `found_in` 与 active severity。必填事实仍无法确认时停止，不得写入任何对象。
-5. 展示拟创建的完整对象清单、每项边界、排除范围和 Proposal 依赖。Proposal 的
-   `related` 只列当前对象直接依赖的 draft/ready Proposal ID；不得记录来源、Bug、
-   ADR、已关闭 Proposal 或无依赖的同批对象。只有用户明确确认清单才继续。
-6. 对每个对象基于已确认语义提出英文 ASCII kebab-case slug。用户确认或修订后，
-   用 CLI `make-id --slug` 生成 ID 与规范化文件名，以相应模板在 `proposals/` 或
-   `bugs/` 写入对象文件，初始状态为 `draft`。
-7. 展示所有 draft、确认事实、排除范围和 Proposal 依赖后结束本 intent。用户在后续
-   显式调用 `$mdf doc review`，并在 `draft` 状态通过 `targeted validation` 后，才可
-   确认转为 `ready`；普通对象不在此流程关闭，也不填 `fulfilled_in`/`fixed_in`。
+   `found_in` 与 active severity；证据：完整必填事实；通过 → 5；失败 → 必填事实仍无法确认时停止，不得写入任何对象。
+5. **约束**；展示对象清单、边界、排除范围、Proposal 依赖；`related` 仅列直接依赖的 draft/ready Proposal ID；
+   证据：只有用户明确确认清单才继续；通过 → 6；失败 → 回到 2 或 4。
+6. **脚本**；为每项提议并确认英文 ASCII kebab-case slug，使用 `make-id --slug`
+   生成 ID 与规范化文件名，并以模板写入 `proposals/` 或 `bugs/`，初始状态为 `draft`；
+   证据：所有 draft；通过 → 7；失败 → 停止并保留现场。
+7. **约束**；展示 draft、确认事实、排除范围和依赖；证据：会话摘要；通过 → 结束；
+   失败 → 停止。后续
+   显式调用 `$mdf doc review`，经 draft targeted validation 后转
+   `ready`；不得关闭普通对象或填写 `fulfilled_in`/`fixed_in`。

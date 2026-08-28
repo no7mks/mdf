@@ -1,47 +1,44 @@
 # Audit
 
-可由同一次 `$mdf init`、`$mdf finish` 内部委托。它只读，不写入、移动、提交或
-生成持久报告，也不执行 `verification.commands`。
+它只读：不写入、移动、提交、生成持久报告或执行 `verification.commands`。
 
 完整读取 `intents/common.md` 与 `references/repository-contract.md`。
 
 ## 审阅类型
 
-- `全量审阅`：从文档和实现两个方向覆盖全部`当前事实文档`与全部产品、系统实现面。
-  任何未触及的目录或生成物都要说明不相关的理由。
-- `范围审阅`：从文档和实现两个方向覆盖调用方给定的实现与文档范围。调用方必须同时
-  给出两类范围；即使未发现受影响的`当前事实文档`，也必须从实现侧审阅，并明确报告
-  没有对应文档的行为或架构。
+- `全量审阅`：从文档和实现两个方向覆盖全部当前事实文档与实现面。
+- `范围审阅`：从文档和实现两个方向覆盖调用方给定的实现与文档范围。
 
-## 调用与状态
+## 决策树
 
-- 用户直接调用 `$mdf audit` 时，执行`全量审阅`。要求 `manifest` 为 `ready`，并在
-  外层 intent 入口检查 clean worktree。
-- `$mdf init` 内部委托时，执行`全量审阅`。允许 `manifest` 为 `initializing`，且
-  不得重复检查 clean worktree。
-- `$mdf finish` 内部委托时，release 执行`全量审阅`；feature、bugfix、hotfix 执行
-  `范围审阅`。后者的范围是`交付前检查`识别出的实现变更和受影响文档，不得重复
-  检查 clean worktree。
+```text
+调用方 → direct/init/finish → 全量或范围审阅 → audit CLI
+→ deterministic finding？是：停止；否 → 双向事实复核 → validation
+→ 零 finding 且用户确认？是：通过；否：报告/停止
+```
 
-## 审阅步骤
+## 工作流（唯一执行契约）
 
-1. 先调用 `audit` CLI。全量审阅不带路径；范围审阅传入调用方已计算的精确实现与
-   当前事实文档路径。CLI 输出范围、文档—`evidence` 映射、ignore 匹配、warnings
-   和确定性 findings。任何确定性 finding 一律停止。
-2. 从文档到实现：对 CLI 列出的范围内每份`当前事实文档`执行`事实复核`，检查陈述是否匹配
-   当前 checkout 的代码、配置、schema、测试或生成物，且每项陈述都有有效
-   `evidence`。
-3. 从实现到文档：检查 CLI 列出的实现范围内的产品行为、系统边界、架构组件、接口、数据与运维
-   实现是否已有`当前事实文档`。报告未记录的实现、过时或错误陈述、无法验证的
-   `evidence`，以及把计划、候选或调研结论写成当前事实的内容。
-4. 审阅 CLI 的每条 warning（未被 `evidence` 引用且未被 ignorelist 覆盖的实现文件）。
-   warning 不是 finding，但必须列入会话摘要并由用户当场确认。
-5. 运行 `full validation`。它只做确定性契约校验，不运行验证命令。`$mdf init` 的内部委托只允许
-   `manifest.initializing` finding；初始化前必须已写入非空验证命令，其他 finding
-   一律报告。
-6. 返回会话内结构化摘要：审阅类型、实现范围、文档范围、映射、warnings、已复核
-   文档、语义 findings、`validation` findings 与未触及理由。零 finding 后必须由用户
-   当场确认才可称审阅通过；该确认不会跨调用复用。
+1. **约束**；确定类型和状态：direct 执行`全量审阅`、manifest 必须 `ready` 且查 clean；
+   init 为全量、允许 `initializing` 且不重查 clean；finish 的 release 为全量，
+   其他分支为调用方给出实现和当前事实文档范围的范围审阅；证据：调用方与范围；
+   通过 → 2；失败 → 停止。
+2. **脚本**；调用 `audit` CLI；全量不带路径，范围使用调用方计算的精确路径；
+   证据：范围、文档—`evidence` 映射、ignore 匹配、warnings、确定性 findings；
+   通过 → 3；失败或有确定性 finding → 停止。
+3. **约束**；从文档到实现执行`事实复核`：复核范围内每份当前事实文档、陈述和 `evidence`；
+   证据：事实复核；通过 → 4；失败 → 记录语义 finding 后继续 4。
+4. **约束**；从实现到文档复核产品行为、系统边界、架构、接口、数据与运维实现；
+   证据：未记录实现、过时/错误陈述、不可验证 evidence 与计划混写 findings；
+   通过 → 5；失败 → 记录语义 finding 后继续 5。
+5. **约束**；逐条审阅 CLI warning；证据：未被 evidence 引用且未被 ignorelist 覆盖的
+   实现文件及用户当场确认；通过 → 6；失败 → 列入会话摘要后继续 6。
+6. **脚本**；运行 `full validation`，不运行验证命令；init 只允许
+   `manifest.initializing` finding；证据：validation findings；通过 → 7；
+   失败 → 报告并停止。
+7. **约束**；返回审阅类型、两类范围、映射、warnings、复核文档、语义/validation
+   findings 与未触及理由；证据：会话摘要和用户当场确认；通过 → 零 finding 时通过；
+   失败 → 不得称审阅通过。该确认不跨调用复用。
 
-`audit` 不检查 Gitflow 分支、变更 diff、Proposal、Bug、Change、release 输入、
-closeout 或 merge 条件；这些属于 `$mdf finish` 的`交付前检查`。
+Audit 不检查 Gitflow 分支、变更 diff、Proposal、Bug、Change、release 输入、closeout 或
+merge 条件；这些属于 `$mdf finish` 的交付前检查。

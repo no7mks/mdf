@@ -1,83 +1,66 @@
 # Init
 
-它将仓库现有材料收敛到 MDF 的当前结构，并在`事实复核`后使 `manifest` 进入
-`ready`。不要自动 commit。
+它将既有材料收敛到当前 MDF 结构，经`当前事实文档`的事实复核后使 `manifest` 进入 `ready`；
+绝不自动 commit。
 
-完整读取 `intents/common.md`、`intents/grill.md`、
+完整读取 `intents/common.md`、`intents/grill.md` 与
 `references/repository-contract.md`。
+
+## 决策树
+
+```text
+clean Git 根 → 默认分支 master？否：用户先改名；是 → 盘点与 grill
+→ 用户确认初始化方案？否：继续澄清；是 → scaffold 与归位 → audit
+→ 当前事实有改动？是：用户复核、commit 后续办；否 → 核对表与确认 → ready
+```
+
+## 工作流（唯一执行契约）
 
 ## 1. 入口检查
 
-1. 在外层 intent 入口确认 worktree clean，解析 Git 根为 `REPO_ROOT`，运行：
-
-   ```bash
-   python3 "$MDF_ROOT/scripts/mdf.py" doctor --repo "$REPO_ROOT"
-   ```
-
-2. 若远端默认分支为 `main`，停止并要求用户先将其改为 `master`；不得自动改名。
-3. 本次写入会使 worktree 变 dirty。用户对中间结果提出反馈时，继续当前流程，
-   不得重复入口检查。
+1. **脚本**；在外层确认 clean、解析 Git 根 `REPO_ROOT` 并运行 `doctor`；检查默认
+   分支；证据：clean、doctor 与默认分支；通过 → 2；失败 → 默认 `main` 时要求用户先
+   改为 `master`，其他 finding 报告后停止。中间反馈继续本次流程，不重查入口。
 
 ## 2. 盘点与归类
 
-1. 盘点全部顶层项目项，区分 MDF 固定项、仓库治理文件、生态所需入口、业务实现、
-   测试、生成物和文档；不得仅按现有目录名或 README 描述直接保留。
-2. 对每个非生态必需且非 MDF 固定的顶层目录，通过内部 grill intent 按轮次决定
-   目录去处或顶层例外。仅含 `.gitkeep` 的占位目录按其未来职责迁移；业务实现目录
-   建议迁入 `src/<目录>`，测试目录建议迁入 `tests/<目录>`。迁移目标已有实际内容时，
-   在同一方案中移除 `.gitkeep`；目标仍为空时保留。不得在未经确认时迁移或删除。
-3. 检查项目原有的全部文档，按仓库契约提出`当前事实文档`、已确认决策和其他材料的
-   归类。符合 CodeWiki 契约的 `docs/repowiki/` 是可选受管生成物，保留在原处且不纳入
-   `当前事实文档`、ADR 或调研分类。此步骤只确定材料去处，不做`事实复核`或事实正确性判断。
-4. 将非事实材料归入契约规定的位置。本地或外部调研材料属于
-   `context/research/`，已确认决策属于 `docs/adr/`。无法分类时一次只询问一个问题。
-5. 通过内部 grill intent 按轮次收敛需用户决定的事项，并从仓库证据收敛八项
-   `基线`、最近稳定版本和非空 `verification.commands`。没有业务检查的空仓库
-   建议使用 `git diff --check`；从未发布时最近稳定版本为 `none`。
-6. `init` 不处理用户的待实现意图。初始化完成后，用户可显式调用
-   `$mdf doc create`。
-7. 形成`初始化方案`：受影响路径、材料的去处、保留内容、顶层允许清单、业务实现与
-   测试目录、拟补字段、`基线`、`验证命令`和预期 `validation`。只有用户明确确认
-   后才可写入。
-
-移动或删除既有内容时，方案必须列出源、目标和无信息损失的理由；不得覆盖既有
-内容。任何配置调整均须重新显式调用 `$mdf init`，不得绕过本 intent 直接改
-`manifest`。
+2. **约束**；盘点全部顶层项目项并检查项目原有的全部文档，区分 MDF 固定项、治理/生态入口、实现、测试、
+   生成物与文档；证据：分类清单；通过 → 3；失败 → 停止并澄清。不得仅凭目录名或 README
+   保留；符合 CodeWiki 契约的 `docs/repowiki/` 留在原处且不纳入当前事实、ADR 或调研分类；
+   此步骤不做`事实复核`。
+3. **约束**；对每个非生态必需且非 MDF 固定的顶层目录，使用内部 grill intent
+   决定去处或顶层例外；本地或外部调研材料归入 `context/research/`，已确认决策归入
+   `docs/adr/`，并从
+   仓库证据收敛八项 `基线`、最近稳定版本与非空 `verification.commands`；
+   证据：逐项决定与验证命令；通过 → 4；失败 → 无法分类时一次只问一个问题。仅含
+   仅含 `.gitkeep` 的占位目录按其未来职责迁移；迁移目标已有实际内容时，
+   在同一方案中移除 `.gitkeep`，否则保留。业务实现目录和测试目录建议迁入
+   `src/<目录>`/`tests/<目录>`，但不得在未经确认时迁移或删除。无业务检查的空仓库建议
+   使用 `git diff --check`；从未发布时最近稳定版本为 `none`。
+4. **约束**；形成`初始化方案`：路径、材料去处、保留内容、顶层允许清单、实现/测试目录、
+   拟补字段、基线、验证命令与预期 `validation`；证据：用户明确确认；通过 → 5；
+   失败 → 回到 2 或 3。移动/删除必须列出源、目标和无信息损失理由，且不得覆盖既有内容。
+   不处理待实现意图；完成后用户可显式 `$mdf doc create`。配置调整必须再次显式调用 `$mdf init`。
 
 ## 3. 落地初始化方案
-
-1. 用户确认后执行 `init`，建立完整 scaffold。需要回退时使用 Git。
-2. `manifest` 保持 `initializing`，并写入初始化方案确认的
-   `verification.commands`。项目原有文档
-   与经确认迁移的顶层项目项仅可按
-   `初始化方案`归位、保留或排除；保留 `AGENTS.md` 的非 MDF 托管块。
-3. 按确认方案处理项目原有文档和顶层项目项，完成材料归位、`当前事实文档`、ADR、
-   `README.md`、`PROJECT.md` 和`验证命令`。在 `PROJECT.md` 记录仅含例外的顶层
-   允许清单及业务实现、测试和生成物目录。按`根文档职责`补齐或修订 `README.md`、
-   `PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md`；若`初始化方案`调整仓库既有结构，
-   审视 `README.md` 的用户和维护者入口、`PROJECT.md` 的维护手册与`当前事实文档`，
-   消除重复或冗余内容。
-4. 停止前逐项核对：每份既有文档和顶层项目项均已归位、保留或获用户明确排除；
-   固定布局完整；`PROJECT.md` 已记录仅含例外的顶层允许清单及目录约定；`README.md`、
-   `PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md` 各自符合`根文档职责`；文档入口可达；
-   没有未说明的遗留文件。
+5. **脚本**；执行 `init` 建立完整 scaffold，保持 manifest `initializing`，写入确认的
+   验证命令，并只按方案归位/保留/排除原材料与顶层项；证据：固定布局、完整归位核对表、
+   `README.md`、`PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md` 各自符合`根文档职责`
+   且入口可达、没有未说明的遗留文件；通过 → 6；失败 → 用 Git 回退并报告。项目原有文档
+   与经确认迁移的顶层项目项只可按方案归位、保留或排除；保留 `AGENTS.md` 非 MDF
+   托管块；完成当前事实文档、ADR、`README.md`、`PROJECT.md` 与验证命令；在
+   `PROJECT.md` 记录仅含例外的顶层允许清单与目录约定。方案调整仓库结构时，审视
+   `README.md` 的用户/维护入口、`PROJECT.md` 的维护手册与当前事实文档，消除重复。
 
 ## 4. 审计当前事实
 
-比较本次调用前后的 `GLOSSARY.md`、`docs/product/**` 与 `docs/system/**`。内部委托
-`audit` 执行`全量审阅`；它执行双向`事实复核`和 `full validation`。此时允许唯一的
-`manifest.initializing` finding。
-
-若任一`当前事实文档`新增或修改，`manifest` 必须保持 `initializing`；展示 audit
-结果与 diff 并停止，要求用户复核、commit 后再次显式调用 `$mdf init`。
+6. **约束**；比较调用前后的 `GLOSSARY.md`、`docs/product/**` 与
+   `docs/system/**`，内部委托 `audit` 执行`全量审阅`；证据：事实复核、diff 与 full validation；
+   通过 → 当前事实有改动时展示结果并停止，要求用户复核、commit 后重调 init；无改动时 7；
+   失败 → 仅允许 `manifest.initializing` finding，其他 finding 报告并停止。
 
 ## 5. 续办
-
-1. 续办时不得再改`当前事实文档`。运行 `full validation`，只接受
-   `manifest.initializing` finding。
-2. 没有其他 finding 时，展示就绪核对表：当前事实复核结果、八项`基线`与
-   `verification.commands`。只有用户明确确认“结束初始化并
-   启用正常工作流”后才改为 `ready`，并再次运行 `full validation`。
-3. 若本次完全未改`当前事实文档`、八项`基线`和非空`验证命令`均可验证，仍须展示
-   核对表并取得该确认后才可执行本节。
-   任何失败均保留现场并报告 findings。
+7. **脚本**；续办时不得改当前事实，运行 full validation；展示当前事实复核、八项基线和
+   `verification.commands` 核对表；证据：只剩 initializing finding 与用户明确“结束初始化
+   并启用正常工作流”确认；通过 → 改为 `ready` 并再次 full validation 后结束；
+   失败 → 保留现场并报告。即使未改当前事实，也须满足八项基线和非空命令并取得确认。
