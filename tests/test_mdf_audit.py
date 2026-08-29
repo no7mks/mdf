@@ -217,8 +217,8 @@ def test_unreleased_sentinel_is_rejected_in_proposal_found_in(
     repo = copy_fixture(tmp_path)
     replace(
         repo / "proposals" / PRP_NAME,
-        "status: ready\nrelated: []",
-        "status: ready\nrelated: []\nfound_in: unreleased",
+        "status: ready\ndepends_on: []",
+        "status: ready\ndepends_on: []\nfound_in: unreleased",
     )
     init_git(repo)
 

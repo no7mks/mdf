@@ -6,9 +6,10 @@
 ## Proposal
 
 Proposal 使用 Markdown + YAML frontmatter：`id`、`type: proposal`、`status`、
-`related`。状态只允许 `draft`、`ready`、`closed`。`related` 是当前 Proposal 的
-直接依赖列表，只能包含其他 `draft` 或 `ready` Proposal 的 ID；不得包含重复、
-自指、循环、Bug、ADR 或已关闭 Proposal。
+`depends_on`。状态只允许 `draft`、`ready`、`closed`。`depends_on` 是当前
+Proposal 的直接依赖列表，只能包含其他 `draft`、`ready` 或
+`closed + fulfilled` Proposal 的 ID；不得包含重复、自指、循环、Bug、ADR、
+缺失对象或其他终态 Proposal。一般关联只在正文中说明，不使用关系 metadata。
 
 正文必须包含 Problem、Desired Outcome、Scope、Acceptance Criteria 四个非空章节；
 Scope 必须含非空的 `### In` 与 `### Out` 子节。
@@ -28,8 +29,9 @@ severity: critical | major | trivial
 found_in: unreleased | <stable-semver>
 ```
 
-Bug 不使用通用 `related`。正文必须包含 Observed Behavior、Expected Behavior、
-Reproduction、Impact 和 Regression Evidence Required。
+Bug 不使用 `depends_on`。一般关联只在正文中说明。正文必须包含
+Observed Behavior、Expected Behavior、Reproduction、Impact 和
+Regression Evidence Required。
 
 `found_in: unreleased` 表示当前未发布线中的稳定关联；它不是 SemVer。`fixed_in`
 只接受稳定 SemVer。

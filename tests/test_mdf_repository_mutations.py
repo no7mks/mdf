@@ -12,8 +12,8 @@ def test_archive_accepts_closed_non_delivery_resolution(
     proposal = repo / "proposals" / PRP_NAME
     replace(
         proposal,
-        "status: ready\nrelated: []",
-        "status: closed\nrelated: []\nresolution: rejected",
+        "status: ready\ndepends_on: []",
+        "status: closed\ndepends_on: []\nresolution: rejected",
     )
     init_git(repo)
 
@@ -37,9 +37,9 @@ def test_archive_post_validation_failure_leaves_worktree(
     repo = copy_fixture(tmp_path)
     replace(
         repo / "proposals" / PRP_NAME,
-        "status: ready\nrelated: []",
+        "status: ready\ndepends_on: []",
         (
-            "status: closed\nrelated: []\n"
+            "status: closed\ndepends_on: []\n"
             "resolution: fulfilled\n"
             "fulfilled_in: 1.2.0"
         ),
@@ -262,8 +262,8 @@ def test_archive_and_move_change_require_clean_worktree(
     proposal = archive_repo / "proposals" / PRP_NAME
     replace(
         proposal,
-        "status: ready\nrelated: []",
-        "status: closed\nrelated: []\nresolution: rejected",
+        "status: ready\ndepends_on: []",
+        "status: closed\ndepends_on: []\nresolution: rejected",
     )
     init_git(archive_repo)
     (archive_repo / "dirty.txt").write_text("dirty\n", encoding="utf-8")

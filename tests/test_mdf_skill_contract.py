@@ -21,6 +21,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert not (skill / "workflows").exists()
     for command in (
         "init",
+        "mvp [方向]",
         "codewiki generate",
         "codewiki update",
         "start",
@@ -35,7 +36,9 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
+    assert "intents/mvp.md" in entry
     assert "intents/doc-create.md" in entry
+    assert (skill / "intents" / "mvp.md").is_file()
     assert "doc derive" not in entry
     assert not (skill / "intents" / "doc-derive.md").exists()
     assert "intents/doc-review.md" in entry
@@ -48,6 +51,59 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "版本化文档与交付流程" in entry
     assert "已确认决策与`当前事实文档`分开" in entry
     assert "可验证的演进记录" in entry
+
+
+def test_mvp_discovers_one_outcome_and_writes_dependency_ordered_prps() -> None:
+    mvp = intent("mvp")
+    normalized = " ".join(mvp.split())
+
+    for contract in (
+        "intents/common.md",
+        "intents/grill.md",
+        "references/repository-contract.md",
+        "references/object-contract.md",
+    ):
+        assert contract in mvp
+    assert "normal_workflows_allowed: true" in mvp
+    assert "`方向`是可选" in mvp
+    for source in (
+        "当前事实文档",
+        "实现根",
+        "测试",
+        "active Proposal/Bug",
+        "fulfilled Proposal",
+        "unreleased Change",
+    ):
+        assert source in mvp
+    assert "用户明确确认该 MVP" in mvp
+    assert "内部 grill intent" in mvp
+    assert "不执行 `audit`" in mvp
+    assert "最少数量的一个或多个 Proposal" in normalized
+    assert "不得为制造 数量而拆分" in normalized
+    assert "`depends_on` 只记录直接依赖并形成无环 DAG" in normalized
+    assert "同一批可并行" in normalized
+    assert "从 `depends_on` 动态计算的会话视图" in normalized
+    assert "不写入字段或独立文件" in normalized
+    assert "不写入批次" in normalized
+    assert "不得由本 intent 修改" in mvp
+    assert "$mdf doc review" in mvp
+    assert "active Bug 只作为风险或阻塞项" in mvp
+    assert "只有用户明确确认清单才继续" in mvp
+    assert "make-id --type proposal --slug" in mvp
+    assert "初始状态为 `draft`" in normalized
+    assert "targeted validation" in mvp
+    assert "不得自动 commit" in mvp
+    skill = skill_dir("mdf")
+    template = (skill / "assets" / "templates" / "proposal.md").read_text(
+        encoding="utf-8"
+    )
+    contract = (
+        skill / "references" / "object-contract.md"
+    ).read_text(encoding="utf-8")
+    assert "depends_on: []" in template
+    for field in ("batch:", "batches:", "dag:", "order:"):
+        assert field not in template
+    assert "一般关联只在正文中说明" in contract
 
 
 def test_init_and_doc_intents_load_internal_contracts() -> None:
@@ -112,7 +168,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "不得复制、归档或链接到仓库" in create
     assert "必填事实仍无法确认时停止，不得写入任何对象" in create
     assert "只有用户明确确认清单才继续" in create
-    assert "直接依赖的 draft/ready Proposal ID" in create
+    assert "`depends_on` 仅列\n   直接依赖的 draft、ready 或 " in create
+    assert "closed + fulfilled Proposal ID" in create
     assert "初始状态为 `draft`" in create
     assert "后续\n   显式调用 `$mdf doc review`" in create
     assert "closed 或 archive 对象拒绝修改" in review

@@ -87,26 +87,26 @@ def validate_object(
         )
 
     if expected_type == "proposal":
-        related = metadata.get("related")
-        if not isinstance(related, list):
+        depends_on = metadata.get("depends_on")
+        if not isinstance(depends_on, list):
             add_finding(
                 findings,
-                "object.related",
-                "Proposal related must be a list of dependency IDs",
+                "object.depends_on",
+                "Proposal depends_on must be a list of Proposal IDs",
                 rel,
             )
-        elif len(related) != len(set(map(str, related))):
+        elif len(depends_on) != len(set(map(str, depends_on))):
             add_finding(
                 findings,
-                "object.related_duplicate",
+                "object.depends_on_duplicate",
                 "Proposal dependencies must not contain duplicate IDs",
                 rel,
             )
-    elif "related" in metadata:
+    elif "depends_on" in metadata:
         add_finding(
             findings,
-            "bug.related_forbidden",
-            "Bug 不得声明 Proposal related；请使用 duplicate_of",
+            "bug.depends_on_forbidden",
+            "Bug must not declare Proposal depends_on",
             rel,
         )
 

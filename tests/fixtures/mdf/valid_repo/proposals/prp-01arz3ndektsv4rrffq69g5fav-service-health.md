@@ -2,7 +2,7 @@
 id: prp-01arz3ndektsv4rrffq69g5fav
 type: proposal
 status: ready
-related: []
+depends_on: []
 ---
 
 # Service health

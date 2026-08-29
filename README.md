@@ -10,6 +10,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | 命令 | 用途 |
 | --- | --- |
 | `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
+| `$mdf mvp [方向]` | 发现并确认下一个 MVP，产出有依赖顺序的 Proposal |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |

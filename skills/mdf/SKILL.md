@@ -2,7 +2,8 @@
 name: mdf
 description: >-
   Mars Development Flow 的唯一入口。用户显式使用 $mdf、$mdf doc、$mdf codewiki 或
-  $mdf jot promote 管理仓库文档、CodeWiki、随手记录、审计、收口、归档或逐题澄清。
+  $mdf jot promote 管理仓库文档、MVP 规划、CodeWiki、随手记录、审计、收口、归档
+  或逐题澄清。
 ---
 
 # Mars Development Flow
@@ -17,7 +18,8 @@ Proposal、Bug 与 Change；`manifest` 约束`validation`和发布状态。它�
 ```text
 $mdf <调用>
 ├─ 裸调用、裸 doc/codewiki、未知调用 → 仅显示帮助
-├─ init | start | finish | audit | grill <议题> → 读取 intents/<intent>.md
+├─ init | mvp [方向] | start | finish | audit | grill <议题>
+│  └─ 读取 intents/<intent>.md
 ├─ doc create | review | archive → 读取对应 doc-<action>.md
 ├─ codewiki generate | update → 读取对应 codewiki-<action>.md
 └─ jot | jot promote → 读取 intents/jot.md
@@ -34,11 +36,13 @@ $mdf <调用>
 3. **约束**；完整读取选择树指定的 intent，并只按其按需读取说明读取公共引用；
    证据：已读取材料与其流程结果；通过 → 执行 intent；失败 → 停止并报告缺失材料。
 
-调用示例包含 `codewiki generate`、`codewiki update`、`doc create`、`doc review`、
-`doc archive`、`jot`、`jot promote` 与 `grill <议题>`；裸 `$mdf` 只显示帮助。
-对应文件为 `intents/doc-create.md`、`intents/doc-review.md`、
-`intents/doc-archive.md`、`intents/codewiki-generate.md`、
-`intents/codewiki-update.md` 与 `intents/jot.md`。
+调用示例包含 `mvp [方向]`、`codewiki generate`、`codewiki update`、`doc create`、
+`doc review`、`doc archive`、`jot`、`jot promote` 与 `grill <议题>`；裸 `$mdf`
+只显示帮助。
+对应文件为 `intents/mvp.md`、`intents/doc-create.md`、
+`intents/doc-review.md`、`intents/doc-archive.md`、
+`intents/codewiki-generate.md`、`intents/codewiki-update.md` 与
+`intents/jot.md`。
 CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`。
 
 ## 术语与数据结构

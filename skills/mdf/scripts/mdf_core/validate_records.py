@@ -246,16 +246,16 @@ def validate_proposal_dependencies(
     for identifier, metadata in proposals.items():
         path = identifier_paths[identifier]
         rel = relative(repo, path)
-        related = metadata.get("related")
-        if not isinstance(related, list):
+        depends_on = metadata.get("depends_on")
+        if not isinstance(depends_on, list):
             continue
         dependencies[identifier] = set()
-        for dependency in related:
+        for dependency in depends_on:
             if not isinstance(dependency, str):
                 add_finding(
                     findings,
                     "proposal.depends_on_type",
-                    "Proposal related entries must be Proposal IDs",
+                    "Proposal depends_on entries must be Proposal IDs",
                     rel,
                 )
                 continue
@@ -270,7 +270,7 @@ def validate_proposal_dependencies(
             target = proposals.get(dependency)
             if target is None:
                 code = (
-                    "object.related_missing"
+                    "object.depends_on_missing"
                     if dependency not in known
                     else "proposal.depends_on_type"
                 )
@@ -282,11 +282,17 @@ def validate_proposal_dependencies(
                     rel,
                 )
                 continue
-            if target.get("status") not in {"draft", "ready"}:
+            status = target.get("status")
+            fulfilled = (
+                status == "closed"
+                and target.get("resolution") == "fulfilled"
+            )
+            if status not in {"draft", "ready"} and not fulfilled:
                 add_finding(
                     findings,
-                    "proposal.depends_on_inactive",
-                    f"Proposal dependency must be draft or ready: {dependency}",
+                    "proposal.depends_on_unfulfilled",
+                    "Proposal dependency must be active or fulfilled: "
+                    f"{dependency}",
                     rel,
                 )
                 continue

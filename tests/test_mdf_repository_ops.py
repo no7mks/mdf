@@ -12,9 +12,9 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     proposal = repo / "proposals" / PRP_NAME
     replace(
         proposal,
-        "status: ready\nrelated: []",
+        "status: ready\ndepends_on: []",
         (
-            "status: closed\nrelated: []\n"
+            "status: closed\ndepends_on: []\n"
             "resolution: fulfilled\n"
             "fulfilled_in: 1.2.0"
         ),
@@ -73,8 +73,8 @@ def test_archive_never_rewrites_external_url_path_text(
     proposal = repo / "proposals" / PRP_NAME
     replace(
         proposal,
-        "status: ready\nrelated: []",
-        "status: closed\nrelated: []\nresolution: rejected",
+        "status: ready\ndepends_on: []",
+        "status: closed\ndepends_on: []\nresolution: rejected",
     )
     external_url = f"https://example.invalid/repository/proposals/{PRP_NAME}"
     index = repo / "docs" / "index.md"

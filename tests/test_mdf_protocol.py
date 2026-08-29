@@ -277,11 +277,15 @@ def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
     assert "proposal.scope" in result.stdout
 
 
-def test_invalid_related_type_returns_findings_json_without_traceback(
+def test_invalid_depends_on_type_returns_findings_json_without_traceback(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(repo / "proposals" / PRP_NAME, "related: []", "related: null")
+    replace(
+        repo / "proposals" / PRP_NAME,
+        "depends_on: []",
+        "depends_on: null",
+    )
     init_git(repo)
 
     result = mdf(python_exe, "validate", "--repo", str(repo))
@@ -289,22 +293,23 @@ def test_invalid_related_type_returns_findings_json_without_traceback(
     assert "Traceback" not in result.stderr
     data = json.loads(result.stdout)
     assert any(
-        finding["code"] == "object.related" for finding in data["findings"]
+        finding["code"] == "object.depends_on"
+        for finding in data["findings"]
     )
 
 
-def test_bug_rejects_generic_related_and_requires_severity(
+def test_bug_rejects_depends_on_and_requires_severity(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     bug = repo / "bugs" / BUG_NAME
-    replace(bug, "severity: major", "related: []")
+    replace(bug, "severity: major", "depends_on: []")
     init_git(repo)
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert result.returncode != 0
     data = json.loads(result.stdout)
     codes = {finding["code"] for finding in data["findings"]}
-    assert {"bug.related_forbidden", "bug.severity_required"} <= codes
+    assert {"bug.depends_on_forbidden", "bug.severity_required"} <= codes
 
 
 def test_bug_found_in_accepts_unreleased_sentinel(
@@ -375,9 +380,9 @@ def test_validation_rejects_duplicate_id_across_active_and_archive(
     archived.parent.mkdir(parents=True)
     archived.write_text(
         source.read_text(encoding="utf-8").replace(
-            "status: ready\nrelated: []",
+            "status: ready\ndepends_on: []",
             (
-                "status: closed\nrelated: []\n"
+                "status: closed\ndepends_on: []\n"
                 "resolution: fulfilled\n"
                 "fulfilled_in: 1.2.0"
             ),

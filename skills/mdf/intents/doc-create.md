@@ -24,7 +24,8 @@ doctor → 允许正常流程？否：停止；是 → 来源澄清 → 对象�
    Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；Bug 收敛
    Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、
    `found_in` 与 active severity；证据：完整必填事实；通过 → 5；失败 → 必填事实仍无法确认时停止，不得写入任何对象。
-5. **约束**；展示对象清单、边界、排除范围、Proposal 依赖；`related` 仅列直接依赖的 draft/ready Proposal ID；
+5. **约束**；展示对象清单、边界、排除范围、Proposal 依赖；`depends_on` 仅列
+   直接依赖的 draft、ready 或 closed + fulfilled Proposal ID；
    证据：只有用户明确确认清单才继续；通过 → 6；失败 → 回到 2 或 4。
 6. **脚本**；为每项提议并确认英文 ASCII kebab-case slug，使用 `make-id --slug`
    生成 ID 与规范化文件名，并以模板写入 `proposals/` 或 `bugs/`，初始状态为 `draft`；

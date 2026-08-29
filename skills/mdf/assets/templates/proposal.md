@@ -2,7 +2,7 @@
 id: "{{PROPOSAL_ID}}"
 type: proposal
 status: draft
-related: []
+depends_on: []
 ---
 
 # {{TITLE}}
