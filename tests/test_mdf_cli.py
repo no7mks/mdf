@@ -167,7 +167,7 @@ def test_removed_verify_command_argument_is_a_hard_failure(
     assert "unrecognized arguments" in result.stderr
 
 
-def test_mdf_grill_is_internal_intent_copy():
+def test_mdf_grill_delegates_to_system_skill():
     skill = skill_dir("mdf")
     grill = (skill / "intents" / "grill.md").read_text(encoding="utf-8")
     create = (skill / "intents" / "doc-create.md").read_text(
@@ -177,14 +177,10 @@ def test_mdf_grill_is_internal_intent_copy():
         encoding="utf-8"
     )
     init = (skill / "intents" / "init.md").read_text(encoding="utf-8")
-
-    assert "持续、深入地追问" in grill
-    assert "展示简明的决策树" in grill
-    assert "预计总题量" in grill
-    assert "当前题号/总题量" in grill
-    assert "一轮可包含多个问题" in grill
-    assert "查证的事实自行查证" in grill
-    assert "不要据此采取行动" in grill
+    assert "系统 `grilling` skill" in grill
+    assert "委托它对议题执行压力测试" in grill
+    assert "报告该失败并停止" in grill
+    assert "当前环境未提供 `grilling` skill" in grill
     assert "内部 grill intent" in create
     assert "内部 grill intent" in review and "内部 grill intent" in init
     assert "明确确认才转" in review
