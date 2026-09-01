@@ -10,13 +10,14 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | 命令 | 用途 |
 | --- | --- |
 | `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
-| `$mdf mvp [方向]` | 发现并确认下一个 MVP，产出有依赖顺序的 Proposal |
+| `$mdf next [方向]` | 发现并确认下一步 MVP，产出有依赖顺序的 Proposal |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
-| `$mdf doc create` | 从临时来源创建 Bug 和/或多个 Proposal |
+| `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
+| `$mdf doc create` | 按已确认的内容手动创建一个 Bug 或 Proposal |
 | `$mdf doc review` | 修订单个 active Proposal 或 Bug |
 | `$mdf doc archive` | 归档 closed Proposal 或 Bug |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |

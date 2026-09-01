@@ -21,7 +21,8 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert not (skill / "workflows").exists()
     for command in (
         "init",
-        "mvp [方向]",
+        "intake",
+        "next [方向]",
         "codewiki generate",
         "codewiki update",
         "start",
@@ -36,9 +37,12 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
-    assert "intents/mvp.md" in entry
+    assert "intents/intake.md" in entry
+    assert "intents/next.md" in entry
     assert "intents/doc-create.md" in entry
-    assert (skill / "intents" / "mvp.md").is_file()
+    assert (skill / "intents" / "intake.md").is_file()
+    assert (skill / "intents" / "next.md").is_file()
+    assert not (skill / "intents" / "mvp.md").exists()
     assert "doc derive" not in entry
     assert not (skill / "intents" / "doc-derive.md").exists()
     assert "intents/doc-review.md" in entry
@@ -53,9 +57,10 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "可验证的演进记录" in entry
 
 
-def test_mvp_discovers_one_outcome_and_writes_dependency_ordered_prps() -> None:
-    mvp = intent("mvp")
-    normalized = " ".join(mvp.split())
+def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
+) -> None:
+    next_intent = intent("next")
+    normalized = " ".join(next_intent.split())
 
     for contract in (
         "intents/common.md",
@@ -63,9 +68,9 @@ def test_mvp_discovers_one_outcome_and_writes_dependency_ordered_prps() -> None:
         "references/repository-contract.md",
         "references/object-contract.md",
     ):
-        assert contract in mvp
-    assert "normal_workflows_allowed: true" in mvp
-    assert "`方向`是可选" in mvp
+        assert contract in next_intent
+    assert "normal_workflows_allowed: true" in next_intent
+    assert "`方向`是可选" in next_intent
     for source in (
         "当前事实文档",
         "实现根",
@@ -74,10 +79,10 @@ def test_mvp_discovers_one_outcome_and_writes_dependency_ordered_prps() -> None:
         "fulfilled Proposal",
         "unreleased Change",
     ):
-        assert source in mvp
-    assert "用户明确确认该 MVP" in mvp
-    assert "内部 grill intent" in mvp
-    assert "不执行 `audit`" in mvp
+        assert source in next_intent
+    assert "用户明确确认该 MVP" in next_intent
+    assert "内部 grill intent" in next_intent
+    assert "不执行 `audit`" in next_intent
     assert "最少数量的一个或多个 Proposal" in normalized
     assert "不得为制造 数量而拆分" in normalized
     assert "`depends_on` 只记录直接依赖并形成无环 DAG" in normalized
@@ -85,14 +90,14 @@ def test_mvp_discovers_one_outcome_and_writes_dependency_ordered_prps() -> None:
     assert "从 `depends_on` 动态计算的会话视图" in normalized
     assert "不写入字段或独立文件" in normalized
     assert "不写入批次" in normalized
-    assert "不得由本 intent 修改" in mvp
-    assert "$mdf doc review" in mvp
-    assert "active Bug 只作为风险或阻塞项" in mvp
-    assert "只有用户明确确认清单才继续" in mvp
-    assert "make-id --type proposal --slug" in mvp
+    assert "不得由本 intent 修改" in next_intent
+    assert "$mdf doc review" in next_intent
+    assert "active Bug 只作为风险或阻塞项" in next_intent
+    assert "只有用户明确确认清单才继续" in next_intent
+    assert "make-id --type proposal --slug" in next_intent
     assert "初始状态为 `draft`" in normalized
-    assert "targeted validation" in mvp
-    assert "不得自动 commit" in mvp
+    assert "targeted validation" in next_intent
+    assert "不得自动 commit" in next_intent
     skill = skill_dir("mdf")
     template = (skill / "assets" / "templates" / "proposal.md").read_text(
         encoding="utf-8"
@@ -108,6 +113,7 @@ def test_mvp_discovers_one_outcome_and_writes_dependency_ordered_prps() -> None:
 
 def test_init_and_doc_intents_load_internal_contracts() -> None:
     init = intent("init")
+    intake = intent("intake")
     create = intent("doc-create")
     review = intent("doc-review")
     archive = intent("doc-archive")
@@ -119,6 +125,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "再次显式调用 `$mdf init`" in init
     assert "context/research/" in init
     assert "context/requirements/" not in init
+    assert "$mdf intake" in init
     assert "$mdf doc create" in init
     assert "## 1. 入口检查" in init
     assert "## 2. 盘点与归类" in init
@@ -157,21 +164,24 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
         assert "内部 grill intent" in document
         assert "normal_workflows_allowed" in document
         assert "先在 `draft` 状态运行 `targeted validation`" in document
-    assert "object-contract.md" in create
-    assert "内部 grill intent" in create
-    assert "normal_workflows_allowed" in create
-    assert "生成 ID 与规范化文件名" in create
-    assert "英文 ASCII kebab-case slug" in create
-    assert "一句话、当前聊天上下文或外部文档" in create
-    assert "偏差建 Bug" in create
-    assert "待实现意图建一个或多个 Proposal" in create
-    assert "不得复制、归档或链接到仓库" in create
-    assert "必填事实仍无法确认时停止，不得写入任何对象" in create
-    assert "只有用户明确确认清单才继续" in create
-    assert "`depends_on` 仅列\n   直接依赖的 draft、ready 或 " in create
-    assert "closed + fulfilled Proposal ID" in create
-    assert "初始状态为 `draft`" in create
-    assert "后续\n   显式调用 `$mdf doc review`" in create
+    assert "object-contract.md" in intake
+    assert "内部 grill intent" in intake
+    assert "normal_workflows_allowed" in intake
+    assert "生成 ID 与规范化文件名" in intake
+    assert "英文 ASCII kebab-case slug" in intake
+    assert "一句话、当前聊天上下文或外部文档" in intake
+    assert "偏差建 Bug" in intake
+    assert "待实现意图建一个或多个 Proposal" in intake
+    assert "不得复制、归档或链接到仓库" in intake
+    assert "必填事实仍无法确认时停止，不得写入任何对象" in intake
+    assert "只有用户明确确认清单才继续" in intake
+    assert "closed + fulfilled Proposal ID" in intake
+    assert "初始状态为 `draft`" in intake
+    assert "显式调用 `$mdf doc review`" in intake
+    assert "外部想法、当前聊天上下文或外部文档必须显式调用" in create
+    assert "$mdf intake" in create
+    assert "一次不得创建多个对象" in create
+    assert "用户手动提供的单个 Proposal 或 Bug 的事实" in create
     assert "closed 或 archive 对象拒绝修改" in review
     assert "closed Proposal/Bug" in archive
 

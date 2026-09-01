@@ -13,8 +13,8 @@
   - `GLOSSARY.md` 只维护领域词典；重要且已决定的长期取舍写入 `docs/adr/`。
 
 - 意图与状态
-  - 仅在用户显式调用 `$mdf …` 时执行 MDF intent，包括 `$mdf doc create` 与
-    `$mdf doc review`；不得隐式接单或自动 commit。
+  - 仅在用户显式调用 `$mdf …` 时执行 MDF intent，包括 `$mdf intake`、
+    `$mdf doc create` 与 `$mdf doc review`；不得隐式接单或自动 commit。
   - Proposal/Bug 状态只使用 `draft`、`ready`、`closed`；feature/bugfix 不得提前
     关闭。
   - release/hotfix 收口前必须通过零 finding 的 MDF 全量审计。

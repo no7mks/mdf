@@ -172,9 +172,9 @@ checkout 的实际行为，并用代码、配置、schema、测试或生成物�
 ## 工作上下文
 
 `context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
-`context/research/` 保存本地或外部调研报告、候选方案和对比。`doc create` 的来源
-只用于本次创建，不保存为工作上下文。已确认的长期取舍另建 ADR；实现后的当前行为
-另写产品或系统`当前事实文档`。
+`context/research/` 保存本地或外部调研报告、候选方案和对比。`intake` 的来源只用于
+本次分诊，不保存为工作上下文。已确认的长期取舍另建 ADR；实现后的当前行为另写产品
+或系统`当前事实文档`。
 
 ## Fact frontmatter：evidence 与 generated
 
