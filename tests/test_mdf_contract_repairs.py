@@ -5,7 +5,7 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 
-DUPLICATE_ID = "bug-01arz3ndektsv4rrffq69g5fax"
+DUPLICATE_ID = "bug-EF56"
 DUPLICATE_NAME = f"{DUPLICATE_ID}-duplicate.md"
 
 

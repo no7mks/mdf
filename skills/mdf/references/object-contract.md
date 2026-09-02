@@ -10,6 +10,8 @@ Proposal 使用 Markdown + YAML frontmatter：`id`、`type: proposal`、`status`
 Proposal 的直接依赖列表，只能包含其他 `draft`、`ready` 或
 `closed + fulfilled` Proposal 的 ID；不得包含重复、自指、循环、Bug、ADR、
 缺失对象或其他终态 Proposal。一般关联只在正文中说明，不使用关系 metadata。
+Proposal、Bug 和 Jot 的 ID 均为前缀后接四位字符。每一位均独立从大写英文字母
+（排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。
 
 正文必须包含 Problem、Desired Outcome、Scope、Acceptance Criteria 四个非空章节；
 Scope 必须含非空的 `### In` 与 `### Out` 子节。
@@ -22,7 +24,7 @@ Scope 必须含非空的 `### In` 与 `### Out` 子节。
 Bug frontmatter 至少包含：
 
 ```yaml
-id: bug-<ulid>
+id: bug-<4 位字符>
 type: bug
 status: ready
 severity: critical | major | trivial

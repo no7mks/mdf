@@ -1,4 +1,3 @@
-import datetime as dt
 import re
 import secrets
 import unicodedata
@@ -38,12 +37,6 @@ def slugify(value: str) -> str:
     return normalized
 
 
-def new_ulid() -> str:
-    alphabet = "0123456789abcdefghjkmnpqrstvwxyz"
-    milliseconds = int(dt.datetime.now(dt.timezone.utc).timestamp() * 1000)
-    value = (milliseconds << 80) | secrets.randbits(80)
-    chars = ["0"] * 26
-    for index in range(25, -1, -1):
-        chars[index] = alphabet[value & 31]
-        value >>= 5
-    return "".join(chars)
+def new_short_id() -> str:
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(4))

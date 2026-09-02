@@ -12,7 +12,7 @@ from mdf_test_support import *  # noqa: F403
         ("make-id", "bug", "bug"),
     ],
 )
-def test_make_id_uses_lowercase_ulid_and_normalized_slug(
+def test_make_id_uses_the_type_specific_format_and_normalized_slug(
     python_exe: str, command: str, object_type: str, prefix: str
 ):
     result = mdf(
@@ -25,7 +25,8 @@ def test_make_id_uses_lowercase_ulid_and_normalized_slug(
     )
     data = payload(result)
 
-    assert ID_RE.fullmatch(data["id"])
+    identifier_re = PRP_ID_RE if object_type == "proposal" else BUG_ID_RE
+    assert identifier_re.fullmatch(data["id"])
     assert data["id"].startswith(f"{prefix}-")
     assert data["filename"] == f"{data['id']}-audit-ready-42.md"
 

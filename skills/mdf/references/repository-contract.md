@@ -35,10 +35,10 @@
 │   ├── adr/
 │   └── repowiki/             # 可选；CodeWiki 受管生成物
 ├── proposals/
-│   ├── prp-<ulid>-<slug>.md
+│   ├── prp-<4 位字符>-<slug>.md
 │   └── archive/<major.minor>/
 ├── bugs/
-│   ├── bug-<ulid>-<slug>.md
+│   ├── bug-<4 位字符>-<slug>.md
 │   └── archive/<major.minor>/
 └── changes/
     ├── unreleased/<slug>/CHANGE.md
@@ -62,15 +62,16 @@ Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
 每条 Jot 使用不可变 ID 与成对 marker，以便提升为 Proposal 或 Bug 后可精确删除：
 
 ```markdown
-<!-- jot: jot-<ulid> -->
+<!-- jot: jot-<4 位字符> -->
 ## <短标题>
 
 <自由正文>
 <!-- /jot -->
 ```
 
-文件可为空，但非空内容必须位于上述条目中。`jot-<ulid>` 只用于定位和 Git
-追溯，不是工作对象 ID。
+文件可为空，但非空内容必须位于上述条目中。ID 的每一位均独立从大写英文字母
+（排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。Jot ID 只用于定位和 Git 追溯，
+不是工作对象 ID。
 
 ## 顶层布局
 

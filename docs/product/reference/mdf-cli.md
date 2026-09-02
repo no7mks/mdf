@@ -100,7 +100,9 @@ python3 skills/mdf/scripts/mdf.py make-id \
 ```
 
 `--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case；命令生成
-新的 ULID，并输出相应的 `prp-...` 或 `bug-...` 标识符和 Markdown 文件名。
+新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和 Markdown 文件名。
+Proposal、Bug 与 Jot 均使用四位字符；每一位均独立从大写英文字母（排除 `I`、`O`）
+与数字 `2` 至 `9` 中等概率选择，例如 `A2B3`。
 它不创建对象文件。
 
 ### `make-jot-id`

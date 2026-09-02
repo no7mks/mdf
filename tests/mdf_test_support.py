@@ -16,11 +16,12 @@ from _support import run
 from conftest import skill_dir
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mdf" / "valid_repo"
-PRP_NAME = "prp-01arz3ndektsv4rrffq69g5fav-service-health.md"
-BUG_NAME = "bug-01arz3ndektsv4rrffq69g5faw-unreleased-timeout.md"
-BUG_ID = "bug-01arz3ndektsv4rrffq69g5faw"
-ID_RE = re.compile(r"^(prp|bug)-[0-9a-hjkmnp-tv-z]{26}$")
-JOT_ID_RE = re.compile(r"^jot-[0-9a-hjkmnp-tv-z]{26}$")
+PRP_NAME = "prp-AB23-service-health.md"
+BUG_NAME = "bug-CD34-unreleased-timeout.md"
+BUG_ID = "bug-CD34"
+PRP_ID_RE = re.compile(r"^prp-[A-HJ-NP-Z2-9]{4}$")
+BUG_ID_RE = re.compile(r"^bug-[A-HJ-NP-Z2-9]{4}$")
+JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
 
 
 def mdf(python_exe: str, *args: str, cwd: Path | None = None):
@@ -150,8 +151,8 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "---\n"
             "change_kind: feature\n"
             f"source_branch: feature/{slug}\n"
-            f"proposals: [prp-01arz3ndektsv4rrffq69g5fav]\n"
-            "fixed: [bug-01arz3ndektsv4rrffq69g5faw]\n"
+            f"proposals: [prp-AB23]\n"
+            "fixed: [bug-CD34]\n"
             "closed: []\n"
             "deferred: []\n"
             "closed_resolutions: {}\n"
@@ -189,12 +190,12 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
                 "release_date": "2026-07-29",
                 "closures": [
                     {
-                        "id": "prp-01arz3ndektsv4rrffq69g5fav",
+                        "id": "prp-AB23",
                         "resolution": "fulfilled",
                         "fulfilled_in": version,
                     },
                     {
-                        "id": "bug-01arz3ndektsv4rrffq69g5faw",
+                        "id": "bug-CD34",
                         "resolution": "fixed",
                         "fixed_in": version,
                     },

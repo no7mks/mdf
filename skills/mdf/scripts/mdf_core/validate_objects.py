@@ -57,7 +57,7 @@ def validate_object(
     rel = relative(repo, path)
     filename = OBJECT_FILE_RE.fullmatch(path.name)
     expected_prefix = "prp" if expected_type == "proposal" else "bug"
-    if not filename or filename.group(1) != expected_prefix:
+    if not filename or not filename.group(1).startswith(f"{expected_prefix}-"):
         add_finding(
             findings,
             "object.filename",
@@ -65,7 +65,7 @@ def validate_object(
             rel,
         )
         return
-    expected_id = f"{filename.group(1)}-{filename.group(2)}"
+    expected_id = filename.group(1)
     try:
         metadata, body = read_frontmatter(path)
     except (OSError, MDFError) as exc:

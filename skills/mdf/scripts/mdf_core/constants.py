@@ -117,10 +117,10 @@ BASELINE_DOC_TYPES = {
 STABLE_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 EPOCH_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 OBJECT_FILE_RE = re.compile(
-    r"^(prp|bug)-([0-9a-hjkmnp-tv-z]{26})-"
+    r"^((?:prp|bug)-[A-HJ-NP-Z2-9]{4})-"
     r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.md$"
 )
-JOT_ID_RE = re.compile(r"^jot-[0-9a-hjkmnp-tv-z]{26}$")
+JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
 MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)

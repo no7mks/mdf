@@ -36,7 +36,7 @@ from .paths import (
     relative,
 )
 from .semver import bump_kind, required_bump
-from .textutil import new_ulid, slugify, stable_semver
+from .textutil import new_short_id, slugify, stable_semver
 
 
 def command_info(_: argparse.Namespace) -> None:
@@ -230,7 +230,7 @@ def command_validate(args: argparse.Namespace) -> None:
 
 def command_make_id(args: argparse.Namespace) -> None:
     prefix = "prp" if args.type == "proposal" else "bug"
-    identifier = f"{prefix}-{new_ulid()}"
+    identifier = f"{prefix}-{new_short_id()}"
     slug = slugify(args.slug)
     filename = f"{identifier}-{slug}.md"
     emit(
@@ -249,7 +249,7 @@ def command_make_jot_id(_: argparse.Namespace) -> None:
         {
             "ok": True,
             "operation": "make-jot-id",
-            "id": f"jot-{new_ulid()}",
+            "id": f"jot-{new_short_id()}",
         }
     )
 

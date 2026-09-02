@@ -6,7 +6,7 @@ from .errors import Finding, add_finding
 
 
 ENTRY_RE = re.compile(
-    r"<!-- jot: (?P<id>jot-[0-9a-hjkmnp-tv-z]{26}) -->\n"
+    r"<!-- jot: (?P<id>jot-[A-HJ-NP-Z2-9]{4}) -->\n"
     r"## (?P<title>[^\n]+)\n"
     r"(?P<body>.*?)"
     r"<!-- /jot -->\n?",

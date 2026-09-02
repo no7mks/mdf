@@ -5,7 +5,7 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 
-def test_make_jot_id_uses_lowercase_ulid(python_exe: str):
+def test_make_jot_id_uses_short_unambiguous_characters(python_exe: str):
     data = payload(mdf(python_exe, "make-jot-id"))
     assert data["operation"] == "make-jot-id"
     assert JOT_ID_RE.fullmatch(data["id"])
@@ -15,7 +15,7 @@ def test_jots_allow_free_markdown_in_marked_entries(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    identifier = "jot-01arz3ndektsv4rrffq69g5fax"
+    identifier = "jot-GH78"
     (repo / "JOTS.md").write_text(
         "# Jots\n\n"
         f"<!-- jot: {identifier} -->\n"
