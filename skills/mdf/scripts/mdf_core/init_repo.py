@@ -168,7 +168,7 @@ def init_files(
         )
     jots = repo / "JOTS.md"
     if not jots.exists():
-        files[jots] = template_text("jots.md", "# Jots\n")
+        files[jots] = template_text("jots.md", "# 随手记录\n")
     for name, fallback in (
         ("GLOSSARY.md", "# Glossary\n"),
         ("PROJECT.md", "# Project\n"),

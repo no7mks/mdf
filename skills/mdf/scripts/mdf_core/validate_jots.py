@@ -29,15 +29,15 @@ def validate_jots(repo: Path, findings: list[Finding]) -> None:
         )
         return
     text = path.read_text(encoding="utf-8")
-    if not text.startswith("# Jots\n"):
+    if not text.startswith("# 随手记录\n"):
         add_finding(
             findings,
             "jot.heading",
-            "JOTS.md must begin with '# Jots'",
+            "JOTS.md 必须以“# 随手记录”开头",
             relative,
         )
         return
-    _validate_entries(text[len("# Jots\n") :], findings, relative)
+    _validate_entries(text[len("# 随手记录\n") :], findings, relative)
 
 
 def _validate_entries(

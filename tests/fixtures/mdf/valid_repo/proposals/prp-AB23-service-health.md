@@ -7,24 +7,24 @@ depends_on: []
 
 # Service health
 
-## Problem
+## 问题
 
 调用方无法确定服务模块是否正常。
 
-## Desired Outcome
+## 期望结果
 
 调用方能取得稳定的健康状态。
 
-## Scope
+## 范围
 
-### In
+### 包含
 
 - 提供布尔状态。
 
-### Out
+### 不包含
 
 - 不提供远程监控。
 
-## Acceptance Criteria
+## 验收标准
 
 - `healthy()` 返回 `true`。

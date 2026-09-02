@@ -83,11 +83,11 @@ def test_duplicate_group_archives_primary_and_child_together(
         f"duplicate_of: {BUG_ID}\n"
         "---\n\n"
         "# Duplicate\n\n"
-        "## Observed Behavior\n\nSame.\n\n"
-        "## Expected Behavior\n\nSame.\n\n"
-        "## Reproduction\n\nSame.\n\n"
-        "## Impact\n\nNone.\n\n"
-        "## Regression Evidence Required\n\nNone.\n",
+        "## 观察到的行为\n\n相同。\n\n"
+        "## 期望行为\n\n相同。\n\n"
+        "## 复现步骤\n\n相同。\n\n"
+        "## 影响\n\n无。\n\n"
+        "## 所需回归证据\n\n无。\n",
         encoding="utf-8",
     )
     init_git(repo)
@@ -250,7 +250,7 @@ def test_init_allows_dirty_worktree_for_active_continuation(
     applied = payload(mdf(python_exe, *arguments))
     assert applied["operation"] == "init"
     assert (repo / ".mdf" / "manifest.yaml").is_file()
-    assert (repo / "JOTS.md").read_text(encoding="utf-8") == "# Jots\n"
+    assert (repo / "JOTS.md").read_text(encoding="utf-8") == "# 随手记录\n"
 
 
 def test_archive_and_move_change_require_clean_worktree(

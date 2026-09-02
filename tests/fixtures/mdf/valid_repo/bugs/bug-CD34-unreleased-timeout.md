@@ -8,22 +8,22 @@ found_in: unreleased
 
 # Unreleased timeout
 
-## Observed Behavior
+## 观察到的行为
 
 尚未发布的调用路径可能超时。
 
-## Expected Behavior
+## 期望行为
 
 调用应在限定时间内返回。
 
-## Reproduction
+## 复现步骤
 
 运行尚未发布的超时用例。
 
-## Impact
+## 影响
 
 开发版本的验证会失败。
 
-## Regression Evidence Required
+## 所需回归证据
 
 增加覆盖该调用路径的自动化测试。

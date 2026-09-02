@@ -118,14 +118,14 @@ def validate_object(
             rel,
         )
     required_headings = (
-        ("Problem", "Desired Outcome", "Scope", "Acceptance Criteria")
+        ("问题", "期望结果", "范围", "验收标准")
         if expected_type == "proposal"
         else (
-            "Observed Behavior",
-            "Expected Behavior",
-            "Reproduction",
-            "Impact",
-            "Regression Evidence Required",
+            "观察到的行为",
+            "期望行为",
+            "复现步骤",
+            "影响",
+            "所需回归证据",
         )
     )
     for heading in required_headings:
@@ -154,7 +154,7 @@ def validate_object(
                 rel,
             )
     if expected_type == "proposal":
-        scope_match = re.search(r"^##+\s+Scope\s*$", body, re.MULTILINE)
+        scope_match = re.search(r"^##+\s+范围\s*$", body, re.MULTILINE)
         if scope_match:
             next_heading = re.search(
                 r"^#{1,2}\s+\S.*$", body[scope_match.end() :], re.MULTILINE
@@ -165,7 +165,7 @@ def validate_object(
                 else len(body)
             )
             scope_body = body[scope_match.end() : scope_end]
-            for subsection in ("In", "Out"):
+            for subsection in ("包含", "不包含"):
                 subsection_match = re.search(
                     rf"^###+\s+{subsection}\s*$", scope_body, re.MULTILINE
                 )
@@ -173,7 +173,7 @@ def validate_object(
                     add_finding(
                         findings,
                         "proposal.scope",
-                        f"Scope requires a {subsection} subsection",
+                        f"范围必须包含“{subsection}”子节",
                         rel,
                     )
                     continue
@@ -193,7 +193,7 @@ def validate_object(
                     add_finding(
                         findings,
                         "proposal.scope_empty",
-                        f"Scope {subsection} subsection is empty",
+                        f"范围的“{subsection}”子节不能为空",
                         rel,
                     )
 

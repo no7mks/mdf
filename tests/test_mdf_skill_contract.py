@@ -159,6 +159,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "仅在外层 intent 入口检查一次" in common
     assert "不得重复" in common
     assert "clean 检查而拒绝修改" in common
+    assert "生成的 Markdown 正文、标题与列表使用简体中文" in common
     for document in (review,):
         assert "object-contract.md" in document
         assert "内部 grill intent" in document

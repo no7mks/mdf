@@ -13,8 +13,8 @@ Proposal 的直接依赖列表，只能包含其他 `draft`、`ready` 或
 Proposal、Bug 和 Jot 的 ID 均为前缀后接四位字符。每一位均独立从大写英文字母
 （排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。
 
-正文必须包含 Problem、Desired Outcome、Scope、Acceptance Criteria 四个非空章节；
-Scope 必须含非空的 `### In` 与 `### Out` 子节。
+正文必须包含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”必须含
+非空的“包含”与“不包含”三级子节。
 
 合法 Proposal resolution：`fulfilled`（必须写稳定 SemVer `fulfilled_in`）、
 `rejected`、`obsolete`、`duplicate`；非 `fulfilled` 不得写 `fulfilled_in`。
@@ -31,9 +31,8 @@ severity: critical | major | trivial
 found_in: unreleased | <stable-semver>
 ```
 
-Bug 不使用 `depends_on`。一般关联只在正文中说明。正文必须包含
-Observed Behavior、Expected Behavior、Reproduction、Impact 和
-Regression Evidence Required。
+Bug 不使用 `depends_on`。一般关联只在正文中说明。正文必须包含“观察到的行为”
+“期望行为”“复现步骤”“影响”和“所需回归证据”。
 
 `found_in: unreleased` 表示当前未发布线中的稳定关联；它不是 SemVer。`fixed_in`
 只接受稳定 SemVer。

@@ -7,24 +7,24 @@ depends_on: []
 
 # {{TITLE}}
 
-## Problem
+## 问题
 
 {{CURRENT_PROBLEM}}
 
-## Desired Outcome
+## 期望结果
 
 {{DESIRED_OUTCOME}}
 
-## Scope
+## 范围
 
-### In
+### 包含
 
 - {{IN_SCOPE_ITEM}}
 
-### Out
+### 不包含
 
 - {{OUT_OF_SCOPE_ITEM}}
 
-## Acceptance Criteria
+## 验收标准
 
 - [ ] {{VERIFIABLE_CRITERION}}

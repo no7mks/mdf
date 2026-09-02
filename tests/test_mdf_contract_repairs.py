@@ -40,11 +40,11 @@ def write_closed_duplicate(repo: Path) -> None:
             f"duplicate_of: {BUG_ID}\n"  # noqa: F405
             "---\n\n"
             "# Duplicate\n\n"
-            "## Observed Behavior\n\nSame.\n\n"
-            "## Expected Behavior\n\nSame.\n\n"
-            "## Reproduction\n\nSame.\n\n"
-            "## Impact\n\nNone.\n\n"
-            "## Regression Evidence Required\n\nNone.\n"
+            "## 观察到的行为\n\n相同。\n\n"
+            "## 期望行为\n\n相同。\n\n"
+            "## 复现步骤\n\n相同。\n\n"
+            "## 影响\n\n无。\n\n"
+            "## 所需回归证据\n\n无。\n"
         ),
         encoding="utf-8",
     )

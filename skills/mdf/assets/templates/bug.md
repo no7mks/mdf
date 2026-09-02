@@ -8,22 +8,22 @@ found_in: {{FOUND_IN}}
 
 # {{TITLE}}
 
-## Observed Behavior
+## 观察到的行为
 
 {{OBSERVED_BEHAVIOR}}
 
-## Expected Behavior
+## 期望行为
 
 {{EXPECTED_BEHAVIOR}}
 
-## Reproduction
+## 复现步骤
 
 1. {{REPRODUCTION_STEP}}
 
-## Impact
+## 影响
 
 {{IMPACT}}
 
-## Regression Evidence Required
+## 所需回归证据
 
 {{REQUIRED_REGRESSION_EVIDENCE}}

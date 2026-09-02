@@ -262,13 +262,13 @@ def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
     proposal = repo / "proposals" / PRP_NAME
     replace(
         proposal,
-        "## Desired Outcome\n\n调用方能取得稳定的健康状态。",
-        "## Desired Outcome\n\n",
+        "## 期望结果\n\n调用方能取得稳定的健康状态。",
+        "## 期望结果\n\n",
     )
     replace(
         proposal,
-        "### Out\n\n- 不提供远程监控。",
-        "### Outside\n\n- 不提供远程监控。",
+        "### 不包含\n\n- 不提供远程监控。",
+        "### 范围外\n\n- 不提供远程监控。",
     )
     init_git(repo)
 
