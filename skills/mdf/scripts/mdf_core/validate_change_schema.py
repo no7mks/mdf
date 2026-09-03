@@ -276,19 +276,19 @@ def validate_change_file(
             rel,
         )
     sections = [
-        "Result",
-        "Current Docs Updated",
-        "Known Deviations",
+        "结果",
+        "已更新的当前文档",
+        "已知偏差",
     ]
     if root:
         sections.extend(
             [
-                "Included Changes",
-                "Closeout Outcomes",
-                "Found-in Transitions",
-                "SemVer Decision",
-                "Audit",
-                "Validation Commands",
+                "包含的 Change",
+                "收口结果",
+                "found-in 转换",
+                "SemVer 决策",
+                "审计",
+                "验证命令",
             ]
         )
     required_sections(body, sections, rel, findings)

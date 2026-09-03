@@ -8,26 +8,26 @@ evidence:
 
 # {{TITLE}}
 
-## What you will learn
+## 学习目标
 
 {{LEARNING_OUTCOME}}
 
-## Before you start
+## 开始前准备
 
 {{PREREQUISITES}}
 
-## Step 1 — {{FIRST_MILESTONE}}
+## 第一步：{{FIRST_MILESTONE}}
 
 {{FIRST_STEP}}
 
-## Step 2 — {{SECOND_MILESTONE}}
+## 第二步：{{SECOND_MILESTONE}}
 
 {{SECOND_STEP}}
 
-## What you achieved
+## 完成结果
 
 {{OBSERVABLE_RESULT}}
 
-## Next steps
+## 后续步骤
 
 {{NEXT_LEARNING_STEP}}

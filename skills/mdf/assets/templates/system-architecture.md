@@ -1,29 +1,29 @@
 ---
-title: "Architecture"
+title: "架构"
 doc_type: system-architecture
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# Architecture
+# 架构
 
-## Current structure
+## 当前结构
 
 {{CURRENT_MODULES_AND_RESPONSIBILITIES}}
 
-## Relationships
+## 关系
 
 {{CURRENT_DEPENDENCIES_AND_DATA_FLOW}}
 
-## Runtime view
+## 运行视图
 
 {{CURRENT_RUNTIME_INTERACTIONS}}
 
-## Constraints
+## 约束
 
 {{CURRENT_ARCHITECTURAL_CONSTRAINTS}}
 
-## Related decisions
+## 相关决策
 
 {{ADR_LINKS_OR_NONE}}

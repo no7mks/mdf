@@ -83,12 +83,11 @@ evidence:
 `evidence.tests`、`evidence.commands` 与 `evidence.artifacts` 都是列表；每个元素
 必须是非空字符串。
 
-正文必须包含 Result、Current Docs Updated、Known Deviations。
+正文必须包含“结果”“已更新的当前文档”和“已知偏差”章节。
 
 ## 版本根 Change
 
 `changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
 `version`、`previous_version`、`included_changes`、Proposal/Bug outcomes、release
-notes、`evidence`、审阅记录，以及 Result、Included Changes、Closeout Outcomes、
-Found-in Transitions、SemVer Decision、Audit、Validation Commands 等章节。每个稳定版本
-只有一个版本根 Change。
+notes、`evidence`、审阅记录，以及“结果”“包含的 Change”“收口结果”“found-in 转换”、
+“SemVer 决策”“审计”“验证命令”等章节。每个稳定版本只有一个版本根 Change。

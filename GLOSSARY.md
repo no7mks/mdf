@@ -4,10 +4,6 @@
 
 Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 
-## Skill
-
-由 Agent 显式调用的能力入口；MDF 只发布一个 `$mdf <intent>` Skill。
-
 ## Jot
 
 `JOTS.md` 中尚未分诊的随手记录。它可以是想法、优化、小问题或观察；提升后才成为
@@ -24,3 +20,11 @@ Proposal 或 Bug。Jot 不是 Proposal/Bug 的 `draft` 状态，也不是 Change
 ## 验证命令
 
 `manifest.verification.commands` 中交付前执行的命令。
+
+## CodeWiki
+
+通过 CodeWiki MCP 生成与更新的仓库结构 Wiki。
+
+## ADR
+
+Architecture Decision Record；记录重要且已决定的长期架构取舍。

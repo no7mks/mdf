@@ -1,33 +1,33 @@
 ---
-title: "System boundary"
+title: "系统边界"
 doc_type: system-boundary
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# System boundary
+# 系统边界
 
-## Purpose
+## 目的
 
 {{CURRENT_SYSTEM_PURPOSE}}
 
-## Users and actors
+## 用户与参与方
 
 {{CURRENT_ACTORS}}
 
-## In scope
+## 范围内
 
 {{CURRENT_IN_SCOPE}}
 
-## Out of scope
+## 范围外
 
 {{CURRENT_OUT_OF_SCOPE}}
 
-## External dependencies
+## 外部依赖
 
 {{CURRENT_EXTERNAL_DEPENDENCIES}}
 
-## Boundary evidence
+## 边界证据
 
 {{HOW_TO_VERIFY_THE_BOUNDARY}}

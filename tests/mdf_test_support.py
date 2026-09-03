@@ -167,12 +167,12 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "  artifacts: []\n"
             "---\n\n"
             "# Change\n\n"
-            "## Result\n\n"
+            "## 结果\n\n"
             "服务健康能力已经交付。\n\n"
-            "## Current Docs Updated\n\n"
+            "## 已更新的当前文档\n\n"
             "- docs/product/reference/capabilities.md\n\n"
-            "## Known Deviations\n\n"
-            "None.\n"
+            "## 已知偏差\n\n"
+            "无。\n"
         ),
         encoding="utf-8",
     )

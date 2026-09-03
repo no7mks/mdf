@@ -207,53 +207,53 @@ def render_version_change(
         + "audit: passed\n"
         + "---\n\n"
         f"# {mode.title()} {version}\n\n"
-        "## Result\n\n"
-        + (hotfix_body or "Release closeout completed.")
-        + "\n\n## Included Changes\n\n"
+        "## 结果\n\n"
+        + (hotfix_body or "发布收口已完成。")
+        + "\n\n## 包含的 Change\n\n"
         + child_lines
-        + "\n\n## Current Docs Updated\n\n"
-        + "CHANGELOG.md and the version-root CHANGE.md were generated.\n\n"
-        + "## Known Deviations\n\nNone.\n\n"
-        + "## Closeout Outcomes\n\n"
-        + "### Proposals\n\n"
+        + "\n\n## 已更新的当前文档\n\n"
+        + "已生成 CHANGELOG.md 与版本根目录中的 CHANGE.md。\n\n"
+        + "## 已知偏差\n\n无。\n\n"
+        + "## 收口结果\n\n"
+        + "### Proposal\n\n"
         + (
             chr(10).join(f"- `{item}`" for item in sorted(proposals))
-            or "None."
+            or "无。"
         )
-        + "\n\n### Closed Proposals\n\n"
+        + "\n\n### 已关闭的 Proposal\n\n"
         + (
             chr(10).join(
                 f"- `{item}` ({closed_proposal_resolutions[item]})"
                 for item in sorted(closed_proposal_resolutions)
             )
-            or "None."
+            or "无。"
         )
-        + "\n\n### Fixed Bugs\n\n"
-        + (chr(10).join(f"- `{item}`" for item in sorted(fixed)) or "None.")
-        + "\n\n### Closed Bugs\n\n"
+        + "\n\n### 已修复的 Bug\n\n"
+        + (chr(10).join(f"- `{item}`" for item in sorted(fixed)) or "无。")
+        + "\n\n### 已关闭的 Bug\n\n"
         + (
             chr(10).join(
                 f"- `{item}` ({closed_resolutions.get(item, 'wont-fix')})"
                 for item in sorted(closed)
             )
-            or "None."
+            or "无。"
         )
-        + "\n\n### Deferred Bugs\n\n"
-        + (chr(10).join(f"- `{item}`" for item in sorted(deferred)) or "None.")
-        + "\n\n## Found-in Transitions\n\n"
+        + "\n\n### 延后的 Bug\n\n"
+        + (chr(10).join(f"- `{item}`" for item in sorted(deferred)) or "无。")
+        + "\n\n## found-in 转换\n\n"
         + transition_lines
-        + "\n\n## Deferred Acceptance\n\n"
+        + "\n\n## 延后接受理由\n\n"
         + acceptance_lines
-        + "\n\n## SemVer Decision\n\n"
-        + "- Observed categories: "
-        + f"{', '.join(sorted(categories)) if categories else 'none'}\n"
-        + f"- Breaking: {'true' if breaking else 'false'}\n"
-        + f"- Minimum bump: {minimum_bump}\n"
-        + f"- Actual bump: {actual_bump}\n"
-        + f"- Selected version: `{version}`\n\n"
-        + "## Audit\n\n"
-        + "- Deterministic full audit: passed (verified by Core).\n"
-        + "- Verify commands:\n"
+        + "\n\n## SemVer 决策\n\n"
+        + "- 观察到的类别："
+        + f"{', '.join(sorted(categories)) if categories else '无'}\n"
+        + f"- 破坏性变更：{'是' if breaking else '否'}\n"
+        + f"- 最低升级幅度：{minimum_bump}\n"
+        + f"- 实际升级幅度：{actual_bump}\n"
+        + f"- 选定版本：`{version}`\n\n"
+        + "## 审计\n\n"
+        + "- 确定性的全量审计：已通过（由 Core 验证）。\n"
+        + "- 验证命令：\n"
         + "".join(
             (
                 f"  - `{item.get('command')}` → exit {item.get('exit_code')}\n"
@@ -268,7 +268,7 @@ def render_version_change(
                 ]
             )
         )
-        + "\n## Validation Commands\n\n```text\n"
+        + "\n## 验证命令\n\n```text\n"
         + "\n".join(validation_commands)
         + "\n```\n"
     )
@@ -306,7 +306,7 @@ def update_changelog_text(
         lines.extend(f"- {value}" for value in values)
         lines.append("")
     if not populated:
-        lines.extend(["- No user-facing changes.", ""])
+        lines.extend(["- 没有面向用户的变更。", ""])
     section = "\n".join(lines)
     heading_end = text.find("\n")
     if heading_end < 0:

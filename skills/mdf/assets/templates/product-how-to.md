@@ -8,24 +8,24 @@ evidence:
 
 # {{TITLE}}
 
-## Goal
+## 目标
 
 {{CONCRETE_GOAL}}
 
-## Prerequisites
+## 前置条件
 
 {{PREREQUISITES}}
 
-## Procedure
+## 操作步骤
 
 1. {{ACTION_ONE}}
 2. {{ACTION_TWO}}
 3. {{ACTION_THREE}}
 
-## Verify the result
+## 验证结果
 
 {{VERIFICATION}}
 
-## Troubleshooting
+## 故障排查
 
 {{CURRENT_FAILURE_MODES_AND_RECOVERY}}

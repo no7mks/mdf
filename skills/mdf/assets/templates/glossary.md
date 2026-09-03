@@ -1,13 +1,25 @@
-# Domain Context
+# 领域术语
 
 本文件只定义领域语言，不记录实现、计划或工作状态。
 
-## Terms
+## 术语
+
+### MDF
+
+Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
+
+### CodeWiki
+
+由 CodeWiki MCP 生成和更新的仓库结构 Wiki。
+
+### ADR
+
+Architecture Decision Record；记录重要且已决定的长期架构取舍。
 
 ### {{TERM}}
 
 {{DOMAIN_DEFINITION}}
 
-**Synonyms:** {{SYNONYMS_OR_NONE}}
+**同义词：**{{SYNONYMS_OR_NONE}}
 
-**Not to be confused with:** {{DISTINCTION_OR_NONE}}
+**不要与以下概念混淆：**{{DISTINCTION_OR_NONE}}

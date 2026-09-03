@@ -8,22 +8,22 @@ evidence:
 
 # {{TITLE}}
 
-## Context
+## 背景
 
 {{CONCEPTUAL_CONTEXT}}
 
-## How it works today
+## 当前工作方式
 
 {{CURRENT_MODEL}}
 
-## Boundaries
+## 边界
 
 {{CURRENT_BOUNDARIES}}
 
-## Consequences
+## 后果
 
 {{CURRENT_CONSEQUENCES}}
 
-## Related decisions
+## 相关决策
 
 {{ADR_LINKS_OR_NONE}}

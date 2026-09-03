@@ -1,25 +1,25 @@
 ---
-title: "Interfaces"
+title: "接口"
 doc_type: system-interfaces
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# Interfaces
+# 接口
 
-## Current contracts
+## 当前契约
 
 {{APIS_EVENTS_FILES_OR_INTERNAL_CONTRACTS}}
 
-## Compatibility
+## 兼容性
 
 {{CURRENT_COMPATIBILITY_RULES}}
 
-## Errors and failure behavior
+## 错误与失败行为
 
 {{CURRENT_FAILURE_CONTRACTS}}
 
-## Verification
+## 验证
 
 {{CONTRACT_TESTS_OR_SCHEMA_CHECKS}}

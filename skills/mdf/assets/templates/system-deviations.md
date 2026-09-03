@@ -1,21 +1,21 @@
 ---
-title: "Known deviations"
+title: "已知偏差"
 doc_type: system-deviations
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# Known deviations
+# 已知偏差
 
-## Active deviations
+## 当前偏差
 
 {{ACTUAL_BEHAVIOR_IMPACT_AND_LINKED_BUGS_OR_NONE}}
 
-## Incomplete migrations
+## 未完成的迁移
 
 {{CURRENT_MIGRATION_GAPS_AND_LINKED_BUGS_OR_NONE}}
 
-## Technical constraints
+## 技术约束
 
 {{CURRENT_CONSTRAINTS_AND_LINKED_BUGS_OR_NONE}}

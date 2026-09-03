@@ -21,14 +21,14 @@ evidence:
 
 # Change
 
-## Result
+## 结果
 
 {{DELIVERED_RESULT}}
 
-## Current Docs Updated
+## 已更新的当前文档
 
 - {{UPDATED_CURRENT_FACT_PATH}}
 
-## Known Deviations
+## 已知偏差
 
-None.
+无。

@@ -7,33 +7,33 @@ date: "{{YYYY_MM_DD}}"
 
 # {{NUMBER}}. {{TITLE}}
 
-## Context and problem statement
+## 背景与问题陈述
 
 {{CONTEXT_AND_PROBLEM}}
 
-## Decision drivers
+## 决策驱动因素
 
 - {{DRIVER}}
 
-## Considered options
+## 考虑过的方案
 
 - {{OPTION_ONE}}
 - {{OPTION_TWO}}
 
-## Decision outcome
+## 决策结果
 
-Chosen option: **{{CHOSEN_OPTION}}**, because {{RATIONALE}}.
+选定方案：**{{CHOSEN_OPTION}}**，因为 {{RATIONALE}}。
 
-## Consequences
+## 后果
 
-### Positive
+### 正面
 
 - {{POSITIVE_CONSEQUENCE}}
 
-### Negative
+### 负面
 
 - {{NEGATIVE_CONSEQUENCE}}
 
-## Related records
+## 相关记录
 
 {{RELATED_IDS_AND_LINKS_OR_NONE}}

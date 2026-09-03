@@ -180,20 +180,20 @@ def test_init_writes_files_from_assets_templates(
     expected_index = (templates / "docs-index.md").read_text(encoding="utf-8")
     # all_not_applicable baselines 移除 system boundary 与 deviations 两行
     expected_index = expected_index.replace(
-        "- [System boundary](system/overview.md)\n", ""
+        "- [系统边界](system/overview.md)\n", ""
     )
     expected_index = expected_index.replace(
-        "- [Known deviations](system/deviations.md)\n", ""
+        "- [已知偏差](system/deviations.md)\n", ""
     )
     assert docs_index == expected_index
-    assert docs_index != "# Documentation\n"
+    assert docs_index != "# 文档\n"
     assert (repo / "context" / "research" / ".gitkeep").is_file()
     assert not (repo / "context" / "requirements").exists()
     assert not (repo / "context" / "planning").exists()
 
     changelog = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
     assert changelog == (templates / "changelog.md").read_text(encoding="utf-8")
-    assert changelog != "# Changelog\n\nReleased versions are recorded here.\n"
+    assert changelog != "# Changelog\n\n本文件记录已发布的版本。\n"
 
     glossary = (repo / "GLOSSARY.md").read_text(encoding="utf-8")
     assert glossary == (templates / "glossary.md").read_text(encoding="utf-8")

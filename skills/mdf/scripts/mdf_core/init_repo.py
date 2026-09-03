@@ -116,17 +116,17 @@ def template_text(name: str, fallback: str) -> str:
 
 
 def render_docs_index(baselines: dict[str, dict[str, str]]) -> str:
-    text = template_text("docs-index.md", "# Documentation\n")
+    text = template_text("docs-index.md", "# 文档\n")
     if baselines["system_boundary"]["status"] == "not_applicable":
         text = re.sub(
-            r"^- \[System boundary]\(system/overview\.md\)\n?",
+            r"^- \[系统边界]\(system/overview\.md\)\n?",
             "",
             text,
             flags=re.MULTILINE,
         )
     if baselines["deviations"]["status"] == "not_applicable":
         text = re.sub(
-            r"^- \[Known deviations]\(system/deviations\.md\)\n?",
+            r"^- \[已知偏差]\(system/deviations\.md\)\n?",
             "",
             text,
             flags=re.MULTILINE,
@@ -164,7 +164,7 @@ def init_files(
     if not changelog.exists():
         files[changelog] = template_text(
             "changelog.md",
-            "# Changelog\n\nReleased versions are recorded here.\n",
+            "# Changelog\n\n本文件记录已发布的版本。\n",
         )
     jots = repo / "JOTS.md"
     if not jots.exists():
