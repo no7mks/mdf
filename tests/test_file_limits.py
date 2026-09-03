@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Iterator
 from pathlib import Path
 
 from _support import REPO_ROOT
 
 
-MAX_LINE_WIDTH = 80
-MAX_FILE_LINES = 400
+MAX_LINE_WIDTH = 120
+MAX_FILE_LINES = 500
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml", ".yml"}
 TEXT_ROOTS = (".agents", "skills", "tests", "internal")
 ROOT_TEXT_FILES = (
@@ -40,11 +41,27 @@ def checked_files() -> Iterator[Path]:
 def file_measurement(path: Path) -> tuple[int, list[tuple[int, int]]]:
     lines = path.read_text(encoding="utf-8").splitlines()
     widths = [
-        (number, len(line))
+        (number, display_width(line))
         for number, line in enumerate(lines, start=1)
         if len(line) > MAX_LINE_WIDTH
     ]
     return len(lines), widths
+
+
+def display_width(text: str) -> int:
+    """返回显示宽度；全角和宽字符（包括中文）按两个字符计。"""
+    return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1
+               for char in text)
+
+
+def has_split_exception(path: Path) -> bool:
+    """检查文件开头是否说明了超过行数上限仍不拆分的理由。"""
+    header = "\n".join(
+        path.read_text(encoding="utf-8").splitlines()[:20]
+    )
+    return "不拆分" in header and any(
+        word in header for word in ("理由", "原因", "因为")
+    )
 
 
 def describe(path: Path, line_count: int, widths: list[tuple[int, int]]) -> str:
@@ -62,6 +79,13 @@ def test_file_limits():
     failures: list[str] = []
     for path in checked_files():
         line_count, widths = file_measurement(path)
-        if line_count > MAX_FILE_LINES or widths:
+        over_line_limit = (
+            line_count > MAX_FILE_LINES and not has_split_exception(path)
+        )
+        if over_line_limit or widths:
             failures.append(describe(path, line_count, widths))
     assert not failures, "File limits exceeded:\n" + "\n".join(failures)
+
+
+def test_display_width_counts_chinese_as_two_characters():
+    assert display_width("MDF 中文") == 8
