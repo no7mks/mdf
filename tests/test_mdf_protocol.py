@@ -249,7 +249,7 @@ def test_audit_rejects_manifest_latest_release_that_disagrees_with_changelog(
 def test_invalid_object_status_is_rejected(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     bug = repo / "bugs" / BUG_NAME
-    replace(bug, "status: ready", "status: in_progress")
+    replace(bug, "status: open", "status: in_progress")
     init_git(repo)
 
     result = mdf(python_exe, "validate", "--repo", str(repo))

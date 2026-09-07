@@ -26,7 +26,7 @@ Bug frontmatter 至少包含：
 ```yaml
 id: bug-<4 位字符>
 type: bug
-status: ready
+status: open
 severity: critical | major | trivial
 found_in: unreleased | <stable-semver>
 ```
@@ -37,17 +37,18 @@ Bug 不使用 `depends_on`。一般关联只在正文中说明。正文必须包
 `found_in: unreleased` 表示当前未发布线中的稳定关联；它不是 SemVer。`fixed_in`
 只接受稳定 SemVer。
 
-非 duplicate 的 active Bug（`draft`/`ready`）必须有 `critical`、`major` 或
-`trivial` 三值 severity。
+Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。`open` 表示待修复；
+`fixed` 表示已修复、等待独立验证；只有二次验证通过才转为 `closed`。`rejected` 是
+终态，且必须有 `reject-reason`：`wont-fix`、`not-a-bug`、`cannot-reproduce`、
+`obsolete` 或 `duplicate`。非 duplicate 的 `open`、`fixed`、`closed` Bug 必须有
+`critical`、`major` 或 `trivial` 三值 severity。`fixed_in` 只允许在 `closed` Bug 中，
+且必须是稳定 SemVer。
 
-合法 Bug resolution：`fixed`、`wont-fix`、`not-a-bug`、`cannot-reproduce`、
-`obsolete`、`duplicate`。非 fixed resolution 不写 `fixed_in`。
-
-duplicate 必须是终态：
+duplicate 是被拒绝的 Bug：
 
 ```yaml
-status: closed
-resolution: duplicate
+status: rejected
+reject-reason: duplicate
 duplicate_of: bug-<canonical>
 ```
 
@@ -66,8 +67,6 @@ proposals: [prp-...]
 fixed: [bug-...]
 closed: [bug-...]
 deferred: [bug-...]
-closed_resolutions:
-  bug-...: wont-fix
 adrs: [adr-0001]
 release_notes: none | {Added/Changed/Deprecated/Removed/Fixed/Security: [text]}
 breaking: false
@@ -77,8 +76,8 @@ evidence:
   artifacts: []
 ```
 
-一个 Bug 只能出现在三个 outcome 列表之一。`closed` 只存 ID；其 resolution 在
-`closed_resolutions` 中声明。duplicate ID 不得出现在任何 outcome 列表。
+一个 Bug 只能出现在三个 outcome 列表之一。`closed` 只存 `rejected` Bug 的 ID；
+拒绝原因由该 Bug 的 `reject-reason` 声明。duplicate ID 不得出现在任何 outcome 列表。
 
 `evidence.tests`、`evidence.commands` 与 `evidence.artifacts` 都是列表；每个元素
 必须是非空字符串。

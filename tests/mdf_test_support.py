@@ -155,7 +155,6 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "fixed: [bug-CD34]\n"
             "closed: []\n"
             "deferred: []\n"
-            "closed_resolutions: {}\n"
             "adrs: []\n"
             "release_notes:\n"
             "  Added:\n"
@@ -215,6 +214,11 @@ def prepare_release_closeout_repo(
     tmp_path: Path, slug: str = "service-health"
 ) -> Path:
     repo = copy_fixture(tmp_path)
+    replace(
+        repo / "bugs" / BUG_NAME,
+        "status: open",
+        "status: fixed",
+    )
     init_git(repo)
     write_unreleased_change(repo, slug)
     git(repo, "add", "--all")

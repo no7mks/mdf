@@ -2,7 +2,6 @@ import re
 from pathlib import Path
 
 from .constants import (
-    BUG_TERMINAL_RESOLUTIONS,
     CHANGE_KINDS,
     MARKER_RE,
     contains_unreleased_sentinel,
@@ -153,36 +152,6 @@ def validate_change_file(
             findings,
             "change.bug_duplicate",
             "同一 Bug ID 只能出现在一个 outcome 列表中",
-            rel,
-        )
-    closed_resolutions = metadata.get("closed_resolutions")
-    if closed_resolutions is not None:
-        if not isinstance(closed_resolutions, dict) or any(
-            not isinstance(identifier, str)
-            or not isinstance(value, str)
-            or value not in BUG_TERMINAL_RESOLUTIONS
-            for identifier, value in closed_resolutions.items()
-        ):
-            add_finding(
-                findings,
-                "change.closed_resolutions",
-                "closed_resolutions 必须将 Bug ID 映射到非 fixed 终态 resolution",
-                rel,
-            )
-        elif isinstance(metadata.get("closed"), list) and set(
-            closed_resolutions
-        ) != {item for item in metadata["closed"] if isinstance(item, str)}:
-            add_finding(
-                findings,
-                "change.closed_resolutions",
-                "closed_resolutions 必须精确覆盖 closed Bug ID",
-                rel,
-            )
-    elif metadata.get("closed"):
-        add_finding(
-            findings,
-            "change.closed_resolutions",
-            "closed Bug 需要显式终态 resolution",
             rel,
         )
     release_notes = metadata.get("release_notes")

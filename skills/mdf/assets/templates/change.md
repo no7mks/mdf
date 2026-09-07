@@ -5,7 +5,6 @@ proposals: []
 fixed: []
 closed: []
 deferred: []
-closed_resolutions: {}
 adrs: []
 release_notes:
   Changed:

@@ -49,7 +49,6 @@ HOTFIX_OPTIONAL_FIELDS = {
     "fixed",
     "closed",
     "deferred",
-    "closed_resolutions",
     "adrs",
     "breaking",
 }
@@ -175,24 +174,6 @@ def normalize_hotfix_change(raw: Any, version: str) -> dict[str, Any]:
             "hotfix 的每个 Bug 只能有一个 outcome",
             code="invalid_closeout_spec",
         )
-    raw_resolutions = change.get("closed_resolutions", {})
-    if not isinstance(raw_resolutions, dict) or any(
-        not isinstance(identifier, str)
-        or not identifier.strip()
-        or not isinstance(resolution, str)
-        or resolution not in BUG_TERMINAL_RESOLUTIONS
-        for identifier, resolution in raw_resolutions.items()
-    ):
-        raise MDFError(
-            "hotfix closed_resolutions 必须是终态 Bug resolution 映射",
-            code="invalid_closeout_spec",
-        )
-    if set(raw_resolutions) != set(closed):
-        raise MDFError(
-            "hotfix closed_resolutions 必须精确覆盖 closed Bug ID",
-            code="invalid_closeout_spec",
-        )
-    normalized["closed_resolutions"] = dict(raw_resolutions)
     return normalized
 
 

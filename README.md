@@ -17,9 +17,10 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
-| `$mdf doc create` | 按已确认的内容手动创建一个 Bug 或 Proposal |
-| `$mdf doc review` | 修订单个 active Proposal 或 Bug |
-| `$mdf doc archive` | 归档 closed Proposal 或 Bug |
+| `$mdf bug create` | 按已确认的内容手动创建一个 open Bug |
+| `$mdf prp create` | 按已确认的内容手动创建一个 draft Proposal |
+| `$mdf prp review` | 修订单个 active Proposal，并通过验证后转为 ready |
+| `$mdf archive` | 归档 closed Proposal 及 closed/rejected Bug |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |

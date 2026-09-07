@@ -75,12 +75,16 @@ CHANGELOG_UNRELEASED_ENTRY_RE = re.compile(
     rf"^\s*(?:[-*+]\s+)?{re.escape(UNRELEASED_SENTINEL)}\s*$", re.MULTILINE
 )
 BUG_SEVERITIES = {"critical", "major", "trivial"}
-BUG_TERMINAL_RESOLUTIONS = {
+BUG_REJECT_REASONS = {
     "wont-fix",
     "not-a-bug",
     "cannot-reproduce",
     "obsolete",
+    "duplicate",
 }
+BUG_STATUSES = {"open", "fixed", "closed", "rejected"}
+# 收口 payload 仍以 resolution 描述本次操作；持久化 Bug 使用 status/reject-reason。
+BUG_TERMINAL_RESOLUTIONS = BUG_REJECT_REASONS - {"duplicate"}
 BUG_RESOLUTIONS = {"fixed", "duplicate", *BUG_TERMINAL_RESOLUTIONS}
 # Proposal 的非交付终态；与 validate_objects 的 Proposal resolution 集合对齐。
 PROPOSAL_CLOSED_RESOLUTIONS = {"rejected", "duplicate", "obsolete"}

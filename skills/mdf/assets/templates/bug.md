@@ -1,7 +1,7 @@
 ---
 id: "{{BUG_ID}}"
 type: bug
-status: draft
+status: open
 severity: major
 found_in: {{FOUND_IN}}
 ---

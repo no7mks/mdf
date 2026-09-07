@@ -21,7 +21,6 @@ def aggregate_release_changes(
     set[str],
     set[str],
     set[str],
-    dict[str, str],
     dict[str, list[str]],
 ]:
     notes = {category: [] for category in CHANGELOG_CATEGORIES}
@@ -31,7 +30,6 @@ def aggregate_release_changes(
     closed: set[str] = set()
     deferred: set[str] = set()
     adrs: set[str] = set()
-    closed_resolutions: dict[str, str] = {}
     evidence_sources: list[dict[str, Any]] = []
     for slug in sorted(slugs):
         change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
@@ -41,9 +39,6 @@ def aggregate_release_changes(
         closed.update(metadata.get("closed", []))
         deferred.update(metadata.get("deferred", []))
         adrs.update(metadata.get("adrs", []))
-        raw_resolutions = metadata.get("closed_resolutions", {})
-        if isinstance(raw_resolutions, dict):
-            closed_resolutions.update(raw_resolutions)
         breaking = breaking or metadata.get("breaking") is True
         release_notes = metadata.get("release_notes")
         if isinstance(release_notes, dict):
@@ -62,7 +57,6 @@ def aggregate_release_changes(
         closed,
         deferred,
         adrs,
-        closed_resolutions,
         merge_evidence(*evidence_sources),
     )
 
@@ -104,7 +98,6 @@ def render_version_change(
     closed: set[str],
     deferred: set[str],
     adrs: set[str],
-    closed_resolutions: dict[str, str],
     closed_proposal_resolutions: dict[str, str],
     found_in_transitions: list[str],
     deferred_acceptance: dict[str, Any],
@@ -159,11 +152,6 @@ def render_version_change(
             )
         return "\n".join(lines) + "\n"
 
-    def closed_resolution_yaml(identifier: str) -> str:
-        resolution = closed_resolutions.get(identifier, "wont-fix")
-        return json.dumps(str(resolution), ensure_ascii=False)
-
-
     transition_lines = (
         "\n".join(f"- {line}" for line in found_in_transitions) or "None."
     )
@@ -189,16 +177,6 @@ def render_version_change(
         f"fixed: {yaml_list(fixed)}\n"
         f"closed: {yaml_list(closed)}\n"
         f"deferred: {yaml_list(deferred)}\n"
-        + (
-            "closed_resolutions:\n"
-            + "".join(
-                f"  {identifier}: "
-                f"{closed_resolution_yaml(identifier)}\n"
-                for identifier in sorted(closed)
-            )
-            if closed
-            else ""
-        )
         + f"adrs: {yaml_list(adrs)}\n"
         f"included_changes: {yaml_list(slugs)}\n"
         + notes_yaml()
@@ -232,10 +210,7 @@ def render_version_change(
         + (chr(10).join(f"- `{item}`" for item in sorted(fixed)) or "无。")
         + "\n\n### 已关闭的 Bug\n\n"
         + (
-            chr(10).join(
-                f"- `{item}` ({closed_resolutions.get(item, 'wont-fix')})"
-                for item in sorted(closed)
-            )
+            chr(10).join(f"- `{item}`" for item in sorted(closed))
             or "无。"
         )
         + "\n\n### 延后的 Bug\n\n"

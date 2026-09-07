@@ -1,10 +1,10 @@
 import re
 from pathlib import Path
 from typing import Any, Iterable
-
 from .constants import (
-    BUG_RESOLUTIONS,
+    BUG_REJECT_REASONS,
     BUG_SEVERITIES,
+    BUG_STATUSES,
     EPOCH_RE,
     MARKER_RE,
     OBJECT_FILE_RE,
@@ -15,8 +15,6 @@ from .errors import Finding, MDFError, add_finding
 from .paths import path_stays_in_repo, relative
 from .textutil import stable_semver
 from .yamlutil import read_frontmatter
-
-
 def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
     root = repo / ("proposals" if kind == "proposal" else "bugs")
     if (
@@ -25,8 +23,7 @@ def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
         or not path_stays_in_repo(repo, root)
     ):
         return []
-    # Collect every Markdown candidate so a misplaced prp-*/bug-* file is
-    # validated (and rejected) instead of being silently ignored.
+    # Validate misplaced prp-*/bug-* Markdown instead of silently ignoring it.
     return sorted(
         path
         for path in root.rglob("*.md")
@@ -34,8 +31,6 @@ def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
         and not path.is_symlink()
         and path_stays_in_repo(repo, path)
     )
-
-
 def required_sections(
     body: str, headings: Iterable[str], rel: str, findings: list[Finding]
 ) -> None:
@@ -49,7 +44,6 @@ def required_sections(
                 f"Missing required section: {heading}",
                 rel,
             )
-
 
 def validate_object(
     repo: Path, path: Path, expected_type: str, findings: list[Finding]
@@ -78,14 +72,22 @@ def validate_object(
             findings, "object.type", f"type must equal {expected_type}", rel
         )
     status = metadata.get("status")
-    if status not in {"draft", "ready", "closed"}:
+    allowed_statuses = (
+        {"draft", "ready", "closed"}
+        if expected_type == "proposal"
+        else BUG_STATUSES
+    )
+    if status not in allowed_statuses:
         add_finding(
             findings,
             "object.status",
-            "status must be draft, ready, or closed",
+            (
+                "Proposal status must be draft, ready, or closed"
+                if expected_type == "proposal"
+                else "Bug status must be open, fixed, closed, or rejected"
+            ),
             rel,
         )
-
     if expected_type == "proposal":
         depends_on = metadata.get("depends_on")
         if not isinstance(depends_on, list):
@@ -109,7 +111,6 @@ def validate_object(
             "Bug must not declare Proposal depends_on",
             rel,
         )
-
     if MARKER_RE.search(body):
         add_finding(
             findings,
@@ -196,23 +197,25 @@ def validate_object(
                         f"范围的“{subsection}”子节不能为空",
                         rel,
                     )
-
     resolution = metadata.get("resolution")
-    if status == "closed" and not isinstance(resolution, str):
+    if (
+        expected_type == "proposal"
+        and status == "closed"
+        and not isinstance(resolution, str)
+    ):
         add_finding(
             findings,
             "object.resolution",
             "Closed objects require resolution",
             rel,
         )
-    if status != "closed" and resolution is not None:
+    if expected_type == "proposal" and status != "closed" and resolution is not None:
         add_finding(
             findings,
             "object.early_resolution",
             "Only closed objects may declare resolution",
             rel,
         )
-
     rel_parts = Path(rel).parts
     expected_root = "proposals" if expected_type == "proposal" else "bugs"
     if len(rel_parts) == 2 and rel_parts[0] == expected_root:
@@ -229,11 +232,13 @@ def validate_object(
                 "Archive slice must be MAJOR.MINOR",
                 rel,
             )
-        if status != "closed":
+        if status != "closed" and not (
+            expected_type == "bug" and status == "rejected"
+        ):
             add_finding(
                 findings,
                 "archive.status",
-                "Only closed objects may be archived",
+                "Only closed Proposals and closed or rejected Bugs may be archived",
                 rel,
             )
     else:
@@ -244,7 +249,6 @@ def validate_object(
             "archive/MAJOR.MINOR",
             rel,
         )
-
     if expected_type == "proposal":
         allowed = {"fulfilled", "rejected", "duplicate", "obsolete"}
         if resolution is not None and resolution not in allowed:
@@ -277,11 +281,11 @@ def validate_object(
                 rel,
             )
     else:
-        if resolution is not None and resolution not in BUG_RESOLUTIONS:
+        if resolution is not None:
             add_finding(
                 findings,
                 "bug.resolution",
-                f"Unsupported bug resolution: {resolution}",
+                "Bug must use status and reject-reason instead of resolution",
                 rel,
             )
         severity = metadata.get("severity")
@@ -292,22 +296,31 @@ def validate_object(
                 "severity 必须是 critical、major 或 trivial",
                 rel,
             )
-        if status in {"draft", "ready"} and severity not in BUG_SEVERITIES:
+        if status in {"open", "fixed", "closed"} and severity not in BUG_SEVERITIES:
             add_finding(
                 findings,
                 "bug.severity_required",
                 "非 duplicate 的 active Bug 必须有 severity",
                 rel,
             )
+        reject_reason = metadata.get("reject-reason")
         duplicate_of = metadata.get("duplicate_of")
-        if resolution == "duplicate":
-            if status != "closed":
+        if status == "rejected":
+            if reject_reason not in BUG_REJECT_REASONS:
                 add_finding(
                     findings,
-                    "bug.duplicate_status",
-                    "A duplicate Bug must be closed",
+                    "bug.reject_reason",
+                    "rejected Bug requires a supported reject-reason",
                     rel,
                 )
+        elif reject_reason is not None:
+            add_finding(
+                findings,
+                "bug.reject_reason",
+                "reject-reason is allowed only with status rejected",
+                rel,
+            )
+        if status == "rejected" and reject_reason == "duplicate":
             if not isinstance(duplicate_of, str) or not duplicate_of.startswith(
                 "bug-"
             ):
@@ -330,7 +343,7 @@ def validate_object(
                 add_finding(
                     findings,
                     "bug.duplicate_of",
-                    "duplicate_of 仅允许用于 resolution: duplicate",
+                    "duplicate_of 仅允许用于 rejected duplicate Bug",
                     rel,
                 )
             found_in = metadata.get("found_in")
@@ -352,7 +365,7 @@ def validate_object(
                     rel,
                 )
             fixed_in = metadata.get("fixed_in")
-            if resolution == "fixed" and stable_semver(fixed_in) is None:
+            if status == "closed" and stable_semver(fixed_in) is None:
                 add_finding(
                     findings,
                     "bug.fixed_in",
@@ -366,14 +379,13 @@ def validate_object(
                     "fixed_in must be a stable SemVer",
                     rel,
                 )
-            if resolution != "fixed" and fixed_in is not None:
+            if status != "closed" and fixed_in is not None:
                 add_finding(
                     findings,
                     "bug.fixed_in",
-                    "fixed_in is allowed only with resolution fixed",
+                    "fixed_in is allowed only with status closed",
                     rel,
                 )
-
     sentinel_metadata = dict(metadata)
     if expected_type == "bug" and is_unreleased_sentinel(
         metadata.get("found_in")

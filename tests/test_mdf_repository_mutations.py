@@ -71,15 +71,19 @@ def test_duplicate_group_archives_primary_and_child_together(
 ):
     repo = copy_fixture(tmp_path)
     primary = repo / "bugs" / BUG_NAME
-    replace(primary, "status: ready", "status: closed\nresolution: wont-fix")
+    replace(
+        primary,
+        "status: open",
+        "status: rejected\nreject-reason: wont-fix",
+    )
     replace(primary, "found_in: unreleased", "found_in: 1.2.0")
     duplicate_name = "bug-EF56-duplicate.md"
     (repo / "bugs" / duplicate_name).write_text(
         "---\n"
         "id: bug-EF56\n"
         "type: bug\n"
-        "status: closed\n"
-        "resolution: duplicate\n"
+        "status: rejected\n"
+        "reject-reason: duplicate\n"
         f"duplicate_of: {BUG_ID}\n"
         "---\n\n"
         "# Duplicate\n\n"

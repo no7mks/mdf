@@ -170,10 +170,10 @@ def test_removed_verify_command_argument_is_a_hard_failure(
 def test_mdf_clarify_delegates_to_system_skill():
     skill = skill_dir("mdf")
     clarify = (skill / "intents" / "clarify.md").read_text(encoding="utf-8")
-    create = (skill / "intents" / "doc-create.md").read_text(
+    create = (skill / "intents" / "prp-create.md").read_text(
         encoding="utf-8"
     )
-    review = (skill / "intents" / "doc-review.md").read_text(
+    review = (skill / "intents" / "prp-review.md").read_text(
         encoding="utf-8"
     )
     init = (skill / "intents" / "init.md").read_text(encoding="utf-8")

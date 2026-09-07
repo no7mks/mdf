@@ -1,7 +1,7 @@
 ---
 id: bug-CD34
 type: bug
-status: ready
+status: open
 severity: major
 found_in: unreleased
 ---

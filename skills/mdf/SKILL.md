@@ -1,7 +1,7 @@
 ---
 name: mdf
 description: >-
-  Mars Development Flow 的唯一入口。用户显式使用 $mdf、$mdf doc、$mdf codewiki 或
+  Mars Development Flow 的唯一入口。用户显式使用 $mdf、$mdf bug、$mdf prp、$mdf codewiki 或
   $mdf jot promote 管理仓库文档、下一步规划、外部输入、CodeWiki、随手记录、审计、
   收口、归档或逐题澄清。
 ---
@@ -17,10 +17,12 @@ Proposal、Bug 与 Change；`manifest` 约束`validation`和发布状态。它�
 
 ```text
 $mdf <调用>
-├─ 裸调用、裸 doc/codewiki、未知调用 → 仅显示帮助
+├─ 裸调用、裸 bug/prp/codewiki、未知调用 → 仅显示帮助
 ├─ init | intake | next [方向] | start | finish | audit → 读取 intents/<intent>.md
 ├─ clarify <议题> → 读取 intents/clarify.md
-├─ doc create | review | archive → 读取对应 doc-<action>.md
+├─ bug create → 读取 intents/bug-create.md
+├─ prp create | review → 读取对应 prp-<action>.md
+├─ archive → 读取 intents/archive.md
 ├─ codewiki generate | update → 读取对应 codewiki-<action>.md
 └─ jot | jot promote → 读取 intents/jot.md
 ```
@@ -37,10 +39,10 @@ $mdf <调用>
    证据：已读取材料与其流程结果；通过 → 执行 intent；失败 → 停止并报告缺失材料。
 
 调用示例包含 `intake`、`next [方向]`、`codewiki generate`、`codewiki update`、
-`doc create`、`doc review`、`doc archive`、`jot`、`jot promote` 与
+`bug create`、`prp create`、`prp review`、`archive`、`jot`、`jot promote` 与
 `clarify <议题>`；裸 `$mdf` 只显示帮助。
-对应文件为 `intents/intake.md`、`intents/next.md`、`intents/doc-create.md`、
-`intents/doc-review.md`、`intents/doc-archive.md`、
+对应文件为 `intents/intake.md`、`intents/next.md`、`intents/bug-create.md`、
+`intents/prp-create.md`、`intents/prp-review.md`、`intents/archive.md`、
 `intents/codewiki-generate.md`、`intents/codewiki-update.md` 与
 `intents/jot.md`。
 CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`。
@@ -54,7 +56,7 @@ CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`。
 | 模板 | `assets/` | 供 intent 写入仓库产出物 |
 | 确定性 CLI | `scripts/` | 由 intent 调用，不等同于用户意图 |
 
-`$mdf <intent>`、`$mdf doc <action>`、`$mdf codewiki <action>` 与
+`$mdf <intent>`、`$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>` 与
 `$mdf jot promote` 是用户入口；CLI command 由 intent 内部使用，不要求一一对应。
 CLI 统一解析目标 Git 根，不假设当前目录就是目标仓库。
 上述材料均不是可单独调用的 Skill。

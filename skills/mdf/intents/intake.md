@@ -7,7 +7,7 @@
 
 ```text
 doctor → 来源澄清 → 对象拆分 → clarify → 用户确认清单？否：继续澄清
-→ slug/ID → 写 draft → 展示结果
+→ slug/ID → 写 draft Proposal/open Bug → 展示结果
 ```
 
 ## 工作流（唯一执行契约）
@@ -28,8 +28,8 @@ doctor → 来源澄清 → 对象拆分 → clarify → 用户确认清单？�
    的 draft、ready 或 closed + fulfilled Proposal ID；证据：只有用户明确确认清单才继续；
    通过 → 6；失败 → 回到 2 或 4。
 6. **脚本**；为每项提议并确认英文 ASCII kebab-case slug，使用 `make-id --slug`
-   生成 ID 与规范化文件名，并以模板写入 `proposals/` 或 `bugs/`，初始状态为 `draft`；
-   证据：所有 draft；通过 → 7；失败 → 停止并保留现场。
-7. **约束**；展示 draft、确认事实、排除范围和依赖；证据：会话摘要；通过 → 结束；
-   失败 → 停止。后续显式调用 `$mdf doc review`，经 draft targeted validation 后转为
-   `ready`；不得关闭普通对象或填写 `fulfilled_in`/`fixed_in`。
+   生成 ID 与规范化文件名，并以模板写入 `proposals/` 或 `bugs/`；Proposal 初始状态为
+   `draft`，Bug 初始状态为 `open`；证据：所有新建对象；通过 → 7；失败 → 停止并保留现场。
+7. **约束**；展示新建对象、确认事实、排除范围和依赖；证据：会话摘要；通过 → 结束；
+   失败 → 停止。Proposal 后续显式调用 `$mdf prp review`，经 draft targeted validation 后转为
+   `ready`；Bug 创建后即为 `open`，不得关闭普通对象或填写 `fulfilled_in`/`fixed_in`。

@@ -37,13 +37,13 @@ doctor + Gitflow 分支 → 交付范围与当前事实检查 → feature/bugfix
    `--dry-run`；证据：版本收口输入；通过 → release 到 7，hotfix 到 6；失败 → 停止。
    Core 仅记录已验证的确定性审计，语义审阅使用本次已确认 audit。
 6. **约束**；验证 hotfix `--hotfix-change-json` 只含 body、outcome、ADR、
-   `closed_resolutions`、`release_notes`、`breaking`、`evidence`；body 非空，
+   `release_notes`、`breaking`、`evidence`；body 非空，
    三类 evidence 字符串列表合计至少一条，release notes 至少一项非空；证据：有效 JSON；
    通过 → 7；失败 → 未知字段、空字符串或缺字段时停止。Core 注入 `change_kind` 与
    `source_branch`。
 7. **约束**；以 `--closures-json` 覆盖每个 child Change outcome，并可补录未写 child
-   Change 的对象；对每个 ready 且 `found_in: unreleased` 的 Bug 分类：fixed 关闭并写
-   `fixed_in`，closed 仅写非 fixed 终态，deferred 保持 ready；critical 仅 fixed；
+   Change 的对象；对每个 active 且 `found_in: unreleased` 的 Bug 分类：fixed 经验证后关闭并写
+   `fixed_in`，rejected 使用既有 `reject-reason`，deferred 保持 open；critical 仅 fixed；
    major deferred/wont-fix 要用户接受、理由和 follow-up；duplicate 不进 outcome；
    canonical 与 duplicate 一并归档；证据：完整 closures；通过 → 8；失败 → 停止。
 8. **脚本**；调用 `release-closeout`；版本根 Change 聚合 child outcomes/evidence，

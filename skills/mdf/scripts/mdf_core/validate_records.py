@@ -115,7 +115,10 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
             metadata, _ = read_frontmatter(path)
         except MDFError:
             continue
-        if metadata.get("resolution") == "duplicate":
+        if (
+            metadata.get("status") == "rejected"
+            and metadata.get("reject-reason") == "duplicate"
+        ):
             identifier = metadata.get("id")
             primary = metadata.get("duplicate_of")
             if not isinstance(primary, str) or primary not in known:
@@ -146,7 +149,10 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                         "duplicate_of must point to a Bug",
                         relative(repo, path),
                     )
-                if primary_metadata.get("resolution") == "duplicate":
+                if (
+                    primary_metadata.get("status") == "rejected"
+                    and primary_metadata.get("reject-reason") == "duplicate"
+                ):
                     add_finding(
                         findings,
                         "bug.duplicate_chain",
@@ -195,7 +201,11 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                             record_metadata, _ = read_frontmatter(record_path)
                         except MDFError:
                             record_metadata = {}
-                        if record_metadata.get("resolution") == "duplicate":
+                        if (
+                            record_metadata.get("status") == "rejected"
+                            and record_metadata.get("reject-reason")
+                            == "duplicate"
+                        ):
                             add_finding(
                                 findings,
                                 "change.duplicate_in_outcome",
@@ -204,35 +214,6 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                                 "ID",
                                 relative(repo, path),
                             )
-        closed_resolutions = metadata.get("closed_resolutions")
-        if isinstance(closed_resolutions, dict):
-            for identifier in closed_resolutions:
-                if (
-                    not isinstance(identifier, str)
-                    or identifier not in known
-                    or not identifier.startswith("bug-")
-                ):
-                    add_finding(
-                        findings,
-                        "change.record_missing",
-                        f"Unknown closed resolution Bug: {identifier}",
-                        relative(repo, path),
-                    )
-                    continue
-                record_path = identifier_paths.get(identifier)
-                if record_path is not None:
-                    try:
-                        record_metadata, _ = read_frontmatter(record_path)
-                    except MDFError:
-                        record_metadata = {}
-                    if record_metadata.get("resolution") == "duplicate":
-                        add_finding(
-                            findings,
-                            "change.duplicate_in_outcome",
-                            f"Duplicate Bug {identifier} must be excluded from "
-                            "Change outcomes; use its canonical Bug ID",
-                            relative(repo, path),
-                        )
 
 
 def validate_proposal_dependencies(

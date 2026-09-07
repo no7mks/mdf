@@ -244,9 +244,9 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init` intent 使用 `doctor` 与 `init`；`next` 使用 `doctor`、`make-id`
-与 `validate`；`intake` 与 `doc create` 使用 `doctor` 与 `make-id`；
+与 `validate`；`intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
 `jot` 使用 `make-jot-id`；
-`doc archive` intent 使用 `archive`；`start` intent 使用 `start`；
+`archive` intent 使用 `archive`；`start` intent 使用 `start`；
 `finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 

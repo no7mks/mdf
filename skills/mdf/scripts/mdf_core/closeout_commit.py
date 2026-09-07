@@ -38,7 +38,6 @@ def apply_version_closeout(
     closed_ids: set[str],
     deferred_ids: set[str],
     adrs: set[str],
-    closed_resolutions: dict[str, str],
     closed_proposal_resolutions: dict[str, str],
     objects: dict[str, tuple[str, Path, dict[str, Any]]],
     closures: list[dict[str, Any]],
@@ -150,7 +149,6 @@ def apply_version_closeout(
             closed_ids,
             deferred_ids,
             adrs,
-            closed_resolutions,
             closed_proposal_resolutions,
             found_in_transitions,
             context.get("deferred_acceptance", {}),
@@ -201,7 +199,6 @@ def apply_version_closeout(
             "fixed": sorted(fixed_ids),
             "closed": sorted(closed_ids),
             "deferred": sorted(deferred_ids),
-            "closed_resolutions": closed_resolutions,
             "closed_proposals": closed_proposal_resolutions,
         },
     }

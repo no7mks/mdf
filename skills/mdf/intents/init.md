@@ -41,7 +41,7 @@ clean Git 根 → 默认分支 master？否：用户先改名；是 → 盘点�
    拟补字段、基线、验证命令与预期 `validation`；证据：用户明确确认；通过 → 5；
    失败 → 回到 2 或 3。移动/删除必须列出源、目标和无信息损失理由，且不得覆盖既有内容。
    不处理待实现意图；完成后用户可按输入形态显式 `$mdf intake` 或
-   `$mdf doc create`。配置调整必须再次显式调用 `$mdf init`。
+   `$mdf bug create` 或 `$mdf prp create`。配置调整必须再次显式调用 `$mdf init`。
 
 ## 3. 落地初始化方案
 5. **脚本**；执行 `init` 建立完整 scaffold，保持 manifest `initializing`，写入确认的

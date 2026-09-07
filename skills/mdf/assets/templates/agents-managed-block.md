@@ -14,9 +14,9 @@
 
 - 意图与状态
   - 仅在用户显式调用 `$mdf …` 时执行 MDF 意图命令，包括 `$mdf intake`、
-    `$mdf doc create` 与 `$mdf doc review`；不得隐式接单或自动提交。
-  - Proposal/Bug 状态只使用 `draft`、`ready`、`closed`；feature/bugfix 不得提前
-    关闭。
+    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单或自动提交。
+  - Proposal 状态只使用 `draft`、`ready`、`closed`；Bug 状态只使用 `open`、`fixed`、
+    `closed`、`rejected`；feature/bugfix 不得提前关闭。
   - release/hotfix 收口前必须通过零问题项的 MDF 全量审计。
 
 - 托管边界

@@ -33,7 +33,10 @@ def archive_plan(
                 records[identifier] = (path, metadata)
             if len(records_path_parts) != 2:
                 continue
-            if metadata.get("status") != "closed":
+            allowed_statuses = (
+                {"closed"} if kind == "proposal" else {"closed", "rejected"}
+            )
+            if metadata.get("status") not in allowed_statuses:
                 continue
             root = repo / directory
             target = root / "archive" / epoch / path.name
@@ -50,7 +53,8 @@ def archive_plan(
     for path, metadata in list(records.values()):
         if (
             metadata.get("type") != "bug"
-            or metadata.get("resolution") != "duplicate"
+            or metadata.get("status") != "rejected"
+            or metadata.get("reject-reason") != "duplicate"
         ):
             continue
         primary_id = metadata.get("duplicate_of")
@@ -60,7 +64,7 @@ def archive_plan(
         if primary is None:
             continue
         primary_path, primary_metadata = primary
-        if primary_metadata.get("status") != "closed":
+        if primary_metadata.get("status") not in {"closed", "rejected"}:
             raise MDFError(
                 "Duplicate archive group is not closed: "
                 f"{relative(repo, primary_path)}",

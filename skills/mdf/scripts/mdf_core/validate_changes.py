@@ -116,7 +116,6 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                     "adrs",
                 )
             }
-            aggregate_resolutions: dict[str, str] = {}
             for child_dir in child_dirs:
                 child = directory / child_dir / "CHANGE.md"
                 if not child.is_file():
@@ -129,14 +128,6 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                     values = child_metadata.get(key)
                     if isinstance(values, list):
                         aggregate[key].update(str(value) for value in values)
-                raw_resolutions = child_metadata.get("closed_resolutions")
-                if isinstance(raw_resolutions, dict):
-                    aggregate_resolutions.update(
-                        {
-                            str(key): str(value)
-                            for key, value in raw_resolutions.items()
-                        }
-                    )
             # A hotfix is a direct version-level Change: it intentionally has
             # no unreleased child slug to aggregate. Release roots must include
             # every child outcome and may supersets from release-level closures.
@@ -160,29 +151,6 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                             f"版本根 {key} 必须覆盖全部子 Change outcome",
                             relative(repo, release),
                         )
-                if aggregate_resolutions:
-                    root_resolutions = root_metadata.get("closed_resolutions")
-                    if not isinstance(root_resolutions, dict):
-                        add_finding(
-                            findings,
-                            "release.aggregate",
-                            "版本根 closed_resolutions 必须覆盖子 Change 的 resolutions",
-                            relative(repo, release),
-                        )
-                    else:
-                        for (
-                            identifier,
-                            resolution,
-                        ) in aggregate_resolutions.items():
-                            if root_resolutions.get(identifier) != resolution:
-                                add_finding(
-                                    findings,
-                                    "release.aggregate",
-                                    "版本根 closed_resolutions 必须覆盖子 Change "
-                                    "的 resolutions",
-                                    relative(repo, release),
-                                )
-                                break
         for change_dir in sorted(
             path
             for path in directory.iterdir()

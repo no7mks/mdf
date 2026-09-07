@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from . import doctor
+from .closeout_objects import active_objects
 from .closeout_stage import apply_closeout, summarize_closeout
 from .closeout_shape import validate_closeout_shape
 from .closeout_validate import normalize_hotfix_change, run_verify_commands
@@ -88,7 +89,6 @@ def derive_closeout_spec(
         fixed: set[str] = set()
         closed: set[str] = set()
         deferred: set[str] = set()
-        closed_resolutions: dict[str, str] = {}
         for slug in slugs:
             metadata, _ = read_frontmatter(
                 repo / "changes" / "unreleased" / slug / "CHANGE.md"
@@ -97,9 +97,6 @@ def derive_closeout_spec(
             fixed.update(metadata.get("fixed", []))
             closed.update(metadata.get("closed", []))
             deferred.update(metadata.get("deferred", []))
-            raw_resolutions = metadata.get("closed_resolutions", {})
-            if isinstance(raw_resolutions, dict):
-                closed_resolutions.update(raw_resolutions)
         hotfix_change = None
     else:
         raw_hotfix = _json_argument(
@@ -117,7 +114,19 @@ def derive_closeout_spec(
         fixed = set(hotfix_change["fixed"])
         closed = set(hotfix_change["closed"])
         deferred = set(hotfix_change["deferred"])
-        closed_resolutions = dict(hotfix_change.get("closed_resolutions", {}))
+    records = active_objects(repo)
+    reject_reasons = {
+        identifier: metadata.get("reject-reason")
+        for identifier in closed
+        for _kind, _path, metadata in [records.get(identifier, (None, None, {}))]
+        if isinstance(metadata.get("reject-reason"), str)
+    }
+    if set(reject_reasons) != closed:
+        raise MDFError(
+            "closed outcome 中的 Bug 必须是带 reject-reason 的 rejected Bug",
+            code="invalid_closure",
+            details={"missing": sorted(closed - set(reject_reasons))},
+        )
 
     explicit = _json_argument(
         args.closures_json, name="--closures-json", default=None
@@ -139,7 +148,7 @@ def derive_closeout_spec(
         closures.extend(
             {
                 "id": identifier,
-                "resolution": closed_resolutions.get(identifier, "wont-fix"),
+                "resolution": reject_reasons.get(identifier),
             }
             for identifier in sorted(closed)
         )

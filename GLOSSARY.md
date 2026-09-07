@@ -9,6 +9,11 @@ Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 `JOTS.md` 中尚未分诊的随手记录。它可以是想法、优化、小问题或观察；提升后才成为
 Proposal 或 Bug。Jot 不是 Proposal/Bug 的 `draft` 状态，也不是 Change。
 
+## Bug 状态
+
+Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次验证后转为
+`closed`；`rejected` 是终态，并由 `reject-reason` 记录拒绝原因。
+
 ## 当前事实文档
 
 描述当前 checkout 已成立行为，并由仓库内 evidence 支持的文档。

@@ -28,9 +28,10 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "start",
         "jot",
         "jot promote",
-        "doc create",
-        "doc review",
-        "doc archive",
+        "bug create",
+        "prp create",
+        "prp review",
+        "archive",
         "finish",
         "audit",
         "clarify <议题>",
@@ -39,14 +40,15 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "裸 `$mdf`" in entry
     assert "intents/intake.md" in entry
     assert "intents/next.md" in entry
-    assert "intents/doc-create.md" in entry
+    assert "intents/bug-create.md" in entry
+    assert "intents/prp-create.md" in entry
     assert (skill / "intents" / "intake.md").is_file()
     assert (skill / "intents" / "next.md").is_file()
     assert not (skill / "intents" / "mvp.md").exists()
     assert "doc derive" not in entry
     assert not (skill / "intents" / "doc-derive.md").exists()
-    assert "intents/doc-review.md" in entry
-    assert "intents/doc-archive.md" in entry
+    assert "intents/prp-review.md" in entry
+    assert "intents/archive.md" in entry
     assert "intents/codewiki-generate.md" in entry
     assert "intents/codewiki-update.md" in entry
     assert "intents/jot.md" in entry
@@ -91,7 +93,7 @@ def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
     assert "不写入字段或独立文件" in normalized
     assert "不写入批次" in normalized
     assert "不得由本 intent 修改" in next_intent
-    assert "$mdf doc review" in next_intent
+    assert "$mdf prp review" in next_intent
     assert "active Bug 只作为风险或阻塞项" in next_intent
     assert "只有用户明确确认清单才继续" in next_intent
     assert "make-id --type proposal --slug" in next_intent
@@ -114,9 +116,9 @@ def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
 def test_init_and_doc_intents_load_internal_contracts() -> None:
     init = intent("init")
     intake = intent("intake")
-    create = intent("doc-create")
-    review = intent("doc-review")
-    archive = intent("doc-archive")
+    create = intent("prp-create")
+    review = intent("prp-review")
+    archive = intent("archive")
     common = intent("common")
 
     assert "repository-contract.md" in init
@@ -126,7 +128,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "context/research/" in init
     assert "context/requirements/" not in init
     assert "$mdf intake" in init
-    assert "$mdf doc create" in init
+    assert "$mdf bug create" in init and "$mdf prp create" in init
     assert "## 1. 入口检查" in init
     assert "## 2. 盘点与归类" in init
     assert "## 5. 续办" in init
@@ -177,14 +179,14 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "必填事实仍无法确认时停止，不得写入任何对象" in intake
     assert "只有用户明确确认清单才继续" in intake
     assert "closed + fulfilled Proposal ID" in intake
-    assert "初始状态为 `draft`" in intake
-    assert "显式调用 `$mdf doc review`" in intake
+    assert "Proposal 初始状态为\n   `draft`，Bug 初始状态为 `open`" in intake
+    assert "显式调用 `$mdf prp review`" in intake
     assert "外部想法、当前聊天上下文或外部文档必须显式调用" in create
     assert "$mdf intake" in create
     assert "一次不得创建多个对象" in create
-    assert "用户手动提供的单个 Proposal 或 Bug 的事实" in create
-    assert "closed 或 archive 对象拒绝修改" in review
-    assert "closed Proposal/Bug" in archive
+    assert "用户手动提供的单个 Proposal 事实" in create
+    assert "closed 或 archive Proposal 拒绝修改" in review
+    assert "closed Proposal、closed/rejected Bug" in archive
 
 
 def test_jot_intent_preserves_raw_input_until_promotion() -> None:

@@ -19,6 +19,7 @@ def release_arguments(repo: Path, **extra: str) -> list[str]:
 
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
+    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")
     init_git(repo)
     write_unreleased_change(repo, slug)
     git(repo, "add", "--all")
@@ -134,16 +135,16 @@ def test_critical_bug_cannot_be_wont_fixed_at_closeout(
 ):
     repo = copy_fixture(tmp_path)
     replace(repo / "bugs" / BUG_NAME, "severity: major", "severity: critical")
+    replace(
+        repo / "bugs" / BUG_NAME,
+        "status: open",
+        "status: rejected\nreject-reason: wont-fix",
+    )
     init_git(repo)
     write_unreleased_change(repo, "timeout-close")
     change = repo / "changes" / "unreleased" / "timeout-close" / "CHANGE.md"
     replace(change, f"fixed: [{BUG_ID}]", "fixed: []")
     replace(change, "closed: []", f"closed: [{BUG_ID}]")
-    replace(
-        change,
-        "closed_resolutions: {}",
-        f"closed_resolutions:\n  {BUG_ID}: wont-fix",
-    )
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: critical wont-fix")
     git(repo, "checkout", "-b", "release/1.3.0")
@@ -154,16 +155,16 @@ def test_critical_bug_cannot_be_wont_fixed_at_closeout(
 
 
 def prepare_wont_fix_release(repo: Path) -> None:
+    replace(
+        repo / "bugs" / BUG_NAME,
+        "status: open",
+        "status: rejected\nreject-reason: wont-fix",
+    )
     init_git(repo)
     write_unreleased_change(repo, "service-health")
     change = repo / "changes" / "unreleased" / "service-health" / "CHANGE.md"
     replace(change, f"fixed: [{BUG_ID}]", "fixed: []")
     replace(change, "closed: []", f"closed: [{BUG_ID}]")
-    replace(
-        change,
-        "closed_resolutions: {}",
-        f"closed_resolutions:\n  {BUG_ID}: wont-fix",
-    )
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: major wont-fix")
     git(repo, "checkout", "-b", "release/1.3.0")
@@ -204,13 +205,14 @@ def test_major_bug_wont_fix_needs_explicit_acceptance(
     assert applied["outcomes"]["closed"] == [BUG_ID]
     archived = accepted_repo / "bugs" / "archive" / "1.3" / BUG_NAME
     assert archived.is_file()
-    assert "resolution: wont-fix" in archived.read_text(encoding="utf-8")
+    assert "reject-reason: wont-fix" in archived.read_text(encoding="utf-8")
 
 
 def test_hotfix_closeout_uses_manifest_commands(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
+    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")
     init_git(repo)
     git(repo, "checkout", "-b", "hotfix/1.2.1")
     hotfix = json.dumps(

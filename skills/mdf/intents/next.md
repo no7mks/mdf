@@ -37,7 +37,7 @@ doctor → 仓库盘点 → 候选下一步 → 用户确认一个 MVP → clari
    PRP 清单、边界、DAG 与批次；通过 → 7；失败 → 回到 5。
 7. **约束**；检查 active/fulfilled Proposal 的重叠与复用；已有对象可作为清单项或
    新 Proposal 的直接依赖，但不得由本 intent 修改。需要改变已有对象范围时停止，
-   要求先显式调用 `$mdf doc review`；active Bug 只作为风险或阻塞项展示，不写入
+   要求先显式调用 `$mdf prp review`；active Bug 只作为风险或阻塞项展示，不写入
    `depends_on`；其他终态 Proposal 不得作为依赖；证据：复用、重复、风险与阻塞判断；
    通过 → 8；失败 → 停止。
 8. **约束**；展示每项 Problem、Desired Outcome、In/Out、Acceptance Criteria、
@@ -51,4 +51,4 @@ doctor → 仓库盘点 → 候选下一步 → 用户确认一个 MVP → clari
     通过 → 11；失败 → 保留 draft 和现场并报告 findings，不得宣称产出可落地。
 11. **约束**；展示新建与复用 PRP、依赖 DAG、拓扑批次、风险、排除范围和 validation
     结果；证据：会话摘要；通过 → 结束；失败 → 停止。新建对象保持 `draft`，后续逐项
-    显式调用 `$mdf doc review` 转为 `ready`；不得自动 commit。
+    显式调用 `$mdf prp review` 转为 `ready`；不得自动 commit。

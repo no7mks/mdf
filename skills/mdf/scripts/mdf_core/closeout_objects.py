@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from .constants import (
+    BUG_REJECT_REASONS,
     BUG_RESOLUTIONS,
     BUG_SEVERITIES,
     is_unreleased_sentinel,
@@ -49,10 +50,12 @@ def _remove_field(frontmatter: str, key: str) -> str:
     )
 
 
-def _require_ready(metadata: dict[str, Any], identifier: str) -> None:
-    if metadata.get("status") != "ready":
+def _require_status(
+    metadata: dict[str, Any], identifier: str, expected: str
+) -> None:
+    if metadata.get("status") != expected:
         raise MDFError(
-            f"Object {identifier} is not ready", code="invalid_closure"
+            f"Object {identifier} is not {expected}", code="invalid_closure"
         )
 
 
@@ -68,10 +71,10 @@ def close_object_text(
     frontmatter = text[start:end]
     metadata = parse_yaml(frontmatter)
     identifier = closure.get("id")
-    _require_ready(metadata, str(identifier))
     resolution = closure["resolution"]
 
     if kind == "proposal":
+        _require_status(metadata, str(identifier), "ready")
         allowed = {"fulfilled", "rejected", "duplicate", "obsolete"}
         if resolution not in allowed:
             raise MDFError(
@@ -98,6 +101,7 @@ def close_object_text(
         return text[:start] + frontmatter + text[end:]
 
     if resolution == "deferred":
+        _require_status(metadata, str(identifier), "open")
         severity = metadata.get("severity")
         if severity not in BUG_SEVERITIES:
             raise MDFError(
@@ -113,32 +117,28 @@ def close_object_text(
             f"Invalid Bug resolution: {resolution}",
             code="invalid_closure",
         )
-    if resolution == "duplicate":
-        primary = closure.get("duplicate_of")
-        if not isinstance(primary, str) or not primary.startswith("bug-"):
+    if resolution == "fixed":
+        _require_status(metadata, str(identifier), "fixed")
+        if closure.get("fixed_in") != version or "fulfilled_in" in closure:
             raise MDFError(
-                "Duplicate closure requires duplicate_of",
-                code="invalid_closure",
-            )
-        frontmatter = _remove_field(frontmatter, "found_in")
-        frontmatter = _remove_field(frontmatter, "fixed_in")
-        frontmatter = _set_field(frontmatter, "duplicate_of", primary)
-    else:
-        if resolution == "fixed":
-            if closure.get("fixed_in") != version or "fulfilled_in" in closure:
-                raise MDFError(
-                    "fixed closure requires fixed_in equal to release version",
-                    code="invalid_closure",
-                )
-        elif "fixed_in" in closure or "fulfilled_in" in closure:
-            raise MDFError(
-                "Non-fixed Bug closure must not declare a version",
+                "fixed closure requires fixed_in equal to release version",
                 code="invalid_closure",
             )
         if is_unreleased_sentinel(metadata.get("found_in")):
             frontmatter = _set_field(frontmatter, "found_in", version)
-        if resolution == "fixed":
-            frontmatter = _set_field(frontmatter, "fixed_in", version)
-    frontmatter = _set_field(frontmatter, "status", "closed")
-    frontmatter = _set_field(frontmatter, "resolution", resolution)
+        frontmatter = _set_field(frontmatter, "fixed_in", version)
+        frontmatter = _set_field(frontmatter, "status", "closed")
+    elif resolution in BUG_REJECT_REASONS:
+        _require_status(metadata, str(identifier), "rejected")
+        if metadata.get("reject-reason") != resolution:
+            raise MDFError(
+                "Rejected Bug closure must match reject-reason",
+                code="invalid_closure",
+            )
+        if is_unreleased_sentinel(metadata.get("found_in")):
+            frontmatter = _set_field(frontmatter, "found_in", version)
+    else:
+        raise MDFError(
+            f"Invalid Bug resolution: {resolution}", code="invalid_closure"
+        )
     return text[:start] + frontmatter + text[end:]

@@ -72,24 +72,6 @@ def apply_closeout(
         closed_ids = set(hotfix_change.get("closed", []))
         deferred_ids = set(hotfix_change.get("deferred", []))
         adrs = set(hotfix_change.get("adrs", []))
-        closed_resolutions = (
-            dict(hotfix_change.get("closed_resolutions", {}))
-            if isinstance(hotfix_change.get("closed_resolutions", {}), dict)
-            else {}
-        )
-        if any(
-            not isinstance(value, str) or value not in BUG_TERMINAL_RESOLUTIONS
-            for value in closed_resolutions.values()
-        ):
-            raise MDFError(
-                "hotfix closed_resolutions 的值必须是非 fixed 终态 resolution",
-                code="invalid_closeout_spec",
-            )
-        if closed_ids and set(closed_resolutions) != closed_ids:
-            raise MDFError(
-                "hotfix closed_resolutions 必须精确覆盖 closed Bug ID",
-                code="invalid_closeout_spec",
-            )
         hotfix_body = (
             hotfix_change.get("body")
             if isinstance(hotfix_change.get("body"), str)
@@ -104,7 +86,6 @@ def apply_closeout(
             closed_ids,
             deferred_ids,
             adrs,
-            closed_resolutions,
             evidence,
         ) = aggregate_release_changes(repo, all_slugs)
         hotfix_body = None
@@ -179,20 +160,19 @@ def apply_closeout(
                 and object_kind != "proposal"
             ):
                 closed_ids.add(identifier)
-                closed_resolutions.setdefault(identifier, resolution)
             else:
                 raise MDFError(
                     "Supplemental closure has unsupported resolution: "
                     f"{identifier}",
                     code="invalid_closure",
                 )
-    unreleased_ready = sorted(
+    unreleased_active = sorted(
         identifier
         for identifier, (kind, _path, metadata) in objects.items()
         if kind == "bug"
-        and metadata.get("status") == "ready"
+        and metadata.get("status") in {"open", "fixed", "rejected"}
         and is_unreleased_sentinel(metadata.get("found_in"))
-        and metadata.get("resolution") != "duplicate"
+        and metadata.get("reject-reason") != "duplicate"
     )
     classified_bugs = {
         closure["id"]
@@ -201,12 +181,12 @@ def apply_closeout(
     }
     missing_unreleased = [
         identifier
-        for identifier in unreleased_ready
+        for identifier in unreleased_active
         if identifier not in classified_bugs
     ]
     if missing_unreleased:
         raise MDFError(
-            "每个 ready 且 found_in: unreleased 的 Bug 必须出现在 closeout outcomes 中",
+            "每个 active 且 found_in: unreleased 的 Bug 必须出现在 closeout outcomes 中",
             code="unclassified_unreleased_bug",
             details={"missing": missing_unreleased},
         )
@@ -226,12 +206,25 @@ def apply_closeout(
             or identifier in closed_proposal_resolutions
             else "bug"
         )
-        if kind != expected_kind or metadata.get("status") != "ready":
+        expected_status = (
+            "ready"
+            if kind == "proposal"
+            else (
+                "fixed"
+                if resolution == "fixed"
+                else "open" if resolution == "deferred" else "rejected"
+            )
+        )
+        if kind != expected_kind or metadata.get("status") != expected_status:
             raise MDFError(
                 f"Closure object has the wrong type or state: {identifier}",
                 code="invalid_closure",
             )
-        if kind == "bug" and metadata.get("resolution") == "duplicate":
+        if (
+            kind == "bug"
+            and metadata.get("status") == "rejected"
+            and metadata.get("reject-reason") == "duplicate"
+        ):
             raise MDFError(
                 "duplicate Bug 不得进入 Change outcomes；请改用 canonical Bug ID",
                 code="duplicate_in_changeset",
@@ -290,7 +283,6 @@ def apply_closeout(
         closed_ids=closed_ids,
         deferred_ids=deferred_ids,
         adrs=adrs,
-        closed_resolutions=closed_resolutions,
         closed_proposal_resolutions=closed_proposal_resolutions,
         objects=objects,
         closures=closures,

@@ -21,6 +21,7 @@ def closeout_args(repo: Path, *extra: str) -> list[str]:
 
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
+    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, slug)  # noqa: F405
     git(repo, "add", "--all")  # noqa: F405
@@ -35,8 +36,8 @@ def write_closed_duplicate(repo: Path) -> None:
             "---\n"
             f"id: {DUPLICATE_ID}\n"
             "type: bug\n"
-            "status: closed\n"
-            "resolution: duplicate\n"
+            "status: rejected\n"
+            "reject-reason: duplicate\n"
             f"duplicate_of: {BUG_ID}\n"  # noqa: F405
             "---\n\n"
             "# Duplicate\n\n"
@@ -59,14 +60,14 @@ def write_closed_duplicate(repo: Path) -> None:
             "status: closed",
         ),
         (
-            "closed",
+            "rejected",
             {"id": BUG_ID, "resolution": "wont-fix"},
-            "status: closed",
+            'status: "rejected" # pending verification',
         ),
         (
             "deferred",
             {"id": BUG_ID, "resolution": "deferred"},
-            'status: "ready" # still active',
+            'status: "open" # pending verification',
         ),
     ],
 )
@@ -76,14 +77,19 @@ def test_closeout_uses_parsed_quoted_status_and_found_in(
     expected_status: str,
 ):
     core = load_core_module()  # noqa: F405
+    status = (
+        "rejected" if resolution == "rejected" else "open" if resolution == "deferred" else "fixed"
+    )
+    reject_reason = "reject-reason: wont-fix\n" if status == "rejected" else ""
     text = (
         "---\n"
         f"id: {BUG_ID}\n"  # noqa: F405
         "type: bug\n"
-        'status: "ready" # still active\n'
-        "severity: major\n"
-        "found_in: 'unreleased' # current line\n"
-        "---\n\n# Bug\n"
+        f'status: "{status}" # pending verification\n'
+        + reject_reason
+        + "severity: major\n"
+        + "found_in: 'unreleased' # current line\n"
+        + "---\n\n# Bug\n"
     )
 
     updated = core.close_object_text(
@@ -93,7 +99,7 @@ def test_closeout_uses_parsed_quoted_status_and_found_in(
         version="1.3.0",
     )
 
-    assert resolution in {"fixed", "closed", "deferred"}
+    assert resolution in {"fixed", "rejected", "deferred"}
     assert expected_status in updated
     assert "found_in: 1.3.0" in updated
     assert "unreleased" not in updated
@@ -115,7 +121,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
     bug = repo / "bugs" / BUG_NAME  # noqa: F405
-    replace(bug, "status: ready", 'status: "ready" # active')  # noqa: F405
+    replace(bug, "status: open", 'status: "fixed" # pending verification')  # noqa: F405
     replace(  # noqa: F405
         bug,
         "found_in: unreleased",
@@ -127,14 +133,19 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
     write_unreleased_change(repo, "quoted-object")  # noqa: F405
     change = repo / "changes" / "unreleased" / "quoted-object" / "CHANGE.md"
     if outcome == "closed":
+        replace(  # noqa: F405
+            bug,
+            'status: "fixed" # pending verification',
+            'status: "rejected" # terminal\nreject-reason: wont-fix',
+        )
         replace(change, f"fixed: [{BUG_ID}]", "fixed: []")  # noqa: F405
         replace(change, "closed: []", f"closed: [{BUG_ID}]")  # noqa: F405
-        replace(  # noqa: F405
-            change,
-            "closed_resolutions: {}",
-            f"closed_resolutions:\n  {BUG_ID}: wont-fix",
-        )
     elif outcome == "deferred":
+        replace(  # noqa: F405
+            bug,
+            'status: "fixed" # pending verification',
+            'status: "open" # still active',
+        )
         replace(change, f"fixed: [{BUG_ID}]", "fixed: []")  # noqa: F405
         replace(change, "deferred: []", f"deferred: [{BUG_ID}]")  # noqa: F405
     git(repo, "add", "--all")  # noqa: F405
@@ -145,10 +156,13 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
 
     if expected_archive:
         result = repo / "bugs" / "archive" / "1.3" / BUG_NAME  # noqa: F405
-        assert "status: closed" in result.read_text(encoding="utf-8")
+        expected_status = "rejected" if outcome == "closed" else "closed"
+        assert f'status: "{expected_status}"' in result.read_text(
+            encoding="utf-8"
+        ) or f"status: {expected_status}" in result.read_text(encoding="utf-8")
     else:
         result = bug
-        assert 'status: "ready" # active' in result.read_text(encoding="utf-8")
+        assert 'status: "open" # still active' in result.read_text(encoding="utf-8")
     text = result.read_text(encoding="utf-8")
     assert "found_in: 1.3.0" in text
     assert "unreleased" not in text
@@ -270,6 +284,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
     tmp_path: Path,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
+    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
     init_git(repo)  # noqa: F405
     git(repo, "checkout", "-b", "hotfix/1.2.1")  # noqa: F405
     hotfix = json.dumps(
@@ -306,6 +321,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     tmp_path: Path,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
+    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, "alpha")  # noqa: F405
     write_unreleased_change(repo, "zeta")  # noqa: F405
