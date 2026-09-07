@@ -167,9 +167,9 @@ def test_removed_verify_command_argument_is_a_hard_failure(
     assert "unrecognized arguments" in result.stderr
 
 
-def test_mdf_grill_delegates_to_system_skill():
+def test_mdf_clarify_delegates_to_system_skill():
     skill = skill_dir("mdf")
-    grill = (skill / "intents" / "grill.md").read_text(encoding="utf-8")
+    clarify = (skill / "intents" / "clarify.md").read_text(encoding="utf-8")
     create = (skill / "intents" / "doc-create.md").read_text(
         encoding="utf-8"
     )
@@ -177,10 +177,10 @@ def test_mdf_grill_delegates_to_system_skill():
         encoding="utf-8"
     )
     init = (skill / "intents" / "init.md").read_text(encoding="utf-8")
-    assert "系统 `grilling` skill" in grill
-    assert "委托它对议题执行压力测试" in grill
-    assert "报告该失败并停止" in grill
-    assert "当前环境未提供 `grilling` skill" in grill
-    assert "内部 grill intent" in create
-    assert "内部 grill intent" in review and "内部 grill intent" in init
+    assert "系统 `grilling` skill" in clarify
+    assert "委托它对议题执行压力测试" in clarify
+    assert "报告该失败并停止" in clarify
+    assert "当前环境未提供 `grilling` skill" in clarify
+    assert "内部 clarify intent" in create
+    assert "内部 clarify intent" in review and "内部 clarify intent" in init
     assert "明确确认才转" in review

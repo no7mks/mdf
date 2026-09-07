@@ -1,12 +1,12 @@
 # Doc Create
 
-完整读取 `intents/common.md`、`intents/grill.md`、
+完整读取 `intents/common.md`、`intents/clarify.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 ## 决策树
 
 ```text
-doctor → 允许正常流程？否：停止；是 → 手动内容澄清 → 对象确认 → grill
+doctor → 允许正常流程？否：停止；是 → 手动内容澄清 → 对象确认 → clarify
 → 用户确认 draft？否：继续澄清；是 → slug/ID → 写 draft → 展示结果
 ```
 
@@ -20,7 +20,7 @@ doctor → 允许正常流程？否：停止；是 → 手动内容澄清 → �
    `$mdf intake`；证据：确认的对象与采用范围；通过 → 3；失败 → 等待澄清。
 3. **约束**；检查对象类型与独立交付边界；偏差建 Bug，待实现意图建 Proposal；
    一次不得创建多个对象；证据：唯一对象；通过 → 4；失败 → 回到 2。
-4. **约束**；使用内部 grill intent 按轮次澄清成稿必要事实；Proposal 收敛
+4. **约束**；使用内部 clarify intent 按轮次澄清成稿必要事实；Proposal 收敛
    Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；Bug 收敛
    Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、
    `found_in` 与 active severity；证据：完整必填事实；通过 → 5；失败 → 必填事实仍无法确认时停止，不得写入任何对象。

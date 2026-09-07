@@ -1,12 +1,12 @@
 # Intake
 
-完整读取 `intents/common.md`、`intents/grill.md`、
+完整读取 `intents/common.md`、`intents/clarify.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 ## 决策树
 
 ```text
-doctor → 来源澄清 → 对象拆分 → grill → 用户确认清单？否：继续澄清
+doctor → 来源澄清 → 对象拆分 → clarify → 用户确认清单？否：继续澄清
 → slug/ID → 写 draft → 展示结果
 ```
 
@@ -20,7 +20,7 @@ doctor → 来源澄清 → 对象拆分 → grill → 用户确认清单？否�
    证据：确认的来源采用范围；通过 → 3；失败 → 等待澄清。
 3. **约束**；从来源和仓库证据判定对象类型、数量与独立交付边界；偏差建 Bug，
    待实现意图建一个或多个 Proposal；证据：对象清单；通过 → 4；失败 → 回到 2。
-4. **约束**；使用内部 grill intent 按轮次澄清成稿必要事实；Proposal 收敛 Problem、
+4. **约束**；使用内部 clarify intent 按轮次澄清成稿必要事实；Proposal 收敛 Problem、
    Desired Outcome、Scope、可验证 Acceptance Criteria；Bug 收敛 Observed/Expected
    Behavior、Reproduction、Impact、Regression Evidence Required、`found_in` 与 active
    severity；证据：完整必填事实；通过 → 5；失败 → 必填事实仍无法确认时停止，不得写入任何对象。

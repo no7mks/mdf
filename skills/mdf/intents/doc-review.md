@@ -1,12 +1,12 @@
 # Doc Review
 
-完整读取 `intents/common.md`、`intents/grill.md`、
+完整读取 `intents/common.md`、`intents/clarify.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 ## 决策树
 
 ```text
-doctor → 选定一个 canonical 对象 → 可编辑？否：停止；是 → grill → draft
+doctor → 选定一个 canonical 对象 → 可编辑？否：停止；是 → clarify → draft
 → 用户确认且 targeted validation 通过？是：ready；否：保留 draft
 ```
 
@@ -19,7 +19,7 @@ doctor → 选定一个 canonical 对象 → 可编辑？否：停止；是 → 
    仓库相对路径；证据：唯一对象；通过 → 3；失败 → 一次只问一个消歧问题。
 3. **约束**；closed 或 archive 对象拒绝修改；开始评审时将既有 `ready` 转为 `draft`；
    取消、暂停或未确认时保持 `draft`；证据：对象状态；通过 → 4；失败 → 停止。
-4. **约束**；先查仓库证据，使用内部 grill intent 按轮次澄清；Proposal 收敛
+4. **约束**；先查仓库证据，使用内部 clarify intent 按轮次澄清；Proposal 收敛
    Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；Bug 收敛
    Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、
    `found_in` 与 active severity；

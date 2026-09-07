@@ -33,7 +33,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "doc archive",
         "finish",
         "audit",
-        "grill <议题>",
+        "clarify <议题>",
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
@@ -64,7 +64,7 @@ def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
 
     for contract in (
         "intents/common.md",
-        "intents/grill.md",
+        "intents/clarify.md",
         "references/repository-contract.md",
         "references/object-contract.md",
     ):
@@ -81,7 +81,7 @@ def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
     ):
         assert source in next_intent
     assert "用户明确确认该 MVP" in next_intent
-    assert "内部 grill intent" in next_intent
+    assert "内部 clarify intent" in next_intent
     assert "不执行 `audit`" in next_intent
     assert "最少数量的一个或多个 Proposal" in normalized
     assert "不得为制造 数量而拆分" in normalized
@@ -162,11 +162,11 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "生成的 Markdown 正文、标题与列表使用简体中文" in common
     for document in (review,):
         assert "object-contract.md" in document
-        assert "内部 grill intent" in document
+        assert "内部 clarify intent" in document
         assert "normal_workflows_allowed" in document
         assert "先在 `draft` 状态运行 `targeted validation`" in document
     assert "object-contract.md" in intake
-    assert "内部 grill intent" in intake
+    assert "内部 clarify intent" in intake
     assert "normal_workflows_allowed" in intake
     assert "生成 ID 与规范化文件名" in intake
     assert "英文 ASCII kebab-case slug" in intake

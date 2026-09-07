@@ -1,6 +1,6 @@
 # Next
 
-完整读取 `intents/common.md`、`intents/grill.md`、
+完整读取 `intents/common.md`、`intents/clarify.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 `方向`是可选的产品目标、问题或范围提示；它只限定盘点与候选项，不代替用户确认。
@@ -8,7 +8,7 @@
 ## 决策树
 
 ```text
-doctor → 仓库盘点 → 候选下一步 → 用户确认一个 MVP → grill
+doctor → 仓库盘点 → 候选下一步 → 用户确认一个 MVP → clarify
 → 最少 PRP 与依赖 DAG → 用户确认清单 → ID/写 draft → validation
 ```
 
@@ -27,8 +27,8 @@ doctor → 仓库盘点 → 候选下一步 → 用户确认一个 MVP → grill
    产品优先级时询问用户；证据：候选项与取舍；通过 → 4；失败 → 继续查证或澄清。
 4. **约束**；一次只选择一个 MVP，且必须是最小但可验证、可交付的结果，不得只是
    技术任务清单；证据：用户明确确认该 MVP、目标与边界；通过 → 5；失败 → 回到 3。
-5. **约束**；以确认的 MVP 和仓库证据为议题，使用内部 grill intent；收敛 Problem、
-   Desired Outcome、Scope、验收方式、关键取舍、约束与排除范围，并取得 grill 要求的
+5. **约束**；以确认的 MVP 和仓库证据为议题，使用内部 clarify intent；收敛 Problem、
+   Desired Outcome、Scope、验收方式、关键取舍、约束与排除范围，并取得 clarify 要求的
    共同理解确认；证据：已解决的决策树；通过 → 6；失败 → 不写入任何对象并停止。
 6. **约束**；按独立评审与验证边界拆成最少数量的一个或多个 Proposal，不得为制造
    数量而拆分；每项都满足 Proposal 必填事实。`depends_on` 只记录直接依赖并形成无环

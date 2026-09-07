@@ -3,13 +3,13 @@
 它将既有材料收敛到当前 MDF 结构，经`当前事实文档`的事实复核后使 `manifest` 进入 `ready`；
 绝不自动 commit。
 
-完整读取 `intents/common.md`、`intents/grill.md` 与
+完整读取 `intents/common.md`、`intents/clarify.md` 与
 `references/repository-contract.md`。
 
 ## 决策树
 
 ```text
-clean Git 根 → 默认分支 master？否：用户先改名；是 → 盘点与 grill
+clean Git 根 → 默认分支 master？否：用户先改名；是 → 盘点与 clarify
 → 用户确认初始化方案？否：继续澄清；是 → scaffold 与归位 → audit
 → 当前事实有改动？是：用户复核、commit 后续办；否 → 核对表与确认 → ready
 ```
@@ -28,7 +28,7 @@ clean Git 根 → 默认分支 master？否：用户先改名；是 → 盘点�
    生成物与文档；证据：分类清单；通过 → 3；失败 → 停止并澄清。不得仅凭目录名或 README
    保留；符合 CodeWiki 契约的 `docs/repowiki/` 留在原处且不纳入当前事实、ADR 或调研分类；
    此步骤不做`事实复核`。
-3. **约束**；对每个非生态必需且非 MDF 固定的顶层目录，使用内部 grill intent
+3. **约束**；对每个非生态必需且非 MDF 固定的顶层目录，使用内部 clarify intent
    决定去处或顶层例外；本地或外部调研材料归入 `context/research/`，已确认决策归入
    `docs/adr/`，并从
    仓库证据收敛八项 `基线`、最近稳定版本与非空 `verification.commands`；

@@ -3,14 +3,14 @@
 `$mdf jot` 追加一条 Jot；`$mdf jot promote` 提升一条既有 Jot；不接受其他子动作，
 且绝不自动 commit。
 
-完整读取 `intents/common.md`、`intents/grill.md`、
+完整读取 `intents/common.md`、`intents/clarify.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 ## 决策树
 
 ```text
 doctor → 可用？否：停止；是 → jot：追加并校验
-                         └→ promote：选一个 ID → grill → 确认 → 建对象 → 校验与移除
+                         └→ promote：选一个 ID → clarify → 确认 → 建对象 → 校验与移除
 ```
 
 ## 工作流（唯一执行契约）
@@ -25,7 +25,7 @@ doctor → 可用？否：停止；是 → jot：追加并校验
    通过 → 结束；失败 → 保留现场并报告 findings。
 4. **约束**；仅对 `$mdf jot promote` 要求一个既有 `jot-` ID，读取完整 marker；
    证据：唯一条目与其正文；通过 → 5；失败 → 一次只问一个消歧问题。
-5. **约束**；先查仓库证据，使用内部 grill intent 按轮次将正文收敛为 Proposal 或 Bug；
+5. **约束**；先查仓库证据，使用内部 clarify intent 按轮次将正文收敛为 Proposal 或 Bug；
    Proposal 收敛 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；
    Bug 收敛
    Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、

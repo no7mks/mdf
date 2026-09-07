@@ -18,8 +18,8 @@ Proposal、Bug 与 Change；`manifest` 约束`validation`和发布状态。它�
 ```text
 $mdf <调用>
 ├─ 裸调用、裸 doc/codewiki、未知调用 → 仅显示帮助
-├─ init | intake | next [方向] | start | finish | audit | grill <议题>
-│  └─ 读取 intents/<intent>.md
+├─ init | intake | next [方向] | start | finish | audit → 读取 intents/<intent>.md
+├─ clarify <议题> → 读取 intents/clarify.md
 ├─ doc create | review | archive → 读取对应 doc-<action>.md
 ├─ codewiki generate | update → 读取对应 codewiki-<action>.md
 └─ jot | jot promote → 读取 intents/jot.md
@@ -38,7 +38,7 @@ $mdf <调用>
 
 调用示例包含 `intake`、`next [方向]`、`codewiki generate`、`codewiki update`、
 `doc create`、`doc review`、`doc archive`、`jot`、`jot promote` 与
-`grill <议题>`；裸 `$mdf` 只显示帮助。
+`clarify <议题>`；裸 `$mdf` 只显示帮助。
 对应文件为 `intents/intake.md`、`intents/next.md`、`intents/doc-create.md`、
 `intents/doc-review.md`、`intents/doc-archive.md`、
 `intents/codewiki-generate.md`、`intents/codewiki-update.md` 与
