@@ -1,15 +1,18 @@
 # CodeWiki Generate
 
-不自动 commit；不要求已初始化 `.mdf/manifest.yaml`。
+不要求已初始化 `.mdf/manifest.yaml`。
 
 完整读取 `intents/common.md` 与 `references/codewiki-contract.md`。
 
 ## 决策树
 
 ```text
-clean Git 根 → CodeWiki MCP 可用？否：安装说明并停止；是 → repowiki 状态
-→ 空/不存在：分析与生成；standard：改用 update；非 standard：拒绝覆盖
-→ 收尾校验 → 报告
+clean Git 根且 CodeWiki MCP 可用？
+├─ 否 → 给出安装或配置说明并停止
+└─ 是 → `docs/repowiki/` 当前状态？
+   ├─ 不存在或为空 → 分析 → 生成页面 → 写 overview → 收尾校验 → 报告
+   ├─ standard → 要求 `$mdf codewiki update`
+   └─ 非空且非 standard → 拒绝覆盖并停止
 ```
 
 ## 工作流（唯一执行契约）

@@ -6,8 +6,12 @@
 ## 决策树
 
 ```text
-doctor → 来源澄清 → 对象拆分 → clarify → 用户确认清单？否：继续澄清
-→ slug/ID → 写 draft Proposal/open Bug → 展示结果
+doctor：允许正常流程？
+├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
+└─ 是 → 来源澄清 → 对象拆分 → clarify
+          └─ 用户确认清单？
+             ├─ 否 → 返回来源或事实澄清
+             └─ 是 → slug/ID → 写 draft Proposal/open Bug → 展示结果
 ```
 
 ## 工作流（唯一执行契约）

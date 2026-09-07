@@ -6,8 +6,15 @@
 ## 决策树
 
 ```text
-doctor → 选定一个 canonical Proposal → 可编辑？否：停止；是 → clarify → draft
-→ 用户确认且 targeted validation 通过？是：ready；否：保留 draft
+doctor：允许正常流程？
+├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
+└─ 是 → 选定一个 canonical Proposal → 可编辑？
+   ├─ 否 → 停止
+   └─ 是 → clarify → draft → 用户确认？
+      ├─ 否 → 保留 draft
+      └─ 是 → targeted validation 通过？
+         ├─ 否 → 保留 draft
+         └─ 是 → ready
 ```
 
 ## 工作流（唯一执行契约）

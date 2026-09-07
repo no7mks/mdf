@@ -1,16 +1,23 @@
 # Finish
 
-绝不自动 commit。
-
 完整读取 `intents/common.md`、`intents/audit.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
 
 ## 决策树
 
 ```text
-doctor + Gitflow 分支 → 交付范围与当前事实检查 → feature/bugfix：Change + 范围 audit
-                                             └→ release：全量 audit；hotfix：范围 audit
-→ 有写入或 audit 未确认？是：用户复核、commit、重调；否 → finish-gitflow
+doctor 与 Gitflow 分支有效？
+├─ 否 → 停止
+└─ 是 → 计算交付范围与当前事实
+   └─ 当前 Gitflow 分支类型？
+      ├─ feature/bugfix → Change + 范围 audit
+      ├─ release → child Change + 全量 audit → release closeout
+      └─ hotfix → 结果 JSON + 范围 audit → hotfix closeout
+
+审计或收口完成后
+└─ 有写入或 audit 未确认？
+   ├─ 是 → 用户复核、commit 后重调
+   └─ 否 → finish-gitflow
 ```
 
 ## 工作流（唯一执行契约）

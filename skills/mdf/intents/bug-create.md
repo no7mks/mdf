@@ -6,8 +6,14 @@
 ## 决策树
 
 ```text
-doctor → 允许正常流程？否：停止；是 → 手动 Bug 事实澄清 → clarify
-→ 用户确认 open？否：继续澄清；是 → slug/ID → 写 open Bug → 展示结果
+doctor：允许正常流程？
+├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
+└─ 是 → 单个 Bug 事实澄清 → clarify
+          └─ 必填事实完整？
+             ├─ 否 → 停止
+             └─ 是 → 用户确认 open？
+                ├─ 否 → 继续澄清
+                └─ 是 → slug/ID → 写 open Bug → 展示结果
 ```
 
 ## 工作流（唯一执行契约）

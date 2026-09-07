@@ -9,22 +9,30 @@ description: >-
 # Mars Development Flow
 
 MDF 是面向 Git 仓库的版本化文档与交付流程，管理`当前事实文档`、ADR、调研、
-Proposal、Bug 与 Change；`manifest` 约束`validation`和发布状态。它不替代任务管理，
-将调研、已确认决策与`当前事实文档`分开，避免把候选方案误作已实现行为。
-从初始化到归档，仓库内 Markdown 与 `manifest` 留下可验证的演进记录；绝不自动 commit。
+Proposal、Bug 与 Change；`manifest` 约束`validation`和发布状态。它不替代任务管理，将调研、
+已确认决策与`当前事实文档`分开，避免把候选方案误作已实现行为；仓库内 Markdown 与
+`manifest` 留下可验证的演进记录，绝不自动 commit。
 
 ## 选择树
 
 ```text
 $mdf <调用>
 ├─ 裸调用、裸 bug/prp/codewiki、未知调用 → 仅显示帮助
-├─ init | intake | next [方向] | start | finish | audit → 读取 intents/<intent>.md
+├─ init → 读取 intents/init.md
+├─ intake → 读取 intents/intake.md
+├─ next [方向] → 读取 intents/next.md
+├─ start → 读取 intents/start.md
+├─ finish → 读取 intents/finish.md
+├─ audit → 读取 intents/audit.md
 ├─ clarify <议题> → 读取 intents/clarify.md
 ├─ bug create → 读取 intents/bug-create.md
-├─ prp create | review → 读取对应 prp-<action>.md
+├─ prp create → 读取 intents/prp-create.md
+├─ prp review → 读取 intents/prp-review.md
 ├─ archive → 读取 intents/archive.md
-├─ codewiki generate | update → 读取对应 codewiki-<action>.md
-└─ jot | jot promote → 读取 intents/jot.md
+├─ codewiki generate → 读取 intents/codewiki-generate.md
+├─ codewiki update → 读取 intents/codewiki-update.md
+├─ jot → 读取 intents/jot.md
+└─ jot promote → 读取 intents/jot.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -38,13 +46,10 @@ $mdf <调用>
 3. **约束**；完整读取选择树指定的 intent，并只按其按需读取说明读取公共引用；
    证据：已读取材料与其流程结果；通过 → 执行 intent；失败 → 停止并报告缺失材料。
 
-调用示例包含 `intake`、`next [方向]`、`codewiki generate`、`codewiki update`、
-`bug create`、`prp create`、`prp review`、`archive`、`jot`、`jot promote` 与
-`clarify <议题>`；裸 `$mdf` 只显示帮助。
-对应文件为 `intents/intake.md`、`intents/next.md`、`intents/bug-create.md`、
-`intents/prp-create.md`、`intents/prp-review.md`、`intents/archive.md`、
-`intents/codewiki-generate.md`、`intents/codewiki-update.md` 与
-`intents/jot.md`。
+裸 `$mdf` 只显示帮助。调用文件：`intents/intake.md`、`intents/next.md`、
+`intents/bug-create.md`、`intents/prp-create.md`、`intents/prp-review.md`、
+`intents/archive.md`、`intents/codewiki-generate.md`、`intents/codewiki-update.md` 与
+`intents/jot.md`。`$mdf codewiki update` 与 `$mdf prp review` 使用对应 action intent。
 CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`。
 
 ## 术语与数据结构

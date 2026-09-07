@@ -12,9 +12,24 @@
 ## 决策树
 
 ```text
-调用方 → direct/init/finish → 全量或范围审阅 → audit CLI
-→ deterministic finding？是：停止；否 → 双向事实复核 → validation
-→ 零 finding 且用户确认？是：通过；否：报告/停止
+`$mdf audit` 的调用方？
+├─ direct → manifest ready 且 clean？
+│  ├─ 否 → 停止
+│  └─ 是 → 全量审阅
+├─ init → manifest initializing？
+│  ├─ 否 → 停止
+│  └─ 是 → 全量审阅
+└─ finish
+   ├─ release → 全量审阅
+   └─ 其他 Gitflow 分支 → 范围审阅
+
+审阅范围确定后
+└─ audit CLI 有确定性 finding？
+   ├─ 是 → 停止
+   └─ 否 → 文档→实现复核 → 实现→文档复核 → validation
+      └─ 零 finding 且用户确认？
+         ├─ 是 → 通过
+         └─ 否 → 报告并停止
 ```
 
 ## 工作流（唯一执行契约）

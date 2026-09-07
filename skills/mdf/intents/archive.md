@@ -6,8 +6,19 @@
 ## 决策树
 
 ```text
-精确 MAJOR.MINOR → doctor ready 且 clean？否：停止；是 → 可选预览
-→ duplicate group 可归档？否：停止；是 → archive → full validation
+RELEASE_EPOCH 是精确 MAJOR.MINOR？
+├─ 否 → 停止
+└─ 是 → doctor ready 且 clean？
+   ├─ 否 → 停止
+   └─ 是 → 用户要求预览？
+      ├─ 是 → 预览成功？
+      │  ├─ 否 → 停止
+      │  └─ 是 → archive group 可归档？
+      │     ├─ 否 → 停止
+      │     └─ 是 → archive → full validation
+      └─ 否 → archive group 可归档？
+         ├─ 否 → 停止
+         └─ 是 → archive → full validation
 ```
 
 ## 工作流（唯一执行契约）

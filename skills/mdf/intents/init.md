@@ -1,7 +1,6 @@
 # Init
 
-它将既有材料收敛到当前 MDF 结构，经`当前事实文档`的事实复核后使 `manifest` 进入 `ready`；
-绝不自动 commit。
+它将既有材料收敛到当前 MDF 结构，经`当前事实文档`的事实复核后使 `manifest` 进入 `ready`。
 
 完整读取 `intents/common.md`、`intents/clarify.md` 与
 `references/repository-contract.md`。
@@ -9,9 +8,16 @@
 ## 决策树
 
 ```text
-clean Git 根 → 默认分支 master？否：用户先改名；是 → 盘点与 clarify
-→ 用户确认初始化方案？否：继续澄清；是 → scaffold 与归位 → audit
-→ 当前事实有改动？是：用户复核、commit 后续办；否 → 核对表与确认 → ready
+clean Git 根且默认分支为 master？
+├─ 否 → 默认分支为 main？
+│  ├─ 是 → 要求用户改名后重调
+│  └─ 否 → 报告 finding 后停止
+└─ 是 → 盘点与 clarify → 用户确认初始化方案？
+   ├─ 否 → 继续澄清
+   └─ 是 → scaffold 与归位 → 全量 audit
+      └─ 当前事实有改动？
+         ├─ 是 → 用户复核、commit 后续办
+         └─ 否 → 核对表与确认 → ready
 ```
 
 ## 工作流（唯一执行契约）

@@ -1,15 +1,20 @@
 # CodeWiki Update
 
-不自动 commit；不要求已初始化 `.mdf/manifest.yaml`。
+不要求已初始化 `.mdf/manifest.yaml`。
 
 完整读取 `intents/common.md` 与 `references/codewiki-contract.md`。
 
 ## 决策树
 
 ```text
-clean Git 根 → MCP/standard 可用？否：停止 → analyze_repo
-→ 无代码类变化：关闭会话，不写；有变化 → 可映射且无需删页？否：要求新 generate
-→ 最小增量写入 → 收尾校验 → 报告
+clean Git 根且 CodeWiki MCP/standard 可用？
+├─ 否 → 停止
+└─ 是 → analyze_repo
+   └─ 无代码类变化？
+      ├─ 是 → close_session，不写 Wiki → 报告
+      └─ 否 → 可映射且无需删页？
+         ├─ 否 → 要求新 generate
+         └─ 是 → 最小增量写入 → 收尾校验 → 报告
 ```
 
 ## 工作流（唯一执行契约）

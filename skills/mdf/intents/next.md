@@ -8,8 +8,13 @@
 ## 决策树
 
 ```text
-doctor → 仓库盘点 → 候选下一步 → 用户确认一个 MVP → clarify
-→ 最少 PRP 与依赖 DAG → 用户确认清单 → ID/写 draft → validation
+doctor：允许正常流程？
+├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
+└─ 是 → 仓库盘点 → 候选下一步 → 用户确认一个 MVP？
+          ├─ 否 → 返回候选与澄清
+          └─ 是 → clarify → 最少 PRP 与依赖 DAG → 用户确认清单？
+             ├─ 否 → 返回 clarify 或拆分
+             └─ 是 → ID/写 draft → validation
 ```
 
 ## 工作流（唯一执行契约）

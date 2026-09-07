@@ -1,7 +1,6 @@
 # Jot
 
-`$mdf jot` 追加一条 Jot；`$mdf jot promote` 提升一条既有 Jot；不接受其他子动作，
-且绝不自动 commit。
+`$mdf jot` 追加一条 Jot；`$mdf jot promote` 提升一条既有 Jot；不接受其他子动作。
 
 完整读取 `intents/common.md`、`intents/clarify.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
@@ -9,8 +8,13 @@
 ## 决策树
 
 ```text
-doctor → 可用？否：停止；是 → jot：追加并校验
-                         └→ promote：选一个 ID → clarify → 确认 → 建对象 → 校验与移除
+doctor：允许正常流程？
+├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
+└─ 是 → `$mdf jot` 的子动作？
+   ├─ jot → 提供内容？
+   │  ├─ 否 → 澄清
+   │  └─ 是 → 追加并校验
+   └─ jot promote → 选一个 ID → clarify → 确认 → 建对象 → 校验与移除
 ```
 
 ## 工作流（唯一执行契约）
