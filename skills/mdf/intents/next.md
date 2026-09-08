@@ -1,23 +1,35 @@
 # Next
 
-完整读取 `intents/common.md`、`intents/clarify.md`、
-`references/repository-contract.md` 与 `references/object-contract.md`。
-
 `方向`是可选的产品目标、问题或范围提示；它只限定盘点与候选项，不代替用户确认。
 
 ## 决策树
 
-```text
-doctor：允许正常流程？
-├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
-└─ 是 → 仓库盘点 → 候选下一步 → 用户确认一个 MVP？
-          ├─ 否 → 返回候选与澄清
-          └─ 是 → clarify → 最少 PRP 与依赖 DAG → 用户确认清单？
-             ├─ 否 → 返回 clarify 或拆分
-             └─ 是 → ID/写 draft → validation
+```mermaid
+flowchart TD
+  A["1 doctor"] -->|通过| B["2 仓库盘点"]
+  A -->|失败| Z["报告并停止"]
+  B -->|缺失材料| Z
+  B -->|通过| C["3–4 候选下一步与一个 MVP"]
+  C -->|仓库事实不足| B
+  C -->|未确认| C
+  C -->|用户确认 MVP| D["5 clarify"]
+  D -->|无法确认| X["不写对象并停止"]
+  D -->|通过| E["6 最少 Proposal 与直接依赖 DAG"]
+  E -->|边界不清| D
+  E -->|通过| F["7 重叠、复用与风险"]
+  F -->|需修改既有对象或失败| Z
+  F -->|通过| G["8 用户确认清单"]
+  G -->|需澄清| D
+  G -->|需重新拆分| E
+  G -->|确认| H["9–10 写 draft 与 targeted validation"]
+  H -->|失败| Y["保留 draft 和现场并报告"]
+  H -->|通过| I["11 展示 DAG、批次与后续 review"]
 ```
 
 ## 工作流（唯一执行契约）
+
+完整读取 `intents/common.md`、`intents/clarify.md`、
+`references/repository-contract.md` 与 `references/object-contract.md`。
 
 1. **脚本**；解析 `REPO_ROOT` 并运行 `doctor`；证据：
    `normal_workflows_allowed: true`；通过 → 2；失败 → manifest 未就绪时提示
@@ -29,7 +41,7 @@ doctor：允许正常流程？
    报告缺失材料并停止。
 3. **约束**；结合仓库证据与用户目标展示少量候选下一步；每项说明 Problem、目标用户
    或受益方、最小可验证结果、明确排除范围、已有对象重叠及选择理由；仓库证据不能决定
-   产品优先级时询问用户；证据：候选项与取舍；通过 → 4；失败 → 继续查证或澄清。
+   产品优先级时询问用户；证据：候选项与取舍；通过 → 4；失败 → 仓库事实不足时回到 2；目标或优先级不明时留在 3 询问用户。
 4. **约束**；一次只选择一个 MVP，且必须是最小但可验证、可交付的结果，不得只是
    技术任务清单；证据：用户明确确认该 MVP、目标与边界；通过 → 5；失败 → 回到 3。
 5. **约束**；以确认的 MVP 和仓库证据为议题，使用内部 clarify intent；收敛 Problem、
@@ -47,7 +59,8 @@ doctor：允许正常流程？
    通过 → 8；失败 → 停止。
 8. **约束**；展示每项 Problem、Desired Outcome、In/Out、Acceptance Criteria、
    直接依赖、拓扑批次及现有/新建标记；证据：只有用户明确确认清单才继续；通过 → 9；
-   失败 → 回到 5 或 6，不写入任何对象。
+   失败 → MVP 的目标、范围或验收变化时回到 5；仅拆分或依赖变化时回到 6；
+   不写入任何对象。
 9. **脚本**；为每个新 Proposal 提议并确认英文 ASCII kebab-case slug，逐项使用
    `make-id --type proposal --slug` 生成全部 ID 与规范化文件名，再以 Proposal 模板
    写入 `proposals/`；只用 `depends_on` 填入新旧直接依赖，不写入批次，初始状态为

@@ -25,8 +25,9 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
 
-裸 `$mdf` 只显示帮助。所有意图都必须显式调用，入口可写入但绝不自动 commit；
-用户须复查并提交，下一次调用从 clean worktree 开始。
+裸 `$mdf` 只显示帮助。所有意图都必须显式调用，入口可写入但不自动提交工作区改动；
+用户须复查并提交，下一次调用从 clean worktree 开始。仅 `finish-gitflow`
+会创建流程规定的 merge commit。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
 记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，

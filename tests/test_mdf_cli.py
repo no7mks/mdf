@@ -167,7 +167,7 @@ def test_removed_verify_command_argument_is_a_hard_failure(
     assert "unrecognized arguments" in result.stderr
 
 
-def test_mdf_clarify_delegates_to_system_skill():
+def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     skill = skill_dir("mdf")
     clarify = (skill / "intents" / "clarify.md").read_text(encoding="utf-8")
     create = (skill / "intents" / "prp-create.md").read_text(
@@ -180,7 +180,11 @@ def test_mdf_clarify_delegates_to_system_skill():
     assert "系统 `grilling` skill" in clarify
     assert "委托它对议题执行压力测试" in clarify
     assert "报告该失败并停止" in clarify
-    assert "当前环境未提供 `grilling` skill" in clarify
+    assert "不可用时进入 3" in clarify
+    assert "等待回答后更新已确认决定与剩余疑问" in clarify
+    assert "不得把未回答视为同意" in clarify
+    assert "无未决疑问及用户明确确认" in clarify
+    assert "用户取消、暂停或关键事实无法获得时列出未决项并停止" in clarify
     assert "内部 clarify intent" in create
     assert "内部 clarify intent" in review and "内部 clarify intent" in init
     assert "明确确认才转" in review

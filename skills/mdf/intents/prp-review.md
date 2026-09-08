@@ -1,23 +1,28 @@
 # PRP Review
 
-完整读取 `intents/common.md`、`intents/clarify.md`、
-`references/repository-contract.md` 与 `references/object-contract.md`。
-
 ## 决策树
 
-```text
-doctor：允许正常流程？
-├─ 否 → 未就绪时提示 `$mdf init`，其他 finding 后停止
-└─ 是 → 选定一个 canonical Proposal → 可编辑？
-   ├─ 否 → 停止
-   └─ 是 → clarify → draft → 用户确认？
-      ├─ 否 → 保留 draft
-      └─ 是 → targeted validation 通过？
-         ├─ 否 → 保留 draft
-         └─ 是 → ready
+```mermaid
+flowchart TD
+  A["1 doctor"] -->|通过| B["2 选定一个 canonical Proposal"]
+  A -->|失败| Z["报告并停止"]
+  B -->|不唯一| Q["一次一个消歧问题"]
+  Q --> B
+  B -->|唯一| C["3 检查状态"]
+  C -->|closed 或 archive| Z
+  C -->|可编辑，ready 转 draft| D["4 查证与 clarify"]
+  D -->|失败| X["保持 draft 并停止"]
+  D -->|通过| E["5 展示 draft 与 diff，用户确认"]
+  E -->|未确认| X
+  E -->|确认| F["6 draft targeted validation"]
+  F -->|失败| Y["保留 draft 和现场"]
+  F -->|通过| G["转为 ready"]
 ```
 
 ## 工作流（唯一执行契约）
+
+完整读取 `intents/common.md`、`intents/clarify.md`、
+`references/repository-contract.md` 与 `references/object-contract.md`。
 
 1. **脚本**；解析 `REPO_ROOT` 并运行 `doctor`；证据：
    `normal_workflows_allowed: true`；通过 → 2；失败 → manifest 未就绪时提示

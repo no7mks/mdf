@@ -106,7 +106,19 @@ def command_start(args) -> None:
         raise MDFError(f"Branch already exists: {branch}", code="branch_exists")
     _git(repo, "checkout", base)
     _git(repo, "checkout", "-b", branch)
-    _git(repo, "push", "-u", ORIGIN, branch)
+    pushed = _git(repo, "push", "-u", ORIGIN, branch, check=False)
+    if pushed.returncode:
+        raise MDFError(
+            "本地分支已创建，但推送失败；保留现场，核对远端后再决定补推或处理",
+            code="start_push_failed",
+            details={
+                "branch": branch,
+                "base": base,
+                "local_head": _git(repo, "rev-parse", "HEAD").stdout.strip(),
+                "remote_state": "unknown",
+                "stderr": pushed.stderr,
+            },
+        )
     emit({"ok": True, "operation": "start", "branch": branch,
           "base": base, "upstream": f"{ORIGIN}/{branch}"})
 

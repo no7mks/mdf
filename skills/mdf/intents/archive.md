@@ -1,27 +1,27 @@
 # Archive
 
-完整读取 `intents/common.md`、`references/repository-contract.md` 与
-`references/object-contract.md`。
-
 ## 决策树
 
-```text
-RELEASE_EPOCH 是精确 MAJOR.MINOR？
-├─ 否 → 停止
-└─ 是 → doctor ready 且 clean？
-   ├─ 否 → 停止
-   └─ 是 → 用户要求预览？
-      ├─ 是 → 预览成功？
-      │  ├─ 否 → 停止
-      │  └─ 是 → archive group 可归档？
-      │     ├─ 否 → 停止
-      │     └─ 是 → archive → full validation
-      └─ 否 → archive group 可归档？
-         ├─ 否 → 停止
-         └─ 是 → archive → full validation
+```mermaid
+flowchart TD
+  A["1 精确 MAJOR.MINOR epoch"] -->|无效| Z["停止"]
+  A -->|有效| B["2 doctor ready 且 clean"]
+  B -->|失败| Z
+  B -->|用户要求预览| C["3 archive dry-run"]
+  B -->|未要求预览| D["4 检查 archive group"]
+  C -->|失败| Z
+  C -->|通过| D
+  D -->|不可归档| Z
+  D -->|可归档| E["5 archive 与 full validation"]
+  E -->|duplicate_group_open| Z
+  E -->|其他失败| X["保留现场并报告 findings"]
+  E -->|通过| F["展示结果，用户复查提交"]
 ```
 
 ## 工作流（唯一执行契约）
+
+完整读取 `intents/common.md`、`references/repository-contract.md` 与
+`references/object-contract.md`。
 
 1. **约束**；要求精确 `MAJOR.MINOR` 的 `RELEASE_EPOCH`，拒绝 patch、预发布、
    构建元数据和 `unreleased`；证据：有效 epoch；通过 → 2；失败 → 停止。

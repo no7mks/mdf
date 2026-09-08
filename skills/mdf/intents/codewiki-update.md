@@ -2,22 +2,32 @@
 
 不要求已初始化 `.mdf/manifest.yaml`。
 
-完整读取 `intents/common.md` 与 `references/codewiki-contract.md`。
-
 ## 决策树
 
-```text
-clean Git 根且 CodeWiki MCP/standard 可用？
-├─ 否 → 停止
-└─ 是 → analyze_repo
-   └─ 无代码类变化？
-      ├─ 是 → close_session，不写 Wiki → 报告
-      └─ 否 → 可映射且无需删页？
-         ├─ 否 → 要求新 generate
-         └─ 是 → 最小增量写入 → 收尾校验 → 报告
+```mermaid
+flowchart TD
+  A["1 clean Git 根与 CodeWiki MCP"] -->|失败| Z["停止，不写目标仓库"]
+  A -->|通过| B["2 检查 MDF CodeWiki standard"]
+  B -->|缺失或为空| X["要求 codewiki generate"]
+  B -->|非空但非 standard| Y["列出缺失或损坏项并停止"]
+  B -->|通过| C["3 analyze_repo 与完整 changes.json"]
+  C -->|失败| F["停止并报告 findings"]
+  C -->|通过| D["4 判定变化"]
+  D -->|无变化或仅手工文档| E["close_session，不写 Wiki，报告已最新"]
+  D -->|代码类变化| G["5 映射既有模块树"]
+  G -->|不可映射或需删页| H["停止，要求新 generate 基线"]
+  G -->|可映射且无需删页| I["6 最小增量更新与父页、overview"]
+  I -->|失败| P["停止并保留现场"]
+  I -->|通过| J["7 重审 hack 与链接"]
+  J -->|需删除 hacks.md| H
+  J -->|通过| K["8 close_session 与输出验收"]
+  K -->|失败| P
+  K -->|通过| L["报告影响范围与 diff，用户复查提交"]
 ```
 
 ## 工作流（唯一执行契约）
+
+完整读取 `intents/common.md` 与 `references/codewiki-contract.md`。
 
 1. **约束**；解析 `REPO_ROOT`、在外层检查 clean，并检查 CodeWiki MCP；证据：Git 根、
    clean、MCP；通过 → 2；失败 → 按契约给出安装和 MCP 配置后停止，不写目标仓库。

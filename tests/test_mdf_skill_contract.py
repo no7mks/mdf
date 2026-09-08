@@ -195,7 +195,9 @@ def test_jot_intent_preserves_raw_input_until_promotion() -> None:
     assert "make-jot-id" in jot
     assert "JOTS.md" in jot
     assert "完整 marker 条目" in jot
-    assert "保留 draft、原 Jot" in jot
+    assert "保留新对象、原 Jot" in jot
+    assert "Proposal 写为 `draft`，Bug 写为 `open`" in jot
+    assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
     assert "同一个独立 commit" in jot
 
 

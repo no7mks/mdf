@@ -2,20 +2,29 @@
 
 不要求已初始化 `.mdf/manifest.yaml`。
 
-完整读取 `intents/common.md` 与 `references/codewiki-contract.md`。
-
 ## 决策树
 
-```text
-clean Git 根且 CodeWiki MCP 可用？
-├─ 否 → 给出安装或配置说明并停止
-└─ 是 → `docs/repowiki/` 当前状态？
-   ├─ 不存在或为空 → 分析 → 生成页面 → 写 overview → 收尾校验 → 报告
-   ├─ standard → 要求 `$mdf codewiki update`
-   └─ 非空且非 standard → 拒绝覆盖并停止
+```mermaid
+flowchart TD
+  A["1 clean Git 根与 CodeWiki MCP"] -->|失败| Z["说明配置并停止，不写 Wiki"]
+  A -->|通过| B["2 检查 docs/repowiki"]
+  B -->|standard| X["要求 codewiki update"]
+  B -->|非空且非 standard| Y["列出不符合项，拒绝覆盖"]
+  B -->|不存在或为空| C["3 分析、模块树与处理顺序"]
+  C -->|失败| F["停止并报告 findings"]
+  C -->|通过| D["4 先 leaf 后父模块，生成页面"]
+  D -->|失败或跳过| R["修复或删图后重试"]
+  R --> D
+  D -->|通过| E["5 overview 与 close_session"]
+  E -->|失败| H["停止并保留现场"]
+  E -->|通过| G["6 输出范围、结构、链接与事实验收"]
+  G -->|失败| I["用 MCP 修复，保留现场与 findings"]
+  G -->|通过| J["报告结果与 diff，用户复查提交"]
 ```
 
 ## 工作流（唯一执行契约）
+
+完整读取 `intents/common.md` 与 `references/codewiki-contract.md`。
 
 1. **约束**；解析目标 Git 根 `REPO_ROOT` 并在外层检查 clean；检查 CodeWiki MCP；
    证据：Git 根、clean 与 MCP 可用；通过 → 2；失败 → 按契约给出安装和 MCP 配置后停止，
@@ -31,7 +40,7 @@ clean Git 根且 CodeWiki MCP 可用？
    通过 → 4；失败 → 停止并报告 findings。
 4. **脚本**；按 processing order 先 leaf 后父模块；每页先 `get_prompt`，读取相关组件
    和必要文件，再用 `write_doc_file` 写入受管 marker、可证当前事实、职责、关系、边界
-   与链接；证据：模块页与 Mermaid 校验；通过 → 5；失败/跳过 → 修复或删图后重试。
+   与链接；证据：模块页与 Mermaid 校验；通过 → 5；失败 → 失败或跳过时修复或删图后重试。
    对可读疑点追踪至事实；仓外事项省略或标为“不覆盖”；不得遗留 TODO、待确认或猜测。
    主动查找符合定义的 hack；存在才写 `hacks.md`，不得将项目特定版本、迁移或路由
    分层抽象成通用 hack 规则。

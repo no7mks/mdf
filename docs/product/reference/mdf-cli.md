@@ -18,7 +18,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
   `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
   clean worktree。
-- 写入类命令不会创建 Git commit；调用方必须展示结果，并由用户复核、提交。
+- 写入类命令不自动提交工作区改动；调用方必须展示结果，并由用户复核、提交。
+  `finish-gitflow` 仅为规定的 Gitflow 合并创建 merge commit。
 - `--dry-run` 只在 `archive`、`move-change` 和 `release-closeout` 中有效。
 
 ## 命令表
@@ -224,6 +225,9 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 
 feature、bugfix 和 release 从 `develop` 创建，hotfix 从 `master` 创建。若新分支
 在本地或远端已存在则失败；成功时创建分支、推送至 `origin` 并设置 upstream。
+创建前检查失败不会创建分支；创建后推送失败返回 `start_push_failed`，保留本地分支，
+并报告分支、来源、HEAD、远端状态未知与 Git 错误。调用方应先核对远端状态，
+再决定补推或处理现场，不应直接重跑 `start` 或自动删除分支。
 
 ### `finish-gitflow`
 

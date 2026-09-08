@@ -14,10 +14,11 @@
 
 - 意图与状态
   - 仅在用户显式调用 `$mdf …` 时执行 MDF 意图命令，包括 `$mdf intake`、
-    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单或自动提交。
+    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单或自动提交工作区改动。
+    仅 `finish-gitflow` 为流程规定的合并创建 merge commit。
   - Proposal 状态只使用 `draft`、`ready`、`closed`；Bug 状态只使用 `open`、`fixed`、
     `closed`、`rejected`；feature/bugfix 不得提前关闭。
-  - release/hotfix 收口前必须通过零问题项的 MDF 全量审计。
+  - release 收口前必须通过 MDF 全量审计；hotfix 收口前通过交付范围审计；两者均须零问题项。
 
 - 托管边界
   - MDF 只管理本标记区块，不得覆盖 `AGENTS.md` 的其他规则。
