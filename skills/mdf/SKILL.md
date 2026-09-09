@@ -31,30 +31,30 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── bootstrap ────→ references/bootstrap.md
-                 ├──── init ────→ references/init.md
-                 ├──── intake ────→ references/intake.md
-                 ├──── next [--depth N] ────→ references/next.md
-                 ├──── start ────→ references/start.md
-                 ├──── design ────→ references/design.md
-                 ├──── write-tests ────→ references/write-tests.md
-                 ├──── implement ────→ references/implement.md
-                 ├──── converge ────→ references/converge.md
-                 ├──── review ────→ references/review.md
-                 ├──── fact update ────→ references/fact-update.md
-                 ├──── prp split ────→ references/prp-split.md
-                 ├──── finish ────→ references/finish.md
-                 ├──── fact audit ────→ references/fact-audit.md
-                 ├──── clarify <议题> ────→ references/clarify.md
-                 ├──── bug create ────→ references/bug-create.md
-                 ├──── prp create ────→ references/prp-create.md
-                 ├──── prp review ────→ references/prp-review.md
-                 ├──── archive ────→ references/archive.md
-                 ├──── codewiki generate ────→ references/codewiki-generate.md
-                 ├──── codewiki update ────→ references/codewiki-update.md
-                 ├──── jot / jot promote ────→ references/jot.md
-                 ├──── 目标边界不明 ────→ [澄清后重查]
-                 ├──── 解析失败或材料缺失 ────→ [报告并停止]
+                 ├──── bootstrap ─────────────→ references/bootstrap.md
+                 ├──── init ──────────────────→ references/init.md
+                 ├──── intake ────────────────→ references/intake.md
+                 ├──── next [--depth N] ──────→ references/next.md
+                 ├──── start ─────────────────→ references/start.md
+                 ├──── design ────────────────→ references/design.md
+                 ├──── write-tests ───────────→ references/write-tests.md
+                 ├──── implement ─────────────→ references/implement.md
+                 ├──── converge ──────────────→ references/converge.md
+                 ├──── review ────────────────→ references/review.md
+                 ├──── fact update ───────────→ references/fact-update.md
+                 ├──── prp split ─────────────→ references/prp-split.md
+                 ├──── finish ────────────────→ references/finish.md
+                 ├──── fact audit ────────────→ references/fact-audit.md
+                 ├──── clarify <议题> ────────→ references/clarify.md
+                 ├──── bug create ────────────→ references/bug-create.md
+                 ├──── prp create ────────────→ references/prp-create.md
+                 ├──── prp review ────────────→ references/prp-review.md
+                 ├──── archive ───────────────→ references/archive.md
+                 ├──── codewiki generate ─────→ references/codewiki-generate.md
+                 ├──── codewiki update ───────→ references/codewiki-update.md
+                 ├──── jot / jot promote ─────→ references/jot.md
+                 ├──── 目标边界不明 ──────────→ [澄清后重查]
+                 └──── 解析失败或材料缺失 ────→ [报告并停止]
 ```
 
 ## 工作流（唯一执行契约）

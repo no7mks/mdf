@@ -28,6 +28,30 @@ def compact(text: str) -> str:
     return "".join(text.split())
 
 
+def display_width(text: str) -> int:
+    return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
+
+
+def assert_branch_alignment(block, path):
+    pattern = r"^(?P<prefix> +[├└]──── )(?P<condition>.*?) (?P<dash>─+)→ (?P<target>.+)$"
+    branches = [
+        (line, re.fullmatch(pattern, line))
+        for line in block.splitlines() if re.match(r" +[├└]", line)
+    ]
+    assert branches and all(match for _, match in branches), path
+    conditions, arrows, targets = set(), set(), set()
+    longest = max(display_width(match["condition"]) for _, match in branches)
+    has_main = bool(re.search(r"^\s*▼", block, re.MULTILINE))
+    for index, (line, match) in enumerate(branches):
+        conditions.add(display_width(line[:match.start("condition")]))
+        arrows.add(display_width(line[:line.index("→")]))
+        targets.add(display_width(line[:match.start("target")]))
+        assert len(match["dash"]) == 4 + longest - display_width(match["condition"]), path
+        corner = "└" if index == len(branches) - 1 and not has_main else "├"
+        assert match["prefix"].lstrip().startswith(corner), path
+    assert len(conditions) == len(arrows) == len(targets) == 1, path
+
+
 def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     root = skill_dir("mdf")
     documents = [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
@@ -59,11 +83,13 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
             assert "▼" in diagram, path
             assert "┌" in diagram and "└" in diagram, path
             assert "+---" not in diagram and "---->" not in diagram, path
-            assert "├──── " in diagram, path
+            assert re.search(r"[├└]──── ", diagram), path
             # 每个编号步骤都必须有分支，不能只画成功路径。
             blocks = re.split(r"^│ \d+ [A-Za-z][A-Za-z ]+│$", diagram,
                               flags=re.MULTILINE)[1:]
-            assert all("├──── " in block for block in blocks), path
+            assert all(re.search(r"[├└]──── ", block) for block in blocks), path
+            for block in blocks:
+                assert_branch_alignment(block, path)
         for target in re.findall(r"\]\(#([^)]*)\)", text):
             assert f'<a id="{target}"></a>' in text, (path, target)
         for target in re.findall(r"references/[a-z-]+\.md", text):
@@ -81,9 +107,9 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
     assert "不进入实际归档" in text
     assert "仅非预览调用授权运行" in text
     diagram = text.split("```text", 1)[1].split("```", 1)[0]
-    assert "预览成功 ────→ [展示预览并结束]" in diagram
+    assert re.search(r"预览成功 ─+→ \[展示预览并结束\]", diagram)
     assert "非预览" in diagram
-    assert "预览成功 ────→ 4" not in diagram
+    assert not re.search(r"预览成功 ─+→ 4", diagram)
 
 
 def test_init_accepts_initializing_at_entry_before_readiness_gate():

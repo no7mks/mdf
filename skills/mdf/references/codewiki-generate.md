@@ -16,7 +16,7 @@
 │ 2 Check output                   │
 └────────────────┬─────────────────┘
                  │
-                 ├──── standard ────→ [要求 codewiki update]
+                 ├──── standard ─────────────→ [要求 codewiki update]
                  ├──── 非空且非 standard ────→ [列出不符合项并停止]
                  │
                  ▼ 目录缺失或为空
@@ -32,7 +32,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 可修复的图失败或跳过 ────→ 4 Write modules
-                 ├──── 其他失败 ────→ references/codewiki-recovery.md
+                 ├──── 其他失败 ────────────────→ references/codewiki-recovery.md
                  │
                  ▼ 页面及图验收通过
 ┌──────────────────────────────────┐
@@ -47,7 +47,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 全部验收通过 ────→ [报告并结束]
-                 ├──── 失败 ────→ references/codewiki-recovery.md
+                 └──── 失败 ────────────→ references/codewiki-recovery.md
 ```
 
 ## 工作流（唯一执行契约）
