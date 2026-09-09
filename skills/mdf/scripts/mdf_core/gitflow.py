@@ -104,8 +104,33 @@ def command_start(args) -> None:
         repo, f"refs/remotes/{ORIGIN}/{branch}"
     ):
         raise MDFError(f"Branch already exists: {branch}", code="branch_exists")
-    _git(repo, "checkout", base)
+    objectives = None
+    if args.kind == "feature":
+        from .proposals import require_startable
+        from .delivery_state import safe
+        if not args.proposal or not args.objectives_file:
+            raise MDFError("feature 需要 --proposal 与 --objectives-file", code="missing_proposal")
+        objectives = Path(args.objectives_file).read_text(encoding="utf-8")
+        from .constants import MARKER_RE
+        if not objectives.strip() or MARKER_RE.search(objectives):
+            raise MDFError("objectives 不能为空", code="missing_objectives")
+        target = safe(repo, repo / ".specs" / suffix)
+        if target.exists() or (repo / "changes/unreleased" / suffix).exists():
+            raise MDFError("交付 slug 已存在", code="collision")
+        _git(repo, "checkout", base)
+        require_startable(repo, args.proposal)
+    else:
+        _git(repo, "checkout", base)
+    start_commit = _git(repo, "rev-parse", "HEAD").stdout.strip()
     _git(repo, "checkout", "-b", branch)
+    if objectives is not None:
+        from .delivery_state import write_json
+        target.mkdir(parents=True)
+        (target / "objectives.md").write_text(objectives, encoding="utf-8")
+        write_json(target / "delivery.json", {"proposal": args.proposal, "slug": suffix,
+                   "branch": branch, "start_commit": start_commit})
+        _git(repo, "add", "--", str(target.relative_to(repo)))
+        _git(repo, "commit", "-m", f"docs(delivery): 确认 {args.proposal} 交付目标")
     pushed = _git(repo, "push", "-u", ORIGIN, branch, check=False)
     if pushed.returncode:
         raise MDFError(
@@ -120,10 +145,10 @@ def command_start(args) -> None:
             },
         )
     emit({"ok": True, "operation": "start", "branch": branch,
-          "base": base, "upstream": f"{ORIGIN}/{branch}"})
+          "base": base, "start_commit": start_commit, "upstream": f"{ORIGIN}/{branch}"})
 
 
-def _merge(repo: Path, source: str, target: str) -> None:
+def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
     _git(repo, "checkout", target)
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
@@ -132,6 +157,8 @@ def _merge(repo: Path, source: str, target: str) -> None:
             f"Merge conflict: {source} -> {target}; merge was aborted",
             code="merge_conflict",
         )
+    if before_commit is not None:
+        before_commit()
     message = f"chore(gitflow): 合并 {source} 到 {target}"
     _git(repo, "commit", "-m", message)
 
@@ -156,8 +183,30 @@ def command_finish_gitflow(args) -> None:
     )
     for target in targets:
         _synced(repo, target)
+    complete_feature = None
+    if kind == "feature":
+        from .delivery_state import locate, require_finish
+        from .proposals import records
+        from .prp_split import render
+        root, data = locate(repo)
+        require_finish(repo, root, data)
+        change = repo / "changes/unreleased" / data["slug"] / "CHANGE.md"
+        if root.parent != repo / "changes/unreleased" or not change.is_file():
+            raise MDFError("finish 前必须将材料归入 Change", code="missing_change")
+        from .yamlutil import read_frontmatter
+        meta, _ = read_frontmatter(change)
+        if meta.get("proposals") != [data["proposal"]] or meta.get("source_branch") != source:
+            raise MDFError("Change 必须对应本 feature 的唯一 PRP", code="invalid_change")
+        path, proposal, body = records(repo)[data["proposal"]]
+        if proposal["status"] != "ready":
+            raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
+        def complete_feature():
+            # Only a successful merge to develop can mark the result implemented.
+            merged, merged_body = read_frontmatter(path)
+            path.write_text(render({**merged, "status": "implemented"}, merged_body))
+            _git(repo, "add", "--", str(path.relative_to(repo)))
     if kind in {"feature", "bugfix"}:
-        _merge(repo, source, "develop")
+        _merge(repo, source, "develop", complete_feature)
         refs = ["develop", f":{source}"]
     else:
         _merge(repo, source, "master")

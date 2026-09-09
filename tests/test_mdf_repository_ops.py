@@ -14,9 +14,9 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
         proposal,
         "status: ready\ndepends_on: []",
         (
-            "status: closed\ndepends_on: []\n"
-            "resolution: fulfilled\n"
-            "fulfilled_in: 1.2.0"
+            "status: released\ndepends_on: []\n"
+            ""
+            "released_in: 1.2.0"
         ),
     )
     proposal.write_text(
@@ -74,7 +74,7 @@ def test_archive_never_rewrites_external_url_path_text(
     replace(
         proposal,
         "status: ready\ndepends_on: []",
-        "status: closed\ndepends_on: []\nresolution: rejected",
+        "status: rejected\ndepends_on: []\nreject-reason: wont-do",
     )
     external_url = f"https://example.invalid/repository/proposals/{PRP_NAME}"
     index = repo / "docs" / "index.md"
@@ -116,8 +116,8 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-command",
-        "true",
+        "--verification-item",
+        '{"id": "check", "kind": "custom", "command": "true"}',
     ]
     sentinel_arguments = [
         "0.0.0-unreleased" if value == "none" else value for value in arguments
@@ -137,7 +137,7 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
     assert "state: initializing" in manifest
     assert "latest_release: null" in manifest
-    assert '    - "true"' in manifest
+    assert '      command: "true"' in manifest
     full = mdf(
         python_exe,
         "validate",
@@ -170,8 +170,8 @@ def test_init_writes_files_from_assets_templates(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-command",
-        "true",
+        "--verification-item",
+        '{"id": "check", "kind": "custom", "command": "true"}',
     ]
     payload(mdf(python_exe, *arguments))
 
@@ -225,8 +225,8 @@ def test_init_updates_existing_manifest_and_managed_block(
         "--latest-release",
         "1.2.0",
         *fixture_documented_baselines(),
-        "--verification-command",
-        "true",
+        "--verification-item",
+        '{"id": "check", "kind": "custom", "command": "true"}',
     ]
 
     payload(mdf(python_exe, *arguments))
@@ -254,8 +254,8 @@ def test_init_executes_directly_without_plan_digest(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-command",
-        "true",
+        "--verification-item",
+        '{"id": "check", "kind": "custom", "command": "true"}',
     ]
     applied = payload(mdf(python_exe, *arguments))
     assert "dry_run" not in applied

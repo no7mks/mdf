@@ -33,10 +33,17 @@ disable-model-invocation: true
                  │
                  ├──── init ────> references/init.md
                  ├──── intake ────> references/intake.md
-                 ├──── next [方向] ────> references/next.md
+                 ├──── next [--depth N] ────> references/next.md
                  ├──── start ────> references/start.md
+                 ├──── design ────> references/design.md
+                 ├──── write-tests ────> references/write-tests.md
+                 ├──── implement ────> references/implement.md
+                 ├──── converge ────> references/converge.md
+                 ├──── review ────> references/review.md
+                 ├──── fact update ────> references/fact-update.md
+                 ├──── prp split ────> references/prp-split.md
                  ├──── finish ────> references/finish.md
-                 ├──── audit ────> references/audit.md
+                 ├──── fact audit ────> references/fact-audit.md
                  ├──── clarify <议题> ────> references/clarify.md
                  ├──── bug create ────> references/bug-create.md
                  ├──── prp create ────> references/prp-create.md
@@ -68,7 +75,7 @@ disable-model-invocation: true
 
 **调用**
 
-只接受选择树所列的显式调用；`next [方向]` 的方向可省略， `clarify <议题>` 的议题由对应 intent 检查。
+只接受选择树所列的显式调用；`next [--depth N]` 的深度可省略， `clarify <议题>` 的议题由对应 intent 检查。
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
 
 验收：完整、非空的调用。
@@ -92,7 +99,7 @@ disable-model-invocation: true
 
 完整读取选择树指定的 intent，并只按其按需读取说明读取公共引用； 将调研、已确认决策与`当前事实文档`分开，
 不把候选方案当作已实现行为， 不替代任务管理；按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录，
-不自动提交工作区改动；仅 `finish-gitflow` 创建规定的 merge commit。
+交付阶段可按明确授权创建必要提交与 no-ff 合并；其他 intent 不自动提交。
 
 验收：已读取材料与其流程结果。
 

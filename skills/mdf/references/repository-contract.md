@@ -13,7 +13,7 @@
 - `evidence`：`当前事实文档` 中指向仓库内已跟踪证据及其验证方式的元数据。
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
-- `验证命令`：`manifest.verification.commands` 中由仓库执行的非空命令列表。
+- `验证命令`：`manifest.verification.commands` 中由仓库执行的非空具名验证项列表。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
 - `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。
 
@@ -22,6 +22,7 @@
 ```text
 /
 ├── .mdf/manifest.yaml
+├── .specs/<prp-slug>/
 ├── AGENTS.md
 ├── PROJECT.md
 ├── GLOSSARY.md
@@ -122,15 +123,18 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 ```yaml
 verification:
   commands:
-    - "python3 -m pytest -q"
+    - id: unit
+      kind: unit
+      command: "python3 -m pytest -q"
 ```
 
-`initializing` 与 `ready` 都要求非空字符串列表。初始化时通过 CLI 的
-`--verification-command` 提供；没有业务检查的空仓库可使用 `git diff --check`。
+`initializing` 与 `ready` 都要求非空具名条目列表，每项只含唯一 id、kind、非空 command。
+kind 为 unit/property/integration/e2e/lint/typecheck/build/custom；不强制各类齐全。
+初始化时通过 CLI 重复传入 `--verification-item` JSON 对象提供；没有业务检查的空仓库可使用 `git diff --check`。
 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 `implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、
-不为符号链接且位于仓库内。`audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
+不为符号链接且位于仓库内。`fact audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
 
 `.mdf/audit-ignore.yaml` 是受 Git 跟踪的 audit 例外清单：
 

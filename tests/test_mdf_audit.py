@@ -32,11 +32,11 @@ def test_audit_reports_evidence_mapping_without_running_commands(
 ):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / ".mdf" / "manifest.yaml", '- "true"', '- "touch audit-ran"'
+        repo / ".mdf" / "manifest.yaml", 'command: "true"', 'command: "touch audit-ran"'
     )
     init_git(repo)
 
-    result = mdf(python_exe, "audit", "--repo", str(repo))
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     data = payload(result)
 
     assert data["finding_count"] == 0
@@ -57,7 +57,7 @@ def test_audit_uncovered_file_is_warning_and_ignorelist_can_cover_it(
     (generated / "client.py").write_text("VALUE = 1\n", encoding="utf-8")
     init_git(repo)
 
-    data = payload(mdf(python_exe, "audit", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
     assert data["finding_count"] == 0
     assert [item["path"] for item in data["warnings"]] == [
         "src/generated/client.py"
@@ -69,7 +69,7 @@ def test_audit_uncovered_file_is_warning_and_ignorelist_can_cover_it(
     )
     git(repo, "add", ".mdf/audit-ignore.yaml")
     git(repo, "commit", "-m", "test: 忽略生成客户端")
-    data = payload(mdf(python_exe, "audit", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
     assert data["warning_count"] == 0
     assert data["ignored"] == [
         {
@@ -90,13 +90,13 @@ def test_audit_rejects_invalid_ignore_and_scope_paths(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "audit", "--repo", str(repo))
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     assert result.returncode == 2
     assert "audit.ignore_rule" in result.stdout
 
     result = mdf(
         python_exe,
-        "audit",
+        "fact-audit",
         "--repo",
         str(repo),
         "--scope",
@@ -117,7 +117,7 @@ def test_audit_rejects_missing_or_overlapping_implementation_roots(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "audit", "--repo", str(repo))
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     assert result.returncode == 2
     assert "manifest.implementation_roots" in result.stdout
 
@@ -134,7 +134,7 @@ def test_audit_rejects_overlapping_implementation_roots(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "audit", "--repo", str(repo))
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     assert result.returncode == 2
     assert "manifest.implementation_root_overlap" in result.stdout
 
@@ -163,7 +163,7 @@ def test_audit_rejects_duplicate_or_empty_ignore_rules(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "audit", "--repo", str(repo))
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     assert result.returncode == 2
     assert expected in result.stdout
 
@@ -177,7 +177,7 @@ def test_audit_accepts_exact_range_paths(
     data = payload(
         mdf(
             python_exe,
-            "audit",
+            "fact-audit",
             "--repo",
             str(repo),
             "--scope",

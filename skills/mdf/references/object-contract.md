@@ -5,19 +5,22 @@
 
 ## Proposal
 
-Proposal 使用 Markdown + YAML frontmatter：`id`、`type: proposal`、`status`、
-`depends_on`。状态只允许 `draft`、`ready`、`closed`。`depends_on` 是当前
-Proposal 的直接依赖列表，只能包含其他 `draft`、`ready` 或
-`closed + fulfilled` Proposal 的 ID；不得包含重复、自指、循环、Bug、ADR、
-缺失对象或其他终态 Proposal。一般关联只在正文中说明，不使用关系 metadata。
-Proposal、Bug 和 Jot 的 ID 均为前缀后接四位字符。每一位均独立从大写英文字母
-（排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。
+Proposal 使用 Markdown + YAML frontmatter：id、type: proposal、status、depends_on。
+状态为 draft、ready、implemented、released、rejected、replaced。
+正常路径 draft → ready → implemented → released；implemented 表示验收后合入 develop，
+released 必须记录稳定 SemVer released_in。其他状态不得使用 released_in。
+rejected 必须有 reject-reason: wont-do/obsolete/duplicate；duplicate 还须有 duplicate_of，
+直接指向同类型的 canonical 非 duplicate PRP，不允许自指或重复链。
+replaced 必须有至少两个唯一 replaced_by ID；替代关系不得缺失、自指或成环。
+不使用持久化 resolution。released、rejected、replaced 可以归档，implemented 不归档。
 
-正文必须包含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”必须含
-非空的“包含”与“不包含”三级子节。
+依赖 depends_on 为唯一的直接 PRP ID 列表；允许 draft、ready、implemented、released，
+其中 implemented/released 已满足依赖。禁止重复、自指、循环、缺失、跨类型及其他终态。
+拆分必须同时改写所有原下游引用；replaced 不表示依赖已满足。
 
-合法 Proposal resolution：`fulfilled`（必须写稳定 SemVer `fulfilled_in`）、
-`rejected`、`obsolete`、`duplicate`；非 `fulfilled` 不得写 `fulfilled_in`。
+Proposal、Bug 和 Jot 的 ID 为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
+一般关联只写正文；上述重复与替代字段是明确的结构关系。
+正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”含“包含”“不包含”非空三级子节。
 
 ## Bug
 

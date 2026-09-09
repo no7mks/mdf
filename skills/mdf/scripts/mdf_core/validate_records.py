@@ -110,6 +110,19 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
         findings,
     )
 
+    replacements = {}
+    for identifier, metadata in proposals.items():
+        values = metadata.get("replaced_by", [])
+        if not isinstance(values, list):
+            continue
+        replacements[identifier] = {value for value in values if isinstance(value, str)}
+        if any(value not in proposals or value == identifier for value in replacements[identifier]):
+            add_finding(findings, "proposal.replaced_by", "替代关系引用无效",
+                        relative(repo, identifier_paths[identifier]))
+    for identifier in cyclic_proposals(replacements):
+        add_finding(findings, "proposal.replacement_cycle", "替代关系不得成环",
+                    relative(repo, identifier_paths[identifier]))
+
     for path in object_paths:
         try:
             metadata, _ = read_frontmatter(path)
@@ -142,7 +155,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                     primary_metadata, _ = read_frontmatter(primary_path)
                 except MDFError:
                     primary_metadata = {}
-                if primary_metadata.get("type") != "bug":
+                if primary_metadata.get("type") != metadata.get("type"):
                     add_finding(
                         findings,
                         "bug.duplicate_type",
@@ -264,15 +277,14 @@ def validate_proposal_dependencies(
                 )
                 continue
             status = target.get("status")
-            fulfilled = (
-                status == "closed"
-                and target.get("resolution") == "fulfilled"
+            released = (
+                status in {"implemented", "released"}
             )
-            if status not in {"draft", "ready"} and not fulfilled:
+            if status not in {"draft", "ready"} and not released:
                 add_finding(
                     findings,
-                    "proposal.depends_on_unfulfilled",
-                    "Proposal dependency must be active or fulfilled: "
+                    "proposal.depends_on_unreleased",
+                    "Proposal dependency must be active or released: "
                     f"{dependency}",
                     rel,
                 )

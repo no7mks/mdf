@@ -122,7 +122,7 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **确认**
 
 展示对象清单、边界、排除范围、Proposal 依赖；`depends_on`
-仅列直接依赖的 draft、ready 或 closed + fulfilled Proposal ID。
+仅列直接依赖的 draft、ready 或 implemented/released Proposal ID。
 
 验收：只有用户明确确认清单才继续。
 
@@ -149,4 +149,4 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 验收：会话摘要。
 
 异常与交接：停止。Proposal 后续显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`；
-Bug 创建后即为 `open`，不得关闭普通对象或填写 `fulfilled_in`/`fixed_in`。
+Bug 创建后即为 `open`，不得关闭普通对象或填写 `released_in`/`fixed_in`。

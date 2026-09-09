@@ -14,12 +14,17 @@
 
 - 意图与状态
   - 仅在用户显式调用 `$mdf …` 时执行 MDF 意图命令，包括 `$mdf intake`、
-    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单或自动提交工作区改动。
-    仅 `finish-gitflow` 为流程规定的合并创建 merge commit。
-  - Proposal 状态只使用 `draft`、`ready`、`closed`；Bug 状态只使用 `open`、`fixed`、
-    `closed`、`rejected`；feature/bugfix 不得提前关闭。
+    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单；交付阶段可按确认范围提交。
+    交付阶段与 `finish-gitflow` 按流程执行必要的 no-ff 合并。
+  - Proposal 状态为 draft、ready、implemented、released、rejected、replaced。
+    Bug 状态为 open、fixed、closed、rejected，保持其二次验证与发布约束。
   - release 收口前必须通过 MDF 全量审计；hotfix 收口前通过交付范围审计；两者均须零问题项。
 
 - 托管边界
   - MDF 只管理本标记区块，不得覆盖 `AGENTS.md` 的其他规则。
+
+- feature 交付：start → design → [write-tests ∥ implement] → converge → review → finish。
+- 当前事实使用 `$mdf fact update` 与 `$mdf fact audit`；finish 前段内部同步事实。
+- `$mdf next` 只读展示 ready 依赖；`$mdf prp split` 拆分未开工对象。
+
 <!-- MDF:END -->

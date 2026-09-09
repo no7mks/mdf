@@ -36,7 +36,7 @@ def require_exact_keys(
 
 
 CLOSURE_RESOLUTIONS = {
-    "fulfilled",
+    "released",
     "fixed",
     "deferred",
     *PROPOSAL_CLOSED_RESOLUTIONS,

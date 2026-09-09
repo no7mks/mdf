@@ -74,30 +74,18 @@ def close_object_text(
     resolution = closure["resolution"]
 
     if kind == "proposal":
-        _require_status(metadata, str(identifier), "ready")
-        allowed = {"fulfilled", "rejected", "duplicate", "obsolete"}
-        if resolution not in allowed:
-            raise MDFError(
-                f"Invalid Proposal resolution: {resolution}",
-                code="invalid_closure",
-            )
-        expected_version = closure.get("fulfilled_in")
-        if resolution == "fulfilled":
-            if expected_version != version or "fixed_in" in closure:
-                raise MDFError(
-                    "fulfilled closure requires fulfilled_in equal to release "
-                    "version",
-                    code="invalid_closure",
-                )
-        elif "fulfilled_in" in closure or "fixed_in" in closure:
-            raise MDFError(
-                "Non-fulfilled Proposal closure must not declare a version",
-                code="invalid_closure",
-            )
-        frontmatter = _set_field(frontmatter, "status", "closed")
-        frontmatter = _set_field(frontmatter, "resolution", resolution)
-        if resolution == "fulfilled":
-            frontmatter = _set_field(frontmatter, "fulfilled_in", version)
+        if resolution == "released":
+            _require_status(metadata, str(identifier), "implemented")
+            if closure.get("released_in") != version or "fixed_in" in closure:
+                raise MDFError("released 需要匹配发布版本", code="invalid_closure")
+            frontmatter = _set_field(frontmatter, "status", "released")
+            frontmatter = _set_field(frontmatter, "released_in", version)
+        else:
+            _require_status(metadata, str(identifier), "rejected")
+            if resolution != metadata.get("reject-reason"):
+                raise MDFError("拒绝原因不一致", code="invalid_closure")
+            if "released_in" in closure or "fixed_in" in closure:
+                raise MDFError("拒绝结果不使用发布版本", code="invalid_closure")
         return text[:start] + frontmatter + text[end:]
 
     if resolution == "deferred":
@@ -119,7 +107,7 @@ def close_object_text(
         )
     if resolution == "fixed":
         _require_status(metadata, str(identifier), "fixed")
-        if closure.get("fixed_in") != version or "fulfilled_in" in closure:
+        if closure.get("fixed_in") != version or "released_in" in closure:
             raise MDFError(
                 "fixed closure requires fixed_in equal to release version",
                 code="invalid_closure",

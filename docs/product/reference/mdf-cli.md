@@ -18,9 +18,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
   `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
   clean worktree。
-- 写入类命令不自动提交工作区改动；调用方必须展示结果，并由用户复核、提交。
-  `finish-gitflow` 仅为规定的 Gitflow 合并创建 merge commit。
-- `--dry-run` 只在 `archive`、`move-change` 和 `release-closeout` 中有效。
+- 对象写入类命令不自动提交；调用方展示结果，由用户复核提交。
+  feature start、交付阶段与 finish 按明确授权创建必要提交及 no-ff 合并。
+- `--dry-run` 只在 `archive`、`move-change`、`prp-split` 和 `release-closeout` 中有效。
 
 ## 命令表
 
@@ -30,7 +30,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `doctor` | 仓库状态 |
 | `init` | 初始化写入 |
 | `validate` | 确定性校验 |
-| `audit` | 确定性审计 |
+| `fact-audit` | 确定性审计 |
 | `make-id` | 对象 ID |
 | `make-jot-id` | Jot ID |
 | `branch` | 分支解析 |
@@ -39,6 +39,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `move-change` | Change 迁移 |
 | `release-closeout` | 版本收口 |
 | `start` | 创建分支 |
+| `next` | ready 依赖视图 |
+| `prp-split` | 未开工 PRP 拆分 |
+| `delivery` | 阶段 gate 与验证 |
 | `finish-gitflow` | Gitflow 合并 |
 
 ## 只读命令
@@ -74,10 +77,10 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 `full` 额外执行全量检查。存在 finding 时仍输出完整 JSON 结果，
 但以状态码 `2` 失败。
 
-### `audit`
+### `fact-audit`
 
 ```bash
-python3 skills/mdf/scripts/mdf.py audit --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 ```
 
 全量审计遍历 manifest 的 `implementation_roots` 与全部当前事实文档，输出实现范围、
@@ -88,7 +91,7 @@ python3 skills/mdf/scripts/mdf.py audit --repo /path/to/repository
 范围审计使用精确路径清单：
 
 ```bash
-python3 skills/mdf/scripts/mdf.py audit --repo /path/to/repository \
+python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --scope paths --implementation-path src/service.py \
   --document-path docs/system/interfaces/api.md
 ```
@@ -143,7 +146,7 @@ python3 skills/mdf/scripts/mdf.py semver-check \
 ```bash
 python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   --latest-release 1.2.3 \
-  --verification-command "python3 -m pytest -q" \
+  --verification-item '{"id":"unit","kind":"unit","command":"python3 -m pytest -q"}'  \
   --implementation-root src \
   --baseline 'glossary=documented' \
   --baseline 'product_reference=documented' \
@@ -162,7 +165,7 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 初始化时建立为空目录。
 每项格式为 `NAME=documented[:仓库相对路径]` 或
 `NAME=not_applicable:原因`。
-至少提供一次 `--verification-command`；可重复提供。没有业务检查的空仓库可使用
+至少提供一次 `--verification-item`；可重复提供。没有业务检查的空仓库可使用
 `git diff --check`。
 
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
@@ -216,7 +219,8 @@ release 会从所有 `changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfi
 
 ```bash
 python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
-  --kind feature --name service-health
+  --kind feature --name service-health \
+  --proposal prp-AB23 --objectives-file /tmp/objectives.md
 ```
 
 `--kind` 为 `feature`、`bugfix`、`release` 或 `hotfix`。前两者必须有 `--name`，
@@ -239,7 +243,7 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 源和参与的目标分支都与远端完全一致。命令会先 `fetch --prune`。
 
 feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
-`chore(gitflow): 合并 <source> 到 <target>` 提交。release/hotfix 先同样合并到
+`chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented 转换包含在该 merge commit。release/hotfix 先同样合并到
 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。最后
 原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
@@ -247,12 +251,36 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 ## 与 intent 的关系
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
-调用：`init` intent 使用 `doctor` 与 `init`；`next` 使用 `doctor`、`make-id`
-与 `validate`；`intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
+调用：`init` intent 使用 `doctor` 与 `init`；`next` 使用只读 `next` CLI；`intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
 `jot` 使用 `make-jot-id`；
 `archive` intent 使用 `archive`；`start` intent 使用 `start`；
 `finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 
-`audit`、`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是
+`fact-audit`、`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是
 intent 和测试的确定性基础，不是面向最终用户的直接产品入口。
+
+## Feature 阶段 CLI
+
+feature start 额外要求 `--proposal <ID> --objectives-file <文件>`；确认的目标文本先从文件读取，
+新分支记录固定起点与 slug，写入材料并提交，再推送。缺 PRP、依赖阻塞或已开工时拒绝。
+
+`delivery <action> --repo <仓库>`：
+
+| action | 输入与效果 |
+| --- | --- |
+| status | 只读列出交付身份、材料位置与阶段记录 |
+| check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
+| record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
+| verify | 执行全部 verification；可用重复 `--item <id>` 做定位运行，全量记录不能由单项替代 |
+| parallel | clean feature 的已提交设计基线建立 qa/dev 本地分支与相邻 worktree |
+| integrate | clean feature 依次 no-ff 集成 qa/dev；冲突保留现场，完成后清理已合并本地工作分支 |
+
+design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["tests/","pyproject.toml"]}`。
+converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
+阶段值为 design、write-tests、implement、converge、review、fact-update。
+
+`next --repo <仓库> [--depth 3]` 输出 trees、blocked、needs_review、hidden；只读，非法依赖失败。
+`prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 在完整预检后一次写入拆分结果。
+输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，
+downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出候选文件全文，失败不留下部分拆分。

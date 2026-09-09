@@ -10,7 +10,7 @@
 | 2 | 入口 | 约束 | [外层只查一次 clean](#s2) | 入口记录 | 返回调用方 | 停止 |
 | 3 | 反馈 | 约束 | [处理同次中间反馈](#s3) | 调用上下文 | 继续修改 | 报告边界，停止 |
 | 4 | 失败 | 约束 | [保留现场并报告](#s4) | 现场、findings | 等待用户处理 | 停止 |
-| 5 | 交接 | 约束 | [用户复核自行提交](#s5) | 复核与提交 | 下一次调用 | 停止 |
+| 5 | 交接 | 约束 | [按授权提交](#s5) | 复核与提交 | 下一次调用 | 停止 |
 | 6 | 语言 | 约束 | [使用简体中文](#s6) | 产出检查 | 下一适用规则 | 改写后重查 |
 
 ## 术语与数据结构
@@ -33,7 +33,8 @@
 
 **入口**
 
-仅在外层 intent 入口检查一次 clean worktree，并按 Git 语义判断； `.gitignore` 忽略文件和 Skill 写入的 `.lark/`
+除 next、交付阶段续办和 fact update 按各自范围检查外，仅在外层 intent 入口检查一次 clean worktree，并按 Git 语义判断；
+ `.gitignore` 忽略文件和 Skill 写入的 `.lark/`
 令牌不构成 dirty。
 
 验收：入口检查记录。
@@ -64,12 +65,13 @@
 
 **交接**
 
-仅当 intent 产生待提交工作区改动时，要求用户复查并自行提交；不自动提交工作区改动；仅 `finish-gitflow`
-创建规定的 merge commit。
+feature 交付阶段按照 `references/delivery-contract.md` 授权创建必要提交和本地集成；
+finish 创建其规定的 merge commit。其他 intent 的待提交改动由用户复查并提交。
+不要提交无关用户改动；每次提交只暂存明确的当前工作路径。
 
-验收：用户复查与提交。
+验收：提交范围、依据和验证证据。
 
-通过条件：下一次独立调用。
+通过条件：当前 intent 完成后返回，不自动触发下一个用户入口。
 
 <a id="s6"></a>
 
@@ -81,6 +83,5 @@
 验收：产出内容符合语言约束。
 
 通过条件：按适用规则继续。异常与交接：改写后再继续。
-
 按操作需要读取：`references/repository-contract.md` 定义仓库目录、`manifest` 与 `基线`；
 `references/object-contract.md` 定义 Proposal、Bug 与 Change 的 schema 和不变量。

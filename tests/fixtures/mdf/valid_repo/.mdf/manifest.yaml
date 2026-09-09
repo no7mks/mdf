@@ -5,7 +5,9 @@ versioning:
   latest_release: "1.2.0"
 verification:
   commands:
-    - "true"
+    - id: check
+      kind: custom
+      command: "true"
 implementation_roots: [src]
 baselines:
   glossary:

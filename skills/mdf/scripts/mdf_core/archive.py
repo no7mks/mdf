@@ -2,7 +2,7 @@ from pathlib import Path
 
 from .constants import EPOCH_RE
 from .errors import MDFError, serialize_findings
-from .moves import replacement_plan
+from .moves import replacement_plan, managed_delivery_markdown
 from .paths import relative
 from .textutil import slugify
 from .validate_change_schema import validate_change_file
@@ -34,7 +34,8 @@ def archive_plan(
             if len(records_path_parts) != 2:
                 continue
             allowed_statuses = (
-                {"closed"} if kind == "proposal" else {"closed", "rejected"}
+                {"released", "replaced", "rejected"}
+                if kind == "proposal" else {"closed", "rejected"}
             )
             if metadata.get("status") not in allowed_statuses:
                 continue
@@ -166,5 +167,9 @@ def change_move_plan(
                 code="recursive_move",
             )
         moves[source] = target
-    rewrites = replacement_plan(repo, moves, rewrite_inside_sources=False)
+    rewrites = replacement_plan(
+        repo, moves, rewrite_inside_sources=False,
+        rewrite_inside_filter=(managed_delivery_markdown
+                               if source and (source / "delivery.json").is_file() else None),
+    )
     return moves, rewrites, target

@@ -90,7 +90,9 @@
 
 **状态**
 
-closed 或 archive Proposal 拒绝修改；开始评审时将既有 `ready` 转为 `draft`； 取消、暂停或未确认时保持 `draft`。
+released/rejected/replaced/implemented 或 archive Proposal 拒绝修改；
+开始评审时将既有 `ready` 转为 `draft`；
+ 取消、暂停或未确认时保持 `draft`。
 
 验收：对象状态。
 
@@ -122,5 +124,5 @@ closed 或 archive Proposal 拒绝修改；开始评审时将既有 `ready` 转�
 
 验收：validation 通过；写回后回读对象，确认状态为 `ready`。
 
-异常与交接：保留 draft 和现场。不得关闭对象或填写 `fulfilled_in`。 写回失败时保留实际现场并停止，
+异常与交接：保留 draft 和现场。不得关闭对象或填写 `released_in`。 写回失败时保留实际现场并停止，
 不得声称已 ready。

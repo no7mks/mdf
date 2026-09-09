@@ -10,7 +10,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | 命令 | 用途 |
 | --- | --- |
 | `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
-| `$mdf next [方向]` | 发现并确认下一步 MVP，产出有依赖顺序的 Proposal |
+| `$mdf next [--depth N]` | 展示 ready PRP 依赖树、阻塞项与 draft 评审提示 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
@@ -20,14 +20,25 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf bug create` | 按已确认的内容手动创建一个 open Bug |
 | `$mdf prp create` | 按已确认的内容手动创建一个 draft Proposal |
 | `$mdf prp review` | 修订单个 active Proposal，并通过验证后转为 ready |
-| `$mdf archive` | 归档 closed Proposal 及 closed/rejected Bug |
+| `$mdf archive` | 归档终态 Proposal 及 closed/rejected Bug |
+| `$mdf prp split` | 拆分未开工 PRP，并完整改写依赖 |
+| `$mdf design` | 确认设计、测试策略和共享代码底座 |
+| `$mdf write-tests` | 按目标编写测试用例 |
+| `$mdf implement` | 按已确认设计实现 |
+| `$mdf converge` | 收敛：集成并持续修复到全量验证通过 |
+| `$mdf review` | 审查并修复实现、测试和 code smell |
+| `$mdf fact update` | 同步当前事实并委托事实审阅；finish 前段自动调用 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
-| `$mdf audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
+| `$mdf fact audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
 
-裸 `$mdf` 只显示帮助。所有意图都必须显式调用，入口可写入但不自动提交工作区改动；
-用户须复查并提交，下一次调用从 clean worktree 开始。仅 `finish-gitflow`
-会创建流程规定的 merge commit。
+裸 `$mdf` 只显示帮助。主线 intent 由用户手动触发：
+
+`start → design → [write-tests ∥ implement] → converge → review → finish`
+
+一个 feature 对应一个 PRP；设计后测试与实现可并行，gate 检查共同基线与有效证据。
+交付阶段可创建必要提交与 no-ff 集成，其他 intent 的改动由用户复核提交。
+材料从 `.specs/<slug>/` 随交付进入 Change，再随版本归档。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
 记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，

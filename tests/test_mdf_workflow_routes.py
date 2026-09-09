@@ -32,7 +32,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     root = skill_dir("mdf")
     documents = [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
     workflows = [p for p in documents if HEADER in p.read_text(encoding="utf-8")]
-    assert len(workflows) == 18
+    assert len(workflows) == 25
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -83,12 +83,11 @@ def test_init_accepts_initializing_at_entry_before_readiness_gate():
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 
-def test_finish_moves_child_change_before_any_document_write():
+def test_finish_updates_facts_before_moving_materials():
     text = workflow("finish")
     prepare = text.split('<a id="s3"></a>', 1)[1].split('<a id="s4"></a>', 1)[0]
-    assert "迁移既有childChange必须在任何工作区写入之前、clean状态下完成" in compact(prepare)
-    assert "先核对并迁移，再补齐" in compact(prepare)
-    assert "迁移只可用`move-change`" in compact(prepare)
+    assert prepare.index("references/fact-update.md") < prepare.index("move-change")
+    assert "delivery check --stage fact-update" in prepare
     assert "预览仅列待补材料，不写入" in prepare
 
 

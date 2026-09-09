@@ -89,7 +89,7 @@
 
 **分组**
 
-closed Proposal、closed/rejected Bug 的 duplicate 必须随 canonical 组成 archive group。
+released/rejected/replaced Proposal 可归档；Bug 的 duplicate 必须随 canonical 组成 archive group。
 
 验收：archive group 关系。
 

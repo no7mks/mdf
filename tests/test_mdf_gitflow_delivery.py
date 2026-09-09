@@ -33,14 +33,18 @@ def test_start_rejected_push_preserves_local_branch_and_reports_state(
     hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
     hook.chmod(0o755)
 
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
     result = mdf(python_exe, "start", "--repo", str(repo),
-                 "--kind", "feature", "--name", "delivery")
+                 "--kind", "feature", "--name", "delivery",
+                 "--proposal", "prp-AB23", "--objectives-file", str(obj))
 
     assert result.returncode != 0
     error = json.loads(result.stderr)
     assert error["error"] == "start_push_failed"
     assert error["details"]["branch"] == "feature/delivery"
-    assert error["details"]["local_head"] == before
+    assert error["details"]["local_head"] != before
+    assert git(repo, "rev-parse", "HEAD^").stdout.strip() == before
     assert error["details"]["remote_state"] == "unknown"
     assert git(repo, "branch", "--show-current").stdout.strip() == "feature/delivery"
     assert not git(remote, "for-each-ref", "refs/heads/feature/delivery").stdout
@@ -48,7 +52,7 @@ def test_start_rejected_push_preserves_local_branch_and_reports_state(
 
     hook.unlink()
     git(repo, "push", "-u", "origin", "feature/delivery")
-    assert git(repo, "rev-parse", "@{upstream}").stdout.strip() == before
+    assert git(repo, "rev-parse", "@{upstream}").stdout.strip() == error["details"]["local_head"]
 
 
 @pytest.mark.parametrize("kind", ["feature", "bugfix", "release", "hotfix"])
@@ -67,10 +71,17 @@ def test_start_sets_upstream_from_expected_base(
         "--version", "1.3.0",
     ]
 
+    if kind == "feature":
+        obj = tmp_path / "objectives.md"
+        obj.write_text("# 目标\n\n交付健康接口。\n")
+        identifier += ["--proposal", "prp-AB23", "--objectives-file", str(obj)]
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
                          "--kind", kind, *identifier))
 
     assert result["base"] == base
+    assert result["start_commit"] == expected
+    if kind == "feature":
+        expected = git(repo, "rev-parse", "HEAD").stdout.strip()
     assert git(repo, "rev-parse", "HEAD").stdout.strip() == expected
     assert git(repo, "rev-parse", "@{upstream}").stdout.strip() == expected
 
@@ -119,7 +130,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     root_change = repo / "changes" / version / "CHANGE.md"
     root_before = root_change.read_bytes()
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
-    assert_ok(mdf(python_exe, "audit", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo)))
 
     finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
 

@@ -1,0 +1,45 @@
+# PRP Split
+
+## 决策树
+
+```text
+┌────────────────────────┐
+│ 1 Inspect              │
+└────────────────────────┘
+             ▼
+┌────────────────────────┐
+│ 2 Design               │
+└────────────────────────┘
+             ▼
+┌────────────────────────┐
+│ 3 Preview              │
+└────────────────────────┘
+             ▼
+┌────────────────────────┐
+│ 4 Apply                │
+└────────────────────────┘
+```
+
+## 工作流（唯一执行契约）
+
+| # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 检查 | 约束 | 确认原 PRP 尚未 start | draft/ready 与开工检查 | 2 | 停止并报告 |
+| 2 | 拆分 | 约束 | 确认最少交付单元、覆盖与依赖 | 用户确认的拆分输入 | 3 | 停止并报告 |
+| 3 | 预检 | 约束 | 运行 prp-split --dry-run | 完整候选 diff | 4 | 停止并报告 |
+| 4 | 写入 | 约束 | 写入并校验完整对象与依赖图 | 全部变更或无变更 | 结束 | 停止并报告 |
+
+## 执行约束
+
+
+读取 `references/object-contract.md` 与 `references/common.md`。要求 clean worktree。
+仅 active draft/ready 且没有关联分支或开发材料的 PRP 可拆分；已有实现或终态拒绝。
+子项须能独立实现与验收，共同覆盖原范围，不拆成文件/操作任务，也不额外扩张范围。
+先用 make-id 分配子 ID。输入 JSON 文件包含 source、children、downstream、rationale。
+children 至少两个，每项为 filename、id、depends_on、body；body 为完整 Proposal 正文。
+downstream 为全部原下游 PRP ID 到其所需子 PRP ID 列表的映射，包含历史对象。
+逐项确认原上游如何分配、下游如何替换，避免机械地全部继承；rationale 记录范围覆盖与用户确认。
+运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选；用户确认后去掉 dry-run。
+原对象置 replaced、记录 replaced_by；子对象为 draft。预检通过才整体写入，写入失败恢复原文件。
+已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
+

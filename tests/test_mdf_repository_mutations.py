@@ -13,7 +13,7 @@ def test_archive_accepts_closed_non_delivery_resolution(
     replace(
         proposal,
         "status: ready\ndepends_on: []",
-        "status: closed\ndepends_on: []\nresolution: rejected",
+        "status: rejected\ndepends_on: []\nreject-reason: wont-do",
     )
     init_git(repo)
 
@@ -39,9 +39,9 @@ def test_archive_post_validation_failure_leaves_worktree(
         repo / "proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
         (
-            "status: closed\ndepends_on: []\n"
-            "resolution: fulfilled\n"
-            "fulfilled_in: 1.2.0"
+            "status: released\ndepends_on: []\n"
+            ""
+            "released_in: 1.2.0"
         ),
     )
     init_git(repo)
@@ -247,8 +247,8 @@ def test_init_allows_dirty_worktree_for_active_continuation(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-command",
-        "true",
+        "--verification-item",
+        '{"id": "check", "kind": "custom", "command": "true"}',
     ]
 
     applied = payload(mdf(python_exe, *arguments))
@@ -267,7 +267,7 @@ def test_archive_and_move_change_require_clean_worktree(
     replace(
         proposal,
         "status: ready\ndepends_on: []",
-        "status: closed\ndepends_on: []\nresolution: rejected",
+        "status: rejected\ndepends_on: []\nreject-reason: wont-do",
     )
     init_git(archive_repo)
     (archive_repo / "dirty.txt").write_text("dirty\n", encoding="utf-8")

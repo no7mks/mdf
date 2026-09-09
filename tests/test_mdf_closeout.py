@@ -92,8 +92,8 @@ def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
     repo = copy_fixture(tmp_path)
     replace(
         repo / ".mdf" / "manifest.yaml",
-        '- "true"',
-        '- "touch verification-marker"',
+        'command: "true"',
+        'command: "touch verification-marker"',
     )
     prepare_release(repo)
     arguments = release_arguments(repo)

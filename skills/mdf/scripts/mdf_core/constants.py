@@ -40,7 +40,7 @@ PROTOCOL_VERSION = 2
 SCHEMA_VERSION = 2
 # A Bug discovered on the current, not-yet-released line is deliberately not
 # represented as a fake SemVer.  ``unreleased`` is a state marker, not a
-# version and must never be used for fixed_in/fulfilled_in or release paths.
+# version and must never be used for fixed_in/released_in or release paths.
 UNRELEASED_SENTINEL = "unreleased"
 
 
@@ -86,8 +86,8 @@ BUG_STATUSES = {"open", "fixed", "closed", "rejected"}
 # 收口 payload 仍以 resolution 描述本次操作；持久化 Bug 使用 status/reject-reason。
 BUG_TERMINAL_RESOLUTIONS = BUG_REJECT_REASONS - {"duplicate"}
 BUG_RESOLUTIONS = {"fixed", "duplicate", *BUG_TERMINAL_RESOLUTIONS}
-# Proposal 的非交付终态；与 validate_objects 的 Proposal resolution 集合对齐。
-PROPOSAL_CLOSED_RESOLUTIONS = {"rejected", "duplicate", "obsolete"}
+# Proposal 拒绝原因，用于发布收口的一次性操作输入。
+PROPOSAL_CLOSED_RESOLUTIONS = {"wont-do", "duplicate", "obsolete"}
 CHANGE_KINDS = {"feature", "bugfix", "release", "hotfix"}
 BASELINES = (
     "glossary",
@@ -134,6 +134,7 @@ ALL_MARKDOWN_LINK_RE = re.compile(
 FACT_ROOTS = ("docs/product", "docs/system")
 MANAGED_ROOTS = (
     ".mdf",
+    ".specs",
     "AGENTS.md",
     "PROJECT.md",
     "GLOSSARY.md",

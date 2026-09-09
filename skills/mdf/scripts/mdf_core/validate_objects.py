@@ -73,7 +73,7 @@ def validate_object(
         )
     status = metadata.get("status")
     allowed_statuses = (
-        {"draft", "ready", "closed"}
+        {"draft", "ready", "implemented", "released", "rejected", "replaced"}
         if expected_type == "proposal"
         else BUG_STATUSES
     )
@@ -82,7 +82,7 @@ def validate_object(
             findings,
             "object.status",
             (
-                "Proposal status must be draft, ready, or closed"
+                "Proposal 状态必须符合当前交付生命周期"
                 if expected_type == "proposal"
                 else "Bug status must be open, fixed, closed, or rejected"
             ),
@@ -198,24 +198,6 @@ def validate_object(
                         rel,
                     )
     resolution = metadata.get("resolution")
-    if (
-        expected_type == "proposal"
-        and status == "closed"
-        and not isinstance(resolution, str)
-    ):
-        add_finding(
-            findings,
-            "object.resolution",
-            "Closed objects require resolution",
-            rel,
-        )
-    if expected_type == "proposal" and status != "closed" and resolution is not None:
-        add_finding(
-            findings,
-            "object.early_resolution",
-            "Only closed objects may declare resolution",
-            rel,
-        )
     rel_parts = Path(rel).parts
     expected_root = "proposals" if expected_type == "proposal" else "bugs"
     if len(rel_parts) == 2 and rel_parts[0] == expected_root:
@@ -232,13 +214,14 @@ def validate_object(
                 "Archive slice must be MAJOR.MINOR",
                 rel,
             )
-        if status != "closed" and not (
-            expected_type == "bug" and status == "rejected"
+        if status not in (
+            {"released", "rejected", "replaced"}
+            if expected_type == "proposal" else {"closed", "rejected"}
         ):
             add_finding(
                 findings,
                 "archive.status",
-                "Only closed Proposals and closed or rejected Bugs may be archived",
+                "仅终态 Proposal 与 closed/rejected Bug 可归档",
                 rel,
             )
     else:
@@ -250,36 +233,8 @@ def validate_object(
             rel,
         )
     if expected_type == "proposal":
-        allowed = {"fulfilled", "rejected", "duplicate", "obsolete"}
-        if resolution is not None and resolution not in allowed:
-            add_finding(
-                findings,
-                "proposal.resolution",
-                f"Unsupported proposal resolution: {resolution}",
-                rel,
-            )
-        fulfilled_in = metadata.get("fulfilled_in")
-        if resolution == "fulfilled" and stable_semver(fulfilled_in) is None:
-            add_finding(
-                findings,
-                "proposal.fulfilled_in",
-                "A fulfilled proposal needs a stable SemVer fulfilled_in",
-                rel,
-            )
-        if fulfilled_in is not None and stable_semver(fulfilled_in) is None:
-            add_finding(
-                findings,
-                "proposal.version",
-                "fulfilled_in must be a stable SemVer",
-                rel,
-            )
-        if resolution != "fulfilled" and fulfilled_in is not None:
-            add_finding(
-                findings,
-                "proposal.fulfilled_in",
-                "fulfilled_in is allowed only with resolution fulfilled",
-                rel,
-            )
+        from .proposal_schema import validate_proposal_fields
+        validate_proposal_fields(metadata, rel, findings)
     else:
         if resolution is not None:
             add_finding(

@@ -77,7 +77,7 @@ def test_proposal_rejects_missing_or_cross_type_dependency(
     assert expected_code in validation_codes(python_exe, repo)
 
 
-def test_proposal_accepts_fulfilled_dependency(
+def test_proposal_accepts_released_dependency(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -86,8 +86,8 @@ def test_proposal_accepts_fulfilled_dependency(
         repo / "proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
         (
-            "status: closed\ndepends_on: []\n"
-            "resolution: fulfilled\nfulfilled_in: 1.2.0"
+            "status: released\ndepends_on: []\n"
+            "released_in: 1.2.0"
         ),
     )
     init_git(repo)
@@ -95,7 +95,7 @@ def test_proposal_accepts_fulfilled_dependency(
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
 
 
-def test_proposal_accepts_archived_fulfilled_dependency(
+def test_proposal_accepts_archived_released_dependency(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -105,8 +105,8 @@ def test_proposal_accepts_archived_fulfilled_dependency(
         source,
         "status: ready\ndepends_on: []",
         (
-            "status: closed\ndepends_on: []\n"
-            "resolution: fulfilled\nfulfilled_in: 1.2.0"
+            "status: released\ndepends_on: []\n"
+            "released_in: 1.2.0"
         ),
     )
     init_git(repo)
@@ -125,7 +125,7 @@ def test_proposal_accepts_archived_fulfilled_dependency(
 
 
 @pytest.mark.parametrize("resolution", ["rejected", "obsolete", "duplicate"])
-def test_proposal_rejects_unfulfilled_dependency(
+def test_proposal_rejects_unreleased_dependency(
     python_exe: str, tmp_path: Path, resolution: str
 ):
     repo = copy_fixture(tmp_path)
@@ -133,11 +133,11 @@ def test_proposal_rejects_unfulfilled_dependency(
     replace(
         repo / "proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
-        f"status: closed\ndepends_on: []\nresolution: {resolution}",
+        f"status: rejected\ndepends_on: []\nreject-reason: {resolution}",
     )
     init_git(repo)
 
-    assert "proposal.depends_on_unfulfilled" in validation_codes(
+    assert "proposal.depends_on_unreleased" in validation_codes(
         python_exe, repo
     )
 

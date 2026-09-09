@@ -15,6 +15,7 @@ from .constants import (
 )
 from .errors import MDFError
 from .moves import (
+    managed_delivery_markdown,
     apply_moves_and_rewrites,
     moved_destination,
     opaque_links_survive_move,
@@ -104,7 +105,7 @@ def apply_version_closeout(
         moves,
         rewrite_inside_sources=False,
         rewrite_inside_filter=lambda path: (
-            path.name == "CHANGE.md"
+            path.name == "CHANGE.md" or managed_delivery_markdown(path)
             or (
                 path.relative_to(repo).parts[0] in {"proposals", "bugs"}
                 and OBJECT_FILE_RE.fullmatch(path.name) is not None

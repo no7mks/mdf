@@ -1,0 +1,47 @@
+# Feature 交付契约
+
+## 身份与材料
+
+一个 feature 对应一个依赖满足的 active ready PRP。start 确认目标、非目标、约束与
+可验证验收，objectives 引用 PRP，避免复制另一个需求来源。
+slug 在 start 固定，不随标题修改。delivery.json 记录 proposal、slug、branch、start_commit。
+起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
+
+开发材料位于 `.specs/<prp-slug>/`：objectives.md、design.md、delivery.json、gates/。
+finish 整体搬入 `changes/unreleased/<prp-slug>/`，材料与 CHANGE.md 同级；发布后进入
+`changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
+objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓库相对，避免依赖目录深度。
+
+## 阶段与执行责任
+
+主线为 start → design → [write-tests ∥ implement] → converge → review → finish。
+feature 以外沿用各分支原有交付语义，不强制新增阶段。
+用户手动触发主线 intent；不新增 Owner 调度系统，当前执行者承担该阶段的协调与语义审查。
+单一执行者可顺序在 feature 工作；并行者使用同设计基线的 qa/<slug> 和 dev/<slug> worktree。
+本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
+
+## Gate
+
+通过 `delivery status/check/record/verify/parallel/integrate` 执行确定性操作。
+每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
+write-tests 和 implement 只要求已提交 design；converge 需两路完成，review 需收敛全绿，
+finish 需当前 review、事实审阅和验证证据有效。不能手填 passed 代替 CLI 检查。
+语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
+
+设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置；manifest 的
+verification.commands 始终属于测试门槛。路径可以是仓库相对文件、目录或 glob。
+全绿按项目全部具名验证项判断；单项重跑仅用于定位，不替代全量通过。
+代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
+记录文件不参与其自身校验对象的指纹。缺失或过期时原地补验，不回退 intent。
+
+## 修改与提交权限
+
+调用交付 intent 授权其必要的设计基线、阶段提交和工作分支集成，提交使用中文 Conventional Commit。
+只暂存当前阶段的必要路径；不得顺带提交无关用户改动。
+首次 write-tests 按既定设计编写测试属于授权。implement 不自主修改测试。
+converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
+review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
+架构优化可以建议；超出当前目标不直接实施。修复后在当前 intent 原地重验。
+
+fact update 可独立运行，也由 finish 前段内部调用，其事实审阅由 fact audit 完成。
+独立调用不要求交付 gate；不能因此自动进入 finish 或其他交付阶段。

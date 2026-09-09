@@ -136,7 +136,7 @@ def validate_closeout_shape(
         closure = require_exact_keys(
             raw_closure,
             {"id", "resolution"},
-            {"fulfilled_in", "fixed_in"},
+            {"released_in", "fixed_in"},
             f"closures[{index}]",
         )
         identifier = closure["id"]

@@ -8,7 +8,9 @@ versioning:
   latest_release: {{QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
 verification:
   commands:
-    - "{{NON_EMPTY_VERIFICATION_COMMAND}}"
+    - id: "{{VERIFICATION_ID}}"
+      kind: "{{VERIFICATION_KIND}}"
+      command: "{{NON_EMPTY_VERIFICATION_COMMAND}}"
 implementation_roots:
   - "{{REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
 baselines:

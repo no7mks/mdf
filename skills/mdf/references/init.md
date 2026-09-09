@@ -107,7 +107,8 @@
 
 对每个非生态必需且非 MDF 固定的顶层目录，使用内部 clarify intent 决定去处或顶层例外；本地或外部调研材料归入
 `context/research/`，已确认决策归入 `docs/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与非空
-`verification.commands`。
+`verification.commands`。每项为 id、kind、command；初始化 CLI 用重复的
+`--verification-item '{"id":"check","kind":"custom","command":"git diff --check"}'` 传入。
 
 验收：逐项决定与验证命令。
 
@@ -148,7 +149,7 @@
 
 **审阅**
 
-比较调用前后的 `GLOSSARY.md`、`docs/product/**` 与 `docs/system/**`，内部委托 `audit` 执行`全量审阅`。
+比较调用前后的 `GLOSSARY.md`、`docs/product/**` 与 `docs/system/**`，内部委托 `fact audit` 执行`全量审阅`。
 
 验收：事实复核、diff 与 full validation。
 

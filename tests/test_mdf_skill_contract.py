@@ -26,7 +26,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     for command in (
         "init",
         "intake",
-        "next [方向]",
+        "next [--depth N]",
         "codewiki generate",
         "codewiki update",
         "start",
@@ -37,7 +37,9 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "prp review",
         "archive",
         "finish",
-        "audit",
+        "fact audit",
+        "fact update",
+        "design", "write-tests", "implement", "converge", "review", "prp split",
         "clarify <议题>",
     ):
         assert command in entry
@@ -63,58 +65,15 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "可验证的演进记录" in entry
 
 
-def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
-) -> None:
-    next_intent = intent("next")
-    normalized = " ".join(next_intent.split())
-
-    for contract in (
-        "references/common.md",
-        "references/clarify.md",
-        "references/repository-contract.md",
-        "references/object-contract.md",
-    ):
-        assert contract in next_intent
-    assert "normal_workflows_allowed: true" in next_intent
-    assert "`方向`是可选" in next_intent
-    for source in (
-        "当前事实文档",
-        "实现根",
-        "测试",
-        "active Proposal/Bug",
-        "fulfilled Proposal",
-        "unreleased Change",
-    ):
-        assert source in next_intent
-    assert "用户明确确认该 MVP" in next_intent
-    assert "内部 clarify intent" in next_intent
-    assert "不执行 `audit`" in next_intent
-    assert "最少数量的一个或多个 Proposal" in normalized
-    assert "不得为制造数量而拆分" in normalized
-    assert "`depends_on` 只记录直接依赖并形成无环 DAG" in normalized
-    assert "同一批可并行" in normalized
-    assert "从 `depends_on` 动态计算的会话视图" in normalized
-    assert "不写入字段或独立文件" in normalized
-    assert "不写入批次" in normalized
-    assert "不得由本 intent 修改" in next_intent
-    assert "$mdf prp review" in next_intent
-    assert "active Bug 只作为风险或阻塞项" in next_intent
-    assert "只有用户明确确认清单才继续" in next_intent
-    assert "make-id --type proposal --slug" in next_intent
-    assert "初始状态为 `draft`" in normalized
-    assert "targeted validation" in next_intent
-    assert "不得自动 commit" in next_intent
-    skill = skill_dir("mdf")
-    template = (skill / "assets" / "templates" / "proposal.md").read_text(
-        encoding="utf-8"
-    )
-    contract = (
-        skill / "references" / "object-contract.md"
-    ).read_text(encoding="utf-8")
-    assert "depends_on: []" in template
-    for field in ("batch:", "batches:", "dag:", "order:"):
-        assert field not in template
-    assert "一般关联只在正文中说明" in contract
+def test_next_only_reports_ready_dependency_graph() -> None:
+    text = intent("next")
+    assert "主报告仅 ready" in text
+    assert "implemented/released" in text
+    assert "blocked_by" in text
+    assert "prp review" in text
+    assert "不创建或拆分" in text
+    assert "默认 3" in text
+    assert "正整数" in text
 
 
 def test_init_and_doc_intents_load_internal_contracts() -> None:
@@ -182,15 +141,15 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "不得复制、归档或链接到仓库" in intake
     assert "必填事实仍无法确认时停止，不得写入任何对象" in intake
     assert "只有用户明确确认清单才继续" in intake
-    assert "closed + fulfilled Proposal ID" in intake
+    assert "implemented/released Proposal ID" in intake
     assert "Proposal 初始状态为 `draft`，Bug 初始状态为 `open`" in intake
     assert "显式调用 `$mdf prp review`" in intake
     assert "外部想法、当前聊天上下文或外部文档必须显式调用" in create
     assert "$mdf intake" in create
     assert "一次不得创建多个对象" in create
     assert "用户手动提供的单个 Proposal 事实" in create
-    assert "closed 或 archive Proposal 拒绝修改" in review
-    assert "closed Proposal、closed/rejected Bug" in archive
+    assert "released/rejected/replaced/implemented 或 archive Proposal 拒绝修改" in review
+    assert "released/rejected/replaced Proposal 可归档" in archive
 
 
 def test_jot_intent_preserves_raw_input_until_promotion() -> None:
@@ -282,7 +241,7 @@ def test_contracts_do_not_duplicate_intent_steps() -> None:
 
 
 def test_audit_is_reused_without_delivery_logic() -> None:
-    audit = intent("audit")
+    audit = intent("fact-audit")
     init = intent("init")
     finish = intent("finish")
 
@@ -299,10 +258,10 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`develop...HEAD`" not in audit
     assert "`master...HEAD`" not in audit
     assert "`release-closeout`" not in audit
-    assert "`audit` 执行`全量审阅`" in init
+    assert "`fact audit` 执行`全量审阅`" in init
     assert "这是交付前检查，不是 audit" in finish
-    assert "内部委托 `audit`" in finish
-    assert "release 执行`全量审阅`" in finish
+    assert "references/fact-update.md" in finish
+    assert "release 为全量" in finish
 
 
 def test_start_and_finish_define_strict_gitflow_operations() -> None:

@@ -383,9 +383,9 @@ def test_validation_rejects_duplicate_id_across_active_and_archive(
         source.read_text(encoding="utf-8").replace(
             "status: ready\ndepends_on: []",
             (
-                "status: closed\ndepends_on: []\n"
-                "resolution: fulfilled\n"
-                "fulfilled_in: 1.2.0"
+                "status: released\ndepends_on: []\n"
+                ""
+                "released_in: 1.2.0"
             ),
         ),
         encoding="utf-8",

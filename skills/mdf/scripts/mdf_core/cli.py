@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--latest-release", required=True)
     init.add_argument("--baseline", action="append", default=[], required=True)
     init.add_argument(
-        "--verification-command",
+        "--verification-item",
         action="append",
         default=[],
         required=True,
@@ -55,7 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate.set_defaults(func=command_validate)
 
-    audit = subparsers.add_parser("audit")
+    audit = subparsers.add_parser("fact-audit")
     audit.add_argument("--repo", required=True)
     audit.add_argument("--scope", choices=("full", "paths"), default="full")
     audit.add_argument("--implementation-path", action="append", default=[])
@@ -114,8 +114,36 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
     start.add_argument("--name")
+    start.add_argument("--proposal")
+    start.add_argument("--objectives-file")
     start.add_argument("--version")
     start.set_defaults(func=command_start)
+
+    from .next_view import command_next
+    from .prp_split import command_split
+    from .delivery import command_delivery
+    from .delivery_state import STAGES
+
+    next_parser = subparsers.add_parser("next")
+    next_parser.add_argument("--repo", required=True)
+    next_parser.add_argument("--depth", type=int, default=3)
+    next_parser.set_defaults(func=command_next)
+
+    split = subparsers.add_parser("prp-split")
+    split.add_argument("--repo", required=True)
+    split.add_argument("--spec-file", required=True)
+    split.add_argument("--dry-run", action="store_true")
+    split.set_defaults(func=command_split)
+
+    delivery = subparsers.add_parser("delivery")
+    delivery.add_argument("action", choices=("status", "check", "record", "verify", "parallel", "integrate"))
+    delivery.add_argument("--repo", required=True)
+    delivery.add_argument("--stage", choices=(*STAGES, "finish"))
+    delivery.add_argument("--summary")
+    delivery.add_argument("--policy-file")
+    delivery.add_argument("--test-approval")
+    delivery.add_argument("--item", action="append", default=[])
+    delivery.set_defaults(func=command_delivery)
 
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)

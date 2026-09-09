@@ -1,0 +1,166 @@
+"""交付材料定位、稳定基线与内容指纹。"""
+import fnmatch
+import hashlib
+import json
+from pathlib import Path
+
+from .errors import MDFError
+from .gitutil import current_branch, run
+from .paths import load_manifest, path_stays_in_repo
+from .verification import manifest_items
+
+STAGES = ("design", "write-tests", "implement", "converge", "review", "fact-update")
+
+
+def git(repo, *args, check=True):
+    return run(["git", *args], cwd=repo, check=check)
+
+
+def safe(repo, path):
+    path = Path(path)
+    if not path.is_absolute():
+        path = repo / path
+    if not path_stays_in_repo(repo, path) or any(p.is_symlink() for p in (path, *path.parents)):
+        raise MDFError("交付材料路径必须留在仓库内且不含符号链接", code="unsafe_path")
+    return path
+
+
+def read_json(path):
+    try:
+        value = json.loads(path.read_text())
+    except (ValueError, OSError) as exc:
+        raise MDFError(f"无法读取记录: {path.name}", code="invalid_delivery") from exc
+    if not isinstance(value, dict):
+        raise MDFError("记录必须为 JSON 对象", code="invalid_delivery")
+    return value
+
+
+def write_json(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    temp.replace(path)
+
+
+def locate(repo, slug=None):
+    branch = current_branch(repo)
+    if slug is None:
+        if not branch.startswith(("feature/", "qa/", "dev/")):
+            raise MDFError("阶段操作需要 feature/qa/dev 分支", code="unsupported_branch")
+        slug = branch.split("/", 1)[1]
+    candidates = [safe(repo, repo / ".specs" / slug),
+                  safe(repo, repo / "changes" / "unreleased" / slug)]
+    found = [path for path in candidates if (path / "delivery.json").is_file()]
+    if len(found) != 1:
+        raise MDFError("交付记录缺失或重复", code="invalid_delivery")
+    root = found[0]
+    data = read_json(safe(repo, root / "delivery.json"))
+    if data.get("slug") != slug or data.get("branch") != f"feature/{slug}":
+        raise MDFError("交付身份不匹配", code="invalid_delivery")
+    base = data.get("start_commit", "")
+    if not isinstance(base, str) or len(base) != 40 or any(c not in "0123456789abcdef" for c in base):
+        raise MDFError("起点必须为完整 commit hash", code="invalid_delivery")
+    if git(repo, "merge-base", "--is-ancestor", base, "HEAD", check=False).returncode:
+        raise MDFError("当前分支不包含交付起点", code="invalid_delivery")
+    return root, data
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def matches(path, patterns):
+    return any(path == item.rstrip("/") or path.startswith(item.rstrip("/") + "/")
+               or fnmatch.fnmatchcase(path, item) for item in patterns)
+
+
+def inventory(repo):
+    raw = git(repo, "ls-files", "-z", "--cached", "--others", "--exclude-standard").stdout
+    result = {}
+    for name in sorted(set(raw.split("\0")) - {""}):
+        path = safe(repo, repo / name)
+        if path.is_file():
+            result[name] = digest([hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mode & 0o111])
+    return result
+
+
+def fingerprints(repo, root, data, config=None):
+    config = config or read_json(safe(repo, root / "gates/design.json")).get("policy", {})
+    files = inventory(repo)
+    protected = config.get("protected_paths", [])
+    commands = manifest_items(load_manifest(repo))
+    facts = {name: value for name, value in files.items()
+             if name == "GLOSSARY.md" or (name.endswith(".md")
+                 and name.startswith(("docs/product/", "docs/system/")))}
+    code = {name: value for name, value in files.items()
+            if name not in facts and not name.startswith((".specs/", "changes/", "proposals/", "bugs/"))
+            and name not in {"JOTS.md", ".mdf/manifest.yaml"}}
+    tests = {name: value for name, value in code.items() if matches(name, protected)}
+    implementation = {name: value for name, value in code.items() if name not in tests}
+    design = {}
+    for name in ("objectives.md", "design.md"):
+        path = safe(repo, root / name)
+        if not path.is_file() or not path.read_text().strip():
+            raise MDFError(f"缺少 {name}", code="missing_artifact")
+        from .constants import ALL_MARKDOWN_LINK_RE
+        from .validate_links import split_link_target
+        from .moves import rewrite_link_raw
+        text = path.read_text()
+        from .constants import MARKER_RE
+        if MARKER_RE.search(text):
+            raise MDFError("设计材料仍含模板占位内容", code="missing_artifact")
+        def normalize(match):
+            raw = match.group(1)
+            target = split_link_target(raw)
+            if not target or target.startswith(("http:", "https:", "mailto:", "data:")):
+                return match.group(0)
+            absolute = (repo / target.lstrip("/") if target.startswith("/")
+                        else path.parent / target).resolve()
+            if not path_stays_in_repo(repo, absolute):
+                return match.group(0)
+            relative = absolute.relative_to(repo).as_posix()
+            if absolute == root or root in absolute.parents:
+                relative = "@delivery/" + absolute.relative_to(root).as_posix()
+            return match.group(0).replace(raw, rewrite_link_raw(raw, relative))
+        design[name] = hashlib.sha256(ALL_MARKDOWN_LINK_RE.sub(normalize, text).encode()).hexdigest()
+    return {"design": digest([design, data, config]), "tests": digest([tests, commands]),
+            "implementation": digest(implementation), "code": digest([code, commands]),
+            "facts": digest(facts)}
+
+
+def gate(repo, root, stage):
+    return read_json(safe(repo, root / "gates" / f"{stage}.json"))
+
+
+def require_design(repo, root, data):
+    record = gate(repo, root, "design")
+    current = fingerprints(repo, root, data, record.get("policy"))
+    if record.get("fingerprints", {}).get("design") != current["design"]:
+        raise MDFError("设计基线已变化，需用户确认后原地重新记录", code="stale_gate")
+    for name in ("objectives.md", "design.md", "delivery.json", "gates/design.json"):
+        rel = str((root / name).relative_to(repo))
+        if git(repo, "ls-files", "--error-unmatch", rel, check=False).returncode:
+            raise MDFError("设计基线必须提交", code="uncommitted_design")
+        if git(repo, "diff", "HEAD", "--", rel).stdout:
+            raise MDFError("设计基线必须提交", code="uncommitted_design")
+    return current
+
+
+def require_green(repo, root, data):
+    record = gate(repo, root, "verification")
+    current = fingerprints(repo, root, data)
+    if (any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design"))
+            or not record.get("all_passed")):
+        raise MDFError("全量验证缺失或过期", code="stale_verification")
+    return current
+
+
+def require_finish(repo, root, data):
+    require_design(repo, root, data)
+    current = require_green(repo, root, data)
+    for stage, keys in (("review", ("code", "design")),
+                        ("fact-update", ("facts", "code", "design"))):
+        record = gate(repo, root, stage)
+        if any(record.get("fingerprints", {}).get(key) != current[key] for key in keys):
+            raise MDFError(f"{stage} 证据缺失或过期", code="stale_gate")
+    return current

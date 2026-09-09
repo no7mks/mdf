@@ -210,6 +210,11 @@ def apply_moves_and_rewrites(
     return created_directories
 
 
+def managed_delivery_markdown(path: Path) -> bool:
+    return (path.name in {"objectives.md", "design.md"}
+            and (path.parent / "delivery.json").is_file())
+
+
 def opaque_links_survive_move(
     repo: Path,
     source: Path,
@@ -218,7 +223,7 @@ def opaque_links_survive_move(
     broken: list[str] = []
     moves = {source: destination}
     for path in sorted(source.rglob("*.md")):
-        if path.name == "CHANGE.md" or path.is_symlink():
+        if path.name == "CHANGE.md" or managed_delivery_markdown(path) or path.is_symlink():
             continue
         text = path.read_text(encoding="utf-8")
         for raw in ALL_MARKDOWN_LINK_RE.findall(text):

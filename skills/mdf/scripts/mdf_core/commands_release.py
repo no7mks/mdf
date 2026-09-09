@@ -32,23 +32,8 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
-    verification = manifest.get("verification")
-    commands = (
-        verification.get("commands") if isinstance(verification, dict) else None
-    )
-    if (
-        not isinstance(commands, list)
-        or not commands
-        or any(
-            not isinstance(command, str) or not command.strip()
-            for command in commands
-        )
-    ):
-        raise MDFError(
-            "ready manifest 要求 verification.commands 为非空字符串列表",
-            code="invalid_manifest",
-        )
-    return list(commands)
+    from .verification import manifest_items
+    return [item["command"] for item in manifest_items(manifest)]
 
 
 def derive_closeout_spec(
@@ -136,8 +121,8 @@ def derive_closeout_spec(
         closures.extend(
             {
                 "id": identifier,
-                "resolution": "fulfilled",
-                "fulfilled_in": version,
+                "resolution": "released",
+                "released_in": version,
             }
             for identifier in sorted(proposals)
         )

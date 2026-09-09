@@ -115,11 +115,11 @@ def apply_closeout(
     objects = active_objects(repo)
     closed_proposal_resolutions: dict[str, str] = {}
     for closure in closures:
+        resolution = closure["resolution"]
         identifier = closure["id"]
-        resolution = closure.get("resolution")
-        if identifier in proposal_ids and resolution != "fulfilled":
+        if identifier in proposal_ids and resolution != "released":
             raise MDFError(
-                f"Proposal closeout must use fulfilled: {identifier}",
+                f"Proposal closeout must use released: {identifier}",
                 code="invalid_closure",
             )
         if identifier in fixed_ids and resolution != "fixed":
@@ -148,7 +148,7 @@ def apply_closeout(
                 fixed_ids.add(identifier)
             elif resolution == "deferred":
                 deferred_ids.add(identifier)
-            elif resolution == "fulfilled":
+            elif resolution == "released":
                 proposal_ids.add(identifier)
             elif (
                 resolution in PROPOSAL_CLOSED_RESOLUTIONS
@@ -191,6 +191,7 @@ def apply_closeout(
             details={"missing": missing_unreleased},
         )
     for closure in closures:
+        resolution = closure["resolution"]
         identifier = closure["id"]
         record = objects.get(identifier)
         if record is None:
@@ -207,7 +208,7 @@ def apply_closeout(
             else "bug"
         )
         expected_status = (
-            "ready"
+            ("implemented" if resolution == "released" else "rejected")
             if kind == "proposal"
             else (
                 "fixed"

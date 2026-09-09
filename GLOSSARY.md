@@ -33,3 +33,18 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 ## ADR
 
 Architecture Decision Record；记录重要且已决定的长期架构取舍。
+
+## Proposal 状态
+
+draft 为待评审，ready 为可交付，implemented 为已验收合入 develop，released 为已发布。
+rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由拆分出的 PRP 承接。
+
+## Objectives、Gate 与收敛
+
+objectives 是本次交付目标与验收约束，引用 PRP。Gate 是基于产物、内容指纹、验证与语义审查的阶段门禁。
+converge（收敛）集成测试和实现，持续修复实现直到项目全部验证项通过。
+
+## 测试类别与 Code Smell
+
+UT 为单元测试，PT 为属性测试，E2E 为端到端测试；是否需要及失败标准由项目配置和设计约定。
+Code smell 指提示维护性或设计问题的代码特征，由 review 判断是否需要在当前范围修复。

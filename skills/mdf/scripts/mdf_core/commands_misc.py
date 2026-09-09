@@ -103,7 +103,8 @@ def command_init(args: argparse.Namespace) -> None:
     require_master_default(repo)
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)
-    verification_commands = list(args.verification_command)
+    from .verification import parse_items
+    verification_commands = parse_items(args.verification_item)
     implementation_roots = list(args.implementation_root) or ["src"]
     root_paths: list[Path] = []
     for raw in implementation_roots:
@@ -126,13 +127,6 @@ def command_init(args: argparse.Namespace) -> None:
                 code="invalid_implementation_root",
             )
         root_paths.append(target)
-    if not verification_commands or any(
-        not command.strip() for command in verification_commands
-    ):
-        raise MDFError(
-            "--verification-command must be a non-empty command",
-            code="invalid_verification_command",
-        )
     existing_manifest = manifest_path(repo).is_file()
     latest_release: str | None
     if args.latest_release == "none":

@@ -116,33 +116,11 @@ def validate_manifest(
             "state must be initializing or ready",
             ".mdf/manifest.yaml",
         )
-    verification = manifest.get("verification")
-    if not isinstance(verification, dict):
-        add_finding(
-            findings,
-            "manifest.verification",
-            "verification must be a mapping",
-            ".mdf/manifest.yaml",
-        )
-    else:
-        commands = verification.get("commands")
-        if not isinstance(commands, list) or any(
-            not isinstance(command, str) or not command.strip()
-            for command in commands
-        ):
-            add_finding(
-                findings,
-                "manifest.verification",
-                "verification.commands must be a list of non-empty strings",
-                ".mdf/manifest.yaml",
-            )
-        elif not commands:
-            add_finding(
-                findings,
-                "manifest.verification",
-                "verification.commands must not be empty",
-                ".mdf/manifest.yaml",
-            )
+    from .verification import manifest_items
+    try:
+        manifest_items(manifest)
+    except MDFError as exc:
+        add_finding(findings, "manifest.verification", str(exc), ".mdf/manifest.yaml")
     versioning = manifest.get("versioning")
     if (
         not isinstance(versioning, dict)

@@ -1,4 +1,4 @@
-# Audit
+# Fact Audit
 
 它只读：不写入、移动、提交、生成持久报告或执行 `verification.commands`。
 
@@ -79,7 +79,9 @@
 
 **范围**
 
-确定类型和状态：direct 执行`全量审阅`、manifest 必须 `ready` 且查 clean； init 为全量、允许 `initializing`
+确定类型和状态：fact update 委托时使用其明确范围，允许同次写入且不重查 clean；
+direct 执行`全量审阅`、manifest 必须 `ready` 且查 clean；
+ init 为全量、允许 `initializing`
 且不重查 clean；finish 的 release 为全量， 其他分支为调用方给出实现和当前事实文档范围的范围审阅。
 
 验收：调用方与范围。
@@ -88,7 +90,7 @@
 
 **映射**
 
-调用 `audit` CLI；全量不带路径，范围使用调用方计算的精确路径。
+调用 `fact-audit` CLI；全量不带路径，范围使用调用方计算的精确路径。
 
 验收：范围、文档—`evidence` 映射、ignore 匹配、warnings、确定性 findings。
 

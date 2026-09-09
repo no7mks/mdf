@@ -73,7 +73,7 @@ def parse_baselines(values: list[str]) -> dict[str, dict[str, str]]:
 def render_manifest(
     baselines: dict[str, dict[str, str]],
     latest_release: str | None,
-    verification_commands: list[str],
+    verification_commands: list[dict[str, str]],
     implementation_roots: list[str],
 ) -> str:
     lines = [
@@ -88,7 +88,11 @@ def render_manifest(
         ),
         "verification:",
         "  commands:",
-        *[f"    - {yaml_quote(command)}" for command in verification_commands],
+        *[line for item in verification_commands for line in (
+            f"    - id: {yaml_quote(item['id'])}",
+            f"      kind: {yaml_quote(item['kind'])}",
+            f"      command: {yaml_quote(item['command'])}",
+        )],
         "implementation_roots:",
         *[f"  - {yaml_quote(root)}" for root in implementation_roots],
         "baselines:",
@@ -139,7 +143,7 @@ def init_files(
     baselines: dict[str, dict[str, str]],
     *,
     latest_release: str | None,
-    verification_commands: list[str],
+    verification_commands: list[dict[str, str]],
     implementation_roots: list[str],
 ) -> dict[Path, str]:
     files = {

@@ -39,7 +39,7 @@ def test_closeout_apply_failure_preserves_written_state(tmp_path: Path):
 
     assert caught.value.code == "collision"
     proposal = repo / "proposals" / PRP_NAME
-    assert "status: closed" in proposal.read_text(encoding="utf-8")
+    assert "status: released" in proposal.read_text(encoding="utf-8")
     assert git(repo, "status", "--porcelain").stdout
 
 
@@ -57,3 +57,23 @@ def test_closeout_preview_is_read_only_and_has_no_exact_write_set(
     assert "writes" not in summary
     assert (repo / "changes" / "unreleased" / "service-health").is_dir()
     assert not git(repo, "status", "--porcelain").stdout
+
+
+def test_release_moves_delivery_materials_and_rewrites_proposal_links(python_exe, tmp_path):
+    repo = prepare_release_closeout_repo(tmp_path)
+    child = repo / "changes/unreleased/service-health"
+    identity = {"proposal": "prp-AB23", "slug": "service-health", "start_commit": "a" * 40}
+    (child / "delivery.json").write_text(json.dumps(identity))
+    (child / "objectives.md").write_text(f"# 目标\n\n[需求](../../../proposals/{PRP_NAME})\n")
+    (child / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")
+    (child / "gates").mkdir()
+    (child / "gates/review.json").write_text('{"summary":"交付审查证据"}\n')
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 附带交付过程材料")
+    payload(mdf(python_exe, "release-closeout", "--repo", str(repo), "--release-date", "2026-09-10"))
+    archived = repo / "changes/1.3.0/service-health"
+    assert json.loads((archived / "delivery.json").read_text()) == identity
+    assert f"../../../proposals/archive/1.3/{PRP_NAME}" in (archived / "objectives.md").read_text()
+    assert (archived / "gates/review.json").is_file()
+    assert not child.exists()
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))

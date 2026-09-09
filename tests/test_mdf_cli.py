@@ -90,7 +90,7 @@ def test_verification_commands_are_required_while_initializing(
     repo = copy_fixture(tmp_path)
     replace(
         repo / ".mdf" / "manifest.yaml",
-        '  commands:\n    - "true"',
+        '  commands:\n    - id: check\n      kind: custom\n      command: "true"',
         "  commands: []",
     )
     replace(
@@ -133,7 +133,7 @@ def test_init_requires_a_non_empty_verification_command(
     )
 
     assert result.returncode != 0
-    assert "--verification-command" in result.stderr
+    assert "--verification-item" in result.stderr
 
     empty = mdf(
         python_exe,
@@ -143,11 +143,11 @@ def test_init_requires_a_non_empty_verification_command(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-command",
-        "  ",
+        "--verification-item",
+        '{"id": "check", "kind": "custom", "command": "  "}',
     )
     assert empty.returncode != 0
-    assert "invalid_verification_command" in empty.stderr
+    assert "invalid_verification" in empty.stderr
 
 
 def test_removed_verify_command_argument_is_a_hard_failure(
