@@ -38,7 +38,7 @@
 
 入口识别已有 staged、unstaged、untracked 改动，不普遍要求 clean worktree。
 无关且不冲突的改动保留并继续；与任务重叠、归属或处理方式不明时先澄清。
-`.gitignore` 忽略文件和 Skill 写入的 `.lark/` 令牌不构成 dirty。
+clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的文件设置额外豁免。
 
 验收：已有改动和当前任务范围明确。
 

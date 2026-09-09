@@ -58,7 +58,7 @@
 | 2 | 对象 | 约束 | [确认单个 Proposal](#s2) | 采用范围 | 3 | 等待澄清，2 |
 | 3 | 澄清 | 约束 | [内部 clarify](#s3) | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | 确认 | 约束 | [展示边界与依赖](#s4) | draft 确认 | 5 | 来源 2；事实 3 |
-| 5 | 创建 | 脚本 | [生成 ID 并写入](#s5) | draft Proposal | 6 | 保留现场，停止 |
+| 5 | 创建 | 脚本 | [生成 ID、写入并校验](#s5) | Proposal、校验与 diff | 6 | 保留现场，停止 |
 | 6 | 报告 | 约束 | [展示结果与后续入口](#s6) | 会话摘要 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -114,9 +114,13 @@
 为 Proposal 提议并确认英文 ASCII kebab-case slug，使用 `make-id --type proposal --slug` 生成 ID 与规范化文件名，
 并以模板写入 `proposals/`， 初始状态为 `draft`。
 
-验收：draft Proposal。
+写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、
+确认事实与完整 diff，核对 schema、必填章节、`draft` 状态和依赖。
 
-异常与交接：停止并保留现场。
+验收：draft Proposal、校验退出 0 且零 finding、回读结果与 diff。
+
+异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象，
+不得宣称创建验收通过，不进入步骤 6 的成功报告。
 
 <a id="s6"></a>
 
