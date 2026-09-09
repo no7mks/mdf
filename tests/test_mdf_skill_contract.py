@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import re
+
 from conftest import skill_dir
 
 
 def intent(name: str) -> str:
-    return (skill_dir("mdf") / "intents" / f"{name}.md").read_text(
+    text = (skill_dir("mdf") / "references" / f"{name}.md").read_text(
         encoding="utf-8"
     )
+    text = re.sub(r"\s+", " ", text)
+    return re.sub(r"(?<=[\u4e00-\u9fff，。；：、]) (?=[\u4e00-\u9fff])", "", text)
 
 
 def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
@@ -38,20 +42,20 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     ):
         assert command in entry
     assert "裸 `$mdf`" in entry
-    assert "intents/intake.md" in entry
-    assert "intents/next.md" in entry
-    assert "intents/bug-create.md" in entry
-    assert "intents/prp-create.md" in entry
-    assert (skill / "intents" / "intake.md").is_file()
-    assert (skill / "intents" / "next.md").is_file()
-    assert not (skill / "intents" / "mvp.md").exists()
+    assert "references/intake.md" in entry
+    assert "references/next.md" in entry
+    assert "references/bug-create.md" in entry
+    assert "references/prp-create.md" in entry
+    assert (skill / "references" / "intake.md").is_file()
+    assert (skill / "references" / "next.md").is_file()
+    assert not (skill / "references" / "mvp.md").exists()
     assert "doc derive" not in entry
-    assert not (skill / "intents" / "doc-derive.md").exists()
-    assert "intents/prp-review.md" in entry
-    assert "intents/archive.md" in entry
-    assert "intents/codewiki-generate.md" in entry
-    assert "intents/codewiki-update.md" in entry
-    assert "intents/jot.md" in entry
+    assert not (skill / "references" / "doc-derive.md").exists()
+    assert "references/prp-review.md" in entry
+    assert "references/archive.md" in entry
+    assert "references/codewiki-generate.md" in entry
+    assert "references/codewiki-update.md" in entry
+    assert "references/jot.md" in entry
     assert "$mdf <intent>" in entry
     assert "mdf.py\" <command>" in entry
     assert "版本化文档与交付流程" in entry
@@ -65,8 +69,8 @@ def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
     normalized = " ".join(next_intent.split())
 
     for contract in (
-        "intents/common.md",
-        "intents/clarify.md",
+        "references/common.md",
+        "references/clarify.md",
         "references/repository-contract.md",
         "references/object-contract.md",
     ):
@@ -86,7 +90,7 @@ def test_next_discovers_one_outcome_and_writes_dependency_ordered_prps(
     assert "内部 clarify intent" in next_intent
     assert "不执行 `audit`" in next_intent
     assert "最少数量的一个或多个 Proposal" in normalized
-    assert "不得为制造 数量而拆分" in normalized
+    assert "不得为制造数量而拆分" in normalized
     assert "`depends_on` 只记录直接依赖并形成无环 DAG" in normalized
     assert "同一批可并行" in normalized
     assert "从 `depends_on` 动态计算的会话视图" in normalized
@@ -129,9 +133,9 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "context/requirements/" not in init
     assert "$mdf intake" in init
     assert "$mdf bug create" in init and "$mdf prp create" in init
-    assert "## 1. 入口检查" in init
-    assert "## 2. 盘点与归类" in init
-    assert "## 5. 续办" in init
+    assert "| 1 | 入口 | 脚本 |" in init
+    assert "| 2 | 盘点 | 约束 |" in init
+    assert "| 7 | 就绪 | 脚本 |" in init
     assert "没有未说明的遗留文件" in init
     assert "README 只作导航" not in init
     for root_document in (
@@ -150,11 +154,11 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "业务实现目录" in init
     assert "`src/<目录>`" in init
     assert "`tests/<目录>`" in init
-    assert "迁移目标已有实际内容时，\n   在同一方案中移除 `.gitkeep`" in init
+    assert "迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`" in init
     assert "不得在未经确认时迁移或删除" in init
-    assert "项目原有文档\n   与经确认迁移的顶层项目项" in init
-    inventory = init.split("## 2. 盘点与归类", maxsplit=1)[1].split(
-        "## 3. 落地初始化方案", maxsplit=1
+    assert "项目原有文档与经确认迁移的顶层项目项" in init
+    inventory = init.split('<a id="s2"></a>', maxsplit=1)[1].split(
+        '<a id="s5"></a>', maxsplit=1
     )[0]
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
@@ -179,7 +183,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "必填事实仍无法确认时停止，不得写入任何对象" in intake
     assert "只有用户明确确认清单才继续" in intake
     assert "closed + fulfilled Proposal ID" in intake
-    assert "Proposal 初始状态为\n   `draft`，Bug 初始状态为 `open`" in intake
+    assert "Proposal 初始状态为 `draft`，Bug 初始状态为 `open`" in intake
     assert "显式调用 `$mdf prp review`" in intake
     assert "外部想法、当前聊天上下文或外部文档必须显式调用" in create
     assert "$mdf intake" in create
@@ -296,7 +300,7 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`master...HEAD`" not in audit
     assert "`release-closeout`" not in audit
     assert "`audit` 执行`全量审阅`" in init
-    assert "## 交付前检查" in finish
+    assert "这是交付前检查，不是 audit" in finish
     assert "内部委托 `audit`" in finish
     assert "release 执行`全量审阅`" in finish
 

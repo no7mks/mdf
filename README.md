@@ -58,7 +58,7 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当�
 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
 具体 intent、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的
-`intents/`、`references/`、`assets/` 与 `scripts/`。
+`references/`、`assets/` 与 `scripts/`。
 
 ## 安装
 

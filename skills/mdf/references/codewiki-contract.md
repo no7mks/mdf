@@ -13,40 +13,18 @@
   `docs/repowiki/` 之外的 `docs/` 仍由项目的普通人工文档契约管理。
 - 生成内容使用简体中文。代码、路径、标识符和必要的术语可保留原文。
 
-## CodeWiki MCP
+## 会话与恢复边界
 
-先检查本次会话已启用八个 MCP 工具。若没有启用，安装或修复运行时，但不要开始
-生成。仅在安装目录不存在时执行 clone；其余安装命令只在缺少相应运行时时执行：
+生成和更新入口读取 `references/codewiki-runtime.md` 检查工具；工具缺失时按该流程
+配置，启用后须重新显式调用。失败或需要新基线时读取 `references/codewiki-recovery.md`。
 
-```bash
-CODEWIKI_DIR="$HOME/.local/share/codewiki"
-git clone https://github.com/FSoft-AI4Code/CodeWiki.git "$CODEWIKI_DIR"
-python3 -m venv "$CODEWIKI_DIR/.venv"
-"$CODEWIKI_DIR/.venv/bin/python" -m pip install -e "$CODEWIKI_DIR"
-"$CODEWIKI_DIR/.venv/bin/python" -c \
-  'from codewiki.mcp.server import server'
-```
+安装目录和 IDE 配置不属于目标仓库产出。成功结束时，当前 session workspace 必须
+清理，`.codewiki/` 不得留下本次残余，也不得通过忽略规则隐藏它。失败时可按恢复流程
+暂留当前 session workspace，以免关闭未完成会话却推进基线；必须明确报告残余和续办条件。
 
-目录已存在时不得 `git pull`、覆盖或清理它；仅在需要时补建 `.venv`、安装并
-验证。若已有源码不完整、不可导入或工作树不干净，报告问题并停止。将下列配置加入
-宿主 IDE 的 MCP 设置，要求用户启用 server 后重新显式调用 intent：
-
-```json
-{
-  "mcpServers": {
-    "codewiki": {
-      "command": "/absolute/path/to/CodeWiki/.venv/bin/python",
-      "args": ["-m", "codewiki.mcp.server"],
-      "cwd": "/absolute/path/to/CodeWiki"
-    }
-  }
-}
-```
-
-安装目录和 IDE 配置不属于目标仓库产出。MCP workspace 可能暂存于目标仓库
-`.codewiki/`；必须由 `close_session` 清理，最终不得留下或忽略该目录。动态启用
-MCP 后不得假定当前 Agent 会话已经获得工具；必须重新调用。缺任何必需工具时，只
-报告配置步骤，不写目标仓库。
+受管页面与 JSON 只通过八个 MCP 工具写入。唯一搬移例外是恢复流程中用户明确确认后，
+将整个旧 Wiki 和本次 session workspace 移至指定仓外备份；不得直接编辑、删除、重排
+受管页面，或手工改写 metadata。其他会话的目录不得触及。
 
 ## 受管输出
 
@@ -63,7 +41,8 @@ docs/repowiki/
 ```
 
 `module_tree.json` 是当前模块树，`first_module_tree.json` 是首次聚类快照；
-`metadata.json` 由 `close_session` 写入增量基线。`overview.md` 与每个受管
+只有本次成功写入或编辑过页面，`close_session` 才写入 `metadata.json` 增量基线；
+未写页面时只关闭会话并清理 workspace。不得仅以返回 `closed` 代替落盘验收。`overview.md` 与每个受管
 Markdown 都以以下首行开始：
 
 ```markdown

@@ -169,14 +169,14 @@ def test_removed_verify_command_argument_is_a_hard_failure(
 
 def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     skill = skill_dir("mdf")
-    clarify = (skill / "intents" / "clarify.md").read_text(encoding="utf-8")
-    create = (skill / "intents" / "prp-create.md").read_text(
+    clarify = (skill / "references" / "clarify.md").read_text(encoding="utf-8")
+    create = (skill / "references" / "prp-create.md").read_text(
         encoding="utf-8"
     )
-    review = (skill / "intents" / "prp-review.md").read_text(
+    review = (skill / "references" / "prp-review.md").read_text(
         encoding="utf-8"
     )
-    init = (skill / "intents" / "init.md").read_text(encoding="utf-8")
+    init = (skill / "references" / "init.md").read_text(encoding="utf-8")
     assert "系统 `grilling` skill" in clarify
     assert "委托它对议题执行压力测试" in clarify
     assert "报告该失败并停止" in clarify
@@ -184,7 +184,9 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     assert "等待回答后更新已确认决定与剩余疑问" in clarify
     assert "不得把未回答视为同意" in clarify
     assert "无未决疑问及用户明确确认" in clarify
-    assert "用户取消、暂停或关键事实无法获得时列出未决项并停止" in clarify
+    assert "用户取消、暂停或关键事实无法获得时列出未决项并停止" in "".join(
+        clarify.split()
+    )
     assert "内部 clarify intent" in create
     assert "内部 clarify intent" in review and "内部 clarify intent" in init
     assert "明确确认才转" in review
