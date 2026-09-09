@@ -27,25 +27,28 @@
 
 ## 工作流（唯一执行契约）
 
+读取 `references/common.md` 与 `references/repository-contract.md`；
+步骤 3 读取并内部执行 `references/fact-audit.md`。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 范围 | 约束 | 识别受影响当前事实与实现 | 明确范围 | 2 | 停止并报告 |
-| 2 | 同步 | 约束 | 更新事实陈述及 evidence | 当前事实文档 | 3 | 停止并报告 |
-| 3 | 审阅 | 约束 | 内部委托 fact audit，必要重验并记录 | 事实一致性 | 结束 | 停止并报告 |
+| 1 | 范围 | 约束 | 按独立或 finish 委托确定事实与实现范围 | 调用方、精确路径 | 2 | 停止并报告 |
+| 2 | 同步 | 约束 | 仅同步受影响事实及 evidence，按公共规则提交 | 事实 diff、适用提交 | 3 | 停止并报告 |
+| 3 | 审阅 | 约束 | 委托审阅；按变更验证，feature 委托记录 gate | 审阅、验证、适用 gate | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
-### 执行约束
+### 范围与写入边界
 
-
-读取 `references/repository-contract.md`、`references/fact-audit.md`。
 支持用户独立调用；也由 finish 在前段委托。独立调用不要求交付分支或阶段记录，不触发交付。
 独立调用基于用户范围和当前实现确定更新面；finish 调用采用固定起点到 HEAD 的精确范围。
 只更新受影响的当前事实及 evidence；不修改 PRP、Bug、Change、objectives 或 design 的意图。
 不为满足形式制造无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。
 按公共规则主动提交本次事实改动；尚未完成审阅时准确说明提交状态，不将提交等同于审阅通过。
+
+### 审阅与验证证据
+
 内部委托 fact audit 做双向只读审阅与 full validation；通过前不得声称事实同步完成。
 feature finish 调用时执行受影响验证，运行
 `delivery record --stage fact-update --summary <本次事实审阅确认与验证证据>`。
 只改事实文档不机械重跑全部业务验证；实现、测试或 verification 改变必须全量重验。
-

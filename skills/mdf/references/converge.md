@@ -29,25 +29,28 @@
 
 ## 工作流（唯一执行契约）
 
+读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
+CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
+一次调用只推进当前 intent；不得自动触发下一用户入口。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 汇合 | 约束 | 集成两路产出，核对设计、交接与续办记录 | 两路 gate、续办核对 | 2 | 停止并报告 |
-| 2 | 验证 | 约束 | 运行 verification 并循环修复实现 | 验证或阻塞记录 | 3 | 可修复则 2；需批准等待；阻塞记录后停止 |
-| 3 | 收敛 | 脚本 | 全量通过后记录 converge gate 并提交 | 全绿证据 | 结束 | 停止并报告 |
+| 1 | 汇合 | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 2 | 停止并报告 |
+| 2 | 验证 | 约束 | 验证、修复实现并维护阻塞记录 | 全量验证、阻塞记录 | 3 | 可修复则 2；需批准等待；阻塞记录后停止 |
+| 3 | 收敛 | 脚本 | 全量通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
-### 执行约束
-
-读取 `references/delivery-contract.md`、`references/common.md` 与相关对象契约。
-CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+### 范围与前置条件
 
 仅在 feature 工作。并行模式先运行 `delivery integrate`，以 no-ff 依次合入 qa、dev；
 顺序模式直接运行 `delivery check --stage converge`。
 使用 `delivery status` 返回的材料目录定位 `gates/converge-blocked.md`；不存在时无需创建。
 续办从步骤 1 开始，回读已有阻塞记录，对照当前 HEAD、设计与两路 gate 核对变化，
 重新判断解除条件；旧记录不替代本次检查或验证。
+
+### 验证与阻塞记录
+
 运行 `delivery verify`；修复循环可用 `--item <id>` 定位失败项，但最终必须全量通过。
 可以自动修复实现。测试、fixture、快照、预期值、发现/跳过规则和验证配置增删改必须用户确认。
 取得确认后原地审查与重验，记录 `--test-approval <用户确认与修改理由>`；不回退 intent。

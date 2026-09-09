@@ -42,21 +42,21 @@
 
 ## 工作流（唯一执行契约）
 
+表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
+
 完整读取 `references/common.md`、`references/repository-contract.md` 与 `references/object-contract.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 版本 | 约束 | [校验 epoch](#s1) | 精确 MAJOR.MINOR | 2 | 停止 |
-| 2 | 入口 | 脚本 | [检查 doctor](#s2) | ready | 3 | 停止 |
-| 3 | 预览 | 脚本 | [按需 dry-run](#s3) | 预览结果 | 预览结束；否则 4 | 停止 |
-| 4 | 分组 | 约束 | [核对归档组](#s4) | 完整 group | 5 | 停止 |
-| 5 | 归档 | 脚本 | [写入并校验](#s5) | 零 finding | 结束 | 保留现场，停止 |
+| 1 | 版本 | 约束 | 校验 RELEASE_EPOCH 仅为精确 MAJOR.MINOR | 有效 epoch | 2 | 停止 |
+| 2 | 入口 | 脚本 | 在目标根运行 `doctor`，确认 ready | doctor 结果 | 3 | 停止 |
+| 3 | 预览 | 脚本 | 仅预览请求：确认 clean 并运行 dry-run | 预览结果或非预览跳过 | 预览结束；否则 4 | 停止 |
+| 4 | 分组 | 约束 | 核对终态对象及 duplicate/canonical 完整组 | 完整 archive group | 5 | 停止 |
+| 5 | 归档 | 脚本 | 确认 clean，归档、全量校验并复核提交 | 产物、零 finding、diff | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
 
-### 执行约束
-
-下列明细补充表中操作、证据与异常处理；步骤顺序和跳转只由上表规定。
+### 版本与入口
 
 <a id="s1"></a>
 
@@ -73,6 +73,8 @@
 解析 `REPO_ROOT`、运行 `doctor`。
 
 验收：`ready`。
+
+### 预览与归档
 
 <a id="s3"></a>
 

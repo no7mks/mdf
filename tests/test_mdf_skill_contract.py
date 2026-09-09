@@ -23,7 +23,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "mdf"
     ]
     assert not (skill / "workflows").exists()
-    for command in (
+    expected_commands = (
         "init",
         "bootstrap",
         "intake",
@@ -42,8 +42,13 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "fact update",
         "design", "write-tests", "implement", "converge", "review", "prp split",
         "clarify <议题>",
-    ):
+    )
+    for command in expected_commands:
         assert command in entry
+    routes = re.findall(r"[├└]──── (.+?) ─+→ references/[a-z-]+\.md", entry)
+    commands = [command for route in routes for command in route.split(" / ")]
+    assert len(commands) == len(expected_commands)
+    assert set(commands) == set(expected_commands)
     assert "裸 `$mdf`" in entry
     assert "references/intake.md" in entry
     assert "references/next.md" in entry

@@ -27,23 +27,26 @@
 
 ## 工作流（唯一执行契约）
 
+读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
+CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
+一次调用只推进当前 intent；不得自动触发下一用户入口。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 检查 write-tests 前置 gate | 已提交共同设计 | 2 | 停止并报告 |
-| 2 | 用例 | 约束 | 按目标与设计编写测试并审查覆盖及断言 | 可执行用例 | 3 | 停止并报告 |
-| 3 | 记录 | 脚本 | 记录 write-tests gate 并提交本阶段产出 | 测试交接 | 结束 | 停止并报告 |
+| 1 | 入口 | 约束 | 检查分支及 write-tests 前置 gate | 分支、已提交共同设计 | 2 | 停止并报告 |
+| 2 | 用例 | 约束 | 按设计编写测试，实跑并逐项审查覆盖及断言 | 加载执行结果、覆盖 | 3 | 停止并报告 |
+| 3 | 记录 | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
-### 执行约束
-
-读取 `references/delivery-contract.md`、`references/common.md` 与相关对象契约。
-CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+### 范围与前置条件
 
 运行 `delivery check --stage write-tests`。与 implement 互不前置，可并行。
 在 feature 或 qa/<slug> 工作。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
 不要求针对具体实现进行错误注入，也不强制先产生红灯。
+
+### 测试与交接证据
+
 测试须能加载执行；环境或导入故障不是有效行为测试结果。逐项审查 objectives 覆盖与断言。
 首次按确认设计编写测试与配置属于本 intent 的授权；不得改变目标或降低项目门槛。
 运行 `delivery record --stage write-tests --summary <覆盖与可执行性证据>` 并提交。

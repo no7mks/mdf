@@ -49,23 +49,24 @@
 
 ## 工作流（唯一执行契约）
 
-完整读取 `references/common.md`、`references/clarify.md`、 `references/repository-contract.md` 与
+表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
+
+完整读取 `references/common.md`、`references/repository-contract.md` 与
 `references/object-contract.md`。
+步骤 4 读取并内部执行 `references/clarify.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | [运行 doctor](#s1) | 允许正常流程 | 2 | 停止 |
-| 2 | 选择 | 约束 | [确定唯一对象](#s2) | canonical ID 或路径 | 3 | 留在 2 消歧 |
-| 3 | 状态 | 约束 | [检查状态与开工记录后转 draft](#s3) | 状态、未开工证据 | 4 | 写入前停止 |
-| 4 | 澄清 | 约束 | [查证并内部 clarify](#s4) | 完整 draft | 5 | 保留 draft，停止 |
-| 5 | 确认 | 约束 | [展示 draft 与 diff](#s5) | 用户明确确认 | 6 | 保留 draft，停止 |
-| 6 | 就绪 | 脚本 | [先校验再转 ready](#s6) | 校验、最终状态 | 结束 | 保留现场，停止 |
+| 1 | 入口 | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
+| 2 | 选择 | 约束 | 按 canonical ID 或相对路径确定唯一 PRP | 唯一对象 | 3 | 留在 2 消歧 |
+| 3 | 状态 | 约束 | 查状态及各引用开工记录；未开工才转 draft | 引用、材料、状态检查 | 4 | 写入前停止 |
+| 4 | 澄清 | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
+| 5 | 确认 | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
+| 6 | 就绪 | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
 
-### 执行约束
-
-下列明细补充表中操作、证据与异常处理；步骤顺序和跳转只由上表规定。
+### 入口与未开工检查
 
 <a id="s1"></a>
 
@@ -103,6 +104,8 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 
 验收：原状态、检查过的引用与材料范围、未开工结论，以及写回后的 draft 状态。
 
+### 草稿与确认
+
 <a id="s4"></a>
 
 **澄清**
@@ -123,6 +126,8 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 
 异常与交接：保持 draft，可提交并准确说明尚未确认的状态；取得确认后继续，无须仅因提交而重调。
 只有用户明确确认才转 `ready`。
+
+### 就绪条件
 
 <a id="s6"></a>
 

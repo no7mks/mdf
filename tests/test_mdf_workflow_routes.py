@@ -168,7 +168,7 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
 
 def test_independent_intents_resolve_the_current_target_before_dispatch():
     entry = workflow("entry")
-    dispatch = entry.split('<a id="s3"></a>', 1)[1]
+    dispatch = entry.split("### 目标与按需读取", 1)[1]
     assert "本次调用" in dispatch
     assert "rev-parse --show-toplevel" in dispatch
     assert "REPO_ROOT" in dispatch
@@ -192,3 +192,22 @@ def test_initialization_and_init_have_explicit_reaudit_routes():
     assert rows(workflow("init"))[6][6] == "事实变化 6；其他保留现场停止"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
+
+
+def test_fact_audit_failure_returns_without_advancing_the_caller():
+    text = workflow("fact-audit")
+    assert "unverified" not in text
+    assert rows(text)[6][6] == "报告未通过；独立结束，委托返回"
+    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+    assert re.search(r"未通过且独立调用 ─+→ \[报告未通过并结束\]", diagram)
+    assert re.search(r"未通过且内部委托 ─+→ \[返回未通过，调用方走失败分支\]", diagram)
+    result = compact(text.split('<a id="s7"></a>', 1)[1])
+    for condition in ("存在其他finding", "未确认warning", "未取得用户确认"):
+        assert condition in result
+    assert "阻断原因与待确认项" in result
+    assert "不得推进依赖审阅通过的步骤" in result
+    assert "不自行修复或自动重试" in result
+    # 返回未通过仍允许 init 在当前审阅步骤修复；交付调用方继续使用失败出口。
+    assert "可修复则重验" in rows(workflow("init"))[5][6]
+    assert rows(workflow("fact-update"))[2][6] == "停止并报告"
+    assert rows(workflow("finish"))[3][6] == "停止并交接"

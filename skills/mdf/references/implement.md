@@ -28,22 +28,25 @@
 
 ## 工作流（唯一执行契约）
 
-| # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 检查 implement 前置 gate | 已提交共同设计 | 2 | 停止并报告 |
-| 2 | 实现 | 约束 | 依据目标与设计实现并自检 | 实现、自检与待验项 | 3 | 可修复则 2；无法完成则停止 |
-| 3 | 记录 | 脚本 | 记录 implement gate 并提交实现 | 实现交接 | 结束 | 停止并报告 |
-
-## 术语与数据结构
-
-### 执行约束
-
-读取 `references/delivery-contract.md`、`references/common.md` 与相关对象契约。
+读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
 一次调用只推进当前 intent；不得自动触发下一用户入口。
 
+| # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 入口 | 约束 | 检查分支及 implement 前置 gate | 分支、已提交共同设计 | 2 | 停止并报告 |
+| 2 | 实现 | 约束 | 按目标与设计实现，逐项自检并说明待验项 | 自检命令、结果、待验项 | 3 | 可修复则 2；无法完成则停止 |
+| 3 | 记录 | 脚本 | 记录 implement gate 并提交实现 | gate、自检摘要、提交 | 结束 | 停止并报告 |
+
+## 术语与数据结构
+
+### 范围与前置条件
+
 运行 `delivery check --stage implement`。测试完成不是前置条件。
 在 feature 或 dev/<slug> 工作，只修改实现；测试争议反馈给用户，不改断言或配置绕过验证。
+
+### 自检与交接证据
+
 在记录 gate 前逐项对照 objectives 与 design 检查实现路径、接口和错误语义；
 执行当前实现适用且可运行的自检，记录命令、退出状态、结果及对应验收项。
 不要求测试先完成或项目全绿；无法执行的自检逐项说明原因及留给 converge 的验证项。

@@ -27,18 +27,19 @@
 
 ## 工作流（唯一执行契约）
 
+读取 `references/object-contract.md` 与 `references/common.md`。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 只读检查 ready 仓库与 Proposal 契约 | 有效依赖图 | 2 | 停止并报告 |
-| 2 | 计算 | 脚本 | 运行 next --depth N | 确定性视图 | 3 | 停止并报告 |
-| 3 | 展示 | 约束 | 展示 ready 树、阻塞清单和评审提示 | 可推进顺序 | 结束 | 停止并报告 |
+| 1 | 入口 | 约束 | 只读核对 ready、依赖图与 depth 正整数 | 仓库状态、图、参数 | 2 | 停止并报告 |
+| 2 | 计算 | 脚本 | 运行 `next --depth N`，核对确定性视图 | 退出状态、结构化视图 | 3 | 停止并报告 |
+| 3 | 展示 | 约束 | 展示 ready 树、阻塞清单和评审提示 | ready 树、阻塞与提示 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
-### 执行约束
+### 输入与依赖视图
 
-
-读取 `references/object-contract.md` 与 `references/common.md`。只读，不要求 clean worktree，不创建或拆分 PRP。
+只读，不要求 clean worktree，不创建或拆分 PRP。
 运行 `python3 "$MDF_ROOT/scripts/mdf.py" next --repo "$REPO_ROOT" --depth <N>`；默认 3，N 为正整数。
 主报告仅 ready；根为全部依赖已满足的 ready。implemented/released 依赖视为满足。
 多上游取最大依赖层级加一；重复节点用交叉引用并保留全部 blocked_by。同层按 PRP ID 排序。

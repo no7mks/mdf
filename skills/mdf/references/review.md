@@ -29,25 +29,27 @@
 
 ## 工作流（唯一执行契约）
 
+读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
+CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
+一次调用只推进当前 intent；不得自动触发下一用户入口。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 检查同设计收敛与全绿证据 | 收敛记录、检查结果 | 2 | 仅全绿过期则 2；其他停止 |
-| 2 | 审查 | 约束 | 对照起点、目标和设计审查并修复 | 审查结论 | 3 | 停止并报告 |
-| 3 | 记录 | 脚本 | 重验并记录 review gate，提交结果 | 有效审查证据 | 结束 | 验证可修复则 2；其他停止 |
+| 1 | 入口 | 约束 | 核对 feature、同设计收敛及本次 gate 检查 | 设计指纹、检查结果 | 2 | 仅全绿过期则 2；其他停止 |
+| 2 | 审查 | 约束 | 对照固定起点、目标与设计审查并按权限修复 | 审查结论、修复依据 | 3 | 停止并报告 |
+| 3 | 记录 | 脚本 | 重验并记录 review gate，提交结果 | 全量验证、gate、提交 | 结束 | 验证可修复则 2；其他停止 |
 
 ## 术语与数据结构
 
-### 执行约束
-
-读取 `references/delivery-contract.md`、`references/common.md` 与相关对象契约。
-CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+### 范围与前置条件
 
 步骤 1 仅在 feature 工作，运行 `delivery status` 定位材料，读取 design 与 converge gate，
 核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止，不跳过 converge。
 运行 `delivery check --stage review`；成功则进入 2。仅返回 `stale_verification` 且上述检查通过时，
 记录全绿证据过期或上次验证失败，进入 2 补审补验；其他错误停止并报告。
 本例外适用于首次进入及同阶段续办，不将旧验证结论视为当前通过。
+
+### 审查权限与验证
 
 步骤 2 对照 delivery.json 的 start_commit 与当前 HEAD，
 检查正确性、验收覆盖、测试质量、code smell、架构合理性及非必要复杂度。
