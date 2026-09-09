@@ -17,43 +17,44 @@ disable-model-invocation: true
 │ 1 Accept call                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 裸调用、未知调用 ────> [帮助并结束]
+                 ├──── 裸调用、未知调用 ────→ [帮助并结束]
                  │
                  ▼ 有效显式调用
 ┌──────────────────────────────────┐
 │ 2 Check CLI                      │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────> [停止]
+                 ├──── 失败/缺失 ────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── bootstrap ────> references/bootstrap.md
-                 ├──── init ────> references/init.md
-                 ├──── intake ────> references/intake.md
-                 ├──── next [--depth N] ────> references/next.md
-                 ├──── start ────> references/start.md
-                 ├──── design ────> references/design.md
-                 ├──── write-tests ────> references/write-tests.md
-                 ├──── implement ────> references/implement.md
-                 ├──── converge ────> references/converge.md
-                 ├──── review ────> references/review.md
-                 ├──── fact update ────> references/fact-update.md
-                 ├──── prp split ────> references/prp-split.md
-                 ├──── finish ────> references/finish.md
-                 ├──── fact audit ────> references/fact-audit.md
-                 ├──── clarify <议题> ────> references/clarify.md
-                 ├──── bug create ────> references/bug-create.md
-                 ├──── prp create ────> references/prp-create.md
-                 ├──── prp review ────> references/prp-review.md
-                 ├──── archive ────> references/archive.md
-                 ├──── codewiki generate ────> references/codewiki-generate.md
-                 ├──── codewiki update ────> references/codewiki-update.md
-                 ├──── jot / jot promote ────> references/jot.md
-                 ├──── 材料缺失 ────> [报告并停止]
+                 ├──── bootstrap ────→ references/bootstrap.md
+                 ├──── init ────→ references/init.md
+                 ├──── intake ────→ references/intake.md
+                 ├──── next [--depth N] ────→ references/next.md
+                 ├──── start ────→ references/start.md
+                 ├──── design ────→ references/design.md
+                 ├──── write-tests ────→ references/write-tests.md
+                 ├──── implement ────→ references/implement.md
+                 ├──── converge ────→ references/converge.md
+                 ├──── review ────→ references/review.md
+                 ├──── fact update ────→ references/fact-update.md
+                 ├──── prp split ────→ references/prp-split.md
+                 ├──── finish ────→ references/finish.md
+                 ├──── fact audit ────→ references/fact-audit.md
+                 ├──── clarify <议题> ────→ references/clarify.md
+                 ├──── bug create ────→ references/bug-create.md
+                 ├──── prp create ────→ references/prp-create.md
+                 ├──── prp review ────→ references/prp-review.md
+                 ├──── archive ────→ references/archive.md
+                 ├──── codewiki generate ────→ references/codewiki-generate.md
+                 ├──── codewiki update ────→ references/codewiki-update.md
+                 ├──── jot / jot promote ────→ references/jot.md
+                 ├──── 目标边界不明 ────→ [澄清后重查]
+                 ├──── 解析失败或材料缺失 ────→ [报告并停止]
 ```
 
 ## 工作流（唯一执行契约）
@@ -64,7 +65,7 @@ disable-model-invocation: true
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 调用 | 约束 | [识别显式调用](#s1) | 有效意图 | 2 | 帮助并结束 |
 | 2 | 工具 | 脚本 | [运行 info](#s2) | 三个版本为 2 | 3 | 停止 |
-| 3 | 分流 | 约束 | [按调用读取流程](#s3) | 流程结果 | 返回调用方 | 停止 |
+| 3 | 分流 | 约束 | [解析目标并读取流程](#s3) | 目标根、流程结果 | 返回调用方 | 边界不明澄清；其他停止 |
 
 ## 术语与数据结构
 
@@ -99,12 +100,17 @@ disable-model-invocation: true
 
 **分流**
 
+除 init/bootstrap 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
+用 `git -C <目标目录> rev-parse --show-toplevel` 解析为绝对 `REPO_ROOT`，再读取并执行对应流程。
+核对解析出的仓库确为用户目标；边界不明先澄清，命令失败则报告并停止，不使用空值或上次调用的变量。
+clarify 不要求 Git 仓库；init/bootstrap 由 initialization 公共流程处理普通目录与父仓库边界。
+
 完整读取选择树指定的 intent，并只按其按需读取说明读取公共引用； 将调研、已确认决策与`当前事实文档`分开，
 不把候选方案当作已实现行为， 不替代任务管理；按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录，
 写入型 intent 允许并鼓励主动本地提交，遵守 `references/common.md` 的范围与历史规则；
 提交不代替确认或验收，远端和集成操作按各自流程授权。
 
-验收：已读取材料与其流程结果。
+验收：本次目标根解析结果（适用时）、已读取材料与其流程结果。
 
 异常与交接：停止并报告缺失材料。
 

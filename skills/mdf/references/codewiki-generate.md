@@ -9,45 +9,45 @@
 │ 1 Check entry                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────> [停止]
+                 ├──── 失败/缺失 ────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
 │ 2 Check output                   │
 └────────────────┬─────────────────┘
                  │
-                 ├──── standard ────> [要求 codewiki update]
-                 ├──── 非空且非 standard ────> [列出不符合项并停止]
+                 ├──── standard ────→ [要求 codewiki update]
+                 ├──── 非空且非 standard ────→ [列出不符合项并停止]
                  │
                  ▼ 目录缺失或为空
 ┌──────────────────────────────────┐
 │ 3 Analyze                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败 ────> references/codewiki-recovery.md
+                 ├──── 失败 ────→ references/codewiki-recovery.md
                  │
                  ▼ 分析成功
 ┌──────────────────────────────────┐
 │ 4 Write modules                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 可修复的图失败或跳过 ────> 4 Write modules
-                 ├──── 其他失败 ────> references/codewiki-recovery.md
+                 ├──── 可修复的图失败或跳过 ────→ 4 Write modules
+                 ├──── 其他失败 ────→ references/codewiki-recovery.md
                  │
                  ▼ 页面及图验收通过
 ┌──────────────────────────────────┐
 │ 5 Close session                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败 ────> references/codewiki-recovery.md
+                 ├──── 失败 ────→ references/codewiki-recovery.md
                  │
                  ▼ 关闭前验收通过且基线有效
 ┌──────────────────────────────────┐
 │ 6 Verify output                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 全部验收通过 ────> [报告并结束]
-                 ├──── 失败 ────> references/codewiki-recovery.md
+                 ├──── 全部验收通过 ────→ [报告并结束]
+                 ├──── 失败 ────→ references/codewiki-recovery.md
 ```
 
 ## 工作流（唯一执行契约）
