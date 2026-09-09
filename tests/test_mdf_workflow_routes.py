@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 import unicodedata
 
 from conftest import skill_dir
@@ -211,3 +212,55 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert "可修复则重验" in rows(workflow("init"))[5][6]
     assert rows(workflow("fact-update"))[2][6] == "停止并报告"
     assert rows(workflow("finish"))[3][6] == "停止并交接"
+
+
+def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
+    text = workflow("fact-update")
+    entry = text.split("### 范围与写入边界", 1)[1].split("支持用户独立调用", 1)[0]
+    assert rows(text)[0][6] == "写入前停止并报告"
+    assert '任何写入或提交前运行 `doctor --repo "$REPO_ROOT"`' in entry
+    for field in ("is_git_root: true", "initialized: true", "state: ready"):
+        assert field in entry
+    assert "独立调用与 finish 委托均须满足" in entry
+    assert "不写入、不提交" in entry
+    assert "不将 `normal_workflows_allowed: true` 作为前置条件" in entry
+    assert "事实及 evidence 问题由步骤 2–3 按范围处理" in entry
+    assert "独立调用仅记录 `branch.invalid`" in entry
+
+
+def test_codewiki_commit_failure_does_not_rebuild_verified_output():
+    for name in ("codewiki-generate", "codewiki-update"):
+        text = workflow(name)
+        final_step = rows(text)[-1]
+        assert "仅提交失败停止" in final_step[6]
+        diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+        assert re.search(r"仅提交失败 ─+→ \[保留已验收 Wiki，报告并停止\]", diagram)
+        assert "MCP 失败或输出验收失败进入 recovery" in text
+        assert "输出验收通过后仅 Git 暂存或提交失败时" in text
+        assert "不得因此进入 recovery、搬移 Wiki 或重新生成" in text
+        assert "同次续办先核对输出与 diff 未变且验收仍有效" in text
+    assert "输出已验收且仅 Git 暂存或提交失败" in workflow("codewiki-recovery")
+
+
+def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_path):
+    from mdf_test_support import PRP_NAME, copy_fixture, git, init_git, mdf, payload, replace
+
+    commands = re.findall(r'`(archive --repo [^`]+)`', workflow("archive"))
+    assert len(commands) == 2
+    repo = copy_fixture(tmp_path)
+    proposal = repo / "proposals" / PRP_NAME
+    replace(proposal, "status: ready\ndepends_on: []",
+            "status: rejected\ndepends_on: []\nreject-reason: wont-do")
+    init_git(repo)
+    for index, command in enumerate(commands):
+        argv = [arg.replace("$REPO_ROOT", str(repo)).replace("$RELEASE_EPOCH", "1.2")
+                for arg in shlex.split(command)]
+        result = payload(mdf(python_exe, *argv, cwd=tmp_path))
+        assert result["dry_run"] is (index == 0)
+        assert result["validation"]["finding_count"] == 0
+        if index == 0:
+            assert proposal.is_file()
+            assert not git(repo, "status", "--porcelain").stdout
+        else:
+            assert not proposal.exists()
+            assert (repo / "proposals" / "archive" / "1.2" / PRP_NAME).is_file()

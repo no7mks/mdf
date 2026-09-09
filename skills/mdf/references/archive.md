@@ -70,7 +70,7 @@
 
 **入口**
 
-解析 `REPO_ROOT`、运行 `doctor`。
+解析 `REPO_ROOT`、运行 `doctor --repo "$REPO_ROOT"`。
 
 验收：`ready`。
 
@@ -81,7 +81,8 @@
 **预览**
 
 `archive` CLI（包括 dry-run）要求操作前 clean；预览不得为满足 clean 而提交改动。
-仅在用户要求预览时运行 `archive --epoch "$RELEASE_EPOCH" --dry-run`。预览成功即展示结果并结束， 不进入实际归档；
+仅在用户要求预览时运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH" --dry-run`。
+预览成功即展示结果并结束，不进入实际归档；
 未要求预览时跳过本步操作。
 
 验收：稳定移动与 canonical 引用重写预览。
@@ -103,7 +104,8 @@ released/rejected/replaced Proposal 可归档；Bug 的 duplicate 必须随 cano
 **归档**
 
 非预览操作前按公共规则整理本次改动并确认 clean，范围不明或存在无关改动时澄清，不夹带提交。
-仅非预览调用授权运行 `archive --epoch "$RELEASE_EPOCH"`，后运行 `full validation`。
+仅非预览调用授权运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH"`，
+后运行 `validate --repo "$REPO_ROOT" --scope full`。
 
 验收：对象、切片、重写数量与 validation。
 
