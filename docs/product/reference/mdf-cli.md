@@ -18,8 +18,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
   `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
   clean worktree。
-- 对象写入类命令不自动提交；调用方展示结果，由用户复核提交。
-  feature start、交付阶段与 finish 按明确授权创建必要提交及 no-ff 合并。
+- 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
+  包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
+  start、delivery integrate 与 finish-gitflow 按各自协议执行提交、集成和远端操作。
 - `--dry-run` 只在 `archive`、`move-change`、`prp-split` 和 `release-closeout` 中有效。
 
 ## 命令表
@@ -63,8 +64,9 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 
 报告目标路径的 Git 根、是否为 Git 根、worktree 是否 clean，及当前分支的
 解析结果。它还报告 `.mdf/manifest.yaml` 是否存在和 manifest 校验 findings。
-已初始化仓库会给出 manifest state；只有 state 为 `ready`、worktree clean
-且没有 finding 时，`normal_workflows_allowed` 才为 `true`。
+已初始化仓库会给出 manifest state；只有 state 为 `ready`
+且没有 finding 时，`normal_workflows_allowed` 才为 `true`。clean 单独报告，
+由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
 ### `validate`
 
@@ -171,7 +173,9 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
 `AGENTS.md` 区块和文档骨架。输出会列出拟创建或更新的文件和 diff；实际写入后
 manifest 保持 `initializing`，但会写入提供的 verification commands，不会切换到
-`ready`。intent 必须在事实复核与显式就绪确认后完成后续校验。
+`ready`。init intent 经事实复核，bootstrap intent 经起步材料核对；两者均须校验并取得
+显式就绪确认，再改 ready、校验并提交。bootstrap 不调用 fact audit。
+Git 化和新旧项目的语义分流由外层 intent 完成，两个 intent 共用本 CLI。
 
 ### `archive`
 
@@ -243,7 +247,8 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 源和参与的目标分支都与远端完全一致。命令会先 `fetch --prune`。
 
 feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
-`chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented 转换包含在该 merge commit。release/hotfix 先同样合并到
+`chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented 转换包含在该 merge commit。
+release/hotfix 先同样合并到
 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。最后
 原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
@@ -251,7 +256,8 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 ## 与 intent 的关系
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
-调用：`init` intent 使用 `doctor` 与 `init`；`next` 使用只读 `next` CLI；`intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
+调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；`next` 使用只读 `next` CLI；
+`intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
 `jot` 使用 `make-jot-id`；
 `archive` intent 使用 `archive`；`start` intent 使用 `start`；
 `finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和

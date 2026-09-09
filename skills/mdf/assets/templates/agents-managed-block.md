@@ -14,8 +14,12 @@
 
 - 意图与状态
   - 仅在用户显式调用 `$mdf …` 时执行 MDF 意图命令，包括 `$mdf intake`、
-    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单；交付阶段可按确认范围提交。
+    `$mdf bug create`、`$mdf prp create` 与 `$mdf prp review`；不得隐式接单。
+    显式 `$mdf init` 可按项目状态内部转入 bootstrap，不自动串联其他用户入口。
     交付阶段与 `finish-gitflow` 按流程执行必要的 no-ff 合并。
+  - 修改工作按已确认范围主动创建本地 commit，可保存未完成阶段并准确标注状态。
+    只读和预览不提交，不夹带无关改动；push、merge、tag 仍按对应 intent 的权限执行。
+    不普遍要求入口 clean；仅在具体操作需要时检查，相关改动范围不明时先澄清。
   - Proposal 状态为 draft、ready、implemented、released、rejected、replaced。
     Bug 状态为 open、fixed、closed、rejected，保持其二次验证与发布约束。
   - release 收口前必须通过 MDF 全量审计；hotfix 收口前通过交付范围审计；两者均须零问题项。

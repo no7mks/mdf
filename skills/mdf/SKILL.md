@@ -1,7 +1,7 @@
 ---
 name: mdf
 description: >-
-  管理 Git 仓库的版本化文档与交付流程：初始化、规划、分诊、CodeWiki、随手记录、
+  管理 Git 仓库的版本化文档与交付流程：项目起步、初始化、规划、分诊、CodeWiki、随手记录、
   审计、收口、归档与逐题澄清。
 disable-model-invocation: true
 ---
@@ -31,6 +31,7 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
+                 ├──── bootstrap ────> references/bootstrap.md
                  ├──── init ────> references/init.md
                  ├──── intake ────> references/intake.md
                  ├──── next [--depth N] ────> references/next.md
@@ -77,6 +78,7 @@ disable-model-invocation: true
 
 只接受选择树所列的显式调用；`next [--depth N]` 的深度可省略， `clarify <议题>` 的议题由对应 intent 检查。
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
+显式 init 可按其契约内部转入 bootstrap；其他入口仍按显式调用路由。
 
 验收：完整、非空的调用。
 
@@ -99,7 +101,8 @@ disable-model-invocation: true
 
 完整读取选择树指定的 intent，并只按其按需读取说明读取公共引用； 将调研、已确认决策与`当前事实文档`分开，
 不把候选方案当作已实现行为， 不替代任务管理；按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录，
-交付阶段可按明确授权创建必要提交与 no-ff 合并；其他 intent 不自动提交。
+写入型 intent 允许并鼓励主动本地提交，遵守 `references/common.md` 的范围与历史规则；
+提交不代替确认或验收，远端和集成操作按各自流程授权。
 
 验收：已读取材料与其流程结果。
 

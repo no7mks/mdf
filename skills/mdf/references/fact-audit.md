@@ -79,10 +79,10 @@
 
 **范围**
 
-确定类型和状态：fact update 委托时使用其明确范围，允许同次写入且不重查 clean；
-direct 执行`全量审阅`、manifest 必须 `ready` 且查 clean；
- init 为全量、允许 `initializing`
-且不重查 clean；finish 的 release 为全量， 其他分支为调用方给出实现和当前事实文档范围的范围审阅。
+确定类型和状态：fact update 委托时使用其明确范围，允许审阅调用方的同次写入；
+direct 执行`全量审阅`、manifest 必须 `ready`；init 为全量、允许 `initializing`；
+finish 的 release 为全量，其他分支为调用方给出实现和当前事实文档范围的范围审阅。
+审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
 
 验收：调用方与范围。
 
@@ -94,7 +94,9 @@ direct 执行`全量审阅`、manifest 必须 `ready` 且查 clean；
 
 验收：范围、文档—`evidence` 映射、ignore 匹配、warnings、确定性 findings。
 
-异常与交接：调用失败或有确定性 finding 时停止。
+通过条件：CLI 成功，或 init 调用时返回结构化结果且 findings 仅有
+`manifest.initializing`；后一种即使退出码为 2、ok 为 false 也继续审阅。
+异常与交接：其他调用失败或确定性 finding 时停止；不得把解析失败当作初始化豁免。
 
 <a id="s3"></a>
 
@@ -144,8 +146,8 @@ direct 执行`全量审阅`、manifest 必须 `ready` 且查 clean；
 
 验收：会话摘要和用户当场确认。
 
-通过条件：无语义 finding、 无未确认 warning，且 validation 无 finding 时通过。异常与交接： init 仅豁免
-`manifest.initializing`，不得将其计为阻断 finding；不得称审阅通过。该确认不跨调用复用。
+通过条件：无语义 finding、无未确认 warning，且 validation 无阻断 finding 时通过；init 仅豁免
+`manifest.initializing`。异常与交接：存在其他 finding 或未取得确认时不得称审阅通过。该确认不跨调用复用。
 Audit 不检查 Gitflow 分支、变更 diff、Proposal、Bug、Change、release 输入、closeout 或 merge 条件；这些属于
 `$mdf finish` 的交付前检查。
 

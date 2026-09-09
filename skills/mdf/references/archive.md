@@ -47,7 +47,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 版本 | 约束 | [校验 epoch](#s1) | 精确 MAJOR.MINOR | 2 | 停止 |
-| 2 | 入口 | 脚本 | [检查 doctor、clean](#s2) | ready 且 clean | 3 | 停止 |
+| 2 | 入口 | 脚本 | [检查 doctor](#s2) | ready | 3 | 停止 |
 | 3 | 预览 | 脚本 | [按需 dry-run](#s3) | 预览结果 | 预览结束；否则 4 | 停止 |
 | 4 | 分组 | 约束 | [核对归档组](#s4) | 完整 group | 5 | 停止 |
 | 5 | 归档 | 脚本 | [写入并校验](#s5) | 零 finding | 结束 | 保留现场，停止 |
@@ -70,14 +70,15 @@
 
 **入口**
 
-解析 `REPO_ROOT`、运行 `doctor` 并检查 clean。
+解析 `REPO_ROOT`、运行 `doctor`。
 
-验收：`ready` 与 clean。
+验收：`ready`。
 
 <a id="s3"></a>
 
 **预览**
 
+`archive` CLI（包括 dry-run）要求操作前 clean；预览不得为满足 clean 而提交改动。
 仅在用户要求预览时运行 `archive --epoch "$RELEASE_EPOCH" --dry-run`。预览成功即展示结果并结束， 不进入实际归档；
 未要求预览时跳过本步操作。
 
@@ -99,8 +100,9 @@ released/rejected/replaced Proposal 可归档；Bug 的 duplicate 必须随 cano
 
 **归档**
 
+非预览操作前按公共规则整理本次改动并确认 clean，范围不明或存在无关改动时澄清，不夹带提交。
 仅非预览调用授权运行 `archive --epoch "$RELEASE_EPOCH"`，后运行 `full validation`。
 
 验收：对象、切片、重写数量与 validation。
 
-异常与交接：`duplicate_group_open` 时停止且不得单独移动，其他失败保留现场并报告 findings。绝不自动 commit。
+异常与交接：`duplicate_group_open` 时停止且不得单独移动，其他失败保留现场并报告 findings。成功后复核并提交本次归档改动。

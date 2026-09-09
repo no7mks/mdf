@@ -32,7 +32,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     root = skill_dir("mdf")
     documents = [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
     workflows = [p for p in documents if HEADER in p.read_text(encoding="utf-8")]
-    assert len(workflows) == 25
+    assert len(workflows) == 26
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -77,9 +77,7 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("init")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
-    assert "允许且仅允许 `manifest.initializing` finding" in entry
-    assert "尚未初始化时允许继续" in entry
-    assert "除 `manifest.initializing` 外的其他 finding" in entry
+    assert "仅允许 initializing finding，或 ready 无 finding" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 

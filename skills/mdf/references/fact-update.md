@@ -32,6 +32,7 @@
 独立调用基于用户范围和当前实现确定更新面；finish 调用采用固定起点到 HEAD 的精确范围。
 只更新受影响的当前事实及 evidence；不修改 PRP、Bug、Change、objectives 或 design 的意图。
 不为满足形式制造无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。
+按公共规则主动提交本次事实改动；尚未完成审阅时准确说明提交状态，不将提交等同于审阅通过。
 内部委托 fact audit 做双向只读审阅与 full validation；通过前不得声称事实同步完成。
 feature finish 调用时执行受影响验证，运行
 `delivery record --stage fact-update --summary <本次事实审阅确认与验证证据>`。

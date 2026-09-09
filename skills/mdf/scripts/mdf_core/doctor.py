@@ -47,7 +47,7 @@ def collect_findings(
         add_finding(
             findings,
             "manifest.initializing",
-            "manifest 未 ready 前只允许 $mdf init",
+            "manifest 未 ready 前使用 $mdf init；符合新仓库条件时可用 $mdf bootstrap",
             ".mdf/manifest.yaml",
         )
     return findings

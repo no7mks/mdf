@@ -114,7 +114,8 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改；
 
 验收：用户明确确认。
 
-异常与交接：保持 draft，用户可在 commit 后的后续调用继续。只有用户明确确认才转 `ready`。
+异常与交接：保持 draft，可提交并准确说明尚未确认的状态；取得确认后继续，无须仅因提交而重调。
+只有用户明确确认才转 `ready`。
 
 <a id="s6"></a>
 

@@ -8,8 +8,8 @@
   `save_module_tree`、`get_processing_order`、`get_prompt`、`close_session`。
 - 不运行 CodeWiki CLI、`generate_docs` 或 `get_module_tree`，不配置
   provider、model 或 API key。Agent 负责理解与写作；MCP 负责分析和受控写入。
-- 不修改业务代码、配置、测试或 `docs/repowiki/` 以外的文档。不要自动
-  commit。
+- 不修改业务代码、配置、测试或 `docs/repowiki/` 以外的文档。按公共规则主动提交
+  本次 Wiki 改动，不夹带其他文件。
   `docs/repowiki/` 之外的 `docs/` 仍由项目的普通人工文档契约管理。
 - 生成内容使用简体中文。代码、路径、标识符和必要的术语可保留原文。
 

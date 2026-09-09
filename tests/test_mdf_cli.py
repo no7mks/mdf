@@ -44,14 +44,18 @@ def test_doctor_reports_ready_v2_repository(python_exe: str, tmp_path: Path):
     assert "entry_skills" not in data
 
 
-def test_doctor_disallows_dirty_worktree(python_exe: str, tmp_path: Path):
+def test_doctor_reports_dirty_without_blocking_normal_workflows(
+    python_exe: str, tmp_path: Path
+):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     (repo / "untracked.txt").write_text("dirty\n", encoding="utf-8")
 
     data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
     assert data["clean"] is False
-    assert data["normal_workflows_allowed"] is False
+    assert data["normal_workflows_allowed"] is True
+    assert data["findings"] == []
+    assert (repo / "untracked.txt").read_text() == "dirty\n"
 
 
 def test_doctor_allows_ignored_runtime_files(

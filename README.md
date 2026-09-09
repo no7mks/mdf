@@ -9,7 +9,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 | 命令 | 用途 |
 | --- | --- |
-| `$mdf init` | 初始化或更新仓库的 MDF 文档系统 |
+| `$mdf bootstrap` | 为全新或几乎全新的项目建立 MDF 起点 |
+| `$mdf init` | 接入已有项目或调整 MDF 配置；新项目自动转入 bootstrap |
 | `$mdf next [--depth N]` | 展示 ready PRP 依赖树、阻塞项与 draft 评审提示 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
@@ -37,7 +38,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 `start → design → [write-tests ∥ implement] → converge → review → finish`
 
 一个 feature 对应一个 PRP；设计后测试与实现可并行，gate 检查共同基线与有效证据。
-交付阶段可创建必要提交与 no-ff 集成，其他 intent 的改动由用户复核提交。
+写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；提交不代表验收通过，
+也不替代用户确认。不夹带无关改动，远端与集成操作按各自流程授权。
 材料从 `.specs/<slug>/` 随交付进入 Change，再随版本归档。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
@@ -46,6 +48,11 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。协议、工具与
 schema 版本均为数字 `2`。
+
+init 与 bootstrap 都负责项目 Git 化，准备本地 master/develop，不强制远端。
+bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已有实际实现或运行事实时，
+在写入前停止并提示 init。两者校验通过并经用户确认启用后进入 ready。
+入口先识别已有改动，仅在具体操作需要时要求 clean。
 
 ## 信息分层
 

@@ -71,7 +71,6 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 预览 ────> [展示预览并结束]
-                 ├──── 非 feature 有写入 ────> [复核、提交后重调 finish]
                  ├──── 交付条件未通过 ────> [报告并停止]
                  │
                  ▼ 非预览、必要提交完成且交付条件通过
@@ -90,7 +89,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | [检查仓库与分支](#s1) | ready、clean | 2 | 停止 |
+| 1 | 入口 | 脚本 | [检查仓库与分支](#s1) | ready、分支 | 2 | 停止 |
 | 2 | 范围 | 约束 | [核对交付与版本状态](#s2) | 精确范围、证据 | 已收口 4；否则 3 | 停止 |
 | 3 | 材料 | 约束 | [先同步事实再整理材料](#s3) | 当前事实、Change | 4 | 保留现场，停止 |
 | 4 | 审阅 | 约束 | [检查本次审阅证据](#s4) | 本次审阅通过 | 满足交接条件 9；否则 5 | 停止并交接 |
@@ -98,7 +97,7 @@
 | 6 | 热修复 | 约束 | [校验结果 JSON](#s6) | 有效 JSON | 7 | 停止 |
 | 7 | 对象 | 约束 | [准备 closures](#s7) | 覆盖与验证记录 | 8 | 停止 |
 | 8 | 收口 | 脚本 | [执行 release-closeout](#s8) | CLI 与验证结果 | 预览结束；apply 9 | 保留现场，停止 |
-| 9 | 交接 | 约束 | [核对提交与交付条件](#s9) | clean、交付条件 | 预览/非 feature 有写入结束；否则 10 | 停止 |
+| 9 | 交接 | 约束 | [核对提交与交付条件](#s9) | clean、交付条件 | 预览结束；否则 10 | 停止 |
 | 10 | 合并 | 脚本 | [调用 finish-gitflow](#s10) | 合并、tag、推送 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构
@@ -113,13 +112,15 @@
 
 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
 
-验收：manifest `ready`、非 detached、clean， Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或
+验收：manifest `ready`、非 detached， Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或
 `hotfix/<semver>`， 以及用户是否要求预览。
 
 <a id="s2"></a>
 
 **范围**
 
+非预览先识别本次相关未提交改动，按公共规则复核并提交后确定交付范围；范围不明时先澄清。
+预览不提交，列出未提交内容对交付范围的影响。
 写入前计算交付范围：feature 为记录的 start_commit 到 HEAD，bugfix 为 `develop...HEAD`，hotfix 为 `master...HEAD`；
 release 要求本地 develop，
 以当前 checkout 和全部 child Change 为交付范围。
@@ -143,6 +144,7 @@ release 要求本地 develop，
 同步受影响当前事实并内部完成 fact audit，再执行必要验证。
 feature 在此之前运行 `delivery check --stage fact-update`，确认 review 有效；使用 start_commit
 到 HEAD 的固定范围。fact update 完成后记录 fact-update gate，并提交事实与证据。
+`move-change` 操作前要求 clean；不得夹带无关改动来满足前置条件。
 将 .specs/<slug> 用 move-change 整体移动到 changes/unreleased/<slug>；续办时识别已移动记录。
 补齐唯一 PRP 对应的 canonical CHANGE.md，材料和 CHANGE.md 同级。搬迁链接由 CLI 重写。
 搬迁和 CHANGE.md 整理完成后提交这些材料，再进入阶段校验，避免用未提交路径作为设计基线。
@@ -203,7 +205,9 @@ major deferred/wont-fix 要用户接受、理由和 follow-up； duplicate 不�
 **收口**
 
 调用 `release-closeout`；版本根 Change 聚合 child outcomes/evidence，
-evidence 按首次出现顺序去重并追加 manifest 验证命令。apply 在目标仓库执行命令， 保持 clean 后写入；
+evidence 按首次出现顺序去重并追加 manifest 验证命令。closeout CLI（含 dry-run）操作前要求 clean；
+预览不提交，若被未提交内容阻塞则报告。非预览主动提交本次必要材料，不夹带无关改动。
+apply 在目标仓库执行命令，保持 clean 后写入；
 preview 不执行命令、不写入。
 
 验收：CLI 结果，apply 的命令结果和 clean， 或 preview 的只读摘要。
@@ -214,8 +218,9 @@ preview 不执行命令、不写入。
 
 **交接**
 
-预览结束。feature 将本次必要的事实、Change 与阶段证据提交并推送，运行 finish gate 检查；
-不要求仅因本次有写入就由用户重复调用 finish。其他分支产生待提交改动时交接用户复查提交。
+预览结束。非预览由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续；
+feature 按既有权限推送并运行 finish gate 检查。其他分支的阶段提交若需额外推送才能同步 upstream，
+须取得该推送授权；不要求用户手动提交或仅因本次写入而重调。
 release/hotfix 仍需已提交收口结果；feature/bugfix 必须有规范 child Change。
 核对 clean、upstream 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
 
@@ -232,4 +237,5 @@ feature/bugfix no-ff 合并到 develop； release/hotfix no-ff 合并到 master 
 验收：合并、tag 和推送结果。
 
 异常与交接：停止并报告当前分支、已完成合并、 tag 与推送状态；冲突时 CLI abort 当前 merge，
-但不得声称此前已完成的合并也被回退。 不继续推送或删分支，询问用户如何继续；必要修复仍须复核、commit 后重调。
+但不得声称此前已完成的合并也被回退。 不继续推送或删分支，询问用户如何继续；
+必要修复按确认范围由 Agent 复核并提交；后续 Git 操作按用户决定继续。

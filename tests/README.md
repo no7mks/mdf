@@ -15,6 +15,9 @@ python -m pytest
 `test_skill_structure.py` 对 `skills/` 下的每个 MDF Skill 自动执行结构检查；
 `fixtures/mdf/valid_repo/` 是协议测试使用的合成仓库。
 
+`test_mdf_bootstrap.py` 验证空仓库和工程模板共用初始化 CLI、无事实页及无远端时
+完成 ready 与本地分支准备；新旧项目的语义分流由 intent 执行，不由 CLI 推断。
+
 ## 交付流程与规划
 
 - `test_mdf_delivery.py`：设计基线、并行交接、收敛与审查权限、内容指纹失效、材料搬迁及 Gitflow 冲突。

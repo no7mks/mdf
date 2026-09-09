@@ -25,6 +25,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert not (skill / "workflows").exists()
     for command in (
         "init",
+        "bootstrap",
         "intake",
         "next [--depth N]",
         "codewiki generate",
@@ -121,9 +122,6 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     )[0]
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
-    assert "仅在外层 intent 入口检查一次" in common
-    assert "不得重复" in common
-    assert "clean 检查而拒绝修改" in common
     assert "生成的 Markdown 正文、标题与列表使用简体中文" in common
     for document in (review,):
         assert "object-contract.md" in document

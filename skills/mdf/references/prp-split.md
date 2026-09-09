@@ -32,7 +32,9 @@
 ## 执行约束
 
 
-读取 `references/object-contract.md` 与 `references/common.md`。要求 clean worktree。
+读取 `references/object-contract.md` 与 `references/common.md`。
+`prp-split` CLI（包括 dry-run）操作前要求 clean worktree；预览不提交。
+非预览按公共规则整理本次改动；无关改动阻塞操作或相关范围不明时先澄清。
 仅 active draft/ready 且没有关联分支或开发材料的 PRP 可拆分；已有实现或终态拒绝。
 子项须能独立实现与验收，共同覆盖原范围，不拆成文件/操作任务，也不额外扩张范围。
 先用 make-id 分配子 ID。输入 JSON 文件包含 source、children、downstream、rationale。

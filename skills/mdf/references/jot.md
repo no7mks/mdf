@@ -169,4 +169,4 @@ Proposal 转为 `ready`；Bug 保持 `open`。删除选中 Jot marker， 再运�
 
 验收：两个文件完整 diff 与两次验证。
 
-异常与交接：保留现场并报告 findings。 成功时提醒用户将创建与移除作为同一个独立 commit；绝不自动 commit。
+异常与交接：保留现场并报告 findings。 成功时将本次创建与移除作为同一个独立 commit 提交。

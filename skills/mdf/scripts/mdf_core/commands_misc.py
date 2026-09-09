@@ -91,7 +91,6 @@ def command_doctor(args: argparse.Namespace) -> None:
             payload["state"] = "invalid"
         payload["normal_workflows_allowed"] = (
             payload["state"] == "ready"
-            and payload["clean"] is True
             and not findings
         )
     emit(payload)
@@ -178,8 +177,8 @@ def command_init(args: argparse.Namespace) -> None:
             )
         ],
         "next": (
-            "Review current facts, then explicitly confirm readiness before "
-            "setting state to ready and running full validation."
+            "按调用 intent 完成核对与校验，取得启用确认后改为 ready，"
+            "再次运行 full validation 并提交就绪结果。"
         ),
     }
     write_files(
