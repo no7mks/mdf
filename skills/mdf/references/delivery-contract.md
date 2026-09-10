@@ -18,10 +18,12 @@ objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓�
 feature 以外沿用各分支原有交付语义，不强制新增阶段。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
 当前执行者承担该阶段的协调与语义审查。
-单一执行者可顺序在 feature 工作。谁需要独立 checkout 谁创建 worktree：
-start 在当前已占用交付或角色分支时从基线建立交付 worktree；write-tests 与
-implement 从同一设计基线按需建立 qa/<slug> 或 dev/<slug> worktree。
-design 不预建角色 worktree。本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
+start 始终从基线建立相邻交付 worktree，不在当前目录开分支。
+design 必须在同一基线提交中写入 write-tests 与 implement 共用的代码底座；
+两路不得各自再写底座。design 不预建角色 worktree。
+write-tests 与 implement 始终从该设计基线建立或复用 qa/<slug> 或
+dev/<slug> worktree，不得在 feature 上编写测试或实现。
+本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate
 

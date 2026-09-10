@@ -34,7 +34,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 检查分支及 implement 前置 gate | 分支、已提交共同设计 | 2 | 停止并报告 |
+| 1 | 入口 | 约束 | 强制 dev worktree 并检查前置 gate | 角色 worktree、共同设计与底座 | 2 | 停止并报告 |
 | 2 | 实现 | 约束 | 按目标与设计实现，逐项自检并说明待验项 | 自检命令、结果、待验项 | 3 | 可修复则 2；无法完成则停止 |
 | 3 | 记录 | 脚本 | 记录 implement gate 并提交实现 | gate、自检摘要、提交 | 结束 | 停止并报告 |
 
@@ -42,11 +42,12 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-运行 `delivery check --stage implement`。测试完成不是前置条件。
-当前已在 feature 或 dev/<slug> 且可在此工作时，不另开 worktree。
-当前不能用于本路，或该目录已被另一路占用时，运行
-`delivery worktree --role dev`，从已提交 design 基线建立 dev/<slug>，
-改用返回路径；不自动分派 Agent。只修改实现；测试争议反馈给用户，不改断言或配置绕过验证。
+先运行 `delivery worktree --role dev`，从已提交 design 基线建立或复用
+dev/<slug> worktree，后续只在返回路径工作；已在该角色 worktree 时 CLI 返回现有路径。
+不得在 feature 上实现。再运行 `delivery check --stage implement`。
+测试完成不是前置条件。不自动分派 Agent。只修改实现；只使用 design 基线已提交的
+共享代码底座，发现缺失时停止并回 design，不得本路自行创建底座。
+测试争议反馈给用户，不改断言或配置绕过验证。
 
 ### 自检与交接证据
 

@@ -43,16 +43,18 @@ def test_start_rejected_push_preserves_local_branch_and_reports_state(
     error = json.loads(result.stderr)
     assert error["error"] == "start_push_failed"
     assert error["details"]["branch"] == "feature/delivery"
-    assert error["details"]["local_head"] != before
-    assert git(repo, "rev-parse", "HEAD^").stdout.strip() == before
+    work = Path(error["details"]["worktree"])
+    assert work != repo
+    assert git(work, "rev-parse", "HEAD^").stdout.strip() == before
     assert error["details"]["remote_state"] == "unknown"
-    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/delivery"
+    assert git(work, "branch", "--show-current").stdout.strip() == "feature/delivery"
+    assert git(repo, "branch", "--show-current").stdout.strip() != "feature/delivery"
     assert not git(remote, "for-each-ref", "refs/heads/feature/delivery").stdout
-    assert not git(repo, "status", "--porcelain").stdout
+    assert not git(work, "status", "--porcelain").stdout
 
     hook.unlink()
-    git(repo, "push", "-u", "origin", "feature/delivery")
-    assert git(repo, "rev-parse", "@{upstream}").stdout.strip() == error["details"]["local_head"]
+    git(work, "push", "-u", "origin", "feature/delivery")
+    assert git(work, "rev-parse", "@{upstream}").stdout.strip() == error["details"]["local_head"]
 
 
 @pytest.mark.parametrize("kind", ["feature", "bugfix", "release", "hotfix"])
@@ -78,13 +80,16 @@ def test_start_sets_upstream_from_expected_base(
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
                          "--kind", kind, *identifier))
 
+    work = Path(result["worktree"])
     assert result["base"] == base
     assert result["start_commit"] == expected
-    assert result["worktree"] == str(repo)
+    assert work != repo
+    assert git(work, "branch", "--show-current").stdout.strip() == result["branch"]
+    assert git(repo, "branch", "--show-current").stdout.strip() != result["branch"]
     if kind == "feature":
-        expected = git(repo, "rev-parse", "HEAD").stdout.strip()
-    assert git(repo, "rev-parse", "HEAD").stdout.strip() == expected
-    assert git(repo, "rev-parse", "@{upstream}").stdout.strip() == expected
+        expected = git(work, "rev-parse", "HEAD").stdout.strip()
+    assert git(work, "rev-parse", "HEAD").stdout.strip() == expected
+    assert git(work, "rev-parse", "@{upstream}").stdout.strip() == expected
 
 
 @pytest.mark.parametrize("kind", ["release", "hotfix"])
@@ -163,10 +168,13 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     git(repo, "push")
     first = tmp_path / "first.md"
     first.write_text("# 目标\n\n交付健康接口。\n")
-    payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
-                 "--name", "health", "--proposal", "prp-AB23",
+    first_start = payload(mdf(python_exe, "start", "--repo", str(repo),
+                 "--kind", "feature", "--name", "health", "--proposal", "prp-AB23",
                  "--objectives-file", str(first)))
-    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    health = Path(first_start["worktree"])
+    assert health != repo
+    assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
+    assert git(health, "branch", "--show-current").stdout.strip() == "feature/health"
 
     second = tmp_path / "second.md"
     second.write_text("# 目标\n\n交付并行接口。\n")
@@ -176,21 +184,21 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
                            "--objectives-file", str(second)))
     work = Path(created["worktree"])
     assert created["branch"] == "feature/parallel"
-    assert work != repo
+    assert work != repo and work != health
     assert work.is_dir()
-    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(work, "branch", "--show-current").stdout.strip() == "feature/parallel"
 
     extra = payload(mdf(python_exe, "start", "--repo", str(repo),
                           "--kind", "bugfix", "--name", "extra-fix"))
     bugfix = Path(extra["worktree"])
     assert extra["branch"] == "bugfix/extra-fix"
-    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     (bugfix / "fix.txt").write_text("ok\n")
     git(bugfix, "add", "--all")
     git(bugfix, "commit", "-m", "fix: 补充热修复文件")
     git(bugfix, "push")
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(bugfix)))
     assert not bugfix.exists()
-    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(repo, "show", "develop:fix.txt").stdout == "ok\n"

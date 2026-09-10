@@ -33,7 +33,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 检查分支及 write-tests 前置 gate | 分支、已提交共同设计 | 2 | 停止并报告 |
+| 1 | 入口 | 约束 | 强制 qa worktree 并检查前置 gate | 角色 worktree、共同设计与底座 | 2 | 停止并报告 |
 | 2 | 用例 | 约束 | 按设计编写测试，实跑并逐项审查覆盖及断言 | 加载执行结果、覆盖 | 3 | 停止并报告 |
 | 3 | 记录 | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
@@ -41,11 +41,12 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-运行 `delivery check --stage write-tests`。与 implement 互不前置，可并行。
-当前已在 feature 或 qa/<slug> 且可在此工作时，不另开 worktree。
-当前不能用于本路，或该目录已被另一路占用时，运行
-`delivery worktree --role qa`，从已提交 design 基线建立 qa/<slug>，
-改用返回路径；不自动分派 Agent。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
+先运行 `delivery worktree --role qa`，从已提交 design 基线建立或复用
+qa/<slug> worktree，后续只在返回路径工作；已在该角色 worktree 时 CLI 返回现有路径。
+不得在 feature 上编写或补写测试。再运行 `delivery check --stage write-tests`。
+与 implement 互不前置，可并行。不自动分派 Agent。
+只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
+回 design 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
 不要求针对具体实现进行错误注入，也不强制先产生红灯。
 
 ### 测试与交接证据

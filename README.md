@@ -16,7 +16,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf next [--depth N]` | 续办在途流程或提示下一步；无在途时展示 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf start` | 按 Gitflow 创建并推送交付分支；已占用交付分支时建立相邻 worktree |
+| `$mdf start` | 按 Gitflow 创建并推送交付分支；始终建立相邻 worktree |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
@@ -41,7 +41,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 `start → design → [write-tests ∥ implement] → converge → review → finish`
 
-一个 feature 对应一个 PRP；设计后测试与实现可并行，gate 检查共同基线与有效证据。
+一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
+gate 检查共同基线与有效证据。start、write-tests 与 implement 均强制独立 worktree。
 写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；提交不代表验收通过，
 也不替代用户确认。不夹带无关改动，远端与集成操作按各自流程授权。
 正常工作不在 master 直接修改或提交；文档与当前分支工作相关时在当前分支更新，否则在 develop 更新。

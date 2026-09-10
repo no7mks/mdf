@@ -1,4 +1,4 @@
-"""按需角色 worktree 与集成。"""
+"""强制角色 worktree 与集成。"""
 from .delivery_state import gate, git, matches, require_design
 from .errors import MDFError
 from .gitutil import (
@@ -17,15 +17,22 @@ def add_role(repo, root, data, role):
     require_design(repo, root, data)
     branch = f"{role}/{data['slug']}"
     path = sibling_worktree(repo, f"{role}-{data['slug']}")
-    exists = git(repo, "show-ref", "--verify", f"refs/heads/{branch}",
-                 check=False)
-    if path.exists() or not exists.returncode:
-        raise MDFError("并行分支或 worktree 已存在", code="collision")
     rel = str((root / "gates" / "design.json").relative_to(repo))
     base = git(repo, "log", "-1", "--format=%H", "--", rel).stdout.strip()
     if len(base) < 40 or any(c not in "0123456789abcdef" for c in base):
         raise MDFError("缺少已提交的设计基线", code="stale_gate")
-    add_linked_worktree(repo, branch, path, base)
+    worktrees = worktree_map(repo)
+    if branch in worktrees:
+        return {"worktree": {"branch": branch, "path": str(worktrees[branch]),
+                             "base": base}}
+    exists = git(repo, "show-ref", "--verify", f"refs/heads/{branch}",
+                 check=False)
+    if path.exists():
+        raise MDFError("并行分支或 worktree 已存在", code="collision")
+    if not exists.returncode:
+        git(repo, "worktree", "add", str(path), branch)
+    else:
+        add_linked_worktree(repo, branch, path, base)
     return {"worktree": {"branch": branch, "path": str(path), "base": base}}
 
 

@@ -85,8 +85,8 @@ release/hotfix 使用 `--version <semver>`；
 CLI 在同一次调用中 fetch， 检查 `origin`、默认
 `master`、 来源及 upstream 一致、clean、目标不存在，
 再从 develop 创建 feature/bugfix/release 或从 master 创建 hotfix、 推送到 origin 并设置 upstream。
-当前已占用 Gitflow 交付分支或 qa/dev 时，不抢占该 checkout，改为从基线建立相邻
-worktree，并在返回中给出该路径；否则在当前目录开分支。
+始终从基线建立相邻 worktree，不在当前目录开分支、不抢占当前 checkout；
+成功 JSON 的 `worktree` 是后续工作目录。
 
 验收：检查、分支、远端、upstream 与实际工作目录。
 
@@ -94,5 +94,5 @@ worktree，并在返回中给出该路径；否则在当前目录开分支。
 不自动删分支或重试 start。先核对远端分支与本地 HEAD，再按用户选择补推或处理现场；
 基线已推进时先询问用户并建议由 MDF 分析解决。
 feature CLI 固定 start_commit，在新分支写入 docs/specs/<slug>/ 的目标和身份，创建目标提交后推送。
-若 CLI 返回的 worktree 不是当前目录，后续工作改用该路径。
+后续工作改用返回的 worktree 路径。
 成功后结束，由用户手动触发 design 或通过 next 委托。其他分支不创建新增阶段材料。

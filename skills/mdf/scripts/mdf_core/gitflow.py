@@ -10,7 +10,6 @@ from .gitutil import (
     branch_details,
     current_branch,
     ensure_clean,
-    occupies_delivery,
     primary_worktree,
     repo_path,
     require_git_root,
@@ -110,7 +109,6 @@ def command_start(args) -> None:
     ):
         raise MDFError(f"Branch already exists: {branch}", code="branch_exists")
     objectives = None
-    linked = occupies_delivery(current_branch(repo))
     if args.kind == "feature":
         from .proposals import require_startable
         if not args.proposal or not args.objectives_file:
@@ -122,44 +120,47 @@ def command_start(args) -> None:
         for rel in (f"docs/specs/{suffix}", f"docs/changes/unreleased/{suffix}"):
             if not _git(repo, "cat-file", "-e", f"{base}:{rel}", check=False).returncode:
                 raise MDFError("交付 slug 已存在", code="collision")
-        if not linked:
-            _git(repo, "checkout", base)
-        require_startable(repo, args.proposal)
-    elif not linked:
-        _git(repo, "checkout", base)
-    work = repo
-    if linked:
+    work = None
+    try:
         path = sibling_worktree(repo, f"{args.kind}-{suffix}")
         add_linked_worktree(repo, branch, path, base)
         work = path
-    else:
-        _git(work, "checkout", "-b", branch)
-    start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
-    if objectives is not None:
-        from .delivery_state import safe, write_json
-        target = safe(work, work / "docs/specs" / suffix)
-        if target.exists() or (work / "docs/changes/unreleased" / suffix).exists():
-            raise MDFError("交付 slug 已存在", code="collision")
-        target.mkdir(parents=True)
-        (target / "objectives.md").write_text(objectives, encoding="utf-8")
-        write_json(target / "delivery.json", {"proposal": args.proposal, "slug": suffix,
-                   "branch": branch, "start_commit": start_commit})
-        _git(work, "add", "--", str(target.relative_to(work)))
-        _git(work, "commit", "-m", f"docs(delivery): 确认 {args.proposal} 交付目标")
-    pushed = _git(work, "push", "-u", ORIGIN, branch, check=False)
-    if pushed.returncode:
-        raise MDFError(
-            "本地分支已创建，但推送失败；保留现场，核对远端后再决定补推或处理",
-            code="start_push_failed",
-            details={
-                "branch": branch,
-                "base": base,
-                "worktree": str(work),
-                "local_head": _git(work, "rev-parse", "HEAD").stdout.strip(),
-                "remote_state": "unknown",
-                "stderr": pushed.stderr,
-            },
-        )
+        if args.kind == "feature":
+            require_startable(work, args.proposal)
+        start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
+        if objectives is not None:
+            from .delivery_state import safe, write_json
+            target = safe(work, work / "docs/specs" / suffix)
+            if target.exists() or (work / "docs/changes/unreleased" / suffix).exists():
+                raise MDFError("交付 slug 已存在", code="collision")
+            target.mkdir(parents=True)
+            (target / "objectives.md").write_text(objectives, encoding="utf-8")
+            write_json(target / "delivery.json", {
+                "proposal": args.proposal, "slug": suffix,
+                "branch": branch, "start_commit": start_commit,
+            })
+            _git(work, "add", "--", str(target.relative_to(work)))
+            _git(work, "commit", "-m", f"docs(delivery): 确认 {args.proposal} 交付目标")
+        pushed = _git(work, "push", "-u", ORIGIN, branch, check=False)
+        if pushed.returncode:
+            raise MDFError(
+                "本地分支已创建，但推送失败；保留现场，核对远端后再决定补推或处理",
+                code="start_push_failed",
+                details={
+                    "branch": branch,
+                    "base": base,
+                    "worktree": str(work),
+                    "local_head": _git(work, "rev-parse", "HEAD").stdout.strip(),
+                    "remote_state": "unknown",
+                    "stderr": pushed.stderr,
+                },
+            )
+    except MDFError as exc:
+        if work is not None and exc.code != "start_push_failed":
+            primary = primary_worktree(repo)
+            _git(primary, "worktree", "remove", "--force", str(work), check=False)
+            _git(primary, "branch", "-D", branch, check=False)
+        raise
     emit({"ok": True, "operation": "start", "branch": branch,
           "base": base, "start_commit": start_commit, "worktree": str(work),
           "upstream": f"{ORIGIN}/{branch}"})

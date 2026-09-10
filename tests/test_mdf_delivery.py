@@ -8,21 +8,32 @@ def commit(repo, message="test: 提交当前阶段"):
     git(repo, "commit", "-m", message)
 
 
+def git_primary(repo):
+    raw = git(repo, "rev-parse", "--git-common-dir").stdout.strip()
+    path = Path(raw)
+    if not path.is_absolute():
+        path = (repo / path).resolve()
+    else:
+        path = path.resolve()
+    return path.parent
+
+
 def setup_delivery(python_exe, tmp_path):
     repo, remote = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
     obj.write_text("# 目标\n\n实现健康状态接口。\n")
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
                        "--name", "health", "--proposal", "prp-AB23", "--objectives-file", str(obj)))
-    root = repo / "docs/specs/health"
+    work = Path(data["worktree"])
+    root = work / "docs/specs/health"
     assert json.loads((root / "delivery.json").read_text())["start_commit"] == data["start_commit"]
     (root / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
-    payload(mdf(python_exe, "delivery", "record", "--repo", str(repo), "--stage", "design",
+    payload(mdf(python_exe, "delivery", "record", "--repo", str(work), "--stage", "design",
                 "--policy-file", str(policy), "--summary", "用户确认接口及验收；测试配置已识别"))
-    commit(repo)
-    return repo, root, remote
+    commit(work)
+    return work, root, remote
 
 
 def record(python_exe, repo, stage, *extra):
@@ -127,11 +138,15 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         assert "implemented" not in git(repo, "show", f"origin/feature/health:docs/proposals/{PRP_NAME}").stdout
         assert not git(repo, "status", "--porcelain").stdout
         return
+    primary = git_primary(repo)
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
-    assert "implemented" in (repo / "docs/proposals" / PRP_NAME).read_text()
-    assert json.loads((dest / "delivery.json").read_text()) == original
-    assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
+    assert not repo.exists()
+    assert "implemented" in git(primary, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
+    dest_json = git(primary, "show",
+                    "develop:docs/changes/unreleased/health/delivery.json").stdout
+    assert json.loads(dest_json) == original
     assert not git(remote, "for-each-ref", "refs/heads/feature/health").stdout
+    assert not git(primary, "for-each-ref", "refs/heads/feature/health").stdout
 
 
 def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
@@ -159,6 +174,19 @@ def test_worktree_requires_role(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     result = mdf(python_exe, "delivery", "worktree", "--repo", str(repo))
     assert "missing_role" in result.stderr
+
+
+def test_role_worktree_is_idempotent(python_exe, tmp_path):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    first = payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
+                         "--role", "qa"))["result"]["worktree"]
+    again = payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
+                          "--role", "qa"))["result"]["worktree"]
+    assert Path(first["path"]) == Path(again["path"])
+    assert first["branch"] == again["branch"] == "qa/health"
+    from_role = payload(mdf(python_exe, "delivery", "worktree",
+                              "--repo", first["path"], "--role", "qa"))
+    assert Path(from_role["result"]["worktree"]["path"]) == Path(first["path"])
 
 
 def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_exe, tmp_path):
