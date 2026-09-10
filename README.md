@@ -9,6 +9,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 | 命令 | 用途 |
 | --- | --- |
+| `$mdf help` | 展示分组意图目录与调用示例 |
+| `$mdf help <intent>` | 展示该 intent 的用法要点 |
 | `$mdf bootstrap` | 为全新或几乎全新的项目建立 MDF 起点 |
 | `$mdf init` | 接入已有项目或调整 MDF 配置；新项目自动转入 bootstrap |
 | `$mdf next [--depth N]` | 续办在途流程或提示下一步；无在途时展示 PRP 蓝图 |
@@ -32,8 +34,10 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf fact audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
+| `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 
-裸 `$mdf` 只显示帮助。主线 intent 由用户手动触发，也可显式调用 `next` 续办：
+裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
+`next` 续办：
 
 `start → design → [write-tests ∥ implement] → converge → review → finish`
 
@@ -92,8 +96,10 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 ```
 
 `install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
-目标已有 `mdf` 时终止；升级时先运行 `unistall`，再运行 `install`。`diff` 分别显示
-本地与目标相对该基线的改动。脚本不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
+目标已有 `mdf` 时终止；维护者升级须先运行 `unistall`，再运行 `install`。
+已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill。
+`diff` 分别显示本地与目标相对该基线的改动。脚本与 upgrade 都不会修改目标仓库的
+`.mdf/`、`docs/` 或业务文件。
 
 ## 维护
 

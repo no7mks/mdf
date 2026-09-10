@@ -17,11 +17,12 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   并以非零状态退出。
 - `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
   `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
-  clean worktree。
+  clean worktree。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
   start、delivery integrate 与 finish-gitflow 按各自协议执行提交、集成和远端操作。
-- `--dry-run` 只在 `archive`、`move-change`、`prp-split` 和 `release-closeout` 中有效。
+- `--dry-run` 只在 `archive`、`move-change`、`prp-split`、`release-closeout` 和
+  `upgrade` 中有效。
 
 ## 命令表
 
@@ -44,6 +45,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `prp-split` | 未开工 PRP 拆分 |
 | `delivery` | 阶段 gate 与验证 |
 | `finish-gitflow` | Gitflow 合并 |
+| `upgrade` | 替换已安装 Skill |
 
 ## 只读命令
 
@@ -253,6 +255,19 @@ release/hotfix 先同样合并到
 原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
 
+### `upgrade`
+
+```bash
+python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --dry-run
+python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
+```
+
+要求 Git 根，不要求 manifest、ready 或 clean worktree。默认源为
+`http://10.1.5.65:8929/mars/mdf`，克隆远程默认分支 HEAD，并归档 `skills/mdf`。
+`--source` 可覆盖上游。命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入
+`references/.version`，不创建未安装位置，不覆盖 `skills/mdf`，不修改 `.mdf/` 或
+`docs/`。`--dry-run` 只拉取并报告 `new_commit` 与各目标当前基线。
+
 ## 与 intent 的关系
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
@@ -261,6 +276,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 `intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
 `jot` 使用 `make-jot-id`；
 `archive` intent 使用 `archive`；`start` intent 使用 `start`；
+`upgrade` intent 使用 `upgrade`；
 `finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 

@@ -42,6 +42,9 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "fact update",
         "design", "write-tests", "implement", "converge", "review", "prp split",
         "clarify <议题>",
+        "help",
+        "help <intent>",
+        "upgrade",
     )
     for command in expected_commands:
         assert command in entry
@@ -64,6 +67,10 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "references/codewiki-generate.md" in entry
     assert "references/codewiki-update.md" in entry
     assert "references/jot.md" in entry
+    assert "references/help.md" in entry
+    assert "references/upgrade.md" in entry
+    assert (skill / "references" / "help.md").is_file()
+    assert (skill / "references" / "upgrade.md").is_file()
     assert "$mdf <intent>" in entry
     assert "mdf.py\" <command>" in entry
     assert "版本化文档与交付流程" in entry

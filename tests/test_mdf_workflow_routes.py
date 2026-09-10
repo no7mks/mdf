@@ -62,7 +62,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "delivery-contract.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 27
+    assert len(workflows) == 29
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -174,8 +174,10 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "rev-parse --show-toplevel" in dispatch
     assert "REPO_ROOT" in dispatch
     assert "不使用空值或上次调用的变量" in dispatch
-    assert "clarify 不要求 Git 仓库" in dispatch
+    assert "clarify 与 help 不要求 Git 仓库" in dispatch
     assert "init/bootstrap" in dispatch and "普通目录" in dispatch
+    assert "upgrade 解析 Git 根" in dispatch
+    assert "不要求 manifest ready" in dispatch
 
 
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():
@@ -297,3 +299,28 @@ def test_next_dispatch_allows_non_git_and_delegated_continuation():
     assert "next 可委托识别出的在途流程" in entry
     assert "显式 next 可按 `references/next.md` 委托续办" in workflow("common")
     assert "显式调用 next 委托下一阶段" in workflow("delivery-contract")
+
+
+def test_help_catalog_is_grouped_and_read_only():
+    text = workflow("help")
+    for heading in ("起步", "规划", "交付", "维护"):
+        assert f"#### {heading}" in text
+    assert "不读取 `references/` 中的其他流程" in text
+    assert "不调用 CLI" in text
+    assert "不得改写" in text
+    assert "$mdf help <intent>" in text
+    assert "$mdf upgrade" in text
+    assert "未知 intent：" in text
+
+
+def test_upgrade_previews_then_confirms_before_replace():
+    text = workflow("upgrade")
+    table = rows(text)
+    assert table[1][5] == "3"
+    assert table[2][5] == "4"
+    assert "拒绝则结束" in table[2][6]
+    assert "http://10.1.5.65:8929/mars/mdf" in text
+    assert "不自动提交" in text
+    assert "不读取 `references/common.md`" in text
+    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+    assert re.search(r"拒绝 ─+→ \[结束\]", diagram)

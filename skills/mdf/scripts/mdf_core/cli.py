@@ -18,6 +18,7 @@ from .audit import command_audit
 from .commands_release import command_release_closeout
 from .errors import MDFError
 from .gitflow import command_finish_gitflow, command_start
+from .upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -148,6 +149,12 @@ def build_parser() -> argparse.ArgumentParser:
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)
     finish.set_defaults(func=command_finish_gitflow)
+
+    upgrade = subparsers.add_parser("upgrade")
+    upgrade.add_argument("--repo", required=True)
+    upgrade.add_argument("--source", default=DEFAULT_SKILL_SOURCE)
+    upgrade.add_argument("--dry-run", action="store_true")
+    upgrade.set_defaults(func=command_upgrade)
     return parser
 
 
