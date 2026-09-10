@@ -136,8 +136,10 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
 
 def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    parallel = payload(mdf(python_exe, "delivery", "parallel", "--repo", str(repo)))["result"]
-    qa, dev = [Path(item["path"]) for item in parallel["worktrees"]]
+    qa = Path(payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
+                           "--role", "qa"))["result"]["worktree"]["path"])
+    dev = Path(payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
+                            "--role", "dev"))["result"]["worktree"]["path"])
     (qa / "tests").mkdir(exist_ok=True)
     (qa / "tests/test_case.py").write_text("def test_case():\n    assert True\n")
     payload(record(python_exe, qa, "write-tests"))
@@ -151,6 +153,12 @@ def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
     assert (repo / "tests/test_case.py").exists()
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
+
+
+def test_worktree_requires_role(python_exe, tmp_path):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    result = mdf(python_exe, "delivery", "worktree", "--repo", str(repo))
+    assert "missing_role" in result.stderr
 
 
 def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_exe, tmp_path):

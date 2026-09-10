@@ -52,4 +52,4 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 测试、fixture、快照、测试发现、覆盖率和告警配置路径；manifest 验证项由 Core 保护。
 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
 提交 objectives.md、design.md、delivery.json、design gate 及共享底座，形成同一基线。
-用户选择并行时在提交后运行 `delivery parallel`，交接 qa/dev worktree；不自动分派 Agent。
+不创建 qa/dev worktree；由 write-tests 与 implement 按需创建。

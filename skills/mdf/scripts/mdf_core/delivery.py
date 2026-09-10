@@ -152,9 +152,11 @@ def command_delivery(args):
         result = verify(repo, root, data, args.item)
     elif args.action == "check":
         result = check(repo, root, data, args.stage)
-    elif args.action == "parallel":
-        from .delivery_git import parallel
-        result = parallel(repo, root, data)
+    elif args.action == "worktree":
+        if args.role not in ("qa", "dev"):
+            raise MDFError("worktree 需要 --role qa 或 dev", code="missing_role")
+        from .delivery_git import add_role
+        result = add_role(repo, root, data, args.role)
     elif args.action == "integrate":
         from .delivery_git import integrate
         result = integrate(repo, root, data, args.test_approval)

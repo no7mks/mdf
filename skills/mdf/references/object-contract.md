@@ -6,6 +6,10 @@
 ## Proposal
 
 Proposal 使用 Markdown + YAML frontmatter：id、type: proposal、status、depends_on。
+可选属性 `milestone` 为单个非空字符串，表示用户确定的阶段归属；无归属时省略整个字段，
+不得写 `milestone: null`、空字符串或列表。同一 milestone 使用相同值。
+它仅用于分组，不影响依赖、开工条件或状态流转，不根据组内 PRP 状态自动宣告阶段达成。
+不要求独立 milestone 对象；阶段目标及其是否为 MVP 由用户实践决定。
 状态为 draft、ready、implemented、released、rejected、replaced。
 正常路径 draft → ready → implemented → released；implemented 表示验收后合入 develop，
 released 必须记录稳定 SemVer released_in。其他状态不得使用 released_in。
@@ -19,6 +23,8 @@ replaced 必须有至少两个唯一 replaced_by ID；替代关系不得缺失�
 拆分必须同时改写所有原下游引用；replaced 不表示依赖已满足。
 
 Proposal、Bug 和 Jot 的 ID 为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
+沟通、引用与展示时必须写完整 ID，如 `prp-A2B3`、`bug-C4D5`、`jot-E6F7`，
+不得只写四位字符。
 一般关联只写正文；上述重复与替代字段是明确的结构关系。
 正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”含“包含”“不包含”非空三级子节。
 

@@ -63,4 +63,6 @@ downstream 为全部原下游 PRP ID 到其所需子 PRP ID 列表的映射，�
 逐项确认原上游如何分配、下游如何替换，避免机械地全部继承；rationale 记录范围覆盖与用户确认。
 运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选；用户确认后去掉 dry-run。
 原对象置 replaced、记录 replaced_by；子对象为 draft。预检通过才整体写入，写入失败恢复原文件。
+子对象继承原 PRP 的可选 `milestone`；原对象无该字段时子对象也省略，不生成 `null`。
+需要调整阶段归属时，在用户确认依据后修订子 PRP；milestone 不参与依赖分配。
 已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。

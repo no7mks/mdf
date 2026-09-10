@@ -102,6 +102,9 @@
 **分类**
 
 从来源和仓库证据判定对象类型、数量与独立交付边界；偏差建 Bug， 待实现意图建一个或多个 Proposal。
+优先拆成尽可能小的 Proposal，以依赖满足后能独立实现、验收和合入为下限。
+能分开验收的结果优先拆开；不按文件或开发步骤机械拆分，不扩张来源范围。
+已足够小的交付单元无需继续拆分。
 
 验收：对象清单。
 
@@ -126,6 +129,9 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 
 展示对象清单、边界、排除范围、Proposal 依赖；`depends_on`
 仅列直接依赖的 draft、ready 或 implemented/released Proposal ID。
+逐条说明需要上游提供的结果；优先顺序或同属一个阶段不能作为依赖依据。
+可建议 milestone 分组，由用户决定是否采用；不默认一次 intake 对应一个 milestone，
+不自动把最先实施的一两个 PRP 标为 MVP。有归属时展示并确认 `milestone`，无归属不强求补齐。
 
 验收：只有用户明确确认清单才继续。
 
@@ -140,6 +146,7 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 为每项提议并确认英文 ASCII kebab-case slug，按类型 proposal 或 bug 使用 `make-id --type <type> --slug <slug>`
 生成 ID 与规范化文件名，并以模板写入 `docs/proposals/` 或 `docs/bugs/`；
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
+Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否则省略字段，不写 `null`。
 
 全部对象写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，
 回读对象并对照模板、确认清单与完整 diff，核对 schema、必填章节、初始状态和依赖。

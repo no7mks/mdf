@@ -105,6 +105,7 @@
 
 展示 Proposal、边界、排除范围和依赖；`depends_on`
 仅列直接依赖的 draft、 ready 或 implemented/released Proposal ID。
+如有阶段归属，同时确认可选 `milestone`；无归属不要求补齐。
 
 验收：只有用户明确确认 draft 才继续。
 
@@ -118,6 +119,7 @@
 
 为 Proposal 提议并确认英文 ASCII kebab-case slug，使用 `make-id --type proposal --slug` 生成 ID 与规范化文件名，
 并以模板写入 `docs/proposals/`， 初始状态为 `draft`。
+仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
 
 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、
 确认事实与完整 diff，核对 schema、必填章节、`draft` 状态和依赖。

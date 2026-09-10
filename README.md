@@ -9,12 +9,14 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 | 命令 | 用途 |
 | --- | --- |
+| `$mdf help` | 展示分组意图目录与调用示例 |
+| `$mdf help <intent>` | 展示该 intent 的用法要点 |
 | `$mdf bootstrap` | 为全新或几乎全新的项目建立 MDF 起点 |
 | `$mdf init` | 接入已有项目或调整 MDF 配置；新项目自动转入 bootstrap |
 | `$mdf next [--depth N]` | 续办在途流程或提示下一步；无在途时展示 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf start` | 按 Gitflow 创建并推送交付分支 |
+| `$mdf start` | 按 Gitflow 创建并推送交付分支；已占用交付分支时建立相邻 worktree |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
@@ -32,14 +34,18 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf fact audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
+| `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 
-裸 `$mdf` 只显示帮助。主线 intent 由用户手动触发，也可显式调用 `next` 续办：
+裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
+`next` 续办：
 
 `start → design → [write-tests ∥ implement] → converge → review → finish`
 
 一个 feature 对应一个 PRP；设计后测试与实现可并行，gate 检查共同基线与有效证据。
 写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；提交不代表验收通过，
 也不替代用户确认。不夹带无关改动，远端与集成操作按各自流程授权。
+正常工作不在 master 直接修改或提交；文档与当前分支工作相关时在当前分支更新，否则在 develop 更新。
+初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
 材料从 `docs/specs/<slug>/` 随交付进入 Change，再随版本归档。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
@@ -90,8 +96,10 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 ```
 
 `install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
-目标已有 `mdf` 时终止；升级时先运行 `unistall`，再运行 `install`。`diff` 分别显示
-本地与目标相对该基线的改动。脚本不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
+目标已有 `mdf` 时终止；维护者升级须先运行 `unistall`，再运行 `install`。
+已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill，并更新已有
+`AGENTS.md` 的 MDF 托管区块。`diff` 分别显示本地与目标相对该基线的改动。脚本与
+upgrade 都不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
 
 ## 维护
 

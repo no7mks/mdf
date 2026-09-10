@@ -49,8 +49,11 @@ def split_plan(repo, spec):
         if target.exists():
             raise MDFError("子 PRP 路径已存在", code="collision")
         ids.append(identifier)
-        changed[target] = render({"id": identifier, "type": "proposal", "status": "draft",
-                                  "depends_on": child["depends_on"]}, child["body"])
+        child_meta = {"id": identifier, "type": "proposal", "status": "draft",
+                      "depends_on": child["depends_on"]}
+        if "milestone" in meta:
+            child_meta["milestone"] = meta["milestone"]
+        changed[target] = render(child_meta, child["body"])
     required = {key for key, value in objects.items() if source in value[1]["depends_on"]}
     if set(downstream) != required:
         raise MDFError("必须完整确认全部下游引用（包括历史对象）", code="invalid_split",

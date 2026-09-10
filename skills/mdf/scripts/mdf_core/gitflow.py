@@ -6,12 +6,17 @@ from pathlib import Path
 
 from .errors import MDFError, emit
 from .gitutil import (
+    add_linked_worktree,
     branch_details,
     current_branch,
     ensure_clean,
+    occupies_delivery,
+    primary_worktree,
     repo_path,
     require_git_root,
     run,
+    sibling_worktree,
+    worktree_map,
 )
 from .textutil import slugify, stable_semver
 
@@ -105,33 +110,43 @@ def command_start(args) -> None:
     ):
         raise MDFError(f"Branch already exists: {branch}", code="branch_exists")
     objectives = None
+    linked = occupies_delivery(current_branch(repo))
     if args.kind == "feature":
         from .proposals import require_startable
-        from .delivery_state import safe
         if not args.proposal or not args.objectives_file:
             raise MDFError("feature 需要 --proposal 与 --objectives-file", code="missing_proposal")
         objectives = Path(args.objectives_file).read_text(encoding="utf-8")
         from .constants import MARKER_RE
         if not objectives.strip() or MARKER_RE.search(objectives):
             raise MDFError("objectives 不能为空", code="missing_objectives")
-        target = safe(repo, repo / "docs/specs" / suffix)
-        if target.exists() or (repo / "docs/changes/unreleased" / suffix).exists():
-            raise MDFError("交付 slug 已存在", code="collision")
-        _git(repo, "checkout", base)
+        for rel in (f"docs/specs/{suffix}", f"docs/changes/unreleased/{suffix}"):
+            if not _git(repo, "cat-file", "-e", f"{base}:{rel}", check=False).returncode:
+                raise MDFError("交付 slug 已存在", code="collision")
+        if not linked:
+            _git(repo, "checkout", base)
         require_startable(repo, args.proposal)
-    else:
+    elif not linked:
         _git(repo, "checkout", base)
-    start_commit = _git(repo, "rev-parse", "HEAD").stdout.strip()
-    _git(repo, "checkout", "-b", branch)
+    work = repo
+    if linked:
+        path = sibling_worktree(repo, f"{args.kind}-{suffix}")
+        add_linked_worktree(repo, branch, path, base)
+        work = path
+    else:
+        _git(work, "checkout", "-b", branch)
+    start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
     if objectives is not None:
-        from .delivery_state import write_json
+        from .delivery_state import safe, write_json
+        target = safe(work, work / "docs/specs" / suffix)
+        if target.exists() or (work / "docs/changes/unreleased" / suffix).exists():
+            raise MDFError("交付 slug 已存在", code="collision")
         target.mkdir(parents=True)
         (target / "objectives.md").write_text(objectives, encoding="utf-8")
         write_json(target / "delivery.json", {"proposal": args.proposal, "slug": suffix,
                    "branch": branch, "start_commit": start_commit})
-        _git(repo, "add", "--", str(target.relative_to(repo)))
-        _git(repo, "commit", "-m", f"docs(delivery): 确认 {args.proposal} 交付目标")
-    pushed = _git(repo, "push", "-u", ORIGIN, branch, check=False)
+        _git(work, "add", "--", str(target.relative_to(work)))
+        _git(work, "commit", "-m", f"docs(delivery): 确认 {args.proposal} 交付目标")
+    pushed = _git(work, "push", "-u", ORIGIN, branch, check=False)
     if pushed.returncode:
         raise MDFError(
             "本地分支已创建，但推送失败；保留现场，核对远端后再决定补推或处理",
@@ -139,17 +154,20 @@ def command_start(args) -> None:
             details={
                 "branch": branch,
                 "base": base,
-                "local_head": _git(repo, "rev-parse", "HEAD").stdout.strip(),
+                "worktree": str(work),
+                "local_head": _git(work, "rev-parse", "HEAD").stdout.strip(),
                 "remote_state": "unknown",
                 "stderr": pushed.stderr,
             },
         )
     emit({"ok": True, "operation": "start", "branch": branch,
-          "base": base, "start_commit": start_commit, "upstream": f"{ORIGIN}/{branch}"})
+          "base": base, "start_commit": start_commit, "worktree": str(work),
+          "upstream": f"{ORIGIN}/{branch}"})
 
 
 def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
-    _git(repo, "checkout", target)
+    if current_branch(repo) != target:
+        _git(repo, "checkout", target)
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
         _git(repo, "merge", "--abort", check=False)
@@ -158,7 +176,7 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
             code="merge_conflict",
         )
     if before_commit is not None:
-        before_commit()
+        before_commit(repo)
     message = f"chore(gitflow): 合并 {source} 到 {target}"
     _git(repo, "commit", "-m", message)
 
@@ -200,16 +218,27 @@ def command_finish_gitflow(args) -> None:
         path, proposal, body = records(repo)[data["proposal"]]
         if proposal["status"] != "ready":
             raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
-        def complete_feature():
+        proposal_rel = path.relative_to(repo)
+        def complete_feature(merge_repo: Path):
             # Only a successful merge to develop can mark the result implemented.
-            merged, merged_body = read_frontmatter(path)
-            path.write_text(render({**merged, "status": "implemented"}, merged_body))
-            _git(repo, "add", "--", str(path.relative_to(repo)))
+            target_path = merge_repo / proposal_rel
+            merged, merged_body = read_frontmatter(target_path)
+            target_path.write_text(render({**merged, "status": "implemented"}, merged_body))
+            _git(merge_repo, "add", "--", str(proposal_rel))
+    primary = primary_worktree(repo)
+
+    def merge_into(target, incoming, hook=None):
+        occupant = worktree_map(primary).get(target)
+        merge_at = occupant if occupant is not None else repo
+        ensure_clean(merge_at)
+        _merge(merge_at, incoming, target, hook)
+        return merge_at
+
     if kind in {"feature", "bugfix"}:
-        _merge(repo, source, "develop", complete_feature)
+        merge_into("develop", source, complete_feature)
         refs = ["develop", f":{source}"]
     else:
-        _merge(repo, source, "master")
+        tagged_at = merge_into("master", source)
         version = details["version"]
         assert isinstance(version, str)
         tag = f"v{version}"
@@ -217,11 +246,19 @@ def command_finish_gitflow(args) -> None:
             repo, f"refs/tags/{ORIGIN}/{tag}"
         ):
             raise MDFError(f"Tag already exists: {tag}", code="tag_exists")
-        _git(repo, "tag", "-a", tag, "-m", f"chore(release): 发布 {tag}")
-        _merge(repo, "master", "develop")
+        _git(tagged_at, "tag", "-a", tag, "-m", f"chore(release): 发布 {tag}")
+        merge_into("develop", "master")
         refs = ["master", "develop", f"refs/tags/{tag}", f":{source}"]
-    _git(repo, "push", "--atomic", ORIGIN, *refs)
-    _git(repo, "branch", "-d", source)
+    _git(primary, "push", "--atomic", ORIGIN, *refs)
+    remaining = worktree_map(primary)
+    source_wt = remaining.get(source)
+    if source_wt is not None:
+        _git(primary, "worktree", "remove", str(source_wt))
+        remaining = worktree_map(primary)
+    delete_at = remaining.get(targets[-1], repo)
+    _git(delete_at, "branch", "-d", source)
+    if repo.resolve() != primary.resolve() and repo.exists():
+        _git(primary, "worktree", "remove", str(repo))
     tag = f"v{details['version']}" if kind in {"release", "hotfix"} else None
     emit(
         {

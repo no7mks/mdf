@@ -17,11 +17,12 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   并以非零状态退出。
 - `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
   `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
-  clean worktree。
+  clean worktree。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
   start、delivery integrate 与 finish-gitflow 按各自协议执行提交、集成和远端操作。
-- `--dry-run` 只在 `archive`、`move-change`、`prp-split` 和 `release-closeout` 中有效。
+- `--dry-run` 只在 `archive`、`move-change`、`prp-split`、`release-closeout` 和
+  `upgrade` 中有效。
 
 ## 命令表
 
@@ -44,6 +45,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `prp-split` | 未开工 PRP 拆分 |
 | `delivery` | 阶段 gate 与验证 |
 | `finish-gitflow` | Gitflow 合并 |
+| `upgrade` | 替换已安装 Skill |
 
 ## 只读命令
 
@@ -107,8 +109,9 @@ python3 skills/mdf/scripts/mdf.py make-id \
 
 `--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case；命令生成
 新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和 Markdown 文件名。
-Proposal、Bug 与 Jot 均使用四位字符；每一位均独立从大写英文字母（排除 `I`、`O`）
-与数字 `2` 至 `9` 中等概率选择，例如 `A2B3`。
+Proposal、Bug 与 Jot 的 ID 为类型前缀加四位字符；每一位均独立从大写英文字母
+（排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。完整形式如 `prp-A2B3`、
+`bug-C4D5`、`jot-E6F7`；沟通时不得只写四位字符。
 它不创建对象文件。
 
 ### `make-jot-id`
@@ -232,9 +235,11 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 默认分支为 `master`，且来源分支与远端完全一致；它会先 `fetch --prune`。
 
 feature、bugfix 和 release 从 `develop` 创建，hotfix 从 `master` 创建。若新分支
-在本地或远端已存在则失败；成功时创建分支、推送至 `origin` 并设置 upstream。
+在本地或远端已存在则失败。当前已占用 Gitflow 交付分支或 `qa/`、`dev/` 时，从基线
+建立相邻 worktree 并在该目录完成创建与推送，成功 JSON 含 `worktree`；否则在当前
+目录开分支。成功时推送至 `origin` 并设置 upstream。
 创建前检查失败不会创建分支；创建后推送失败返回 `start_push_failed`，保留本地分支，
-并报告分支、来源、HEAD、远端状态未知与 Git 错误。调用方应先核对远端状态，
+并报告分支、来源、HEAD、`worktree`、远端状态未知与 Git 错误。调用方应先核对远端状态，
 再决定补推或处理现场，不应直接重跑 `start` 或自动删除分支。
 
 ### `finish-gitflow`
@@ -250,8 +255,24 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 `chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented 转换包含在该 merge commit。
 release/hotfix 先同样合并到
 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。最后
-原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。任一 merge
+原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。若 `--repo` 是相邻
+worktree，合并后移除该 worktree。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
+
+### `upgrade`
+
+```bash
+python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --dry-run
+python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
+```
+
+要求 Git 根，不要求 manifest、ready 或 clean worktree。默认源为
+`http://10.1.5.65:8929/mars/mdf`，克隆远程默认分支 HEAD，并归档 `skills/mdf`。
+`--source` 可覆盖上游。命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入
+`references/.version`，并更新已有 `AGENTS.md` 的唯一 MDF 托管区块；无该文件或
+无区块则跳过，不新建或追加。不创建未安装位置，不覆盖 `skills/mdf`，不修改
+`.mdf/` 或 `docs/`。`--dry-run` 只拉取并报告 `new_commit`、各目标当前基线与
+`agents` 计划。
 
 ## 与 intent 的关系
 
@@ -261,6 +282,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 `intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
 `jot` 使用 `make-jot-id`；
 `archive` intent 使用 `archive`；`start` intent 使用 `start`；
+`upgrade` intent 使用 `upgrade`；
 `finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 
@@ -280,8 +302,8 @@ feature start 额外要求 `--proposal <ID> --objectives-file <文件>`；确认
 | check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行全部 verification；可用重复 `--item <id>` 做定位运行，全量记录不能由单项替代 |
-| parallel | clean feature 的已提交设计基线建立 qa/dev 本地分支与相邻 worktree |
-| integrate | clean feature 依次 no-ff 集成 qa/dev；冲突保留现场，完成后清理已合并本地工作分支 |
+| worktree | `--role qa` 或 `dev`；从已提交 design 基线建立对应本地分支与相邻 worktree |
+| integrate | clean feature 依次 no-ff 集成已有 qa/dev；冲突保留现场，完成后清理已合并本地工作分支 |
 
 design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["tests/","pyproject.toml"]}`。
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
@@ -292,3 +314,4 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，
 downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出候选文件全文，失败不留下部分拆分。
+子 PRP 继承原 PRP 的可选 `milestone`；原 PRP 未声明时省略该字段，不写 `null`。

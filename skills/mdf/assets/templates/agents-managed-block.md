@@ -8,5 +8,7 @@
 - `docs/product/`、`docs/system/` 只记录当前检出版本的事实，不混入待实现计划。
 - `docs/repowiki/` 由 CodeWiki 管理，不得人工修改。
 - 维护改动按 `PROJECT.md` 的验证要求执行检查。
+- 沟通 Bug、Proposal、Jot 时写完整 ID（`bug-` / `prp-` / `jot-` 前缀），
+  不得只用四位字符。
 
 <!-- MDF:END -->

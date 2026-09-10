@@ -242,6 +242,7 @@ release/hotfix 仍需已提交收口结果；feature/bugfix 必须有规范 chil
 调用 `finish-gitflow --repo "$REPO_ROOT"`。CLI fetch 后要求源分支及参与的 master/develop 与 upstream 完全一致；
 feature/bugfix no-ff 合并到 develop； release/hotfix no-ff 合并到 master 后 no-ff 合并 master 到 develop，
 并创建注释 `v<semver>` tag；仅这些合并自动创建 merge commit。随后原子 push、删远端及本地源分支。
+若当前是相邻 worktree，合并后移除该 worktree。
 
 验收：合并、tag 和推送结果。
 

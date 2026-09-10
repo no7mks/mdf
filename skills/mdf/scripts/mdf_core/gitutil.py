@@ -155,3 +155,48 @@ def git_path_tracked(repo: Path, path: Path) -> bool:
         check=False,
     )
     return bool(result.stdout.strip())
+
+
+def worktree_map(repo: Path) -> dict[str, Path]:
+    raw = run(["git", "worktree", "list", "--porcelain"], cwd=repo).stdout
+    worktrees: dict[str, Path] = {}
+    for block in raw.strip().split("\n\n"):
+        values = dict(
+            line.split(" ", 1) for line in block.splitlines() if " " in line
+        )
+        if "branch" in values:
+            name = values["branch"].removeprefix("refs/heads/")
+            worktrees[name] = Path(values["worktree"])
+    return worktrees
+
+
+def primary_worktree(repo: Path) -> Path:
+    raw = run(["git", "rev-parse", "--git-common-dir"], cwd=repo).stdout.strip()
+    path = Path(raw)
+    if not path.is_absolute():
+        path = (repo / path).resolve()
+    else:
+        path = path.resolve()
+    return path.parent
+
+
+def sibling_worktree(repo: Path, label: str) -> Path:
+    primary = primary_worktree(repo)
+    return primary.parent / f"{primary.name}-{label}"
+
+
+def occupies_delivery(branch: str) -> bool:
+    if branch.startswith(("qa/", "dev/")):
+        return True
+    return bool(branch_details(branch)["supported"])
+
+
+def add_linked_worktree(
+    repo: Path, branch: str, path: Path, start_point: str
+) -> None:
+    if path.exists():
+        raise MDFError("并行分支或 worktree 已存在", code="collision")
+    run(
+        ["git", "worktree", "add", "-b", branch, str(path), start_point],
+        cwd=repo,
+    )

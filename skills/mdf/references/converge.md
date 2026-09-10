@@ -43,7 +43,8 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-仅在 feature 工作。并行模式先运行 `delivery integrate`，以 no-ff 依次合入 qa、dev；
+仅在 feature 工作。若存在 qa/<slug> 或 dev/<slug>，先运行 `delivery integrate`，
+以 no-ff 依次合入这些角色分支并移除其 worktree；
 顺序模式直接运行 `delivery check --stage converge`。
 使用 `delivery status` 返回的材料目录定位 `gates/converge-blocked.md`；不存在时无需创建。
 续办从步骤 1 开始，回读已有阻塞记录，对照当前 HEAD、设计与两路 gate 核对变化，

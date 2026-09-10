@@ -43,7 +43,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 ### 范围与前置条件
 
 运行 `delivery check --stage implement`。测试完成不是前置条件。
-在 feature 或 dev/<slug> 工作，只修改实现；测试争议反馈给用户，不改断言或配置绕过验证。
+当前已在 feature 或 dev/<slug> 且可在此工作时，不另开 worktree。
+当前不能用于本路，或该目录已被另一路占用时，运行
+`delivery worktree --role dev`，从已提交 design 基线建立 dev/<slug>，
+改用返回路径；不自动分派 Agent。只修改实现；测试争议反馈给用户，不改断言或配置绕过验证。
 
 ### 自检与交接证据
 

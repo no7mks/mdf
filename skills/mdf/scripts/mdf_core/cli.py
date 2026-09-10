@@ -18,6 +18,7 @@ from .audit import command_audit
 from .commands_release import command_release_closeout
 from .errors import MDFError
 from .gitflow import command_finish_gitflow, command_start
+from .upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -136,9 +137,13 @@ def build_parser() -> argparse.ArgumentParser:
     split.set_defaults(func=command_split)
 
     delivery = subparsers.add_parser("delivery")
-    delivery.add_argument("action", choices=("status", "check", "record", "verify", "parallel", "integrate"))
+    delivery.add_argument(
+        "action",
+        choices=("status", "check", "record", "verify", "worktree", "integrate"),
+    )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--stage", choices=(*STAGES, "finish"))
+    delivery.add_argument("--role", choices=("qa", "dev"))
     delivery.add_argument("--summary")
     delivery.add_argument("--policy-file")
     delivery.add_argument("--test-approval")
@@ -148,6 +153,12 @@ def build_parser() -> argparse.ArgumentParser:
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)
     finish.set_defaults(func=command_finish_gitflow)
+
+    upgrade = subparsers.add_parser("upgrade")
+    upgrade.add_argument("--repo", required=True)
+    upgrade.add_argument("--source", default=DEFAULT_SKILL_SOURCE)
+    upgrade.add_argument("--dry-run", action="store_true")
+    upgrade.set_defaults(func=command_upgrade)
     return parser
 
 
