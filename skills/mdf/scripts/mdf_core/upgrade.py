@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -28,35 +29,22 @@ KNOWN_SKILL_DIRS = (
 )
 SOURCE_SKILL = "skills/mdf"
 AGENTS_TEMPLATE = Path("assets") / "templates" / "agents-managed-block.md"
+_COMMIT_RE = re.compile(r"^[0-9a-f]{40,64}$")
 
 
-def _clone(source: str, dest: Path) -> None:
+def _run(
+    args: list[str], cwd: Path | None = None, *, text: bool = True
+):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
-    completed = subprocess.run(
-        ["git", "clone", "--depth", "1", "--", source, str(dest)],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-        env=env,
+    return subprocess.run(
+        args, cwd=cwd, text=text, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, check=False, env=env,
     )
-    if completed.returncode:
-        raise MDFError(
-            completed.stderr.strip() or f"git clone failed: {source}",
-            code="upgrade_clone_failed",
-        )
 
 
 def _git_text(args: list[str], cwd: Path) -> str:
-    completed = subprocess.run(
-        args,
-        cwd=cwd,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
+    completed = _run(args, cwd)
     if completed.returncode:
         raise MDFError(
             completed.stderr.strip() or f"Command failed: {' '.join(args)}",
@@ -65,19 +53,23 @@ def _git_text(args: list[str], cwd: Path) -> str:
     return completed.stdout.strip()
 
 
-def _archive_skill(clone: Path, commit: str) -> bytes:
-    completed = subprocess.run(
-        ["git", "archive", "--format=tar", f"{commit}:{SOURCE_SKILL}"],
-        cwd=clone,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
+def _clone(source: str, dest: Path) -> None:
+    completed = _run(["git", "clone", "--depth", "1", "--", source, str(dest)])
     if completed.returncode:
         raise MDFError(
-            completed.stderr.strip() or "git archive failed",
-            code="upgrade_archive_failed",
+            completed.stderr.strip() or f"git clone failed: {source}",
+            code="upgrade_clone_failed",
         )
+
+
+def _archive_skill(clone: Path, commit: str) -> bytes:
+    completed = _run(
+        ["git", "archive", "--format=tar", f"{commit}:{SOURCE_SKILL}"],
+        clone, text=False,
+    )
+    if completed.returncode:
+        err = completed.stderr.decode().strip() if completed.stderr else ""
+        raise MDFError(err or "git archive failed", code="upgrade_archive_failed")
     return completed.stdout
 
 
@@ -181,6 +173,142 @@ def _plan_agents(
     return {"path": "AGENTS.md", "action": "update"}, updated
 
 
+def _has_commit(clone: Path, commit: str) -> bool:
+    probe = ["git", "cat-file", "-e", f"{commit}^{{commit}}"]
+    return _run(probe, clone).returncode == 0
+
+
+def _ensure_commit(clone: Path, commit: str) -> bool:
+    if not _has_commit(clone, commit):
+        _run(["git", "fetch", "--unshallow"], clone)
+    return _has_commit(clone, commit)
+
+
+def _skill_path(raw: str) -> str:
+    prefix = f"{SOURCE_SKILL}/"
+    if raw.startswith(prefix):
+        return raw[len(prefix) :]
+    if raw == SOURCE_SKILL:
+        return "."
+    return raw
+
+
+def _changed_files(clone: Path, old: str, new: str) -> list[dict[str, str]]:
+    text = _git_text(
+        ["git", "diff", "--name-status", old, new, "--", SOURCE_SKILL],
+        clone,
+    )
+    files: list[dict[str, str]] = []
+    for line in text.splitlines():
+        status, _, rest = line.partition("\t")
+        path = rest.split("\t")[-1] if rest else ""
+        if not status or not path:
+            continue
+        files.append({"status": status, "path": _skill_path(path)})
+    return files
+
+
+def _skill_history(
+    clone: Path, old: str | None, new: str
+) -> dict[str, object]:
+    result: dict[str, object] = {
+        "from": old,
+        "to": new,
+        "status": "ok",
+        "commits": [],
+        "files": [],
+    }
+    if not old:
+        result["status"] = "no_current_version"
+        return result
+    if old == new:
+        result["status"] = "same"
+        return result
+    if not _COMMIT_RE.fullmatch(old) or not _ensure_commit(clone, old):
+        result["status"] = "unknown_base"
+        return result
+    log = _git_text(
+        ["git", "log", "--format=%H%x09%s", f"{old}..{new}", "--", SOURCE_SKILL],
+        clone,
+    )
+    commits: list[dict[str, str]] = []
+    for line in log.splitlines():
+        commit, _, subject = line.partition("\t")
+        if commit:
+            commits.append({"commit": commit, "subject": subject})
+    result["commits"] = commits
+    result["files"] = _changed_files(clone, old, new)
+    return result
+
+
+def _commit_plan(
+    targets: list[dict[str, str | None]],
+    agents: dict[str, str],
+    new_commit: str,
+) -> dict[str, object]:
+    paths = [item["path"] for item in targets if item.get("path")]
+    if agents.get("action") == "update" and agents.get("path"):
+        paths.append(agents["path"])
+    return {
+        "paths": paths,
+        "message": f"chore(mdf): 升级已安装 Skill 到 {new_commit[:12]}",
+    }
+
+
+def _commit_upgrade(repo: Path, plan: dict[str, object]) -> dict[str, object]:
+    paths = [path for path in plan["paths"] if isinstance(path, str)]
+    message = str(plan["message"])
+    result: dict[str, object] = {"paths": paths, "message": message}
+    if not paths:
+        result.update(action="none", reason="no_paths")
+        return result
+    added = _run(["git", "add", "-A", "--", *paths], repo)
+    if added.returncode:
+        raise MDFError(
+            added.stderr.strip() or "git add failed",
+            code="upgrade_commit_failed",
+        )
+    diff = _run(["git", "diff", "--cached", "--quiet", "--", *paths], repo)
+    if diff.returncode == 0:
+        result.update(action="none", reason="unchanged")
+        return result
+    if diff.returncode != 1:
+        raise MDFError(
+            diff.stderr.strip() or "git diff failed",
+            code="upgrade_commit_failed",
+        )
+    created = _run(
+        ["git", "commit", "--only", "-m", message, "--", *paths], repo
+    )
+    if created.returncode:
+        raise MDFError(
+            created.stderr.strip() or created.stdout.strip() or "git commit failed",
+            code="upgrade_commit_failed",
+        )
+    result["action"] = "created"
+    result["commit"] = _git_text(["git", "rev-parse", "HEAD"], repo)
+    return result
+
+
+def _collect_history(
+    clone: Path,
+    targets: list[dict[str, str | None]],
+    new: str,
+) -> list[dict[str, object]]:
+    groups: list[dict[str, object]] = []
+    index: dict[str | None, list[str]] = {}
+    for target in targets:
+        old = target["current_commit"]
+        path = target["path"] or ""
+        if old not in index:
+            index[old] = []
+            item = _skill_history(clone, old, new)
+            item["targets"] = index[old]
+            groups.append(item)
+        index[old].append(path)
+    return groups
+
+
 def _replace_skill(dest: Path, payload: Path, commit: str) -> None:
     parent = dest.parent
     staging = parent / ".mdf-skill-new"
@@ -233,6 +361,7 @@ def command_upgrade(args: argparse.Namespace) -> None:
             for skill in installs
         ]
         agents, agents_text = _plan_agents(repo, clone / SOURCE_SKILL)
+        plan = _commit_plan(targets, agents, commit)
         payload = {
             "ok": True,
             "operation": "upgrade",
@@ -240,7 +369,9 @@ def command_upgrade(args: argparse.Namespace) -> None:
             "source": source,
             "new_commit": commit,
             "targets": targets,
+            "history": _collect_history(clone, targets, commit),
             "agents": agents,
+            "commit": {"action": "planned", **plan},
         }
         if args.dry_run:
             emit(payload)
@@ -259,6 +390,7 @@ def command_upgrade(args: argparse.Namespace) -> None:
         if agents_text is not None:
             (repo / "AGENTS.md").write_text(agents_text, encoding="utf-8")
         payload["replaced"] = [item["path"] for item in targets]
+        payload["commit"] = _commit_upgrade(repo, plan)
         emit(payload)
     finally:
         temp.cleanup()

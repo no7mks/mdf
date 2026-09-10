@@ -335,11 +335,15 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert table[2][5] == "4"
     assert "拒绝则结束" in table[2][6]
     assert "http://10.1.5.65:8929/mars/mdf" in text
-    assert "不自动提交" in text
     assert "不读取 `references/common.md`" in text
     assert "AGENTS.md" in text
     assert "托管区块" in text
     assert "`agents`" in text
+    assert "`history`" in text
+    assert "提交摘要" in text
+    assert "不 push" in text
+    assert "提交本次路径" in text
+    assert "不自动提交" not in text
     assert "重读" in text
     assert "同会话" in text
     assert "提示在新会话" not in text

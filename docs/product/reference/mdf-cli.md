@@ -20,7 +20,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   clean worktree。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
-  start、delivery integrate 与 finish-gitflow 按各自协议执行提交、集成和远端操作。
+  start、delivery integrate、finish-gitflow 与 upgrade 按各自协议执行提交、
+  集成和远端操作。
 - `--dry-run` 只在 `archive`、`move-change`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
 
@@ -271,8 +272,11 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
 `--source` 可覆盖上游。命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入
 `references/.version`，并更新已有 `AGENTS.md` 的唯一 MDF 托管区块；无该文件或
 无区块则跳过，不新建或追加。不创建未安装位置，不覆盖 `skills/mdf`，不修改
-`.mdf/` 或 `docs/`。`--dry-run` 只拉取并报告 `new_commit`、各目标当前基线与
-`agents` 计划。
+`.mdf/` 或 `docs/`。非预览写入后仅提交本次替换路径与已更新的 `AGENTS.md`，
+不夹带其他改动，不 push；无变更则不创建提交。`--dry-run` 只拉取并报告
+`new_commit`、各目标当前基线、`history`、`agents` 与 `commit` 计划。`history`
+按已安装 `.version` 分组，列出上游 `skills/mdf` 在该基线到 HEAD 之间的提交
+与文件变更；无法对照时带 `status`，不视为失败。
 
 ## 与 intent 的关系
 
