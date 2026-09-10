@@ -266,7 +266,7 @@ $mdf clarify 要不要把缓存放到 Redis
 用法：`$mdf upgrade`
 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
 说明：先预览新旧基线，确认后再替换；更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与
-`docs/`。
+`docs/`。替换后重读新 Skill，同会话后续调用按新副本执行。
 
 `$mdf help`
 用法：`$mdf help` 或 `$mdf help <intent>`

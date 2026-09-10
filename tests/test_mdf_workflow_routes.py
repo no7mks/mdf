@@ -325,5 +325,8 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "AGENTS.md" in text
     assert "托管区块" in text
     assert "`agents`" in text
+    assert "重读" in text
+    assert "同会话" in text
+    assert "提示在新会话" not in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)

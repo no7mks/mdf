@@ -101,7 +101,7 @@ clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共
 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
 写入型 intent 允许并鼓励主动本地提交；写入前读取 `references/common.md` 的范围与历史规则。
 upgrade 替换已安装 Skill 并更新已有 `AGENTS.md` 托管区块，不读 `common.md`，
-不自动提交。
+不自动提交。替换成功后从 `MDF_ROOT` 重读新 Skill，同会话后续调用按新副本执行。
 提交不代替确认或验收，远端和集成操作按各自流程授权。
 
 | 材料 | 位置 | 读取条件 |
