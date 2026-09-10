@@ -264,3 +264,35 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
         else:
             assert not proposal.exists()
             assert (repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME).is_file()
+
+
+def test_next_resumes_all_workflows_before_showing_blueprint():
+    text = workflow("next")
+    table = rows(text)
+    assert table[0][5] == "有在途 2；无在途 3"
+    assert table[0][6] == "澄清或报告阻塞"
+    assert table[1][5] == "交接并结束"
+    assert table[1][6] == "说明阻塞与操作后结束"
+    assert "全部 MDF workflow" in text
+    for name in ("init", "bootstrap", "intake", "prp review", "CodeWiki", "clarify"):
+        assert name in text
+    assert "不得在识别前统一要求 manifest ready 或 clean" in text
+    assert "draft PRP、open Bug 或待办事项本身不代表流程已启动" in text
+    assert "不把无法判定当作无在途而退回蓝图" in text
+    assert "列出候选并询问用户选择" in text
+    assert "不能仅凭文件存在或历史 passed 判断阶段完成" in text
+    assert "不重复执行其工作" in text
+    assert "不重做已验收且仍有效的操作" in text
+    assert "next 不代替方案确认、初始化启用确认或原流程要求的 Git 操作授权" in text
+    assert "一次 next 只续办一个所选 intent" in text
+    assert "用户仅要求查看时保持只读" in text
+    assert "仅确认没有在途流程时进入本分支" in text
+
+
+def test_next_dispatch_allows_non_git_and_delegated_continuation():
+    entry = workflow("entry")
+    assert "除 init/bootstrap/next 外" in entry
+    assert "允许续办尚未 Git 化的初始化与无需仓库的 clarify" in entry
+    assert "next 可委托识别出的在途流程" in entry
+    assert "显式 next 可按 `references/next.md` 委托续办" in workflow("common")
+    assert "显式调用 next 委托下一阶段" in workflow("delivery-contract")

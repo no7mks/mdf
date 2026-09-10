@@ -72,8 +72,9 @@ disable-model-invocation: true
 ### 调用与工具
 
 只接受选择树所列的显式调用；`next [--depth N]` 的深度可省略， `clarify <议题>` 的议题由对应 intent 检查。
+除显式 next 按 `references/next.md` 识别并续办在途流程外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
-显式 init 可按其契约内部转入 bootstrap；其他入口仍按显式调用路由。
+显式 init 可按其契约内部转入 bootstrap；next 可委托识别出的在途流程；其他入口仍按显式调用路由。
 
 **帮助**：仅展示意图表与调用示例，不读取 intent、不检查仓库、不写入。
 **MDF_ROOT**：本文件所在目录的绝对路径。确认 `scripts/mdf.py` 后运行
@@ -82,7 +83,8 @@ disable-model-invocation: true
 
 ### 目标与按需读取
 
-除 init/bootstrap 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
+next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
+除 init/bootstrap/next 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
 用 `git -C <目标目录> rev-parse --show-toplevel` 解析为绝对 `REPO_ROOT`，再读取并执行对应流程。
 核对解析出的仓库确为用户目标；边界不明先澄清，命令失败则报告并停止，不使用空值或上次调用的变量。
 clarify 不要求 Git 仓库；init/bootstrap 由 initialization 公共流程处理普通目录与父仓库边界。

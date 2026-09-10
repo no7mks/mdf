@@ -92,6 +92,7 @@ push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限�
 
 通过条件：阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束，
 不仅为手动 commit 要求重调，也不自动触发下一个用户入口。
+显式 next 可按 `references/next.md` 委托续办或进入交付的下一阶段，完成所选 intent 后结束。
 init 依据 `references/initialization.md` 自动转入 bootstrap 是明确的内部委托，不自动串联交付主线。
 
 <a id="s6"></a>

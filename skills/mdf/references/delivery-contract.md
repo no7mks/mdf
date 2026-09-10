@@ -16,7 +16,8 @@ objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓�
 
 主线为 start → design → [write-tests ∥ implement] → converge → review → finish。
 feature 以外沿用各分支原有交付语义，不强制新增阶段。
-用户手动触发主线 intent；不新增 Owner 调度系统，当前执行者承担该阶段的协调与语义审查。
+用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
+当前执行者承担该阶段的协调与语义审查。
 单一执行者可顺序在 feature 工作；并行者使用同设计基线的 qa/<slug> 和 dev/<slug> worktree。
 本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 

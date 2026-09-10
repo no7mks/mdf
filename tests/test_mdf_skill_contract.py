@@ -71,7 +71,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "可验证的演进记录" in entry
 
 
-def test_next_only_reports_ready_dependency_graph() -> None:
+def test_next_blueprint_reports_ready_dependency_graph() -> None:
     text = intent("next")
     assert "主报告仅 ready" in text
     assert "implemented/released" in text

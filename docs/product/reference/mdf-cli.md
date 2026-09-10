@@ -256,7 +256,8 @@ release/hotfix 先同样合并到
 ## 与 intent 的关系
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
-调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；`next` 使用只读 `next` CLI；
+调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；
+`next` intent 优先续办在途流程，无在途时使用只读 `next` CLI 展示 PRP 蓝图；
 `intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
 `jot` 使用 `make-jot-id`；
 `archive` intent 使用 `archive`；`start` intent 使用 `start`；
@@ -286,6 +287,7 @@ design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["te
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
 阶段值为 design、write-tests、implement、converge、review、fact-update。
 
+`next` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
 `next --repo <仓库> [--depth 3]` 输出 trees、blocked、needs_review、hidden；只读，非法依赖失败。
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，

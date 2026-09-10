@@ -11,7 +11,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | --- | --- |
 | `$mdf bootstrap` | 为全新或几乎全新的项目建立 MDF 起点 |
 | `$mdf init` | 接入已有项目或调整 MDF 配置；新项目自动转入 bootstrap |
-| `$mdf next [--depth N]` | 展示 ready PRP 依赖树、阻塞项与 draft 评审提示 |
+| `$mdf next [--depth N]` | 续办在途流程或提示下一步；无在途时展示 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf start` | 按 Gitflow 创建并推送交付分支 |
@@ -33,7 +33,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf fact audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
 | `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
 
-裸 `$mdf` 只显示帮助。主线 intent 由用户手动触发：
+裸 `$mdf` 只显示帮助。主线 intent 由用户手动触发，也可显式调用 `next` 续办：
 
 `start → design → [write-tests ∥ implement] → converge → review → finish`
 
