@@ -9,13 +9,28 @@ from pathlib import Path
 from conftest import skill_dir
 from mdf_test_support import git, init_git, mdf, payload
 
+BEGIN = "<!-- MDF:BEGIN -->"
+END = "<!-- MDF:END -->"
 
-def init_upstream(tmp_path: Path, marker: str) -> Path:
+
+def write_agents_template(skill: Path, body: str) -> None:
+    folder = skill / "assets" / "templates"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "agents-managed-block.md").write_text(
+        f"{BEGIN}\n{body}\n{END}\n", encoding="utf-8"
+    )
+
+
+def init_upstream(
+    tmp_path: Path, marker: str, *, agents_body: str | None = None
+) -> Path:
     source = tmp_path / "upstream"
     skill = source / "skills" / "mdf"
     (skill / "references").mkdir(parents=True)
     (skill / "SKILL.md").write_text(f"{marker}\n", encoding="utf-8")
     (skill / "references" / "note.md").write_text("skill\n", encoding="utf-8")
+    if agents_body is not None:
+        write_agents_template(skill, agents_body)
     init_git(source)
     return source
 
@@ -87,6 +102,11 @@ def test_upgrade_dry_run_does_not_replace(python_exe: str, tmp_path: Path) -> No
     paths = {item["path"]: item["current_commit"] for item in data["targets"]}
     assert paths[".codex/skills/mdf"] == "old-codex-hash"
     assert paths[".cursor/skills/mdf"] == "old-cursor-hash"
+    assert data["agents"] == {
+        "path": "AGENTS.md",
+        "action": "skip",
+        "reason": "absent",
+    }
     assert (target / ".codex/skills/mdf/SKILL.md").read_text(
         encoding="utf-8"
     ) == "old-codex\n"
@@ -137,6 +157,11 @@ def test_upgrade_replaces_installed_copies_only(
     assert (target / ".mdf" / "manifest.yaml").read_text(
         encoding="utf-8"
     ) == "keep-mdf\n"
+    assert data["agents"] == {
+        "path": "AGENTS.md",
+        "action": "skip",
+        "reason": "absent",
+    }
 
 
 def test_upgrade_requires_an_installed_skill(
@@ -190,6 +215,171 @@ def test_upgrade_rejects_missing_upstream_skill(
     assert result.returncode != 0
     error = json.loads(result.stderr)
     assert error["error"] == "upgrade_missing_skill"
+    assert (target / ".codex/skills/mdf/SKILL.md").read_text(
+        encoding="utf-8"
+    ) == "old-codex\n"
+
+
+def write_agents(repo: Path, body: str, extra: str = "") -> str:
+    text = f"# Existing rules\n\n{BEGIN}\n{body}\n{END}\n{extra}"
+    (repo / "AGENTS.md").write_text(text, encoding="utf-8")
+    return text
+
+
+def test_upgrade_updates_existing_agents_managed_block(
+    python_exe: str, tmp_path: Path
+) -> None:
+    upstream = init_upstream(tmp_path, "new-skill", agents_body="new-block")
+    target = init_target(tmp_path)
+    write_agents(target, "old-block", extra="\nKeep this exact rule.\n")
+
+    data = payload(
+        mdf(
+            python_exe,
+            "upgrade",
+            "--repo",
+            str(target),
+            "--source",
+            str(upstream),
+        )
+    )
+
+    assert data["agents"] == {"path": "AGENTS.md", "action": "update"}
+    agents = (target / "AGENTS.md").read_text(encoding="utf-8")
+    assert agents.startswith("# Existing rules\n\n")
+    assert f"{BEGIN}\nnew-block\n{END}" in agents
+    assert "old-block" not in agents
+    assert "Keep this exact rule." in agents
+    assert (target / ".codex/skills/mdf/SKILL.md").read_text(
+        encoding="utf-8"
+    ) == "new-skill\n"
+
+
+def test_upgrade_dry_run_does_not_write_agents_block(
+    python_exe: str, tmp_path: Path
+) -> None:
+    upstream = init_upstream(tmp_path, "new-skill", agents_body="new-block")
+    target = init_target(tmp_path)
+    original = write_agents(target, "old-block")
+
+    data = payload(
+        mdf(
+            python_exe,
+            "upgrade",
+            "--repo",
+            str(target),
+            "--source",
+            str(upstream),
+            "--dry-run",
+        )
+    )
+
+    assert data["dry_run"] is True
+    assert data["agents"]["action"] == "update"
+    assert (target / "AGENTS.md").read_text(encoding="utf-8") == original
+    assert (target / ".codex/skills/mdf/SKILL.md").read_text(
+        encoding="utf-8"
+    ) == "old-codex\n"
+
+
+def test_upgrade_skips_agents_without_managed_block(
+    python_exe: str, tmp_path: Path
+) -> None:
+    upstream = init_upstream(tmp_path, "new-skill", agents_body="new-block")
+    target = init_target(tmp_path)
+    original = "# Local agent notes\n"
+    (target / "AGENTS.md").write_text(original, encoding="utf-8")
+
+    data = payload(
+        mdf(
+            python_exe,
+            "upgrade",
+            "--repo",
+            str(target),
+            "--source",
+            str(upstream),
+        )
+    )
+
+    assert data["agents"] == {
+        "path": "AGENTS.md",
+        "action": "skip",
+        "reason": "no_block",
+    }
+    assert (target / "AGENTS.md").read_text(encoding="utf-8") == original
+    assert (target / ".codex/skills/mdf/SKILL.md").read_text(
+        encoding="utf-8"
+    ) == "new-skill\n"
+
+
+def test_upgrade_reports_unchanged_agents_block(
+    python_exe: str, tmp_path: Path
+) -> None:
+    upstream = init_upstream(tmp_path, "new-skill", agents_body="same-block")
+    target = init_target(tmp_path)
+    original = write_agents(target, "same-block")
+
+    data = payload(
+        mdf(
+            python_exe,
+            "upgrade",
+            "--repo",
+            str(target),
+            "--source",
+            str(upstream),
+        )
+    )
+
+    assert data["agents"] == {"path": "AGENTS.md", "action": "unchanged"}
+    assert (target / "AGENTS.md").read_text(encoding="utf-8") == original
+
+
+def test_upgrade_rejects_invalid_agents_block_before_replace(
+    python_exe: str, tmp_path: Path
+) -> None:
+    upstream = init_upstream(tmp_path, "new-skill", agents_body="new-block")
+    target = init_target(tmp_path)
+    (target / "AGENTS.md").write_text(
+        f"{BEGIN}\nfirst\n{END}\n{BEGIN}\nsecond\n{END}\n",
+        encoding="utf-8",
+    )
+
+    result = mdf(
+        python_exe,
+        "upgrade",
+        "--repo",
+        str(target),
+        "--source",
+        str(upstream),
+    )
+    assert result.returncode != 0
+    error = json.loads(result.stderr)
+    assert error["error"] == "invalid_managed_block"
+    assert (target / ".codex/skills/mdf/SKILL.md").read_text(
+        encoding="utf-8"
+    ) == "old-codex\n"
+    assert (target / "AGENTS.md").read_text(encoding="utf-8").count(BEGIN) == 2
+
+
+def test_upgrade_requires_template_when_updating_agents_block(
+    python_exe: str, tmp_path: Path
+) -> None:
+    upstream = init_upstream(tmp_path, "new-skill")
+    target = init_target(tmp_path)
+    original = write_agents(target, "old-block")
+
+    result = mdf(
+        python_exe,
+        "upgrade",
+        "--repo",
+        str(target),
+        "--source",
+        str(upstream),
+    )
+    assert result.returncode != 0
+    error = json.loads(result.stderr)
+    assert error["error"] == "upgrade_missing_agents_template"
+    assert (target / "AGENTS.md").read_text(encoding="utf-8") == original
     assert (target / ".codex/skills/mdf/SKILL.md").read_text(
         encoding="utf-8"
     ) == "old-codex\n"

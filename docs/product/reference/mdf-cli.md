@@ -109,8 +109,9 @@ python3 skills/mdf/scripts/mdf.py make-id \
 
 `--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case；命令生成
 新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和 Markdown 文件名。
-Proposal、Bug 与 Jot 均使用四位字符；每一位均独立从大写英文字母（排除 `I`、`O`）
-与数字 `2` 至 `9` 中等概率选择，例如 `A2B3`。
+Proposal、Bug 与 Jot 的 ID 为类型前缀加四位字符；每一位均独立从大写英文字母
+（排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。完整形式如 `prp-A2B3`、
+`bug-C4D5`、`jot-E6F7`；沟通时不得只写四位字符。
 它不创建对象文件。
 
 ### `make-jot-id`
@@ -265,8 +266,10 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
 要求 Git 根，不要求 manifest、ready 或 clean worktree。默认源为
 `http://10.1.5.65:8929/mars/mdf`，克隆远程默认分支 HEAD，并归档 `skills/mdf`。
 `--source` 可覆盖上游。命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入
-`references/.version`，不创建未安装位置，不覆盖 `skills/mdf`，不修改 `.mdf/` 或
-`docs/`。`--dry-run` 只拉取并报告 `new_commit` 与各目标当前基线。
+`references/.version`，并更新已有 `AGENTS.md` 的唯一 MDF 托管区块；无该文件或
+无区块则跳过，不新建或追加。不创建未安装位置，不覆盖 `skills/mdf`，不修改
+`.mdf/` 或 `docs/`。`--dry-run` 只拉取并报告 `new_commit`、各目标当前基线与
+`agents` 计划。
 
 ## 与 intent 的关系
 

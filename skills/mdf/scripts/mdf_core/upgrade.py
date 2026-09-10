@@ -12,6 +12,7 @@ import tarfile
 import tempfile
 from pathlib import Path
 
+from .constants import MDF_BLOCK_END, MDF_BLOCK_START
 from .errors import MDFError, emit
 from .gitutil import repo_path, require_git_root
 from .paths import relative
@@ -26,6 +27,7 @@ KNOWN_SKILL_DIRS = (
     ".openclaw/skills",
 )
 SOURCE_SKILL = "skills/mdf"
+AGENTS_TEMPLATE = Path("assets") / "templates" / "agents-managed-block.md"
 
 
 def _clone(source: str, dest: Path) -> None:
@@ -123,6 +125,62 @@ def _write_version(skill: Path, commit: str) -> None:
     path.write_text(f"{commit}\n", encoding="utf-8")
 
 
+def _agents_template(skill_root: Path) -> str:
+    path = skill_root / AGENTS_TEMPLATE
+    if not path.is_file():
+        raise MDFError(
+            "Upstream is missing assets/templates/agents-managed-block.md",
+            code="upgrade_missing_agents_template",
+        )
+    return path.read_text(encoding="utf-8").strip()
+
+
+def _agents_file_state(repo: Path) -> str:
+    path = repo / "AGENTS.md"
+    if not path.exists():
+        return "absent"
+    if path.is_symlink() or not path.is_file():
+        raise MDFError(
+            "AGENTS.md must be a regular repository file",
+            code="upgrade_agents_not_file",
+        )
+    text = path.read_text(encoding="utf-8")
+    starts = text.count(MDF_BLOCK_START)
+    ends = text.count(MDF_BLOCK_END)
+    if starts == 0 and ends == 0:
+        return "no_block"
+    if (
+        starts == 1
+        and ends == 1
+        and text.index(MDF_BLOCK_START) < text.index(MDF_BLOCK_END)
+    ):
+        return "present"
+    raise MDFError(
+        "AGENTS.md 的 MDF 标记格式错误或重复",
+        code="invalid_managed_block",
+    )
+
+
+def _replace_managed_block(text: str, block: str) -> str:
+    start = text.index(MDF_BLOCK_START)
+    end = text.index(MDF_BLOCK_END) + len(MDF_BLOCK_END)
+    return text[:start] + block + text[end:]
+
+
+def _plan_agents(
+    repo: Path, skill_root: Path
+) -> tuple[dict[str, str], str | None]:
+    state = _agents_file_state(repo)
+    if state in {"absent", "no_block"}:
+        return {"path": "AGENTS.md", "action": "skip", "reason": state}, None
+    block = _agents_template(skill_root)
+    current = (repo / "AGENTS.md").read_text(encoding="utf-8")
+    updated = _replace_managed_block(current, block)
+    if updated == current:
+        return {"path": "AGENTS.md", "action": "unchanged"}, None
+    return {"path": "AGENTS.md", "action": "update"}, updated
+
+
 def _replace_skill(dest: Path, payload: Path, commit: str) -> None:
     parent = dest.parent
     staging = parent / ".mdf-skill-new"
@@ -174,6 +232,7 @@ def command_upgrade(args: argparse.Namespace) -> None:
             }
             for skill in installs
         ]
+        agents, agents_text = _plan_agents(repo, clone / SOURCE_SKILL)
         payload = {
             "ok": True,
             "operation": "upgrade",
@@ -181,6 +240,7 @@ def command_upgrade(args: argparse.Namespace) -> None:
             "source": source,
             "new_commit": commit,
             "targets": targets,
+            "agents": agents,
         }
         if args.dry_run:
             emit(payload)
@@ -196,6 +256,8 @@ def command_upgrade(args: argparse.Namespace) -> None:
                 )
             for skill in installs:
                 _replace_skill(skill, extracted, commit)
+        if agents_text is not None:
+            (repo / "AGENTS.md").write_text(agents_text, encoding="utf-8")
         payload["replaced"] = [item["path"] for item in targets]
         emit(payload)
     finally:

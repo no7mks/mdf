@@ -103,7 +103,7 @@
 - `$mdf fact audit`：审阅文档与实现的覆盖、证据和语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
-- `$mdf upgrade`：从上游拉取最新 Skill 并替换已安装副本
+- `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
 
@@ -265,7 +265,8 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf upgrade`
 用法：`$mdf upgrade`
 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
-说明：先预览新旧基线，确认后再替换；不改 `.mdf/` 与 `docs/`。
+说明：先预览新旧基线，确认后再替换；更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与
+`docs/`。
 
 `$mdf help`
 用法：`$mdf help` 或 `$mdf help <intent>`

@@ -135,6 +135,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
     assert "生成的 Markdown 正文、标题与列表使用简体中文" in common
+    assert "须写完整前缀 ID，不得只写四位字符" in common
+    assert "核对简体中文、英文保留范围与完整前缀 ID" in common
     for document in (review,):
         assert "object-contract.md" in document
         assert "内部 clarify intent" in document
@@ -236,6 +238,24 @@ def test_repository_contract_defines_top_level_layout() -> None:
     assert "每项的理由" in contract
     assert "`docs/repowiki/` 存在时" in contract
     assert "不填入`基线`" in contract
+
+
+def test_object_ids_must_be_cited_with_type_prefix() -> None:
+    skill = skill_dir("mdf")
+    object_contract = (skill / "references" / "object-contract.md").read_text(
+        encoding="utf-8"
+    )
+    agents = (skill / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "必须写完整 ID" in object_contract
+    assert "`prp-A2B3`" in object_contract
+    assert "`bug-C4D5`" in object_contract
+    assert "`jot-E6F7`" in object_contract
+    assert "不得只写四位字符" in object_contract
+    assert "`bug-`" in agents and "`prp-`" in agents and "`jot-`" in agents
+    assert "不得只用四位字符" in agents
 
 
 def test_contracts_do_not_duplicate_intent_steps() -> None:

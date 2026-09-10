@@ -97,9 +97,9 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 
 `install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
 目标已有 `mdf` 时终止；维护者升级须先运行 `unistall`，再运行 `install`。
-已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill。
-`diff` 分别显示本地与目标相对该基线的改动。脚本与 upgrade 都不会修改目标仓库的
-`.mdf/`、`docs/` 或业务文件。
+已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill，并更新已有
+`AGENTS.md` 的 MDF 托管区块。`diff` 分别显示本地与目标相对该基线的改动。脚本与
+upgrade 都不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
 
 ## 维护
 

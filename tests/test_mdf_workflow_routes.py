@@ -322,5 +322,8 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "http://10.1.5.65:8929/mars/mdf" in text
     assert "不自动提交" in text
     assert "不读取 `references/common.md`" in text
+    assert "AGENTS.md" in text
+    assert "托管区块" in text
+    assert "`agents`" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)
