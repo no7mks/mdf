@@ -180,6 +180,21 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "不要求 manifest ready" in dispatch
 
 
+def test_start_clarifies_feature_objectives_before_branch():
+    text = workflow("start")
+    table = rows(text)
+    assert table[0][5] == "feature 2；其他 3"
+    assert "内部 clarify" in table[1][3]
+    assert table[1][5] == "3"
+    assert table[1][6] == "不写目标，停止"
+    assert "references/clarify.md" in text
+    assert "assets/templates/objectives.md" in text
+    assert "$mdf prp review" in text
+    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+    assert re.search(r"其他种类通过 ─+→ 3 Start branch", diagram)
+    assert re.search(r"feature 通过", diagram)
+
+
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():
     text = workflow("implement")
     assert text.index("逐项对照 objectives") < text.index("delivery record")

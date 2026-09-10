@@ -2,8 +2,8 @@
 
 ## 身份与材料
 
-一个 feature 对应一个依赖满足的 active ready PRP。start 确认目标、非目标、约束与
-可验证验收，objectives 引用 PRP，避免复制另一个需求来源。
+一个 feature 对应一个依赖满足的 active ready PRP。start 经内部 clarify 确认
+目标、非目标、约束与可验证验收，objectives 引用 PRP，避免复制另一个需求来源。
 slug 在 start 固定，不随标题修改。delivery.json 记录 proposal、slug、branch、start_commit。
 起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
 

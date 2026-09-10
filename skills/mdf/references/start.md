@@ -9,11 +9,19 @@
 │ 1 Resolve branch                 │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [留在 1 询问]
+                 ├──── 失败/缺失 ───────→ [留在 1 询问]
+                 ├──── 其他种类通过 ────→ 3 Start branch
+                 │
+                 ▼ feature 通过
+┌──────────────────────────────────┐
+│ 2 Clarify objectives             │
+└────────────────┬─────────────────┘
+                 │
+                 ├──── 失败/缺失 ────→ [不写目标，停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 2 Start branch                   │
+│ 3 Start branch                   │
 └────────────────┬─────────────────┘
                  │
                  ├──── 创建与推送成功 ────→ [报告并结束]
@@ -26,35 +34,53 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。
+feature 的步骤 2 读取并内部执行 `references/clarify.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 参数 | 约束 | 确认分支标识；feature 另确认 PRP 与目标 | 参数、依赖、确认目标 | 2 | 留在 1 询问 |
-| 2 | 创建 | 脚本 | 运行 start，核对分支创建及推送结果 | 分支、远端、upstream | 结束 | 按失败阶段处理 |
+| 1 | 参数 | 约束 | 确认分支标识；feature 另确认 PRP | 参数、依赖 | feature 2；其他 3 | 留在 1 询问 |
+| 2 | 澄清 | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
+| 3 | 创建 | 脚本 | 运行 start，核对分支创建及推送结果 | 分支、远端、upstream | 结束 | 按失败阶段处理 |
 
 ## 术语与数据结构
 
-### 分支参数与创建
+### 分支参数
 
 <a id="s1"></a>
 
 **参数**
 
-一次只要求一个分支的类型和必要标识：feature/bugfix 要 slug， release/hotfix 要稳定 SemVer。
-feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。先只读分析并让用户确认
-按 `assets/templates/objectives.md` 确认目标、非目标、约束与验收；将确认文本放在仓外临时文件，保持开分支前 clean。
+一次只要求一个分支的类型和必要标识：feature/bugfix 要 slug，
+release/hotfix 要稳定 SemVer。
+feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
 
-验收：明确参数、PRP 与确认目标。
+验收：明确参数；feature 另确认 PRP。
 
-异常与交接：询问。 不得从自然语言猜测版本。
+异常与交接：询问。不得从自然语言猜测版本。
 
 <a id="s2"></a>
 
+**澄清**
+
+对照 ready PRP 与 `assets/templates/objectives.md`，一次只问一个问题，
+使用内部 clarify intent 按轮次澄清本次交付的目标、非目标、约束与
+可验证验收。objectives 引用 PRP，不另造需求来源，不改写 PRP。
+PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写目标，
+提示 `$mdf prp review`。
+共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
+其他种类不进入本步骤。
+
+验收：确认目标与共同理解。
+
+异常与交接：不写目标、不创建分支。
+
+<a id="s3"></a>
+
 **创建**
 
-解析目标 Git 根为 `REPO_ROOT`；运行 `start --repo "$REPO_ROOT" --kind <kind>`， feature/bugfix 使用
-`--name <slug>`；
-feature 还须 `--proposal <PRP-ID> --objectives-file <文件>`，
+解析目标 Git 根为 `REPO_ROOT`；运行 `start --repo "$REPO_ROOT" --kind <kind>`，
+feature/bugfix 使用 `--name <slug>`；
+feature 还须 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`，
 release/hotfix 使用 `--version <semver>`；
 CLI 在同一次调用中 fetch， 检查 `origin`、默认
 `master`、 来源及 upstream 一致、clean、目标不存在，
