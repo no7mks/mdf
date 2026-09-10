@@ -18,12 +18,14 @@ objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓�
 feature 以外沿用各分支原有交付语义，不强制新增阶段。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
 当前执行者承担该阶段的协调与语义审查。
-单一执行者可顺序在 feature 工作；并行者使用同设计基线的 qa/<slug> 和 dev/<slug> worktree。
-本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
+单一执行者可顺序在 feature 工作。谁需要独立 checkout 谁创建 worktree：
+start 在当前已占用交付或角色分支时从基线建立交付 worktree；write-tests 与
+implement 从同一设计基线按需建立 qa/<slug> 或 dev/<slug> worktree。
+design 不预建角色 worktree。本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate
 
-通过 `delivery status/check/record/verify/parallel/integrate` 执行确定性操作。
+通过 `delivery status/check/record/verify/worktree/integrate` 执行确定性操作。
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design；converge 需两路完成，review 需收敛全绿，
 finish 需当前 review、事实审阅和验证证据有效。不能手填 passed 代替 CLI 检查。

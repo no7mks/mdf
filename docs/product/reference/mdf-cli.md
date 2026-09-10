@@ -235,9 +235,11 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 默认分支为 `master`，且来源分支与远端完全一致；它会先 `fetch --prune`。
 
 feature、bugfix 和 release 从 `develop` 创建，hotfix 从 `master` 创建。若新分支
-在本地或远端已存在则失败；成功时创建分支、推送至 `origin` 并设置 upstream。
+在本地或远端已存在则失败。当前已占用 Gitflow 交付分支或 `qa/`、`dev/` 时，从基线
+建立相邻 worktree 并在该目录完成创建与推送，成功 JSON 含 `worktree`；否则在当前
+目录开分支。成功时推送至 `origin` 并设置 upstream。
 创建前检查失败不会创建分支；创建后推送失败返回 `start_push_failed`，保留本地分支，
-并报告分支、来源、HEAD、远端状态未知与 Git 错误。调用方应先核对远端状态，
+并报告分支、来源、HEAD、`worktree`、远端状态未知与 Git 错误。调用方应先核对远端状态，
 再决定补推或处理现场，不应直接重跑 `start` 或自动删除分支。
 
 ### `finish-gitflow`
@@ -253,7 +255,8 @@ feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
 `chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented 转换包含在该 merge commit。
 release/hotfix 先同样合并到
 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。最后
-原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。任一 merge
+原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。若 `--repo` 是相邻
+worktree，合并后移除该 worktree。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
 
 ### `upgrade`
@@ -299,8 +302,8 @@ feature start 额外要求 `--proposal <ID> --objectives-file <文件>`；确认
 | check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行全部 verification；可用重复 `--item <id>` 做定位运行，全量记录不能由单项替代 |
-| parallel | clean feature 的已提交设计基线建立 qa/dev 本地分支与相邻 worktree |
-| integrate | clean feature 依次 no-ff 集成 qa/dev；冲突保留现场，完成后清理已合并本地工作分支 |
+| worktree | `--role qa` 或 `dev`；从已提交 design 基线建立对应本地分支与相邻 worktree |
+| integrate | clean feature 依次 no-ff 集成已有 qa/dev；冲突保留现场，完成后清理已合并本地工作分支 |
 
 design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["tests/","pyproject.toml"]}`。
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。

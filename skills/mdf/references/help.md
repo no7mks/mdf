@@ -88,7 +88,7 @@
 #### 交付
 
 - `$mdf next [--depth N]`：续办在途流程；无在途时展示 PRP 蓝图
-- `$mdf start`：按 Gitflow 创建并推送交付分支
+- `$mdf start`：按 Gitflow 创建并推送交付分支；当前已占用交付分支时建立相邻 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写测试用例
 - `$mdf implement`：按已确认设计实现
@@ -205,7 +205,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf start`
 用法：`$mdf start`
 用途：按 Gitflow 创建并推送交付分支。
-说明：正常工作不在 master 直接修改。
+说明：当前已占用交付或角色分支时建立相邻 worktree；否则在当前目录开分支。
 
 `$mdf design`
 用法：`$mdf design`
@@ -215,12 +215,12 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf write-tests`
 用法：`$mdf write-tests`
 用途：按目标编写测试用例。
-说明：可与 implement 并行，gate 检查共同基线。
+说明：可与 implement 并行；需要独立 checkout 时从 design 基线开 qa worktree。
 
 `$mdf implement`
 用法：`$mdf implement`
 用途：按已确认设计实现。
-说明：不要求测试先完成或项目全绿。
+说明：不要求测试先完成；需要独立 checkout 时从 design 基线开 dev worktree。
 
 `$mdf converge`
 用法：`$mdf converge`

@@ -1,27 +1,32 @@
-"""用户选择并行时的本地角色分支和集成。"""
-from pathlib import Path
-
+"""按需角色 worktree 与集成。"""
 from .delivery_state import gate, git, matches, require_design
 from .errors import MDFError
-from .gitutil import current_branch, ensure_clean
+from .gitutil import (
+    add_linked_worktree,
+    current_branch,
+    ensure_clean,
+    sibling_worktree,
+    worktree_map,
+)
 
 
-def parallel(repo, root, data):
+def add_role(repo, root, data, role):
+    if role not in ("qa", "dev"):
+        raise MDFError("角色必须是 qa 或 dev", code="invalid_role")
     ensure_clean(repo)
     require_design(repo, root, data)
-    if current_branch(repo) != data["branch"]:
-        raise MDFError("仅 feature 可建立并行分支", code="stage_branch")
-    base = git(repo, "rev-parse", "HEAD").stdout.strip()
-    result = []
-    for role in ("qa", "dev"):
-        branch = f"{role}/{data['slug']}"
-        path = repo.parent / f"{repo.name}-{role}-{data['slug']}"
-        if path.exists() or not git(repo, "show-ref", "--verify", f"refs/heads/{branch}", check=False).returncode:
-            raise MDFError("并行分支或 worktree 已存在", code="collision")
-        result.append({"branch": branch, "path": str(path), "base": base})
-    for item in result:
-        git(repo, "worktree", "add", "-b", item["branch"], item["path"], base)
-    return {"worktrees": result}
+    branch = f"{role}/{data['slug']}"
+    path = sibling_worktree(repo, f"{role}-{data['slug']}")
+    exists = git(repo, "show-ref", "--verify", f"refs/heads/{branch}",
+                 check=False)
+    if path.exists() or not exists.returncode:
+        raise MDFError("并行分支或 worktree 已存在", code="collision")
+    rel = str((root / "gates" / "design.json").relative_to(repo))
+    base = git(repo, "log", "-1", "--format=%H", "--", rel).stdout.strip()
+    if len(base) < 40 or any(c not in "0123456789abcdef" for c in base):
+        raise MDFError("缺少已提交的设计基线", code="stale_gate")
+    add_linked_worktree(repo, branch, path, base)
+    return {"worktree": {"branch": branch, "path": str(path), "base": base}}
 
 
 def integrate(repo, root, data, approval):
@@ -31,12 +36,7 @@ def integrate(repo, root, data, approval):
         raise MDFError("仅 feature 可集成", code="stage_branch")
     policy = gate(repo, root, "design")["policy"]
     available = []
-    raw = git(repo, "worktree", "list", "--porcelain").stdout
-    worktrees = {}
-    for block in raw.strip().split("\n\n"):
-        values = dict(line.split(" ", 1) for line in block.splitlines() if " " in line)
-        if "branch" in values:
-            worktrees[values["branch"].removeprefix("refs/heads/")] = Path(values["worktree"])
+    worktrees = worktree_map(repo)
     for role, stage in (("qa", "write-tests"), ("dev", "implement")):
         branch = f"{role}/{data['slug']}"
         if git(repo, "show-ref", "--verify", f"refs/heads/{branch}", check=False).returncode:

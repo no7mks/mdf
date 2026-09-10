@@ -42,7 +42,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 ### 范围与前置条件
 
 运行 `delivery check --stage write-tests`。与 implement 互不前置，可并行。
-在 feature 或 qa/<slug> 工作。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
+当前已在 feature 或 qa/<slug> 且可在此工作时，不另开 worktree。
+当前不能用于本路，或该目录已被另一路占用时，运行
+`delivery worktree --role qa`，从已提交 design 基线建立 qa/<slug>，
+改用返回路径；不自动分派 Agent。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
 不要求针对具体实现进行错误注入，也不强制先产生红灯。
 
 ### 测试与交接证据

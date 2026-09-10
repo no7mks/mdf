@@ -137,9 +137,13 @@ def build_parser() -> argparse.ArgumentParser:
     split.set_defaults(func=command_split)
 
     delivery = subparsers.add_parser("delivery")
-    delivery.add_argument("action", choices=("status", "check", "record", "verify", "parallel", "integrate"))
+    delivery.add_argument(
+        "action",
+        choices=("status", "check", "record", "verify", "worktree", "integrate"),
+    )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--stage", choices=(*STAGES, "finish"))
+    delivery.add_argument("--role", choices=("qa", "dev"))
     delivery.add_argument("--summary")
     delivery.add_argument("--policy-file")
     delivery.add_argument("--test-approval")

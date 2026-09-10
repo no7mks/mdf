@@ -80,6 +80,7 @@ def test_start_sets_upstream_from_expected_base(
 
     assert result["base"] == base
     assert result["start_commit"] == expected
+    assert result["worktree"] == str(repo)
     if kind == "feature":
         expected = git(repo, "rev-parse", "HEAD").stdout.strip()
     assert git(repo, "rev-parse", "HEAD").stdout.strip() == expected
@@ -143,3 +144,53 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     assert not git(remote, "for-each-ref", f"refs/heads/{kind}/{version}").stdout
     assert not git(repo, "for-each-ref", f"refs/heads/{kind}/{version}").stdout
     assert not git(repo, "status", "--porcelain").stdout
+
+
+def _add_ready_prp(repo: Path, identifier: str) -> None:
+    template = (repo / "docs/proposals" / PRP_NAME).read_text()
+    text = template.replace("prp-AB23", identifier)
+    (repo / "docs/proposals" / f"{identifier}-item.md").write_text(text)
+
+
+def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
+    python_exe: str, tmp_path: Path,
+):
+    repo, _remote = start_repo(tmp_path)
+    git(repo, "checkout", "develop")
+    _add_ready_prp(repo, "prp-EF56")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "docs(prp): 增加可并行提案")
+    git(repo, "push")
+    first = tmp_path / "first.md"
+    first.write_text("# 目标\n\n交付健康接口。\n")
+    payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
+                 "--name", "health", "--proposal", "prp-AB23",
+                 "--objectives-file", str(first)))
+    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+
+    second = tmp_path / "second.md"
+    second.write_text("# 目标\n\n交付并行接口。\n")
+    created = payload(mdf(python_exe, "start", "--repo", str(repo),
+                           "--kind", "feature", "--name", "parallel",
+                           "--proposal", "prp-EF56",
+                           "--objectives-file", str(second)))
+    work = Path(created["worktree"])
+    assert created["branch"] == "feature/parallel"
+    assert work != repo
+    assert work.is_dir()
+    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    assert git(work, "branch", "--show-current").stdout.strip() == "feature/parallel"
+
+    extra = payload(mdf(python_exe, "start", "--repo", str(repo),
+                          "--kind", "bugfix", "--name", "extra-fix"))
+    bugfix = Path(extra["worktree"])
+    assert extra["branch"] == "bugfix/extra-fix"
+    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    (bugfix / "fix.txt").write_text("ok\n")
+    git(bugfix, "add", "--all")
+    git(bugfix, "commit", "-m", "fix: 补充热修复文件")
+    git(bugfix, "push")
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(bugfix)))
+    assert not bugfix.exists()
+    assert git(repo, "branch", "--show-current").stdout.strip() == "feature/health"
+    assert git(repo, "show", "develop:fix.txt").stdout == "ok\n"
