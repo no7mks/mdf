@@ -16,7 +16,7 @@ def test_jots_allow_free_markdown_in_marked_entries(
 ):
     repo = copy_fixture(tmp_path)
     identifier = "jot-GH78"
-    (repo / "JOTS.md").write_text(
+    (repo / "docs/JOTS.md").write_text(
         "# 随手记录\n\n"
         f"<!-- jot: {identifier} -->\n"
         "## Retry feedback\n\n"
@@ -35,7 +35,7 @@ def test_jots_require_marked_nonempty_entries(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    (repo / "JOTS.md").write_text(
+    (repo / "docs/JOTS.md").write_text(
         "# 随手记录\n\nraw text\n", encoding="utf-8"
     )
     init_git(repo)

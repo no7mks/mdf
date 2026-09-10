@@ -40,7 +40,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 一个 feature 对应一个 PRP；设计后测试与实现可并行，gate 检查共同基线与有效证据。
 写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；提交不代表验收通过，
 也不替代用户确认。不夹带无关改动，远端与集成操作按各自流程授权。
-材料从 `.specs/<slug>/` 随交付进入 Change，再随版本归档。
+材料从 `docs/specs/<slug>/` 随交付进入 Change，再随版本归档。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
 记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，
@@ -58,10 +58,11 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 
 | 类型 | 载体 |
 | --- | --- |
+| 文档入口 | `docs/README.md` |
 | 当前事实 | `docs/product/`、`docs/system/`、配置、schema、测试 |
-| 工作上下文 | `context/research/` |
+| 工作上下文 | `docs/context/research/` |
 | 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新 |
-| 未分诊记录 | `JOTS.md` |
+| 未分诊记录 | `docs/JOTS.md` |
 | 意图与工作 | Proposal、Bug、unreleased Change |
 | 决策 | `docs/adr/` |
 | 证据 | 测试、契约、生成物、配置和命令 |
@@ -72,7 +73,7 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
 验证，且不得混写未来计划。
 
-`JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
+`docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
 具体 intent、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的

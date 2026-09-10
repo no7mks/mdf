@@ -144,10 +144,10 @@ def closeout_cli_args(*extra: str) -> list[str]:
 
 
 def write_unreleased_change(repo: Path, slug: str) -> None:
-    proposal = repo / "proposals" / PRP_NAME
+    proposal = repo / "docs/proposals" / PRP_NAME
     text = proposal.read_text()
     proposal.write_text(text.replace("status: ready", "status: implemented"))
-    change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
+    change = repo / "docs/changes" / "unreleased" / slug / "CHANGE.md"
     change.parent.mkdir(parents=True)
     change.write_text(
         (
@@ -218,12 +218,12 @@ def prepare_release_closeout_repo(
 ) -> Path:
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "bugs" / BUG_NAME,
+        repo / "docs/bugs" / BUG_NAME,
         "status: open",
         "status: fixed",
     )
     init_git(repo)
-    replace(repo / "proposals" / PRP_NAME, "status: ready", "status: implemented")
+    replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     write_unreleased_change(repo, slug)
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "feat: 准备服务健康变更")

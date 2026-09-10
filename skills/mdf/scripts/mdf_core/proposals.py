@@ -32,7 +32,7 @@ def check_proposals(repo):
 
 
 def started(repo, identifier):
-    for root in (repo / ".specs", repo / "changes"):
+    for root in (repo / "docs/specs", repo / "docs/changes"):
         if not root.exists():
             continue
         for path in root.rglob("delivery.json"):
@@ -49,7 +49,7 @@ def started(repo, identifier):
     refs = run(["git", "for-each-ref", "--format=%(refname)",
                 "refs/heads/feature/", "refs/remotes/origin/feature/"], cwd=repo).stdout.splitlines()
     for ref in refs:
-        paths = run(["git", "ls-tree", "-r", "--name-only", ref, "--", ".specs", "changes"],
+        paths = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "docs/specs", "docs/changes"],
                     cwd=repo).stdout.splitlines()
         for path in paths:
             if not path.endswith("/delivery.json"):
@@ -74,7 +74,7 @@ def require_startable(repo, identifier):
     if identifier not in objects:
         raise MDFError("缺少指定 PRP", code="missing_proposal")
     path, meta, _ = objects[identifier]
-    if meta["status"] != "ready" or len(path.relative_to(repo).parts) != 2:
+    if meta["status"] != "ready" or len(path.relative_to(repo / "docs").parts) != 2:
         raise MDFError("feature 需要 active ready PRP", code="proposal_not_ready")
     blocked = [dep for dep in meta["depends_on"] if objects[dep][1]["status"] not in SATISFIED]
     if blocked:

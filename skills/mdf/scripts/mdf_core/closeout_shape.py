@@ -89,14 +89,14 @@ def validate_closeout_shape(
             "closeout version 必须大于 previous_version",
             code="not_increasing",
         )
-    target = repo / "changes" / version
+    target = repo / "docs/changes" / version
     if target.exists():
         raise MDFError(
             f"Release directory already exists: {relative(repo, target)}",
             code="collision",
         )
 
-    unreleased = repo / "changes" / "unreleased"
+    unreleased = repo / "docs/changes" / "unreleased"
     actual_slugs = (
         sorted(
             path.name
@@ -107,7 +107,7 @@ def validate_closeout_shape(
         else []
     )
     release_items = [
-        {"slug": slug, "source": f"changes/unreleased/{slug}"}
+        {"slug": slug, "source": f"docs/changes/unreleased/{slug}"}
         for slug in actual_slugs
     ]
     slugs = actual_slugs

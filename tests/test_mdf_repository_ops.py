@@ -9,7 +9,7 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    proposal = repo / "proposals" / PRP_NAME
+    proposal = repo / "docs/proposals" / PRP_NAME
     replace(
         proposal,
         "status: ready\ndepends_on: []",
@@ -39,7 +39,7 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     assert PRP_NAME in dry_run.stdout
     assert "plan_digest" not in json.loads(dry_run.stdout)
     assert proposal.is_file(), "dry-run 不得移动文件"
-    assert not (repo / "proposals" / "archive" / "1.2" / PRP_NAME).exists()
+    assert not (repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME).exists()
     assert not git(repo, "status", "--porcelain").stdout
 
     applied = mdf(
@@ -51,7 +51,7 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
         "1.2",
     )
     assert_ok(applied)
-    archived = repo / "proposals" / "archive" / "1.2" / PRP_NAME
+    archived = repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME
     assert archived.is_file()
     assert not proposal.exists()
     archived_text = archived.read_text(encoding="utf-8")
@@ -62,22 +62,22 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     reference = (
         repo / "docs" / "product" / "reference" / "capabilities.md"
     ).read_text(encoding="utf-8")
-    assert f"../../../proposals/archive/1.2/{PRP_NAME}" in reference
-    assert f"../../../proposals/{PRP_NAME}" not in reference
+    assert f"../../proposals/archive/1.2/{PRP_NAME}" in reference
+    assert f"../../proposals/{PRP_NAME}" not in reference
 
 
 def test_archive_never_rewrites_external_url_path_text(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    proposal = repo / "proposals" / PRP_NAME
+    proposal = repo / "docs/proposals" / PRP_NAME
     replace(
         proposal,
         "status: ready\ndepends_on: []",
         "status: rejected\ndepends_on: []\nreject-reason: wont-do",
     )
     external_url = f"https://example.invalid/repository/proposals/{PRP_NAME}"
-    index = repo / "docs" / "index.md"
+    index = repo / "docs" / "README.md"
     index.write_text(
         index.read_text(encoding="utf-8")
         + f"\n[External proposal]({external_url})\n",
@@ -93,7 +93,7 @@ def test_archive_never_rewrites_external_url_path_text(
     ]
 
     plan = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert "docs/index.md" not in plan["rewrites"]
+    assert "docs/README.md" not in plan["rewrites"]
     payload(mdf(python_exe, *arguments))
     assert external_url in index.read_text(encoding="utf-8")
 
@@ -159,6 +159,7 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
 def test_init_writes_files_from_assets_templates(
     python_exe: str, tmp_path: Path
 ):
+    (tmp_path / "AGENTS.md").write_text("- Parent-only rule.\n")
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "README.md").write_text("# Test repository\n", encoding="utf-8")
@@ -176,8 +177,8 @@ def test_init_writes_files_from_assets_templates(
     payload(mdf(python_exe, *arguments))
 
     templates = skill_dir("mdf") / "assets" / "templates"
-    docs_index = (repo / "docs" / "index.md").read_text(encoding="utf-8")
-    expected_index = (templates / "docs-index.md").read_text(encoding="utf-8")
+    docs_index = (repo / "docs" / "README.md").read_text(encoding="utf-8")
+    expected_index = (templates / "docs-readme.md").read_text(encoding="utf-8")
     # all_not_applicable baselines 移除 system boundary 与 deviations 两行
     expected_index = expected_index.replace(
         "- [系统边界](system/overview.md)\n", ""
@@ -187,9 +188,9 @@ def test_init_writes_files_from_assets_templates(
     )
     assert docs_index == expected_index
     assert docs_index != "# 文档\n"
-    assert (repo / "context" / "research" / ".gitkeep").is_file()
-    assert not (repo / "context" / "requirements").exists()
-    assert not (repo / "context" / "planning").exists()
+    assert not (repo / "docs/context").exists()
+    assert not (repo / "docs/context" / "requirements").exists()
+    assert not (repo / "docs/context" / "planning").exists()
 
     changelog = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
     assert changelog == (templates / "changelog.md").read_text(encoding="utf-8")
@@ -210,7 +211,10 @@ def test_init_writes_files_from_assets_templates(
         .read_text(encoding="utf-8")
         .strip()
     )
-    assert block in agents
+    assert agents == "# AGENTS.md\n\n" + block + "\n"
+    for name in ("proposals", "bugs", "changes", "specs", "context"):
+        assert not (repo / "docs" / name).exists()
+    assert (repo / "docs/JOTS.md").is_file()
 
 
 def test_init_updates_existing_manifest_and_managed_block(
@@ -290,12 +294,12 @@ def test_move_change_dry_run_preserves_source_then_moves_tree(
     ]
 
     dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert dry_run["target"] == "changes/unreleased/api-user-auth"
+    assert dry_run["target"] == "docs/changes/unreleased/api-user-auth"
     assert "plan_digest" not in dry_run
     assert artifact.is_file()
 
     payload(mdf(python_exe, *arguments))
-    target = repo / "changes" / "unreleased" / "api-user-auth"
+    target = repo / "docs/changes" / "unreleased" / "api-user-auth"
     assert (target / "notes.md").read_text(encoding="utf-8") == (
         "# External planning artifact\n"
     )

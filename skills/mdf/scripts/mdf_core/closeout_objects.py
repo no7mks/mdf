@@ -17,7 +17,7 @@ def active_objects(repo: Path) -> dict[str, tuple[str, Path, dict[str, Any]]]:
     result: dict[str, tuple[str, Path, dict[str, Any]]] = {}
     for kind in ("proposal", "bug"):
         for path in iter_object_files(repo, kind):
-            if len(path.relative_to(repo).parts) != 2:
+            if len(path.relative_to(repo / "docs").parts) != 2:
                 continue
             text = path.read_text(encoding="utf-8")
             start, end, _ = frontmatter_span(text)

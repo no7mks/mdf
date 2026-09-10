@@ -26,7 +26,7 @@ def split_plan(repo, spec):
     if not isinstance(source, str) or source not in objects:
         raise MDFError("原 PRP 不存在", code="invalid_split")
     path, meta, body = objects[source]
-    if (meta["status"] not in {"draft", "ready"} or len(path.relative_to(repo).parts) != 2
+    if (meta["status"] not in {"draft", "ready"} or len(path.relative_to(repo / "docs").parts) != 2
             or started(repo, source)):
         raise MDFError("仅未 start 的 active draft/ready 可以拆分", code="proposal_started")
     children = spec["children"]
@@ -45,7 +45,7 @@ def split_plan(repo, spec):
                 or match.group(1) != identifier or not identifier.startswith("prp-")
                 or identifier in objects or identifier in ids or not isinstance(child["body"], str)):
             raise MDFError("子 PRP 身份无效或冲突", code="invalid_split")
-        target = repo / "proposals" / name
+        target = repo / "docs/proposals" / name
         if target.exists():
             raise MDFError("子 PRP 路径已存在", code="collision")
         ids.append(identifier)
@@ -69,7 +69,7 @@ def split_plan(repo, spec):
     changed[path] = render(meta, body + "\n\n## 拆分依据\n\n" + spec["rationale"])
     with tempfile.TemporaryDirectory(prefix="mdf-split-") as tmp:
         stage = Path(tmp).resolve()
-        for directory in ("proposals", "bugs", "changes", "docs/adr"):
+        for directory in ("docs/proposals", "docs/bugs", "docs/changes", "docs/adr"):
             src = repo / directory
             if src.exists():
                 shutil.copytree(src, stage / directory, symlinks=True)

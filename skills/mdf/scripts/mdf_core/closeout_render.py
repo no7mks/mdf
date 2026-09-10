@@ -32,7 +32,7 @@ def aggregate_release_changes(
     adrs: set[str] = set()
     evidence_sources: list[dict[str, Any]] = []
     for slug in sorted(slugs):
-        change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
+        change = repo / "docs/changes" / "unreleased" / slug / "CHANGE.md"
         metadata, _ = read_frontmatter(change)
         proposals.update(metadata.get("proposals", []))
         fixed.update(metadata.get("fixed", []))

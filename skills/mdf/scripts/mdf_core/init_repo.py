@@ -120,7 +120,7 @@ def template_text(name: str, fallback: str) -> str:
 
 
 def render_docs_index(baselines: dict[str, dict[str, str]]) -> str:
-    text = template_text("docs-index.md", "# 文档\n")
+    text = template_text("docs-readme.md", "# 文档\n")
     if baselines["system_boundary"]["status"] == "not_applicable":
         text = re.sub(
             r"^- \[系统边界]\(system/overview\.md\)\n?",
@@ -161,7 +161,7 @@ def init_files(
         path = repo / root / ".gitkeep"
         if not path.exists():
             files[path] = ""
-    docs_index = repo / "docs" / "index.md"
+    docs_index = repo / "docs" / "README.md"
     if not docs_index.exists():
         files[docs_index] = render_docs_index(baselines)
     changelog = repo / "CHANGELOG.md"
@@ -170,7 +170,7 @@ def init_files(
             "changelog.md",
             "# Changelog\n\n本文件记录已发布的版本。\n",
         )
-    jots = repo / "JOTS.md"
+    jots = repo / "docs/JOTS.md"
     if not jots.exists():
         files[jots] = template_text("jots.md", "# 随手记录\n")
     for name, fallback in (
@@ -218,14 +218,10 @@ def init_files(
             code="invalid_managed_block",
         )
     for path in (
-        repo / "proposals",
-        repo / "bugs",
-        repo / "changes" / "unreleased",
         repo / "docs" / "product" / "tutorials",
         repo / "docs" / "product" / "how-to",
         repo / "docs" / "product" / "reference",
         repo / "docs" / "product" / "explanation",
-        repo / "context" / "research",
         repo / "docs" / "system" / "architecture",
         repo / "docs" / "system" / "interfaces",
         repo / "docs" / "system" / "data",

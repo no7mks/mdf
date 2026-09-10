@@ -22,33 +22,39 @@
 ```text
 /
 ├── .mdf/manifest.yaml
-├── .specs/<prp-slug>/
 ├── AGENTS.md
 ├── PROJECT.md
 ├── GLOSSARY.md
-├── JOTS.md
 ├── CHANGELOG.md
-├── context/
-│   └── research/
-├── docs/
-│   ├── product/
-│   ├── system/
-│   ├── adr/
-│   └── repowiki/             # 可选；CodeWiki 受管生成物
-├── proposals/
-│   ├── prp-<4 位字符>-<slug>.md
-│   └── archive/<major.minor>/
-├── bugs/
-│   ├── bug-<4 位字符>-<slug>.md
-│   └── archive/<major.minor>/
-└── changes/
-    ├── unreleased/<slug>/CHANGE.md
-    └── <major.minor.patch>/
-        ├── CHANGE.md
-        └── <slug>/CHANGE.md
+└── docs/
+    ├── README.md
+    ├── JOTS.md
+    ├── product/
+    ├── system/
+    ├── adr/
+    ├── repowiki/             # 可选；CodeWiki 受管生成物
+    ├── context/research/
+    ├── specs/<prp-slug>/
+    ├── proposals/
+    │   ├── prp-<4 位字符>-<slug>.md
+    │   └── archive/<major.minor>/
+    ├── bugs/
+    │   ├── bug-<4 位字符>-<slug>.md
+    │   └── archive/<major.minor>/
+    └── changes/
+        ├── unreleased/<slug>/CHANGE.md
+        └── <major.minor.patch>/
+            ├── CHANGE.md
+            └── <slug>/CHANGE.md
 ```
 
-`changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
+`docs/README.md` 是文档入口，区分当前事实、决策、工作记录与调研材料。
+工作目录 `proposals/`、`bugs/`、`changes/`、`specs/`、`context/` 在首次写入时创建，
+不在初始化时创建空占位。已有项目文档保持原位；同名目录须核对内容和归属，
+不得覆盖或自动接管。事实审计仍限定在 `docs/product/` 与 `docs/system/`。
+
+
+`docs/changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量
@@ -57,7 +63,7 @@ frontmatter。该目录由 CodeWiki intent 受管，项目其他文档仍可按�
 
 ## Jots
 
-`JOTS.md` 是未分诊的随手记录本。每条 Jot 可保留任意 Markdown 正文，尚不属于
+`docs/JOTS.md` 是未分诊的随手记录本。每条 Jot 可保留任意 Markdown 正文，尚不属于
 Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
 
 每条 Jot 使用不可变 ID 与成对 marker，以便提升为 Proposal 或 Bug 后可精确删除：
@@ -76,8 +82,8 @@ Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
 
 ## 顶层布局
 
-顶层只保留项目入口、构建或包管理或部署配置、仓库治理文件和 MDF 固定项。`context/`
-是 MDF 固定项，保存非 SSOT 的调研上下文。业务实现
+顶层只保留项目入口、构建或包管理或部署配置、仓库治理文件和 MDF 固定项。
+MDF 工作记录统一位于 `docs/`，配置位于 `.mdf/`。业务实现
 应归入 `src/`，测试应归入 `tests/`；生成物应归入名称明确的子目录。生态惯例要求
 其他目录名时，须在 `PROJECT.md` 中说明。
 
@@ -91,8 +97,8 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 - `PROJECT.md` 仅面向项目维护者，记录项目专属的开发、验证与维护手册，包括环境、
   lint、test、build、CI 等价检查、生成物与目录约定。命令的可执行事实来源始终是
   仓库配置与脚本；生产运行和运维事实属于 `docs/system/operations/`。
-- `AGENTS.md` 仅面向在仓库中工作的 Agent，记录 Agent 的行为准则与必要的项目
-  例外，不重复面向用户或维护者的材料。它要求 Agent 先读 `README.md`，再按工作
+- `AGENTS.md` 仅面向在仓库中工作的 Agent，记录项目专属的 Agent 行为准则与必要例外，
+  不重复面向用户或维护者的材料。它要求 Agent 先读 `README.md`，再按工作
   需要读取 `PROJECT.md` 与 `GLOSSARY.md`。MDF 只维护其中带 marker 的区块，其余
   内容由仓库维护者负责。
 - `GLOSSARY.md` 面向所有读者维护稳定的领域词典，包括术语、同义词和易混淆概念；
@@ -106,7 +112,8 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 | `glossary.md`                       | `GLOSSARY.md`                    |
 | `project.md`                        | `PROJECT.md`                     |
 | `agents-managed-block.md`           | `AGENTS.md` MDF marker           |
-| `jots.md`                           | `JOTS.md` 草稿本                 |
+| `docs-readme.md`                   | `docs/README.md` 文档入口        |
+| `jots.md`                           | `docs/JOTS.md` 草稿本                 |
 | `changelog.md`                      | `CHANGELOG.md`                   |
 | `docs-*` / `product-*` / `system-*` | `当前事实文档`                   |
 | `adr.md`                            | `docs/adr/NNNN-slug.md`          |
@@ -176,8 +183,8 @@ checkout 的实际行为，并用代码、配置、schema、测试或生成物�
 
 ## 工作上下文
 
-`context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
-`context/research/` 保存本地或外部调研报告、候选方案和对比。`intake` 的来源只用于
+`docs/context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
+`docs/context/research/` 保存本地或外部调研报告、候选方案和对比。`intake` 的来源只用于
 本次分诊，不保存为工作上下文。已确认的长期取舍另建 ADR；实现后的当前行为另写产品
 或系统`当前事实文档`。
 

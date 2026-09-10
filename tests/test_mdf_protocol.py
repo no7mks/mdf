@@ -248,7 +248,7 @@ def test_audit_rejects_manifest_latest_release_that_disagrees_with_changelog(
 
 def test_invalid_object_status_is_rejected(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
-    bug = repo / "bugs" / BUG_NAME
+    bug = repo / "docs/bugs" / BUG_NAME
     replace(bug, "status: open", "status: in_progress")
     init_git(repo)
 
@@ -259,7 +259,7 @@ def test_invalid_object_status_is_rejected(python_exe: str, tmp_path: Path):
 
 def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
-    proposal = repo / "proposals" / PRP_NAME
+    proposal = repo / "docs/proposals" / PRP_NAME
     replace(
         proposal,
         "## 期望结果\n\n调用方能取得稳定的健康状态。",
@@ -283,7 +283,7 @@ def test_invalid_depends_on_type_returns_findings_json_without_traceback(
 ):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "depends_on: []",
         "depends_on: null",
     )
@@ -303,7 +303,7 @@ def test_bug_rejects_depends_on_and_requires_severity(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    bug = repo / "bugs" / BUG_NAME
+    bug = repo / "docs/bugs" / BUG_NAME
     replace(bug, "severity: major", "depends_on: []")
     init_git(repo)
     result = mdf(python_exe, "validate", "--repo", str(repo))
@@ -323,9 +323,9 @@ def test_bug_found_in_accepts_unreleased_sentinel(
 
 def test_misplaced_object_prefix_is_rejected(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
-    misplaced = repo / "bugs" / PRP_NAME
+    misplaced = repo / "docs/bugs" / PRP_NAME
     misplaced.write_text(
-        (repo / "proposals" / PRP_NAME).read_text(encoding="utf-8"),
+        (repo / "docs/proposals" / PRP_NAME).read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     init_git(repo)
@@ -335,7 +335,7 @@ def test_misplaced_object_prefix_is_rejected(python_exe: str, tmp_path: Path):
     data = json.loads(result.stdout)
     assert any(
         finding["code"] == "object.filename"
-        and finding["path"] == f"bugs/{PRP_NAME}"
+        and finding["path"] == f"docs/bugs/{PRP_NAME}"
         for finding in data["findings"]
     )
 
@@ -346,7 +346,7 @@ def test_validation_rejects_local_link_outside_repository(
     repo = copy_fixture(tmp_path)
     outside = tmp_path / "outside.md"
     outside.write_text("# Outside\n", encoding="utf-8")
-    index = repo / "docs" / "index.md"
+    index = repo / "docs" / "README.md"
     index.write_text(
         index.read_text(encoding="utf-8") + "\n[Outside](../../outside.md)\n",
         encoding="utf-8",
@@ -376,8 +376,8 @@ def test_validation_rejects_duplicate_id_across_active_and_archive(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    source = repo / "proposals" / PRP_NAME
-    archived = repo / "proposals" / "archive" / "1.2" / PRP_NAME
+    source = repo / "docs/proposals" / PRP_NAME
+    archived = repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME
     archived.parent.mkdir(parents=True)
     archived.write_text(
         source.read_text(encoding="utf-8").replace(

@@ -48,8 +48,8 @@ def locate(repo, slug=None):
         if not branch.startswith(("feature/", "qa/", "dev/")):
             raise MDFError("阶段操作需要 feature/qa/dev 分支", code="unsupported_branch")
         slug = branch.split("/", 1)[1]
-    candidates = [safe(repo, repo / ".specs" / slug),
-                  safe(repo, repo / "changes" / "unreleased" / slug)]
+    candidates = [safe(repo, repo / "docs/specs" / slug),
+                  safe(repo, repo / "docs/changes" / "unreleased" / slug)]
     found = [path for path in candidates if (path / "delivery.json").is_file()]
     if len(found) != 1:
         raise MDFError("交付记录缺失或重复", code="invalid_delivery")
@@ -93,8 +93,9 @@ def fingerprints(repo, root, data, config=None):
              if name == "GLOSSARY.md" or (name.endswith(".md")
                  and name.startswith(("docs/product/", "docs/system/")))}
     code = {name: value for name, value in files.items()
-            if name not in facts and not name.startswith((".specs/", "changes/", "proposals/", "bugs/"))
-            and name not in {"JOTS.md", ".mdf/manifest.yaml"}}
+            if name not in facts and not name.startswith(
+                ("docs/specs/", "docs/changes/", "docs/proposals/", "docs/bugs/"))
+            and name not in {"docs/JOTS.md", ".mdf/manifest.yaml"}}
     tests = {name: value for name, value in code.items() if matches(name, protected)}
     implementation = {name: value for name, value in code.items() if name not in tests}
     design = {}

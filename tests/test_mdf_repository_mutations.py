@@ -9,7 +9,7 @@ def test_archive_accepts_closed_non_delivery_resolution(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    proposal = repo / "proposals" / PRP_NAME
+    proposal = repo / "docs/proposals" / PRP_NAME
     replace(
         proposal,
         "status: ready\ndepends_on: []",
@@ -27,7 +27,7 @@ def test_archive_accepts_closed_non_delivery_resolution(
     dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
     assert "plan_digest" not in dry_run
     assert_ok(mdf(python_exe, *arguments))
-    assert (repo / "proposals" / "archive" / "2.0" / PRP_NAME).is_file()
+    assert (repo / "docs/proposals" / "archive" / "2.0" / PRP_NAME).is_file()
 
 
 def test_archive_post_validation_failure_leaves_worktree(
@@ -36,7 +36,7 @@ def test_archive_post_validation_failure_leaves_worktree(
     core = load_core_module()
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
         (
             "status: released\ndepends_on: []\n"
@@ -61,8 +61,8 @@ def test_archive_post_validation_failure_leaves_worktree(
     with pytest.raises(core.MDFError) as caught:
         core.command_archive(args)
     assert caught.value.code == "post_validation_failed"
-    assert not (repo / "proposals" / PRP_NAME).exists()
-    assert (repo / "proposals" / "archive" / "1.2" / PRP_NAME).is_file()
+    assert not (repo / "docs/proposals" / PRP_NAME).exists()
+    assert (repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME).is_file()
     assert git(repo, "status", "--porcelain").stdout
 
 
@@ -70,7 +70,7 @@ def test_duplicate_group_archives_primary_and_child_together(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    primary = repo / "bugs" / BUG_NAME
+    primary = repo / "docs/bugs" / BUG_NAME
     replace(
         primary,
         "status: open",
@@ -78,7 +78,7 @@ def test_duplicate_group_archives_primary_and_child_together(
     )
     replace(primary, "found_in: unreleased", "found_in: 1.2.0")
     duplicate_name = "bug-EF56-duplicate.md"
-    (repo / "bugs" / duplicate_name).write_text(
+    (repo / "docs/bugs" / duplicate_name).write_text(
         "---\n"
         "id: bug-EF56\n"
         "type: bug\n"
@@ -122,14 +122,14 @@ def test_move_rewrite_failure_leaves_partial_changes(
 ):
     core = load_core_module()
     repo = tmp_path / "repo"
-    source = repo / "proposals" / "record"
+    source = repo / "docs/proposals" / "record"
     source.mkdir(parents=True)
     (source / "item.md").write_text("# Item\n", encoding="utf-8")
     reference = repo / "reference.md"
     reference.write_text(
-        "[Item](proposals/record/item.md)\n", encoding="utf-8"
+        "[Item](docs/proposals/record/item.md)\n", encoding="utf-8"
     )
-    destination = repo / "proposals" / "archive" / "1.0" / "record"
+    destination = repo / "docs/proposals" / "archive" / "1.0" / "record"
     moves = {source: destination}
     rewrites = core.replacement_plan(repo, moves)
 
@@ -147,14 +147,14 @@ def test_move_rewrite_failure_leaves_partial_changes(
     assert not source.exists()
     assert (destination / "item.md").is_file()
     assert reference.read_text(encoding="utf-8") == (
-        "[Item](proposals/record/item.md)\n"
+        "[Item](docs/proposals/record/item.md)\n"
     )
-    assert (repo / "proposals" / "archive").is_dir()
+    assert (repo / "docs/proposals" / "archive").is_dir()
 
 
 def test_init_refuses_to_overwrite_unexpected_files(tmp_path: Path):
     core = load_core_module()
-    existing = tmp_path / "docs" / "index.md"
+    existing = tmp_path / "docs" / "README.md"
     existing.parent.mkdir(parents=True)
     existing.write_text("keep me\n", encoding="utf-8")
 
@@ -170,7 +170,7 @@ def test_init_write_failure_leaves_partial_writes(
     core = load_core_module()
     replaced_existing = tmp_path / "CHANGELOG.md"
     replaced_existing.write_text("original changelog\n", encoding="utf-8")
-    created = tmp_path / "docs" / "index.md"
+    created = tmp_path / "docs" / "README.md"
     blocked = tmp_path / "AGENTS.md"
     files = {
         replaced_existing: "updated changelog\n",
@@ -223,8 +223,8 @@ def test_move_change_rewrites_links_pointing_outside_moved_tree(
     assert "working-notes/api-user-auth/notes.md" in dry_run["rewrites"]
     payload(mdf(python_exe, *arguments))
 
-    moved = repo / "changes" / "unreleased" / "api-user-auth" / "notes.md"
-    rewritten = f"../../../{target_doc}"
+    moved = repo / "docs/changes" / "unreleased" / "api-user-auth" / "notes.md"
+    rewritten = "../../../product/reference/capabilities.md"
     assert f"[Capabilities]({rewritten})" in moved.read_text(encoding="utf-8")
     assert (moved.parent / rewritten).resolve() == (repo / target_doc).resolve()
 
@@ -254,7 +254,7 @@ def test_init_allows_dirty_worktree_for_active_continuation(
     applied = payload(mdf(python_exe, *arguments))
     assert applied["operation"] == "init"
     assert (repo / ".mdf" / "manifest.yaml").is_file()
-    assert (repo / "JOTS.md").read_text(encoding="utf-8") == "# 随手记录\n"
+    assert (repo / "docs/JOTS.md").read_text(encoding="utf-8") == "# 随手记录\n"
 
 
 def test_archive_and_move_change_require_clean_worktree(
@@ -263,7 +263,7 @@ def test_archive_and_move_change_require_clean_worktree(
     archive_root = tmp_path / "archive"
     archive_root.mkdir()
     archive_repo = copy_fixture(archive_root)
-    proposal = archive_repo / "proposals" / PRP_NAME
+    proposal = archive_repo / "docs/proposals" / PRP_NAME
     replace(
         proposal,
         "status: ready\ndepends_on: []",

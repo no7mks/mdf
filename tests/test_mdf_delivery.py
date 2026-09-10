@@ -14,9 +14,9 @@ def setup_delivery(python_exe, tmp_path):
     obj.write_text("# 目标\n\n实现健康状态接口。\n")
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
                        "--name", "health", "--proposal", "prp-AB23", "--objectives-file", str(obj)))
-    root = repo / ".specs/health"
+    root = repo / "docs/specs/health"
     assert json.loads((root / "delivery.json").read_text())["start_commit"] == data["start_commit"]
-    (root / "design.md").write_text("# 设计\n\n[实现](../../src/service.py)\n")
+    (root / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
     payload(mdf(python_exe, "delivery", "record", "--repo", str(repo), "--stage", "design",
@@ -103,15 +103,15 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     commit(repo)
     payload(mdf(python_exe, "move-change", "--repo", str(repo), "--source", str(root),
                 "--branch-slug", "health"))
-    dest = repo / "changes/unreleased/health"
-    assert "../../../src/service.py" in (dest / "design.md").read_text()
+    dest = repo / "docs/changes/unreleased/health"
+    assert "../../../../src/service.py" in (dest / "design.md").read_text()
     # Existing helper creates the directory; place its CHANGE alongside the moved material.
     write_unreleased_change(repo, "temporary")
-    text = (repo / "changes/unreleased/temporary/CHANGE.md").read_text()
+    text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
     (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/health")
                                     .replace("fixed: [bug-CD34]", "fixed: []"))
-    shutil.rmtree(repo / "changes/unreleased/temporary")
-    replace(repo / "proposals" / PRP_NAME, "status: implemented", "status: ready")
+    shutil.rmtree(repo / "docs/changes/unreleased/temporary")
+    replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
     commit(repo)
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     git(repo, "push")
@@ -123,12 +123,12 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         git(repo, "checkout", "feature/health")
         result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
         assert "merge_conflict" in result.stderr
-        assert "status: ready" in (repo / "proposals" / PRP_NAME).read_text()
-        assert "implemented" not in git(repo, "show", f"origin/feature/health:proposals/{PRP_NAME}").stdout
+        assert "status: ready" in (repo / "docs/proposals" / PRP_NAME).read_text()
+        assert "implemented" not in git(repo, "show", f"origin/feature/health:docs/proposals/{PRP_NAME}").stdout
         assert not git(repo, "status", "--porcelain").stdout
         return
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
-    assert "implemented" in (repo / "proposals" / PRP_NAME).read_text()
+    assert "implemented" in (repo / "docs/proposals" / PRP_NAME).read_text()
     assert json.loads((dest / "delivery.json").read_text()) == original
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert not git(remote, "for-each-ref", "refs/heads/feature/health").stdout

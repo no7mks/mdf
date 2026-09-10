@@ -7,9 +7,9 @@
 slug 在 start 固定，不随标题修改。delivery.json 记录 proposal、slug、branch、start_commit。
 起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
 
-开发材料位于 `.specs/<prp-slug>/`：objectives.md、design.md、delivery.json、gates/。
-finish 整体搬入 `changes/unreleased/<prp-slug>/`，材料与 CHANGE.md 同级；发布后进入
-`changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
+开发材料位于 `docs/specs/<prp-slug>/`：objectives.md、design.md、delivery.json、gates/。
+finish 整体搬入 `docs/changes/unreleased/<prp-slug>/`，材料与 CHANGE.md 同级；发布后进入
+`docs/changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
 objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓库相对，避免依赖目录深度。
 
 ## 阶段与执行责任

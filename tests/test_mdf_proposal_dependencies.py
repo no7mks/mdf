@@ -14,8 +14,8 @@ DEPENDENCY_ID = "prp-CD34"
 def write_proposal(
     repo: Path, identifier: str, slug: str, depends_on: str = "[]"
 ) -> Path:
-    source = repo / "proposals" / PRP_NAME
-    target = repo / "proposals" / f"{identifier}-{slug}.md"
+    source = repo / "docs/proposals" / PRP_NAME
+    target = repo / "docs/proposals" / f"{identifier}-{slug}.md"
     target.write_text(
         source.read_text(encoding="utf-8")
         .replace(PRP_ID, identifier)
@@ -68,7 +68,7 @@ def test_proposal_rejects_missing_or_cross_type_dependency(
             encoding="utf-8",
         )
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "depends_on: []",
         f"depends_on: [{dependency}]",
     )
@@ -83,7 +83,7 @@ def test_proposal_accepts_released_dependency(
     repo = copy_fixture(tmp_path)
     write_proposal(repo, DEPENDENCY_ID, "health-client", f"[{PRP_ID}]")
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
         (
             "status: released\ndepends_on: []\n"
@@ -100,7 +100,7 @@ def test_proposal_accepts_archived_released_dependency(
 ):
     repo = copy_fixture(tmp_path)
     write_proposal(repo, DEPENDENCY_ID, "health-client", f"[{PRP_ID}]")
-    source = repo / "proposals" / PRP_NAME
+    source = repo / "docs/proposals" / PRP_NAME
     replace(
         source,
         "status: ready\ndepends_on: []",
@@ -131,7 +131,7 @@ def test_proposal_rejects_unreleased_dependency(
     repo = copy_fixture(tmp_path)
     write_proposal(repo, DEPENDENCY_ID, "health-client", f"[{PRP_ID}]")
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
         f"status: rejected\ndepends_on: []\nreject-reason: {resolution}",
     )
@@ -162,7 +162,7 @@ def test_proposal_rejects_duplicate_dependencies(
 def test_proposal_rejects_self_dependency(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "depends_on: []",
         f"depends_on: [{PRP_ID}]",
     )
@@ -175,7 +175,7 @@ def test_proposal_rejects_dependency_cycle(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     write_proposal(repo, DEPENDENCY_ID, "health-client", f"[{PRP_ID}]")
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "depends_on: []",
         f"depends_on: [{DEPENDENCY_ID}]",
     )

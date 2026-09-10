@@ -111,7 +111,7 @@
 
 **追加**
 
-调用 `make-jot-id`、生成简短标题、在 `JOTS.md` 末尾追加完整 marker 条目， 保留原始含义和细节，再运行
+调用 `make-jot-id`、生成简短标题、在 `docs/JOTS.md` 末尾追加完整 marker 条目， 保留原始含义和细节，再运行
 `targeted validation`。
 
 验收：新增条目和 diff。

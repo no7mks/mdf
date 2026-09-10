@@ -65,5 +65,5 @@ CLI 在同一次调用中 fetch， 检查 `origin`、默认
 异常与交接：创建前检查失败时不创建分支并报告 finding；创建后推送失败时保留本地分支，报告 CLI 返回的现场，
 不自动删分支或重试 start。先核对远端分支与本地 HEAD，再按用户选择补推或处理现场；
 基线已推进时先询问用户并建议由 MDF 分析解决。
-feature CLI 固定 start_commit，在新分支写入 .specs/<slug>/ 的目标和身份，创建目标提交后推送。
+feature CLI 固定 start_commit，在新分支写入 docs/specs/<slug>/ 的目标和身份，创建目标提交后推送。
 成功后结束，由用户手动触发 design。其他分支不创建新增阶段材料。

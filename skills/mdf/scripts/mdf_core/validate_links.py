@@ -13,9 +13,6 @@ def managed_markdown(repo: Path) -> Iterable[Path]:
         repo / "GLOSSARY.md",
         repo / "CHANGELOG.md",
         repo / "docs",
-        repo / "proposals",
-        repo / "bugs",
-        repo / "changes",
     )
     found: set[Path] = set()
     for root in roots:

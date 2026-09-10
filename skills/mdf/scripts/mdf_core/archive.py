@@ -17,9 +17,9 @@ def archive_plan(
         raise MDFError("Archive epoch must be MAJOR.MINOR", code="bad_epoch")
     moves: dict[Path, Path] = {}
     records: dict[str, tuple[Path, dict[str, Any]]] = {}
-    for kind, directory in (("proposal", "proposals"), ("bug", "bugs")):
+    for kind, directory in (("proposal", "docs/proposals"), ("bug", "docs/bugs")):
         for path in iter_object_files(repo, kind):
-            records_path_parts = path.relative_to(repo).parts
+            records_path_parts = path.relative_to(repo / "docs").parts
             try:
                 metadata, _ = read_frontmatter(path)
             except MDFError as exc:
@@ -71,14 +71,14 @@ def archive_plan(
                 f"{relative(repo, primary_path)}",
                 code="duplicate_group_open",
             )
-        primary_parts = primary_path.relative_to(repo).parts
+        primary_parts = primary_path.relative_to(repo / "docs").parts
         group_epoch = (
             primary_parts[2]
             if len(primary_parts) == 4 and primary_parts[1] == "archive"
             else epoch
         )
         if len(primary_parts) == 2:
-            target = repo / "bugs" / "archive" / group_epoch / primary_path.name
+            target = repo / "docs/bugs" / "archive" / group_epoch / primary_path.name
             if target.exists() and primary_path not in moves:
                 raise MDFError(
                     "Archive destination already exists: "
@@ -86,8 +86,8 @@ def archive_plan(
                     code="collision",
                 )
             moves.setdefault(primary_path, target)
-        if len(path.relative_to(repo).parts) == 2:
-            target = repo / "bugs" / "archive" / group_epoch / path.name
+        if len(path.relative_to(repo / "docs").parts) == 2:
+            target = repo / "docs/bugs" / "archive" / group_epoch / path.name
             if target.exists() and path not in moves:
                 raise MDFError(
                     "Archive destination already exists: "
@@ -103,7 +103,7 @@ def change_move_plan(
     repo: Path, source: Path | None, branch_slug: str
 ) -> tuple[dict[Path, Path], dict[Path, str], Path]:
     slug = slugify(branch_slug)
-    target = repo / "changes" / "unreleased" / slug
+    target = repo / "docs/changes" / "unreleased" / slug
     moves: dict[Path, Path] = {}
     if target.exists():
         if source is None or source.resolve() != target.resolve():

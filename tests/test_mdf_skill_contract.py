@@ -94,8 +94,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "intents.md" not in init
     assert "形成`初始化方案`" in init
     assert "再次显式调用 `$mdf init`" in init
-    assert "context/research/" in init
-    assert "context/requirements/" not in init
+    assert "docs/context/research/" in init
+    assert "docs/context/requirements/" not in init
     assert "$mdf intake" in init
     assert "$mdf bug create" in init and "$mdf prp create" in init
     assert "| 1 | 入口 | 脚本 |" in init
@@ -159,7 +159,7 @@ def test_jot_intent_preserves_raw_input_until_promotion() -> None:
     jot = intent("jot")
 
     assert "make-jot-id" in jot
-    assert "JOTS.md" in jot
+    assert "docs/JOTS.md" in jot
     assert "完整 marker 条目" in jot
     assert "保留新对象、原 Jot" in jot
     assert "Proposal 写为 `draft`，Bug 写为 `open`" in jot
@@ -197,8 +197,8 @@ def test_repository_contract_defines_static_core_terms() -> None:
     assert "`当前事实文档`" in init
     assert "`validation`" in init
     assert "`全量审阅`" in init
-    assert "context/requirements/" not in contract
-    assert "context/planning/" not in contract
+    assert "docs/context/requirements/" not in contract
+    assert "docs/context/planning/" not in contract
 
 
 def test_repository_contract_defines_root_document_responsibilities() -> None:

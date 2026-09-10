@@ -3,10 +3,10 @@ from mdf_test_support import *  # noqa: F403
 
 
 def add_prp(repo, identifier, deps=(), status="ready"):
-    template = (repo / "proposals" / PRP_NAME).read_text()
+    template = (repo / "docs/proposals" / PRP_NAME).read_text()
     text = template.replace("prp-AB23", identifier).replace("depends_on: []", f"depends_on: {json.dumps(list(deps))}")
     text = text.replace("status: ready", f"status: {status}")
-    path = repo / "proposals" / f"{identifier}-item.md"
+    path = repo / "docs/proposals" / f"{identifier}-item.md"
     path.write_text(text)
     return path
 
@@ -33,7 +33,7 @@ def test_next_ready_dag_drafts_truncation_and_invalid_dependencies(python_exe, t
 
 
 def split_spec(repo):
-    body = (repo / "proposals" / PRP_NAME).read_text().split("---", 2)[2]
+    body = (repo / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
     return {"source": "prp-AB23", "rationale": "用户确认两项共同覆盖验收，下游仅依赖第一项",
             "children": [{"id": key, "filename": f"{key}-part.md", "depends_on": [], "body": body}
                          for key in ("prp-EF56", "prp-GH78")],
@@ -52,9 +52,9 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path):
     assert len(result["files"]) == 4
     assert git(repo, "status", "--porcelain").stdout == before
     payload(mdf(python_exe, *args))
-    assert 'status: "replaced"' in (repo / "proposals" / PRP_NAME).read_text()
-    assert 'depends_on: ["prp-EF56"]' in (repo / "proposals/prp-JK89-item.md").read_text()
-    assert 'status: "draft"' in (repo / "proposals/prp-EF56-part.md").read_text()
+    assert 'status: "replaced"' in (repo / "docs/proposals" / PRP_NAME).read_text()
+    assert 'depends_on: ["prp-EF56"]' in (repo / "docs/proposals/prp-JK89-item.md").read_text()
+    assert 'status: "draft"' in (repo / "docs/proposals/prp-EF56-part.md").read_text()
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
 
 
@@ -84,21 +84,21 @@ def test_verification_items_validate_identity_and_kind(python_exe, tmp_path):
 
 def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    replace(repo / "proposals" / PRP_NAME, "status: ready", "status: implemented")
+    replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     add_prp(repo, "prp-EF56", ["prp-AB23"])
     # add_prp copies its source; explicitly keep the dependent ready.
-    replace(repo / "proposals/prp-EF56-item.md", "status: implemented", "status: ready")
+    replace(repo / "docs/proposals/prp-EF56-item.md", "status: implemented", "status: ready")
     init_git(repo)
     data = payload(mdf(python_exe, "next", "--repo", str(repo)))
     assert [node["id"] for node in data["trees"]] == ["prp-EF56"]
-    source = repo / "proposals" / PRP_NAME
+    source = repo / "docs/proposals" / PRP_NAME
     source.write_text(source.read_text().replace("status: implemented", "status: replaced")
                       .replace("depends_on: []", "depends_on: []\nreplaced_by: [prp-ZZ99, prp-XX88]"))
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert "proposal.replaced_by" in result.stdout
 
 
-@pytest.mark.parametrize("location", [".specs/started", "changes/unreleased/started"])
+@pytest.mark.parametrize("location", ["docs/specs/started", "docs/changes/unreleased/started"])
 def test_split_rejects_branch_record_even_when_current_tree_has_no_specs(python_exe, tmp_path, location):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-JK89", ["prp-AB23"])
@@ -126,7 +126,7 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
     load_core_module()
     from mdf_core.prp_split import command_split
     original = Path.write_text
-    target = repo / "proposals/prp-GH78-part.md"
+    target = repo / "docs/proposals/prp-GH78-part.md"
 
     def fail_second(path, content, *args, **kwargs):
         if path == target:

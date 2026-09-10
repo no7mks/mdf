@@ -138,7 +138,8 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **创建**
 
 为每项提议并确认英文 ASCII kebab-case slug，按类型 proposal 或 bug 使用 `make-id --type <type> --slug <slug>`
-生成 ID 与规范化文件名，并以模板写入 `proposals/` 或 `bugs/`；Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
+生成 ID 与规范化文件名，并以模板写入 `docs/proposals/` 或 `docs/bugs/`；
+Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
 
 全部对象写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，
 回读对象并对照模板、确认清单与完整 diff，核对 schema、必填章节、初始状态和依赖。

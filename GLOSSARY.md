@@ -6,7 +6,7 @@ Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 
 ## Jot
 
-`JOTS.md` 中尚未分诊的随手记录。它可以是想法、优化、小问题或观察；提升后才成为
+`docs/JOTS.md` 中尚未分诊的随手记录。它可以是想法、优化、小问题或观察；提升后才成为
 Proposal 或 Bug。Jot 不是 Proposal/Bug 的 `draft` 状态，也不是 Change。
 
 ## Bug 状态

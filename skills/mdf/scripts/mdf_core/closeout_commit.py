@@ -63,7 +63,7 @@ def apply_version_closeout(
             code="insufficient_bump",
         )
 
-    release_dir = repo / "changes" / context["version"]
+    release_dir = repo / "docs/changes" / context["version"]
     moves: dict[Path, Path] = {}
     move_records: list[dict[str, Any]] = []
     for item in context["release_items"]:
@@ -107,7 +107,7 @@ def apply_version_closeout(
         rewrite_inside_filter=lambda path: (
             path.name == "CHANGE.md" or managed_delivery_markdown(path)
             or (
-                path.relative_to(repo).parts[0] in {"proposals", "bugs"}
+                path.relative_to(repo).parts[:2] in {("docs", "proposals"), ("docs", "bugs")}
                 and OBJECT_FILE_RE.fullmatch(path.name) is not None
             )
         ),

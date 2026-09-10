@@ -117,7 +117,7 @@
 **创建**
 
 为 Bug 提议并确认英文 ASCII kebab-case slug，使用 `make-id --type bug --slug` 生成 ID 与规范化文件名，
-并以模板写入 `bugs/`，状态为 `open`。
+并以模板写入 `docs/bugs/`，状态为 `open`。
 
 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、
 确认事实与完整 diff，核对 schema、必填章节及 `open` 状态。

@@ -79,7 +79,7 @@
 - README 说明项目定位与入口，明确尚未实现；PROJECT 记录维护、目录和验证约定。
 - 目标和未来需求保持意图性质；既有需求草稿按确认方案保留，不自动转 Proposal 或 Bug。
   后续由用户显式调用 `$mdf intake`、`$mdf bug create` 或 `$mdf prp create`。
-- 已确认的重要长期取舍可记录 ADR；候选选型与调研归入 `context/research/`。
+- 已确认的重要长期取舍可记录 ADR；候选选型与调研归入 `docs/context/research/`。
 - GLOSSARY 只保留稳定术语，AGENTS 只管理 MDF 区块，根文档各自遵守职责。
 - 文档移动、改写列出源、目标和处理方式，确认后执行且不覆盖既有内容。
   保留默认工程模板及其目录结构，不重排业务实现或测试目录。

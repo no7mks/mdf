@@ -15,16 +15,16 @@ ENTRY_RE = re.compile(
 
 
 def validate_jots(repo: Path, findings: list[Finding]) -> None:
-    path = repo / "JOTS.md"
-    relative = "JOTS.md"
+    path = repo / "docs/JOTS.md"
+    relative = "docs/JOTS.md"
     if not path.exists() and not path.is_symlink():
-        add_finding(findings, "jot.missing", "Missing JOTS.md", relative)
+        add_finding(findings, "jot.missing", "Missing docs/JOTS.md", relative)
         return
     if not path.is_file() or path.is_symlink():
         add_finding(
             findings,
             "jot.path",
-            "JOTS.md must be a regular repository file",
+            "docs/JOTS.md must be a regular repository file",
             relative,
         )
         return
@@ -33,7 +33,7 @@ def validate_jots(repo: Path, findings: list[Finding]) -> None:
         add_finding(
             findings,
             "jot.heading",
-            "JOTS.md 必须以“# 随手记录”开头",
+            "docs/JOTS.md 必须以“# 随手记录”开头",
             relative,
         )
         return

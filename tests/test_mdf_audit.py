@@ -200,7 +200,7 @@ def test_bug_found_in_accepts_only_bare_unreleased_or_stable(
 ):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / f"bugs/{BUG_NAME}",
+        repo / f"docs/bugs/{BUG_NAME}",
         "found_in: unreleased",
         f"found_in: {bad_value}",
     )
@@ -216,7 +216,7 @@ def test_unreleased_sentinel_is_rejected_in_proposal_found_in(
 ):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / "proposals" / PRP_NAME,
+        repo / "docs/proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
         "status: ready\ndepends_on: []\nfound_in: unreleased",
     )

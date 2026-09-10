@@ -61,7 +61,7 @@ duplicate。duplicate 不需要 `found_in`/`fixed_in`，也不得出现在 Chang
 
 ## Change
 
-未版本化的子 Change 位于 `changes/unreleased/<slug>/CHANGE.md`：
+未版本化的子 Change 位于 `docs/changes/unreleased/<slug>/CHANGE.md`：
 
 ```yaml
 change_kind: feature | bugfix
@@ -89,7 +89,7 @@ evidence:
 
 ## 版本根 Change
 
-`changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
+`docs/changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
 `version`、`previous_version`、`included_changes`、Proposal/Bug outcomes、release
 notes、`evidence`、审阅记录，以及“结果”“包含的 Change”“收口结果”“found-in 转换”、
 “SemVer 决策”“审计”“验证命令”等章节。每个稳定版本只有一个版本根 Change。

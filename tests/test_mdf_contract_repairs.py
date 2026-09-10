@@ -21,7 +21,7 @@ def closeout_args(repo: Path, *extra: str) -> list[str]:
 
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
-    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, slug)  # noqa: F405
     git(repo, "add", "--all")  # noqa: F405
@@ -30,7 +30,7 @@ def prepare_release(repo: Path, slug: str = "service-health") -> None:
 
 
 def write_closed_duplicate(repo: Path) -> None:
-    duplicate = repo / "bugs" / DUPLICATE_NAME
+    duplicate = repo / "docs/bugs" / DUPLICATE_NAME
     duplicate.write_text(
         (
             "---\n"
@@ -120,7 +120,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
     expected_archive: bool,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
-    bug = repo / "bugs" / BUG_NAME  # noqa: F405
+    bug = repo / "docs/bugs" / BUG_NAME  # noqa: F405
     replace(bug, "status: open", 'status: "fixed" # pending verification')  # noqa: F405
     replace(  # noqa: F405
         bug,
@@ -131,7 +131,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
         replace(bug, "severity: major", "severity: trivial")  # noqa: F405
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, "quoted-object")  # noqa: F405
-    change = repo / "changes" / "unreleased" / "quoted-object" / "CHANGE.md"
+    change = repo / "docs/changes" / "unreleased" / "quoted-object" / "CHANGE.md"
     if outcome == "closed":
         replace(  # noqa: F405
             bug,
@@ -155,7 +155,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
 
     if expected_archive:
-        result = repo / "bugs" / "archive" / "1.3" / BUG_NAME  # noqa: F405
+        result = repo / "docs/bugs" / "archive" / "1.3" / BUG_NAME  # noqa: F405
         expected_status = "rejected" if outcome == "closed" else "closed"
         assert f'status: "{expected_status}"' in result.read_text(
             encoding="utf-8"
@@ -182,7 +182,7 @@ def test_change_evidence_requires_non_empty_string_elements(
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
     write_unreleased_change(repo, "service-health")  # noqa: F405
-    change = repo / "changes" / "unreleased" / "service-health" / "CHANGE.md"
+    change = repo / "docs/changes" / "unreleased" / "service-health" / "CHANGE.md"
     replace(  # noqa: F405
         change,
         "  tests: [tests/test_service.py]",
@@ -284,7 +284,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
     tmp_path: Path,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
-    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
     init_git(repo)  # noqa: F405
     git(repo, "checkout", "-b", "hotfix/1.2.1")  # noqa: F405
     hotfix = json.dumps(
@@ -304,7 +304,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
     payload(
         mdf(python_exe, *closeout_args(repo, "--hotfix-change-json", hotfix))
     )  # noqa: F405
-    root = (repo / "changes" / "1.2.1" / "CHANGE.md").read_text(
+    root = (repo / "docs/changes" / "1.2.1" / "CHANGE.md").read_text(
         encoding="utf-8"
     )
 
@@ -321,11 +321,11 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     tmp_path: Path,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
-    replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, "alpha")  # noqa: F405
     write_unreleased_change(repo, "zeta")  # noqa: F405
-    zeta = repo / "changes" / "unreleased" / "zeta" / "CHANGE.md"
+    zeta = repo / "docs/changes" / "unreleased" / "zeta" / "CHANGE.md"
     replace(  # noqa: F405
         zeta,
         "  tests: [tests/test_service.py]",
@@ -346,7 +346,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     git(repo, "checkout", "-b", "release/1.3.0")  # noqa: F405
 
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
-    root = (repo / "changes" / "1.3.0" / "CHANGE.md").read_text(
+    root = (repo / "docs/changes" / "1.3.0" / "CHANGE.md").read_text(
         encoding="utf-8"
     )
 
@@ -394,6 +394,6 @@ def test_release_closeout_archives_the_whole_duplicate_group(
 
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
 
-    archive = repo / "bugs" / "archive" / "1.3"
+    archive = repo / "docs/bugs" / "archive" / "1.3"
     assert (archive / BUG_NAME).is_file()  # noqa: F405
     assert (archive / DUPLICATE_NAME).is_file()

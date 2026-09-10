@@ -129,7 +129,7 @@ def test_finish_updates_facts_before_moving_materials():
     assert "- bugfix：" in prepare
     assert "- release：" in prepare
     assert "- hotfix：" in prepare
-    assert "不要求 `.specs`、唯一 PRP 或 feature gate" in prepare
+    assert "不要求 `docs/specs`、唯一 PRP 或 feature gate" in prepare
 
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():
@@ -248,7 +248,7 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
     commands = re.findall(r'`(archive --repo [^`]+)`', workflow("archive"))
     assert len(commands) == 2
     repo = copy_fixture(tmp_path)
-    proposal = repo / "proposals" / PRP_NAME
+    proposal = repo / "docs/proposals" / PRP_NAME
     replace(proposal, "status: ready\ndepends_on: []",
             "status: rejected\ndepends_on: []\nreject-reason: wont-do")
     init_git(repo)
@@ -263,4 +263,4 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
             assert not git(repo, "status", "--porcelain").stdout
         else:
             assert not proposal.exists()
-            assert (repo / "proposals" / "archive" / "1.2" / PRP_NAME).is_file()
+            assert (repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME).is_file()

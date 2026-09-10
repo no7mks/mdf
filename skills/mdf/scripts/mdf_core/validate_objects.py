@@ -16,7 +16,7 @@ from .paths import path_stays_in_repo, relative
 from .textutil import stable_semver
 from .yamlutil import read_frontmatter
 def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
-    root = repo / ("proposals" if kind == "proposal" else "bugs")
+    root = repo / "docs" / ("proposals" if kind == "proposal" else "bugs")
     if (
         not root.is_dir()
         or root.is_symlink()
@@ -199,6 +199,7 @@ def validate_object(
                     )
     resolution = metadata.get("resolution")
     rel_parts = Path(rel).parts
+    rel_parts = rel_parts[1:] if rel_parts[0] == "docs" else ()
     expected_root = "proposals" if expected_type == "proposal" else "bugs"
     if len(rel_parts) == 2 and rel_parts[0] == expected_root:
         pass

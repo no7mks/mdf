@@ -114,8 +114,8 @@ def command_start(args) -> None:
         from .constants import MARKER_RE
         if not objectives.strip() or MARKER_RE.search(objectives):
             raise MDFError("objectives 不能为空", code="missing_objectives")
-        target = safe(repo, repo / ".specs" / suffix)
-        if target.exists() or (repo / "changes/unreleased" / suffix).exists():
+        target = safe(repo, repo / "docs/specs" / suffix)
+        if target.exists() or (repo / "docs/changes/unreleased" / suffix).exists():
             raise MDFError("交付 slug 已存在", code="collision")
         _git(repo, "checkout", base)
         require_startable(repo, args.proposal)
@@ -190,8 +190,8 @@ def command_finish_gitflow(args) -> None:
         from .prp_split import render
         root, data = locate(repo)
         require_finish(repo, root, data)
-        change = repo / "changes/unreleased" / data["slug"] / "CHANGE.md"
-        if root.parent != repo / "changes/unreleased" or not change.is_file():
+        change = repo / "docs/changes/unreleased" / data["slug"] / "CHANGE.md"
+        if root.parent != repo / "docs/changes/unreleased" or not change.is_file():
             raise MDFError("finish 前必须将材料归入 Change", code="missing_change")
         from .yamlutil import read_frontmatter
         meta, _ = read_frontmatter(change)

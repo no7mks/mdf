@@ -98,7 +98,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
         extra = []
     else:
         repo = copy_fixture(tmp_path)
-        replace(repo / "bugs" / BUG_NAME, "status: open", "status: fixed")
+        replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
         init_git(repo)
         git(repo, "branch", "master")
         git(repo, "branch", "develop")
@@ -121,13 +121,13 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     assert git(repo, "show-ref").stdout == before_local
     assert git(remote, "show-ref").stdout == before_remote
     assert not git(repo, "status", "--porcelain").stdout
-    assert not (repo / "changes" / version).exists()
+    assert not (repo / "docs/changes" / version).exists()
 
     payload(mdf(python_exe, *args))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "chore: 复核并提交版本收口")
     git(repo, "push")
-    root_change = repo / "changes" / version / "CHANGE.md"
+    root_change = repo / "docs/changes" / version / "CHANGE.md"
     root_before = root_change.read_bytes()
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo)))

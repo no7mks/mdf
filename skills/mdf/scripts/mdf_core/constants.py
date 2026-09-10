@@ -134,16 +134,11 @@ ALL_MARKDOWN_LINK_RE = re.compile(
 FACT_ROOTS = ("docs/product", "docs/system")
 MANAGED_ROOTS = (
     ".mdf",
-    ".specs",
     "AGENTS.md",
     "PROJECT.md",
     "GLOSSARY.md",
-    "JOTS.md",
     "CHANGELOG.md",
     "docs",
-    "proposals",
-    "bugs",
-    "changes",
 )
 DOC_TYPES = {
     "product-tutorial",

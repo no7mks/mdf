@@ -28,13 +28,13 @@ def apply_closeout(
     all_slugs = [item["slug"] for item in context["release_items"]]
     change_findings: list[Finding] = []
     for slug in all_slugs:
-        change_path = repo / "changes" / "unreleased" / slug / "CHANGE.md"
+        change_path = repo / "docs/changes" / "unreleased" / slug / "CHANGE.md"
         if not change_path.is_file():
             add_finding(
                 change_findings,
                 "change.missing",
                 "Release-set directory requires CHANGE.md",
-                f"changes/unreleased/{slug}",
+                f"docs/changes/unreleased/{slug}",
             )
             continue
         validate_change_file(

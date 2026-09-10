@@ -117,7 +117,7 @@ Proposal、Bug 与 Jot 均使用四位字符；每一位均独立从大写英文
 python3 skills/mdf/scripts/mdf.py make-jot-id
 ```
 
-生成一个 `jot-...` 标识符，供 `$mdf jot` 在 `JOTS.md` 中定位原始记录。它不创建或
+生成一个 `jot-...` 标识符，供 `$mdf jot` 在 `docs/JOTS.md` 中定位原始记录。它不创建或
 修改文件。
 
 ### `branch`
@@ -197,7 +197,7 @@ python3 skills/mdf/scripts/mdf.py move-change --repo /path/to/repository \
 ```
 
 要求 Git 根、有效 manifest 和 clean worktree。目标固定为
-`changes/unreleased/<branch-slug>`。未给 `--source` 时，正常运行只创建
+`docs/changes/unreleased/<branch-slug>`。未给 `--source` 时，正常运行只创建
 不存在的目标目录；给出来源时，命令先验证迁移计划，再迁移目录并重写受影响的
 仓库内引用。`--dry-run` 只输出目标、移动和重写计划。
 
@@ -213,7 +213,7 @@ clean worktree、`manifest.state: ready` 与 full validation 零 finding。
 必须提供 `--release-date`。Core 只验证确定性审计；同次 `$mdf finish` 的语义审阅
 与用户确认属于 intent 的职责。
 
-release 会从所有 `changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
+release 会从所有 `docs/changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
 提供 `--hotfix-change-json`。可用 `--closures-json` 覆盖或补充收口结果，
 `--deferred-acceptance-json` 记录 deferred 的接受信息。正常运行会执行 manifest
 声明的验证命令，保持 worktree clean 后写入版本 Change、归档对象和链接重写，并在
