@@ -6,6 +6,10 @@
 ## Proposal
 
 Proposal 使用 Markdown + YAML frontmatter：id、type: proposal、status、depends_on。
+可选属性 `milestone` 为单个非空字符串，表示用户确定的阶段归属；无归属时省略整个字段，
+不得写 `milestone: null`、空字符串或列表。同一 milestone 使用相同值。
+它仅用于分组，不影响依赖、开工条件或状态流转，不根据组内 PRP 状态自动宣告阶段达成。
+不要求独立 milestone 对象；阶段目标及其是否为 MVP 由用户实践决定。
 状态为 draft、ready、implemented、released、rejected、replaced。
 正常路径 draft → ready → implemented → released；implemented 表示验收后合入 develop，
 released 必须记录稳定 SemVer released_in。其他状态不得使用 released_in。

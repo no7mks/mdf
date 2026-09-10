@@ -6,9 +6,13 @@ from .textutil import stable_semver
 def validate_proposal_fields(metadata, rel, findings):
     status = metadata.get("status")
     allowed = {"id", "type", "status", "depends_on", "reject-reason",
-               "duplicate_of", "replaced_by", "released_in"}
+               "duplicate_of", "replaced_by", "released_in", "milestone"}
     for key in sorted(set(metadata) - allowed):
         add_finding(findings, "proposal.field", f"不支持的 Proposal 字段: {key}", rel)
+    if "milestone" in metadata:
+        milestone = metadata["milestone"]
+        if not isinstance(milestone, str) or not milestone.strip():
+            add_finding(findings, "proposal.milestone", "milestone 必须为非空字符串；无归属时省略字段", rel)
     version = metadata.get("released_in")
     if status == "released":
         if stable_semver(version) is None:

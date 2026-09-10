@@ -292,3 +292,4 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，
 downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出候选文件全文，失败不留下部分拆分。
+子 PRP 继承原 PRP 的可选 `milestone`；原 PRP 未声明时省略该字段，不写 `null`。

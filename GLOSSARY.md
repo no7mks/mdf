@@ -39,6 +39,12 @@ Architecture Decision Record；记录重要且已决定的长期架构取舍。
 draft 为待评审，ready 为可交付，implemented 为已验收合入 develop，released 为已发布。
 rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由拆分出的 PRP 承接。
 
+## Milestone 与 MVP
+
+Milestone（里程碑）表示用户定义的阶段目标；PRP 的可选 `milestone` 属性仅记录阶段归属。
+MVP（最小可行产品）是满足最小可用或验证目的的产品范围，可作为 milestone 的目标，
+不由 PRP 数量或实施顺序自动决定。
+
 ## Objectives、Gate 与收敛
 
 objectives 是本次交付目标与验收约束，引用 PRP。Gate 是基于产物、内容指纹、验证与语义审查的阶段门禁。

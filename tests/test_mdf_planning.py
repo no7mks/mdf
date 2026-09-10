@@ -40,9 +40,13 @@ def split_spec(repo):
             "downstream": {"prp-JK89": ["prp-EF56"]}}
 
 
-def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path):
+@pytest.mark.parametrize("milestone", [None, "首次购买"])
+def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, milestone):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-JK89", ["prp-AB23"])
+    if milestone is not None:
+        replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []",
+                f'depends_on: []\nmilestone: "{milestone}"')
     init_git(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
@@ -55,7 +59,30 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path):
     assert 'status: "replaced"' in (repo / "docs/proposals" / PRP_NAME).read_text()
     assert 'depends_on: ["prp-EF56"]' in (repo / "docs/proposals/prp-JK89-item.md").read_text()
     assert 'status: "draft"' in (repo / "docs/proposals/prp-EF56-part.md").read_text()
+    for name in (PRP_NAME, "prp-EF56-part.md", "prp-GH78-part.md"):
+        content = (repo / "docs/proposals" / name).read_text()
+        if milestone is None:
+            assert "milestone:" not in content
+        else:
+            assert f'milestone: "{milestone}"' in content
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
+@pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', "null", '""', '"   "',
+                                   "[]", "{}", "true", "42"])
+def test_proposal_optional_milestone_validation(python_exe, tmp_path, value):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    args = ["validate", "--repo", str(repo)]
+    assert_ok(mdf(python_exe, *args))
+    replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []",
+            f"depends_on: []\nmilestone: {value}")
+    result = mdf(python_exe, *args)
+    if value in ('"first-purchase"', '"首次购买"'):
+        assert_ok(result)
+    else:
+        assert result.returncode != 0
+        assert "proposal.milestone" in result.stdout
 
 
 def test_invalid_split_has_no_partial_writes(python_exe, tmp_path):
