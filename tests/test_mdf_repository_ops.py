@@ -188,7 +188,7 @@ def test_init_writes_files_from_assets_templates(
     )
     assert docs_index == expected_index
     assert docs_index != "# 文档\n"
-    assert not (repo / "docs/context").exists()
+    assert (repo / "docs/context/research/.gitkeep").is_file()
     assert not (repo / "docs/context" / "requirements").exists()
     assert not (repo / "docs/context" / "planning").exists()
 
@@ -212,8 +212,8 @@ def test_init_writes_files_from_assets_templates(
         .strip()
     )
     assert agents == "# AGENTS.md\n\n" + block + "\n"
-    for name in ("proposals", "bugs", "changes", "specs", "context"):
-        assert not (repo / "docs" / name).exists()
+    for name in ("proposals", "bugs", "changes/unreleased", "specs", "context/research"):
+        assert (repo / "docs" / name / ".gitkeep").is_file()
     assert (repo / "docs/JOTS.md").is_file()
 
 

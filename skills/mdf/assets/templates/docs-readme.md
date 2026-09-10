@@ -25,9 +25,8 @@
 ## 工作记录与调研
 
 - [随手记录](JOTS.md)：尚未分诊的原始记录。
-- `proposals/`：待实现意图；`bugs/`：已观察到的偏差。
-- `changes/`：交付结果；`specs/`：设计与实施材料。
-- `context/research/`：调研、候选方案和背景材料。
-
-工作目录按需创建，创建后补充对应链接。工作记录和调研不代表当前已实现行为。
-CodeWiki 生成后补充 `repowiki/` 入口。
+- [proposals/](proposals/)：待实现意图及其状态记录。
+- [bugs/](bugs/)：已观察到的偏差及其处理记录。
+- [changes/](changes/)：交付结果与随交付保存的设计、实施和验证材料。
+- [specs/](specs/)：进行中的 Proposal 交付材料；finish 时整体移入 `changes/unreleased/`，发布后归入版本目录。
+- [context/research/](context/research/)：调研、候选方案和背景材料。
