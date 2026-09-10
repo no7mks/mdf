@@ -93,6 +93,8 @@
 **入口**
 
 解析 `REPO_ROOT`、检查 CodeWiki MCP。
+按 `common.md` 确定写入分支归属后再建立 MCP session；与当前分支工作相关时在当前分支更新，
+否则在 develop 更新，不在 master 写入。改用其他 checkout 后重新核对目标根与工具参数。
 
 验收：Git 根、MCP。
 

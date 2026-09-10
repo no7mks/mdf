@@ -45,11 +45,13 @@
 未初始化、initializing 或 manifest 无法读取时提示 `$mdf init`，不写入、不提交；
 工具失败或目标边界不符时报告并停止。
 本步骤检查初始化状态，不将 `normal_workflows_allowed: true` 作为前置条件；
-独立调用仅记录 `branch.invalid`，不据此限制分支名称。
+写入分支按 `common.md` 的归属规则检查；`branch.invalid` 不作为分支归属判断的替代。
 已有 findings 如实记录，事实及 evidence 问题由步骤 2–3 按范围处理，
 其他超出本次范围的问题报告后停止，不借同步入口修改无关对象或配置。
 
 支持用户独立调用；也由 finish 在前段委托。独立调用不要求交付分支或阶段记录，不触发交付。
+独立调用可在当前工作相关的 feature、bugfix、release 或 hotfix 分支同步事实；
+无关的独立维护在 develop 完成，不在 master 写入。
 独立调用基于用户范围和当前实现确定更新面；finish 调用采用固定起点到 HEAD 的精确范围。
 只更新受影响的当前事实及 evidence；不修改 PRP、Bug、Change、objectives 或 design 的意图。
 不为满足形式制造无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。

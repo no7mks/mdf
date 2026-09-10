@@ -225,7 +225,8 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     assert "不写入、不提交" in entry
     assert "不将 `normal_workflows_allowed: true` 作为前置条件" in entry
     assert "事实及 evidence 问题由步骤 2–3 按范围处理" in entry
-    assert "独立调用仅记录 `branch.invalid`" in entry
+    assert "写入分支按 `common.md` 的归属规则检查" in entry
+    assert "独立调用仅记录 `branch.invalid`" not in entry
 
 
 def test_codewiki_commit_failure_does_not_rebuild_verified_output():
