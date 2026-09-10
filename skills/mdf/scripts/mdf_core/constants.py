@@ -125,6 +125,9 @@ OBJECT_FILE_RE = re.compile(
     r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.md$"
 )
 JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
+OBJECT_ID_RE = re.compile(
+    r"^(?:(?:prp|bug|jot)-[A-HJ-NP-Z2-9]{4}|adr-\d{4})$"
+)
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
 MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)

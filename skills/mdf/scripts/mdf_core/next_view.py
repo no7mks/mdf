@@ -1,7 +1,8 @@
 """只读生成 ready Proposal 依赖视图。"""
 from .errors import MDFError, emit
 from .gitutil import repo_path, require_git_root
-from .proposals import SATISFIED, check_proposals, started
+from .proposals import check_proposals, started
+from .validate_records import unsatisfied_depends_on
 
 
 def next_view(repo, depth):
@@ -10,8 +11,9 @@ def next_view(repo, depth):
     objects = check_proposals(repo)
     active = {key: value for key, value in objects.items() if value[1]["status"] in {"draft", "ready"}}
     ready = {key for key, value in active.items() if value[1]["status"] == "ready"}
-    waiting = {key: [dep for dep in value[1]["depends_on"]
-                     if objects[dep][1]["status"] not in SATISFIED] for key, value in active.items()}
+    metas = {key: value[1] for key, value in objects.items()}
+    waiting = {key: unsatisfied_depends_on(value[1]["depends_on"], metas)
+               for key, value in active.items()}
     levels = {}
 
     def level(key):

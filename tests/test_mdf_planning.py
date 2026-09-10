@@ -2,10 +2,19 @@
 from mdf_test_support import *  # noqa: F403
 
 
-def add_prp(repo, identifier, deps=(), status="ready"):
+def add_prp(repo, identifier, deps=(), status="ready", milestone=None):
     template = (repo / "docs/proposals" / PRP_NAME).read_text()
-    text = template.replace("prp-AB23", identifier).replace("depends_on: []", f"depends_on: {json.dumps(list(deps))}")
+    depends_on = json.dumps(list(deps), ensure_ascii=False)
+    text = template.replace("prp-AB23", identifier).replace(
+        "depends_on: []", f"depends_on: {depends_on}"
+    )
     text = text.replace("status: ready", f"status: {status}")
+    if milestone is not None:
+        text = text.replace(
+            f"depends_on: {depends_on}",
+            f"depends_on: {depends_on}\n"
+            f"milestone: {json.dumps(milestone, ensure_ascii=False)}",
+        )
     path = repo / "docs/proposals" / f"{identifier}-item.md"
     path.write_text(text)
     return path
@@ -68,8 +77,8 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
 
 
-@pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', "null", '""', '"   "',
-                                   "[]", "{}", "true", "42"])
+@pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', '"prp-AB23"',
+                                   "null", '""', '"   "', "[]", "{}", "true", "42"])
 def test_proposal_optional_milestone_validation(python_exe, tmp_path, value):
     repo = copy_fixture(tmp_path)
     init_git(repo)
@@ -123,6 +132,52 @@ def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(py
                       .replace("depends_on: []", "depends_on: []\nreplaced_by: [prp-ZZ99, prp-XX88]"))
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert "proposal.replaced_by" in result.stdout
+
+
+def test_milestone_dependency_blocks_next_until_members_are_implemented(
+    python_exe, tmp_path
+):
+    repo = copy_fixture(tmp_path)
+    add_prp(repo, "prp-CD34", milestone="阶段一")
+    add_prp(repo, "prp-EF56", ["阶段一"])
+    replace(
+        repo / "docs/proposals" / PRP_NAME,
+        "depends_on: []",
+        'depends_on: []\nmilestone: "阶段一"',
+    )
+    init_git(repo)
+    data = payload(mdf(python_exe, "next", "--repo", str(repo)))
+    assert sorted(node["id"] for node in data["trees"]) == ["prp-AB23", "prp-CD34"]
+    assert data["blocked"] == [{"id": "prp-EF56", "blocked_by": ["阶段一"]}]
+    replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
+    replace(
+        repo / "docs/proposals/prp-CD34-item.md",
+        "status: ready",
+        "status: implemented",
+    )
+    data = payload(mdf(python_exe, "next", "--repo", str(repo)))
+    assert [node["id"] for node in data["trees"]] == ["prp-EF56"]
+    assert data["blocked"] == []
+
+
+def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    add_prp(repo, "prp-CD34", status="rejected", milestone="阶段一")
+    replace(
+        repo / "docs/proposals/prp-CD34-item.md",
+        "status: rejected",
+        "status: rejected\nreject-reason: wont-do",
+    )
+    add_prp(repo, "prp-EF56", ["阶段一"])
+    replace(
+        repo / "docs/proposals" / PRP_NAME,
+        "status: ready\ndepends_on: []",
+        'status: implemented\ndepends_on: []\nmilestone: "阶段一"',
+    )
+    init_git(repo)
+    data = payload(mdf(python_exe, "next", "--repo", str(repo)))
+    assert [node["id"] for node in data["trees"]] == ["prp-EF56"]
+    assert data["blocked"] == []
 
 
 @pytest.mark.parametrize("location", ["docs/specs/started", "docs/changes/unreleased/started"])

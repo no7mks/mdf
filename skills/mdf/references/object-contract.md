@@ -8,8 +8,8 @@
 Proposal 使用 Markdown + YAML frontmatter：id、type: proposal、status、depends_on。
 可选属性 `milestone` 为单个非空字符串，表示用户确定的阶段归属；无归属时省略整个字段，
 不得写 `milestone: null`、空字符串或列表。同一 milestone 使用相同值。
-它仅用于分组，不影响依赖、开工条件或状态流转，不根据组内 PRP 状态自动宣告阶段达成。
-不要求独立 milestone 对象；阶段目标及其是否为 MVP 由用户实践决定。
+milestone 值不得与对象 ID 同形。不要求独立 milestone 对象；阶段目标及其是否为 MVP
+由用户实践决定。不根据组内 PRP 状态自动宣告阶段达成。
 状态为 draft、ready、implemented、released、rejected、replaced。
 正常路径 draft → ready → implemented → released；implemented 表示验收后合入 develop，
 released 必须记录稳定 SemVer released_in。其他状态不得使用 released_in。
@@ -18,9 +18,11 @@ rejected 必须有 reject-reason: wont-do/obsolete/duplicate；duplicate 还须�
 replaced 必须有至少两个唯一 replaced_by ID；替代关系不得缺失、自指或成环。
 不使用持久化 resolution。released、rejected、replaced 可以归档，implemented 不归档。
 
-依赖 depends_on 为唯一的直接 PRP ID 列表；允许 draft、ready、implemented、released，
-其中 implemented/released 已满足依赖。禁止重复、自指、循环、缺失、跨类型及其他终态。
-拆分必须同时改写所有原下游引用；replaced 不表示依赖已满足。
+依赖 depends_on 为唯一的直接条目列表，每项为 PRP ID 或已有 milestone 值。
+PRP 依赖允许 draft、ready、implemented、released，其中 implemented/released 已满足。
+milestone 依赖在该值下不存在 draft 或 ready PRP 时满足。禁止重复、自指、循环、缺失、
+跨类型及其他终态。PRP 不得依赖自身所属 milestone。
+拆分必须同时改写所有原下游 PRP 引用；replaced 不表示依赖已满足。
 
 Proposal、Bug 和 Jot 的 ID 为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
 沟通、引用与展示时必须写完整 ID，如 `prp-A2B3`、`bug-C4D5`、`jot-E6F7`，

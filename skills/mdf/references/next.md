@@ -93,7 +93,8 @@ next 不代替方案确认、初始化启用确认或原流程要求的 Git 操�
 运行 `python3 "$MDF_ROOT/scripts/mdf.py" next --repo "$REPO_ROOT" --depth <N>`；默认 3，N 为正整数。
 本分支要求 ready；参数非法或仓库未就绪时报告原因和所需操作，不自动初始化。
 depth 仅控制蓝图展示深度，不控制续办步数。
-主报告仅 ready；根为全部依赖已满足的 ready。implemented/released 依赖视为满足。
+主报告仅 ready；根为全部依赖已满足的 ready。implemented/released 依赖视为满足；
+milestone 依赖在该阶段不存在 draft 或 ready PRP 时满足。
 多上游取最大依赖层级加一；重复节点用交叉引用并保留全部 blocked_by。同层按 PRP ID 排序。
 显示进行中的 ready、未进入树的阻塞 ready、draft 的 prp review 提示和隐藏节点。
 树的下游不表示完成一个上游即可开工。空结果明确说明；非法依赖停止，不输出误导性树。

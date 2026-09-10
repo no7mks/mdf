@@ -229,6 +229,41 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                             )
 
 
+SATISFIED = {"implemented", "released"}
+DELIVERABLE = {"draft", "ready", "implemented", "released"}
+
+
+def proposal_milestones(proposals: dict[str, dict]) -> dict[str, set[str]]:
+    groups: dict[str, set[str]] = {}
+    for identifier, metadata in proposals.items():
+        name = metadata.get("milestone")
+        if isinstance(name, str) and name.strip():
+            groups.setdefault(name, set()).add(identifier)
+    return groups
+
+
+def unsatisfied_depends_on(
+    depends_on: list, proposals: dict[str, dict]
+) -> list[str]:
+    groups = proposal_milestones(proposals)
+    blocked: list[str] = []
+    for dependency in depends_on:
+        if not isinstance(dependency, str):
+            continue
+        target = proposals.get(dependency)
+        if target is not None:
+            if target.get("status") not in SATISFIED:
+                blocked.append(dependency)
+            continue
+        members = groups.get(dependency)
+        if members is None or any(
+            proposals[ident].get("status") in {"draft", "ready"}
+            for ident in members
+        ):
+            blocked.append(dependency)
+    return blocked
+
+
 def validate_proposal_dependencies(
     repo: Path,
     known: set[str],
@@ -236,6 +271,7 @@ def validate_proposal_dependencies(
     identifier_paths: dict[str, Path],
     findings: list[Finding],
 ) -> None:
+    groups = proposal_milestones(proposals)
     dependencies: dict[str, set[str]] = {}
     for identifier, metadata in proposals.items():
         path = identifier_paths[identifier]
@@ -249,7 +285,8 @@ def validate_proposal_dependencies(
                 add_finding(
                     findings,
                     "proposal.depends_on_type",
-                    "Proposal depends_on entries must be Proposal IDs",
+                    "Proposal depends_on entries must be Proposal IDs or "
+                    "milestone names",
                     rel,
                 )
                 continue
@@ -262,34 +299,39 @@ def validate_proposal_dependencies(
                 )
                 continue
             target = proposals.get(dependency)
-            if target is None:
-                code = (
-                    "object.depends_on_missing"
-                    if dependency not in known
-                    else "proposal.depends_on_type"
-                )
-                add_finding(
-                    findings,
-                    code,
-                    "Proposal dependency must be an active Proposal: "
-                    f"{dependency}",
-                    rel,
-                )
+            if target is not None:
+                status = target.get("status")
+                released = status in SATISFIED
+                if status not in {"draft", "ready"} and not released:
+                    add_finding(
+                        findings,
+                        "proposal.depends_on_unreleased",
+                        "Proposal dependency must be active or released: "
+                        f"{dependency}",
+                        rel,
+                    )
+                    continue
+                dependencies[identifier].add(dependency)
                 continue
-            status = target.get("status")
-            released = (
-                status in {"implemented", "released"}
+            if dependency in groups:
+                members = {
+                    ident for ident in groups[dependency]
+                    if proposals[ident].get("status") in DELIVERABLE
+                }
+                dependencies[identifier].update(members)
+                continue
+            code = (
+                "object.depends_on_missing"
+                if dependency not in known
+                else "proposal.depends_on_type"
             )
-            if status not in {"draft", "ready"} and not released:
-                add_finding(
-                    findings,
-                    "proposal.depends_on_unreleased",
-                    "Proposal dependency must be active or released: "
-                    f"{dependency}",
-                    rel,
-                )
-                continue
-            dependencies[identifier].add(dependency)
+            add_finding(
+                findings,
+                code,
+                "Proposal dependency must be an active Proposal or existing "
+                f"milestone: {dependency}",
+                rel,
+            )
     for identifier in sorted(cyclic_proposals(dependencies)):
         add_finding(
             findings,

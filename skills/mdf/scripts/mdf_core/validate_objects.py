@@ -94,7 +94,8 @@ def validate_object(
             add_finding(
                 findings,
                 "object.depends_on",
-                "Proposal depends_on must be a list of Proposal IDs",
+                "Proposal depends_on must be a list of Proposal IDs or "
+                "milestone names",
                 rel,
             )
         elif len(depends_on) != len(set(map(str, depends_on))):

@@ -4,10 +4,8 @@ import json
 from .errors import MDFError, serialize_findings
 from .gitutil import run
 from .validate_objects import iter_object_files, validate_object
-from .validate_records import validate_record_references
+from .validate_records import unsatisfied_depends_on, validate_record_references
 from .yamlutil import read_frontmatter
-
-SATISFIED = {"implemented", "released"}
 
 
 def records(repo):
@@ -76,7 +74,8 @@ def require_startable(repo, identifier):
     path, meta, _ = objects[identifier]
     if meta["status"] != "ready" or len(path.relative_to(repo / "docs").parts) != 2:
         raise MDFError("feature 需要 active ready PRP", code="proposal_not_ready")
-    blocked = [dep for dep in meta["depends_on"] if objects[dep][1]["status"] not in SATISFIED]
+    metas = {key: value[1] for key, value in objects.items()}
+    blocked = unsatisfied_depends_on(meta["depends_on"], metas)
     if blocked:
         raise MDFError("PRP 依赖尚未满足", code="proposal_blocked", details={"blocked_by": blocked})
     if started(repo, identifier):

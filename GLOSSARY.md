@@ -41,7 +41,8 @@ rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由�
 
 ## Milestone 与 MVP
 
-Milestone（里程碑）表示用户定义的阶段目标；PRP 的可选 `milestone` 属性仅记录阶段归属。
+Milestone（里程碑）表示用户定义的阶段目标；PRP 的可选 `milestone` 属性记录阶段归属。
+`depends_on` 可引用 milestone 值，表示该阶段下已无 draft 或 ready PRP。
 MVP（最小可行产品）是满足最小可用或验证目的的产品范围，可作为 milestone 的目标，
 不由 PRP 数量或实施顺序自动决定。
 

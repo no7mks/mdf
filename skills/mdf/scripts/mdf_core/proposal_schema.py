@@ -1,4 +1,5 @@
 """Proposal 的阶段、拒绝原因与替代关系。"""
+from .constants import OBJECT_ID_RE
 from .errors import add_finding
 from .textutil import stable_semver
 
@@ -12,7 +13,10 @@ def validate_proposal_fields(metadata, rel, findings):
     if "milestone" in metadata:
         milestone = metadata["milestone"]
         if not isinstance(milestone, str) or not milestone.strip():
-            add_finding(findings, "proposal.milestone", "milestone 必须为非空字符串；无归属时省略字段", rel)
+            add_finding(findings, "proposal.milestone",
+                        "milestone 必须为非空字符串；无归属时省略字段", rel)
+        elif OBJECT_ID_RE.fullmatch(milestone):
+            add_finding(findings, "proposal.milestone", "milestone 不得与对象 ID 同形", rel)
     version = metadata.get("released_in")
     if status == "released":
         if stable_semver(version) is None:

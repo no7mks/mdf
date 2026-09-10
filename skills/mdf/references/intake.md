@@ -128,8 +128,10 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **确认**
 
 展示对象清单、边界、排除范围、Proposal 依赖；`depends_on`
-仅列直接依赖的 draft、ready 或 implemented/released Proposal ID。
-逐条说明需要上游提供的结果；优先顺序或同属一个阶段不能作为依赖依据。
+仅列直接依赖的 draft、ready 或 implemented/released Proposal ID，
+以及需要等待整阶段完成时的已有 milestone 值。
+逐条说明需要上游提供的结果；优先顺序不能作为依赖依据。
+同属一个阶段不能写成对其中单个 PRP 的依赖。
 可建议 milestone 分组，由用户决定是否采用；不默认一次 intake 对应一个 milestone，
 不自动把最先实施的一两个 PRP 标为 MVP。有归属时展示并确认 `milestone`，无归属不强求补齐。
 

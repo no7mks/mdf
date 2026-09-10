@@ -104,7 +104,8 @@
 **确认**
 
 展示 Proposal、边界、排除范围和依赖；`depends_on`
-仅列直接依赖的 draft、 ready 或 implemented/released Proposal ID。
+仅列直接依赖的 draft、 ready 或 implemented/released Proposal ID，
+以及需要等待整阶段完成时的已有 milestone 值。
 如有阶段归属，同时确认可选 `milestone`；无归属不要求补齐。
 
 验收：只有用户明确确认 draft 才继续。
