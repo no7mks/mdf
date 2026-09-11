@@ -166,7 +166,10 @@ def command_start(args) -> None:
                     work / "docs/changes/unreleased" / suffix).exists():
                 raise MDFError("交付 slug 已存在", code="collision")
             target.mkdir(parents=True)
-            (target / "objectives.md").write_text(objectives, encoding="utf-8")
+            dest = target / "objectives.md"
+            from .moves import rewrite_repo_root_style_links
+            objectives = rewrite_repo_root_style_links(work, dest, objectives)
+            dest.write_text(objectives, encoding="utf-8")
             write_json(target / "delivery.json", {
                 "proposal": args.proposal, "slug": suffix,
                 "branch": branch, "start_commit": start_commit,

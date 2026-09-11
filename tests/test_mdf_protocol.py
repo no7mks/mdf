@@ -358,6 +358,23 @@ def test_validation_rejects_local_link_outside_repository(
     assert "link.outside_repo" in result.stdout
 
 
+def test_validation_rejects_leading_slash_as_site_root(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    overview = repo / "docs" / "system" / "overview.md"
+    overview.write_text(
+        overview.read_text(encoding="utf-8")
+        + "\n[Root](/docs/product/reference/capabilities.md)\n",
+        encoding="utf-8",
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "link.outside_repo" in result.stdout
+
+
 def test_validation_rejects_symlink_in_managed_docs(
     python_exe: str, tmp_path: Path
 ):

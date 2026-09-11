@@ -268,6 +268,8 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 不在当前目录开分支；成功 JSON 含该 `worktree`。feature 同时建立
 `qa/<owner>` 与 `dev/<owner>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
 不设置 upstream。
+feature 写入 `docs/specs/<slug>/objectives.md` 时，把仓根风格的本地链接改成
+相对该目录的路径。
 
 ### `finish-gitflow`
 

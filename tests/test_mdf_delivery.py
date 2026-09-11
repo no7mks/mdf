@@ -272,3 +272,73 @@ def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_
     design.write_text(design.read_text().replace("service.py)", "service.py#new)"))
     commit(dev)
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
+
+
+def test_canonical_local_link_missing_is_not_delivery_internal(tmp_path: Path):
+    load_core_module()
+    from mdf_core.validate_links import canonical_local_link
+
+    repo = copy_fixture(tmp_path)
+    root = repo / "docs/specs/service-health"
+    root.mkdir(parents=True)
+    source = root / "objectives.md"
+    source.write_text("# 目标\n")
+    (root / "design.md").write_text("# 设计\n")
+    ghost = canonical_local_link(
+        repo, source, f"docs/proposals/{PRP_NAME}", root
+    )
+    assert ghost == (
+        f"docs/specs/service-health/docs/proposals/{PRP_NAME}"
+    )
+    assert not ghost.startswith("@delivery/")
+    real = canonical_local_link(
+        repo, source, f"../../proposals/{PRP_NAME}", root
+    )
+    assert real == f"docs/proposals/{PRP_NAME}"
+    sibling = canonical_local_link(repo, source, "design.md", root)
+    assert sibling == "@delivery/design.md"
+
+
+def test_record_design_rejects_repo_root_style_links(
+    python_exe: str, tmp_path: Path
+):
+    repo, _ = start_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n实现健康状态接口。\n")
+    data = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-AB23", "--objectives-file", str(obj),
+    ))
+    work = Path(data["worktree"])
+    root = work / "docs/specs/service-health"
+    (root / "design.md").write_text(
+        "# 设计\n\n[能力](docs/product/reference/capabilities.md)\n"
+    )
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    result = mdf(
+        python_exe, "delivery", "record", "--repo", str(work),
+        "--stage", "design", "--policy-file", str(policy),
+        "--summary", "用户确认接口及验收；测试配置已识别",
+    )
+    assert result.returncode != 0
+    assert "broken_link" in result.stderr
+
+
+def test_move_change_leaves_missing_repo_root_style_links(
+    python_exe: str, tmp_path: Path
+):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    objectives = root / "objectives.md"
+    objectives.write_text(
+        objectives.read_text()
+        + f"\n[需求](docs/proposals/{PRP_NAME})\n"
+    )
+    commit(repo)
+    payload(mdf(
+        python_exe, "move-change", "--repo", str(repo), "--source", str(root),
+        "--branch-slug", "service-health",
+    ))
+    moved = repo / "docs/changes/unreleased/service-health/objectives.md"
+    assert f"[需求](docs/proposals/{PRP_NAME})" in moved.read_text()
+

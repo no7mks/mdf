@@ -11,7 +11,10 @@ proposal、slug、branch、start_commit。
 开发材料位于 `docs/specs/<prp-slug>/`：objectives.md、design.md、delivery.json、gates/。
 finish 整体搬入 `docs/changes/unreleased/<prp-slug>/`，材料与 CHANGE.md 同级；发布后进入
 `docs/changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
-objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓库相对，避免依赖目录深度。
+objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只相对当前文件
+（`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。搬迁时 CLI 改写仍有效
+的相对路径。delivery.json 与 gate 内路径一律仓库相对；指纹规范化用仓库相对或
+`@delivery/`，不是第二种 href 写法。
 
 ## 阶段与执行责任
 

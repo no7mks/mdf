@@ -10,6 +10,7 @@ from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
 from .verification import manifest_items
 from .closeout_validate import run_verify_commands
+from .validate_links import require_existing_local_links
 
 
 def policy_input(raw):
@@ -40,6 +41,9 @@ def record_stage(repo, root, data, args):
         raise MDFError("gate 需要非空语义审查摘要", code="missing_review")
     if stage == "design":
         policy = policy_input(args.policy_file)
+        require_existing_local_links(
+            repo, [root / "objectives.md", root / "design.md"]
+        )
         current = fingerprints(repo, root, data, policy)
     else:
         current = require_design(repo, root, data)

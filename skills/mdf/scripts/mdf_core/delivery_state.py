@@ -117,26 +117,19 @@ def fingerprints(repo, root, data, config=None):
         path = safe(repo, root / name)
         if not path.is_file() or not path.read_text().strip():
             raise MDFError(f"缺少 {name}", code="missing_artifact")
-        from .constants import ALL_MARKDOWN_LINK_RE
-        from .validate_links import split_link_target
+        from .constants import ALL_MARKDOWN_LINK_RE, MARKER_RE
         from .moves import rewrite_link_raw
+        from .validate_links import canonical_local_link, split_link_target
         text = path.read_text()
-        from .constants import MARKER_RE
         if MARKER_RE.search(text):
             raise MDFError("设计材料仍含模板占位内容", code="missing_artifact")
         def normalize(match):
             raw = match.group(1)
             target = split_link_target(raw)
-            if not target or target.startswith(("http:", "https:", "mailto:", "data:")):
+            canonical = canonical_local_link(repo, path, target, root)
+            if canonical is None:
                 return match.group(0)
-            absolute = (repo / target.lstrip("/") if target.startswith("/")
-                        else path.parent / target).resolve()
-            if not path_stays_in_repo(repo, absolute):
-                return match.group(0)
-            relative = absolute.relative_to(repo).as_posix()
-            if absolute == root or root in absolute.parents:
-                relative = "@delivery/" + absolute.relative_to(root).as_posix()
-            return match.group(0).replace(raw, rewrite_link_raw(raw, relative))
+            return match.group(0).replace(raw, rewrite_link_raw(raw, canonical))
         design[name] = hashlib.sha256(ALL_MARKDOWN_LINK_RE.sub(normalize, text).encode()).hexdigest()
     return {"design": digest([design, data, config]), "tests": digest([tests, commands]),
             "implementation": digest(implementation), "code": digest([code, commands]),

@@ -7,7 +7,11 @@ from .constants import ALL_MARKDOWN_LINK_RE
 from .digests import text_diff
 from .errors import MDFError
 from .paths import path_stays_in_repo, relative
-from .validate_links import split_link_target
+from .validate_links import (
+    is_external_link,
+    resolve_local_link,
+    split_link_target,
+)
 
 
 def move_entry_for(
@@ -45,6 +49,47 @@ def fenced_code_spans(text: str) -> list[tuple[int, int]]:
     if open_start is not None:
         spans.append((open_start, len(text)))
     return spans
+
+
+def rewrite_repo_root_style_links(repo: Path, source: Path, text: str) -> str:
+    """Rewrite repo-root-style hrefs to current-file relative paths.
+
+    A link is rewritten only when the current-file target is missing and
+    ``repo / target`` exists in-repo. Leading ``/`` is site-root and is not
+    rewritten.
+    """
+    edits: list[tuple[int, int, str]] = []
+    for match in ALL_MARKDOWN_LINK_RE.finditer(text):
+        raw = match.group(1)
+        target = split_link_target(raw)
+        if (
+            not target
+            or is_external_link(target)
+            or target.startswith("/")
+        ):
+            continue
+        current = resolve_local_link(source, target)
+        if current.exists() and path_stays_in_repo(repo, current):
+            continue
+        repo_abs = (repo / target).resolve()
+        if not repo_abs.exists() or not path_stays_in_repo(repo, repo_abs):
+            continue
+        rewritten = os.path.relpath(repo_abs, source.parent).replace(
+            os.sep, "/"
+        )
+        new_raw = rewrite_link_raw(raw, rewritten)
+        if new_raw != raw:
+            edits.append((match.start(1), match.end(1), new_raw))
+    if not edits:
+        return text
+    chunks: list[str] = []
+    cursor = 0
+    for start, end, replacement in edits:
+        chunks.append(text[cursor:start])
+        chunks.append(replacement)
+        cursor = end
+    chunks.append(text[cursor:])
+    return "".join(chunks)
 
 
 def rewrite_link_raw(raw: str, rewritten_path: str) -> str:
@@ -114,15 +159,11 @@ def replacement_plan(
                 continue
             raw = match.group(1)
             target = split_link_target(raw)
-            if not target or target.startswith(
-                ("http://", "https://", "mailto:", "data:")
-            ):
+            if not target or is_external_link(target):
                 continue
-            absolute = (
-                repo / target.lstrip("/")
-                if target.startswith("/")
-                else path.parent / target
-            ).resolve()
+            absolute = resolve_local_link(path, target)
+            if not absolute.exists():
+                continue
             source_after_move = moved_destination(path, moves)
             destination = moved_destination(absolute, moves)
             if source_after_move == path and destination == absolute:
@@ -228,22 +269,12 @@ def opaque_links_survive_move(
         text = path.read_text(encoding="utf-8")
         for raw in ALL_MARKDOWN_LINK_RE.findall(text):
             target = split_link_target(raw)
-            if not target or target.startswith(
-                ("http://", "https://", "mailto:", "data:")
-            ):
+            if not target or is_external_link(target):
                 continue
-            absolute = (
-                repo / target.lstrip("/")
-                if target.startswith("/")
-                else path.parent / target
-            ).resolve()
+            absolute = resolve_local_link(path, target)
             target_after = moved_destination(absolute, moves)
             source_after = moved_destination(path, moves)
-            unchanged_target = (
-                repo / target.lstrip("/")
-                if target.startswith("/")
-                else source_after.parent / target
-            ).resolve()
+            unchanged_target = resolve_local_link(source_after, target)
             if unchanged_target != target_after:
                 broken.append(f"{relative(repo, path)}: {raw}")
     return broken

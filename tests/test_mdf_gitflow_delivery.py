@@ -231,6 +231,28 @@ def test_start_feature_rejects_name_and_derives_slug_from_prp(
     assert created["roles"]["qa"]["branch"] == "qa/feature/service-health"
 
 
+def test_start_rewrites_repo_root_style_objectives_links(
+    python_exe: str, tmp_path: Path,
+):
+    repo = local_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text(
+        f"# 目标\n\n[需求](docs/proposals/{PRP_NAME})\n"
+        "[能力](docs/product/reference/capabilities.md)\n"
+        "[外链](/docs/product/reference/capabilities.md)\n"
+    )
+    data = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-AB23", "--objectives-file", str(obj),
+    ))
+    work = Path(data["worktree"])
+    text = (work / "docs/specs/service-health/objectives.md").read_text()
+    assert f"[需求](../../proposals/{PRP_NAME})" in text
+    assert "[能力](../../product/reference/capabilities.md)" in text
+    assert "[外链](/docs/product/reference/capabilities.md)" in text
+
+
+
 def test_start_bugfix_uses_bug_id_and_rejects_name(
     python_exe: str, tmp_path: Path,
 ):
