@@ -53,10 +53,8 @@ def git(repo: Path, *args: str):
 
 
 def init_git(repo: Path) -> None:
-    git(repo, "init")
-    git(repo, "branch", "-M", "main")
-    git(repo, "config", "user.name", "MDF Test")
-    git(repo, "config", "user.email", "mdf@example.invalid")
+    # 提交身份由 conftest 通过环境变量提供，省去逐仓库 config 调用。
+    git(repo, "init", "--initial-branch=main")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 初始化 MDF fixture")
 

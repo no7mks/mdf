@@ -1,2 +1,3 @@
-# MDF 测试仅需 pytest；被测 CLI 本身只依赖 Python 标准库和 Git。
+# MDF 测试仅需 pytest 与并行插件 pytest-xdist；被测 CLI 本身只依赖 Python 标准库和 Git。
 pytest>=8.0
+pytest-xdist>=3.0

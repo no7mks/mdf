@@ -152,12 +152,12 @@ def require_design(repo, root, data):
     current = fingerprints(repo, root, data, record.get("policy"))
     if record.get("fingerprints", {}).get("design") != current["design"]:
         raise MDFError("设计基线已变化，需用户确认后原地重新记录", code="stale_gate")
-    for name in ("objectives.md", "design.md", "delivery.json", "gates/design.json"):
-        rel = str((root / name).relative_to(repo))
-        if git(repo, "ls-files", "--error-unmatch", rel, check=False).returncode:
-            raise MDFError("设计基线必须提交", code="uncommitted_design")
-        if git(repo, "diff", "HEAD", "--", rel).stdout:
-            raise MDFError("设计基线必须提交", code="uncommitted_design")
+    rels = [str((root / name).relative_to(repo))
+            for name in ("objectives.md", "design.md", "delivery.json", "gates/design.json")]
+    if git(repo, "ls-files", "--error-unmatch", *rels, check=False).returncode:
+        raise MDFError("设计基线必须提交", code="uncommitted_design")
+    if git(repo, "diff", "HEAD", "--", *rels).stdout:
+        raise MDFError("设计基线必须提交", code="uncommitted_design")
     return current
 
 

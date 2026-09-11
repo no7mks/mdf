@@ -12,12 +12,7 @@ from .constants import (
     SYSTEM_DOC_TYPES,
 )
 from .errors import Finding, MDFError, add_finding
-from .gitutil import (
-    commit_is_after,
-    git_last_commit,
-    git_path_dirty,
-    git_path_tracked,
-)
+from .gitutil import GitPathIndex, commit_is_after
 from .paths import path_stays_in_repo, relative
 from .yamlutil import read_frontmatter
 
@@ -73,6 +68,7 @@ def validate_evidence(
     *,
     check_staleness: bool,
 ) -> None:
+    index = GitPathIndex(repo)
     for doc in fact_documents(repo):
         rel = relative(repo, doc)
         try:
@@ -125,7 +121,7 @@ def validate_evidence(
                 "Current-fact document needs at least one evidence path",
                 rel,
             )
-        doc_tracked = git_path_tracked(repo, doc) if check_staleness else True
+        doc_tracked = index.tracked(doc) if check_staleness else True
         if check_staleness and not doc_tracked:
             add_finding(
                 findings,
@@ -133,7 +129,7 @@ def validate_evidence(
                 "Current-fact document is not tracked by Git",
                 rel,
             )
-        doc_commit = git_last_commit(repo, doc) if check_staleness else None
+        doc_commit = index.last_commit(doc) if check_staleness else None
         for evidence_path, method in evidence:
             raw_candidate = Path(evidence_path)
             candidate = (repo / raw_candidate).resolve()
@@ -172,7 +168,7 @@ def validate_evidence(
                 )
             if not check_staleness:
                 continue
-            if not git_path_tracked(repo, candidate):
+            if not index.tracked(candidate):
                 add_finding(
                     findings,
                     "evidence.untracked",
@@ -180,8 +176,8 @@ def validate_evidence(
                     rel,
                 )
                 continue
-            evidence_commit = git_last_commit(repo, candidate)
-            if git_path_dirty(repo, candidate) or doc_commit is None:
+            evidence_commit = index.last_commit(candidate)
+            if index.dirty(candidate) or doc_commit is None:
                 add_finding(
                     findings,
                     "evidence.stale",
@@ -231,8 +227,8 @@ def validate_evidence(
                         rel,
                     )
                     source_path = None
-                elif check_staleness and not git_path_tracked(
-                    repo, source_path
+                elif check_staleness and not index.tracked(
+                    source_path
                 ):
                     add_finding(
                         findings,
@@ -276,8 +272,8 @@ def validate_evidence(
                         rel,
                     )
                     generator_path = None
-                elif check_staleness and not git_path_tracked(
-                    repo, generator_path
+                elif check_staleness and not index.tracked(
+                    generator_path
                 ):
                     add_finding(
                         findings,
@@ -293,9 +289,9 @@ def validate_evidence(
                 ):
                     if generated_path is None:
                         continue
-                    generated_commit = git_last_commit(repo, generated_path)
+                    generated_commit = index.last_commit(generated_path)
                     if (
-                        git_path_dirty(repo, generated_path)
+                        index.dirty(generated_path)
                         or doc_commit is None
                         or generated_commit is None
                         or commit_is_after(repo, generated_commit, doc_commit)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -11,6 +12,11 @@ from _support import REPO_ROOT, Skill, discover_skills
 
 # Make the venv interpreter that runs pytest the one the tests shell out to.
 PYTHON = sys.executable
+
+# 临时仓库与被测 CLI 的提交身份统一由环境提供，省去逐仓库 git config。
+for _key in ("GIT_AUTHOR", "GIT_COMMITTER"):
+    os.environ.setdefault(f"{_key}_NAME", "MDF Test")
+    os.environ.setdefault(f"{_key}_EMAIL", "mdf@example.invalid")
 
 
 def skill_dir(name: str) -> Path:

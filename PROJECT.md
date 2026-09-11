@@ -10,7 +10,7 @@
 
 ## 本地验证
 
-MDF 测试只依赖 Python 标准库、Git 和 pytest：
+MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
 
 ```bash
 python -m pip install -r tests/requirements-test.txt

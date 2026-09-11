@@ -36,11 +36,20 @@ def repo_path(raw: str) -> Path:
     return path
 
 
+# 同一进程内目录所属的 Git 根不会改变；只缓存已确认的根，避免重复 rev-parse。
+_GIT_ROOTS: dict[Path, Path] = {}
+
+
 def git_root(repo: Path) -> Path | None:
+    cached = _GIT_ROOTS.get(repo)
+    if cached is not None:
+        return cached
     result = run(["git", "rev-parse", "--show-toplevel"], cwd=repo, check=False)
     if result.returncode:
         return None
-    return Path(result.stdout.strip()).resolve()
+    root = Path(result.stdout.strip()).resolve()
+    _GIT_ROOTS[repo] = root
+    return root
 
 
 def require_git_root(repo: Path) -> None:
@@ -155,6 +164,67 @@ def git_path_tracked(repo: Path, path: Path) -> bool:
         check=False,
     )
     return bool(result.stdout.strip())
+
+
+def _with_parents(names: list[str]) -> set[str]:
+    found: set[str] = set()
+    for name in names:
+        if not name:
+            continue
+        found.add(name)
+        parts = name.split("/")
+        for depth in range(1, len(parts)):
+            found.add("/".join(parts[:depth]))
+        found.add(".")
+    return found
+
+
+def _status_paths(raw: str) -> list[str]:
+    entries = raw.split("\0")
+    paths: list[str] = []
+    index = 0
+    while index < len(entries):
+        entry = entries[index]
+        index += 1
+        if len(entry) < 4:
+            continue
+        paths.append(entry[3:])
+        if "R" in entry[:2] or "C" in entry[:2]:
+            paths.append(entries[index])
+            index += 1
+    return paths
+
+
+class GitPathIndex:
+    """一次性读取跟踪与脏状态，供同一校验内的重复路径查询复用。"""
+
+    def __init__(self, repo: Path) -> None:
+        self.repo = repo
+        self._tracked: set[str] | None = None
+        self._dirty: set[str] | None = None
+        self._commits: dict[str, str | None] = {}
+
+    def tracked(self, path: Path) -> bool:
+        if self._tracked is None:
+            raw = run(["git", "ls-files", "-z"], cwd=self.repo, check=False)
+            self._tracked = _with_parents(raw.stdout.split("\0"))
+        return relative(self.repo, path) in self._tracked
+
+    def dirty(self, path: Path) -> bool:
+        if self._dirty is None:
+            raw = run(
+                ["git", "status", "--porcelain", "-z", "--untracked-files=all"],
+                cwd=self.repo,
+                check=False,
+            )
+            self._dirty = _with_parents(_status_paths(raw.stdout))
+        return relative(self.repo, path) in self._dirty
+
+    def last_commit(self, path: Path) -> str | None:
+        rel = relative(self.repo, path)
+        if rel not in self._commits:
+            self._commits[rel] = git_last_commit(self.repo, path)
+        return self._commits[rel]
 
 
 def worktree_map(repo: Path) -> dict[str, Path]:
