@@ -84,8 +84,9 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-完整读取 `references/common.md`、`references/fact-audit.md`、 `references/repository-contract.md` 与
-`references/object-contract.md`。
+完整读取 `references/common.md`、`references/fact-audit.md`、
+`references/repository-contract.md` 与 `references/object-contract.md`。
+步骤 3 读取并内部执行 `references/fact-update.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |

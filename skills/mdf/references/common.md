@@ -41,6 +41,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   不改 `.mdf/` 与 `docs/`；该例外只约束 upgrade，见 `references/upgrade.md`。
 - 与当前分支工作相关的文档在当前分支更新，随该分支交付；包括规划记录、事实文档和 CodeWiki。
   当前事实文档和 CodeWiki 必须反映该 checkout 的实际状态，不把未实现的计划写成事实。
+  调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，不替代任务管理。
 - 与当前分支工作无关的文档在 develop 更新；独立规划、记录和公共文档维护也按此规则处理。
   develop 不存在时先明确创建基线，不擅自从未交付分支创建。
 - 归属不明确时先询问。需改用 develop 时，在写入前选择安全切换或独立 worktree，

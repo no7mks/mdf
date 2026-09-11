@@ -1,5 +1,7 @@
 # CodeWiki Wiki 契约
 
+由 codewiki generate 与 codewiki update 读取。规则持续适用，不是依次执行的阶段。
+
 ## 边界
 
 - 仅用 CodeWiki MCP 的八个工具生成或修改 Wiki：

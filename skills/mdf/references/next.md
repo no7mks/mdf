@@ -37,6 +37,8 @@
 ## 工作流（唯一执行契约）
 
 读取 `references/common.md`；蓝图分支另读 `references/object-contract.md`。
+续办尚未 Git 化的 init/bootstrap 时读取 `references/initialization.md`；
+续办 feature 时读取 `references/delivery-contract.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |

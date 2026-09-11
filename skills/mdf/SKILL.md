@@ -89,7 +89,7 @@ disable-model-invocation: true
 将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理；
 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
 写入型 intent 读取 `references/common.md`；upgrade 不读该文件，见
-`references/upgrade.md`。提交不代替确认或验收，远端和集成操作按各自流程授权。
+`references/upgrade.md`。
 
 `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`
 与 `$mdf help <intent>` 均由选择树路由；

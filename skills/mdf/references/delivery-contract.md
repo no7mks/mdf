@@ -1,5 +1,8 @@
 # Feature 交付契约
 
+由 start、design、write-tests、implement、converge、review 与 finish 读取。
+规则持续适用，不是依次执行的阶段。
+
 ## 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。start 经内部 clarify 确认

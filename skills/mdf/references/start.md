@@ -34,7 +34,8 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。
-feature 的步骤 2 读取并内部执行 `references/clarify.md`。
+feature 的步骤 2 读取并内部执行 `references/clarify.md`，
+对照 `assets/templates/objectives.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |

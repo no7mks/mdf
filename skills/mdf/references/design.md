@@ -30,6 +30,8 @@
 读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
 一次调用只推进当前 intent；不得自动触发下一用户入口。
+步骤 2 读取并内部执行 `references/clarify.md`；确认后，步骤 3 按
+`assets/templates/design.md` 写入设计。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -41,7 +43,6 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-步骤 2 读取并内部执行 `references/clarify.md`；确认后，步骤 3 按 `assets/templates/design.md` 写入设计。
 在 design.md 中明确目标、非目标、接口、错误语义、
 验收到测试类别的映射及 verification 各项适用条件。测试仅对 objectives 负责。
 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
