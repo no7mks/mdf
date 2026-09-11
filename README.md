@@ -26,7 +26,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf archive` | 归档终态 Proposal 及 closed/rejected Bug |
 | `$mdf prp split` | 拆分未开工 PRP，并完整改写依赖 |
 | `$mdf design` | 确认设计、测试策略和共享代码底座 |
-| `$mdf write-tests` | 按目标编写测试用例 |
+| `$mdf write-tests` | 按目标编写可执行测试；不要求全绿 |
 | `$mdf implement` | 按已确认设计实现 |
 | `$mdf converge` | 收敛：集成并持续修复到全量验证通过 |
 | `$mdf review` | 审查并修复实现、测试和 code smell |

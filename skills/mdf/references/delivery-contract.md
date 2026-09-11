@@ -32,8 +32,10 @@ write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
 
 通过 `delivery status/check/record/verify/integrate` 执行确定性操作。
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
-write-tests 和 implement 只要求已提交 design；converge 需两路完成，review 需收敛全绿，
-finish 需当前 review、事实审阅和验证证据有效。不能手填 passed 代替 CLI 检查。
+write-tests 和 implement 只要求已提交 design。write-tests 写完可编译或可加载
+执行的测试即完成，不要求全绿；全绿由 converge 负责。converge 需两路完成，
+review 需收敛全绿，finish 需当前 review、事实审阅和验证证据有效。不能手填
+passed 代替 CLI 检查。
 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 
 设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置；manifest 的

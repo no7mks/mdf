@@ -91,7 +91,7 @@
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
-- `$mdf write-tests`：按目标编写测试用例
+- `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
 - `$mdf converge`：集成并持续修复到全量验证通过
 - `$mdf review`：审查并修复实现、测试和 code smell
@@ -218,6 +218,7 @@ $mdf clarify 要不要把缓存放到 Redis
 用法：`$mdf write-tests`
 用途：按目标编写测试用例。
 说明：可与 implement 并行；切到已有 qa worktree，先 merge owner。
+写完可执行测试即完成，不要求全绿。
 
 `$mdf implement`
 用法：`$mdf implement`

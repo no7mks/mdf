@@ -216,6 +216,10 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "底座未写入该基线则不得结束" in design
     assert "worktrees.qa.path" in tests
     assert "不得在 feature 上编写或补写测试" in tests
+    assert "本阶段不要求项目全绿" in tests
+    assert "不得因断言失败拒绝记录 gate" in tests
+    assert "全绿由 converge 负责" in tests
+    assert "不要求全绿" in contract
     assert "worktrees.dev.path" in implement
     assert "不得在 feature 上实现" in implement
     assert "git merge --no-ff" in tests
