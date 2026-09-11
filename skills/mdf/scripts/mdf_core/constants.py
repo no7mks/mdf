@@ -128,6 +128,7 @@ JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
 OBJECT_ID_RE = re.compile(
     r"^(?:(?:prp|bug|jot)-[A-HJ-NP-Z2-9]{4}|adr-\d{4})$"
 )
+OBJECT_ID_SLUG_RE = re.compile(r"^(?:prp|bug)-[a-hj-np-z2-9]{4}$")
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
 MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)

@@ -147,7 +147,8 @@ release 要求本地 develop，
   将 docs/specs/<slug> 用 move-change 整体移动到 docs/changes/unreleased/<slug>；续办时识别已移动记录。
   补齐唯一 PRP 对应的 canonical CHANGE.md，材料和 CHANGE.md 同级。搬迁链接由 CLI 重写。
   搬迁和 CHANGE.md 整理完成后提交这些材料，再进入阶段校验，避免用未提交路径作为设计基线。
-- bugfix：按对象契约准备当前分支的 `docs/changes/unreleased/<slug>/CHANGE.md`；
+- bugfix：按对象契约准备当前分支的 `docs/changes/unreleased/<slug>/CHANGE.md`，
+  slug 为 Bug ID 的 kebab-case（小写）；
   不要求 `docs/specs`、唯一 PRP 或 feature gate。记录实际 Bug outcomes 和证据。
 - release：核对已有 child Change，材料聚合与版本目录写入留给步骤 8。
 - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。

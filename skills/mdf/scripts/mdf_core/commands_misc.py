@@ -36,7 +36,7 @@ from .paths import (
     relative,
 )
 from .semver import bump_kind, required_bump
-from .textutil import new_short_id, slugify, stable_semver
+from .textutil import is_object_id_slug, new_short_id, slugify, stable_semver
 
 
 def command_info(_: argparse.Namespace) -> None:
@@ -225,6 +225,8 @@ def command_make_id(args: argparse.Namespace) -> None:
     prefix = "prp" if args.type == "proposal" else "bug"
     identifier = f"{prefix}-{new_short_id()}"
     slug = slugify(args.slug)
+    if is_object_id_slug(slug):
+        raise MDFError("slug 不得与对象 ID 同形", code="slug_is_id")
     filename = f"{identifier}-{slug}.md"
     emit(
         {

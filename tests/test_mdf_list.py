@@ -7,7 +7,8 @@ def add_bug(repo, identifier, status="open", severity="major"):
     template = (repo / "docs/bugs" / BUG_NAME).read_text()
     text = template.replace(BUG_ID, identifier).replace("status: open", f"status: {status}")
     text = text.replace("severity: major", f"severity: {severity}")
-    path = repo / "docs/bugs" / f"{identifier}-item.md"
+    slug = f"fix-{identifier.split('-', 1)[1].lower()}"
+    path = repo / "docs/bugs" / f"{identifier}-{slug}.md"
     path.write_text(text)
     return path
 
@@ -20,7 +21,7 @@ def test_list_filters_by_type_status_milestone_and_severity(python_exe, tmp_path
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-EF56", ["prp-AB23"], status="draft", milestone="阶段一")
     add_prp(repo, "prp-GH78", status="rejected")
-    replace(repo / "docs/proposals/prp-GH78-item.md", "status: rejected",
+    replace(repo / "docs/proposals/prp-GH78-item-gh78.md", "status: rejected",
             "status: rejected\nreject-reason: wont-do")
     add_bug(repo, "bug-EF56", status="fixed", severity="trivial")
     init_git(repo)

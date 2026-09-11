@@ -395,3 +395,58 @@ def test_validation_rejects_duplicate_id_across_active_and_archive(
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert result.returncode != 0
     assert "object.id_duplicate" in result.stdout
+
+
+def test_validation_rejects_id_shaped_filename_slug(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    source = repo / "docs/proposals" / PRP_NAME
+    shaped = repo / "docs/proposals" / "prp-EF56-prp-ab23.md"
+    shaped.write_text(
+        source.read_text(encoding="utf-8").replace("prp-AB23", "prp-EF56"),
+        encoding="utf-8",
+    )
+    init_git(repo)
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "object.slug_id" in result.stdout
+
+
+def test_validation_rejects_duplicate_active_slugs(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    bug = repo / "docs/bugs" / "bug-EF56-service-health.md"
+    bug.write_text(
+        (repo / "docs/bugs" / BUG_NAME).read_text(encoding="utf-8").replace(
+            BUG_ID, "bug-EF56"
+        ),
+        encoding="utf-8",
+    )
+    init_git(repo)
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "object.slug_duplicate" in result.stdout
+
+
+def test_validation_allows_archived_slug_reuse(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    source = repo / "docs/proposals" / PRP_NAME
+    archived = (
+        repo / "docs/proposals" / "archive" / "1.2" / "prp-EF56-service-health.md"
+    )
+    archived.parent.mkdir(parents=True)
+    archived.write_text(
+        source.read_text(encoding="utf-8").replace(
+            "id: prp-AB23", "id: prp-EF56"
+        ).replace(
+            "status: ready\ndepends_on: []",
+            "status: released\ndepends_on: []\nreleased_in: 1.2.0",
+        ),
+        encoding="utf-8",
+    )
+    init_git(repo)
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))

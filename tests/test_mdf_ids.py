@@ -12,3 +12,11 @@ def test_make_id_requires_an_ascii_slug(
 
     assert result.returncode != 0
     assert "--slug" in result.stderr
+
+
+def test_make_id_rejects_object_id_slug(python_exe: str):
+    result = mdf(
+        python_exe, "make-id", "--type", "proposal", "--slug", "prp-AB23"
+    )
+    assert result.returncode != 0
+    assert "slug_is_id" in result.stderr

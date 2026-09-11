@@ -92,12 +92,42 @@ def command_start(args) -> None:
     require_master_default(repo)
     base = _target(args.kind)
     _synced(repo, base)
-    if args.kind in {"feature", "bugfix"}:
-        if not args.name:
+    objectives = None
+    if args.kind == "feature":
+        if args.name:
             raise MDFError(
-                "feature and bugfix require --name", code="missing_name"
+                "feature 的 slug 由 PRP 文件名决定，不要传 --name",
+                code="unexpected_name",
             )
-        suffix = slugify(args.name)
+        if not args.proposal or not args.objectives_file:
+            raise MDFError(
+                "feature 需要 --proposal 与 --objectives-file",
+                code="missing_proposal",
+            )
+        from .proposals import proposal_slug_on_ref, require_startable
+        suffix = proposal_slug_on_ref(repo, args.proposal, base)
+        objectives = Path(args.objectives_file).read_text(encoding="utf-8")
+        from .constants import MARKER_RE
+        if not objectives.strip() or MARKER_RE.search(objectives):
+            raise MDFError("objectives 不能为空", code="missing_objectives")
+        for rel in (f"docs/specs/{suffix}", f"docs/changes/unreleased/{suffix}"):
+            if not _git(repo, "cat-file", "-e", f"{base}:{rel}",
+                        check=False).returncode:
+                raise MDFError("交付 slug 已存在", code="collision")
+    elif args.kind == "bugfix":
+        if args.name:
+            raise MDFError(
+                "bugfix 的分支名是 Bug ID，不要传 --name，使用 --bug",
+                code="unexpected_name",
+            )
+        if not args.bug:
+            raise MDFError("bugfix 需要 --bug", code="missing_bug")
+        from .bugs import bug_id_on_ref, require_startable_bug
+        suffix = bug_id_on_ref(repo, args.bug, base)
+        unreleased = f"docs/changes/unreleased/{slugify(suffix)}"
+        if not _git(repo, "cat-file", "-e", f"{base}:{unreleased}",
+                    check=False).returncode:
+            raise MDFError("交付 slug 已存在", code="collision")
     else:
         if stable_semver(args.version or "") is None:
             raise MDFError("release and hotfix require stable --version",
@@ -108,18 +138,6 @@ def command_start(args) -> None:
         repo, f"refs/remotes/{ORIGIN}/{branch}"
     ):
         raise MDFError(f"Branch already exists: {branch}", code="branch_exists")
-    objectives = None
-    if args.kind == "feature":
-        from .proposals import require_startable
-        if not args.proposal or not args.objectives_file:
-            raise MDFError("feature 需要 --proposal 与 --objectives-file", code="missing_proposal")
-        objectives = Path(args.objectives_file).read_text(encoding="utf-8")
-        from .constants import MARKER_RE
-        if not objectives.strip() or MARKER_RE.search(objectives):
-            raise MDFError("objectives 不能为空", code="missing_objectives")
-        for rel in (f"docs/specs/{suffix}", f"docs/changes/unreleased/{suffix}"):
-            if not _git(repo, "cat-file", "-e", f"{base}:{rel}", check=False).returncode:
-                raise MDFError("交付 slug 已存在", code="collision")
     work = None
     try:
         path = sibling_worktree(repo, f"{args.kind}-{suffix}")
@@ -127,6 +145,8 @@ def command_start(args) -> None:
         work = path
         if args.kind == "feature":
             require_startable(work, args.proposal)
+        elif args.kind == "bugfix":
+            require_startable_bug(work, args.bug)
         start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
         if objectives is not None:
             from .delivery_state import safe, write_json

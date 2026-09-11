@@ -36,24 +36,29 @@ def test_start_rejected_push_preserves_local_branch_and_reports_state(
     obj = tmp_path / "objectives.md"
     obj.write_text("# 目标\n\n交付健康接口。\n")
     result = mdf(python_exe, "start", "--repo", str(repo),
-                 "--kind", "feature", "--name", "delivery",
-                 "--proposal", "prp-AB23", "--objectives-file", str(obj))
+                 "--kind", "feature", "--proposal", "prp-AB23",
+                 "--objectives-file", str(obj))
 
     assert result.returncode != 0
     error = json.loads(result.stderr)
     assert error["error"] == "start_push_failed"
-    assert error["details"]["branch"] == "feature/delivery"
+    assert error["details"]["branch"] == "feature/service-health"
     work = Path(error["details"]["worktree"])
     assert work != repo
     assert git(work, "rev-parse", "HEAD^").stdout.strip() == before
     assert error["details"]["remote_state"] == "unknown"
-    assert git(work, "branch", "--show-current").stdout.strip() == "feature/delivery"
-    assert git(repo, "branch", "--show-current").stdout.strip() != "feature/delivery"
-    assert not git(remote, "for-each-ref", "refs/heads/feature/delivery").stdout
+    assert git(work, "branch", "--show-current").stdout.strip() == (
+        "feature/service-health"
+    )
+    assert git(repo, "branch", "--show-current").stdout.strip() != (
+        "feature/service-health"
+    )
+    assert not git(remote, "for-each-ref",
+                   "refs/heads/feature/service-health").stdout
     assert not git(work, "status", "--porcelain").stdout
 
     hook.unlink()
-    git(work, "push", "-u", "origin", "feature/delivery")
+    git(work, "push", "-u", "origin", "feature/service-health")
     assert git(work, "rev-parse", "@{upstream}").stdout.strip() == error["details"]["local_head"]
 
 
@@ -69,14 +74,16 @@ def test_start_sets_upstream_from_expected_base(
     git(repo, "push")
     base = "master" if kind == "hotfix" else "develop"
     expected = git(repo, "rev-parse", base).stdout.strip()
-    identifier = ["--name", "delivery"] if kind in {"feature", "bugfix"} else [
-        "--version", "1.3.0",
-    ]
-
     if kind == "feature":
         obj = tmp_path / "objectives.md"
         obj.write_text("# 目标\n\n交付健康接口。\n")
-        identifier += ["--proposal", "prp-AB23", "--objectives-file", str(obj)]
+        identifier = [
+            "--proposal", "prp-AB23", "--objectives-file", str(obj),
+        ]
+    elif kind == "bugfix":
+        identifier = ["--bug", "bug-CD34"]
+    else:
+        identifier = ["--version", "1.3.0"]
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
                          "--kind", kind, *identifier))
 
@@ -151,10 +158,10 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     assert not git(repo, "status", "--porcelain").stdout
 
 
-def _add_ready_prp(repo: Path, identifier: str) -> None:
+def _add_ready_prp(repo: Path, identifier: str, slug: str) -> None:
     template = (repo / "docs/proposals" / PRP_NAME).read_text()
     text = template.replace("prp-AB23", identifier)
-    (repo / "docs/proposals" / f"{identifier}-item.md").write_text(text)
+    (repo / "docs/proposals" / f"{identifier}-{slug}.md").write_text(text)
 
 
 def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
@@ -162,25 +169,26 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
 ):
     repo, _remote = start_repo(tmp_path)
     git(repo, "checkout", "develop")
-    _add_ready_prp(repo, "prp-EF56")
+    _add_ready_prp(repo, "prp-EF56", "parallel")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs(prp): 增加可并行提案")
     git(repo, "push")
     first = tmp_path / "first.md"
     first.write_text("# 目标\n\n交付健康接口。\n")
     first_start = payload(mdf(python_exe, "start", "--repo", str(repo),
-                 "--kind", "feature", "--name", "health", "--proposal", "prp-AB23",
+                 "--kind", "feature", "--proposal", "prp-AB23",
                  "--objectives-file", str(first)))
     health = Path(first_start["worktree"])
     assert health != repo
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
-    assert git(health, "branch", "--show-current").stdout.strip() == "feature/health"
+    assert git(health, "branch", "--show-current").stdout.strip() == (
+        "feature/service-health"
+    )
 
     second = tmp_path / "second.md"
     second.write_text("# 目标\n\n交付并行接口。\n")
     created = payload(mdf(python_exe, "start", "--repo", str(repo),
-                           "--kind", "feature", "--name", "parallel",
-                           "--proposal", "prp-EF56",
+                           "--kind", "feature", "--proposal", "prp-EF56",
                            "--objectives-file", str(second)))
     work = Path(created["worktree"])
     assert created["branch"] == "feature/parallel"
@@ -190,9 +198,9 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     assert git(work, "branch", "--show-current").stdout.strip() == "feature/parallel"
 
     extra = payload(mdf(python_exe, "start", "--repo", str(repo),
-                          "--kind", "bugfix", "--name", "extra-fix"))
+                          "--kind", "bugfix", "--bug", "bug-CD34"))
     bugfix = Path(extra["worktree"])
-    assert extra["branch"] == "bugfix/extra-fix"
+    assert extra["branch"] == "bugfix/bug-CD34"
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     (bugfix / "fix.txt").write_text("ok\n")
     git(bugfix, "add", "--all")
@@ -202,3 +210,47 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     assert not bugfix.exists()
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(repo, "show", "develop:fix.txt").stdout == "ok\n"
+
+
+def test_start_feature_rejects_name_and_derives_slug_from_prp(
+    python_exe: str, tmp_path: Path,
+):
+    repo, _remote = start_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    rejected = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--name", "delivery", "--proposal", "prp-AB23",
+        "--objectives-file", str(obj),
+    )
+    assert "unexpected_name" in rejected.stderr
+    created = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-AB23", "--objectives-file", str(obj),
+    ))
+    assert created["branch"] == "feature/service-health"
+
+
+def test_start_bugfix_uses_bug_id_and_rejects_name(
+    python_exe: str, tmp_path: Path,
+):
+    repo, _remote = start_repo(tmp_path)
+    named = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+        "--name", "timeout-fix",
+    )
+    assert "unexpected_name" in named.stderr
+    missing = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+    )
+    assert "missing_bug" in missing.stderr
+    wrong = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+        "--bug", "prp-AB23",
+    )
+    assert "missing_bug" in wrong.stderr
+    created = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+        "--bug", "bug-CD34",
+    ))
+    assert created["branch"] == "bugfix/bug-CD34"

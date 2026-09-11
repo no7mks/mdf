@@ -23,9 +23,9 @@ def setup_delivery(python_exe, tmp_path):
     obj = tmp_path / "objectives.md"
     obj.write_text("# 目标\n\n实现健康状态接口。\n")
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
-                       "--name", "health", "--proposal", "prp-AB23", "--objectives-file", str(obj)))
+                       "--proposal", "prp-AB23", "--objectives-file", str(obj)))
     work = Path(data["worktree"])
-    root = work / "docs/specs/health"
+    root = work / "docs/specs/service-health"
     assert json.loads((root / "delivery.json").read_text())["start_commit"] == data["start_commit"]
     (root / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")
     policy = tmp_path / "policy.json"
@@ -113,13 +113,13 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         payload(record(python_exe, repo, stage))
     commit(repo)
     payload(mdf(python_exe, "move-change", "--repo", str(repo), "--source", str(root),
-                "--branch-slug", "health"))
-    dest = repo / "docs/changes/unreleased/health"
+                "--branch-slug", "service-health"))
+    dest = repo / "docs/changes/unreleased/service-health"
     assert "../../../../src/service.py" in (dest / "design.md").read_text()
     # Existing helper creates the directory; place its CHANGE alongside the moved material.
     write_unreleased_change(repo, "temporary")
     text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
-    (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/health")
+    (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
                                     .replace("fixed: [bug-CD34]", "fixed: []"))
     shutil.rmtree(repo / "docs/changes/unreleased/temporary")
     replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
@@ -131,11 +131,14 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         (repo / "src/service.py").write_text("value = 2\n")
         commit(repo)
         git(repo, "push")
-        git(repo, "checkout", "feature/health")
+        git(repo, "checkout", "feature/service-health")
         result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
         assert "merge_conflict" in result.stderr
         assert "status: ready" in (repo / "docs/proposals" / PRP_NAME).read_text()
-        assert "implemented" not in git(repo, "show", f"origin/feature/health:docs/proposals/{PRP_NAME}").stdout
+        assert "implemented" not in git(
+            repo, "show",
+            f"origin/feature/service-health:docs/proposals/{PRP_NAME}",
+        ).stdout
         assert not git(repo, "status", "--porcelain").stdout
         return
     primary = git_primary(repo)
@@ -143,10 +146,12 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     assert not repo.exists()
     assert "implemented" in git(primary, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
     dest_json = git(primary, "show",
-                    "develop:docs/changes/unreleased/health/delivery.json").stdout
+                    "develop:docs/changes/unreleased/service-health/delivery.json").stdout
     assert json.loads(dest_json) == original
-    assert not git(remote, "for-each-ref", "refs/heads/feature/health").stdout
-    assert not git(primary, "for-each-ref", "refs/heads/feature/health").stdout
+    assert not git(remote, "for-each-ref",
+                   "refs/heads/feature/service-health").stdout
+    assert not git(primary, "for-each-ref",
+                   "refs/heads/feature/service-health").stdout
 
 
 def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
@@ -183,7 +188,7 @@ def test_role_worktree_is_idempotent(python_exe, tmp_path):
     again = payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
                           "--role", "qa"))["result"]["worktree"]
     assert Path(first["path"]) == Path(again["path"])
-    assert first["branch"] == again["branch"] == "qa/health"
+    assert first["branch"] == again["branch"] == "qa/service-health"
     from_role = payload(mdf(python_exe, "delivery", "worktree",
                               "--repo", first["path"], "--role", "qa"))
     assert Path(from_role["result"]["worktree"]["path"]) == Path(first["path"])

@@ -13,7 +13,7 @@ from .constants import (
 )
 from .errors import Finding, MDFError, add_finding
 from .paths import path_stays_in_repo, relative
-from .textutil import stable_semver
+from .textutil import is_object_id_slug, stable_semver
 from .yamlutil import read_frontmatter
 def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
     root = repo / "docs" / ("proposals" if kind == "proposal" else "bugs")
@@ -60,6 +60,14 @@ def validate_object(
         )
         return
     expected_id = filename.group(1)
+    slug = filename.group(2)
+    if is_object_id_slug(slug):
+        add_finding(
+            findings,
+            "object.slug_id",
+            "Object filename slug must not match an object ID",
+            rel,
+        )
     try:
         metadata, body = read_frontmatter(path)
     except (OSError, MDFError) as exc:

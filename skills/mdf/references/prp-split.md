@@ -59,6 +59,7 @@
 
 先用 make-id 分配子 ID。输入 JSON 文件包含 source、children、downstream、rationale。
 children 至少两个，每项为 filename、id、depends_on、body；body 为完整 Proposal 正文。
+子项 filename slug 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
 downstream 为全部原下游 PRP ID 到其所需子 PRP ID 列表的映射，包含历史对象。
 逐项确认原上游如何分配、下游如何替换，避免机械地全部继承；rationale 记录范围覆盖与用户确认。
 运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选；用户确认后去掉 dry-run。

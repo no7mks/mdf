@@ -120,7 +120,8 @@
 
 **创建**
 
-为 Proposal 提议并确认英文 ASCII kebab-case slug，使用 `make-id --type proposal --slug` 生成 ID 与规范化文件名，
+为 Proposal 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
+中唯一，且不得与对象 ID 同形。使用 `make-id --type proposal --slug` 生成 ID 与规范化文件名，
 并以模板写入 `docs/proposals/`， 初始状态为 `draft`。
 仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
 

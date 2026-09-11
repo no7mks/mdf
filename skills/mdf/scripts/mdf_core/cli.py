@@ -116,6 +116,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     start.add_argument("--name")
     start.add_argument("--proposal")
+    start.add_argument("--bug")
     start.add_argument("--objectives-file")
     start.add_argument("--version")
     start.set_defaults(func=command_start)

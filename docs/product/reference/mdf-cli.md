@@ -131,12 +131,13 @@ python3 skills/mdf/scripts/mdf.py make-id \
   --type proposal --slug service-health
 ```
 
-`--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case；命令生成
-新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和 Markdown 文件名。
+`--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case，且不得与
+对象 ID 同形。命令生成新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和
+Markdown 文件名。
 Proposal、Bug 与 Jot 的 ID 为类型前缀加四位字符；每一位均独立从大写英文字母
 （排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。完整形式如 `prp-A2B3`、
 `bug-C4D5`、`jot-E6F7`；沟通时不得只写四位字符。
-它不创建对象文件。
+它不创建对象文件，也不检查仓库内 slug 是否唯一。
 
 ### `make-jot-id`
 
@@ -250,13 +251,15 @@ release 会从所有 `docs/changes/unreleased/*/CHANGE.md` 汇总对象结果；
 
 ```bash
 python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
-  --kind feature --name service-health \
-  --proposal prp-AB23 --objectives-file /tmp/objectives.md
+  --kind feature --proposal prp-AB23 --objectives-file /tmp/objectives.md
 ```
 
-`--kind` 为 `feature`、`bugfix`、`release` 或 `hotfix`。前两者必须有 `--name`，
-后两者必须有稳定 SemVer 的 `--version`。命令要求 clean worktree、`origin`、
-默认分支为 `master`，且来源分支与远端完全一致；它会先 `fetch --prune`。
+`--kind` 为 `feature`、`bugfix`、`release` 或 `hotfix`。
+`feature` 必须有 `--proposal` 与 `--objectives-file`，slug 由 PRP 文件名决定，
+禁止 `--name`。`bugfix` 必须有 `--bug <Bug ID>`，分支名为 `bugfix/<Bug ID>`，
+禁止 `--name`。
+`release` 与 `hotfix` 必须有稳定 SemVer 的 `--version`。命令要求 clean worktree、
+`origin`、默认分支为 `master`，且来源分支与远端完全一致；它会先 `fetch --prune`。
 
 feature、bugfix 和 release 从 `develop` 创建，hotfix 从 `master` 创建。若新分支
 在本地或远端已存在则失败。始终从基线建立相邻 worktree 并在该目录完成创建与推送，
@@ -318,7 +321,8 @@ intent 和测试的确定性基础，不是面向最终用户的直接产品入�
 
 ## Feature 阶段 CLI
 
-feature start 额外要求 `--proposal <ID> --objectives-file <文件>`；确认的目标文本先从文件读取，
+feature start 要求 `--proposal <ID> --objectives-file <文件>`，不接受 `--name`；
+slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 新分支记录固定起点与 slug，写入材料并提交，再推送。缺 PRP、依赖阻塞或已开工时拒绝。
 
 `delivery <action> --repo <仓库>`：

@@ -148,7 +148,8 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 
 **创建**
 
-为每项提议并确认英文 ASCII kebab-case slug，按类型 proposal 或 bug 使用 `make-id --type <type> --slug <slug>`
+为每项提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
+中唯一，且不得与对象 ID 同形。按类型 proposal 或 bug 使用 `make-id --type <type> --slug <slug>`
 生成 ID 与规范化文件名，并以模板写入 `docs/proposals/` 或 `docs/bugs/`；
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
 Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否则省略字段，不写 `null`。

@@ -3,7 +3,7 @@ import secrets
 import unicodedata
 from typing import Any
 
-from .constants import STABLE_SEMVER_RE
+from .constants import OBJECT_ID_SLUG_RE, STABLE_SEMVER_RE
 from .errors import MDFError
 
 
@@ -35,6 +35,10 @@ def slugify(value: str) -> str:
             "Slug becomes empty after normalization", code="empty_slug"
         )
     return normalized
+
+
+def is_object_id_slug(value: str) -> bool:
+    return OBJECT_ID_SLUG_RE.fullmatch(value) is not None
 
 
 def new_short_id() -> str:

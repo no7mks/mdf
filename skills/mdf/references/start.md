@@ -50,14 +50,19 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`。
 
 **参数**
 
-一次只要求一个分支的类型和必要标识：feature/bugfix 要 slug，
+一次只要求一个分支的类型和必要标识：feature 要 PRP ID，bugfix 要 Bug ID，
 release/hotfix 要稳定 SemVer。
-feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
+feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP；
+分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
+bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，
+不得另选 slug。
 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`，
 只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选，按 `id` 与 `title` 供用户选择；
 不逐篇翻阅 `docs/proposals/`。
+用户未指定 Bug 时运行 `list --repo "$REPO_ROOT" --type bug --status open`，
+按 `id` 与 `title` 供用户选择；不逐篇翻阅 `docs/bugs/`。
 
-验收：明确参数；feature 另确认 PRP。
+验收：明确参数；feature 另确认 PRP，bugfix 另确认 Bug。
 
 异常与交接：询问。不得从自然语言猜测版本。
 
@@ -82,8 +87,9 @@ PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写�
 **创建**
 
 解析目标 Git 根为 `REPO_ROOT`；运行 `start --repo "$REPO_ROOT" --kind <kind>`，
-feature/bugfix 使用 `--name <slug>`；
-feature 还须 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`，
+feature 使用 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`，
+不传 `--name`；CLI 从 PRP 文件名取出 slug。
+bugfix 使用 `--bug <Bug-ID>`，不传 `--name`；CLI 用该 ID 作为分支名。
 release/hotfix 使用 `--version <semver>`；
 CLI 在同一次调用中 fetch， 检查 `origin`、默认
 `master`、 来源及 upstream 一致、clean、目标不存在，

@@ -2,7 +2,7 @@
 from mdf_test_support import *  # noqa: F403
 
 
-def add_prp(repo, identifier, deps=(), status="ready", milestone=None):
+def add_prp(repo, identifier, deps=(), status="ready", milestone=None, slug=None):
     template = (repo / "docs/proposals" / PRP_NAME).read_text()
     depends_on = json.dumps(list(deps), ensure_ascii=False)
     text = template.replace("prp-AB23", identifier).replace(
@@ -15,7 +15,9 @@ def add_prp(repo, identifier, deps=(), status="ready", milestone=None):
             f"depends_on: {depends_on}\n"
             f"milestone: {json.dumps(milestone, ensure_ascii=False)}",
         )
-    path = repo / "docs/proposals" / f"{identifier}-item.md"
+    if slug is None:
+        slug = f"item-{identifier.split('-', 1)[1].lower()}"
+    path = repo / "docs/proposals" / f"{identifier}-{slug}.md"
     path.write_text(text)
     return path
 
@@ -44,8 +46,15 @@ def test_next_ready_dag_drafts_truncation_and_invalid_dependencies(python_exe, t
 def split_spec(repo):
     body = (repo / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
     return {"source": "prp-AB23", "rationale": "用户确认两项共同覆盖验收，下游仅依赖第一项",
-            "children": [{"id": key, "filename": f"{key}-part.md", "depends_on": [], "body": body}
-                         for key in ("prp-EF56", "prp-GH78")],
+            "children": [
+                {
+                    "id": key,
+                    "filename": f"{key}-part-{key.split('-', 1)[1].lower()}.md",
+                    "depends_on": [],
+                    "body": body,
+                }
+                for key in ("prp-EF56", "prp-GH78")
+            ],
             "downstream": {"prp-JK89": ["prp-EF56"]}}
 
 
@@ -66,9 +75,13 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     assert git(repo, "status", "--porcelain").stdout == before
     payload(mdf(python_exe, *args))
     assert 'status: "replaced"' in (repo / "docs/proposals" / PRP_NAME).read_text()
-    assert 'depends_on: ["prp-EF56"]' in (repo / "docs/proposals/prp-JK89-item.md").read_text()
-    assert 'status: "draft"' in (repo / "docs/proposals/prp-EF56-part.md").read_text()
-    for name in (PRP_NAME, "prp-EF56-part.md", "prp-GH78-part.md"):
+    assert 'depends_on: ["prp-EF56"]' in (
+        repo / "docs/proposals/prp-JK89-item-jk89.md"
+    ).read_text()
+    assert 'status: "draft"' in (
+        repo / "docs/proposals/prp-EF56-part-ef56.md"
+    ).read_text()
+    for name in (PRP_NAME, "prp-EF56-part-ef56.md", "prp-GH78-part-gh78.md"):
         content = (repo / "docs/proposals" / name).read_text()
         if milestone is None:
             assert "milestone:" not in content
@@ -123,7 +136,7 @@ def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(py
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     add_prp(repo, "prp-EF56", ["prp-AB23"])
     # add_prp copies its source; explicitly keep the dependent ready.
-    replace(repo / "docs/proposals/prp-EF56-item.md", "status: implemented", "status: ready")
+    replace(repo / "docs/proposals/prp-EF56-item-ef56.md", "status: implemented", "status: ready")
     init_git(repo)
     data = payload(mdf(python_exe, "next", "--repo", str(repo)))
     assert [node["id"] for node in data["trees"]] == ["prp-EF56"]
@@ -151,7 +164,7 @@ def test_milestone_dependency_blocks_next_until_members_are_implemented(
     assert data["blocked"] == [{"id": "prp-EF56", "blocked_by": ["阶段一"]}]
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     replace(
-        repo / "docs/proposals/prp-CD34-item.md",
+        repo / "docs/proposals/prp-CD34-item-cd34.md",
         "status: ready",
         "status: implemented",
     )
@@ -164,7 +177,7 @@ def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_pat
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-CD34", status="rejected", milestone="阶段一")
     replace(
-        repo / "docs/proposals/prp-CD34-item.md",
+        repo / "docs/proposals/prp-CD34-item-cd34.md",
         "status: rejected",
         "status: rejected\nreject-reason: wont-do",
     )
@@ -208,7 +221,7 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
     load_core_module()
     from mdf_core.prp_split import command_split
     original = Path.write_text
-    target = repo / "docs/proposals/prp-GH78-part.md"
+    target = repo / "docs/proposals/prp-GH78-part-gh78.md"
 
     def fail_second(path, content, *args, **kwargs):
         if path == target:

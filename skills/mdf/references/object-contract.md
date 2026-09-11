@@ -27,6 +27,11 @@ milestone 依赖在该值下不存在 draft 或 ready PRP 时满足。禁止重�
 Proposal、Bug 和 Jot 的 ID 为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
 沟通、引用与展示时必须写完整 ID，如 `prp-A2B3`、`bug-C4D5`、`jot-E6F7`，
 不得只写四位字符。
+文件名 `prp-<4 位字符>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug
+为英文 ASCII kebab-case。active（非 archive）Proposal 与 Bug 的 slug 必须
+全局唯一。slug 不得与对象 ID 同形（如 `prp-a2b3`、`bug-c4d5`）。
+feature 的分支与 `docs/specs/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
+bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
 一般关联只写正文；上述重复与替代字段是明确的结构关系。
 正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”含“包含”“不包含”非空三级子节。
 
@@ -73,7 +78,7 @@ duplicate。duplicate 不需要 `found_in`/`fixed_in`，也不得出现在 Chang
 
 ```yaml
 change_kind: feature | bugfix
-source_branch: feature/<slug> | bugfix/<slug>
+source_branch: feature/<slug> | bugfix/<bug-id>
 proposals: [prp-...]
 fixed: [bug-...]
 closed: [bug-...]

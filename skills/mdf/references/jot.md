@@ -161,7 +161,8 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、 Regression Evid
 
 **创建**
 
-提议并确认英文 ASCII kebab-case slug；按对象类型 proposal 或 bug， 调用 `make-id --type <type> --slug <slug>`；
+提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug 中唯一，
+且不得与对象 ID 同形。按对象类型 proposal 或 bug， 调用 `make-id --type <type> --slug <slug>`；
 Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。
 
 验收：新对象与首次 validation。

@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from .constants import MARKER_RE
+from .constants import MARKER_RE, OBJECT_FILE_RE
 from .errors import Finding, MDFError, add_finding
 from .paths import path_stays_in_repo, relative
 from .validate_objects import iter_object_files
@@ -67,11 +67,27 @@ def validate_adrs(repo: Path, findings: list[Finding]) -> None:
 def validate_record_references(repo: Path, findings: list[Finding]) -> None:
     known: set[str] = set()
     identifier_paths: dict[str, Path] = {}
+    slug_paths: dict[str, Path] = {}
     proposals: dict[str, dict] = {}
     object_paths: list[Path] = []
     for kind in ("proposal", "bug"):
         for path in iter_object_files(repo, kind):
             object_paths.append(path)
+            match = OBJECT_FILE_RE.fullmatch(path.name)
+            if match and len(path.relative_to(repo / "docs").parts) == 2:
+                slug = match.group(2)
+                if slug in slug_paths:
+                    add_finding(
+                        findings,
+                        "object.slug_duplicate",
+                        (
+                            f"Duplicate slug {slug}; first declared at "
+                            f"{relative(repo, slug_paths[slug])}"
+                        ),
+                        relative(repo, path),
+                    )
+                else:
+                    slug_paths[slug] = path
             try:
                 metadata, _ = read_frontmatter(path)
             except MDFError:
