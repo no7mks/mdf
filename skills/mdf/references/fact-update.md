@@ -51,6 +51,7 @@
 
 支持用户独立调用；也由 finish 在前段委托。独立调用不要求交付分支或阶段记录，不触发交付。
 独立调用可在当前工作相关的 feature、bugfix、release 或 hotfix 分支同步事实；
+在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
 无关的独立维护在 develop 完成，不在 master 写入。
 独立调用基于用户范围和当前实现确定更新面；finish 调用采用固定起点到 HEAD 的精确范围。
 只更新受影响的当前事实及 evidence；不修改 PRP、Bug、Change、objectives 或 design 的意图。

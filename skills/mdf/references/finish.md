@@ -97,8 +97,8 @@
 | 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并核对验证与接受 | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | 交接 | 约束 | 提交本次产物；按权限同步并核对交付条件 | clean、upstream、证据 | 10 | 停止 |
-| 10 | 合并 | 脚本 | 运行 finish-gitflow，核对合并、tag 与推送 | Git 实际结果 | 结束 | 报告现场并询问 |
+| 9 | 交接 | 约束 | 提交本次产物并核对交付条件 | clean、证据 | 10 | 停止 |
+| 10 | 合并 | 脚本 | 运行 finish-gitflow，核对合并、tag 与发版推送 | Git 实际结果 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构
 
@@ -231,10 +231,10 @@ evidence 按首次出现顺序去重并追加 manifest 验证命令。CLI 操作
 **交接**
 
 由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续；
-feature 按既有权限推送并运行 finish gate 检查。其他分支的阶段提交若需额外推送才能同步 upstream，
-须取得该推送授权；不要求用户手动提交或仅因本次写入而重调。
-release/hotfix 仍需已提交收口结果；feature/bugfix 必须有规范 child Change。
-核对 clean、upstream 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
+feature/bugfix 不 push，运行 finish gate 检查后进入本地 Gitflow 合并。
+release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
+feature/bugfix 必须有规范 child Change。
+核对 clean 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
 
 验收：必要提交、当前 clean 和交付条件。
 
@@ -242,12 +242,14 @@ release/hotfix 仍需已提交收口结果；feature/bugfix 必须有规范 chil
 
 **合并**
 
-调用 `finish-gitflow --repo "$REPO_ROOT"`。CLI fetch 后要求源分支及参与的 master/develop 与 upstream 完全一致；
-feature/bugfix no-ff 合并到 develop； release/hotfix no-ff 合并到 master 后 no-ff 合并 master 到 develop，
-并创建注释 `v<semver>` tag；仅这些合并自动创建 merge commit。随后原子 push、删远端及本地源分支。
-若当前是相邻 worktree，合并后移除该 worktree。
+调用 `finish-gitflow --repo "$REPO_ROOT"`。feature/bugfix 不 fetch、不 push；
+no-ff 合并到本地 develop，删除本地源分支。角色分支仍在则失败。
+release/hotfix 要求 origin，fetch 后要求本地 master/develop 与远端一致；
+no-ff 合并到 master，创建注释 `v<semver>` tag，再 no-ff 合并 master 到 develop，
+原子 push `master`、`develop` 与 tag。不推送、不删除远端 `release/*`/`hotfix/*`。
+若当前位于 `<repo-name>-worktrees/` 下的交付 worktree，合并后移除该 worktree。
 
-验收：合并、tag 和推送结果。
+验收：合并、tag 与（release/hotfix 的）推送结果。
 
 异常与交接：停止并报告当前分支、已完成合并、 tag 与推送状态；冲突时 CLI abort 当前 merge，
 但不得声称此前已完成的合并也被回退。 不继续推送或删分支，询问用户如何继续；

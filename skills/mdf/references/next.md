@@ -57,7 +57,8 @@ prp review、CodeWiki、clarify 等尚未完成的流程及其内部委托。
 clarify 可仅依赖已确认议题，不要求 Git 仓库。不得在识别前统一要求 manifest ready 或 clean。
 
 按需核对 manifest、当前分支、相关 worktree、产物、验证与恢复记录。
-feature 使用 `references/delivery-contract.md`，通过 `delivery status` 查看身份和阶段记录，
+feature 使用 `references/delivery-contract.md`，通过 `delivery status` 查看身份、
+阶段记录和 worktree 路径；按下一 intent 切到对应已有 worktree，缺树则停止。
 按原阶段要求检查 gate 是否有效；不能仅凭文件存在或历史 passed 判断阶段完成。
 不能仅凭 `next` CLI 的 in_progress 或当前 checkout 缺少材料断言没有在途流程。
 非 feature 分支按原有交付语义判断，不套用 feature gate。

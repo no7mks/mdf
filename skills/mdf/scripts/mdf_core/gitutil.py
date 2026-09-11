@@ -180,9 +180,14 @@ def primary_worktree(repo: Path) -> Path:
     return path.parent
 
 
-def sibling_worktree(repo: Path, label: str) -> Path:
+def sibling_worktree(repo: Path, name: str) -> Path:
     primary = primary_worktree(repo)
-    return primary.parent / f"{primary.name}-{label}"
+    relative = Path(name)
+    if relative.is_absolute() or not relative.parts or any(
+        part in ("", ".", "..") for part in relative.parts
+    ):
+        raise MDFError("非法 worktree 名称", code="invalid_worktree")
+    return primary.parent / f"{primary.name}-worktrees" / relative
 
 
 def occupies_delivery(branch: str) -> bool:
@@ -196,6 +201,7 @@ def add_linked_worktree(
 ) -> None:
     if path.exists():
         raise MDFError("并行分支或 worktree 已存在", code="collision")
+    path.parent.mkdir(parents=True, exist_ok=True)
     run(
         ["git", "worktree", "add", "-b", branch, str(path), start_point],
         cwd=repo,

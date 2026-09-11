@@ -12,6 +12,22 @@ from .verification import manifest_items
 STAGES = ("design", "write-tests", "implement", "converge", "review", "fact-update")
 
 
+def owner_branch(branch: str) -> str:
+    if branch.startswith(("qa/", "dev/")):
+        owner = branch.split("/", 1)[1]
+        if not owner.startswith("feature/"):
+            raise MDFError("阶段操作需要 feature/qa/dev 分支",
+                           code="unsupported_branch")
+        return owner
+    if branch.startswith("feature/"):
+        return branch
+    raise MDFError("阶段操作需要 feature/qa/dev 分支", code="unsupported_branch")
+
+
+def role_names(owner: str) -> dict[str, str]:
+    return {"qa": f"qa/{owner}", "dev": f"dev/{owner}"}
+
+
 def git(repo, *args, check=True):
     return run(["git", *args], cwd=repo, check=check)
 
@@ -45,9 +61,7 @@ def write_json(path, value):
 def locate(repo, slug=None):
     branch = current_branch(repo)
     if slug is None:
-        if not branch.startswith(("feature/", "qa/", "dev/")):
-            raise MDFError("阶段操作需要 feature/qa/dev 分支", code="unsupported_branch")
-        slug = branch.split("/", 1)[1]
+        slug = owner_branch(branch).split("/", 1)[1]
     candidates = [safe(repo, repo / "docs/specs" / slug),
                   safe(repo, repo / "docs/changes" / "unreleased" / slug)]
     found = [path for path in candidates if (path / "delivery.json").is_file()]

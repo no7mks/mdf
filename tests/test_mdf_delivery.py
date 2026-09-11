@@ -18,6 +18,21 @@ def git_primary(repo):
     return path.parent
 
 
+def role_paths(python_exe, owner):
+    trees = payload(mdf(python_exe, "delivery", "status", "--repo", str(owner))
+                    )["result"]["worktrees"]
+    return Path(trees["qa"]["path"]), Path(trees["dev"]["path"])
+
+
+def sync_roles(python_exe, owner):
+    qa, dev = role_paths(python_exe, owner)
+    branch = git(owner, "branch", "--show-current").stdout.strip()
+    message = f"chore(delivery): 合入 {branch}"
+    for path in (qa, dev):
+        git(path, "merge", "--no-ff", "--no-edit", "-m", message, branch)
+    return qa, dev
+
+
 def setup_delivery(python_exe, tmp_path):
     repo, remote = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
@@ -25,6 +40,15 @@ def setup_delivery(python_exe, tmp_path):
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
                        "--proposal", "prp-AB23", "--objectives-file", str(obj)))
     work = Path(data["worktree"])
+    primary = git_primary(work)
+    assert work == (
+        primary.parent / f"{primary.name}-worktrees" / "feature" / "service-health"
+    )
+    qa = Path(data["roles"]["qa"]["worktree"])
+    assert qa == (
+        primary.parent / f"{primary.name}-worktrees" / "qa" / "feature"
+        / "service-health"
+    )
     root = work / "docs/specs/service-health"
     assert json.loads((root / "delivery.json").read_text())["start_commit"] == data["start_commit"]
     (root / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")
@@ -43,18 +67,20 @@ def record(python_exe, repo, stage, *extra):
 
 def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    # Implementation need not wait for tests.
-    payload(record(python_exe, repo, "implement"))
+    qa, dev = sync_roles(python_exe, repo)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
     result = record(python_exe, repo, "converge")
     assert result.returncode != 0
-    (repo / "tests").mkdir(exist_ok=True)
-    (repo / "tests/test_health.py").write_text("def test_health():\n    assert 1 == 1\n")
-    payload(record(python_exe, repo, "write-tests"))
+    (qa / "tests").mkdir(exist_ok=True)
+    (qa / "tests/test_health.py").write_text("def test_health():\n    assert 1 == 1\n")
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
     payload(record(python_exe, repo, "review"))
     payload(record(python_exe, repo, "fact-update"))
-    # Evidence writes do not invalidate their own results.
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     fact = repo / "docs/product/reference/capabilities.md"
     fact.write_text(fact.read_text() + "\n补充事实说明。\n")
@@ -70,8 +96,12 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
 
 def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    payload(record(python_exe, repo, "write-tests"))
-    payload(record(python_exe, repo, "implement"))
+    qa, dev = sync_roles(python_exe, repo)
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     (repo / "pytest.ini").write_text("[pytest]\n")
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     assert "test_approval_required" in record(python_exe, repo, "converge").stderr
@@ -84,8 +114,12 @@ def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tm
 
 def test_partial_verification_does_not_satisfy_full_gate(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    payload(record(python_exe, repo, "write-tests"))
-    payload(record(python_exe, repo, "implement"))
+    qa, dev = sync_roles(python_exe, repo)
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo), "--item", "check"))
     assert record(python_exe, repo, "converge").returncode != 0
     manifest = repo / ".mdf/manifest.yaml"
@@ -97,17 +131,22 @@ def test_partial_verification_does_not_satisfy_full_gate(python_exe, tmp_path):
 
 def test_uncommitted_design_and_changed_design_block(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    (root / "design.md").write_text("# 未确认的新设计\n")
-    assert "stale_gate" in record(python_exe, repo, "implement").stderr
+    qa, dev = sync_roles(python_exe, repo)
+    (dev / "docs/specs/service-health/design.md").write_text("# 未确认的新设计\n")
+    assert "stale_gate" in record(python_exe, dev, "implement").stderr
 
 
 @pytest.mark.parametrize("conflict", [False, True])
 def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_path, conflict):
     repo, root, remote = setup_delivery(python_exe, tmp_path)
     original = json.loads((root / "delivery.json").read_text())
-    (repo / "src/service.py").write_text("value = 1\n")
-    for stage in ("write-tests", "implement"):
-        payload(record(python_exe, repo, stage))
+    qa, dev = sync_roles(python_exe, repo)
+    (dev / "src/service.py").write_text("value = 1\n")
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     for stage in ("converge", "review", "fact-update"):
         payload(record(python_exe, repo, stage))
@@ -116,7 +155,6 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
                 "--branch-slug", "service-health"))
     dest = repo / "docs/changes/unreleased/service-health"
     assert "../../../../src/service.py" in (dest / "design.md").read_text()
-    # Existing helper creates the directory; place its CHANGE alongside the moved material.
     write_unreleased_change(repo, "temporary")
     text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
     (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
@@ -125,19 +163,17 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
     commit(repo)
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
-    git(repo, "push")
     if conflict:
         git(repo, "checkout", "develop")
         (repo / "src/service.py").write_text("value = 2\n")
         commit(repo)
-        git(repo, "push")
         git(repo, "checkout", "feature/service-health")
         result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
         assert "merge_conflict" in result.stderr
         assert "status: ready" in (repo / "docs/proposals" / PRP_NAME).read_text()
         assert "implemented" not in git(
             repo, "show",
-            f"origin/feature/service-health:docs/proposals/{PRP_NAME}",
+            f"feature/service-health:docs/proposals/{PRP_NAME}",
         ).stdout
         assert not git(repo, "status", "--porcelain").stdout
         return
@@ -148,18 +184,17 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     dest_json = git(primary, "show",
                     "develop:docs/changes/unreleased/service-health/delivery.json").stdout
     assert json.loads(dest_json) == original
-    assert not git(remote, "for-each-ref",
-                   "refs/heads/feature/service-health").stdout
     assert not git(primary, "for-each-ref",
                    "refs/heads/feature/service-health").stdout
 
 
 def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    qa = Path(payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
-                           "--role", "qa"))["result"]["worktree"]["path"])
-    dev = Path(payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
-                            "--role", "dev"))["result"]["worktree"]["path"])
+    qa, dev = sync_roles(python_exe, repo)
+    primary = git_primary(repo)
+    container = primary.parent / f"{primary.name}-worktrees"
+    assert qa == container / "qa" / "feature" / "service-health"
+    assert dev == container / "dev" / "feature" / "service-health"
     (qa / "tests").mkdir(exist_ok=True)
     (qa / "tests/test_case.py").write_text("def test_case():\n    assert True\n")
     payload(record(python_exe, qa, "write-tests"))
@@ -175,33 +210,65 @@ def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
     payload(record(python_exe, repo, "converge"))
 
 
-def test_worktree_requires_role(python_exe, tmp_path):
+def test_status_lists_role_worktrees(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    result = mdf(python_exe, "delivery", "worktree", "--repo", str(repo))
-    assert "missing_role" in result.stderr
+    first = payload(mdf(python_exe, "delivery", "status", "--repo", str(repo))
+                    )["result"]["worktrees"]
+    assert first["qa"]["branch"] == "qa/feature/service-health"
+    assert first["dev"]["branch"] == "dev/feature/service-health"
+    qa, _dev = sync_roles(python_exe, repo)
+    again = payload(mdf(python_exe, "delivery", "status", "--repo", str(qa))
+                    )["result"]["worktrees"]
+    assert Path(again["qa"]["path"]) == qa
+    assert Path(again["owner"]["path"]) == repo
 
 
-def test_role_worktree_is_idempotent(python_exe, tmp_path):
+def test_write_tests_rejected_on_owner(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
-    first = payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
-                         "--role", "qa"))["result"]["worktree"]
-    again = payload(mdf(python_exe, "delivery", "worktree", "--repo", str(repo),
-                          "--role", "qa"))["result"]["worktree"]
-    assert Path(first["path"]) == Path(again["path"])
-    assert first["branch"] == again["branch"] == "qa/service-health"
-    from_role = payload(mdf(python_exe, "delivery", "worktree",
-                              "--repo", first["path"], "--role", "qa"))
-    assert Path(from_role["result"]["worktree"]["path"]) == Path(first["path"])
+    result = record(python_exe, repo, "write-tests")
+    assert "stage_branch" in result.stderr
+
+
+def test_finish_rejects_pending_role_branches(python_exe, tmp_path):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    qa, dev = sync_roles(python_exe, repo)
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
+    git(repo, "merge", "--no-ff", "--no-edit", "-m",
+        "chore(delivery): 合入 qa/feature/service-health",
+        "qa/feature/service-health")
+    git(repo, "merge", "--no-ff", "--no-edit", "-m",
+        "chore(delivery): 合入 dev/feature/service-health",
+        "dev/feature/service-health")
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
+    for stage in ("converge", "review", "fact-update"):
+        payload(record(python_exe, repo, stage))
+    commit(repo)
+    payload(mdf(python_exe, "move-change", "--repo", str(repo), "--source", str(root),
+                "--branch-slug", "service-health"))
+    dest = repo / "docs/changes/unreleased/service-health"
+    write_unreleased_change(repo, "temporary")
+    text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
+    (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
+                                    .replace("fixed: [bug-CD34]", "fixed: []"))
+    shutil.rmtree(repo / "docs/changes/unreleased/temporary")
+    replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
+    commit(repo)
+    result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
+    assert "roles_pending" in result.stderr
 
 
 def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     before = json.loads((root / "gates/design.json").read_text())["fingerprints"]
-    (repo / "src/service.py").chmod(0o755)
-    data = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
+    qa, dev = sync_roles(python_exe, repo)
+    (dev / "src/service.py").chmod(0o755)
+    data = payload(mdf(python_exe, "delivery", "check", "--repo", str(dev),
                        "--stage", "implement"))["result"]
     assert data["code"] != before["code"]
-    design = root / "design.md"
+    design = dev / "docs/specs/service-health/design.md"
     design.write_text(design.read_text().replace("service.py)", "service.py#new)"))
-    commit(repo)
-    assert "stale_gate" in record(python_exe, repo, "implement").stderr
+    commit(dev)
+    assert "stale_gate" in record(python_exe, dev, "implement").stderr

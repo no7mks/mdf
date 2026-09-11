@@ -41,9 +41,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-先运行 `delivery worktree --role qa`，从已提交 design 基线建立或复用
-qa/<slug> worktree，后续只在返回路径工作；已在该角色 worktree 时 CLI 返回现有路径。
-不得在 feature 上编写或补写测试。再运行 `delivery check --stage write-tests`。
+先运行 `delivery status`，读取 `worktrees.qa.path`；缺树则停止。
+切到该路径，对 owner 分支执行 `git merge --no-ff`；已在该 worktree 时仍先
+merge。冲突保留现场。不得在 feature 上编写或补写测试。再运行
+`delivery check --stage write-tests`。
 与 implement 互不前置，可并行。不自动分派 Agent。
 只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
 回 design 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；

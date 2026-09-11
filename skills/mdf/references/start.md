@@ -40,7 +40,7 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`。
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 参数 | 脚本 | 确认分支标识；feature 用 `list` 选定 PRP | 参数、list 结果 | feature 2；其他 3 | 留在 1 询问 |
 | 2 | 澄清 | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
-| 3 | 创建 | 脚本 | 运行 start，核对分支创建及推送结果 | 分支、远端、upstream | 结束 | 按失败阶段处理 |
+| 3 | 创建 | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 结束 | 按失败阶段处理 |
 
 ## 术语与数据结构
 
@@ -91,17 +91,20 @@ feature 使用 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`�
 不传 `--name`；CLI 从 PRP 文件名取出 slug。
 bugfix 使用 `--bug <Bug-ID>`，不传 `--name`；CLI 用该 ID 作为分支名。
 release/hotfix 使用 `--version <semver>`；
-CLI 在同一次调用中 fetch， 检查 `origin`、默认
-`master`、 来源及 upstream 一致、clean、目标不存在，
-再从 develop 创建 feature/bugfix/release 或从 master 创建 hotfix、 推送到 origin 并设置 upstream。
-始终从基线建立相邻 worktree，不在当前目录开分支、不抢占当前 checkout；
-成功 JSON 的 `worktree` 是后续工作目录。
+CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
+feature/bugfix/release 从本地 develop 创建，hotfix 从本地 master 创建。
+本地已有同名分支则失败，不检查远端。
+始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立
+worktree，路径等于分支名，`/` 为嵌套目录；不在当前目录开分支、不抢占当前
+checkout。feature 同时建立 owner `feature/<slug>` 与角色
+`qa/feature/<slug>`、`dev/feature/<slug>`；其他 kind 只建 owner。
+成功 JSON 的 `worktree` 是 owner 工作目录；feature 另含 `roles`。
+创建失败时拆除本次已建的全部 worktree 与分支。
 
-验收：检查、分支、远端、upstream 与实际工作目录。
+验收：检查、本地分支与实际工作目录。
 
-异常与交接：创建前检查失败时不创建分支并报告 finding；创建后推送失败时保留本地分支，报告 CLI 返回的现场，
-不自动删分支或重试 start。先核对远端分支与本地 HEAD，再按用户选择补推或处理现场；
-基线已推进时先询问用户并建议由 MDF 分析解决。
-feature CLI 固定 start_commit，在新分支写入 docs/specs/<slug>/ 的目标和身份，创建目标提交后推送。
-后续工作改用返回的 worktree 路径。
+异常与交接：创建前检查失败时不创建分支并报告 finding；创建中失败则拆除已建
+worktree 与分支。不推送，不设置 upstream。
+feature CLI 固定 start_commit，在 owner 写入 docs/specs/<slug>/ 的目标和身份并提交。
+后续工作改用返回的 worktree 路径；write-tests / implement 改用 `roles` 路径。
 成功后结束，由用户手动触发 design 或通过 next 委托。其他分支不创建新增阶段材料。

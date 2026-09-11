@@ -26,7 +26,7 @@ def policy_input(raw):
 
 def require_stage_branch(repo, stage):
     branch = current_branch(repo)
-    allowed = {"write-tests": ("feature/", "qa/"), "implement": ("feature/", "dev/")}
+    allowed = {"write-tests": ("qa/",), "implement": ("dev/",)}
     if not branch.startswith(allowed.get(stage, ("feature/",))):
         raise MDFError("该阶段不允许在当前角色分支执行", code="stage_branch")
 
@@ -120,6 +120,7 @@ def check(repo, root, data, stage):
         return require_finish(repo, root, data)
     current = require_design(repo, root, data)
     if stage in {"write-tests", "implement"}:
+        require_stage_branch(repo, stage)
         return current
     if stage == "converge":
         for prerequisite in ("write-tests", "implement"):
@@ -152,15 +153,26 @@ def command_delivery(args):
         result = verify(repo, root, data, args.item)
     elif args.action == "check":
         result = check(repo, root, data, args.stage)
-    elif args.action == "worktree":
-        if args.role not in ("qa", "dev"):
-            raise MDFError("worktree 需要 --role qa 或 dev", code="missing_role")
-        from .delivery_git import add_role
-        result = add_role(repo, root, data, args.role)
     elif args.action == "integrate":
         from .delivery_git import integrate
         result = integrate(repo, root, data, args.test_approval)
     else:
-        result = {"delivery": data, "path": str(root.relative_to(repo)),
-                  "gates": [stage for stage in STAGES if (root / "gates" / f"{stage}.json").exists()]}
+        from .gitutil import worktree_map
+        from .delivery_state import role_names
+        trees = worktree_map(repo)
+        owner = data["branch"]
+        slots = {"owner": owner, **role_names(owner)}
+        result = {
+            "delivery": data,
+            "path": str(root.relative_to(repo)),
+            "gates": [stage for stage in STAGES
+                      if (root / "gates" / f"{stage}.json").exists()],
+            "worktrees": {
+                key: {
+                    "branch": name,
+                    "path": str(trees[name]) if name in trees else None,
+                }
+                for key, name in slots.items()
+            },
+        }
     emit({"ok": True, "operation": f"delivery-{args.action}", "result": result})

@@ -1,39 +1,9 @@
-"""强制角色 worktree 与集成。"""
-from .delivery_state import gate, git, matches, require_design
+"""角色分支集成。"""
+import json
+
+from .delivery_state import gate, git, matches, require_design, role_names
 from .errors import MDFError
-from .gitutil import (
-    add_linked_worktree,
-    current_branch,
-    ensure_clean,
-    sibling_worktree,
-    worktree_map,
-)
-
-
-def add_role(repo, root, data, role):
-    if role not in ("qa", "dev"):
-        raise MDFError("角色必须是 qa 或 dev", code="invalid_role")
-    ensure_clean(repo)
-    require_design(repo, root, data)
-    branch = f"{role}/{data['slug']}"
-    path = sibling_worktree(repo, f"{role}-{data['slug']}")
-    rel = str((root / "gates" / "design.json").relative_to(repo))
-    base = git(repo, "log", "-1", "--format=%H", "--", rel).stdout.strip()
-    if len(base) < 40 or any(c not in "0123456789abcdef" for c in base):
-        raise MDFError("缺少已提交的设计基线", code="stale_gate")
-    worktrees = worktree_map(repo)
-    if branch in worktrees:
-        return {"worktree": {"branch": branch, "path": str(worktrees[branch]),
-                             "base": base}}
-    exists = git(repo, "show-ref", "--verify", f"refs/heads/{branch}",
-                 check=False)
-    if path.exists():
-        raise MDFError("并行分支或 worktree 已存在", code="collision")
-    if not exists.returncode:
-        git(repo, "worktree", "add", str(path), branch)
-    else:
-        add_linked_worktree(repo, branch, path, base)
-    return {"worktree": {"branch": branch, "path": str(path), "base": base}}
+from .gitutil import current_branch, ensure_clean, worktree_map
 
 
 def integrate(repo, root, data, approval):
@@ -45,15 +15,18 @@ def integrate(repo, root, data, approval):
     available = []
     worktrees = worktree_map(repo)
     for role, stage in (("qa", "write-tests"), ("dev", "implement")):
-        branch = f"{role}/{data['slug']}"
-        if git(repo, "show-ref", "--verify", f"refs/heads/{branch}", check=False).returncode:
-            continue
+        branch = role_names(data["branch"])[role]
+        if git(repo, "show-ref", "--verify", f"refs/heads/{branch}",
+               check=False).returncode:
+            raise MDFError(f"缺少角色分支 {branch}", code="missing_role")
         if branch in worktrees:
             ensure_clean(worktrees[branch])
         rel = str((root / "gates" / f"{stage}.json").relative_to(repo))
-        import json
+        shown = git(repo, "show", f"{branch}:{rel}", check=False)
+        if shown.returncode:
+            raise MDFError(f"角色分支缺少 {stage} 记录", code="stale_gate")
         try:
-            record = json.loads(git(repo, "show", f"{branch}:{rel}").stdout)
+            record = json.loads(shown.stdout)
         except ValueError as exc:
             raise MDFError("角色分支阶段记录损坏", code="invalid_delivery") from exc
         if record.get("fingerprints", {}).get("design") != current["design"]:
@@ -67,12 +40,14 @@ def integrate(repo, root, data, approval):
                            details={"paths": protected})
         available.append(branch)
     for branch in available:
-        if not git(repo, "merge-base", "--is-ancestor", branch, "HEAD", check=False).returncode:
+        if not git(repo, "merge-base", "--is-ancestor", branch, "HEAD",
+                    check=False).returncode:
             continue
         result = git(repo, "merge", "--no-ff", "--no-commit", branch, check=False)
         if result.returncode:
             # Preserve conflicts for contract-based review; no silent test resolution.
-            raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认", code="merge_conflict")
+            raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认",
+                           code="merge_conflict")
         git(repo, "commit", "-m", f"chore(delivery): 集成 {branch}")
     for branch in available:
         if branch in worktrees:

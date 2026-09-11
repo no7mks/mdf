@@ -258,16 +258,15 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 `feature` 必须有 `--proposal` 与 `--objectives-file`，slug 由 PRP 文件名决定，
 禁止 `--name`。`bugfix` 必须有 `--bug <Bug ID>`，分支名为 `bugfix/<Bug ID>`，
 禁止 `--name`。
-`release` 与 `hotfix` 必须有稳定 SemVer 的 `--version`。命令要求 clean worktree、
-`origin`、默认分支为 `master`，且来源分支与远端完全一致；它会先 `fetch --prune`。
+`release` 与 `hotfix` 必须有稳定 SemVer 的 `--version`。命令要求 clean worktree
+和本地基线分支存在。不要求 origin，不 fetch、不 push。
 
-feature、bugfix 和 release 从 `develop` 创建，hotfix 从 `master` 创建。若新分支
-在本地或远端已存在则失败。始终从基线建立相邻 worktree 并在该目录完成创建与推送，
-不在当前目录开分支；成功 JSON 含该 `worktree`。成功时推送至 `origin` 并设置
-upstream。
-创建前检查失败不会创建分支；创建后推送失败返回 `start_push_failed`，保留本地分支，
-并报告分支、来源、HEAD、`worktree`、远端状态未知与 Git 错误。调用方应先核对远端状态，
-再决定补推或处理现场，不应直接重跑 `start` 或自动删除分支。
+feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `master` 创建。
+若新分支在本地已存在则失败，不检查远端。始终从基线在仓库同级
+`<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
+不在当前目录开分支；成功 JSON 含该 `worktree`。feature 同时建立
+`qa/<owner>` 与 `dev/<owner>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
+不设置 upstream。
 
 ### `finish-gitflow`
 
@@ -275,15 +274,17 @@ upstream。
 python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 ```
 
-要求当前分支为支持的 Gitflow 交付分支、worktree clean、`origin` 存在，并要求
-源和参与的目标分支都与远端完全一致。命令会先 `fetch --prune`。
+要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 
-feature/bugfix 以 `--no-ff --no-commit` 合并到 `develop`，再以
-`chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented 转换包含在该 merge commit。
-release/hotfix 先同样合并到
+feature/bugfix 不 fetch、不 push；以 `--no-ff --no-commit` 合并到本地 `develop`，
+再以 `chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented
+转换包含在该 merge commit。角色分支或 worktree 仍在则失败。
+release/hotfix 要求 origin，先 `fetch --prune`，并要求本地 `master` 与 `develop`
+与远端完全一致（不要求源分支有 upstream）。先同样合并到
 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。最后
-原子推送目标分支和 tag（如有）、删除远端源分支并删除本地源分支。若 `--repo` 是相邻
-worktree，合并后移除该 worktree。任一 merge
+原子推送 `master`、`develop` 和 tag，删除本地源分支。不推送、不删除远端
+`release/*`/`hotfix/*`。若 `--repo` 位于
+`<repo-name>-worktrees/` 下，合并后移除该 worktree。任一 merge
 冲突都会立即 abort，不会推送或删除分支。
 
 ### `upgrade`
@@ -323,18 +324,17 @@ intent 和测试的确定性基础，不是面向最终用户的直接产品入�
 
 feature start 要求 `--proposal <ID> --objectives-file <文件>`，不接受 `--name`；
 slug 取自 PRP 文件名。确认的目标文本先从文件读取，
-新分支记录固定起点与 slug，写入材料并提交，再推送。缺 PRP、依赖阻塞或已开工时拒绝。
+新分支记录固定起点与 slug，写入材料并提交，不 push。缺 PRP、依赖阻塞或已开工时拒绝。
 
 `delivery <action> --repo <仓库>`：
 
 | action | 输入与效果 |
 | --- | --- |
-| status | 只读列出交付身份、材料位置与阶段记录 |
+| status | 只读列出交付身份、材料位置、阶段记录与 owner/qa/dev worktree 路径 |
 | check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行全部 verification；可用重复 `--item <id>` 做定位运行，全量记录不能由单项替代 |
-| worktree | `--role qa` 或 `dev`；从已提交 design 基线建立或复用对应本地分支与相邻 worktree |
-| integrate | clean feature 依次 no-ff 集成已有 qa/dev；冲突保留现场，完成后清理已合并本地工作分支 |
+| integrate | clean feature 依次 no-ff 集成 qa 再 dev；冲突保留现场，完成后清理已合并本地工作分支 |
 
 design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["tests/","pyproject.toml"]}`。
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。

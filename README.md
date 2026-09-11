@@ -16,7 +16,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf next [--depth N]` | 续办在途流程或提示下一步；无在途时展示 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf start` | 按 Gitflow 创建并推送交付分支；始终建立相邻 worktree |
+| `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |

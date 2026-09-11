@@ -19,16 +19,18 @@ objectives/design 是受管可搬迁 Markdown；记录文件内路径一律仓�
 feature 以外沿用各分支原有交付语义，不强制新增阶段。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
 当前执行者承担该阶段的协调与语义审查。
-start 始终从基线建立相邻交付 worktree，不在当前目录开分支。
-design 必须在同一基线提交中写入 write-tests 与 implement 共用的代码底座；
-两路不得各自再写底座。design 不预建角色 worktree。
-write-tests 与 implement 始终从该设计基线建立或复用 qa/<slug> 或
-dev/<slug> worktree，不得在 feature 上编写测试或实现。
-本地工作分支不自动推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
+start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
+建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。
+feature 固定为 squad：start 同时建立 owner 与 `qa/<owner>`、`dev/<owner>`
+角色分支，三者同一 start 基线。design 只在 owner 提交共用代码底座；
+两路不得各自再写底座。design 不创建角色 worktree。
+write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
+`dev/feature/<slug>`，入口先 no-ff merge owner，不得在 feature 上编写测试或实现。
+本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate
 
-通过 `delivery status/check/record/verify/worktree/integrate` 执行确定性操作。
+通过 `delivery status/check/record/verify/integrate` 执行确定性操作。
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design；converge 需两路完成，review 需收敛全绿，
 finish 需当前 review、事实审阅和验证证据有效。不能手填 passed 代替 CLI 检查。

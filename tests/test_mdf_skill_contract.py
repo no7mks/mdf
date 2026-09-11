@@ -299,11 +299,11 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     finish = intent("finish")
 
     assert "master" in start and "develop" in start
-    assert "推送到 origin 并设置 upstream" in start
+    assert "不 fetch、不要求 origin、不 push" in start
     assert "内部 clarify intent" in start
     assert "不写目标" in start
     assert "feature 2；其他 3" in start
-    assert "no-ff 合并到 develop" in finish
+    assert "no-ff 合并到本地 develop" in finish
     assert "no-ff 合并到" in finish and "master" in finish
     assert "原子 push" in finish
     assert "v<semver>" in finish

@@ -84,14 +84,20 @@ def _target(kind: str) -> str:
     return "develop" if kind in {"feature", "bugfix", "release"} else "master"
 
 
+def _discard(repo: Path, created: list[tuple[str, Path]]) -> None:
+    primary = primary_worktree(repo)
+    for branch, path in reversed(created):
+        _git(primary, "worktree", "remove", "--force", str(path), check=False)
+        _git(primary, "branch", "-D", branch, check=False)
+
+
 def command_start(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
     ensure_clean(repo)
-    _fetch(repo)
-    require_master_default(repo)
     base = _target(args.kind)
-    _synced(repo, base)
+    if not _exists(repo, f"refs/heads/{base}"):
+        raise MDFError(f"Branch {base} must exist", code="missing_branch")
     objectives = None
     if args.kind == "feature":
         if args.name:
@@ -134,15 +140,20 @@ def command_start(args) -> None:
                            code="invalid_version")
         suffix = args.version
     branch = f"{args.kind}/{suffix}"
-    if _exists(repo, f"refs/heads/{branch}") or _exists(
-        repo, f"refs/remotes/{ORIGIN}/{branch}"
-    ):
-        raise MDFError(f"Branch already exists: {branch}", code="branch_exists")
-    work = None
+    names = [branch]
+    if args.kind == "feature":
+        names.extend([f"qa/{branch}", f"dev/{branch}"])
+    for name in names:
+        if _exists(repo, f"refs/heads/{name}"):
+            raise MDFError(f"Branch already exists: {name}",
+                           code="branch_exists")
+    created: list[tuple[str, Path]] = []
     try:
-        path = sibling_worktree(repo, f"{args.kind}-{suffix}")
-        add_linked_worktree(repo, branch, path, base)
-        work = path
+        for name in names:
+            path = sibling_worktree(repo, name)
+            add_linked_worktree(repo, name, path, base)
+            created.append((name, path))
+        work = created[0][1]
         if args.kind == "feature":
             require_startable(work, args.proposal)
         elif args.kind == "bugfix":
@@ -151,7 +162,8 @@ def command_start(args) -> None:
         if objectives is not None:
             from .delivery_state import safe, write_json
             target = safe(work, work / "docs/specs" / suffix)
-            if target.exists() or (work / "docs/changes/unreleased" / suffix).exists():
+            if target.exists() or (
+                    work / "docs/changes/unreleased" / suffix).exists():
                 raise MDFError("交付 slug 已存在", code="collision")
             target.mkdir(parents=True)
             (target / "objectives.md").write_text(objectives, encoding="utf-8")
@@ -160,30 +172,21 @@ def command_start(args) -> None:
                 "branch": branch, "start_commit": start_commit,
             })
             _git(work, "add", "--", str(target.relative_to(work)))
-            _git(work, "commit", "-m", f"docs(delivery): 确认 {args.proposal} 交付目标")
-        pushed = _git(work, "push", "-u", ORIGIN, branch, check=False)
-        if pushed.returncode:
-            raise MDFError(
-                "本地分支已创建，但推送失败；保留现场，核对远端后再决定补推或处理",
-                code="start_push_failed",
-                details={
-                    "branch": branch,
-                    "base": base,
-                    "worktree": str(work),
-                    "local_head": _git(work, "rev-parse", "HEAD").stdout.strip(),
-                    "remote_state": "unknown",
-                    "stderr": pushed.stderr,
-                },
-            )
-    except MDFError as exc:
-        if work is not None and exc.code != "start_push_failed":
-            primary = primary_worktree(repo)
-            _git(primary, "worktree", "remove", "--force", str(work), check=False)
-            _git(primary, "branch", "-D", branch, check=False)
+            _git(work, "commit", "-m",
+                 f"docs(delivery): 确认 {args.proposal} 交付目标")
+    except MDFError:
+        _discard(repo, created)
         raise
-    emit({"ok": True, "operation": "start", "branch": branch,
-          "base": base, "start_commit": start_commit, "worktree": str(work),
-          "upstream": f"{ORIGIN}/{branch}"})
+    payload = {
+        "ok": True, "operation": "start", "branch": branch, "base": base,
+        "start_commit": start_commit, "worktree": str(work), "pushed": False,
+    }
+    if args.kind == "feature":
+        payload["roles"] = {
+            "qa": {"branch": created[1][0], "worktree": str(created[1][1])},
+            "dev": {"branch": created[2][0], "worktree": str(created[2][1])},
+        }
+    emit(payload)
 
 
 def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
@@ -212,19 +215,23 @@ def command_finish_gitflow(args) -> None:
         raise MDFError("finish requires a Gitflow delivery branch",
                        code="unsupported_branch")
     kind = details["kind"]
-    _fetch(repo)
-    require_master_default(repo)
-    _synced(repo, source)
+    publish = kind in {"release", "hotfix"}
+    if publish:
+        _fetch(repo)
+        require_master_default(repo)
     targets = (
         ["develop"]
         if kind in {"feature", "bugfix"}
         else ["master", "develop"]
     )
-    for target in targets:
-        _synced(repo, target)
+    if publish:
+        for target in targets:
+            _synced(repo, target)
+    elif not _exists(repo, "refs/heads/develop"):
+        raise MDFError("Branch develop must exist", code="missing_branch")
     complete_feature = None
     if kind == "feature":
-        from .delivery_state import locate, require_finish
+        from .delivery_state import locate, require_finish, role_names
         from .proposals import records
         from .prp_split import render
         root, data = locate(repo)
@@ -239,6 +246,11 @@ def command_finish_gitflow(args) -> None:
         path, proposal, body = records(repo)[data["proposal"]]
         if proposal["status"] != "ready":
             raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
+        primary = primary_worktree(repo)
+        trees = worktree_map(primary)
+        for name in role_names(source).values():
+            if _exists(repo, f"refs/heads/{name}") or name in trees:
+                raise MDFError("角色分支尚未集成", code="roles_pending")
         proposal_rel = path.relative_to(repo)
         def complete_feature(merge_repo: Path):
             # Only a successful merge to develop can mark the result implemented.
@@ -257,7 +269,6 @@ def command_finish_gitflow(args) -> None:
 
     if kind in {"feature", "bugfix"}:
         merge_into("develop", source, complete_feature)
-        refs = ["develop", f":{source}"]
     else:
         tagged_at = merge_into("master", source)
         version = details["version"]
@@ -269,18 +280,18 @@ def command_finish_gitflow(args) -> None:
             raise MDFError(f"Tag already exists: {tag}", code="tag_exists")
         _git(tagged_at, "tag", "-a", tag, "-m", f"chore(release): 发布 {tag}")
         merge_into("develop", "master")
-        refs = ["master", "develop", f"refs/tags/{tag}", f":{source}"]
-    _git(primary, "push", "--atomic", ORIGIN, *refs)
+        _git(primary, "push", "--atomic", ORIGIN, "master", "develop",
+             f"refs/tags/{tag}")
     remaining = worktree_map(primary)
     source_wt = remaining.get(source)
     if source_wt is not None:
         _git(primary, "worktree", "remove", str(source_wt))
         remaining = worktree_map(primary)
     delete_at = remaining.get(targets[-1], repo)
-    _git(delete_at, "branch", "-d", source)
+    _git(delete_at, "branch", "-D", source)
     if repo.resolve() != primary.resolve() and repo.exists():
         _git(primary, "worktree", "remove", str(repo))
-    tag = f"v{details['version']}" if kind in {"release", "hotfix"} else None
+    tag = f"v{details['version']}" if publish else None
     emit(
         {
             "ok": True,
@@ -289,5 +300,6 @@ def command_finish_gitflow(args) -> None:
             "targets": targets,
             "deleted": source,
             "tag": tag,
+            "pushed": publish,
         }
     )

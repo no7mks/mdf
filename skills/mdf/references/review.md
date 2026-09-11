@@ -43,7 +43,8 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-步骤 1 仅在 feature 工作，运行 `delivery status` 定位材料，读取 design 与 converge gate，
+步骤 1 仅在 owner `feature/<slug>` 工作；cwd 为 qa/dev 时切回 owner。
+运行 `delivery status` 定位材料，读取 design 与 converge gate，
 核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止，不跳过 converge。
 运行 `delivery check --stage review`；成功则进入 2。仅返回 `stale_verification` 且上述检查通过时，
 记录全绿证据过期或上次验证失败，进入 2 补审补验；其他错误停止并报告。

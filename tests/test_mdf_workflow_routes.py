@@ -210,17 +210,19 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     tests = workflow("write-tests")
     implement = workflow("implement")
     contract = workflow("delivery-contract")
-    assert "始终从基线建立相邻 worktree" in start
+    assert "<repo-name>-worktrees/<worktree-name>" in start
     assert "不在当前目录开分支" in start
     assert "write-tests 与 implement 后续都会依赖的共享代码底座" in design
     assert "底座未写入该基线则不得结束" in design
-    assert "delivery worktree --role qa" in tests
+    assert "worktrees.qa.path" in tests
     assert "不得在 feature 上编写或补写测试" in tests
-    assert "delivery worktree --role dev" in implement
+    assert "worktrees.dev.path" in implement
     assert "不得在 feature 上实现" in implement
-    assert "不另开 worktree" not in tests
-    assert "不另开 worktree" not in implement
-    assert "始终从该设计基线建立或复用" in contract
+    assert "git merge --no-ff" in tests
+    assert "git merge --no-ff" in implement
+    assert "delivery worktree" not in tests
+    assert "delivery worktree" not in implement
+    assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
 
 
