@@ -41,6 +41,17 @@ def is_object_id_slug(value: str) -> bool:
     return OBJECT_ID_SLUG_RE.fullmatch(value) is not None
 
 
+_ID_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+_ID_DIGITS = "23456789"
+_ID_ALPHABET = _ID_LETTERS + _ID_DIGITS
+
+
 def new_short_id() -> str:
-    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    return "".join(secrets.choice(alphabet) for _ in range(4))
+    """生成四位短 ID：字符集与校验相同，但至少含一个字母和一个数字。"""
+    letters = set(_ID_LETTERS)
+    digits = set(_ID_DIGITS)
+    while True:
+        value = "".join(secrets.choice(_ID_ALPHABET) for _ in range(4))
+        chars = set(value)
+        if chars & letters and chars & digits:
+            return value

@@ -134,8 +134,9 @@ python3 skills/mdf/scripts/mdf.py make-id \
 `--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case，且不得与
 对象 ID 同形。命令生成新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和
 Markdown 文件名。
-Proposal、Bug 与 Jot 的 ID 为类型前缀加四位字符；每一位均独立从大写英文字母
-（排除 `I`、`O`）与数字 `2` 至 `9` 中等概率选择。完整形式如 `prp-A2B3`、
+Proposal、Bug 与 Jot 的 ID 为类型前缀加四位字符；每一位从大写英文字母
+（排除 `I`、`O`）与数字 `2` 至 `9` 中选择。新生成的四位字符至少包含一个
+字母和一个数字；校验仍接受符合该字符集的既有 ID。完整形式如 `prp-A2B3`、
 `bug-C4D5`、`jot-E6F7`；沟通时不得只写四位字符。
 它不创建对象文件，也不检查仓库内 slug 是否唯一。
 
