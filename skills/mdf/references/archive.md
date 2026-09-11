@@ -51,7 +51,7 @@
 | 1 | 版本 | 约束 | 校验 RELEASE_EPOCH 仅为精确 MAJOR.MINOR | 有效 epoch | 2 | 停止 |
 | 2 | 入口 | 脚本 | 在目标根运行 `doctor`，确认 ready | doctor 结果 | 3 | 停止 |
 | 3 | 预览 | 脚本 | 仅预览请求：确认 clean 并运行 dry-run | 预览结果或非预览跳过 | 预览结束；否则 4 | 停止 |
-| 4 | 分组 | 约束 | 核对终态对象及 duplicate/canonical 完整组 | 完整 archive group | 5 | 停止 |
+| 4 | 分组 | 脚本 | 用 `list` 列终态对象，核对 duplicate/canonical 完整组 | list 结果、archive group | 5 | 停止 |
 | 5 | 归档 | 脚本 | 确认 clean，归档、全量校验并复核提交 | 产物、零 finding、diff | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
@@ -93,9 +93,12 @@
 
 **分组**
 
+运行 `list --repo "$REPO_ROOT" --type proposal --status released --status rejected --status replaced`
+与 `list --repo "$REPO_ROOT" --type bug --status closed --status rejected` 取得候选；
+按输出的 `reject-reason` 与 `duplicate_of` 核对分组，不逐篇翻阅对象目录。
 released/rejected/replaced Proposal 可归档；Bug 的 duplicate 必须随 canonical 组成 archive group。
 
-验收：archive group 关系。
+验收：候选清单与 archive group 关系。
 
 异常与交接：停止，不得单独移动。
 

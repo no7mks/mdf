@@ -95,7 +95,7 @@
 | 4 | 审阅 | 约束 | 核对本次审阅、校验与 gate | 有效证据 | 已收口或 feature/bugfix 9；待收口 5 | 停止并交接 |
 | 5 | 输入 | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | 对象 | 约束 | 准备 closures，核对 outcomes、二次验证与接受 | 完整覆盖、接受记录 | 8 | 停止 |
+| 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并核对验证与接受 | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | 交接 | 约束 | 提交本次产物；按权限同步并核对交付条件 | clean、upstream、证据 | 10 | 停止 |
 | 10 | 合并 | 脚本 | 运行 finish-gitflow，核对合并、tag 与推送 | Git 实际结果 | 结束 | 报告现场并询问 |
@@ -203,6 +203,8 @@ release notes 至少一项非空。
 **对象**
 
 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
+运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed`，取 `found_in` 为 `unreleased`
+的条目作为待分类清单，不逐篇翻阅 `docs/bugs/`。
 对每个 active 且 `found_in: unreleased` 的 Bug 分类： fixed 经二次验证后由 CLI 关闭并写 fixed_in，
 rejected 使用既有 reject-reason， deferred 保持 open；critical 仅 fixed；
 major deferred/wont-fix 要用户接受、理由和 follow-up； duplicate 不进 outcome，canonical 与 duplicate 一并归档。

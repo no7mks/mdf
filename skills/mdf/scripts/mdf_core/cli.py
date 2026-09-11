@@ -120,6 +120,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--version")
     start.set_defaults(func=command_start)
 
+    from .list_objects import command_list
     from .next_view import command_next
     from .prp_split import command_split
     from .delivery import command_delivery
@@ -129,6 +130,14 @@ def build_parser() -> argparse.ArgumentParser:
     next_parser.add_argument("--repo", required=True)
     next_parser.add_argument("--depth", type=int, default=3)
     next_parser.set_defaults(func=command_next)
+
+    listing = subparsers.add_parser("list")
+    listing.add_argument("--repo", required=True)
+    listing.add_argument("--type", choices=("proposal", "bug"))
+    listing.add_argument("--status", action="append", default=[])
+    listing.add_argument("--milestone")
+    listing.add_argument("--severity")
+    listing.set_defaults(func=command_list)
 
     split = subparsers.add_parser("prp-split")
     split.add_argument("--repo", required=True)

@@ -1,11 +1,33 @@
 """Proposal 身份、依赖图和未开工判定。"""
 import json
+from pathlib import Path
 
+from .constants import OBJECT_FILE_RE
 from .errors import MDFError, serialize_findings
 from .gitutil import run
 from .validate_objects import iter_object_files, validate_object
 from .validate_records import unsatisfied_depends_on, validate_record_references
 from .yamlutil import read_frontmatter
+
+
+def proposal_slug_on_ref(repo, identifier, ref):
+    listed = run(
+        ["git", "ls-tree", "-r", "--name-only", ref, "--", "docs/proposals"],
+        cwd=repo,
+    )
+    found = []
+    for rel in listed.stdout.splitlines():
+        parts = Path(rel).parts
+        if len(parts) != 3 or parts[:2] != ("docs", "proposals"):
+            continue
+        match = OBJECT_FILE_RE.fullmatch(parts[2])
+        if match and match.group(1) == identifier:
+            found.append(match.group(2))
+    if not found:
+        raise MDFError("缺少指定 PRP", code="missing_proposal")
+    if len(found) > 1:
+        raise MDFError("Proposal ID 重复", code="invalid_proposals")
+    return found[0]
 
 
 def records(repo):
@@ -29,7 +51,9 @@ def check_proposals(repo):
     return records(repo)
 
 
-def started(repo, identifier):
+def started_ids(repo):
+    """收集当前工作区与全部 feature 分支的开工记录所指向的 Proposal ID。"""
+    found = set()
     for root in (repo / "docs/specs", repo / "docs/changes"):
         if not root.exists():
             continue
@@ -42,8 +66,8 @@ def started(repo, identifier):
                 raise MDFError("工作记录损坏", code="invalid_delivery") from exc
             if not isinstance(data, dict):
                 raise MDFError("工作记录必须是 JSON 对象", code="invalid_delivery")
-            if data.get("proposal") == identifier:
-                return True
+            if isinstance(data.get("proposal"), str):
+                found.add(data["proposal"])
     refs = run(["git", "for-each-ref", "--format=%(refname)",
                 "refs/heads/feature/", "refs/remotes/origin/feature/"], cwd=repo).stdout.splitlines()
     for ref in refs:
@@ -57,11 +81,15 @@ def started(repo, identifier):
                 data = json.loads(raw)
                 if not isinstance(data, dict):
                     raise MDFError("分支工作记录必须是 JSON 对象", code="invalid_delivery")
-                if data.get("proposal") == identifier:
-                    return True
+                if isinstance(data.get("proposal"), str):
+                    found.add(data["proposal"])
             except ValueError as exc:
                 raise MDFError("关联分支的工作记录损坏", code="invalid_delivery") from exc
-    return False
+    return found
+
+
+def started(repo, identifier):
+    return identifier in started_ids(repo)
 
 
 def require_startable(repo, identifier):

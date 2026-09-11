@@ -38,7 +38,7 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 参数 | 约束 | 确认分支标识；feature 另确认 PRP | 参数、依赖 | feature 2；其他 3 | 留在 1 询问 |
+| 1 | 参数 | 脚本 | 确认分支标识；feature 用 `list` 选定 PRP | 参数、list 结果 | feature 2；其他 3 | 留在 1 询问 |
 | 2 | 澄清 | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
 | 3 | 创建 | 脚本 | 运行 start，核对分支创建及推送结果 | 分支、远端、upstream | 结束 | 按失败阶段处理 |
 
@@ -53,6 +53,9 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`。
 一次只要求一个分支的类型和必要标识：feature/bugfix 要 slug，
 release/hotfix 要稳定 SemVer。
 feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
+用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`，
+只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选，按 `id` 与 `title` 供用户选择；
+不逐篇翻阅 `docs/proposals/`。
 
 验收：明确参数；feature 另确认 PRP。
 

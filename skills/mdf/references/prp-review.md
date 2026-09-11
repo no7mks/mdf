@@ -58,8 +58,8 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 入口 | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
-| 2 | 选择 | 约束 | 按 canonical ID 或相对路径确定唯一 PRP | 唯一对象 | 3 | 留在 2 消歧 |
-| 3 | 状态 | 约束 | 查状态及各引用开工记录；未开工才转 draft | 引用、材料、状态检查 | 4 | 写入前停止 |
+| 2 | 选择 | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
+| 3 | 状态 | 脚本 | 以 `list` 的状态与 `in_progress` 判定；未开工才转 draft | list 结果、状态检查 | 4 | 写入前停止 |
 | 4 | 澄清 | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
 | 5 | 确认 | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
 | 6 | 就绪 | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
@@ -83,6 +83,9 @@
 **选择**
 
 一次只接受一个 Proposal 的 canonical `prp-` ID 或仓库相对路径。
+用户未指定时运行 `list --repo "$REPO_ROOT" --type proposal --status draft --status ready`，
+按输出的 `id`、`title`、`status`、`blocked_by` 与 `in_progress` 列出候选供用户选择；
+不逐篇翻阅 `docs/proposals/`。
 
 验收：唯一对象。
 
@@ -93,12 +96,13 @@
 **状态**
 
 released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
-在修改状态或正文前，检查当前 checkout 的 `docs/specs/`、`docs/changes/` 下全部 `delivery.json`，
-以及本地 `feature/*` 和 `origin/feature/*` 引用中的同类记录。
-使用 Git 只读列举引用、树和文件内容；任一记录的 `proposal` 命中目标 ID 即判为已开工。
+在修改状态或正文前，以 `list --repo "$REPO_ROOT" --type proposal` 输出中目标 PRP 的 `status`
+与 `in_progress` 为准：`in_progress` 已覆盖当前 checkout 的 `docs/specs/`、`docs/changes/` 下全部
+`delivery.json`，以及本地 `feature/*` 和 `origin/feature/*` 引用中的同类记录，
+任一记录的 `proposal` 命中目标 ID 即为 `true`。
 不能仅凭当前 checkout 没有开发材料或 `next` 未显示进行中，就判定未开工。
 已开工时报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP。
-记录损坏或检查未完成时同样在写入前停止，报告缺失证据。
+`list` 因记录损坏失败或目标不在输出中时同样在写入前停止，报告缺失证据。
 仅 active draft/ready 且已确认未开工时继续；将既有 `ready` 转为 `draft`，
 取消、暂停或未确认时保持 `draft`。
 

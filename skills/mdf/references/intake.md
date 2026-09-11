@@ -66,7 +66,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 入口 | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
 | 2 | 来源 | 约束 | 确认一次性来源及采用范围；逐题消歧 | 来源、已确认范围 | 3 | 等待澄清，2 |
-| 3 | 分类 | 约束 | 依证据区分偏差与意图，确定对象及交付边界 | 分类依据、对象清单 | 4 | 回到 2 |
+| 3 | 分类 | 脚本 | 用 `list` 查重，依证据区分偏差与意图，确定对象边界 | list 结果、对象清单 | 4 | 回到 2 |
 | 4 | 澄清 | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
 | 5 | 确认 | 约束 | 展示对象、边界、排除项和直接依赖并确认 | 用户明确确认的清单 | 6 | 来源 2；事实 4 |
 | 6 | 创建 | 脚本 | 确认 slug，生成 ID、写初始对象、校验回读 | 零 finding、对象与 diff | 7 | 保留现场，停止 |
@@ -101,6 +101,9 @@
 
 **分类**
 
+先运行 `list --repo "$REPO_ROOT"` 取得 active Proposal 与 Bug 的 `id`、`title`、`status`，
+对照来源查重；命中既有对象时不新建，改为提示 `$mdf prp review` 或在既有 Bug 中补充，
+不逐篇翻阅 `docs/proposals/` 与 `docs/bugs/`。
 从来源和仓库证据判定对象类型、数量与独立交付边界；偏差建 Bug， 待实现意图建一个或多个 Proposal。
 优先拆成尽可能小的 Proposal，以依赖满足后能独立实现、验收和合入为下限。
 能分开验收的结果优先拆开；不按文件或开发步骤机械拆分，不扩张来源范围。
@@ -129,7 +132,7 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 
 展示对象清单、边界、排除范围、Proposal 依赖；`depends_on`
 仅列直接依赖的 draft、ready 或 implemented/released Proposal ID，
-以及需要等待整阶段完成时的已有 milestone 值。
+以及需要等待整阶段完成时的已有 milestone 值；候选 ID 与 milestone 取自步骤 3 的 `list` 输出。
 逐条说明需要上游提供的结果；优先顺序不能作为依赖依据。
 同属一个阶段不能写成对其中单个 PRP 的依赖。
 可建议 milestone 分组，由用户决定是否采用；不默认一次 intake 对应一个 milestone，

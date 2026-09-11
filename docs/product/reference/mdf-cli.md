@@ -42,6 +42,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `move-change` | Change 迁移 |
 | `release-closeout` | 版本收口 |
 | `start` | 创建分支 |
+| `list` | 对象清单 |
 | `next` | ready 依赖视图 |
 | `prp-split` | 未开工 PRP 拆分 |
 | `delivery` | 阶段 gate 与验证 |
@@ -100,6 +101,28 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --scope paths --implementation-path src/service.py \
   --document-path docs/system/interfaces/api.md
 ```
+
+### `list`
+
+```bash
+python3 skills/mdf/scripts/mdf.py list --repo /path/to/repository \
+  --type bug --status open
+python3 skills/mdf/scripts/mdf.py list --repo /path/to/repository \
+  --type proposal --status draft --status ready --milestone 阶段一
+```
+
+只读列出 `docs/proposals/` 与 `docs/bugs/` 顶层的 active 对象，不含 `archive/`。
+要求 Git 根与 manifest 存在，不要求 `ready` 或 clean。`--type` 为 `proposal` 或 `bug`，
+省略时两者都列；`--status` 可重复，须是所选类型的合法状态；`--milestone` 只适用于
+Proposal，`--severity` 只适用于 Bug，两者不能同时使用；与 `--type` 冲突时以
+`invalid_filter` 失败。
+
+每条 `objects` 含 `id`、`type`、`status`、`title`（正文首个一级标题）与 `path`。
+Proposal 额外给出 `depends_on`、`blocked_by`（未满足的直接依赖，含归档 Proposal 的
+状态判断）、`in_progress`（当前工作区或任一 feature 分支存在该 PRP 的开工记录）与
+`milestone`；Bug 额外给出 `severity`、`found_in`、`fixed_in`、`reject-reason` 与
+`duplicate_of`，缺失字段为 `null`。frontmatter 损坏、文件名不合规或缺少 `id`/`status`
+的 active 文件不使命令失败，而是列入 `skipped` 并附原因；契约校验仍由 `validate` 负责。
 
 ### `make-id`
 
@@ -283,11 +306,11 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；
 `next` intent 优先续办在途流程，无在途时使用只读 `next` CLI 展示 PRP 蓝图；
-`intake`、`bug create` 与 `prp create` 使用 `doctor` 与 `make-id`；
-`jot` 使用 `make-jot-id`；
-`archive` intent 使用 `archive`；`start` intent 使用 `start`；
+`intake`、`bug create` 与 `prp create` 使用 `doctor`、`list` 与 `make-id`；
+`jot` 使用 `make-jot-id`，`jot promote` 另用 `list` 查重；`prp review` 使用 `list` 定位候选；
+`archive` intent 使用 `list` 与 `archive`；`start` intent 使用 `list` 与 `start`；
 `upgrade` intent 使用 `upgrade`；
-`finish` intent 还会调用 `branch`、`move-change`、`release-closeout` 和
+`finish` intent 还会调用 `branch`、`list`、`move-change`、`release-closeout` 和
 `finish-gitflow`。
 
 `fact-audit`、`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是
