@@ -248,7 +248,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf archive`
 用法：`$mdf archive`
 用途：归档终态 Proposal 及 closed/rejected Bug。
-说明：默认预览；确认后再实际归档。
+说明：仅用户要求预览时 dry-run；未要求则实际归档。
 
 `$mdf fact audit`
 用法：`$mdf fact audit`

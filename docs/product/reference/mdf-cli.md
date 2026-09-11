@@ -266,7 +266,7 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 若新分支在本地已存在则失败，不检查远端。始终从基线在仓库同级
 `<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
 不在当前目录开分支；成功 JSON 含该 `worktree`。feature 同时建立
-`qa/<owner>` 与 `dev/<owner>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
+`qa/feature/<slug>` 与 `dev/feature/<slug>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
 不设置 upstream。
 feature 写入 `docs/specs/<slug>/objectives.md` 时，把仓根风格的本地链接改成
 相对该目录的路径。

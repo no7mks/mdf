@@ -42,10 +42,10 @@
     │   ├── bug-<4 位字符>-<slug>.md
     │   └── archive/<major.minor>/
     └── changes/
-        ├── unreleased/<slug>/CHANGE.md
+        ├── unreleased/<slug>/          # CHANGE.md 与交付材料同级
         └── <major.minor.patch>/
             ├── CHANGE.md
-            └── <slug>/CHANGE.md
+            └── <slug>/                # 材料与 CHANGE.md 同级
 ```
 
 `docs/README.md` 是文档入口，区分当前事实、决策、工作记录与调研材料。
@@ -179,7 +179,7 @@ Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # 
 
 一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。产品和系统页面表达当前
 checkout 的实际行为，并用代码、配置、schema、测试或生成物作为 `evidence`。
-计划、Proposal、Bug、Iteration 和 Change 不得冒充`当前事实文档`。
+计划、Proposal、Bug 和 Change 不得冒充`当前事实文档`。
 
 ## 工作上下文
 

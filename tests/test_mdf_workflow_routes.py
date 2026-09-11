@@ -59,10 +59,10 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     # 按文件职责识别范围，避免缺少执行表的流程从检查中消失。
     nonprocedural = {
         "repository-contract.md", "object-contract.md", "codewiki-contract.md",
-        "delivery-contract.md",
+        "delivery-contract.md", "common.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 29
+    assert len(workflows) == 28
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -75,22 +75,19 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         assert [row[0] for row in table] == numbers, path
         assert all(len(row) == 7 and all(row) for row in table), path
         assert all(row[2] in {"脚本", "Subagent", "约束"} for row in table), path
-        if path.stem == "common":
-            assert "## 决策树" not in text
-        else:
-            diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-            boxes = re.findall(r"^│ (\d+) [A-Za-z][A-Za-z ]+│$", diagram, re.MULTILINE)
-            assert boxes == numbers, path
-            assert "▼" in diagram, path
-            assert "┌" in diagram and "└" in diagram, path
-            assert "+---" not in diagram and "---->" not in diagram, path
-            assert re.search(r"[├└]──── ", diagram), path
-            # 每个编号步骤都必须有分支，不能只画成功路径。
-            blocks = re.split(r"^│ \d+ [A-Za-z][A-Za-z ]+│$", diagram,
-                              flags=re.MULTILINE)[1:]
-            assert all(re.search(r"[├└]──── ", block) for block in blocks), path
-            for block in blocks:
-                assert_branch_alignment(block, path)
+        diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+        boxes = re.findall(r"^│ (\d+) [A-Za-z][A-Za-z ]+│$", diagram, re.MULTILINE)
+        assert boxes == numbers, path
+        assert "▼" in diagram, path
+        assert "┌" in diagram and "└" in diagram, path
+        assert "+---" not in diagram and "---->" not in diagram, path
+        assert re.search(r"[├└]──── ", diagram), path
+        # 每个编号步骤都必须有分支，不能只画成功路径。
+        blocks = re.split(r"^│ \d+ [A-Za-z][A-Za-z ]+│$", diagram,
+                          flags=re.MULTILINE)[1:]
+        assert all(re.search(r"[├└]──── ", block) for block in blocks), path
+        for block in blocks:
+            assert_branch_alignment(block, path)
         for target in re.findall(r"\]\(#([^)]*)\)", text):
             assert f'<a id="{target}"></a>' in text, (path, target)
         for target in re.findall(r"references/[a-z-]+\.md", text):
@@ -168,8 +165,7 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
 
 
 def test_independent_intents_resolve_the_current_target_before_dispatch():
-    entry = workflow("entry")
-    dispatch = entry.split("### 目标与按需读取", 1)[1]
+    dispatch = workflow("common").split("## 目标根", 1)[1]
     assert "本次调用" in dispatch
     assert "rev-parse --show-toplevel" in dispatch
     assert "REPO_ROOT" in dispatch
@@ -314,7 +310,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
     assert table[0][5] == "有在途 2；无在途 3"
-    assert table[0][6] == "澄清或报告阻塞"
+    assert table[0][6] == "多候选则澄清；证据不足则报告阻塞"
     assert table[1][5] == "交接并结束"
     assert table[1][6] == "说明阻塞与操作后结束"
     assert "全部 MDF workflow" in text
@@ -335,10 +331,11 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
 
 def test_next_dispatch_allows_non_git_and_delegated_continuation():
     entry = workflow("entry")
-    assert "除 init/bootstrap/next 外" in entry
-    assert "允许续办尚未 Git 化的初始化与无需仓库的 clarify" in entry
+    common = workflow("common")
+    assert "除 init/bootstrap/next 外" in common
+    assert "允许续办尚未 Git 化的初始化与无需仓库的 clarify" in common
     assert "next 可委托识别出的在途流程" in entry
-    assert "显式 next 可按 `references/next.md` 委托续办" in workflow("common")
+    assert "一次 next 只续办一个所选 intent" in workflow("next")
     assert "显式调用 next 委托下一阶段" in workflow("delivery-contract")
 
 

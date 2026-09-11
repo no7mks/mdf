@@ -67,7 +67,7 @@ disable-model-invocation: true
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 调用 | 约束 | 只接受显式 intent；裸调用或未知调用按 help 执行 | 有效显式调用 | 2 | 帮助并结束 |
 | 2 | 工具 | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 2 | 3 | 停止 |
-| 3 | 分流 | 约束 | 核对本次目标根，读取命中流程并执行 | 目标根、流程结果 | 返回调用方 | 边界不明澄清；其他停止 |
+| 3 | 分流 | 约束 | 核对本次目标根，读取命中流程并执行 | 目标根、流程结果 | 返回调用方 | 边界不明澄清后重查；其他停止 |
 
 ## 术语与数据结构
 
@@ -85,32 +85,11 @@ disable-model-invocation: true
 `python3 "$MDF_ROOT/scripts/mdf.py" info`；协议、工具与 schema 版本均须为数字 `2`。
 工具缺失或检查失败时停止，不得模拟 CLI。
 
-### 目标与按需读取
-
-next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
-除 init/bootstrap/next 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
-用 `git -C <目标目录> rev-parse --show-toplevel` 解析为绝对 `REPO_ROOT`，再读取并执行对应流程。
-核对解析出的仓库确为用户目标；边界不明先澄清，命令失败则报告并停止，不使用空值或上次调用的变量。
-clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共流程处理普通目录
-与父仓库边界。upgrade 解析 Git 根后替换已安装 Skill，并更新已有 `AGENTS.md`
-托管区块；不要求 manifest ready，不按文档归属改分支，替换后在当前分支提交本次
-路径且不 push，写入前不读 `common.md`。
-
 完整读取选择树指定的 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理；
 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-写入型 intent 允许并鼓励主动本地提交；写入前读取 `references/common.md` 的范围与历史规则。
-upgrade 替换已安装 Skill 并更新已有 `AGENTS.md` 托管区块，不读 `common.md`，
-替换后在当前分支提交本次路径，不 push。替换成功后从 `MDF_ROOT` 重读新 Skill，
-同会话后续调用按新副本执行。
-提交不代替确认或验收，远端和集成操作按各自流程授权。
-
-| 材料 | 位置 | 读取条件 |
-| --- | --- | --- |
-| 意图 | `references/` | 读取显式调用命中的流程及其声明委托的内部流程 |
-| 公共契约 | `references/` | 按 intent 指定读取目录、对象或 CodeWiki 契约 |
-| 模板 | `assets/` | intent 要求写入仓库产出物时读取对应模板 |
-| 确定性 CLI | `scripts/` | intent 要求确定性操作时调用 |
+写入型 intent 读取 `references/common.md`；upgrade 不读该文件，见
+`references/upgrade.md`。提交不代替确认或验收，远端和集成操作按各自流程授权。
 
 `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`
 与 `$mdf help <intent>` 均由选择树路由；

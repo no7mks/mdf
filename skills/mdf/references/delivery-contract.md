@@ -19,12 +19,14 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 ## 阶段与执行责任
 
 主线为 start → design → [write-tests ∥ implement] → converge → review → finish。
+`fact-update` 是 CLI gate，由独立 `$mdf fact update` 或 finish 前段内嵌记录，
+不是用户主线箭头上的一站。
 feature 以外沿用各分支原有交付语义，不强制新增阶段。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。
-feature 固定为 squad：start 同时建立 owner 与 `qa/<owner>`、`dev/<owner>`
+feature 固定为 squad：start 同时建立 owner 与 `qa/feature/<slug>`、`dev/feature/<slug>`
 角色分支，三者同一 start 基线。design 只在 owner 提交共用代码底座；
 两路不得各自再写底座。design 不创建角色 worktree。
 write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
