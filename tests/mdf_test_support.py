@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -26,8 +29,41 @@ JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
 
 
 def mdf(python_exe: str, *args: str, cwd: Path | None = None):
+    """调用同一进程内的 CLI，避免每个命令再起一个 Python 解释器。"""
+    scripts = str((skill_dir("mdf") / "scripts").resolve())
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    from mdf_core.cli import main
+
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    previous = os.getcwd()
+    try:
+        if cwd is not None:
+            os.chdir(cwd)
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(
+            stderr
+        ):
+            try:
+                code = main(list(args))
+            except SystemExit as exc:
+                raw = exc.code
+                if raw is None:
+                    code = 0
+                elif isinstance(raw, int):
+                    code = raw
+                else:
+                    code = 1
+    finally:
+        if cwd is not None:
+            os.chdir(previous)
     cli = skill_dir("mdf") / "scripts" / "mdf.py"
-    return run([python_exe, str(cli), *args], cwd=cwd)
+    return subprocess.CompletedProcess(
+        args=[python_exe, str(cli), *args],
+        returncode=code,
+        stdout=stdout.getvalue(),
+        stderr=stderr.getvalue(),
+    )
 
 
 def assert_ok(result) -> None:
@@ -55,9 +91,18 @@ def git(repo: Path, *args: str):
 
 def init_git(repo: Path) -> None:
     # 提交身份由 conftest 通过环境变量提供，省去逐仓库 config 调用。
-    git(repo, "init", "--initial-branch=main")
-    git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 初始化 MDF fixture")
+    # 一次 shell 完成 init/add/commit，少两次 git 进程启动。
+    result = run(
+        [
+            "sh",
+            "-c",
+            "git init --initial-branch=main --template= && "
+            "git add --all && "
+            'git commit --quiet -m "test: 初始化 MDF fixture"',
+        ],
+        cwd=repo,
+    )
+    assert_ok(result)
 
 
 def checkout_develop(repo: Path) -> None:

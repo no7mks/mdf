@@ -17,6 +17,8 @@ python -m pip install -r tests/requirements-test.txt
 python -m pytest
 ```
 
+`pytest.ini` 默认 `-n auto` 并行；全量验证不要加 `-n0` 串行。调试单个测试时才用 `-n0`。
+
 改动某项协议或工作流时，先运行对应测试，再运行完整测试集。
 
 验证输出中的 warning、skip、note 和 deprecated 都视为失败，必须处理后才能交付。

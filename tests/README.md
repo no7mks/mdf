@@ -12,7 +12,8 @@ python -m pip install -r tests/requirements-test.txt
 python -m pytest
 ```
 
-`pytest.ini` 默认以 `-n auto` 并行运行（pytest-xdist）；调试单个测试可加 `-n0`。
+`pytest.ini` 默认以 `-n auto --dist worksteal` 并行运行（pytest-xdist）；
+调试单个测试可加 `-n0`。
 
 `test_skill_structure.py` 对 `skills/` 下的每个 MDF Skill 自动执行结构检查；
 `fixtures/mdf/valid_repo/` 是协议测试使用的合成仓库。
