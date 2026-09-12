@@ -135,7 +135,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "不做`事实复核`" in inventory
     assert "`evidence`" not in inventory
     assert "生成的 Markdown 正文、标题与列表使用简体中文" in common
-    assert "须写完整前缀 ID，不得只写四位字符" in common
+    assert "须写完整前缀 ID，不得省略前缀或只写序号/短码" in common
     assert "核对简体中文、英文保留范围与完整前缀 ID" in common
     for document in (review,):
         assert "object-contract.md" in document
@@ -145,7 +145,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "object-contract.md" in intake
     assert "内部 clarify intent" in intake
     assert "normal_workflows_allowed" in intake
-    assert "生成 ID 与规范化文件名" in intake
+    assert "按已有最大序号加一生成 ID" in intake
     assert "英文 ASCII kebab-case slug" in intake
     assert "一句话、当前聊天上下文或外部文档" in intake
     assert "偏差建 Bug" in intake
@@ -250,12 +250,12 @@ def test_object_ids_must_be_cited_with_type_prefix() -> None:
     )
 
     assert "必须写完整 ID" in object_contract
-    assert "`prp-A2B3`" in object_contract
+    assert "`prp-001`" in object_contract
     assert "`bug-C4D5`" in object_contract
     assert "`jot-E6F7`" in object_contract
-    assert "不得只写四位字符" in object_contract
+    assert "不得省略类型前缀或只写序号/短码" in object_contract
     assert "`bug-`" in agents and "`prp-`" in agents and "`jot-`" in agents
-    assert "不得只用四位字符" in agents
+    assert "不得省略前缀或只写序号/短码" in agents
 
 
 def test_contracts_do_not_duplicate_intent_steps() -> None:

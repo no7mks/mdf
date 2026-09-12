@@ -44,6 +44,9 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，不替代任务管理。
 - 与当前分支工作无关的文档在 develop 更新；独立规划、记录和公共文档维护也按此规则处理。
   develop 不存在时先明确创建基线，不擅自从未交付分支创建。
+- 新建 Proposal（含 `prp create`、intake 中的 Proposal、`prp split`、jot promote
+  为 Proposal）必须在 develop 上分配 ID、写入并提交；已有 Proposal 的修改仍按
+  工作归属落在当前分支或 develop。
 - 归属不明确时先询问。需改用 develop 时，在写入前选择安全切换或独立 worktree，
   重新解析目标根并复查前置条件；不得自动搬运、暂存或提交已有改动来切换分支。
   无法安全准备目标时保留现场并停止。detached HEAD 下不写入或提交。
@@ -95,7 +98,7 @@ init 依据 `references/initialization.md` 自动转入 bootstrap 是明确的�
 核对简体中文、英文保留范围与完整前缀 ID。
 生成的 Markdown 正文、标题与列表使用简体中文；
 仅代码、路径、标识符、 命令、 标准名称及无法准确翻译的专有术语保留英文原文。
-对用户沟通及产出中的 Proposal、Bug、Jot 须写完整前缀 ID，不得只写四位字符。
+对用户沟通及产出中的 Proposal、Bug、Jot 须写完整前缀 ID，不得省略前缀或只写序号/短码。
 不符合时改写后再继续。
 
 ## 按需读取

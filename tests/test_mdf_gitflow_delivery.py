@@ -40,7 +40,7 @@ def test_start_does_not_require_origin(
     obj = tmp_path / "objectives.md"
     obj.write_text("# 目标\n\n交付健康接口。\n")
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
-                         "--kind", "feature", "--proposal", "prp-AB23",
+                         "--kind", "feature", "--proposal", "prp-001",
                          "--objectives-file", str(obj)))
     work = Path(result["worktree"])
     assert result["pushed"] is False
@@ -71,7 +71,7 @@ def test_start_uses_local_base_without_upstream(
         obj = tmp_path / "objectives.md"
         obj.write_text("# 目标\n\n交付健康接口。\n")
         identifier = [
-            "--proposal", "prp-AB23", "--objectives-file", str(obj),
+            "--proposal", "prp-001", "--objectives-file", str(obj),
         ]
     elif kind == "bugfix":
         identifier = ["--bug", "bug-CD34"]
@@ -159,7 +159,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
 
 def _add_ready_prp(repo: Path, identifier: str, slug: str) -> None:
     template = (repo / "docs/proposals" / PRP_NAME).read_text()
-    text = template.replace("prp-AB23", identifier)
+    text = template.replace("prp-001", identifier)
     (repo / "docs/proposals" / f"{identifier}-{slug}.md").write_text(text)
 
 
@@ -168,13 +168,13 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
 ):
     repo, _remote = start_repo(tmp_path)
     git(repo, "checkout", "develop")
-    _add_ready_prp(repo, "prp-EF56", "parallel")
+    _add_ready_prp(repo, "prp-003", "parallel")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs(prp): 增加可并行提案")
     first = tmp_path / "first.md"
     first.write_text("# 目标\n\n交付健康接口。\n")
     first_start = payload(mdf(python_exe, "start", "--repo", str(repo),
-                 "--kind", "feature", "--proposal", "prp-AB23",
+                 "--kind", "feature", "--proposal", "prp-001",
                  "--objectives-file", str(first)))
     health = Path(first_start["worktree"])
     assert health != repo
@@ -186,7 +186,7 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     second = tmp_path / "second.md"
     second.write_text("# 目标\n\n交付并行接口。\n")
     created = payload(mdf(python_exe, "start", "--repo", str(repo),
-                           "--kind", "feature", "--proposal", "prp-EF56",
+                           "--kind", "feature", "--proposal", "prp-003",
                            "--objectives-file", str(second)))
     work = Path(created["worktree"])
     assert created["branch"] == "feature/parallel"
@@ -219,13 +219,13 @@ def test_start_feature_rejects_name_and_derives_slug_from_prp(
     obj.write_text("# 目标\n\n交付健康接口。\n")
     rejected = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--name", "delivery", "--proposal", "prp-AB23",
+        "--name", "delivery", "--proposal", "prp-001",
         "--objectives-file", str(obj),
     )
     assert "unexpected_name" in rejected.stderr
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-AB23", "--objectives-file", str(obj),
+        "--proposal", "prp-001", "--objectives-file", str(obj),
     ))
     assert created["branch"] == "feature/service-health"
     assert created["roles"]["qa"]["branch"] == "qa/feature/service-health"
@@ -243,7 +243,7 @@ def test_start_rewrites_repo_root_style_objectives_links(
     )
     data = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-AB23", "--objectives-file", str(obj),
+        "--proposal", "prp-001", "--objectives-file", str(obj),
     ))
     work = Path(data["worktree"])
     text = (work / "docs/specs/service-health/objectives.md").read_text()
@@ -268,7 +268,7 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
     assert "missing_bug" in missing.stderr
     wrong = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
-        "--bug", "prp-AB23",
+        "--bug", "prp-001",
     )
     assert "missing_bug" in wrong.stderr
     created = payload(mdf(

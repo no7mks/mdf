@@ -120,15 +120,23 @@ BASELINE_DOC_TYPES = {
 }
 STABLE_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 EPOCH_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+# PRP：001–999 固定三位；1000 起不再补零。Bug/Jot 仍为四位短码。
+_PRP_ID_BODY = r"(?:00[1-9]|0[1-9]\d|[1-9]\d{2,})"
+_SHORT_ID_BODY = r"[A-HJ-NP-Z2-9]{4}"
+_OBJECT_SLUG = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 OBJECT_FILE_RE = re.compile(
-    r"^((?:prp|bug)-[A-HJ-NP-Z2-9]{4})-"
-    r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.md$"
+    rf"^((?:prp-{_PRP_ID_BODY}|bug-{_SHORT_ID_BODY}))-"
+    rf"({_OBJECT_SLUG})\.md$"
 )
-JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
+JOT_ID_RE = re.compile(rf"^jot-{_SHORT_ID_BODY}$")
+PRP_ID_RE = re.compile(rf"^prp-{_PRP_ID_BODY}$")
 OBJECT_ID_RE = re.compile(
-    r"^(?:(?:prp|bug|jot)-[A-HJ-NP-Z2-9]{4}|adr-\d{4})$"
+    rf"^(?:prp-{_PRP_ID_BODY}|bug-{_SHORT_ID_BODY}|jot-{_SHORT_ID_BODY}|"
+    rf"adr-\d{{4}})$"
 )
-OBJECT_ID_SLUG_RE = re.compile(r"^(?:prp|bug)-[a-hj-np-z2-9]{4}$")
+OBJECT_ID_SLUG_RE = re.compile(
+    rf"^(?:prp-{_PRP_ID_BODY}|bug-[a-hj-np-z2-9]{{4}})$"
+)
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
 MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)

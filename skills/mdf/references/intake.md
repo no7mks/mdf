@@ -69,7 +69,7 @@
 | 3 | 分类 | 脚本 | 用 `list` 查重，依证据区分偏差与意图，确定对象边界 | list 结果、对象清单 | 4 | 回到 2 |
 | 4 | 澄清 | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
 | 5 | 确认 | 约束 | 展示对象、边界、排除项和直接依赖并确认 | 用户明确确认的清单 | 6 | 来源 2；事实 4 |
-| 6 | 创建 | 脚本 | 确认 slug，生成 ID、写初始对象、校验回读 | 零 finding、对象与 diff | 7 | 保留现场，停止 |
+| 6 | 创建 | 脚本 | 确认 slug 与写入分支，生成 ID、写初始对象、校验回读 | 零 finding、对象与 diff | 7 | 保留现场，停止 |
 | 7 | 报告 | 约束 | 报告对象、范围、依赖和后续显式入口 | 结果摘要 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -149,8 +149,11 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **创建**
 
 为每项提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。按类型 proposal 或 bug 使用 `make-id --type <type> --slug <slug>`
-生成 ID 与规范化文件名，并以模板写入 `docs/proposals/` 或 `docs/bugs/`；
+中唯一，且不得与对象 ID 同形。清单含 Proposal 时，当前分支必须是 `develop`；
+仅创建 Bug 时按 `common.md` 的写入分支归属处理。
+Proposal 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
+按已有最大序号加一生成 ID；Bug 使用 `make-id --type bug --slug <slug>`。
+以模板写入 `docs/proposals/` 或 `docs/bugs/`；
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
 Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否则省略字段，不写 `null`。
 

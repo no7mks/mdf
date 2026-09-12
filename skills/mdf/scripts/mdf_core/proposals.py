@@ -2,9 +2,10 @@
 import json
 from pathlib import Path
 
-from .constants import OBJECT_FILE_RE
+from .constants import OBJECT_FILE_RE, PRP_ID_RE
 from .errors import MDFError, serialize_findings
 from .gitutil import run
+from .textutil import format_prp_id
 from .validate_objects import iter_object_files, validate_object
 from .validate_records import unsatisfied_depends_on, validate_record_references
 from .yamlutil import read_frontmatter
@@ -28,6 +29,15 @@ def proposal_slug_on_ref(repo, identifier, ref):
     if len(found) > 1:
         raise MDFError("Proposal ID 重复", code="invalid_proposals")
     return found[0]
+
+
+def next_prp_id(repo: Path) -> str:
+    numbers = [0]
+    for path in iter_object_files(repo, "proposal"):
+        match = OBJECT_FILE_RE.fullmatch(path.name)
+        if match and PRP_ID_RE.fullmatch(match.group(1)):
+            numbers.append(int(match.group(1).split("-", 1)[1]))
+    return format_prp_id(max(numbers) + 1)
 
 
 def records(repo):

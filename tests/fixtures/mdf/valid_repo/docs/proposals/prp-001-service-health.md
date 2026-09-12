@@ -1,5 +1,5 @@
 ---
-id: prp-AB23
+id: prp-001
 type: proposal
 status: ready
 depends_on: []

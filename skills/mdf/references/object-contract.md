@@ -24,12 +24,15 @@ milestone 依赖在该值下不存在 draft 或 ready PRP 时满足。禁止重�
 跨类型及其他终态。PRP 不得依赖自身所属 milestone。
 拆分必须同时改写所有原下游 PRP 引用；replaced 不表示依赖已满足。
 
-Proposal、Bug 和 Jot 的 ID 为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
-沟通、引用与展示时必须写完整 ID，如 `prp-A2B3`、`bug-C4D5`、`jot-E6F7`，
-不得只写四位字符。
-文件名 `prp-<4 位字符>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug
+Proposal ID 为 `prp-` 加自增序号：1–999 固定三位并保留前导零（`prp-001`），
+1000 起不再补零（`prp-1000`）。序号取当前仓库 `docs/proposals/`（含 archive）
+已有文件名中的最大序号加一。新建 Proposal 只能在 develop 上分配 ID、写入并提交。
+Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
+沟通、引用与展示时必须写完整 ID，如 `prp-001`、`bug-C4D5`、`jot-E6F7`，
+不得省略类型前缀或只写序号/短码。
+文件名 `prp-<序号>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug
 为英文 ASCII kebab-case。active（非 archive）Proposal 与 Bug 的 slug 必须
-全局唯一。slug 不得与对象 ID 同形（如 `prp-a2b3`、`bug-c4d5`）。
+全局唯一。slug 不得与对象 ID 同形（如 `prp-001`、`bug-c4d5`）。
 feature 的分支与 `docs/specs/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
 bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
 一般关联只写正文；上述重复与替代字段是明确的结构关系。

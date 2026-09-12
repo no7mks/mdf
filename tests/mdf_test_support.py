@@ -16,10 +16,11 @@ from _support import run
 from conftest import skill_dir
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mdf" / "valid_repo"
-PRP_NAME = "prp-AB23-service-health.md"
+PRP_NAME = "prp-001-service-health.md"
 BUG_NAME = "bug-CD34-unreleased-timeout.md"
 BUG_ID = "bug-CD34"
-PRP_ID_RE = re.compile(r"^prp-[A-HJ-NP-Z2-9]{4}$")
+PRP_ID = "prp-001"
+PRP_ID_RE = re.compile(r"^prp-(?:00[1-9]|0[1-9]\d|[1-9]\d{2,})$")
 BUG_ID_RE = re.compile(r"^bug-[A-HJ-NP-Z2-9]{4}$")
 JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
 
@@ -57,6 +58,10 @@ def init_git(repo: Path) -> None:
     git(repo, "init", "--initial-branch=main")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 初始化 MDF fixture")
+
+
+def checkout_develop(repo: Path) -> None:
+    git(repo, "checkout", "-b", "develop")
 
 
 def load_core_module():
@@ -152,7 +157,7 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "---\n"
             "change_kind: feature\n"
             f"source_branch: feature/{slug}\n"
-            f"proposals: [prp-AB23]\n"
+            f"proposals: [prp-001]\n"
             "fixed: [bug-CD34]\n"
             "closed: []\n"
             "deferred: []\n"
@@ -190,7 +195,7 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
                 "release_date": "2026-07-29",
                 "closures": [
                     {
-                        "id": "prp-AB23",
+                        "id": "prp-001",
                         "resolution": "released",
                         "released_in": version,
                     },

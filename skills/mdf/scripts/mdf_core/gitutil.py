@@ -87,6 +87,14 @@ def current_branch(repo: Path) -> str:
     return name
 
 
+def require_develop(repo: Path) -> None:
+    if current_branch(repo) != "develop":
+        raise MDFError(
+            "新建 Proposal 只能在 develop 上分配或写入",
+            code="proposal_not_on_develop",
+        )
+
+
 def branch_details(name: str) -> dict[str, Any]:
     match = re.fullmatch(r"(feature|bugfix)/(.+)", name)
     if match:

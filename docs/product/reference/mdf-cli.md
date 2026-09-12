@@ -15,9 +15,10 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 
 - 成功时命令向 stdout 输出 JSON；业务规则拒绝时输出 JSON 错误，
   并以非零状态退出。
-- `--repo` 接受目标仓库路径。除 `info`、`make-id`、`make-jot-id`、`branch --name` 和
-  `semver-check` 外，命令会按自身需要检查 Git 根、MDF manifest 或
-  clean worktree。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
+- `--repo` 接受目标仓库路径。除 `info`、`make-id --type bug`、`make-jot-id`、
+  `branch --name` 和 `semver-check` 外，命令会按自身需要检查 Git 根、MDF
+  manifest 或 clean worktree。`make-id --type proposal` 需要 Git 根且当前分支为
+  `develop`。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
   start、delivery integrate、finish-gitflow 与 upgrade 按各自协议执行提交、
@@ -128,16 +129,18 @@ Proposal 额外给出 `depends_on`、`blocked_by`（未满足的直接依赖，�
 
 ```bash
 python3 skills/mdf/scripts/mdf.py make-id \
-  --type proposal --slug service-health
+  --type proposal --repo /path/to/repo --slug service-health
 ```
 
 `--type` 只能是 `proposal` 或 `bug`。`--slug` 必须为 ASCII kebab-case，且不得与
 对象 ID 同形。命令生成新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和
 Markdown 文件名。
-Proposal、Bug 与 Jot 的 ID 为类型前缀加四位字符；每一位从大写英文字母
-（排除 `I`、`O`）与数字 `2` 至 `9` 中选择。新生成的四位字符至少包含一个
-字母和一个数字；校验仍接受符合该字符集的既有 ID。完整形式如 `prp-A2B3`、
-`bug-C4D5`、`jot-E6F7`；沟通时不得只写四位字符。
+Proposal ID 为 `prp-` 加自增序号：1–999 固定三位（`prp-001`），1000 起不再补零
+（`prp-1000`）。`make-id --type proposal` 必须提供 `--repo`，在 `develop` 上扫描
+`docs/proposals/`（含 archive）已有文件名，取最大序号加一。Bug 与 Jot 仍为类型前缀加
+四位字符；每一位从大写英文字母（排除 `I`、`O`）与数字 `2` 至 `9` 中选择。新生成的
+四位字符至少包含一个字母和一个数字。完整形式如 `prp-001`、`bug-C4D5`、`jot-E6F7`；
+沟通时不得省略前缀或只写序号/短码。
 它不创建对象文件，也不检查仓库内 slug 是否唯一。
 
 ### `make-jot-id`
@@ -252,7 +255,7 @@ release 会从所有 `docs/changes/unreleased/*/CHANGE.md` 汇总对象结果；
 
 ```bash
 python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
-  --kind feature --proposal prp-AB23 --objectives-file /tmp/objectives.md
+  --kind feature --proposal prp-001 --objectives-file /tmp/objectives.md
 ```
 
 `--kind` 为 `feature`、`bugfix`、`release` 或 `hotfix`。
@@ -345,7 +348,8 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 
 `next` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
 `next --repo <仓库> [--depth 3]` 输出 trees、blocked、needs_review、hidden；只读，非法依赖失败。
-`prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 在完整预检后一次写入拆分结果。
+`prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为
+`develop`，在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，
 downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出候选文件全文，失败不留下部分拆分。
 子 PRP 继承原 PRP 的可选 `milestone`；原 PRP 未声明时省略该字段，不写 `null`。

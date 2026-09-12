@@ -36,7 +36,7 @@
     ├── context/research/
     ├── specs/<prp-slug>/
     ├── proposals/
-    │   ├── prp-<4 位字符>-<slug>.md
+    │   ├── prp-<序号>-<slug>.md
     │   └── archive/<major.minor>/
     ├── bugs/
     │   ├── bug-<4 位字符>-<slug>.md

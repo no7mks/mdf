@@ -19,23 +19,23 @@ def ids(data):
 
 def test_list_filters_by_type_status_milestone_and_severity(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-EF56", ["prp-AB23"], status="draft", milestone="阶段一")
-    add_prp(repo, "prp-GH78", status="rejected")
-    replace(repo / "docs/proposals/prp-GH78-item-gh78.md", "status: rejected",
+    add_prp(repo, "prp-003", ["prp-001"], status="draft", milestone="阶段一")
+    add_prp(repo, "prp-004", status="rejected")
+    replace(repo / "docs/proposals/prp-004-item-004.md", "status: rejected",
             "status: rejected\nreject-reason: wont-do")
     add_bug(repo, "bug-EF56", status="fixed", severity="trivial")
     init_git(repo)
     base = ["list", "--repo", str(repo)]
     everything = payload(mdf(python_exe, *base))
-    assert ids(everything) == ["bug-CD34", "bug-EF56", "prp-AB23", "prp-EF56", "prp-GH78"]
+    assert ids(everything) == ["bug-CD34", "bug-EF56", "prp-001", "prp-003", "prp-004"]
     assert everything["count"] == 5 and everything["skipped"] == []
     assert ids(payload(mdf(python_exe, *base, "--type", "bug", "--status", "open"))) == ["bug-CD34"]
     assert ids(payload(mdf(python_exe, *base, "--status", "draft", "--status", "fixed"))) == [
-        "bug-EF56", "prp-EF56"]
-    assert ids(payload(mdf(python_exe, *base, "--milestone", "阶段一"))) == ["prp-EF56"]
+        "bug-EF56", "prp-003"]
+    assert ids(payload(mdf(python_exe, *base, "--milestone", "阶段一"))) == ["prp-003"]
     assert ids(payload(mdf(python_exe, *base, "--severity", "trivial"))) == ["bug-EF56"]
     draft = payload(mdf(python_exe, *base, "--status", "draft"))["objects"][0]
-    assert draft["title"] == "Service health" and draft["blocked_by"] == ["prp-AB23"]
+    assert draft["title"] == "Service health" and draft["blocked_by"] == ["prp-001"]
     assert draft["in_progress"] is False and draft["milestone"] == "阶段一"
     bug = payload(mdf(python_exe, *base, "--type", "bug", "--status", "fixed"))["objects"][0]
     assert bug["severity"] == "trivial" and bug["found_in"] == "unreleased"
@@ -61,35 +61,35 @@ def test_list_marks_started_and_excludes_archive_but_resolves_archived_dependenc
     repo = copy_fixture(tmp_path)
     archive = repo / "docs/proposals/archive/1.2"
     archive.mkdir(parents=True)
-    released = add_prp(repo, "prp-JK89", status="released")
+    released = add_prp(repo, "prp-005", status="released")
     replace(released, "status: released", "status: released\nreleased_in: 1.2.0")
     released.rename(archive / released.name)
-    add_prp(repo, "prp-EF56", ["prp-JK89"], status="ready")
+    add_prp(repo, "prp-003", ["prp-005"], status="ready")
     init_git(repo)
     git(repo, "checkout", "-b", "feature/started")
     folder = repo / "docs/specs/started"
     folder.mkdir(parents=True)
-    (folder / "delivery.json").write_text(json.dumps({"proposal": "prp-AB23"}))
+    (folder / "delivery.json").write_text(json.dumps({"proposal": "prp-001"}))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 记录开工")
     git(repo, "checkout", "main")
     data = payload(mdf(python_exe, "list", "--repo", str(repo), "--type", "proposal"))
     by_id = {item["id"]: item for item in data["objects"]}
-    assert sorted(by_id) == ["prp-AB23", "prp-EF56"]
-    assert by_id["prp-AB23"]["in_progress"] is True
-    assert by_id["prp-EF56"]["in_progress"] is False and by_id["prp-EF56"]["blocked_by"] == []
+    assert sorted(by_id) == ["prp-001", "prp-003"]
+    assert by_id["prp-001"]["in_progress"] is True
+    assert by_id["prp-003"]["in_progress"] is False and by_id["prp-003"]["blocked_by"] == []
 
 
 def test_list_skips_broken_files_and_does_not_require_ready(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     (repo / "docs/bugs/notes.md").write_text("# 不是对象\n")
     (repo / "docs/bugs/bug-EF56-broken.md").write_text("no frontmatter\n")
-    (repo / "docs/proposals/prp-EF56-noid.md").write_text("---\ntype: proposal\n---\n# x\n")
+    (repo / "docs/proposals/prp-003-noid.md").write_text("---\ntype: proposal\n---\n# x\n")
     replace(repo / ".mdf/manifest.yaml", "state: ready", "state: initializing")
     init_git(repo)
     data = payload(mdf(python_exe, "list", "--repo", str(repo)))
-    assert ids(data) == ["bug-CD34", "prp-AB23"]
+    assert ids(data) == ["bug-CD34", "prp-001"]
     assert [item["path"] for item in data["skipped"]] == [
-        "docs/bugs/bug-EF56-broken.md", "docs/bugs/notes.md", "docs/proposals/prp-EF56-noid.md"]
+        "docs/bugs/bug-EF56-broken.md", "docs/bugs/notes.md", "docs/proposals/prp-003-noid.md"]
     assert all(item["reason"] for item in data["skipped"])
     assert mdf(python_exe, "next", "--repo", str(repo)).returncode == 1

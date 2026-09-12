@@ -181,7 +181,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf prp create`
 用法：`$mdf prp create`
 用途：按已确认内容手动创建一个 draft Proposal。
-说明：一次只创建一个对象；随后需 `$mdf prp review`。
+说明：一次只创建一个对象；须在 develop 上创建并提交；随后需 `$mdf prp review`。
 
 `$mdf prp review`
 用法：`$mdf prp review`
@@ -191,7 +191,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf prp split`
 用法：`$mdf prp split`
 用途：拆分未开工 PRP，并完整改写依赖。
-说明：不拆已开工交付。
+说明：不拆已开工交付；须在 develop 上拆分并提交。
 
 `$mdf clarify <议题>`
 用法：`$mdf clarify <议题>`

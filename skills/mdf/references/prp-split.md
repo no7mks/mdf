@@ -41,7 +41,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 检查 | 约束 | 确认原 PRP active draft/ready 且尚未 start | 状态、分支与材料检查 | 2 | 停止并报告 |
+| 1 | 检查 | 约束 | 确认当前分支为 develop，且原 PRP active draft/ready 尚未 start | 分支、状态与材料 | 2 | 停止并报告 |
 | 2 | 拆分 | 约束 | 确认最少交付单元及依赖，准备 JSON | 用户确认、覆盖、输入 | 无需拆分结束；否则 3 | 停止并报告 |
 | 3 | 预检 | 脚本 | 确认 clean，预检并展示候选 | diff、非预览写入确认 | 仅预览结束；确认写入 4 | 失败或未确认则停止 |
 | 4 | 写入 | 脚本 | 去掉 dry-run，整体写入并核对状态及依赖图 | 校验、完整变更或恢复 | 结束 | 停止并报告 |
@@ -50,14 +50,16 @@
 
 ### 输入与前置条件
 
-`prp-split` CLI（包括 dry-run）操作前要求 clean worktree；预览不提交。
+`prp-split` CLI（包括 dry-run）操作前要求当前分支为 develop，且 clean worktree；
+预览不提交。
 非预览按公共规则整理本次改动；无关改动阻塞操作或相关范围不明时先澄清。
 仅 active draft/ready 且没有关联分支或开发材料的 PRP 可拆分；已有实现或终态拒绝。
 子项须能独立实现与验收，共同覆盖原范围，不拆成文件/操作任务，也不额外扩张范围。
 
 ### 拆分输入与状态结果
 
-先用 make-id 分配子 ID。输入 JSON 文件包含 source、children、downstream、rationale。
+先在 develop 上用 `make-id --type proposal --repo "$REPO_ROOT" --slug` 分配子 ID。
+输入 JSON 文件包含 source、children、downstream、rationale。
 children 至少两个，每项为 filename、id、depends_on、body；body 为完整 Proposal 正文。
 子项 filename slug 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
 downstream 为全部原下游 PRP ID 到其所需子 PRP ID 列表的映射，包含历史对象。

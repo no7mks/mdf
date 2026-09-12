@@ -68,6 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--type", choices=("proposal", "bug"), required=True
     )
     make_id.add_argument("--slug", required=True)
+    make_id.add_argument("--repo")
     make_id.set_defaults(func=command_make_id)
 
     make_jot_id = subparsers.add_parser("make-jot-id")

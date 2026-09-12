@@ -57,7 +57,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
+| 1 | 入口 | 脚本 | 运行 `doctor`，确认当前分支为 develop，核对允许正常流程 | doctor 与分支 | 2 | 停止 |
 | 2 | 对象 | 脚本 | 用 `list` 查重，确认用户提供的单个 Proposal | list 结果、唯一对象 | 3 | 等待澄清，2 |
 | 3 | 澄清 | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | 确认 | 约束 | 展示边界、排除项与依赖，取得 draft 确认 | 用户明确确认 | 5 | 来源 2；事实 3 |
@@ -72,11 +72,13 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。
+解析 `REPO_ROOT` 并运行 `doctor`。再运行 `branch --repo "$REPO_ROOT"`，
+确认当前分支为 `develop`。
 
-验收：`normal_workflows_allowed: true`。
+验收：`normal_workflows_allowed: true`，当前分支为 `develop`。
 
-异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
+异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 或当前分支不是
+`develop` 时报告后停止。
 
 <a id="s2"></a>
 
@@ -121,8 +123,9 @@
 **创建**
 
 为 Proposal 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。使用 `make-id --type proposal --slug` 生成 ID 与规范化文件名，
-并以模板写入 `docs/proposals/`， 初始状态为 `draft`。
+中唯一，且不得与对象 ID 同形。使用
+`make-id --type proposal --repo "$REPO_ROOT" --slug` 按已有最大序号加一
+生成 ID 与规范化文件名，并以模板写入 `docs/proposals/`，初始状态为 `draft`。
 仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
 
 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、

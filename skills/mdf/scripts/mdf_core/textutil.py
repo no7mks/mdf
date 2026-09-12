@@ -41,6 +41,13 @@ def is_object_id_slug(value: str) -> bool:
     return OBJECT_ID_SLUG_RE.fullmatch(value) is not None
 
 
+def format_prp_id(number: int) -> str:
+    if number < 1:
+        raise MDFError("PRP 序号必须从 1 起", code="invalid_prp_id")
+    body = f"{number:03d}" if number <= 999 else str(number)
+    return f"prp-{body}"
+
+
 _ID_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 _ID_DIGITS = "23456789"
 _ID_ALPHABET = _ID_LETTERS + _ID_DIGITS

@@ -18,8 +18,10 @@ from .gitutil import (
     git_is_clean,
     git_root,
     repo_path,
+    require_develop,
     require_git_root,
 )
+from .proposals import next_prp_id
 from .init_repo import init_files, parse_baselines, write_files
 from .gitflow import require_master_default
 from .moves import (
@@ -222,11 +224,18 @@ def command_validate(args: argparse.Namespace) -> None:
 
 
 def command_make_id(args: argparse.Namespace) -> None:
-    prefix = "prp" if args.type == "proposal" else "bug"
-    identifier = f"{prefix}-{new_short_id()}"
     slug = slugify(args.slug)
     if is_object_id_slug(slug):
         raise MDFError("slug 不得与对象 ID 同形", code="slug_is_id")
+    if args.type == "proposal":
+        if args.repo is None:
+            raise MDFError("Proposal ID 需要 --repo", code="missing_argument")
+        repo = repo_path(args.repo)
+        require_git_root(repo)
+        require_develop(repo)
+        identifier = next_prp_id(repo)
+    else:
+        identifier = f"bug-{new_short_id()}"
     filename = f"{identifier}-{slug}.md"
     emit(
         {

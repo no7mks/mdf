@@ -5,30 +5,37 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 
-@pytest.mark.parametrize(
-    ("command", "object_type", "prefix"),
-    [
-        ("make-id", "proposal", "prp"),
-        ("make-id", "bug", "bug"),
-    ],
-)
-def test_make_id_uses_the_type_specific_format_and_normalized_slug(
-    python_exe: str, command: str, object_type: str, prefix: str
+def test_make_id_bug_uses_the_type_specific_format_and_normalized_slug(
+    python_exe: str,
 ):
-    result = mdf(
-        python_exe,
-        command,
-        "--type",
-        object_type,
-        "--slug",
-        "  Audit Ready 42!  ",
+    data = payload(
+        mdf(python_exe, "make-id", "--type", "bug", "--slug", "  Audit Ready 42!  ")
     )
-    data = payload(result)
-
-    identifier_re = PRP_ID_RE if object_type == "proposal" else BUG_ID_RE
-    assert identifier_re.fullmatch(data["id"])
-    assert data["id"].startswith(f"{prefix}-")
+    assert BUG_ID_RE.fullmatch(data["id"])
+    assert data["id"].startswith("bug-")
     assert data["filename"] == f"{data['id']}-audit-ready-42.md"
+
+
+def test_make_id_proposal_uses_sequential_id_and_normalized_slug(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    checkout_develop(repo)
+    data = payload(
+        mdf(
+            python_exe,
+            "make-id",
+            "--type",
+            "proposal",
+            "--repo",
+            str(repo),
+            "--slug",
+            "  Audit Ready 42!  ",
+        )
+    )
+    assert data["id"] == "prp-002"
+    assert data["filename"] == "prp-002-audit-ready-42.md"
 
 
 def test_new_id_alias_no_longer_exists(python_exe: str):
@@ -419,9 +426,9 @@ def test_validation_rejects_id_shaped_filename_slug(
 ):
     repo = copy_fixture(tmp_path)
     source = repo / "docs/proposals" / PRP_NAME
-    shaped = repo / "docs/proposals" / "prp-EF56-prp-ab23.md"
+    shaped = repo / "docs/proposals" / "prp-003-prp-001.md"
     shaped.write_text(
-        source.read_text(encoding="utf-8").replace("prp-AB23", "prp-EF56"),
+        source.read_text(encoding="utf-8").replace("prp-001", "prp-003"),
         encoding="utf-8",
     )
     init_git(repo)
@@ -453,12 +460,12 @@ def test_validation_allows_archived_slug_reuse(
     repo = copy_fixture(tmp_path)
     source = repo / "docs/proposals" / PRP_NAME
     archived = (
-        repo / "docs/proposals" / "archive" / "1.2" / "prp-EF56-service-health.md"
+        repo / "docs/proposals" / "archive" / "1.2" / "prp-003-service-health.md"
     )
     archived.parent.mkdir(parents=True)
     archived.write_text(
         source.read_text(encoding="utf-8").replace(
-            "id: prp-AB23", "id: prp-EF56"
+            "id: prp-001", "id: prp-003"
         ).replace(
             "status: ready\ndepends_on: []",
             "status: released\ndepends_on: []\nreleased_in: 1.2.0",
