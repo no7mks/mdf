@@ -51,7 +51,13 @@ def setup_delivery(python_exe, tmp_path):
     )
     root = work / "docs/specs/service-health"
     assert json.loads((root / "delivery.json").read_text())["start_commit"] == data["start_commit"]
-    (root / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")
+    objectives = root / "objectives.md"
+    objectives.write_text(objectives.read_text() + "\n[design.md](./design.md)\n")
+    (root / "design.md").write_text(
+        "# 设计\n\n[实现](../../../src/service.py)\n\n"
+        "[objectives.md](./objectives.md)\n"
+        "[see design.md](./design.md)\n"
+    )
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
     payload(mdf(python_exe, "delivery", "record", "--repo", str(work), "--stage", "design",
@@ -151,10 +157,15 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     for stage in ("converge", "review", "fact-update"):
         payload(record(python_exe, repo, stage))
     commit(repo)
+    recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
     payload(mdf(python_exe, "move-change", "--repo", str(repo), "--source", str(root),
                 "--branch-slug", "service-health"))
     dest = repo / "docs/changes/unreleased/service-health"
-    assert "../../../../src/service.py" in (dest / "design.md").read_text()
+    moved_design = (dest / "design.md").read_text()
+    assert "../../../../src/service.py" in moved_design
+    assert "[objectives.md](objectives.md)" in moved_design
+    assert "[see design.md](design.md)" in moved_design
+    assert "[design.md](design.md)" in (dest / "objectives.md").read_text()
     write_unreleased_change(repo, "temporary")
     text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
     (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
@@ -162,7 +173,9 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     shutil.rmtree(repo / "docs/changes/unreleased/temporary")
     replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
     commit(repo)
-    payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
+    checked = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
+                           "--stage", "finish"))["result"]
+    assert checked["design"] == recorded
     if conflict:
         git(repo, "checkout", "develop")
         (repo / "src/service.py").write_text("value = 2\n")
@@ -272,6 +285,18 @@ def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_
     design.write_text(design.read_text().replace("service.py)", "service.py#new)"))
     commit(dev)
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
+
+
+def test_design_fingerprint_stable_across_sibling_href_spelling(python_exe, tmp_path):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
+    for name in ("design.md", "objectives.md"):
+        path = root / name
+        path.write_text(path.read_text().replace("(./", "("))
+    commit(repo)
+    current = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
+                           "--stage", "design"))["result"]
+    assert current["design"] == recorded
 
 
 def test_canonical_local_link_missing_is_not_delivery_internal(tmp_path: Path):

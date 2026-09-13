@@ -129,7 +129,11 @@ def fingerprints(repo, root, data, config=None):
             canonical = canonical_local_link(repo, path, target, root)
             if canonical is None:
                 return match.group(0)
-            return match.group(0).replace(raw, rewrite_link_raw(raw, canonical))
+            # 只改 href。str.replace 会把链接文字里的同一子串一并改掉。
+            full = match.group(0)
+            start = match.start(1) - match.start(0)
+            end = match.end(1) - match.start(0)
+            return full[:start] + rewrite_link_raw(raw, canonical) + full[end:]
         design[name] = hashlib.sha256(ALL_MARKDOWN_LINK_RE.sub(normalize, text).encode()).hexdigest()
     return {"design": digest([design, data, config]), "tests": digest([tests, commands]),
             "implementation": digest(implementation), "code": digest([code, commands]),
