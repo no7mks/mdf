@@ -183,6 +183,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "内部 clarify" in table[1][3]
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
+    assert "一次只问一个问题" not in text
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "$mdf prp review" in text
