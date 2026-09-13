@@ -224,28 +224,23 @@ def command_validate(args: argparse.Namespace) -> None:
 
 
 def command_make_id(args: argparse.Namespace) -> None:
-    slug = slugify(args.slug)
-    if is_object_id_slug(slug):
-        raise MDFError("slug 不得与对象 ID 同形", code="slug_is_id")
+    from .textutil import format_prp_id
+    slugs = [slugify(value) for value in args.slug]
+    if len(set(slugs)) != len(slugs) or any(is_object_id_slug(value) for value in slugs):
+        raise MDFError("slug 不得重复或与对象 ID 同形", code="slug_is_id")
     if args.type == "proposal":
         if args.repo is None:
             raise MDFError("Proposal ID 需要 --repo", code="missing_argument")
         repo = repo_path(args.repo)
         require_git_root(repo)
         require_develop(repo)
-        identifier = next_prp_id(repo)
+        first = int(next_prp_id(repo).split("-")[1])
+        ids = [format_prp_id(first + offset) for offset in range(len(slugs))]
     else:
-        identifier = f"bug-{new_short_id()}"
-    filename = f"{identifier}-{slug}.md"
-    emit(
-        {
-            "ok": True,
-            "operation": "make-id",
-            "type": args.type,
-            "id": identifier,
-            "filename": filename,
-        }
-    )
+        ids = [f"bug-{new_short_id()}" for _ in slugs]
+    items = [{"type": args.type, "id": identifier, "filename": f"{identifier}-{slug}.md"}
+             for identifier, slug in zip(ids, slugs)]
+    emit({"ok": True, "operation": "make-id", **(items[0] if len(items) == 1 else {"items": items})})
 
 
 def command_make_jot_id(_: argparse.Namespace) -> None:

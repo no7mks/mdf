@@ -41,8 +41,8 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 工具 | 约束 | 核对本次会话中八工具均实际可调用 | 当前可调用工具清单 | 返回调用方 | 缺工具到 2 |
-| 2 | 源码 | 脚本 | 检查安装目录；不存在才 clone | 完整、干净源码 | 3 | 报告并停止 |
-| 3 | 运行时 | 脚本 | 只补缺失运行时，逐条安装并检查导入 | 退出 0、导入结果 | 4 | 报告并停止 |
+| 2 | 准备 | 脚本 | 运行 codewiki-runtime 准备源码与运行时 | 退出 0、结构化结果 | 3 | 报告并停止 |
+| 3 | 核验 | 约束 | 检查脚本返回的路径和 MCP 字段 | directory、python、mcpServers | 4 | 报告并停止 |
 | 4 | 配置 | 约束 | 保留其他配置，添加 MCP 设置并交接启用 | 配置、启用及重调说明 | 停止，要求重调 | 报告并停止 |
 
 ## 术语与数据结构
@@ -54,41 +54,15 @@
 
 <a id="source"></a>
 
-安装目录为 `$HOME/.local/share/codewiki`。目录不存在才 clone；目录存在时先检查
-源码完整、工作树干净，不得 pull、覆盖或清理已有目录。检查失败时报告具体问题。
-
-```bash
-CODEWIKI_DIR="$HOME/.local/share/codewiki"
-git clone https://github.com/FSoft-AI4Code/CodeWiki.git "$CODEWIKI_DIR"
-```
+调用 `python3 "$MDF_ROOT/scripts/mdf.py" codewiki-runtime`；默认安装目录为
+`$HOME/.local/share/codewiki`。用户明确另选目录时传 `--directory <绝对路径>`。
+脚本只在目录缺失时 clone；目录存在时核对独立 Git 根、源码完整和工作区干净，不 pull、覆盖或清理。
+只有 `.venv` 缺失才创建并安装；已有运行时导入失败时停止，不自动重装。
 
 ### 运行时与宿主配置
 
-<a id="runtime"></a>
-
-只在缺少相应运行时时补建 `.venv` 或安装；已有运行时无法导入时报告并停止。
-每条安装命令成功后才运行下一条，最后以导入检查验收。
-
-```bash
-python3 -m venv "$CODEWIKI_DIR/.venv"
-"$CODEWIKI_DIR/.venv/bin/python" -m pip install -e "$CODEWIKI_DIR"
-"$CODEWIKI_DIR/.venv/bin/python" -c \
-  'from codewiki.mcp.server import server'
-```
-
-<a id="host"></a>
-
-将以下字段加入宿主 IDE 的 MCP 设置，保留其他配置；路径使用已确认的安装位置。
+步骤 2 调用脚本一次完成源码与运行时准备；步骤 3 核对退出 0、返回的 directory、python 与 mcpServers。
+`codewiki_runtime_failed` 等失败包含命令与退出状态，保留已完成现场并停止，不猜测成功。
+宿主设置仍由 Agent 按实际 IDE 格式处理，将脚本返回的 MCP 字段加入已确认宿主，保留其他配置。
+安装目录和宿主设置不属于目标仓库产出；不在目标仓库安装运行时。
 配置后要求用户启用 server 并重新显式调用 intent；不得假定当前会话已获得工具。
-
-```json
-{
-  "mcpServers": {
-    "codewiki": {
-      "command": "/absolute/path/to/CodeWiki/.venv/bin/python",
-      "args": ["-m", "codewiki.mcp.server"],
-      "cwd": "/absolute/path/to/CodeWiki"
-    }
-  }
-}
-```

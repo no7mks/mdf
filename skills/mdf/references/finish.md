@@ -166,6 +166,7 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 **审阅**
 
 feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
+其他分支运行 `project-verify check --repo "$REPO_ROOT"`，失败或过期则补验后复核。
 语义或实现变化必须补审补验。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
@@ -246,7 +247,7 @@ feature/bugfix 必须有规范 child Change。
 
 调用 `finish-gitflow --repo "$REPO_ROOT"`。feature/bugfix 不 fetch、不 push；
 no-ff 合并到本地 develop，删除本地源分支。角色分支仍在则失败。
-release/hotfix 要求 origin，fetch 后要求本地 master/develop 与远端一致；
+release/hotfix 要求 origin；首次调用 fetch 后要求本地 master/develop 与远端一致；
 no-ff 合并到 master，创建注释 `v<semver>` tag，再 no-ff 合并 master 到 develop，
 原子 push `master`、`develop` 与 tag。不推送、不删除远端 `release/*`/`hotfix/*`。
 若当前位于 `<repo-name>-worktrees/` 下的交付 worktree，合并后移除该 worktree。
@@ -256,3 +257,10 @@ no-ff 合并到 master，创建注释 `v<semver>` tag，再 no-ff 合并 master 
 异常与交接：停止并报告当前分支、已完成合并、 tag 与推送状态；冲突时 CLI abort 当前 merge，
 但不得声称此前已完成的合并也被回退。 不继续推送或删分支，询问用户如何继续；
 必要修复按确认范围由 Agent 复核并提交；后续 Git 操作按用户决定继续。
+
+release/hotfix 首次发布前，CLI 在 Git common dir 的 `mdf/finish/<完整分支名>.json`
+保存源提交、origin、目标起点及后续进度。失败后取得用户继续决定，再调用同一命令；
+若源 worktree 已删除或当前已不在原分支，从主 worktree 调用 `finish-gitflow --repo <主路径> --source <原分支>`。
+脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag；推送结果丢失时先查询远端，
+完全一致则仅继续清理。记录、源提交、origin 或目标引用冲突时返回 `publish_state_changed`，
+停止并报告，不重置分支、不覆盖 tag、不盲目重推。完成记录保留供清理中断后续办。

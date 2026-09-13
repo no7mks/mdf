@@ -212,7 +212,7 @@ def command_finish_gitflow(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
     ensure_clean(repo)
-    source = current_branch(repo)
+    source = args.source or current_branch(repo)
     details = branch_details(source)
     if not details["supported"]:
         raise MDFError("finish requires a Gitflow delivery branch",
@@ -227,10 +227,9 @@ def command_finish_gitflow(args) -> None:
         if kind in {"feature", "bugfix"}
         else ["master", "develop"]
     )
-    if publish:
-        for target in targets:
-            _synced(repo, target)
-    elif not _exists(repo, "refs/heads/develop"):
+    if args.source and not publish:
+        raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
+    if not publish and not _exists(repo, "refs/heads/develop"):
         raise MDFError("Branch develop must exist", code="missing_branch")
     complete_feature = None
     if kind == "feature":
@@ -273,25 +272,16 @@ def command_finish_gitflow(args) -> None:
     if kind in {"feature", "bugfix"}:
         merge_into("develop", source, complete_feature)
     else:
-        tagged_at = merge_into("master", source)
-        version = details["version"]
-        assert isinstance(version, str)
-        tag = f"v{version}"
-        if _exists(repo, f"refs/tags/{tag}") or _exists(
-            repo, f"refs/tags/{ORIGIN}/{tag}"
-        ):
-            raise MDFError(f"Tag already exists: {tag}", code="tag_exists")
-        _git(tagged_at, "tag", "-a", tag, "-m", f"chore(release): 发布 {tag}")
-        merge_into("develop", "master")
-        _git(primary, "push", "--atomic", ORIGIN, "master", "develop",
-             f"refs/tags/{tag}")
+        from .publish import publish as publish_release
+        publish_release(repo, source, details["version"])
     remaining = worktree_map(primary)
     source_wt = remaining.get(source)
     if source_wt is not None:
         _git(primary, "worktree", "remove", str(source_wt))
         remaining = worktree_map(primary)
     delete_at = remaining.get(targets[-1], repo)
-    _git(delete_at, "branch", "-D", source)
+    if _exists(primary, f"refs/heads/{source}"):
+        _git(delete_at, "branch", "-D", source)
     if repo.resolve() != primary.resolve() and repo.exists():
         _git(primary, "worktree", "remove", str(repo))
     tag = f"v{details['version']}" if publish else None

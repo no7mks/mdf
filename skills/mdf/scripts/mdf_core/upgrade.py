@@ -345,14 +345,18 @@ def _fetch(source: str) -> tuple[str, Path, tempfile.TemporaryDirectory[str]]:
         raise
     return commit, clone, temp
 
-
 def command_upgrade(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
     source = args.source
+    if not args.dry_run and not _COMMIT_RE.fullmatch(args.expected_commit or ""):
+        raise MDFError("替换需要预览确认的完整 commit", code="missing_expected_commit")
     installs = _installed_skills(repo)
     commit, clone, temp = _fetch(source)
     try:
+        if not args.dry_run and commit != args.expected_commit:
+            raise MDFError("上游已变化，须重新预览并确认", code="upgrade_source_changed",
+                           details={"expected": args.expected_commit, "actual": commit})
         targets = [
             {
                 "path": relative(repo, skill),

@@ -58,7 +58,9 @@
 
 ### 拆分输入与状态结果
 
-先在 develop 上用 `make-id --type proposal --repo "$REPO_ROOT" --slug` 分配子 ID。
+在 develop 上一次调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <子一> --slug <子二>`，
+用重复 --slug 提供全部子项；从返回的 items 取得连续、唯一的 ID 与 filename。
+该调用只读、不预占编号；不得逐个调用后拼装，也不得先写占位对象。
 输入 JSON 文件包含 source、children、downstream、rationale。
 children 至少两个，每项为 filename、id、depends_on、body；body 为完整 Proposal 正文。
 子项 filename slug 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。

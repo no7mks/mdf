@@ -1,0 +1,173 @@
+"""复盘发现的跨流程衔接与失败恢复回归。"""
+from types import SimpleNamespace
+
+from mdf_test_support import *  # noqa: F403
+from test_mdf_delivery import setup_delivery, sync_roles, record, commit
+from test_mdf_upgrade import init_target, init_upstream, source_head
+from test_mdf_gitflow_delivery import start_repo
+
+
+def test_batch_prp_ids_do_not_write_or_repeat(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    git(repo, "checkout", "develop")
+    head = source_head(repo)
+    data = payload(mdf(python_exe, "make-id", "--type", "proposal", "--repo", str(repo),
+                       "--slug", "part-one", "--slug", "part-two"))
+    assert [item["id"] for item in data["items"]] == ["prp-002", "prp-003"]
+    assert data["items"][1]["filename"] == "prp-003-part-two.md"
+    assert source_head(repo) == head
+    assert not git(repo, "status", "--porcelain").stdout
+    body = (repo / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
+    spec = {"source": "prp-001", "children": [
+        {"id": item["id"], "filename": item["filename"], "depends_on": [], "body": body}
+        for item in data["items"]], "downstream": {}, "rationale": "用户确认分成两项"}
+    path = tmp_path / "split.json"
+    path.write_text(json.dumps(spec))
+    args = ["prp-split", "--repo", str(repo), "--spec-file", str(path)]
+    preview = payload(mdf(python_exe, *args, "--dry-run"))
+    applied = payload(mdf(python_exe, *args))
+    assert preview["files"] == applied["files"]
+
+
+def test_upgrade_rejects_source_movement_before_writing(python_exe, tmp_path):
+    upstream = init_upstream(tmp_path, "reviewed")
+    repo = init_target(tmp_path)
+    preview = payload(mdf(python_exe, "upgrade", "--repo", str(repo), "--source", str(upstream), "--dry-run"))
+    head = source_head(repo)
+    (upstream / "skills/mdf/SKILL.md").write_text("not reviewed\n")
+    commit(upstream)
+    result = mdf(python_exe, "upgrade", "--repo", str(repo), "--source", str(upstream),
+                 "--expected-commit", preview["new_commit"])
+    assert "upgrade_source_changed" in result.stderr
+    assert source_head(repo) == head
+    assert (repo / ".codex/skills/mdf/SKILL.md").read_text() == "old-codex\n"
+    missing = mdf(python_exe, "upgrade", "--repo", str(repo), "--source", str(upstream))
+    assert "missing_expected_commit" in missing.stderr
+
+
+def test_worktree_check_rejects_wrong_role_and_stale_handoff(python_exe, tmp_path):
+    owner, _, _ = setup_delivery(python_exe, tmp_path)
+    qa, _ = sync_roles(python_exe, owner)
+    design = source_head(owner)
+    args = ["worktree-check", "--owner", str(owner), "--role", "qa", "--design-commit", design]
+    assert "wrong_worktree" in mdf(python_exe, *args, "--repo", str(owner)).stderr
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    result = payload(mdf(python_exe, *args, "--repo", str(qa), "--handoff"))["result"]
+    assert result["path"] == str(qa)
+    (qa / "tests").mkdir(exist_ok=True)
+    (qa / "tests/late.py").write_text("assert True\n")
+    commit(qa)
+    assert "stale_gate" in mdf(python_exe, *args, "--repo", str(qa), "--handoff").stderr
+
+
+def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "bugfix", "--bug", "bug-CD34"))
+    work = Path(created["worktree"])
+    args = ["--repo", str(work)]
+    payload(mdf(python_exe, "project-verify", "run", *args))
+    payload(mdf(python_exe, "project-verify", "check", *args))
+    (work / "src/service.py").write_text("changed = True\n")
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
+    manifest = work / ".mdf/manifest.yaml"
+    manifest.write_text(manifest.read_text().replace('command: "true"', 'command: "false"'))
+    assert "verify_command_failed" in mdf(python_exe, "project-verify", "run", *args).stderr
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
+
+
+def test_integration_resumes_after_first_role_was_removed(python_exe, tmp_path, monkeypatch):
+    owner, root, _ = setup_delivery(python_exe, tmp_path)
+    qa, dev = sync_roles(python_exe, owner)
+    for path, stage in ((qa, "write-tests"), (dev, "implement")):
+        payload(record(python_exe, path, stage))
+        commit(path)
+    load_core_module()
+    from mdf_core import delivery_git
+    from mdf_core.delivery_state import locate
+    from mdf_core.errors import MDFError
+    original = delivery_git.git
+
+    def fail_cleanup(repo, *args, **kwargs):
+        if args[:2] == ("worktree", "remove") and args[2] == str(dev):
+            raise MDFError("模拟第二路清理失败", code="test_interruption")
+        return original(repo, *args, **kwargs)
+
+    _, data = locate(owner)
+    with monkeypatch.context() as patch:
+        patch.setattr(delivery_git, "git", fail_cleanup)
+        with pytest.raises(MDFError):
+            delivery_git.integrate(owner, root, data, None)
+    assert not qa.exists() and dev.exists()
+    merged_head = source_head(owner)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    assert source_head(owner) == merged_head
+    assert not dev.exists()
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    assert source_head(owner) == merged_head
+
+
+@pytest.mark.parametrize("after_push", [False, True])
+def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, monkeypatch, after_push):
+    repo, remote = start_repo(tmp_path)
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix", "--version", "1.2.1"))
+    work = Path(created["worktree"])
+    (work / "src/service.py").write_text("fixed = True\n")
+    commit(work)
+    load_core_module()
+    from mdf_core import gitflow
+    from mdf_core.errors import MDFError
+    original = gitflow._git
+
+    def fail_push(repo, *args, **kwargs):
+        if args and args[0] == "push":
+            if after_push:
+                original(repo, *args, **kwargs)
+            raise MDFError("模拟推送结果丢失" if after_push else "模拟网络中断", code="test_interruption")
+        return original(repo, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(gitflow, "_git", fail_push)
+        with pytest.raises(MDFError):
+            gitflow.command_finish_gitflow(SimpleNamespace(repo=str(work), source=None))
+    before = {ref: git(repo, "rev-parse", ref).stdout for ref in ("master", "develop", "v1.2.1")}
+    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert done["pushed"] is True
+    assert not work.exists()
+    for ref, head in before.items():
+        assert git(repo, "rev-parse", ref).stdout == head
+    assert git(remote, "rev-parse", "master").stdout == before["master"]
+    # 清理后仍可从主 worktree 核验同一次成功操作，不重复创建提交/tag。
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/1.2.1"))
+    assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
+
+
+def test_codewiki_runtime_checks_existing_environment_without_installing(tmp_path, monkeypatch):
+    load_core_module()
+    from mdf_core import codewiki_runtime
+    root = tmp_path / "codewiki"
+    (root / "codewiki").mkdir(parents=True)
+    (root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+    python = root / ".venv/bin/python"
+    python.parent.mkdir(parents=True)
+    python.write_text("stub")
+    commands = []
+
+    def fake_run(args, cwd):
+        commands.append(args)
+        return str(root) if "--show-toplevel" in args else ""
+
+    monkeypatch.setattr(codewiki_runtime, "run", fake_run)
+    result = codewiki_runtime.prepare(root)
+    assert result["python"] == str(python)
+    assert commands[-1] == [str(python), "-c", "from codewiki.mcp.server import server"]
+    assert not any("install" in args or "clone" in args for args in commands)
+
+
+def test_review_resume_routes_to_repair_without_replacing_initial_head():
+    from conftest import skill_dir
+    text = (skill_dir("mdf") / "references/code-review.md").read_text()
+    assert "修复续办 3；否则 2" in text
+    assert "三份报告有效且修复续办" in text
+    assert "保留原 review_head，不覆盖原报告" in text
+    assert "首轮未齐时进入 2 补齐" in text

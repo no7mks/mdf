@@ -19,7 +19,7 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "没有独立开发 intent 的剩余工作由主 Agent", "角色已集成并清理时读取 owner 的两路证据",
     ):
         assert rule in text
-    assert "不新增 CLI command、gate 或统一 workflow 状态文件" in text
+    assert "不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件" in text
     for name in ("start", "design", "write-tests", "implement", "converge", "code-review", "finish"):
         assert f"references/{name}.md" in text
     for name in ("design", "write-tests", "implement", "converge", "code-review"):
@@ -34,10 +34,9 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
         "必须分别交给 subagent，不由主 Agent 串行代做",
         "两路已有一条运行时", "不得重复创建执行者",
         "worktrees.qa.path", "worktrees.dev.path", "规范化后的 owner、qa、dev 路径必须两两不同",
-        "git rev-parse --show-toplevel", "git branch --show-current",
-        "git rev-parse --path-format=absolute --git-common-dir",
-        "git merge-base --is-ancestor <design_commit> HEAD",
-        "主 Agent 分派前和 subagent 首次操作时都必须核对",
+        "worktree-check --repo <角色绝对路径> --owner <owner绝对路径>",
+        "--design-commit <固定设计提交>", "--handoff",
+        "主 Agent 分派前和 subagent 首次操作时都运行内部 CLI",
         "不得假设 subagent 继承主 Agent cwd", "不悄悄降级串行",
         "不在任一路仍运行时执行 converge 或删除角色 worktree",
         "tests（qa）或 implementation（dev）指纹", "同一可写 worktree 不并发派工",
@@ -77,5 +76,5 @@ def test_converge_can_resume_from_owner_after_role_cleanup(python_exe, tmp_path)
     assert (root / "gates/converge.json").is_file()
     assert not qa.exists() and not dev.exists()
     text = workflow("converge")
-    assert "通过后跳过 integrate" in text
-    assert "仅部分角色缺失或无法证明已集成时停止" in text
+    assert "续办仍调用同一命令" in text
+    assert "缺少有效记录却缺角色时停止" in text

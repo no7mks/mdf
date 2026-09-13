@@ -43,7 +43,7 @@
 
 读取 `references/common.md`；feature 另读 `references/delivery-contract.md`。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
-本 intent 是持续交付的外层协调者，不新增 CLI command、gate 或统一 workflow 状态文件。
+本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -125,13 +125,11 @@ Git common dir、设计提交、对应 intent、读写边界与完成证据，�
 | implement | `worktrees.dev.path`；`dev/feature/<slug>` | 原 implement 契约允许的实现及阶段证据 |
 | code-review 的三名审查者 | owner 的同一绝对路径与固定 review_head | 只读，不建立角色 worktree |
 
-主 Agent 分派前和 subagent 首次操作时都必须核对：
-
-- 在指定路径运行 `git rev-parse --show-toplevel`，规范化绝对路径必须等于分派的 worktree。
-- `git branch --show-current` 必须等于预期完整分支，不能 detached，也不能在 owner 冒充 qa/dev。
-- `git rev-parse --path-format=absolute --git-common-dir` 必须等于 owner 的 Git common dir。
-- 角色依原 intent 先 no-ff merge owner，随后以 `git merge-base --is-ancestor <design_commit> HEAD`
-  确认包含固定共同基线，并运行对应 `delivery check --stage`。冲突或身份不符立即停止。
+主 Agent 分派前和 subagent 首次操作时都运行内部 CLI：
+`worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev>`。
+脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
+角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>` 再检查共同基线与指纹。
+审查者使用 `--role owner --expected-head <review_head>`，只读验证，不合并或写入。
 
 所有命令显式指定该 worktree 的工作目录或 `git -C`，文件写入使用该 worktree 下的绝对路径。
 不得假设 subagent 继承主 Agent cwd；工具自动分配的其他 worktree 不替代 MDF 角色树。
@@ -142,9 +140,9 @@ Git common dir、设计提交、对应 intent、读写边界与完成证据，�
 主 Agent 等待所有已派阶段完成或明确阻塞，不在任一路仍运行时执行 converge 或删除角色 worktree。
 一条失败时保留另一条已完成产物；如需修改共同设计，先暂停所有仍在写入的执行者。
 各路交接报告实际绝对路径、分支、最终提交 hash、gate 路径、验证/自检结果及未解决项。
-主 Agent 在对应路径重新核对身份、提交和工作区状态，读取 gate，检查共同 design 指纹与职责边界；
-还须将 gate 的 tests（qa）或 implementation（dev）指纹与本次对应 check 返回的当前指纹比较。
-不以 subagent 的“完成”摘要替代检查。所有写入者停止且两路交接有效后才返回 2 进入 converge。
+主 Agent 对各路再次调用同一 worktree-check，传入固定设计提交并追加 `--handoff`；
+脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）指纹。
+失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
 合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。
 
 单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。

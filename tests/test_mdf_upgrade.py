@@ -96,7 +96,7 @@ def test_upgrade_dry_run_does_not_replace(python_exe: str, tmp_path: Path) -> No
             "--repo",
             str(target),
             "--source",
-            str(upstream),
+            str(upstream), "--expected-commit", source_head(upstream),
             "--dry-run",
         )
     )
@@ -148,7 +148,7 @@ def test_upgrade_replaces_installed_copies_only(
             "--repo",
             str(target),
             "--source",
-            str(upstream),
+            str(upstream), "--expected-commit", source_head(upstream),
         )
     )
 
@@ -212,7 +212,7 @@ def test_upgrade_requires_an_installed_skill(
         "--repo",
         str(target),
         "--source",
-        str(upstream),
+        str(upstream), "--expected-commit", source_head(upstream),
         "--dry-run",
     )
     assert result.returncode != 0
@@ -269,7 +269,7 @@ def test_upgrade_updates_existing_agents_managed_block(
             "--repo",
             str(target),
             "--source",
-            str(upstream),
+            str(upstream), "--expected-commit", source_head(upstream),
         )
     )
 
@@ -300,7 +300,7 @@ def test_upgrade_dry_run_does_not_write_agents_block(
             "--repo",
             str(target),
             "--source",
-            str(upstream),
+            str(upstream), "--expected-commit", source_head(upstream),
             "--dry-run",
         )
     )
@@ -328,7 +328,7 @@ def test_upgrade_skips_agents_without_managed_block(
             "--repo",
             str(target),
             "--source",
-            str(upstream),
+            str(upstream), "--expected-commit", source_head(upstream),
         )
     )
 
@@ -357,7 +357,7 @@ def test_upgrade_reports_unchanged_agents_block(
             "--repo",
             str(target),
             "--source",
-            str(upstream),
+            str(upstream), "--expected-commit", source_head(upstream),
         )
     )
 
@@ -381,7 +381,7 @@ def test_upgrade_rejects_invalid_agents_block_before_replace(
         "--repo",
         str(target),
         "--source",
-        str(upstream),
+        str(upstream), "--expected-commit", source_head(upstream),
     )
     assert result.returncode != 0
     error = json.loads(result.stderr)
@@ -405,7 +405,7 @@ def test_upgrade_requires_template_when_updating_agents_block(
         "--repo",
         str(target),
         "--source",
-        str(upstream),
+        str(upstream), "--expected-commit", source_head(upstream),
     )
     assert result.returncode != 0
     error = json.loads(result.stderr)

@@ -43,11 +43,11 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-仅在 owner `feature/<slug>` 工作。角色分支均存在时先运行 `delivery integrate`，以 no-ff 先合入
-`qa/feature/<slug>` 再合入 `dev/feature/<slug>`，并移除其 worktree 与本地分支。
-续办时两路均已集成清理，须核对 owner 中两路 gate 已提交、与当前设计一致，
-且各记录 head 是当前 HEAD 的祖先；通过后跳过 integrate，不因角色已清理而重建或再次集成。
-仅部分角色缺失或无法证明已集成时停止并报告；角色还在但缺 gate 时失败。
+仅在 owner `feature/<slug>` 工作。运行 `delivery integrate`：脚本按 no-ff 合入 qa/dev，
+提交 `gates/integration.json` 固定设计指纹与两个角色的最终提交，再清理角色 worktree 和分支。
+续办仍调用同一命令；脚本核对已记录提交是 owner 的祖先，现存角色未改变，随后只清理剩余角色。
+两路均已清理时同样核验记录，不重建角色、不再次合并。缺少有效记录却缺角色时停止并报告。
+`stale_integration` 表示现场被其他操作改变，停止；普通清理失败保留记录，排除阻塞后原地重试。
 随后运行 `delivery check --stage converge`。
 使用 `delivery status` 返回的材料目录定位 `gates/converge-blocked.md`；不存在时无需创建。
 续办从步骤 1 开始，回读已有阻塞记录，对照当前 HEAD、设计与两路 gate 核对变化，

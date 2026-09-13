@@ -7,9 +7,10 @@
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败或缺失 ────→ [停止并报告]
+                 ├──── 三份报告有效且修复续办 ────→ 3 Repair
+                 ├──── 失败或缺失 ────────────────→ [停止并报告]
                  │
-                 ▼ 范围与前置条件通过
+                 ▼ 新审查或首轮尚未完成
 ┌──────────────────────────────────┐
 │ 2 Review                         │
 └────────────────┬─────────────────┘
@@ -42,7 +43,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 核对分支、固定范围与前置条件 | 基线、HEAD、检查结果 | 2 | 停止并报告 |
+| 1 | 入口 | 约束 | 核对范围、前置条件及续办证据 | 基线、报告、检查结果 | 修复续办 3；否则 2 | 停止并报告 |
 | 2 | 审查 | Subagent | 强制 3 个独立 subagent 各自全量审查 | 三份完整审查 | 3 | 停止并报告 |
 | 3 | 修复 | 约束 | 主 Agent 汇总裁定、修复并复核 | 发现、裁定、修复依据 | 4 | 保留现场并报告 |
 | 4 | 记录 | 脚本 | 按需重验、保存证据并提交 | 审查记录、验证、提交 | 结束 | 可修复则 3；其他停止 |
@@ -52,7 +53,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 ### 范围与前置条件
 
 步骤 1 支持 feature、bugfix、hotfix、release；cwd 为 qa/dev 时切回 owner feature。
-先确认目标仓库 ready，识别相关未提交改动并按公共规则提交，固定本轮完整 HEAD hash。
+先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
+首次审查才固定当前 HEAD 为 review_head；已有同范围修复续办保留原 review_head，不覆盖原报告。
+三份首轮报告齐全、基线一致且本次仅为已记录问题的修复续办时，核对前置条件后直接进入 3。
+首轮未齐时进入 2 补齐；新的交付改动重新固定 review_head 并进入 2。范围无法判定时停止询问。
 不得把未提交改动遗漏在审查范围外；存在无关改动且无法隔离时停止。
 
 | 分支 | 固定基线 |
@@ -68,7 +72,7 @@ release 首轮依据正式发布记录确认上一版本，核对其 `v<version>
 基线必须是当前 HEAD 的祖先；审查两个端点的内容差异 `git diff <base_commit> <review_head>`，
 并读取必要上下文，不能仅按提交标题或文件名审查。release 覆盖上一版本以来的完整变化，
 不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过其代码。
-步骤 1 将基线与 review_head 写入本次审查记录草稿，明确尚未通过，再启动审查。
+步骤 1 仅在新审查时将基线与 review_head 写入草稿，明确尚未通过，再启动审查。
 基线写入本次审查记录后固定，续办沿用，不重新追随分支或 tag。
 
 feature 保留前置要求：运行 `delivery status` 定位材料，读取 design 与 converge gate，
@@ -102,7 +106,10 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 步骤 4：feature 先运行 `delivery check --stage code-review`；通过且本轮未改动实现、测试
 或验证配置时沿用有效全绿证据；返回 `stale_verification` 或本轮有改动时运行
 `delivery verify` 全量重验。其他错误停止。
-bugfix/hotfix/release 执行 manifest 的全部 `verification.commands`，逐项记录命令与退出状态，
+bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
+脚本执行 manifest 的全部 `verification.commands`，逐项记录命令与退出状态，
+输出并保存 `<完整分支名>.verification.json`（与审查报告同目录）；失败保留失败证据。
+finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入指纹及全绿结果。
 不能用仅检查文档结构的 full validation 代替业务验证。
 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
 

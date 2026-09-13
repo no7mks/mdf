@@ -66,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
     make_id.add_argument(
         "--type", choices=("proposal", "bug"), required=True
     )
-    make_id.add_argument("--slug", required=True)
+    make_id.add_argument("--slug", required=True, action="append")
     make_id.add_argument("--repo")
     make_id.set_defaults(func=command_make_id)
 
@@ -152,14 +152,37 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--item", action="append", default=[])
     delivery.set_defaults(func=command_delivery)
 
+    from .codewiki_runtime import command_codewiki_runtime
+    runtime = subparsers.add_parser("codewiki-runtime")
+    runtime.add_argument("--directory", default="~/.local/share/codewiki")
+    runtime.set_defaults(func=command_codewiki_runtime)
+
+    from .worktree_check import command_worktree_check
+    worktree = subparsers.add_parser("worktree-check")
+    worktree.add_argument("--repo", required=True)
+    worktree.add_argument("--owner", required=True)
+    worktree.add_argument("--role", choices=("owner", "qa", "dev"), required=True)
+    worktree.add_argument("--design-commit")
+    worktree.add_argument("--expected-head")
+    worktree.add_argument("--handoff", action="store_true")
+    worktree.set_defaults(func=command_worktree_check)
+
+    from .project_verify import command_project_verify
+    verification = subparsers.add_parser("project-verify")
+    verification.add_argument("action", choices=("run", "check"))
+    verification.add_argument("--repo", required=True)
+    verification.set_defaults(func=command_project_verify)
+
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)
+    finish.add_argument("--source")
     finish.set_defaults(func=command_finish_gitflow)
 
     upgrade = subparsers.add_parser("upgrade")
     upgrade.add_argument("--repo", required=True)
     upgrade.add_argument("--source", default=DEFAULT_SKILL_SOURCE)
     upgrade.add_argument("--dry-run", action="store_true")
+    upgrade.add_argument("--expected-commit")
     upgrade.set_defaults(func=command_upgrade)
     return parser
 

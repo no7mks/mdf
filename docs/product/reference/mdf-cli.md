@@ -46,6 +46,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `next` | ready 依赖视图与 draft 列表 |
 | `prp-split` | 未开工 PRP 拆分 |
 | `delivery` | 阶段 gate 与验证 |
+| `worktree-check` | 分派路径、角色与交接核验 |
+| `project-verify` | 非 feature 全量验证与证据检查 |
+| `codewiki-runtime` | 本地 CodeWiki 运行时准备 |
 | `finish-gitflow` | Gitflow 合并 |
 | `upgrade` | 替换已安装 Skill |
 
@@ -287,12 +290,13 @@ release/hotfix 要求 origin，先 `fetch --prune`，并要求本地 `master` �
 
 ```bash
 python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --dry-run
-python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-commit <预览commit>
 ```
 
 要求 Git 根，不要求 manifest、ready 或 clean worktree。默认源为
 `http://10.1.5.65:8929/mars/mdf`，克隆远程默认分支 HEAD，并归档 `skills/mdf`。
-`--source` 可覆盖上游。命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入
+非预览必须传 `--expected-commit`，在写入前比对上游 HEAD；变化报
+`upgrade_source_changed`，须重新预览并确认。`--source` 可覆盖上游。命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入
 `references/.version`，并更新已有 `AGENTS.md` 的唯一 MDF 托管区块；无该文件或
 无区块则跳过，不新建或追加。不创建未安装位置，不覆盖 `skills/mdf`，不修改
 `.mdf/` 或 `docs/`。非预览写入后仅提交本次替换路径与已更新的 `AGENTS.md`，
@@ -349,3 +353,28 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，
 downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出候选文件全文，失败不留下部分拆分。
 子 PRP 继承原 PRP 的可选 `milestone`；原 PRP 未声明时省略该字段，不写 `null`。
+
+## 分派与验证脚本
+
+`make-id --type proposal --repo <仓库> --slug <子一> --slug <子二>` 支持重复 slug 参数，
+一次只读计算连续编号；多项返回 `items`，单项返回 `id` 与 `filename`。不预占编号，
+拆分使用该批候选构造 spec，后续身份冲突由预检拒绝，不提前写占位对象。
+
+`worktree-check --repo <角色路径> --owner <owner路径> --role <owner|qa|dev>` 只读核验
+Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同设计，
+`--handoff` 要求 clean 与有效阶段指纹；审查者用 `--expected-head <hash>` 固定只读对象。
+
+`project-verify run --repo <仓库>` 执行 bugfix/hotfix/release 的全部 manifest 验证项，
+将成功或失败证据写入 `docs/context/research/code-review/<完整分支名>.verification.json`。
+`project-verify check` 只读核验输入指纹、分支及全绿状态；事实/收口文档不改变代码指纹。
+
+`codewiki-runtime [--directory <路径>]` 只在安装目录缺失时 clone，核对源码和 Git 状态，
+只补缺失 venv 并检查导入，返回宿主所需 MCP 字段；不修改宿主配置或目标仓库。
+
+`delivery integrate` 在清理前提交 `gates/integration.json`，固定两路最终提交及设计指纹。
+重复调用核验同一集成后只完成剩余清理；角色引用改变或无法证明已集成时停止。
+
+release/hotfix 的 `finish-gitflow` 在 Git common dir 的 `mdf/finish/<分支>.json` 保存发布进度，
+重试核对实际引用，跳过已完成的合并/tag；推送响应丢失时查询远端后继续。
+源 worktree 已移除时，可从主 worktree 使用 `--source <原release/hotfix分支>` 恢复清理。
+本地/远端被其他操作改变时拒绝恢复；不会强制对齐或覆盖既有 tag。
