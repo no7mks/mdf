@@ -257,7 +257,8 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 `<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
 不在当前目录开分支；成功 JSON 含该 `worktree`。feature 同时建立
 `qa/feature/<slug>` 与 `dev/feature/<slug>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
-不设置 upstream。
+在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 保存完整起点 hash，
+供 bugfix/hotfix code-review 读取；不设置 upstream。分支删除时配置随分支清理。
 feature 写入 `changes/unreleased/<slug>/objectives.md` 时，把仓根风格的本地链接改成
 相对该目录的路径。
 
@@ -268,6 +269,8 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 ```
 
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
+外层 finish intent 必须先核对各分支的三份 code-review、主 Agent 复核与验证记录；
+非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
 
 feature/bugfix 不 fetch、不 push；以 `--no-ff --no-commit` 合并到本地 `develop`，
 再以 `chore(gitflow): 合并 <source> 到 <target>` 提交；feature 的 implemented
@@ -332,7 +335,7 @@ slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 
 design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["tests/","pyproject.toml"]}`。
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
-阶段值为 design、write-tests、implement、converge、review、fact-update。
+阶段值为 design、write-tests、implement、converge、code-review、fact-update。
 
 `next` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
 `next --repo <仓库> [--depth 3]` 输出 trees、blocked、needs_review、hidden；只读，非法依赖失败。

@@ -40,7 +40,7 @@ disable-model-invocation: true
                  ├──── write-tests ─────────────→ references/write-tests.md
                  ├──── implement ───────────────→ references/implement.md
                  ├──── converge ────────────────→ references/converge.md
-                 ├──── review ──────────────────→ references/review.md
+                 ├──── code-review ─────────────→ references/code-review.md
                  ├──── fact update ─────────────→ references/fact-update.md
                  ├──── prp split ───────────────→ references/prp-split.md
                  ├──── finish ──────────────────→ references/finish.md

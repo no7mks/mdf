@@ -1,6 +1,6 @@
 # Feature 交付契约
 
-由 start、design、write-tests、implement、converge、review 与 finish 读取。
+由 start、design、write-tests、implement、converge、code-review 与 finish 读取。
 规则持续适用，不是依次执行的阶段。
 
 ## 身份与材料
@@ -21,10 +21,11 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 
 ## 阶段与执行责任
 
-主线为 start → design → [write-tests ∥ implement] → converge → review → finish。
+主线为 start → design → [write-tests ∥ implement] → converge → code-review → finish。
 `fact-update` 是 CLI gate，由独立 `$mdf fact update` 或 finish 前段内嵌记录，
 不是用户主线箭头上的一站。
-feature 以外沿用各分支原有交付语义，不强制新增阶段。
+bugfix/hotfix/release 也须完成 code-review，范围与三份独立审查见 `references/code-review.md`；
+不要求 feature 的 design、write-tests、implement 或 converge 阶段。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
@@ -42,7 +43,7 @@ write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design。write-tests 写完可编译或可加载
 执行的测试即完成，不要求全绿；全绿由 converge 负责。converge 需两路完成，
-review 需收敛全绿，finish 需当前 review、事实审阅和验证证据有效。不能手填
+code-review 需收敛全绿，finish 需当前 code-review、事实审阅和验证证据有效。不能手填
 passed 代替 CLI 检查。
 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 
@@ -51,7 +52,7 @@ verification.commands 始终属于测试门槛。路径可以是仓库相对文�
 全绿按项目全部具名验证项判断；单项重跑仅用于定位，不替代全量通过。
 代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
 `code` 指纹覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件；
-ADR、调研、Proposal 或 Change 材料的改动不使 review 或全绿过期。
+ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
 记录文件不参与其自身校验对象的指纹。缺失或过期时原地补验，不回退 intent。
 
 ## 修改与提交权限
@@ -61,7 +62,7 @@ ADR、调研、Proposal 或 Change 材料的改动不使 review 或全绿过期�
 但须准确记录未完成状态；阶段提交不代表 gate 通过，不能绕过既有验收与审阅。
 首次 write-tests 按既定设计编写测试属于授权。implement 不自主修改测试。
 converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
+code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
 架构优化可以建议；超出当前目标不直接实施。修复后在当前 intent 原地重验。
 
 fact update 可独立运行，也由 finish 前段内部调用，其事实审阅由 fact audit 完成。

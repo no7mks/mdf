@@ -86,6 +86,7 @@
 
 完整读取 `references/common.md`、`references/fact-audit.md`、
 `references/repository-contract.md` 与 `references/object-contract.md`。
+读取 `references/code-review.md` 的范围与证据规则，不自动执行缺失的 code-review。
 步骤 3 读取并内部执行 `references/fact-update.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -119,9 +120,10 @@
 **范围**
 
 先识别本次相关未提交改动，按公共规则复核并提交后确定交付范围；范围不明时先澄清。
-写入前计算交付范围：feature 为记录的 start_commit 到 HEAD，bugfix 为 `develop...HEAD`，hotfix 为 `master...HEAD`；
-release 要求本地 develop，
-以当前 checkout 和全部 child Change 为交付范围。
+写入前按 code-review 记录固定交付范围：feature/bugfix/hotfix 为分支 start_commit 到 HEAD；
+release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 child Change。
+四种分支均须有完整且有效的三份独立审查、主 Agent 裁定、修复复核与验证记录；
+缺失或过期时停止并提示 `$mdf code-review`，不自动跳过或补跑。
 检查代码、配置、schema、测试、当前事实、Proposal、 Bug、Change，识别应更新文档。 release/hotfix 同时检查
 `changes/<version>/CHANGE.md` 与 manifest： 版本根不存在，
 且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。 版本根已跟踪、 已提交，
@@ -140,7 +142,7 @@ release 要求本地 develop，
 
 先委托 `references/fact-update.md`，传入步骤 2 的交付范围，
 同步受影响当前事实并内部完成 fact audit，再执行必要验证。release 的事实审阅使用全量范围。
-仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 review 有效；使用 start_commit
+仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 code-review 有效；使用 start_commit
 到 HEAD 的固定范围，并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
 按分支准备材料：
 
@@ -163,12 +165,12 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 
 **审阅**
 
-feature 运行 `delivery check --stage finish`，使用本次有效 review、事实与验证证据。
+feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
 语义或实现变化必须补审补验。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
 
-验收：feature 无缺失或过期 gate；各分支的事实审阅及 full validation 通过。
+验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full validation 通过。
 
 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。
@@ -233,6 +235,7 @@ evidence 按首次出现顺序去重并追加 manifest 验证命令。CLI 操作
 feature/bugfix 不 push，运行 finish gate 检查后进入本地 Gitflow 合并。
 release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
 feature/bugfix 必须有规范 child Change。
+按 code-review 的证据规则再次核对最终 HEAD，防止收口期间的实现改动遗漏审查。
 核对 clean 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
 
 验收：必要提交、当前 clean 和交付条件。

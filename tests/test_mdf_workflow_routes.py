@@ -380,3 +380,35 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "提示在新会话" not in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)
+
+
+def test_code_review_requires_three_full_reviews_before_owner_repairs():
+    text = workflow("code-review")
+    table = rows(text)
+    assert table[1][2] == "Subagent"
+    assert "3 个独立 subagent" in table[1][3]
+    assert table[1][5] == "3"
+    assert table[3][6] == "可修复则 3；其他停止"
+    for rule in (
+        "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
+        "三份结果全部返回前不修改", "以证据裁定，不按票数决定",
+        "不强制再次启动 3 个 subagent", "不足 3 个", "无法补齐则停止",
+    ):
+        assert rule in text
+
+
+def test_code_review_covers_branch_starts_and_previous_release():
+    text = workflow("code-review")
+    for rule in (
+        "delivery.json 的 start_commit", "mdf-start-commit",
+        "上一正式发布版本的 master commit/tag", "首次发布没有上一版本",
+        "git diff <base_commit> <review_head>", "基线必须是当前 HEAD 的祖先",
+        "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
+        "bugfix/hotfix/release 不要求 feature 的 design/converge gate",
+        "manifest 的全部 `verification.commands`", "最终 final_head",
+    ):
+        assert rule in text
+    finish = workflow("finish")
+    assert "develop...HEAD" not in finish and "master...HEAD" not in finish
+    assert "四种分支均须有完整且有效的三份独立审查" in finish
+    assert "不自动跳过或补跑" in finish

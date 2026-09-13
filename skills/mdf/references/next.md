@@ -91,7 +91,7 @@ feature 使用 `references/delivery-contract.md`，通过 `delivery status` 查�
 完整读取所选 intent 及其要求的公共引用，以其编号工作流、前置条件和失败恢复规则为准。
 先复核已完成步骤的证据，从尚未完成的步骤续办，不重做已验收且仍有效的操作。
 交付主线的当前 intent 已完成而交付未结束时，可委托下一个阶段：
-start → design → [write-tests ∥ implement] → converge → review → finish。
+start → design → [write-tests ∥ implement] → converge → code-review → finish。
 测试与实现都未完成时，沿用已有分工；无分工则先 write-tests，再由后续 next 推进 implement。
 存在仍在运行的执行者时报告其进度或待交接项，不重复执行其工作。
 缺失或过期证据按原阶段规则原地补验，不跳过门禁。

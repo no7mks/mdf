@@ -158,6 +158,8 @@ def command_start(args) -> None:
         elif args.kind == "bugfix":
             require_startable_bug(work, args.bug)
         start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
+        _git(work, "config", "--local",
+             f"branch.{branch}.mdf-start-commit", start_commit)
         if objectives is not None:
             from .delivery_state import safe, write_json
             target = safe(work, work / "changes/unreleased" / suffix)

@@ -68,7 +68,7 @@
 
 ### 目录
 
-主线：`start → design → [write-tests ∥ implement] → converge → review → finish`
+主线：`start → design → [write-tests ∥ implement] → converge → code-review → finish`
 
 #### 起步
 
@@ -95,7 +95,7 @@
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
 - `$mdf converge`：集成并持续修复到全量验证通过
-- `$mdf review`：审查并修复实现、测试和 code smell
+- `$mdf code-review`：审查并修复实现、测试和 code smell
 - `$mdf fact update`：同步当前事实；finish 前段自动调用
 - `$mdf finish`：按 Gitflow 分支完成审计与收口
 
@@ -130,7 +130,7 @@ $mdf design
 $mdf write-tests
 $mdf implement
 $mdf converge
-$mdf review
+$mdf code-review
 $mdf fact update
 $mdf finish
 $mdf fact audit
@@ -146,7 +146,7 @@ $mdf clarify 要不要把缓存放到 Redis
 
 主题键：`bootstrap`、`init`、`intake`、`jot`、`jot promote`、`bug create`、
 `prp create`、`prp review`、`prp split`、`clarify`、`next`、`start`、
-`design`、`write-tests`、`implement`、`converge`、`review`、`fact update`、
+`design`、`write-tests`、`implement`、`converge`、`code-review`、`fact update`、
 `finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
 `upgrade`、`help`。
 
@@ -233,10 +233,11 @@ feature 交付分支上始终续办该 feature；非 feature 上的 `next?` 询�
 用途：集成并持续修复到全量验证通过。
 说明：修复实现直到项目全部验证项通过。
 
-`$mdf review`
-用法：`$mdf review`
+`$mdf code-review`
+用法：`$mdf code-review`
 用途：审查并修复实现、测试和 code smell。
-说明：位于 converge 之后、finish 之前。
+说明：支持 feature/bugfix/hotfix/release；首轮 3 个 subagent 各自全量审查，主 Agent 汇总修复。
+feature 位于 converge 之后；各分支均在 finish 前完成。
 
 `$mdf fact update`
 用法：`$mdf fact update`

@@ -9,7 +9,7 @@ from .gitutil import current_branch, run
 from .paths import load_manifest, path_stays_in_repo
 from .verification import manifest_items
 
-STAGES = ("design", "write-tests", "implement", "converge", "review", "fact-update")
+STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
 
 
 def owner_branch(branch: str) -> str:
@@ -168,7 +168,7 @@ def require_green(repo, root, data):
 def require_finish(repo, root, data):
     require_design(repo, root, data)
     current = require_green(repo, root, data)
-    for stage, keys in (("review", ("code", "design")),
+    for stage, keys in (("code-review", ("code", "design")),
                         ("fact-update", ("facts", "code", "design"))):
         record = gate(repo, root, stage)
         if any(record.get("fingerprints", {}).get(key) != current[key] for key in keys):

@@ -95,7 +95,7 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
-    payload(record(python_exe, repo, "review"))
+    payload(record(python_exe, repo, "code-review"))
     payload(record(python_exe, repo, "fact-update"))
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     fact = repo / "docs/product/reference/capabilities.md"
@@ -106,7 +106,7 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     implementation = repo / "src/service.py"
     implementation.write_text(implementation.read_text() + "\n# changed\n")
-    result = record(python_exe, repo, "review")
+    result = record(python_exe, repo, "code-review")
     assert "stale_verification" in result.stderr
 
 
@@ -124,8 +124,8 @@ def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tm
     payload(record(python_exe, repo, "converge", "--test-approval", "用户明确确认增加配置"))
     (repo / "pytest.ini").write_text("[pytest]\naddopts = -q\n")
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    payload(record(python_exe, repo, "review"))
-    assert (root / "gates/review.json").is_file()
+    payload(record(python_exe, repo, "code-review"))
+    assert (root / "gates/code-review.json").is_file()
 
 
 def test_partial_verification_does_not_satisfy_full_gate(python_exe, tmp_path):
@@ -164,7 +164,7 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "review", "fact-update"):
+    for stage in ("converge", "code-review", "fact-update"):
         payload(record(python_exe, repo, stage))
     commit(repo)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
@@ -253,7 +253,7 @@ def test_finish_rejects_pending_role_branches(python_exe, tmp_path):
         "chore(delivery): 合入 dev/feature/service-health",
         "dev/feature/service-health")
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "review", "fact-update"):
+    for stage in ("converge", "code-review", "fact-update"):
         payload(record(python_exe, repo, stage))
     commit(repo)
     write_change_in_place(repo, root)
@@ -285,7 +285,7 @@ def test_non_fact_docs_do_not_expire_review_or_green(python_exe, tmp_path):
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "review", "fact-update"):
+    for stage in ("converge", "code-review", "fact-update"):
         payload(record(python_exe, repo, stage))
     commit(repo)
     before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),

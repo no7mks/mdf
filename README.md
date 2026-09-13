@@ -29,7 +29,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf write-tests` | 按目标编写可执行测试；不要求全绿 |
 | `$mdf implement` | 按已确认设计实现 |
 | `$mdf converge` | 收敛：集成并持续修复到全量验证通过 |
-| `$mdf review` | 审查并修复实现、测试和 code smell |
+| `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update` | 同步当前事实并委托事实审阅；finish 前段自动调用 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf fact audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
@@ -39,7 +39,11 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
 `next` 续办：
 
-`start → design → [write-tests ∥ implement] → converge → review → finish`
+`start → design → [write-tests ∥ implement] → converge → code-review → finish`
+
+code-review 支持 feature、bugfix、hotfix 和 release；首轮强制 3 个 subagent 各自全量审查，
+主 Agent 汇总裁定、修复并复核。前三种分支从固定起点审查，release 从上一正式发布版本审查。
+各分支 finish 前均须有有效审查证据。
 
 一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
 gate 检查共同基线与有效证据。start、write-tests 与 implement 均强制独立 worktree。

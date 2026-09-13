@@ -83,6 +83,8 @@ def test_start_uses_local_base_without_upstream(
     work = Path(result["worktree"])
     assert result["base"] == base
     assert result["start_commit"] == expected
+    key = f"branch.{result['branch']}.mdf-start-commit"
+    assert git(work, "config", "--local", "--get", key).stdout.strip() == expected
     assert result["pushed"] is False
     assert work == repo.parent / f"{repo.name}-worktrees" / Path(result["branch"])
     assert work != repo
@@ -207,6 +209,8 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(bugfix)))
     assert finished["pushed"] is False
     assert not bugfix.exists()
+    assert run(["git", "config", "--local", "--get",
+                "branch.bugfix/bug-CD34.mdf-start-commit"], cwd=repo).returncode == 1
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(repo, "show", "develop:fix.txt").stdout == "ok\n"
 
@@ -277,3 +281,20 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
     ))
     assert created["branch"] == "bugfix/bug-CD34"
     assert "roles" not in created
+
+
+@pytest.mark.parametrize("kind", ["bugfix", "hotfix"])
+def test_review_start_stays_fixed_when_parent_moves(python_exe, tmp_path, kind):
+    repo = local_repo(tmp_path)
+    identifier = ["--bug", "bug-CD34"] if kind == "bugfix" else ["--version", "1.2.1"]
+    data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind, *identifier))
+    work = Path(data["worktree"])
+    git(repo, "checkout", data["base"])
+    (repo / "later.txt").write_text("后续交付\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 推进父分支")
+    key = f"branch.{data['branch']}.mdf-start-commit"
+    saved = git(work, "config", "--local", "--get", key).stdout.strip()
+    assert saved == data["start_commit"]
+    assert saved != git(repo, "rev-parse", data["base"]).stdout.strip()
+    assert git(work, "diff", saved, "HEAD").stdout == ""

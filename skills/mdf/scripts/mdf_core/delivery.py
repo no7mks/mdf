@@ -63,13 +63,13 @@ def record_stage(repo, root, data, args):
         if original != current["tests"] and not args.test_approval:
             raise MDFError("测试或验证规则变化，需要用户批准记录", code="test_approval_required")
         current = require_green(repo, root, data)
-    elif stage == "review":
+    elif stage == "code-review":
         previous = gate(repo, root, "converge")
         if previous.get("fingerprints", {}).get("design") != current["design"]:
             raise MDFError("缺少同设计的收敛证据", code="stale_gate")
         current = require_green(repo, root, data)
     elif stage == "fact-update":
-        previous = gate(repo, root, "review")
+        previous = gate(repo, root, "code-review")
         if previous.get("fingerprints", {}).get("code") != current["code"]:
             raise MDFError("实现审查已过期", code="stale_gate")
         # Facts-only edits need not invalidate business verification.
@@ -132,11 +132,11 @@ def check(repo, root, data, stage):
             if record.get("fingerprints", {}).get("design") != current["design"]:
                 raise MDFError("并行阶段设计不一致", code="stale_gate")
         return current
-    if stage == "review":
+    if stage == "code-review":
         gate(repo, root, "converge")
         return require_green(repo, root, data)
     if stage == "fact-update":
-        record = gate(repo, root, "review")
+        record = gate(repo, root, "code-review")
         if any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design")):
             raise MDFError("实现审查已过期", code="stale_gate")
         return current
