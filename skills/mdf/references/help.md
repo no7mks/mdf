@@ -89,6 +89,7 @@
 #### 交付
 
 - `$mdf next [--depth N]`：续办在途；feature 上走交付；`next?` 问 PRP 蓝图
+- `$mdf deliver`：从当前交付状态持续推进到 finish；可并行阶段强制 subagent 分别执行
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
@@ -119,6 +120,7 @@ $mdf init
 $mdf next
 $mdf next?
 $mdf next --depth 2
+$mdf deliver
 $mdf start
 $mdf jot
 $mdf jot promote
@@ -145,7 +147,7 @@ $mdf clarify 要不要把缓存放到 Redis
 ### 主题
 
 主题键：`bootstrap`、`init`、`intake`、`jot`、`jot promote`、`bug create`、
-`prp create`、`prp review`、`prp split`、`clarify`、`next`、`start`、
+`prp create`、`prp review`、`prp split`、`clarify`、`next`、`deliver`、`start`、
 `design`、`write-tests`、`implement`、`converge`、`code-review`、`fact update`、
 `finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
 `upgrade`、`help`。
@@ -205,6 +207,12 @@ $mdf clarify 要不要把缓存放到 Redis
 用途：续办在途流程；无在途时展示 ready PRP 蓝图。
 说明：深度省略时默认 3；一次只续办一个所选 intent。
 feature 交付分支上始终续办该 feature；非 feature 上的 `next?` 询问 PRP 蓝图。
+
+`$mdf deliver`
+用法：`$mdf deliver`
+用途：锁定当前一次交付，持续运行到 finish 完成。
+说明：支持 feature/bugfix/hotfix/release；feature 两路可并行时强制分别使用 qa/dev worktree 的 subagent。
+遇到需用户决定或外部阻塞时暂停；包含 finish 的合并及适用的 tag、发版推送。
 
 `$mdf start`
 用法：`$mdf start`

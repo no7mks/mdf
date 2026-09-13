@@ -29,7 +29,7 @@
 
 读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 步骤 2 读取并内部执行 `references/clarify.md`；确认后，步骤 3 按
 `assets/templates/design.md` 写入设计。
 

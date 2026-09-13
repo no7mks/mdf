@@ -29,7 +29,7 @@
 
 读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 切到该路径，对 owner 分支执行 `git merge --no-ff`；已在该 worktree 时仍先
 merge。冲突保留现场。不得在 feature 上编写或补写测试。再运行
 `delivery check --stage write-tests`。
-与 implement 互不前置，可并行。不自动分派 Agent。
+与 implement 互不前置，可并行。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。
 只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
 回 design 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
 不要求针对具体实现进行错误注入，也不强制先产生红灯。

@@ -303,6 +303,9 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
 
 ## 与 intent 的关系
 
+deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 finish 命令，
+不新增 deliver CLI；负责持续委托、并行 subagent 的 worktree 身份核验与结果交接。
+
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；
 `next` intent 在 feature 交付分支上续办该 feature；否则 `next?` 用只读 `next`

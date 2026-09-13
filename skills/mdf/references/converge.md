@@ -31,7 +31,7 @@
 
 读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -43,9 +43,12 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-仅在 owner `feature/<slug>` 工作。先运行 `delivery integrate`，以 no-ff 先合入
-`qa/feature/<slug>` 再合入 `dev/feature/<slug>`，并移除其 worktree 与本地分支；
-角色还在但缺 gate 时失败。再运行 `delivery check --stage converge`。
+仅在 owner `feature/<slug>` 工作。角色分支均存在时先运行 `delivery integrate`，以 no-ff 先合入
+`qa/feature/<slug>` 再合入 `dev/feature/<slug>`，并移除其 worktree 与本地分支。
+续办时两路均已集成清理，须核对 owner 中两路 gate 已提交、与当前设计一致，
+且各记录 head 是当前 HEAD 的祖先；通过后跳过 integrate，不因角色已清理而重建或再次集成。
+仅部分角色缺失或无法证明已集成时停止并报告；角色还在但缺 gate 时失败。
+随后运行 `delivery check --stage converge`。
 使用 `delivery status` 返回的材料目录定位 `gates/converge-blocked.md`；不存在时无需创建。
 续办从步骤 1 开始，回读已有阻塞记录，对照当前 HEAD、设计与两路 gate 核对变化，
 重新判断解除条件；旧记录不替代本次检查或验证。

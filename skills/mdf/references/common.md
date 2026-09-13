@@ -89,6 +89,7 @@ push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限�
 
 阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束，
 不仅为手动 commit 要求重调，也不自动触发下一个用户入口。
+deliver 依据 `references/deliver.md` 内部串联剩余交付阶段，子 intent 完成后返回 deliver 继续。
 init 依据 `references/initialization.md` 自动转入 bootstrap 是明确的内部委托，不自动串联交付主线。
 
 ## 语言

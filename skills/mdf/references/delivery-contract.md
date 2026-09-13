@@ -1,6 +1,6 @@
 # Feature 交付契约
 
-由 start、design、write-tests、implement、converge、code-review 与 finish 读取。
+由 deliver、start、design、write-tests、implement、converge、code-review 与 finish 读取。
 规则持续适用，不是依次执行的阶段。
 
 ## 身份与材料
@@ -26,7 +26,9 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 不是用户主线箭头上的一站。
 bugfix/hotfix/release 也须完成 code-review，范围与三份独立审查见 `references/code-review.md`；
 不要求 feature 的 design、write-tests、implement 或 converge 阶段。
-用户手动触发主线 intent，或显式调用 next 委托下一阶段；不新增 Owner 调度系统。
+用户手动触发主线 intent，或显式调用 next 委托下一阶段；
+显式 deliver 按 `references/deliver.md` 协调剩余阶段到 finish，可并行阶段强制分别委托 subagent。
+不新增独立 Owner 调度服务或统一状态协议。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。

@@ -38,7 +38,7 @@
 读取 `references/common.md`；feature 另读 `references/delivery-contract.md`；
 涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
-一次调用只推进当前 intent；不得自动触发下一用户入口。
+独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |

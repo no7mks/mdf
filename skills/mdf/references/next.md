@@ -59,12 +59,13 @@ feature 交付分支即使带问号也不进入 3。
 - feature 交付步骤：当前分支为 `feature/<slug>`、`qa/feature/<slug>` 或
   `dev/feature/<slug>` 时，本次肯定是该 feature 的交付步骤，进入续办。
   `$mdf next?` 不改变此判定，不展示 PRP 蓝图。
+  若该 feature 正由已显式启动的 deliver 协调，续办其未完成内部步骤后返回 deliver。
 - 问号蓝图：否则，若调用为 `$mdf next?` 或 `$mdf next？`（可带
   `--depth N`），本次肯定是询问 ready PRP 依赖蓝图，进入步骤 3。
   不因其他在途流程改走续办。
 - 在途推理：其余情况按下方规则识别在途流程。
 
-在途范围包括全部 MDF workflow：既包括交付主线，也包括 init、bootstrap、intake、
+在途范围包括全部 MDF workflow：既包括交付主线与 deliver，也包括 init、bootstrap、intake、
 prp review、CodeWiki、clarify 等尚未完成的流程及其内部委托。
 结合当前对话的显式调用、已确认范围、待回答问题、失败与交接记录，以及目标现场识别。
 已经完成、取消或被用户替代的流程不算在途；draft PRP、open Bug 或待办事项本身不代表流程已启动。
@@ -103,7 +104,9 @@ next 不代替方案确认、初始化启用确认或原流程要求的 Git 操�
 当前流程与步骤、判定证据、阻塞原因，以及用户需要回答的问题、补充的材料或执行的命令。
 
 一次 next 只续办一个所选 intent（包含其内部委托），完成后报告实际结果和后续步骤；
-不自动串联其余主线，不在续办结束后追加蓝图。失败保留现场，按原流程交接。
+不自动串联其余主线，不在续办结束后追加蓝图。所选 intent 为在途 deliver 时，
+其内部持续交付委托按 `references/deliver.md` 执行；不得将普通 next 自动升级为 deliver。
+失败保留现场，按原流程交接。
 无在途时不自动启动 init、start、prp review 或其他工作。
 
 ### PRP 蓝图
