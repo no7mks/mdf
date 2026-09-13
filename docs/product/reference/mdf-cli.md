@@ -43,7 +43,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `release-closeout` | 版本收口 |
 | `start` | 创建分支 |
 | `list` | 对象清单 |
-| `next` | ready 依赖视图 |
+| `next` | ready 依赖视图与 draft 列表 |
 | `prp-split` | 未开工 PRP 拆分 |
 | `delivery` | 阶段 gate 与验证 |
 | `finish-gitflow` | Gitflow 合并 |
@@ -302,7 +302,8 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；
-`next` intent 优先续办在途流程，无在途时使用只读 `next` CLI 展示 PRP 蓝图；
+`next` intent 在 feature 交付分支上续办该 feature；否则 `next?` 用只读 `next`
+CLI 展示 PRP 蓝图；再否则优先续办在途流程，无在途时同样展示蓝图；
 `intake`、`bug create` 与 `prp create` 使用 `doctor`、`list` 与 `make-id`；
 `jot` 使用 `make-jot-id`，`jot promote` 另用 `list` 查重；`prp review` 使用 `list` 定位候选；
 `archive` intent 使用 `list` 与 `archive`；`start` intent 使用 `list` 与 `start`；
@@ -335,6 +336,8 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 
 `next` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
 `next --repo <仓库> [--depth 3]` 输出 trees、blocked、needs_review、hidden；只读，非法依赖失败。
+`needs_review` 为 `{groups, ungrouped}`：draft 带 `depends_on` 与 `blocked_by`；
+有 milestone 的按值分组，无归属放入 `ungrouped`。
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为
 `develop`，在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，

@@ -13,7 +13,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf help <intent>` | 展示该 intent 的用法要点 |
 | `$mdf bootstrap` | 为全新或几乎全新的项目建立 MDF 起点 |
 | `$mdf init` | 接入已有项目或调整 MDF 配置；新项目自动转入 bootstrap |
-| `$mdf next [--depth N]` | 续办在途流程或提示下一步；无在途时展示 PRP 蓝图 |
+| `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；`next?` 问 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |

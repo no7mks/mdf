@@ -31,7 +31,13 @@ def test_next_ready_dag_drafts_truncation_and_invalid_dependencies(python_exe, t
     add_prp(repo, "prp-007", ["prp-006"])
     init_git(repo)
     data = payload(mdf(python_exe, "next", "--repo", str(repo)))
-    assert data["needs_review"] == ["prp-006"]
+    assert data["needs_review"] == {
+        "groups": [],
+        "ungrouped": [{
+            "id": "prp-006", "title": "Service health",
+            "depends_on": [], "blocked_by": [],
+        }],
+    }
     assert data["blocked"] == [{"id": "prp-007", "blocked_by": ["prp-006"]}]
     children = data["trees"][0]["children"]
     assert children[1]["children"][0]["reference"] is True
@@ -41,6 +47,41 @@ def test_next_ready_dag_drafts_truncation_and_invalid_dependencies(python_exe, t
     assert mdf(python_exe, "next", "--repo", str(repo), "--depth", "0").returncode != 0
     add_prp(repo, "prp-008", ["prp-099"])
     assert "invalid_proposals" in mdf(python_exe, "next", "--repo", str(repo)).stderr
+
+
+def test_next_drafts_include_deps_and_groupby_milestone(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    add_prp(repo, "prp-002", status="draft", milestone="阶段一")
+    add_prp(repo, "prp-003", ["prp-002"], status="draft", milestone="阶段一")
+    add_prp(repo, "prp-004", ["prp-001"], status="draft", milestone="阶段二")
+    add_prp(repo, "prp-005", ["prp-001"], status="draft")
+    init_git(repo)
+    data = payload(mdf(python_exe, "next", "--repo", str(repo)))
+    health = "Service health"
+    assert data["needs_review"] == {
+        "groups": [
+            {
+                "milestone": "阶段一",
+                "drafts": [
+                    {"id": "prp-002", "title": health,
+                     "depends_on": [], "blocked_by": []},
+                    {"id": "prp-003", "title": health,
+                     "depends_on": ["prp-002"], "blocked_by": ["prp-002"]},
+                ],
+            },
+            {
+                "milestone": "阶段二",
+                "drafts": [
+                    {"id": "prp-004", "title": health,
+                     "depends_on": ["prp-001"], "blocked_by": ["prp-001"]},
+                ],
+            },
+        ],
+        "ungrouped": [
+            {"id": "prp-005", "title": health,
+             "depends_on": ["prp-001"], "blocked_by": ["prp-001"]},
+        ],
+    }
 
 
 def split_spec(repo):

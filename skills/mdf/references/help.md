@@ -44,7 +44,8 @@
 
 - 裸 `$mdf`、未知调用或 `$mdf help`：展示「目录」
 - `$mdf help <intent>`：展示「主题」中对应条目
-- 主题名按空格或连字符等价，如 `fact update` 与 `fact-update`
+- 主题名按空格或连字符等价，如 `fact update` 与 `fact-update`；
+  `next?`、`next？` 与 `next` 等价
 
 未知主题时先输出一行 `未知 intent：<原文>`，再展示完整「目录」。
 不得猜测未列出的 intent。
@@ -87,7 +88,7 @@
 
 #### 交付
 
-- `$mdf next [--depth N]`：续办在途流程；无在途时展示 PRP 蓝图
+- `$mdf next [--depth N]`：续办在途；feature 上走交付；`next?` 问 PRP 蓝图
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
@@ -116,6 +117,7 @@ $mdf help start
 $mdf bootstrap
 $mdf init
 $mdf next
+$mdf next?
 $mdf next --depth 2
 $mdf start
 $mdf jot
@@ -199,9 +201,10 @@ $mdf clarify 要不要把缓存放到 Redis
 说明：议题不能为空；不要求 Git 仓库。
 
 `$mdf next [--depth N]`
-用法：`$mdf next` 或 `$mdf next --depth N`
+用法：`$mdf next`、`$mdf next?` 或 `$mdf next --depth N`
 用途：续办在途流程；无在途时展示 ready PRP 蓝图。
 说明：深度省略时默认 3；一次只续办一个所选 intent。
+feature 交付分支上始终续办该 feature；非 feature 上的 `next?` 询问 PRP 蓝图。
 
 `$mdf start`
 用法：`$mdf start`

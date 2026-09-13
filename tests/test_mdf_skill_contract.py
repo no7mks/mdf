@@ -83,10 +83,15 @@ def test_next_blueprint_reports_ready_dependency_graph() -> None:
     assert "主报告仅 ready" in text
     assert "implemented/released" in text
     assert "blocked_by" in text
+    assert "depends_on" in text
+    assert "按 milestone 分组" in text
     assert "prp review" in text
     assert "不创建或拆分" in text
     assert "默认 3" in text
     assert "正整数" in text
+    assert "feature 交付步骤" in text
+    assert "qa/feature/" in text
+    assert "问号蓝图" in text
 
 
 def test_init_and_doc_intents_load_internal_contracts() -> None:

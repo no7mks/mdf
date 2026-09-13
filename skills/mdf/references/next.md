@@ -7,8 +7,10 @@
 │ 1 Resolve workflow               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 无在途流程 ────→ 3 Graph
-                 ├──── 状态不明 ──────→ [多候选则澄清；证据不足则报告阻塞]
+                 ├──── feature 交付分支 ────→ 2 Resume
+                 ├──── 调用为 next? ────────→ 3 Graph
+                 ├──── 无在途流程 ──────────→ 3 Graph
+                 ├──── 状态不明 ────────────→ [多候选则澄清；证据不足则报告阻塞]
                  │
                  ▼ 唯一在途流程
 ┌──────────────────────────────────┐
@@ -32,7 +34,8 @@
                  └──── 失败/缺失 ────→ [停止并报告]
 ```
 
-步骤 2 结束后不进入 3；步骤 3 仅由步骤 1「无在途流程」到达。
+步骤 2 结束后不进入 3。步骤 3 由步骤 1「调用为 next?」或「无在途流程」到达；
+feature 交付分支即使带问号也不进入 3。
 
 ## 工作流（唯一执行契约）
 
@@ -42,14 +45,24 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 识别 | 约束 | 判断在途流程 | 未完成事项、状态证据 | 有在途 2；无在途 3 | 多候选则澄清；证据不足则报告阻塞 |
+| 1 | 识别 | 约束 | 按规则判定 | 分支、调用、证据 | feature/在途 2；问号/无在途 3 | 多候选则澄清；证据不足则报告阻塞 |
 | 2 | 续办 | 约束 | 读取原流程，推进或说明用户下一步操作 | 原步骤、条件、执行结果 | 交接并结束 | 说明阻塞与操作后结束 |
 | 3 | 计算 | 脚本 | 核对 ready 与 depth，运行 next CLI | 退出状态、依赖视图 | 4 | 停止并报告 |
-| 4 | 蓝图 | 约束 | 展示 ready 树、阻塞清单和评审提示 | ready 树、阻塞与提示 | 结束 | 停止并报告 |
+| 4 | 蓝图 | 约束 | 展示 ready 树、阻塞清单和 draft 列表 | ready 树、阻塞与 draft | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
 ### 在途流程识别
+
+先按以下顺序判定，命中即停止：
+
+- feature 交付步骤：当前分支为 `feature/<slug>`、`qa/feature/<slug>` 或
+  `dev/feature/<slug>` 时，本次肯定是该 feature 的交付步骤，进入续办。
+  `$mdf next?` 不改变此判定，不展示 PRP 蓝图。
+- 问号蓝图：否则，若调用为 `$mdf next?` 或 `$mdf next？`（可带
+  `--depth N`），本次肯定是询问 ready PRP 依赖蓝图，进入步骤 3。
+  不因其他在途流程改走续办。
+- 在途推理：其余情况按下方规则识别在途流程。
 
 在途范围包括全部 MDF workflow：既包括交付主线，也包括 init、bootstrap、intake、
 prp review、CodeWiki、clarify 等尚未完成的流程及其内部委托。
@@ -57,6 +70,7 @@ prp review、CodeWiki、clarify 等尚未完成的流程及其内部委托。
 已经完成、取消或被用户替代的流程不算在途；draft PRP、open Bug 或待办事项本身不代表流程已启动。
 
 先核对本次目标；Git 仓库解析绝对 `REPO_ROOT` 并识别已有改动。
+判定 feature 交付分支时以当前 checkout 分支名为准。
 续办尚未 Git 化的 init/bootstrap 时按 `references/initialization.md` 核对普通目录和父仓库边界；
 clarify 可仅依赖已确认议题，不要求 Git 仓库。不得在识别前统一要求 manifest ready 或 clean。
 
@@ -94,13 +108,16 @@ next 不代替方案确认、初始化启用确认或原流程要求的 Git 操�
 
 ### PRP 蓝图
 
-仅确认没有在途流程时进入本分支。只读，不要求 clean worktree，不创建或拆分 PRP。
+仅确认没有在途流程，或非 feature 上的 `next?` 时进入本分支。
+只读，不要求 clean worktree，不创建或拆分 PRP。
 运行 `python3 "$MDF_ROOT/scripts/mdf.py" next --repo "$REPO_ROOT" --depth <N>`；默认 3，N 为正整数。
 本分支要求 ready；参数非法或仓库未就绪时报告原因和所需操作，不自动初始化。
 depth 仅控制蓝图展示深度，不控制续办步数。
 主报告仅 ready；根为全部依赖已满足的 ready。implemented/released 依赖视为满足；
 milestone 依赖在该阶段不存在 draft 或 ready PRP 时满足。
 多上游取最大依赖层级加一；重复节点用交叉引用并保留全部 blocked_by。同层按 PRP ID 排序。
-显示进行中的 ready、未进入树的阻塞 ready、draft 的 prp review 提示和隐藏节点。
+显示进行中的 ready、未进入树的阻塞 ready、draft 评审列表和隐藏节点。
+draft 列表每项含 depends_on 与 blocked_by；有 milestone 的按 milestone 分组，
+无归属另列。不因 draft 自动启动 prp review。
 树的下游不表示完成一个上游即可开工。空结果明确说明；非法依赖停止，不输出误导性树。
 蓝图不选择 MVP、不发现新需求、不创建或拆分 Proposal，不新增 mvp 入口。

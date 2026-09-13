@@ -5,6 +5,27 @@ from .proposals import check_proposals, started
 from .validate_records import unsatisfied_depends_on
 
 
+def _title(objects, key):
+    return next((line[2:].strip() for line in objects[key][2].splitlines()
+                 if line.startswith("# ")), key)
+
+
+def review_queue(objects, waiting, draft_ids):
+    groups, ungrouped = {}, []
+    for key in draft_ids:
+        meta = objects[key][1]
+        item = {"id": key, "title": _title(objects, key),
+                "depends_on": list(meta["depends_on"]), "blocked_by": waiting[key]}
+        milestone = meta.get("milestone")
+        if isinstance(milestone, str) and milestone.strip():
+            groups.setdefault(milestone, []).append(item)
+        else:
+            ungrouped.append(item)
+    return {"groups": [{"milestone": name, "drafts": groups[name]}
+                       for name in sorted(groups)],
+            "ungrouped": ungrouped}
+
+
 def next_view(repo, depth):
     if type(depth) is not int or depth < 1:
         raise MDFError("depth 必须为正整数", code="invalid_depth")
@@ -34,9 +55,7 @@ def next_view(repo, depth):
 
     def node(key):
         result = {"id": key, "level": levels[key], "blocked_by": waiting[key],
-                  "in_progress": started(repo, key)}
-        title = next((line[2:].strip() for line in objects[key][2].splitlines() if line.startswith("# ")), key)
-        result["title"] = title
+                  "in_progress": started(repo, key), "title": _title(objects, key)}
         if key in seen:
             result["reference"] = True
             return result
@@ -47,7 +66,8 @@ def next_view(repo, depth):
     trees = [node(key) for key in sorted(shown) if not waiting[key]]
     blocked = [{"id": key, "blocked_by": waiting[key]} for key in sorted(ready) if levels[key] is None]
     return {"ok": True, "operation": "next", "depth": depth, "trees": trees,
-            "blocked": blocked, "needs_review": sorted(set(active) - ready),
+            "blocked": blocked,
+            "needs_review": review_queue(objects, waiting, sorted(set(active) - ready)),
             "hidden": sorted(key for key, value in levels.items() if value is not None and value > depth),
             "empty": not ready}
 

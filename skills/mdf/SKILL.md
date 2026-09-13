@@ -73,8 +73,9 @@ disable-model-invocation: true
 
 ### 调用与工具
 
-只接受选择树所列的显式调用；`next [--depth N]` 的深度可省略， `clarify <议题>`
-的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
+只接受选择树所列的显式调用；`next [--depth N]` 的深度可省略，亦可写成
+`$mdf next?` 或 `$mdf next？`（问号不是独立 intent，判定见 `references/next.md`）。
+`clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 识别并续办在途流程外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
 显式 init 可按其契约内部转入 bootstrap；next 可委托识别出的在途流程；其他入口仍按显式调用路由。

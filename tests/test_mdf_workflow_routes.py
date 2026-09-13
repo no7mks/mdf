@@ -312,7 +312,7 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
 def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
-    assert table[0][5] == "有在途 2；无在途 3"
+    assert table[0][5] == "feature/在途 2；问号/无在途 3"
     assert table[0][6] == "多候选则澄清；证据不足则报告阻塞"
     assert table[1][5] == "交接并结束"
     assert table[1][6] == "说明阻塞与操作后结束"
@@ -329,7 +329,12 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert "next 不代替方案确认、初始化启用确认或原流程要求的 Git 操作授权" in text
     assert "一次 next 只续办一个所选 intent" in text
     assert "用户仅要求查看时保持只读" in text
-    assert "仅确认没有在途流程时进入本分支" in text
+    assert "仅确认没有在途流程，或非 feature 上的 `next?` 时进入本分支" in text
+    assert "feature 交付步骤" in text
+    assert "问号蓝图" in text
+    assert "$mdf next?" in text
+    assert "不因其他在途流程改走续办" in text
+    assert "feature 交付分支即使带问号也不进入 3" in text
 
 
 def test_next_dispatch_allows_non_git_and_delegated_continuation():
