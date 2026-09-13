@@ -62,12 +62,9 @@ def locate(repo, slug=None):
     branch = current_branch(repo)
     if slug is None:
         slug = owner_branch(branch).split("/", 1)[1]
-    candidates = [safe(repo, repo / "docs/specs" / slug),
-                  safe(repo, repo / "docs/changes" / "unreleased" / slug)]
-    found = [path for path in candidates if (path / "delivery.json").is_file()]
-    if len(found) != 1:
-        raise MDFError("交付记录缺失或重复", code="invalid_delivery")
-    root = found[0]
+    root = safe(repo, repo / "changes" / "unreleased" / slug)
+    if not (root / "delivery.json").is_file():
+        raise MDFError("交付记录缺失", code="invalid_delivery")
     data = read_json(safe(repo, root / "delivery.json"))
     if data.get("slug") != slug or data.get("branch") != f"feature/{slug}":
         raise MDFError("交付身份不匹配", code="invalid_delivery")
@@ -108,7 +105,7 @@ def fingerprints(repo, root, data, config=None):
                  and name.startswith(("docs/product/", "docs/system/")))}
     code = {name: value for name, value in files.items()
             if name not in facts and not name.startswith(
-                ("docs/specs/", "docs/changes/", "docs/proposals/", "docs/bugs/"))
+                ("changes/", "docs/proposals/", "docs/bugs/"))
             and name not in {"docs/JOTS.md", ".mdf/manifest.yaml"}}
     tests = {name: value for name, value in code.items() if matches(name, protected)}
     implementation = {name: value for name, value in code.items() if name not in tests}

@@ -72,7 +72,7 @@ def split_plan(repo, spec):
     changed[path] = render(meta, body + "\n\n## 拆分依据\n\n" + spec["rationale"])
     with tempfile.TemporaryDirectory(prefix="mdf-split-") as tmp:
         stage = Path(tmp).resolve()
-        for directory in ("docs/proposals", "docs/bugs", "docs/changes", "docs/adr"):
+        for directory in ("docs/proposals", "docs/bugs", "changes", "docs/adr"):
             src = repo / directory
             if src.exists():
                 shutil.copytree(src, stage / directory, symlinks=True)

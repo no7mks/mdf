@@ -74,7 +74,7 @@ bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，
 对照 ready PRP 与 `assets/templates/objectives.md`，
 使用内部 clarify intent 按轮次澄清本次交付的目标、非目标、约束与
 可验证验收。
-objectives 用 `[prp-001](../../proposals/<filename>)` 引用 PRP，
+objectives 用 `[prp-001](../../../docs/proposals/<filename>)` 引用 PRP，
 不另造需求来源，不改写 PRP。
 PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写目标，
 提示 `$mdf prp review`。
@@ -108,6 +108,6 @@ checkout。feature 同时建立 owner `feature/<slug>` 与角色
 
 异常与交接：创建前检查失败时不创建分支并报告 finding；创建中失败则拆除已建
 worktree 与分支。不推送，不设置 upstream。
-feature CLI 固定 start_commit，在 owner 写入 docs/specs/<slug>/ 的目标和身份并提交。
+feature CLI 固定 start_commit，在 owner 写入 changes/unreleased/<slug>/ 的目标和身份并提交。
 后续工作改用返回的 worktree 路径；write-tests / implement 改用 `roles` 路径。
 成功后结束，由用户手动触发 design 或通过 next 委托。其他分支不创建新增阶段材料。

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from . import doctor
-from .archive import archive_plan, change_move_plan
+from .archive import archive_plan
 from .constants import (
     PROTOCOL_VERSION,
     SCHEMA_VERSION,
@@ -366,31 +366,4 @@ def command_archive(args: argparse.Namespace) -> None:
                 code="post_validation_failed",
                 details={"findings": serialize_findings(post_findings)},
             )
-    emit(payload)
-
-
-def command_move_change(args: argparse.Namespace) -> None:
-    repo = repo_path(args.repo)
-    require_git_root(repo)
-    ensure_safe_managed_paths(repo)
-    load_manifest(repo)
-    ensure_clean(repo)
-    source = Path(args.source) if args.source else None
-    moves, rewrites, target = change_move_plan(repo, source, args.branch_slug)
-    move_details = describe_moves(repo, moves)
-    rewrite_details = describe_rewrites(repo, rewrites)
-    payload = {
-        "ok": True,
-        "operation": "move-change",
-        "dry_run": args.dry_run,
-        "target": relative(repo, target),
-        "moves": move_details,
-        "rewrites": [relative(repo, path) for path in sorted(rewrites)],
-        "rewrite_details": rewrite_details,
-    }
-    if not args.dry_run:
-        if moves:
-            apply_moves_and_rewrites(moves, rewrites)
-        elif not target.exists():
-            target.mkdir(parents=True, exist_ok=False)
     emit(payload)

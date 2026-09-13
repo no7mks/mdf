@@ -206,13 +206,12 @@ def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_pat
     assert data["blocked"] == []
 
 
-@pytest.mark.parametrize("location", ["docs/specs/started", "docs/changes/unreleased/started"])
-def test_split_rejects_branch_record_even_when_current_tree_has_no_specs(python_exe, tmp_path, location):
+def test_split_rejects_branch_record_even_when_current_tree_has_no_changes(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-005", ["prp-001"])
     init_git(repo)
     git(repo, "checkout", "-b", "feature/started")
-    folder = repo / location
+    folder = repo / "changes/unreleased/started"
     folder.mkdir(parents=True)
     (folder / "delivery.json").write_text(json.dumps({"proposal": "prp-001"}))
     git(repo, "add", "--all")

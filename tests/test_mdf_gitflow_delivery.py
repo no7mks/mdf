@@ -133,13 +133,13 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     assert git(repo, "show-ref").stdout == before_local
     assert git(remote, "show-ref").stdout == before_remote
     assert not git(repo, "status", "--porcelain").stdout
-    assert not (repo / "docs/changes" / version).exists()
+    assert not (repo / "changes" / version).exists()
 
     payload(mdf(python_exe, *args))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "chore: 复核并提交版本收口")
     git(repo, "push", "origin", "master", "develop")
-    root_change = repo / "docs/changes" / version / "CHANGE.md"
+    root_change = repo / "changes" / version / "CHANGE.md"
     root_before = root_change.read_bytes()
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo)))
@@ -246,9 +246,9 @@ def test_start_rewrites_repo_root_style_objectives_links(
         "--proposal", "prp-001", "--objectives-file", str(obj),
     ))
     work = Path(data["worktree"])
-    text = (work / "docs/specs/service-health/objectives.md").read_text()
-    assert f"[需求](../../proposals/{PRP_NAME})" in text
-    assert "[能力](../../product/reference/capabilities.md)" in text
+    text = (work / "changes/unreleased/service-health/objectives.md").read_text()
+    assert f"[需求](../../../docs/proposals/{PRP_NAME})" in text
+    assert "[能力](../../../docs/product/reference/capabilities.md)" in text
     assert "[外链](/docs/product/reference/capabilities.md)" in text
 
 

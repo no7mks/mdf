@@ -131,7 +131,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
         replace(bug, "severity: major", "severity: trivial")  # noqa: F405
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, "quoted-object")  # noqa: F405
-    change = repo / "docs/changes" / "unreleased" / "quoted-object" / "CHANGE.md"
+    change = repo / "changes" / "unreleased" / "quoted-object" / "CHANGE.md"
     if outcome == "closed":
         replace(  # noqa: F405
             bug,
@@ -182,7 +182,7 @@ def test_change_evidence_requires_non_empty_string_elements(
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
     write_unreleased_change(repo, "service-health")  # noqa: F405
-    change = repo / "docs/changes" / "unreleased" / "service-health" / "CHANGE.md"
+    change = repo / "changes" / "unreleased" / "service-health" / "CHANGE.md"
     replace(  # noqa: F405
         change,
         "  tests: [tests/test_service.py]",
@@ -304,7 +304,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
     payload(
         mdf(python_exe, *closeout_args(repo, "--hotfix-change-json", hotfix))
     )  # noqa: F405
-    root = (repo / "docs/changes" / "1.2.1" / "CHANGE.md").read_text(
+    root = (repo / "changes" / "1.2.1" / "CHANGE.md").read_text(
         encoding="utf-8"
     )
 
@@ -325,7 +325,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, "alpha")  # noqa: F405
     write_unreleased_change(repo, "zeta")  # noqa: F405
-    zeta = repo / "docs/changes" / "unreleased" / "zeta" / "CHANGE.md"
+    zeta = repo / "changes" / "unreleased" / "zeta" / "CHANGE.md"
     replace(  # noqa: F405
         zeta,
         "  tests: [tests/test_service.py]",
@@ -346,7 +346,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     git(repo, "checkout", "-b", "release/1.3.0")  # noqa: F405
 
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
-    root = (repo / "docs/changes" / "1.3.0" / "CHANGE.md").read_text(
+    root = (repo / "changes" / "1.3.0" / "CHANGE.md").read_text(
         encoding="utf-8"
     )
 

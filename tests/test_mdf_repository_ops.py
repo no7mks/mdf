@@ -212,8 +212,10 @@ def test_init_writes_files_from_assets_templates(
         .strip()
     )
     assert agents == "# AGENTS.md\n\n" + block + "\n"
-    for name in ("proposals", "bugs", "changes/unreleased", "specs", "context/research"):
+    for name in ("proposals", "bugs", "context/research"):
         assert (repo / "docs" / name / ".gitkeep").is_file()
+    assert (repo / "changes/unreleased/.gitkeep").is_file()
+    assert not (repo / "docs/specs").exists()
     assert (repo / "docs/JOTS.md").is_file()
 
 
@@ -270,92 +272,3 @@ def test_init_executes_directly_without_plan_digest(
         python_exe, *arguments, "--plan-digest", "sha256:" + "0" * 64
     )
     assert rejected.returncode != 0
-
-
-def test_move_change_dry_run_preserves_source_then_moves_tree(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
-    source = repo / "working-notes" / "api-user-auth"
-    source.mkdir(parents=True)
-    artifact = source / "notes.md"
-    artifact.write_text("# External planning artifact\n", encoding="utf-8")
-    git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 准备外部材料")
-    arguments = [
-        "move-change",
-        "--repo",
-        str(repo),
-        "--source",
-        str(source),
-        "--branch-slug",
-        "api/user_auth",
-    ]
-
-    dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert dry_run["target"] == "docs/changes/unreleased/api-user-auth"
-    assert "plan_digest" not in dry_run
-    assert artifact.is_file()
-
-    payload(mdf(python_exe, *arguments))
-    target = repo / "docs/changes" / "unreleased" / "api-user-auth"
-    assert (target / "notes.md").read_text(encoding="utf-8") == (
-        "# External planning artifact\n"
-    )
-    assert not source.exists()
-
-
-def test_move_change_rejects_source_with_mismatched_slug(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
-    source = repo / "working-notes" / "different-change"
-    source.mkdir(parents=True)
-    result = mdf(
-        python_exe,
-        "move-change",
-        "--repo",
-        str(repo),
-        "--source",
-        str(source),
-        "--branch-slug",
-        "api-user-auth",
-        "--dry-run",
-    )
-    assert result.returncode != 0
-    assert "source_slug" in result.stderr
-    assert source.is_dir()
-
-
-def test_move_change_never_overwrites_opaque_reserved_change(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
-    source = repo / "working-notes" / "api-user-auth"
-    source.mkdir(parents=True)
-    reserved = source / "CHANGE.md"
-    reserved.write_text(
-        "# External file with a reserved name\n", encoding="utf-8"
-    )
-    git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 准备保留文件")
-
-    result = mdf(
-        python_exe,
-        "move-change",
-        "--repo",
-        str(repo),
-        "--source",
-        str(source),
-        "--branch-slug",
-        "api-user-auth",
-        "--dry-run",
-    )
-    assert result.returncode != 0
-    assert "reserved_change" in result.stderr
-    assert reserved.read_text(encoding="utf-8") == (
-        "# External file with a reserved name\n"
-    )

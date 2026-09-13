@@ -195,7 +195,7 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
     proposal = repo / "docs/proposals" / PRP_NAME
     text = proposal.read_text()
     proposal.write_text(text.replace("status: ready", "status: implemented"))
-    change = repo / "docs/changes" / "unreleased" / slug / "CHANGE.md"
+    change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
     change.parent.mkdir(parents=True)
     change.write_text(
         (

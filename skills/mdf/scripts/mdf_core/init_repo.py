@@ -220,8 +220,7 @@ def init_files(
     for path in (
         repo / "docs/proposals",
         repo / "docs/bugs",
-        repo / "docs/changes/unreleased",
-        repo / "docs/specs",
+        repo / "changes/unreleased",
         repo / "docs/context/research",
         repo / "docs" / "product" / "tutorials",
         repo / "docs" / "product" / "how-to",

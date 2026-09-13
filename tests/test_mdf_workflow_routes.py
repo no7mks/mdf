@@ -117,16 +117,18 @@ def test_init_accepts_initializing_at_entry_before_readiness_gate():
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 
-def test_finish_updates_facts_before_moving_materials():
+def test_finish_updates_facts_before_preparing_materials():
     text = workflow("finish")
     prepare = text.split('<a id="s3"></a>', 1)[1].split('<a id="s4"></a>', 1)[0]
-    assert prepare.index("references/fact-update.md") < prepare.index("move-change")
+    assert prepare.index("references/fact-update.md") < prepare.index("- feature：")
     assert "delivery check --stage fact-update" in prepare
+    assert "move-change" not in text
     assert "- feature：" in prepare
     assert "- bugfix：" in prepare
     assert "- release：" in prepare
     assert "- hotfix：" in prepare
-    assert "不要求 `docs/specs`、唯一 PRP 或 feature gate" in prepare
+    assert "材料不搬迁" in prepare
+    assert "不要求 objectives、design、唯一 PRP 或 feature gate" in prepare
 
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():

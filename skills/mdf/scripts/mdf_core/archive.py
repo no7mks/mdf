@@ -1,11 +1,9 @@
 from pathlib import Path
 
 from .constants import EPOCH_RE
-from .errors import MDFError, serialize_findings
-from .moves import replacement_plan, managed_delivery_markdown
+from .errors import MDFError
+from .moves import replacement_plan
 from .paths import relative
-from .textutil import slugify
-from .validate_change_schema import validate_change_file
 from .validate_objects import iter_object_files
 from .yamlutil import read_frontmatter
 
@@ -97,79 +95,3 @@ def archive_plan(
             moves[path] = target
     rewrites = replacement_plan(repo, moves)
     return moves, rewrites
-
-
-def change_move_plan(
-    repo: Path, source: Path | None, branch_slug: str
-) -> tuple[dict[Path, Path], dict[Path, str], Path]:
-    slug = slugify(branch_slug)
-    target = repo / "docs/changes" / "unreleased" / slug
-    moves: dict[Path, Path] = {}
-    if target.exists():
-        if source is None or source.resolve() != target.resolve():
-            raise MDFError(
-                f"Change directory already exists: {target}", code="collision"
-            )
-    elif source is not None:
-        source = source.expanduser().resolve()
-        try:
-            source.relative_to(repo)
-        except ValueError as exc:
-            raise MDFError("源路径必须位于仓库内", code="outside_repo") from exc
-        if not source.is_dir():
-            raise MDFError(f"源目录不存在: {source}", code="missing_source")
-        try:
-            source_slug = slugify(source.name)
-        except MDFError as exc:
-            raise MDFError(
-                "Source directory has no valid branch slug",
-                code="source_slug",
-            ) from exc
-        if source_slug != slug:
-            raise MDFError(
-                "Source path does not match the requested branch slug",
-                code="source_slug",
-                details={"expected": slug, "actual": source_slug},
-            )
-        source_symlinks = sorted(
-            path for path in source.rglob("*") if path.is_symlink()
-        )
-        if source_symlinks:
-            raise MDFError(
-                "External planning source contains symbolic links",
-                code="source_symlink",
-                details={
-                    "paths": [
-                        path.relative_to(repo).as_posix()
-                        for path in source_symlinks
-                    ]
-                },
-            )
-        reserved_change = source / "CHANGE.md"
-        if reserved_change.exists():
-            reserved_findings: list[Finding] = []
-            validate_change_file(
-                repo,
-                reserved_change,
-                reserved_findings,
-                expected_slug=slug,
-            )
-            if reserved_findings:
-                raise MDFError(
-                    "Source contains a non-canonical file at reserved name "
-                    "CHANGE.md",
-                    code="reserved_change",
-                    details={"findings": serialize_findings(reserved_findings)},
-                )
-        if source == target or source in target.parents:
-            raise MDFError(
-                "Source cannot contain the target change directory",
-                code="recursive_move",
-            )
-        moves[source] = target
-    rewrites = replacement_plan(
-        repo, moves, rewrite_inside_sources=False,
-        rewrite_inside_filter=(managed_delivery_markdown
-                               if source and (source / "delivery.json").is_file() else None),
-    )
-    return moves, rewrites, target

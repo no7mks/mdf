@@ -195,43 +195,6 @@ def test_init_write_failure_leaves_partial_writes(
     assert not blocked.exists()
 
 
-def test_move_change_rewrites_links_pointing_outside_moved_tree(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
-    source = repo / "working-notes" / "api-user-auth"
-    source.mkdir(parents=True)
-    target_doc = "docs/product/reference/capabilities.md"
-    (source / "notes.md").write_text(
-        f"# Notes\n\n[Capabilities](../../{target_doc})\n",
-        encoding="utf-8",
-    )
-    git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 准备链接重写工件")
-    arguments = [
-        "move-change",
-        "--repo",
-        str(repo),
-        "--source",
-        str(source),
-        "--branch-slug",
-        "api-user-auth",
-    ]
-
-    dry_run = payload(mdf(python_exe, *arguments, "--dry-run"))
-    assert "working-notes/api-user-auth/notes.md" in dry_run["rewrites"]
-    payload(mdf(python_exe, *arguments))
-
-    moved = repo / "docs/changes" / "unreleased" / "api-user-auth" / "notes.md"
-    rewritten = "../../../product/reference/capabilities.md"
-    assert f"[Capabilities]({rewritten})" in moved.read_text(encoding="utf-8")
-    assert (moved.parent / rewritten).resolve() == (repo / target_doc).resolve()
-
-    audit = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
-    assert "link.broken" not in audit.stdout
-
-
 def test_init_allows_dirty_worktree_for_active_continuation(
     python_exe: str, tmp_path: Path
 ):
@@ -257,7 +220,7 @@ def test_init_allows_dirty_worktree_for_active_continuation(
     assert (repo / "docs/JOTS.md").read_text(encoding="utf-8") == "# 随手记录\n"
 
 
-def test_archive_and_move_change_require_clean_worktree(
+def test_archive_requires_clean_worktree(
     python_exe: str, tmp_path: Path
 ):
     archive_root = tmp_path / "archive"
@@ -279,29 +242,6 @@ def test_archive_and_move_change_require_clean_worktree(
             str(archive_repo),
             "--epoch",
             "1.2",
-            *suffix,
-        )
-        assert result.returncode != 0
-        assert "dirty_worktree" in result.stderr
-
-    move_root = tmp_path / "move"
-    move_root.mkdir()
-    move_repo = copy_fixture(move_root)
-    source = move_repo / "working-notes" / "api-user-auth"
-    source.mkdir(parents=True)
-    (source / "notes.md").write_text("# Notes\n", encoding="utf-8")
-    init_git(move_repo)
-    (move_repo / "dirty.txt").write_text("dirty\n", encoding="utf-8")
-    for suffix in ([], ["--dry-run"]):
-        result = mdf(
-            python_exe,
-            "move-change",
-            "--repo",
-            str(move_repo),
-            "--source",
-            str(source),
-            "--branch-slug",
-            "api-user-auth",
             *suffix,
         )
         assert result.returncode != 0

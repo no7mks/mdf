@@ -64,10 +64,10 @@ def derive_closeout_spec(
         slugs = (
             sorted(
                 path.name
-                for path in (repo / "docs/changes" / "unreleased").iterdir()
+                for path in (repo / "changes" / "unreleased").iterdir()
                 if path.is_dir() and not path.is_symlink()
             )
-            if (repo / "docs/changes" / "unreleased").is_dir()
+            if (repo / "changes" / "unreleased").is_dir()
             else []
         )
         proposals: set[str] = set()
@@ -76,7 +76,7 @@ def derive_closeout_spec(
         deferred: set[str] = set()
         for slug in slugs:
             metadata, _ = read_frontmatter(
-                repo / "docs/changes" / "unreleased" / slug / "CHANGE.md"
+                repo / "changes" / "unreleased" / slug / "CHANGE.md"
             )
             proposals.update(metadata.get("proposals", []))
             fixed.update(metadata.get("fixed", []))

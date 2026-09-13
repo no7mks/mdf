@@ -63,7 +63,7 @@ def apply_version_closeout(
             code="insufficient_bump",
         )
 
-    release_dir = repo / "docs/changes" / context["version"]
+    release_dir = repo / "changes" / context["version"]
     moves: dict[Path, Path] = {}
     move_records: list[dict[str, Any]] = []
     for item in context["release_items"]:

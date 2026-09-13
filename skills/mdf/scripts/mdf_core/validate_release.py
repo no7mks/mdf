@@ -112,7 +112,7 @@ def validate_release_history(
 ) -> None:
     changelog = changelog_versions(repo, findings)
     changelog_set = set(changelog)
-    release_root = repo / "docs/changes"
+    release_root = repo / "changes"
     release_dirs = (
         sorted(
             (
@@ -134,7 +134,7 @@ def validate_release_history(
                 findings,
                 "release.changelog_missing",
                 f"Released version is missing from CHANGELOG: {version}",
-                f"docs/changes/{version}",
+                f"changes/{version}",
             )
 
     latest_release: Any = None

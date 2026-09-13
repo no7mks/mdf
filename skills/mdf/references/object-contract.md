@@ -33,7 +33,7 @@ Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（�
 文件名 `prp-<序号>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug
 为英文 ASCII kebab-case。active（非 archive）Proposal 与 Bug 的 slug 必须
 全局唯一。slug 不得与对象 ID 同形（如 `prp-001`、`bug-c4d5`）。
-feature 的分支与 `docs/specs/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
+feature 的分支与 `changes/unreleased/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
 bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
 一般关联只写正文；上述重复与替代字段是明确的结构关系。
 正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”含“包含”“不包含”非空三级子节。
@@ -77,7 +77,7 @@ duplicate。duplicate 不需要 `found_in`/`fixed_in`，也不得出现在 Chang
 
 ## Change
 
-未版本化的子 Change 位于 `docs/changes/unreleased/<slug>/CHANGE.md`：
+未版本化的子 Change 位于 `changes/unreleased/<slug>/CHANGE.md`：
 
 ```yaml
 change_kind: feature | bugfix
@@ -105,7 +105,7 @@ evidence:
 
 ## 版本根 Change
 
-`docs/changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
+`changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
 `version`、`previous_version`、`included_changes`、Proposal/Bug outcomes、release
 notes、`evidence`、审阅记录，以及“结果”“包含的 Change”“收口结果”“found-in 转换”、
 “SemVer 决策”“审计”“验证命令”等章节。每个稳定版本只有一个版本根 Change。

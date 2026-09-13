@@ -116,10 +116,9 @@ def command_start(args) -> None:
         from .constants import MARKER_RE
         if not objectives.strip() or MARKER_RE.search(objectives):
             raise MDFError("objectives 不能为空", code="missing_objectives")
-        for rel in (f"docs/specs/{suffix}", f"docs/changes/unreleased/{suffix}"):
-            if not _git(repo, "cat-file", "-e", f"{base}:{rel}",
-                        check=False).returncode:
-                raise MDFError("交付 slug 已存在", code="collision")
+        if not _git(repo, "cat-file", "-e", f"{base}:changes/unreleased/{suffix}",
+                    check=False).returncode:
+            raise MDFError("交付 slug 已存在", code="collision")
     elif args.kind == "bugfix":
         if args.name:
             raise MDFError(
@@ -130,7 +129,7 @@ def command_start(args) -> None:
             raise MDFError("bugfix 需要 --bug", code="missing_bug")
         from .bugs import bug_id_on_ref, require_startable_bug
         suffix = bug_id_on_ref(repo, args.bug, base)
-        unreleased = f"docs/changes/unreleased/{slugify(suffix)}"
+        unreleased = f"changes/unreleased/{slugify(suffix)}"
         if not _git(repo, "cat-file", "-e", f"{base}:{unreleased}",
                     check=False).returncode:
             raise MDFError("交付 slug 已存在", code="collision")
@@ -161,9 +160,8 @@ def command_start(args) -> None:
         start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
         if objectives is not None:
             from .delivery_state import safe, write_json
-            target = safe(work, work / "docs/specs" / suffix)
-            if target.exists() or (
-                    work / "docs/changes/unreleased" / suffix).exists():
+            target = safe(work, work / "changes/unreleased" / suffix)
+            if target.exists():
                 raise MDFError("交付 slug 已存在", code="collision")
             target.mkdir(parents=True)
             dest = target / "objectives.md"
@@ -239,9 +237,9 @@ def command_finish_gitflow(args) -> None:
         from .prp_split import render
         root, data = locate(repo)
         require_finish(repo, root, data)
-        change = repo / "docs/changes/unreleased" / data["slug"] / "CHANGE.md"
-        if root.parent != repo / "docs/changes/unreleased" or not change.is_file():
-            raise MDFError("finish 前必须将材料归入 Change", code="missing_change")
+        change = root / "CHANGE.md"
+        if not change.is_file():
+            raise MDFError("finish 前必须补齐 Change", code="missing_change")
         from .yamlutil import read_frontmatter
         meta, _ = read_frontmatter(change)
         if meta.get("proposals") != [data["proposal"]] or meta.get("source_branch") != source:

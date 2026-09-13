@@ -190,7 +190,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                         relative(repo, path),
                     )
 
-    changes = repo / "docs/changes"
+    changes = repo / "changes"
     if not changes.is_dir():
         return
     for path in changes.rglob("CHANGE.md"):

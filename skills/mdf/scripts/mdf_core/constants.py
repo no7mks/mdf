@@ -150,6 +150,7 @@ MANAGED_ROOTS = (
     "PROJECT.md",
     "GLOSSARY.md",
     "CHANGELOG.md",
+    "changes",
     "docs",
 )
 DOC_TYPES = {

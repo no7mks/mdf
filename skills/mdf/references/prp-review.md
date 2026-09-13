@@ -97,7 +97,7 @@
 
 released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 在修改状态或正文前，以 `list --repo "$REPO_ROOT" --type proposal` 输出中目标 PRP 的 `status`
-与 `in_progress` 为准：`in_progress` 已覆盖当前 checkout 的 `docs/specs/`、`docs/changes/` 下全部
+与 `in_progress` 为准：`in_progress` 已覆盖当前 checkout 的 `changes/` 下全部
 `delivery.json`，以及本地 `feature/*` 和 `origin/feature/*` 引用中的同类记录，
 任一记录的 `proposal` 命中目标 ID 即为 `true`。
 不能仅凭当前 checkout 没有开发材料或 `next` 未显示进行中，就判定未开工。

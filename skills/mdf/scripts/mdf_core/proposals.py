@@ -64,9 +64,8 @@ def check_proposals(repo):
 def started_ids(repo):
     """收集当前工作区与全部 feature 分支的开工记录所指向的 Proposal ID。"""
     found = set()
-    for root in (repo / "docs/specs", repo / "docs/changes"):
-        if not root.exists():
-            continue
+    root = repo / "changes"
+    if root.exists():
         for path in root.rglob("delivery.json"):
             if path.is_symlink():
                 raise MDFError("工作记录不能为符号链接", code="unsafe_path")
@@ -81,7 +80,7 @@ def started_ids(repo):
     refs = run(["git", "for-each-ref", "--format=%(refname)",
                 "refs/heads/feature/", "refs/remotes/origin/feature/"], cwd=repo).stdout.splitlines()
     for ref in refs:
-        paths = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "docs/specs", "docs/changes"],
+        paths = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "changes"],
                     cwd=repo).stdout.splitlines()
         for path in paths:
             if not path.endswith("/delivery.json"):

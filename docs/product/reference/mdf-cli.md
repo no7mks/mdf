@@ -23,7 +23,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
   start、delivery integrate、finish-gitflow 与 upgrade 按各自协议执行提交、
   集成和远端操作。
-- `--dry-run` 只在 `archive`、`move-change`、`prp-split`、`release-closeout` 和
+- `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
 
 ## 命令表
@@ -40,7 +40,6 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `branch` | 分支解析 |
 | `semver-check` | 版本校验 |
 | `archive` | 对象归档 |
-| `move-change` | Change 迁移 |
 | `release-closeout` | 版本收口 |
 | `start` | 创建分支 |
 | `list` | 对象清单 |
@@ -221,18 +220,6 @@ python3 skills/mdf/scripts/mdf.py archive --repo /path/to/repository \
 canonical 链接重写。`--dry-run` 仅返回计划；正常运行会应用移动与重写，随后再次
 full validate。后校验失败时保留现场，供人工检查。
 
-### `move-change`
-
-```bash
-python3 skills/mdf/scripts/mdf.py move-change --repo /path/to/repository \
-  --source /path/to/existing/change --branch-slug service-health --dry-run
-```
-
-要求 Git 根、有效 manifest 和 clean worktree。目标固定为
-`docs/changes/unreleased/<branch-slug>`。未给 `--source` 时，正常运行只创建
-不存在的目标目录；给出来源时，命令先验证迁移计划，再迁移目录并重写受影响的
-仓库内引用。`--dry-run` 只输出目标、移动和重写计划。
-
 ### `release-closeout`
 
 ```bash
@@ -245,7 +232,7 @@ clean worktree、`manifest.state: ready` 与 full validation 零 finding。
 必须提供 `--release-date`。Core 只验证确定性审计；同次 `$mdf finish` 的语义审阅
 与用户确认属于 intent 的职责。
 
-release 会从所有 `docs/changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
+release 会从所有 `changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
 提供 `--hotfix-change-json`。可用 `--closures-json` 覆盖或补充收口结果，
 `--deferred-acceptance-json` 记录 deferred 的接受信息。正常运行会执行 manifest
 声明的验证命令，保持 worktree clean 后写入版本 Change、归档对象和链接重写，并在
@@ -271,7 +258,7 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 不在当前目录开分支；成功 JSON 含该 `worktree`。feature 同时建立
 `qa/feature/<slug>` 与 `dev/feature/<slug>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
 不设置 upstream。
-feature 写入 `docs/specs/<slug>/objectives.md` 时，把仓根风格的本地链接改成
+feature 写入 `changes/unreleased/<slug>/objectives.md` 时，把仓根风格的本地链接改成
 相对该目录的路径。
 
 ### `finish-gitflow`
@@ -320,7 +307,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 `jot` 使用 `make-jot-id`，`jot promote` 另用 `list` 查重；`prp review` 使用 `list` 定位候选；
 `archive` intent 使用 `list` 与 `archive`；`start` intent 使用 `list` 与 `start`；
 `upgrade` intent 使用 `upgrade`；
-`finish` intent 还会调用 `branch`、`list`、`move-change`、`release-closeout` 和
+`finish` intent 还会调用 `branch`、`list`、`release-closeout` 和
 `finish-gitflow`。
 
 `fact-audit`、`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。它们是

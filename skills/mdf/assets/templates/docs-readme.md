@@ -27,6 +27,5 @@
 - [随手记录](JOTS.md)：尚未分诊的原始记录。
 - [proposals/](proposals/)：待实现意图及其状态记录。
 - [bugs/](bugs/)：已观察到的偏差及其处理记录。
-- [changes/](changes/)：交付结果与随交付保存的设计、实施和验证材料。
-- [specs/](specs/)：进行中的 Proposal 交付材料；finish 时整体移入 `changes/unreleased/`，发布后归入版本目录。
+- [changes/](../changes/)：进行中与已交付的 Change，含随交付保存的目标、设计、gate 和验证材料；发布后归入版本目录。
 - [context/research/](context/research/)：调研、候选方案和背景材料。

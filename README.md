@@ -48,7 +48,7 @@ gate 检查共同基线与有效证据。start、write-tests 与 implement 均�
 正常工作不在 master 直接修改或提交；文档与当前分支工作相关时在当前分支更新，否则在 develop 更新。
 新建 Proposal 只能在 develop 上分配 ID、写入并提交。
 初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
-材料从 `docs/specs/<slug>/` 随交付进入 Change，再随版本归档。
+材料自 start 起位于 `changes/unreleased/<slug>/`，与 CHANGE.md 同级，再随版本归档。
 
 供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
 记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，

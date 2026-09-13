@@ -11,9 +11,9 @@ slug 取自 PRP 文件名，start 固定使用，不随标题修改。delivery.j
 proposal、slug、branch、start_commit。
 起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
 
-开发材料位于 `docs/specs/<prp-slug>/`：objectives.md、design.md、delivery.json、gates/。
-finish 整体搬入 `docs/changes/unreleased/<prp-slug>/`，材料与 CHANGE.md 同级；发布后进入
-`docs/changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
+开发材料自 start 起位于 `changes/unreleased/<prp-slug>/`：objectives.md、design.md、
+delivery.json、gates/；finish 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
+`changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
 objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只相对当前文件
 （`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。搬迁时 CLI 改写仍有效
 的相对路径。delivery.json 与 gate 内路径一律仓库相对；指纹规范化用仓库相对或

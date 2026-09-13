@@ -52,6 +52,7 @@ def managed_markdown(repo: Path) -> Iterable[Path]:
         repo / "PROJECT.md",
         repo / "GLOSSARY.md",
         repo / "CHANGELOG.md",
+        repo / "changes",
         repo / "docs",
     )
     found: set[Path] = set()

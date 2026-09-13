@@ -45,7 +45,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert "confirmation_required" not in preview
     assert "digest" not in json.dumps(preview)
     assert "writes" not in summary
-    assert not (repo / "docs/changes" / "1.3.0").exists()
+    assert not (repo / "changes" / "1.3.0").exists()
     assert not git(repo, "status", "--porcelain").stdout
 
     applied = payload(mdf(python_exe, *arguments))
@@ -53,7 +53,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert applied["verification"]["results"] == [
         {"command": "true", "exit_code": 0}
     ]
-    release_dir = repo / "docs/changes" / "1.3.0"
+    release_dir = repo / "changes" / "1.3.0"
     assert (release_dir / "CHANGE.md").is_file()
     assert (release_dir / "service-health" / "CHANGE.md").is_file()
     assert (repo / "docs/proposals" / "archive" / "1.3" / PRP_NAME).is_file()
@@ -106,7 +106,7 @@ def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
     assert result.returncode != 0
     assert "dirty_worktree" in result.stderr
     assert (repo / "verification-marker").is_file()
-    assert not (repo / "docs/changes" / "1.3.0").exists()
+    assert not (repo / "changes" / "1.3.0").exists()
 
 
 def test_closeout_rejects_unclassified_unreleased_bug_on_apply(
@@ -116,7 +116,7 @@ def test_closeout_rejects_unclassified_unreleased_bug_on_apply(
     init_git(repo)
     write_unreleased_change(repo, "service-health")
     replace(
-        repo / "docs/changes" / "unreleased" / "service-health" / "CHANGE.md",
+        repo / "changes" / "unreleased" / "service-health" / "CHANGE.md",
         f"fixed: [{BUG_ID}]",
         "fixed: []",
     )
@@ -127,7 +127,7 @@ def test_closeout_rejects_unclassified_unreleased_bug_on_apply(
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0
     assert "unclassified_unreleased_bug" in result.stderr
-    assert not (repo / "docs/changes" / "1.3.0").exists()
+    assert not (repo / "changes" / "1.3.0").exists()
 
 
 def test_critical_bug_cannot_be_wont_fixed_at_closeout(
@@ -142,7 +142,7 @@ def test_critical_bug_cannot_be_wont_fixed_at_closeout(
     )
     init_git(repo)
     write_unreleased_change(repo, "timeout-close")
-    change = repo / "docs/changes" / "unreleased" / "timeout-close" / "CHANGE.md"
+    change = repo / "changes" / "unreleased" / "timeout-close" / "CHANGE.md"
     replace(change, f"fixed: [{BUG_ID}]", "fixed: []")
     replace(change, "closed: []", f"closed: [{BUG_ID}]")
     git(repo, "add", "--all")
@@ -162,7 +162,7 @@ def prepare_wont_fix_release(repo: Path) -> None:
     )
     init_git(repo)
     write_unreleased_change(repo, "service-health")
-    change = repo / "docs/changes" / "unreleased" / "service-health" / "CHANGE.md"
+    change = repo / "changes" / "unreleased" / "service-health" / "CHANGE.md"
     replace(change, f"fixed: [{BUG_ID}]", "fixed: []")
     replace(change, "closed: []", f"closed: [{BUG_ID}]")
     git(repo, "add", "--all")
@@ -236,7 +236,7 @@ def test_hotfix_closeout_uses_manifest_commands(
         )
     )
     assert applied["version"] == "1.2.1"
-    assert (repo / "docs/changes" / "1.2.1" / "CHANGE.md").is_file()
+    assert (repo / "changes" / "1.2.1" / "CHANGE.md").is_file()
     assert (repo / "docs/bugs" / "archive" / "1.2" / BUG_NAME).is_file()
 
 

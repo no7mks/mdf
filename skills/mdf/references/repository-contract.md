@@ -26,6 +26,11 @@
 ├── PROJECT.md
 ├── GLOSSARY.md
 ├── CHANGELOG.md
+├── changes/
+│   ├── unreleased/<slug>/              # CHANGE.md 与交付材料同级
+│   └── <major.minor.patch>/
+│       ├── CHANGE.md
+│       └── <slug>/                    # 材料与 CHANGE.md 同级
 └── docs/
     ├── README.md
     ├── JOTS.md
@@ -34,18 +39,12 @@
     ├── adr/
     ├── repowiki/             # 可选；CodeWiki 受管生成物
     ├── context/research/
-    ├── specs/<prp-slug>/
     ├── proposals/
     │   ├── prp-<序号>-<slug>.md
     │   └── archive/<major.minor>/
-    ├── bugs/
-    │   ├── bug-<4 位字符>-<slug>.md
-    │   └── archive/<major.minor>/
-    └── changes/
-        ├── unreleased/<slug>/          # CHANGE.md 与交付材料同级
-        └── <major.minor.patch>/
-            ├── CHANGE.md
-            └── <slug>/                # 材料与 CHANGE.md 同级
+    └── bugs/
+        ├── bug-<4 位字符>-<slug>.md
+        └── archive/<major.minor>/
 ```
 
 `docs/README.md` 是文档入口，区分当前事实、决策、工作记录与调研材料。
@@ -54,7 +53,7 @@
 不得覆盖或自动接管。事实审计仍限定在 `docs/product/` 与 `docs/system/`。
 
 
-`docs/changes/unreleased/` 保存未版本化的子 Change。每个稳定版本目录始终只有一个根
+`changes/unreleased/` 保存未版本化的子 Change 及其交付材料。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量

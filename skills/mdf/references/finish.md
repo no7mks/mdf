@@ -123,7 +123,7 @@
 release 要求本地 develop，
 以当前 checkout 和全部 child Change 为交付范围。
 检查代码、配置、schema、测试、当前事实、Proposal、 Bug、Change，识别应更新文档。 release/hotfix 同时检查
-`docs/changes/<version>/CHANGE.md` 与 manifest： 版本根不存在，
+`changes/<version>/CHANGE.md` 与 manifest： 版本根不存在，
 且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。 版本根已跟踪、 已提交，
 且 version、 change_kind、source_branch 与当前分支完全一致、latest_release 等于目标版本时，
 运行 full validation 并核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
@@ -144,20 +144,18 @@ release 要求本地 develop，
 到 HEAD 的固定范围，并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
 按分支准备材料：
 
-- feature：`move-change` 操作前要求 clean；不得夹带无关改动来满足前置条件。
-  将 docs/specs/<slug> 用 move-change 整体移动到 docs/changes/unreleased/<slug>；续办时识别已移动记录。
-  补齐唯一 PRP 对应的 canonical CHANGE.md，材料和 CHANGE.md 同级。搬迁链接由 CLI 重写。
-  搬迁和 CHANGE.md 整理完成后提交这些材料，再进入阶段校验，避免用未提交路径作为设计基线。
-- bugfix：按对象契约准备当前分支的 `docs/changes/unreleased/<slug>/CHANGE.md`，
+- feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 canonical CHANGE.md，
+  与 objectives、design、gates 同级；材料不搬迁。CHANGE.md 整理完成后提交，再进入阶段校验。
+- bugfix：按对象契约准备当前分支的 `changes/unreleased/<slug>/CHANGE.md`，
   slug 为 Bug ID 的 kebab-case（小写）；
-  不要求 `docs/specs`、唯一 PRP 或 feature gate。记录实际 Bug outcomes 和证据。
+  不要求 objectives、design、唯一 PRP 或 feature gate。记录实际 Bug outcomes 和证据。
 - release：核对已有 child Change，材料聚合与版本目录写入留给步骤 8。
 - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
 
 feature/bugfix 不建版本目录。feature 在成功合入 develop 的 merge commit 中转换为 implemented；
 bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步骤管理版本与对象。
 
-验收：事实一致性、有效 gate、规范 Change、搬迁和链接检查。
+验收：事实一致性、有效 gate、规范 Change 和链接检查。
 
 异常与交接：保留现场；缺少前置阶段时报告，不自动执行被跳过的主线 intent。
 
@@ -166,7 +164,7 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 **审阅**
 
 feature 运行 `delivery check --stage finish`，使用本次有效 review、事实与验证证据。
-材料移动后如 evidence 路径发生变化，执行 full validation 并检查链接；语义或实现变化必须补审补验。
+语义或实现变化必须补审补验。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
 

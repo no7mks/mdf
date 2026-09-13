@@ -49,7 +49,7 @@ def setup_delivery(python_exe, tmp_path):
         primary.parent / f"{primary.name}-worktrees" / "qa" / "feature"
         / "service-health"
     )
-    root = work / "docs/specs/service-health"
+    root = work / "changes/unreleased/service-health"
     assert json.loads((root / "delivery.json").read_text())["start_commit"] == data["start_commit"]
     objectives = root / "objectives.md"
     objectives.write_text(objectives.read_text() + "\n[design.md](./design.md)\n")
@@ -64,6 +64,16 @@ def setup_delivery(python_exe, tmp_path):
                 "--policy-file", str(policy), "--summary", "用户确认接口及验收；测试配置已识别"))
     commit(work)
     return work, root, remote
+
+
+def write_change_in_place(repo, root):
+    """在交付目录原地补齐 canonical CHANGE.md，并把 PRP 恢复为 ready。"""
+    write_unreleased_change(repo, "temporary")
+    text = (repo / "changes/unreleased/temporary/CHANGE.md").read_text()
+    (root / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
+                                    .replace("fixed: [bug-CD34]", "fixed: []"))
+    shutil.rmtree(repo / "changes/unreleased/temporary")
+    replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
 
 
 def record(python_exe, repo, stage, *extra):
@@ -138,7 +148,7 @@ def test_partial_verification_does_not_satisfy_full_gate(python_exe, tmp_path):
 def test_uncommitted_design_and_changed_design_block(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     qa, dev = sync_roles(python_exe, repo)
-    (dev / "docs/specs/service-health/design.md").write_text("# 未确认的新设计\n")
+    (dev / "changes/unreleased/service-health/design.md").write_text("# 未确认的新设计\n")
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
 
 
@@ -158,20 +168,7 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         payload(record(python_exe, repo, stage))
     commit(repo)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
-    payload(mdf(python_exe, "move-change", "--repo", str(repo), "--source", str(root),
-                "--branch-slug", "service-health"))
-    dest = repo / "docs/changes/unreleased/service-health"
-    moved_design = (dest / "design.md").read_text()
-    assert "../../../../src/service.py" in moved_design
-    assert "[objectives.md](objectives.md)" in moved_design
-    assert "[see design.md](design.md)" in moved_design
-    assert "[design.md](design.md)" in (dest / "objectives.md").read_text()
-    write_unreleased_change(repo, "temporary")
-    text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
-    (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
-                                    .replace("fixed: [bug-CD34]", "fixed: []"))
-    shutil.rmtree(repo / "docs/changes/unreleased/temporary")
-    replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
+    write_change_in_place(repo, root)
     commit(repo)
     checked = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
                            "--stage", "finish"))["result"]
@@ -195,7 +192,7 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     assert not repo.exists()
     assert "implemented" in git(primary, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
     dest_json = git(primary, "show",
-                    "develop:docs/changes/unreleased/service-health/delivery.json").stdout
+                    "develop:changes/unreleased/service-health/delivery.json").stdout
     assert json.loads(dest_json) == original
     assert not git(primary, "for-each-ref",
                    "refs/heads/feature/service-health").stdout
@@ -259,15 +256,7 @@ def test_finish_rejects_pending_role_branches(python_exe, tmp_path):
     for stage in ("converge", "review", "fact-update"):
         payload(record(python_exe, repo, stage))
     commit(repo)
-    payload(mdf(python_exe, "move-change", "--repo", str(repo), "--source", str(root),
-                "--branch-slug", "service-health"))
-    dest = repo / "docs/changes/unreleased/service-health"
-    write_unreleased_change(repo, "temporary")
-    text = (repo / "docs/changes/unreleased/temporary/CHANGE.md").read_text()
-    (dest / "CHANGE.md").write_text(text.replace("feature/temporary", "feature/service-health")
-                                    .replace("fixed: [bug-CD34]", "fixed: []"))
-    shutil.rmtree(repo / "docs/changes/unreleased/temporary")
-    replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
+    write_change_in_place(repo, root)
     commit(repo)
     result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
     assert "roles_pending" in result.stderr
@@ -281,7 +270,7 @@ def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_
     data = payload(mdf(python_exe, "delivery", "check", "--repo", str(dev),
                        "--stage", "implement"))["result"]
     assert data["code"] != before["code"]
-    design = dev / "docs/specs/service-health/design.md"
+    design = dev / "changes/unreleased/service-health/design.md"
     design.write_text(design.read_text().replace("service.py)", "service.py#new)"))
     commit(dev)
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
@@ -304,7 +293,7 @@ def test_canonical_local_link_missing_is_not_delivery_internal(tmp_path: Path):
     from mdf_core.validate_links import canonical_local_link
 
     repo = copy_fixture(tmp_path)
-    root = repo / "docs/specs/service-health"
+    root = repo / "changes/unreleased/service-health"
     root.mkdir(parents=True)
     source = root / "objectives.md"
     source.write_text("# 目标\n")
@@ -313,11 +302,11 @@ def test_canonical_local_link_missing_is_not_delivery_internal(tmp_path: Path):
         repo, source, f"docs/proposals/{PRP_NAME}", root
     )
     assert ghost == (
-        f"docs/specs/service-health/docs/proposals/{PRP_NAME}"
+        f"changes/unreleased/service-health/docs/proposals/{PRP_NAME}"
     )
     assert not ghost.startswith("@delivery/")
     real = canonical_local_link(
-        repo, source, f"../../proposals/{PRP_NAME}", root
+        repo, source, f"../../../docs/proposals/{PRP_NAME}", root
     )
     assert real == f"docs/proposals/{PRP_NAME}"
     sibling = canonical_local_link(repo, source, "design.md", root)
@@ -335,7 +324,7 @@ def test_record_design_rejects_repo_root_style_links(
         "--proposal", "prp-001", "--objectives-file", str(obj),
     ))
     work = Path(data["worktree"])
-    root = work / "docs/specs/service-health"
+    root = work / "changes/unreleased/service-health"
     (root / "design.md").write_text(
         "# 设计\n\n[能力](docs/product/reference/capabilities.md)\n"
     )
@@ -348,22 +337,4 @@ def test_record_design_rejects_repo_root_style_links(
     )
     assert result.returncode != 0
     assert "broken_link" in result.stderr
-
-
-def test_move_change_leaves_missing_repo_root_style_links(
-    python_exe: str, tmp_path: Path
-):
-    repo, root, _ = setup_delivery(python_exe, tmp_path)
-    objectives = root / "objectives.md"
-    objectives.write_text(
-        objectives.read_text()
-        + f"\n[需求](docs/proposals/{PRP_NAME})\n"
-    )
-    commit(repo)
-    payload(mdf(
-        python_exe, "move-change", "--repo", str(repo), "--source", str(root),
-        "--branch-slug", "service-health",
-    ))
-    moved = repo / "docs/changes/unreleased/service-health/objectives.md"
-    assert f"[需求](docs/proposals/{PRP_NAME})" in moved.read_text()
 

@@ -67,7 +67,7 @@ def test_list_marks_started_and_excludes_archive_but_resolves_archived_dependenc
     add_prp(repo, "prp-003", ["prp-005"], status="ready")
     init_git(repo)
     git(repo, "checkout", "-b", "feature/started")
-    folder = repo / "docs/specs/started"
+    folder = repo / "changes/unreleased/started"
     folder.mkdir(parents=True)
     (folder / "delivery.json").write_text(json.dumps({"proposal": "prp-001"}))
     git(repo, "add", "--all")

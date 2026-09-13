@@ -12,7 +12,7 @@ from .yamlutil import read_frontmatter
 
 
 def validate_changes(repo: Path, findings: list[Finding]) -> None:
-    root = repo / "docs/changes"
+    root = repo / "changes"
     if (
         not root.is_dir()
         or root.is_symlink()

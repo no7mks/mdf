@@ -10,7 +10,6 @@ from .commands_misc import (
     command_init,
     command_make_id,
     command_make_jot_id,
-    command_move_change,
     command_semver,
     command_validate,
 )
@@ -91,13 +90,6 @@ def build_parser() -> argparse.ArgumentParser:
     archive.add_argument("--epoch", required=True)
     archive.add_argument("--dry-run", action="store_true")
     archive.set_defaults(func=command_archive)
-
-    move = subparsers.add_parser("move-change")
-    move.add_argument("--repo", required=True)
-    move.add_argument("--source")
-    move.add_argument("--branch-slug", required=True)
-    move.add_argument("--dry-run", action="store_true")
-    move.set_defaults(func=command_move_change)
 
     closeout = subparsers.add_parser("release-closeout")
     closeout.add_argument("--repo", required=True)
