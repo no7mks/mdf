@@ -276,6 +276,31 @@ def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
 
 
+def test_non_fact_docs_do_not_expire_review_or_green(python_exe, tmp_path):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    qa, dev = sync_roles(python_exe, repo)
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
+    for stage in ("converge", "review", "fact-update"):
+        payload(record(python_exe, repo, stage))
+    commit(repo)
+    before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
+                          "--stage", "finish"))["result"]
+    adr = repo / "docs/adr/adr-0001-example.md"
+    adr.parent.mkdir(exist_ok=True)
+    adr.write_text("# ADR-0001\n\n记录一次架构决策。\n")
+    (repo / "AGENTS.md").write_text((repo / "AGENTS.md").read_text() + "\n补充说明。\n")
+    (root / "CHANGE.md").write_text("# 草稿\n")
+    after = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
+                         "--stage", "finish"))["result"]
+    assert after["code"] == before["code"]
+    assert after["facts"] == before["facts"]
+
+
 def test_design_fingerprint_stable_across_sibling_href_spelling(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]

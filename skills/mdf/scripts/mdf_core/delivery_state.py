@@ -103,10 +103,11 @@ def fingerprints(repo, root, data, config=None):
     facts = {name: value for name, value in files.items()
              if name == "GLOSSARY.md" or (name.endswith(".md")
                  and name.startswith(("docs/product/", "docs/system/")))}
+    # 文档与 Change 材料的改动不使实现审查或全绿失效；事实文档另由 facts 覆盖。
     code = {name: value for name, value in files.items()
-            if name not in facts and not name.startswith(
-                ("changes/", "docs/proposals/", "docs/bugs/"))
-            and name not in {"docs/JOTS.md", ".mdf/manifest.yaml"}}
+            if name not in facts and not name.startswith(("changes/", "docs/"))
+            and not ("/" not in name and name.endswith(".md"))
+            and name != ".mdf/manifest.yaml"}
     tests = {name: value for name, value in code.items() if matches(name, protected)}
     implementation = {name: value for name, value in code.items() if name not in tests}
     design = {}
