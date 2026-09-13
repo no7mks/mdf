@@ -157,7 +157,7 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix 9；待收口 5"
     assert table[7][5] == "9"
-    assert table[8][5] == "10"
+    assert table[8][5] == "有效 10；需重集成 2"
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
     assert "preview" not in diagram and "预览" not in diagram
@@ -411,4 +411,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
     finish = workflow("finish")
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
     assert "四种分支均须有完整且有效的三份独立审查" in finish
-    assert "不自动跳过或补跑" in finish
+    assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
+    assert "无论是否冲突，都以集成后的 HEAD 重新执行完整 code-review" in finish
+    assert "不复用集成前报告" in finish
+    assert "证据缺失或过期时内部执行 code-review" in finish
