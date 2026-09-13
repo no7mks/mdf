@@ -282,5 +282,9 @@ release/hotfix 首次发布前，CLI 在 Git common dir 的 `mdf/finish/<完整�
 保存源提交、origin、目标起点及后续进度。失败后取得用户继续决定，再调用同一命令；
 若源 worktree 已删除或当前已不在原分支，从主 worktree 调用 `finish-gitflow --repo <主路径> --source <原分支>`。
 脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag；推送结果丢失时先查询远端，
-完全一致则仅继续清理。记录、源提交、origin 或目标引用冲突时返回 `publish_state_changed`，
+完全一致则仅继续清理。release/hotfix 分支存在期间 develop 可继续前进；续办时若 develop
+尚无合并记录且本地与 origin/develop 一致，以当前 develop 刷新记录中的合并基线，
+再 no-ff 合并 master；精确匹配原基线与 master 双亲的未记录合并直接恢复，不重复合并。
+master 仍严格核对原基线；最终原子推送前的远端校验使用刷新后的 develop 基线。
+记录、源提交、origin 或目标引用冲突时返回 `publish_state_changed`，
 停止并报告，不重置分支、不覆盖 tag、不盲目重推。完成记录保留供清理中断后续办。

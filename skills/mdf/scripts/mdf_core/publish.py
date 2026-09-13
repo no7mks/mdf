@@ -45,6 +45,13 @@ def publish(repo, source, version):
         current = _git(repo, "rev-parse", target).stdout.strip()
         remote = _git(repo, "rev-parse", f"origin/{target}").stdout.strip()
         recorded = state["merged"].get(target)
+        if target == "develop" and recorded is None and current != before and current == remote:
+            parents = _git(repo, "show", "-s", "--format=%P", current).stdout.split()
+            # 精确匹配的未记录合并仍走恢复；正常开发进度成为新的合并基线。
+            if parents != [before, incoming]:
+                before = current
+                state["before"][target] = before
+                write_json(path, state)
         if current == before and recorded is None:
             if remote != before:
                 raise MDFError("远端分支已变化", code="publish_state_changed")

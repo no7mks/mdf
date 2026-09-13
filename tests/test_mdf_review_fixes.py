@@ -142,6 +142,79 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
     assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
 
 
+@pytest.mark.parametrize("push_develop", [False, True])
+def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeypatch, push_develop):
+    repo, remote = start_repo(tmp_path)
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix", "--version", "1.2.1"))
+    work = Path(created["worktree"])
+    (work / "src/service.py").write_text("fixed = True\n")
+    commit(work)
+    load_core_module()
+    from mdf_core import gitflow, publish
+    from mdf_core.errors import MDFError
+    original = publish.write_json
+
+    def fail_record(path, state):
+        if "develop" in state["merged"]:
+            raise MDFError("模拟合并记录写入中断", code="test_interruption")
+        original(path, state)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(publish, "write_json", fail_record)
+        with pytest.raises(MDFError, match="模拟合并记录写入中断"):
+            gitflow.command_finish_gitflow(SimpleNamespace(repo=str(work), source=None))
+    path = publish.state_path(work, "hotfix/1.2.1")
+    before = json.loads(path.read_text())["before"]["develop"]
+    merged = git(repo, "rev-parse", "develop").stdout.strip()
+    if push_develop:
+        git(repo, "push", "origin", "develop")
+    assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))["pushed"] is True
+    assert git(repo, "rev-parse", "develop").stdout.strip() == merged
+    assert git(remote, "rev-parse", "develop").stdout.strip() == merged
+    assert json.loads(path.read_text())["before"]["develop"] == before
+
+
+@pytest.mark.parametrize("kind", ["release", "hotfix"])
+@pytest.mark.parametrize("advance,pushed", [("develop", True), ("develop", False), ("master", True)])
+def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_path, kind, advance, pushed):
+    repo, remote = start_repo(tmp_path)
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind, "--version", "1.2.1"))
+    work = Path(created["worktree"])
+    (work / "src/service.py").write_text("fixed = True\n")
+    commit(work)
+    load_core_module()
+    from mdf_core.publish import state_path
+    path = state_path(work, f"{kind}/1.2.1")
+    dirty = repo / "dirty.txt"
+    dirty.write_text("未提交\n")
+    assert "dirty_worktree" in mdf(python_exe, "finish-gitflow", "--repo", str(work)).stderr
+    state = json.loads(path.read_text())
+    assert state["merged"] == {}
+    dirty.unlink()
+    git(repo, "checkout", advance)
+    (repo / "development.txt").write_text("后续开发\n")
+    commit(repo)
+    advanced = source_head(repo)
+    if pushed:
+        git(repo, "push", "origin", advance)
+    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    if advance == "master" or not pushed:
+        assert "publish_state_changed" in result.stderr
+        assert json.loads(path.read_text())["before"][advance] == state["before"][advance]
+        assert git(remote, "rev-parse", advance).stdout.strip() == (
+            advanced if pushed else state["before"][advance])
+        return
+    assert payload(result)["pushed"] is True
+    state = json.loads(path.read_text())
+    assert state["before"]["develop"] == advanced
+    assert git(repo, "show", "-s", "--format=%P", "develop").stdout.split() == [
+        advanced, state["merged"]["master"]]
+    assert state["pushed"] is True
+    for ref in ("master", "develop", "refs/tags/v1.2.1"):
+        assert git(remote, "rev-parse", ref).stdout == git(repo, "rev-parse", ref).stdout
+    assert not work.exists()
+
+
 def test_codewiki_runtime_checks_existing_environment_without_installing(tmp_path, monkeypatch):
     load_core_module()
     from mdf_core import codewiki_runtime
