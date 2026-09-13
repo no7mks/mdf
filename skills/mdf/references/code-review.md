@@ -78,18 +78,28 @@ release 首轮依据正式发布记录确认上一版本，核对其 `v<version>
 
 feature 保留前置要求：运行 `delivery status` 定位材料，读取 design 与 converge gate，
 核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止。
-运行 `delivery check --stage code-review`；通过则进入 2。
-仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，进入 2 补审补验。
+运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
+仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
+并在步骤 4 全量重验。
 其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate；
 读取对应 Bug、交付目标、版本材料及适用设计作为审查依据，不为形式创建 feature 材料。
 
 ### 三份独立审查
 
+主 Agent 向每个审查 subagent 派发任务时，必须以以下文字作为提示词 opening，
+随后提供本次审查上下文及现有执行与输出约束：
+
+> 以最严苛的白盒测试专家视角审查实现代码和测试用例，主动挑战实现逻辑与测试的充分性，
+> 寻找隐藏缺陷和覆盖盲区。以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
+
 步骤 2 强制启动 3 个独立 subagent。三者收到相同的基线、review_head、工作目录、
 目标、验收与适用设计材料，均全量检查正确性、验收覆盖、测试质量、code smell、
 架构合理性及非必要复杂度。不安排分工，不按文件、模块或领域拆分，不共享其他审查者结论。
 主 Agent 在三份结果全部返回前不修改审查对象；subagent 只读审查，不修改文件或提交。
-每份报告列出问题位置、触发条件、影响与证据；无问题也须明确说明完成的范围。
+每份报告均声明 base_commit、review_head、已完成的审查范围及未完成项；无未完成项时明确写无。
+发现问题时列出问题位置、触发条件、影响与证据；无问题时明确说明未发现问题。
+主 Agent 核对每份报告与派发的基线、review_head 和全量范围一致，且无未完成项，才验收为完整报告。
+范围声明缺失、端点不一致或存在未完成项时，要求补齐或重新独立审查；无法补齐则停止。
 不足 3 个、启动失败、结果缺失或未覆盖全量时，补齐独立审查；无法补齐则停止，不记录通过。
 续办只复用同一基线与 review_head 的完整报告；首轮未凑齐三份时不得进入修复或记录完成。
 
@@ -104,9 +114,10 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 
 ### 验证与持久证据
 
-步骤 4：feature 先运行 `delivery check --stage code-review`；通过且本轮未改动实现、测试
-或验证配置时沿用有效全绿证据；返回 `stale_verification` 或本轮有改动时运行
-`delivery verify` 全量重验。其他错误停止。
+步骤 4：feature 先运行 `delivery check --stage code-review`；除 `stale_verification` 外的错误均停止。
+finish 本次集成产生新提交、返回 `stale_verification` 或本轮改动实现、测试、验证配置时，
+运行 `delivery verify` 全量重验；finish 集成后的强制重验优先于证据复用，即使仅修改文档。
+仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
 脚本执行 manifest 的全部 `verification.commands`，逐项记录命令与退出状态，
 输出并保存 `<完整分支名>.verification.json`（与审查报告同目录）；失败保留失败证据。
