@@ -185,6 +185,11 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "内部 clarify" in table[1][3]
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
+    assert table[2][5] == "4"
+    assert table[3][1] == "切换"
+    assert table[3][2] == "约束"
+    assert table[3][5] == "结束"
+    assert table[3][6] == "留在 4 等待"
     assert "一次只问一个问题" not in text
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
@@ -192,6 +197,24 @@ def test_start_clarifies_feature_objectives_before_branch():
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"其他种类通过 ─+→ 3 Start branch", diagram)
     assert re.search(r"feature 通过", diagram)
+    assert re.search(r"创建成功", diagram)
+    assert re.search(r"4 Switch worktree", diagram)
+
+
+def test_start_switches_agent_to_owner_worktree():
+    text = workflow("start")
+    assert "创建成功进入 4" in text
+    assert "move_agent_to_root" in text
+    assert "move_agent_to_cloned_root" in text
+    assert "New local worktree" in text
+    assert "Create a new worktree" in text
+    assert "File > Open Folder" in text
+    assert "EnterWorktree" in text
+    assert "git rev-parse --show-toplevel" in text
+    assert "git branch --show-current" in text
+    assert "不得再 `git worktree add`" in text
+    assert "不得只在原根 `cd` 冒充已切换" in text
+    assert "qa/dev 不在本步切换" in text
 
 
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():

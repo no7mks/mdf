@@ -26,7 +26,14 @@
                  │
                  ├──── 创建前检查失败 ────→ [报告 finding，不创建分支]
                  ├──── 创建中失败 ────────→ [拆除已建 worktree 与分支]
-                 └──── 创建成功 ──────────→ [报告并结束]
+                 │
+                 ▼ 创建成功
+┌──────────────────────────────────┐
+│ 4 Switch worktree                │
+└────────────────┬─────────────────┘
+                 │
+                 ├──── 未切到 ────→ [留在 4 等待]
+                 └──── 已切到 ────→ [结束]
 ```
 
 ## 工作流（唯一执行契约）
@@ -41,7 +48,8 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 参数 | 脚本 | 确认分支标识；feature 用 `list` 选定 PRP | 参数、list 结果 | feature 2；其他 3 | 留在 1 询问 |
 | 2 | 澄清 | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
-| 3 | 创建 | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 结束 | 检查失败不创建；创建中失败拆除 |
+| 3 | 创建 | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 4 | 检查失败不创建；创建中失败拆除 |
+| 4 | 切换 | 约束 | 按当前 agent 把会话切到 owner worktree | cwd、分支 | 结束 | 留在 4 等待 |
 
 ## 术语与数据结构
 
@@ -111,5 +119,51 @@ worktree 与分支。不推送，不设置 upstream。
 CLI 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 固定起点完整 hash，
 供 bugfix/hotfix code-review 使用；删除分支时该配置随分支删除，不设置 upstream。
 feature CLI 另固定 start_commit，在 owner 写入 changes/unreleased/<slug>/ 的目标和身份并提交。
-后续工作改用返回的 worktree 路径；write-tests / implement 改用 `roles` 路径。
-成功后结束，由用户手动触发 design 或通过 next 委托。其他分支不创建 feature 阶段材料。
+后续 write-tests / implement 改用 `roles` 路径。
+创建成功进入 4，本步不结束。其他 kind 不创建 feature 阶段材料。
+
+<a id="s4"></a>
+
+**切换**
+
+目标固定为步骤 3 JSON 的 owner：`worktree` 绝对路径与 `branch` 完整分支名。
+feature 的 qa/dev 不在本步切换。已在该路径且当前分支已是 `branch` 则本步通过。
+不得再 `git worktree add`，也不得只在原根 `cd` 冒充已切换。
+向用户给出应切到的绝对路径与分支名。
+
+判定当前 agent：先看本会话可用工具，再看 `$MDF_ROOT` 是否位于
+`.cursor/skills`、`.codex/skills`、`.kiro/skills`、`.claude/skills` 或
+`.openclaw/skills`。工具与路径冲突时以工具为准。
+
+Cursor：立即对 owner `worktree` 调用 `move_agent_to_root`（参数
+`rootPath`）。禁止 `move_agent_to_cloned_root`（会 fetch origin，本地未推送
+分支会失败）。调用后必须新开 shell 再核对，不得沿用切换前的终端 cwd。
+无该工具时报告缺失并留在 4，要求用户把工作区根打开为该路径。
+
+Codex：要求用户把当前对话接到已有 owner worktree，不要再创建：
+1. 点右上角 Environment 当前项（一般显示 Local）
+2. Continue in 选 New local worktree，不要选 Cloud
+3. 在 Hand off chat to worktree 中打开 Worktree 下拉，选名称等于
+   `branch` 的已有项（如 `feature/<slug>`）
+4. 不要选 Create a new worktree，也不要选 `qa/` 或 `dev/` 角色树
+对话框会保持该 worktree 的既有分支。给出应选项后等待用户完成，再核对。
+
+Kiro IDE：没有会话内切根工具。要求用户用 File > Open Folder 或
+`kiro <worktree>` 打开 owner 绝对路径作为工作区根；禁止 Add Folder to
+Workspace。打开后在该根继续并核对。
+Kiro CLI：会话绑定启动目录。要求用户在 owner `worktree` 下重新启动
+`kiro-cli`；禁止只在原会话 `cd`。
+
+Claude Code：对 owner `worktree` 调用 `EnterWorktree`。路径不在
+`.claude/worktrees/` 时需用户批准。禁止 `claude --worktree` 或在
+`.claude/worktrees/` 另建副本。
+
+其他（含 OpenClaw）：把 owner 绝对路径交给用户，要求把工作区或进程 cwd
+打开到该路径后继续；禁止再创建 worktree。OpenClaw 不得用 `worktree: true`
+另建 checkout，可用 `--cwd` 指向已有 owner 路径后重启。
+
+核对必须在切换后的环境、新 shell 执行：
+`git rev-parse --show-toplevel` 等于 JSON `worktree`，
+`git branch --show-current` 等于 `branch`。
+向用户展示这两项。未满足则留在 4，重复对应指引，不拆除已建 worktree 与分支。
+通过后结束，由用户手动触发 design 或通过 next 委托。
