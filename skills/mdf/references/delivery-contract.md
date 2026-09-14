@@ -53,6 +53,8 @@ passed 代替 CLI 检查。
 verification.commands 始终属于测试门槛。路径可以是仓库相对文件、目录或 glob。
 全绿按项目全部具名验证项判断；单项重跑仅用于定位，不替代全量通过。
 代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
+`fact-update` gate 绑定 `facts`、`implementation` 与 `design`：只改测试或验证配置不使
+事实审阅过期，但仍使全绿与 code-review 过期。
 `code` 指纹覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件；
 ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
 记录文件不参与其自身校验对象的指纹。缺失或过期时原地补验，不回退 intent。

@@ -110,6 +110,39 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     assert "stale_verification" in result.stderr
 
 
+def test_tests_only_change_does_not_expire_fact_update(python_exe, tmp_path):
+    repo, root, _ = setup_delivery(python_exe, tmp_path)
+    qa, dev = sync_roles(python_exe, repo)
+    (qa / "tests").mkdir(exist_ok=True)
+    (qa / "tests/test_health.py").write_text("def test_health():\n    assert 1 == 1\n")
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    payload(record(python_exe, dev, "implement"))
+    commit(dev)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
+    for stage in ("converge", "code-review", "fact-update"):
+        payload(record(python_exe, repo, stage))
+    commit(repo)
+    fact_update = (root / "gates/fact-update.json").read_text()
+    # 纯测试改动：全绿与 code-review 过期，重验重审后 fact-update 仍有效。
+    test_file = repo / "tests/test_health.py"
+    test_file.write_text(test_file.read_text() + "\n\ndef test_more():\n    assert True\n")
+    result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
+    assert "stale_verification" in result.stderr
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
+    payload(record(python_exe, repo, "code-review"))
+    payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
+    assert (root / "gates/fact-update.json").read_text() == fact_update
+    # 实现改动：重验重审后 fact-update 仍过期。
+    implementation = repo / "src/service.py"
+    implementation.write_text(implementation.read_text() + "\n# changed\n")
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
+    payload(record(python_exe, repo, "code-review"))
+    result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
+    assert "stale_gate" in result.stderr
+
+
 def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     qa, dev = sync_roles(python_exe, repo)

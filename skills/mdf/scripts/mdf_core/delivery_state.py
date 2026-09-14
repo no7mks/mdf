@@ -168,8 +168,9 @@ def require_green(repo, root, data):
 def require_finish(repo, root, data):
     require_design(repo, root, data)
     current = require_green(repo, root, data)
+    # 事实审阅对照的是实现；纯测试或验证配置改动不使其过期，只由 code-review 与全绿覆盖。
     for stage, keys in (("code-review", ("code", "design")),
-                        ("fact-update", ("facts", "code", "design"))):
+                        ("fact-update", ("facts", "implementation", "design"))):
         record = gate(repo, root, stage)
         if any(record.get("fingerprints", {}).get(key) != current[key] for key in keys):
             raise MDFError(f"{stage} 证据缺失或过期", code="stale_gate")
