@@ -93,12 +93,12 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 入口 | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | 范围 | 约束 | 核对版本，集成主线并重审 | 集成、审查、版本 | 已收口 4；否则 3 | 停止 |
+| 2 | 范围 | 约束 | 核对版本；no-ff 集成主线并内部执行 code-review | 集成、审查、版本 | 已收口 4；否则 3 | 停止 |
 | 3 | 材料 | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
-| 4 | 审阅 | 约束 | 核对本次审阅、校验与 gate | 有效证据 | 已收口或 feature/bugfix 9；待收口 5 | 停止并交接 |
+| 4 | 审阅 | 约束 | 运行 gate 检查；过期原地补验后复核 | 有效证据 | 已收口或 feature/bugfix 9；待收口 5 | 停止并交接 |
 | 5 | 输入 | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并核对验证与接受 | 完整覆盖、接受记录 | 8 | 停止 |
+| 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并取得用户接受 | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | 交接 | 约束 | 提交本次产物并核对交付条件 | clean、证据 | 有效 10；需重集成 2 | 报告并停止 |
 | 10 | 合并 | 脚本 | 运行 finish-gitflow，核对合并、tag 与发版推送 | Git 实际结果 | 结束 | 报告现场并询问 |
@@ -184,8 +184,9 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 **审阅**
 
 feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
-其他分支运行 `project-verify check --repo "$REPO_ROOT"`，失败或过期则补验后复核。
-语义或实现变化必须补审补验。
+其他分支运行 `project-verify check --repo "$REPO_ROOT"`。
+两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤原地补验补审后复核，
+不回退步骤；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
 
@@ -256,7 +257,8 @@ release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
 feature/bugfix 必须有规范 child Change。
 按 code-review 的证据规则再次核对最终 HEAD，防止收口期间的实现改动遗漏审查。
 再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时，feature/bugfix 回到步骤 2
-重新集成、审查并更新事实材料；已收口 release/hotfix 停止报告状态不一致。
+重新集成、审查并更新事实材料；release/hotfix 无论是否已收口均停止并报告状态不一致，
+不重新集成、不覆盖版本目录。
 核对 clean 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
 
 验收：必要提交、当前 clean 和交付条件。

@@ -70,7 +70,7 @@
 | 3 | 事实 | 约束 | 逐份核对当前事实陈述及 evidence 与实现 | 事实复核、语义发现 | 4 | 无法复核则停止 |
 | 4 | 覆盖 | 约束 | 从实现反查产品与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | 警告 | 约束 | 逐条审阅未引用实现的 warning 并确认 | 逐条用户确认 | 6 | 无法审阅则停止 |
-| 6 | 校验 | 脚本 | 运行 full validation，不运行验证命令 | validation findings | 7 | 停止 |
+| 6 | 校验 | 脚本 | 运行 `validate --scope full`，不运行验证命令 | validation findings | 7 | 停止 |
 | 7 | 确认 | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
@@ -107,8 +107,9 @@ finish 的 release 为全量，其他分支为调用方给出实现和当前事�
 **事实**
 
 从文档到实现执行`事实复核`：复核范围内每份当前事实文档、陈述和 `evidence`。
+范围内未复核的文档逐份记录未触及理由，供步骤 7 报告。
 
-验收：事实复核。
+验收：事实复核、未触及理由。
 
 异常与交接：记录语义 finding 后继续 4。
 
@@ -136,7 +137,8 @@ finish 的 release 为全量，其他分支为调用方给出实现和当前事�
 
 **校验**
 
-运行 `full validation`，不运行验证命令；init 只允许 `manifest.initializing` finding。
+运行 `validate --repo "$REPO_ROOT" --scope full`（即 full validation），不运行验证命令；
+init 只允许 `manifest.initializing` finding。
 
 验收：validation findings。
 

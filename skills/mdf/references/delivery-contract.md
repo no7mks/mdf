@@ -22,8 +22,8 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 ## 阶段与执行责任
 
 主线为 start → design → [write-tests ∥ implement] → converge → code-review → finish。
-`fact-update` 是 CLI gate，由独立 `$mdf fact update` 或 finish 前段内嵌记录，
-不是用户主线箭头上的一站。
+`fact-update` 是 CLI gate，只由 finish 前段内嵌的 fact update 记录；独立 `$mdf fact update`
+不记录 gate。它不是用户主线箭头上的一站。
 bugfix/hotfix/release 也须完成 code-review，范围与三份独立审查见 `references/code-review.md`；
 不要求 feature 的 design、write-tests、implement 或 converge 阶段。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
