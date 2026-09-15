@@ -1,4 +1,8 @@
-"""验证 Skill 的执行表、路由和副作用边界。"""
+"""验证 Skill 的执行表、路由和副作用边界。
+
+不拆分理由：路由契约按 intent 集中在单一文件，便于对照同一张执行表的
+行断言；拆分会让同一 intent 的表格、决策树与文本约束分散到多文件。
+"""
 
 from __future__ import annotations
 
@@ -400,6 +404,7 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "提交本次路径" in text
     assert "不自动提交" not in text
     assert "重读" in text
+    assert "提示用户运行 `$mdf fact audit`" in text
     assert "同会话" in text
     assert "提示在新会话" not in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
