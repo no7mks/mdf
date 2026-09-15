@@ -44,7 +44,6 @@
                  │
                  ├──── 可修复的审阅或校验问题 ────→ 5 Validate
                  ├──── 无法继续 ──────────────────→ [保留现场并报告]
-                 │
                  └──── 审阅及校验通过 ────────────→ [返回调用方]
 
 ┌──────────────────────────────────┐
@@ -159,7 +158,8 @@ AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范
 
 按调用方验收：init 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
 bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
-initializing 阶段仅允许 `manifest.initializing` finding；其他 finding 修正、提交后重验。
+`manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；已是 ready
+时须零 finding。其他 finding 修正、提交后重验。
 通过后返回调用方验收步骤；调用方进入启用阶段时从 6 继续。无法继续则保留现场并报告。
 
 <a id="s6"></a>
@@ -170,7 +170,7 @@ initializing 阶段仅允许 `manifest.initializing` finding；其他 finding �
 <a id="s7"></a>
 
 将 manifest 改为 ready，执行 full validation，零 finding 后提交就绪结果；提交后再次核验。
-事实发生变化时返回 5 补审补验；其他失败保留现场并报告，不宣称已完成。
+事实发生变化时返回 5 补审补验，且步骤 5 按当前 `manifest.state` 验收；其他失败保留现场并报告，不宣称已完成。
 
 <a id="s8"></a>
 

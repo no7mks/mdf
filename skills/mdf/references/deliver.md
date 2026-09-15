@@ -42,6 +42,7 @@
 ## 工作流（唯一执行契约）
 
 读取 `references/common.md`；feature 另读 `references/delivery-contract.md`。
+步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
 
@@ -78,6 +79,7 @@ feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `wo
 ### 从当前证据选择剩余工作
 
 步骤 2 结合原步骤、对话确认、未完成子步骤、产物、Git 历史及执行者状态判断。
+按下表自上而下命中即停止，不并行套用多行。
 已完成且证据有效的阶段不重做；不能仅凭 gate 文件存在或一次 check 成功判断整个阶段完成，
 还须核对该阶段要求的提交、语义结论和相关内容指纹。过期证据按原阶段规则补审补验。
 角色尚在时从对应 qa/dev worktree 读取各路 gate 与提交，不因 owner 尚未合入就重复分派。
@@ -89,7 +91,7 @@ feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `wo
 | start 未完成 | 续办 start，锁定其返回路径 |
 | feature 设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
 | feature 两路均未完成且前置条件满足 | 并行委托 `references/write-tests.md` 与 `references/implement.md` |
-| feature 仅一路未完成 | 在该角色 worktree 续办该 intent，不重跑已完成一路 |
+| feature 仅一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成一路 |
 | feature 两路完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | bugfix/hotfix/release 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
 | 实现完成且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
@@ -108,7 +110,9 @@ finish 已开始而代码发生变化时按 code-review 的复核规则处理后
 步骤 4：所有当前可并行且互不依赖的 intent 必须分别交给 subagent，不由主 Agent 串行代做。
 当前明确的并行组合为 feature 的 write-tests 与 implement，须已确认并提交同一 design 与共享底座。
 两路已有一条运行时，等待其结果并启动另一条可执行的空闲路；不得重复创建执行者。
-只剩一路时也可交给单个 subagent，主 Agent 保持协调与核验责任。
+仅一路未完成走步骤 3，由主 Agent 用该角色绝对路径与 `git -C` 续办，不走步骤 4；
+禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。步骤 4 的 subagent
+按其 intent 切到角色 worktree。
 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
 code-review 内部仍强制 3 个 subagent 同范围只读审查，按其契约执行，主 Agent 汇总修复。
 资源不足时等待已有执行者释放；无法提供所需 subagent 能力时报告阻塞，不悄悄降级串行。

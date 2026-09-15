@@ -80,7 +80,7 @@
 | 5 | 澄清 | 脚本 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | 确认 | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
 | 7 | 创建 | 脚本 | 确认 slug，生成 ID、写初始对象并首次校验 | 对象、首次校验 | 8 | 保留两者，停止 |
-| 8 | 提升 | 脚本 | 转状态、移除 Jot，复验后同批独立提交 | 两次校验、diff、提交 | 交接并结束 | 保留现场，停止 |
+| 8 | 提升 | 脚本 | 复验后转状态、删 Jot、再复验并提交 | 两次校验、diff、提交 | 交接并结束 | 首次保留；二次回滚停止 |
 
 ## 术语与数据结构
 
@@ -175,8 +175,13 @@ Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。
 
 **提升**
 
-Proposal 转为 `ready`；Bug 保持 `open`。删除选中 Jot marker， 再运行 `targeted validation`。
+不重写对象。在步骤 7 已写入的 draft/open 上先运行 `targeted validation`。
+通过后 Proposal 转为 `ready`；Bug 保持 `open`。然后删除选中 Jot marker，再运行第二次
+`targeted validation`。第一次校验失败时尚未改动状态与 Jot，保留 draft/open 对象与
+原 Jot 并停止；第二次校验失败时转状态与删 Jot 已落盘，按本 intent 恢复规则回滚到
+步骤 7 完成状态（恢复 draft/open 状态与原 Jot marker），不提交。
 
 验收：两个文件完整 diff 与两次验证。
 
-异常与交接：保留现场并报告 findings。 成功时将本次创建与移除作为同一个独立 commit 提交。
+异常与交接：第一次失败保留两者，第二次失败先回滚再保留两者，均报告 findings。
+成功时将本次创建与移除作为同一个独立 commit 提交。

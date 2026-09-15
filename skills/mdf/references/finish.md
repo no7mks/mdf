@@ -1,8 +1,5 @@
 # Finish
 
-本 intent 执行实际收口，不提供预览模式。用户明确要求仅预览或只读时，说明此入口不支持并停止；
-不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
-
 ## 决策树
 
 ```text
@@ -70,6 +67,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 主线前进，feature/bugfix ────→ 2 Integrate and review
+                 ├──── 主线前进，release/hotfix ────→ [报告并停止]
                  ├──── 交付条件未通过 ──────────────→ [报告并停止]
                  │
                  ▼ 必要提交完成且交付条件通过
@@ -100,8 +98,8 @@
 | 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并取得用户接受 | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | 交接 | 约束 | 提交本次产物并核对交付条件 | clean、证据 | 有效 10；需重集成 2 | 报告并停止 |
-| 10 | 合并 | 脚本 | 运行 finish-gitflow，核对合并、tag 与发版推送 | Git 实际结果 | 结束 | 报告现场并询问 |
+| 9 | 交接 | 约束 | 提交并核对交付条件 | clean、证据 | 有效 10；feature/bugfix 2 | release/hotfix 前进或条件未过则停止 |
+| 10 | 合并 | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构
 
@@ -110,6 +108,9 @@
 <a id="s1"></a>
 
 **入口**
+
+本 intent 执行实际收口，不提供预览模式。用户明确要求仅预览或只读时，说明此入口不支持并停止；
+不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
 
 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
 
@@ -185,8 +186,9 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 
 feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
 其他分支运行 `project-verify check --repo "$REPO_ROOT"`。
-两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤原地补验补审后复核，
-不回退步骤；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
+两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤补验，并内部从
+`code-review.md` 步骤 1 执行完整审查（新审查三人全量，不把集成当修复续办）后复核，
+不回退本流程步骤编号；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
 
@@ -256,6 +258,7 @@ feature/bugfix 不 push，运行 finish gate 检查后进入本地 Gitflow 合�
 release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
 feature/bugfix 必须有规范 child Change。
 按 code-review 的证据规则再次核对最终 HEAD，防止收口期间的实现改动遗漏审查。
+证据缺失或过期时停止，不进入步骤 10。
 再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时，feature/bugfix 回到步骤 2
 重新集成、审查并更新事实材料；release/hotfix 无论是否已收口均停止并报告状态不一致，
 不重新集成、不覆盖版本目录。

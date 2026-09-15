@@ -41,6 +41,9 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
         "不在任一路仍运行时执行 converge 或删除角色 worktree",
         "tests（qa）或 implementation（dev）指纹", "同一可写 worktree 不并发派工",
         "code-review 内部仍强制 3 个 subagent 同范围只读审查",
+        "仅一路未完成走步骤 3",
+        "禁止把主 Agent 会话切离 owner",
+        "禁止 `move_agent_to_root`",
     ):
         assert rule in text
 

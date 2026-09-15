@@ -42,9 +42,15 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 ### 范围与前置条件
 
 先运行 `delivery status`，读取 `worktrees.qa.path`；缺树则停止。
-切到该路径，对 owner 分支执行 `git merge --no-ff`；已在该 worktree 时仍先
-merge。冲突保留现场。不得在 feature 上编写或补写测试。再运行
-`delivery check --stage write-tests`。
+用 `git -C <qa 绝对路径>` 与该路径下的绝对文件路径操作。对 owner 分支执行
+`git merge --no-ff`；已在该 worktree 时仍先 merge。冲突保留现场。
+不得在 feature 上编写或补写测试（指 owner `feature/<slug>`，不是 kind）。
+独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与
+`qa/feature/<slug>`，不是 owner：Cursor 对该 qa 路径调用 `move_agent_to_root`
+（禁止 `move_agent_to_cloned_root`），新 shell 核对 toplevel 与当前分支；其他宿主
+打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止。
+deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
+再运行 `delivery check --stage write-tests`。
 与 implement 互不前置，可并行。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。
 只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
 回 design 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；

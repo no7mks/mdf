@@ -63,6 +63,7 @@
 **版本**
 
 要求精确 `MAJOR.MINOR` 的 `RELEASE_EPOCH`，拒绝 patch、预发布、 构建元数据和 `unreleased`。
+缺失时询问用户，不猜测当前 minor；用户未提供则停止。
 
 验收：有效 epoch。
 
@@ -72,7 +73,7 @@
 
 解析 `REPO_ROOT`、运行 `doctor --repo "$REPO_ROOT"`。
 
-验收：`ready`。
+验收：`normal_workflows_allowed: true`。
 
 ### 预览与归档
 
@@ -110,6 +111,6 @@ released/rejected/replaced Proposal 可归档；Bug 的 duplicate 必须随 cano
 仅非预览调用授权运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH"`，
 后运行 `validate --repo "$REPO_ROOT" --scope full`。
 
-验收：对象、切片、重写数量与 validation。
+验收：对象、`moves`、`rewrites` 数量与 validation。
 
 异常与交接：`duplicate_group_open` 时停止且不得单独移动，其他失败保留现场并报告 findings。成功后复核并提交本次归档改动。

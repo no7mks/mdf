@@ -103,8 +103,8 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 不能仅凭当前 checkout 没有开发材料或 `next` 未显示进行中，就判定未开工。
 已开工时报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP。
 `list` 因记录损坏失败或目标不在输出中时同样在写入前停止，报告缺失证据。
-仅 active draft/ready 且已确认未开工时继续；将既有 `ready` 转为 `draft`，
-取消、暂停或未确认时保持 `draft`。
+仅 active draft/ready 且已确认未开工时继续；将既有 `ready` 转为 `draft`。
+进入本步骤即放弃 ready；取消、暂停、未确认或后续失败均保持 `draft`，不恢复 ready。
 
 验收：原状态、检查过的引用与材料范围、未开工结论，以及写回后的 draft 状态。
 

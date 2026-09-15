@@ -111,7 +111,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "docs/context/requirements/" not in init
     assert "$mdf intake" in init
     assert "$mdf bug create" in init and "$mdf prp create" in init
-    assert "| 1 | 入口 | 脚本 |" in init
+    assert "| 1 | 入口 | 约束 |" in init
     assert "| 2 | 盘点 | 约束 |" in init
     assert "| 7 | 就绪 | 脚本 |" in init
     assert "没有未说明的遗留文件" in init

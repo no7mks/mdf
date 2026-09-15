@@ -157,7 +157,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix 9；待收口 5"
     assert table[7][5] == "9"
-    assert table[8][5] == "有效 10；需重集成 2"
+    assert table[8][5] == "有效 10；feature/bugfix 2"
+    assert "release/hotfix 前进或条件未过则停止" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
     assert "preview" not in diagram and "预览" not in diagram
@@ -255,7 +256,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
     assert rows(shared)[6][6] == "事实变化 5；其他保留现场停止"
-    assert rows(workflow("init"))[6][6] == "事实变化 6；其他保留现场停止"
+    assert rows(workflow("init"))[6][6] == "事实变化 6；未确认结束；其他停止"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
 
@@ -438,3 +439,62 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "无论是否冲突，都以集成后的 HEAD 重新执行完整 code-review" in finish
     assert "不复用集成前报告" in finish
     assert "证据缺失或过期时内部执行 code-review" in finish
+
+
+def test_role_intents_do_not_reuse_owner_session_switch():
+    tests = workflow("write-tests")
+    implement = workflow("implement")
+    deliver = workflow("deliver")
+    for text in (tests, implement):
+        assert "按 start 步骤 4" not in text
+        assert "git -C" in text
+        assert "move_agent_to_root" in text
+        assert "禁止 `move_agent_to_cloned_root`" in text
+        assert "deliver 步骤 3 主 Agent 续办时禁止切会话" in text
+        assert "禁止切到 owner" in text
+    assert "qa/feature/<slug>" in tests
+    assert "dev/feature/<slug>" in implement
+    assert "禁止把主 Agent 会话切离 owner" in deliver
+    assert "仅一路未完成走步骤 3" in deliver
+    assert "不走步骤 4" in deliver
+
+
+def test_codewiki_session_is_created_by_analyze_repo():
+    for name in ("codewiki-generate", "codewiki-update"):
+        text = workflow(name)
+        assert "通过后建立 MCP session" not in text
+        assert "再建立 MCP session" not in text
+        assert "session 由 `analyze_repo` 创建" in text
+        assert "不得另调建 session 工具" in text
+        assert "调用 `analyze_repo` 创建 session" in text
+    generate = workflow("codewiki-generate")
+    assert "读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`" in generate
+    assert "save_module_tree` 并读取其写出的 `processing_order.json`" in generate
+    assert rows(workflow("codewiki-recovery"))[4][2] == "脚本"  # 移出为文件操作
+
+
+def test_init_entry_is_read_only_and_existing_git_runs_doctor():
+    table = rows(workflow("init"))
+    assert table[0][2] == "约束"
+    assert table[0][3] == "只读判定分流"
+    text = workflow("init")
+    assert "必须运行 doctor" in text
+    assert "可运行 doctor" not in text
+    assert "转入前不写入 `.git/`" in text
+
+
+def test_jot_promote_revalidates_without_rewriting():
+    jot = workflow("jot")
+    assert "不重写对象" in jot
+    assert "在步骤 7 已写入的 draft/open 上" in jot
+    assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
+    assert "回滚到\n步骤 7 完成状态" in jot
+    table = rows(jot)
+    assert (table[4][1], table[4][2]) == ("澄清", "脚本")
+    assert "首次保留；二次回滚停止" in table[7][6]
+
+
+def test_clarify_unavailable_facts_stop_like_cancel():
+    table = rows(workflow("clarify"))
+    assert "不可得" in table[2][6]
+    assert "取消/暂停/不可得则停止" in table[2][6] and "取消或失败停止" in table[1][6]

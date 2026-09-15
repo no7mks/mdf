@@ -12,7 +12,8 @@ upgrade 不读取本文件。
 每次 CLI 调用记录实际命令、输入、退出状态与结构化结果，并按当前步骤检查预期产物。
 除 intent 明确声明的例外外，非零退出或产物缺失均走该步骤的失败去向，不以摘要代替检查。
 
-验收：CLI 调用、产物检查与 intent 判断各自可追溯。异常：停止，不得用 CLI 模拟语义判断。
+验收：CLI 调用、产物检查与 intent 判断各自可追溯。非零退出或产物缺失走该步失败去向。
+「异常」仅指禁止用 CLI 模拟语义判断；此时停止，不另走失败去向。
 
 ## 目标根
 
@@ -21,7 +22,8 @@ upgrade 不读取本文件。
 next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
 除 init/bootstrap/next 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
 用 `git -C <目标目录> rev-parse --show-toplevel` 解析为绝对 `REPO_ROOT`，再读取并执行对应流程。
-核对解析出的仓库确为用户目标；边界不明先澄清，命令失败则报告并停止，不使用空值或上次调用的变量。
+核对解析出的仓库确为用户目标；边界不明先澄清，澄清后重做本条；命令失败则报告并停止，
+不使用空值或上次调用的变量。
 clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共流程处理普通目录
 与父仓库边界。upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
 
@@ -30,7 +32,8 @@ clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共
 <a id="s2"></a>
 
 入口识别已有 staged、unstaged、untracked 改动，不普遍要求 clean worktree。
-无关且不冲突的改动保留并继续；与任务重叠、归属或处理方式不明时先澄清，否则停止。
+无关且不冲突的改动保留并继续；与任务重叠、归属或处理方式不明时先澄清，澄清后重做本条；
+无法判定归属则停止。
 clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的文件设置额外豁免。
 
 写入或提交前读取当前分支，按本次工作与文档的归属确定落点，不按 intent 名称分配分支：
@@ -63,13 +66,19 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 <a id="s3"></a>
 
 同次 intent 接受用户对中间产物的反馈；不得仅因本次产物尚未提交而拒绝修改。
-具体操作的前置条件仍须满足。边界不明时报告并停止。
+具体操作的前置条件仍须满足。
+
+验收：用户反馈已被本步吸收，或明确无反馈。
+异常与交接：边界不明则报告并停止；澄清后重做调用方当前步骤。
 
 ## 失败
 
 <a id="s4"></a>
 
 写入失败时保留现场并报告 findings，等待用户处理。
+
+验收：失败现场、findings 与等待状态已报告。
+异常与交接：本条即失败汇；不自行回滚，除非当前 intent 另有恢复规则。
 
 ## 交接
 
@@ -89,6 +98,9 @@ push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限�
 
 阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束，
 不仅为手动 commit 要求重调，也不自动触发下一个用户入口。
+
+验收：提交范围、staged diff 与 Conventional Commit 可追溯，或明确无改动。
+异常与交接：提交失败保留现场；只读、预览不产生提交。
 deliver 依据 `references/deliver.md` 内部串联剩余交付阶段，子 intent 完成后返回 deliver 继续。
 init 依据 `references/initialization.md` 自动转入 bootstrap 是明确的内部委托，不自动串联交付主线。
 
@@ -106,6 +118,7 @@ init 依据 `references/initialization.md` 自动转入 bootstrap 是明确的�
 
 按操作需要读取：`references/repository-contract.md` 定义仓库目录、`manifest` 与 `基线`；
 `references/object-contract.md` 定义 Proposal、Bug 与 Change 的 schema 和不变量。
+intent 声明读取的契约或模板缺失时停止并报告，不猜测内容。
 
 | 材料 | 位置 | 读取条件 |
 | --- | --- | --- |

@@ -31,8 +31,8 @@
 │ 4 Write modules                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 可修复的图失败或跳过 ────→ 4 Write modules
-                 ├──── 其他失败 ────────────────→ references/codewiki-recovery.md
+                 ├──── 可修复的页面或图 ────→ 4 Write modules
+                 ├──── 其他失败 ────────────→ references/codewiki-recovery.md
                  │
                  ▼ 页面及图验收通过
 ┌──────────────────────────────────┐
@@ -57,7 +57,7 @@
 
 完整读取 `references/common.md` 与 `references/codewiki-contract.md`。
 入口执行 `references/codewiki-runtime.md`；失败恢复或重建时读取
-`references/codewiki-recovery.md`，传入失败步骤、写入记录、session ID 与实际 workspace。
+`references/codewiki-recovery.md`，传入失败步骤、写入记录、session ID、实际 workspace 与 diff。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -77,8 +77,8 @@
 **入口**
 
 解析目标 Git 根 `REPO_ROOT` ；检查 CodeWiki MCP。
-按 `common.md` 确定写入分支归属后再建立 MCP session；与当前分支工作相关时在当前分支生成，
-否则在 develop 生成，不在 master 写入。改用其他 checkout 后重新核对目标根与工具参数。
+按 `common.md` 确定写入分支归属。与当前分支工作相关时在当前分支生成，
+否则在 develop 生成，不在 master 写入。本步不建立 MCP session。
 
 验收：Git 根与 MCP 可用。
 
@@ -93,7 +93,9 @@
 验收：目录状态。
 
 异常与交接：standard 时要求 `$mdf codewiki update`，非空非 standard 时列出不符合项并停止。
-用户可移至自选非受管位置后重调；旧材料只作 reference，代码优先。
+本步失败时尚未建立 session，不调用 `close_session`。用户可移至自选非受管位置后重调；
+旧材料只作 reference，代码优先。通过后改用其他 checkout 须重新核对目标根，再进入
+步骤 3。session 由 `analyze_repo` 创建，不得另调建 session 工具。
 
 ### 模块与页面
 
@@ -101,9 +103,10 @@
 
 **分析**
 
-调用 `analyze_repo`，固定 repo/output 路径，遵守 `.gitignore` 并按实际排除第三方和纯生成目录；
-读取 workspace 的四个 JSON、`get_prompt(cluster)` 与所需 `read_code_components`；按内聚、调用与目录边界聚类，
-使用原始 component ID 调用 `save_module_tree` 并读取 `processing_order.json`；小仓库不强造层级，
+调用 `analyze_repo` 创建 session，固定 repo/output 路径，遵守 `.gitignore` 并按实际排除第三方和纯生成目录；
+读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`
+与分析返回的 JSON、`get_prompt(cluster)` 与所需 `read_code_components`；按内聚、调用与目录边界聚类，
+使用原始 component ID 调用 `save_module_tree` 并读取其写出的 `processing_order.json`；小仓库不强造层级，
 大仓库 避免只按目录机械切分。
 
 验收：模块树和处理顺序。
@@ -119,7 +122,7 @@
 
 验收：模块页与 Mermaid 校验。
 
-异常与交接：失败或跳过时修复或删图后重试。 对可读疑点追踪至事实；仓外事项省略或标为“不覆盖”；
+异常与交接：失败或跳过时，页面或图可修复则留在 4；否则走 recovery。 对可读疑点追踪至事实；仓外事项省略或标为“不覆盖”；
 不得遗留 TODO、待确认或猜测。 主动查找符合定义的 hack；存在才写 `hacks.md`，
 不得将项目特定版本、迁移或路由 分层抽象成通用 hack 规则。
 
@@ -141,8 +144,9 @@
 
 **验收**
 
-验收本次改动仅在 `docs/repowiki/`，overview、模块页、三个 JSON、链接、 模块树和 metadata 均有效且 `.codewiki/`
-无仓库改动；抽样回读并对照代码确认简体中文、事实闭合、无占位，且所有 hack 符合定义。
+验收本次改动仅在 `docs/repowiki/`，overview、模块页、三个 JSON、链接、 模块树和 metadata 均有效，
+`.codewiki/` 无仓库改动，且当前 session workspace 已清空、不得用忽略规则隐藏残余。
+抽样回读并对照代码确认简体中文、事实闭合、无占位，且所有 hack 符合定义。
 
 验收：验证与 diff。
 
@@ -151,4 +155,4 @@
 报告提交错误及待提交范围后停止；不得因此进入 recovery、搬移 Wiki 或重新生成。
 同次续办先核对输出与 diff 未变且验收仍有效，再按公共规则处理提交；不重新调用 MCP。
 
-分析开始后的 MCP 失败或输出验收失败进入 recovery；页面可修复时按其规则返回失败步骤。
+分析开始后的 MCP 失败或输出验收失败进入 recovery。

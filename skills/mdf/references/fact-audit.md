@@ -1,7 +1,5 @@
 # Fact Audit
 
-它只读：不写入、移动、提交、生成持久报告或执行 `verification.commands`。
-
 ## 决策树
 
 ```text
@@ -80,6 +78,8 @@
 <a id="s1"></a>
 
 **范围**
+
+它只读：不写入、移动、提交、生成持久报告或执行 `verification.commands`。
 
 确定类型和状态：fact update 委托时使用其明确范围，允许审阅调用方的同次写入；
 direct 执行`全量审阅`、manifest 必须 `ready`；init 为全量、允许 `initializing`；

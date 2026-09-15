@@ -43,9 +43,15 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 ### 范围与前置条件
 
 先运行 `delivery status`，读取 `worktrees.dev.path`；缺树则停止。
-切到该路径，对 owner 分支执行 `git merge --no-ff`；已在该 worktree 时仍先
-merge。冲突保留现场。不得在 feature 上实现。再运行
-`delivery check --stage implement`。
+用 `git -C <dev 绝对路径>` 与该路径下的绝对文件路径操作。对 owner 分支执行
+`git merge --no-ff`；已在该 worktree 时仍先 merge。冲突保留现场。
+不得在 feature 上实现（指 owner `feature/<slug>`，不是 kind）。
+独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 dev 路径与
+`dev/feature/<slug>`，不是 owner：Cursor 对该 dev 路径调用 `move_agent_to_root`
+（禁止 `move_agent_to_cloned_root`），新 shell 核对 toplevel 与当前分支；其他宿主
+打开或接到已有 dev worktree，禁止新建 worktree，禁止切到 owner。未切到则停止。
+deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
+再运行 `delivery check --stage implement`。
 测试完成不是前置条件。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。只修改实现；只使用 design 基线已提交的
 共享代码底座，发现缺失时停止并回 design，不得本路自行创建底座。
 测试争议反馈给用户，不改断言或配置绕过验证。
@@ -55,7 +61,8 @@ merge。冲突保留现场。不得在 feature 上实现。再运行
 在记录 gate 前逐项对照 objectives 与 design 检查实现路径、接口和错误语义；
 执行当前实现适用且可运行的自检，记录命令、退出状态、结果及对应验收项。
 不要求测试先完成或项目全绿；无法执行的自检逐项说明原因及留给 converge 的验证项。
-自检发现本阶段可修复的实现问题时原地修复并重查；目标或设计不明、实现未完成时停止并报告，
+自检发现本阶段可修复的实现问题时原地修复并重查。可修复指同一失败未满三轮且下一步修复动作明确；
+否则视为无法完成。目标或设计不明、实现未完成时停止并报告，
 不记录通过的 implement gate。摘要须区分已验证结论与未验证项，不把后续验证项写成已通过。
 运行 `delivery record --stage implement --summary <实现与自检摘要>` 并提交。
 

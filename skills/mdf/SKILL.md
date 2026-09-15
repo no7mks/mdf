@@ -55,9 +55,7 @@ disable-model-invocation: true
                  ├──── codewiki update ─────────→ references/codewiki-update.md
                  ├──── jot / jot promote ───────→ references/jot.md
                  ├──── help / help <intent> ────→ references/help.md
-                 ├──── upgrade ─────────────────→ references/upgrade.md
-                 ├──── 目标边界不明 ────────────→ [澄清后重查]
-                 └──── 解析失败或材料缺失 ──────→ [报告并停止]
+                 └──── upgrade ─────────────────→ references/upgrade.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -66,16 +64,17 @@ disable-model-invocation: true
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 调用 | 约束 | 只接受显式 intent；裸调用或未知调用按 help 执行 | 有效显式调用 | 2 | 帮助并结束 |
+| 1 | 调用 | 约束 | 只接受显式 intent；问号 next 仍是 next | 有效显式调用 | 2 | 帮助并结束 |
 | 2 | 工具 | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 2 | 3 | 停止 |
-| 3 | 分流 | 约束 | 核对本次目标根，读取命中流程并执行 | 目标根、流程结果 | 返回调用方 | 边界不明澄清后重查；其他停止 |
+| 3 | 分流 | 约束 | 核对目标根并执行命中流程 | 目标根或豁免、流程结果 | 返回调用方 | 澄清后回到 3；其他停止 |
 
 ## 术语与数据结构
 
 ### 调用与工具
 
-只接受选择树所列的显式调用；`next [--depth N]` 的深度可省略，亦可写成
-`$mdf next?` 或 `$mdf next？`（问号不是独立 intent，判定见 `references/next.md`）。
+只接受选择树所列的显式调用。裸调用或未知调用按 help 执行。`next [--depth N]`
+的深度可省略；`$mdf next?` 与 `$mdf next？` 不是独立 intent，步骤 1 视为
+`next` 并执行 `references/next.md`，不得当未知调用送 help。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
@@ -91,8 +90,10 @@ deliver 可内部委托剩余交付阶段直到 finish；其他入口仍按显�
 完整读取选择树指定的 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理；
 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-写入型 intent 读取 `references/common.md`；upgrade 不读该文件，见
-`references/upgrade.md`。
+除 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
+help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
+`codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
+步骤 3 命中后核对目标根；边界不明澄清后回到 3，材料缺失则停止并报告。
 
 `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`
 与 `$mdf help <intent>` 均由选择树路由；
