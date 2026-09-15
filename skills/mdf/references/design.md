@@ -45,6 +45,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 在 design.md 中明确目标、非目标、接口、错误语义、
 验收到测试类别的映射及 verification 各项适用条件。测试仅对 objectives 负责。
+设计前按任务从 `docs/README.md` 定位并读取相关当前事实页，在 design.md 列出
+当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
+不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库：
 类型、接口、错误语义、明确未实现的 stub 和最小测试设施，使两路从同一提交继续，

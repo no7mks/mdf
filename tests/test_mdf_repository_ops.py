@@ -179,12 +179,15 @@ def test_init_writes_files_from_assets_templates(
     templates = skill_dir("mdf") / "assets" / "templates"
     docs_index = (repo / "docs" / "README.md").read_text(encoding="utf-8")
     expected_index = (templates / "docs-readme.md").read_text(encoding="utf-8")
-    # all_not_applicable baselines 移除 system boundary 与 deviations 两行
+    # all_not_applicable baselines 移除 system boundary 与 deviations 相关行
     expected_index = expected_index.replace(
-        "- [系统边界](system/overview.md)\n", ""
+        "| 了解系统能做什么、边界在哪 | [系统边界](system/overview.md) |\n", ""
     )
     expected_index = expected_index.replace(
-        "- [已知偏差](system/deviations.md)\n", ""
+        "  - [系统边界](system/overview.md)\n", ""
+    )
+    expected_index = expected_index.replace(
+        "  - [已知偏差](system/deviations.md)\n", ""
     )
     assert docs_index == expected_index
     assert docs_index != "# 文档\n"

@@ -115,7 +115,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "| 2 | 盘点 | 约束 |" in init
     assert "| 7 | 就绪 | 脚本 |" in init
     assert "没有未说明的遗留文件" in init
-    assert "README 只作导航" not in init
+    assert "消除重复" in init
     for root_document in (
         "`README.md`",
         "`PROJECT.md`",
@@ -226,7 +226,8 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "`README.md` 面向项目用户与维护者" in contract
     assert "`PROJECT.md` 仅面向项目维护者" in contract
     assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
-    assert "要求 Agent 先读 `README.md`" in contract
+    assert "把 `docs/README.md` 当任务地图" in contract
+    assert "最短可运行路径" in contract
     assert "`GLOSSARY.md` 面向所有读者维护稳定的领域词典" in contract
 
 
@@ -286,6 +287,7 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`事实复核`" in audit
     assert "从文档到实现" in audit
     assert "从实现到文档" in audit
+    assert "加载质量" in audit
     assert "## 审阅类型" in audit
     assert "`全量审阅`：从文档和实现两个方向" in audit
     assert "`范围审阅`：从文档和实现两个方向" in audit
@@ -298,6 +300,25 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "这是交付前检查，不是 audit" in finish
     assert "references/fact-update.md" in finish
     assert "release 为全量" in finish
+
+
+def test_delivery_intents_consume_current_fact_pages() -> None:
+    design = intent("design")
+    tests = intent("write-tests")
+    implement = intent("implement")
+    review = intent("code-review")
+    template = (skill_dir("mdf") / "assets" / "templates" / "design.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "当前事实锚点" in design
+    assert "不得把计划写进既有事实页" in design
+    assert "## 当前事实锚点" in template
+    assert "以事实页为准" in tests
+    assert "以事实页为准" in implement
+    assert "不从源码重新推断契约" in implement
+    assert "相关当前事实页" in review
+    assert "回归基线" in review
 
 
 def test_start_and_finish_define_strict_gitflow_operations() -> None:

@@ -123,14 +123,21 @@ def render_docs_index(baselines: dict[str, dict[str, str]]) -> str:
     text = template_text("docs-readme.md", "# 文档\n")
     if baselines["system_boundary"]["status"] == "not_applicable":
         text = re.sub(
-            r"^- \[系统边界]\(system/overview\.md\)\n?",
+            r"^\| 了解系统能做什么、边界在哪 "
+            r"\| \[系统边界]\(system/overview\.md\) \|\n?",
+            "",
+            text,
+            flags=re.MULTILINE,
+        )
+        text = re.sub(
+            r"^  - \[系统边界]\(system/overview\.md\)\n?",
             "",
             text,
             flags=re.MULTILINE,
         )
     if baselines["deviations"]["status"] == "not_applicable":
         text = re.sub(
-            r"^- \[已知偏差]\(system/deviations\.md\)\n?",
+            r"^  - \[已知偏差]\(system/deviations\.md\)\n?",
             "",
             text,
             flags=re.MULTILINE,

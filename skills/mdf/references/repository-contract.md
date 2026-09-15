@@ -47,9 +47,11 @@
         └── archive/<major.minor>/
 ```
 
-`docs/README.md` 是文档入口，区分当前事实、决策、工作记录与调研材料。
-初始化预建工作目录，以 `.gitkeep` 保留空目录，并在文档入口逐项链接。
-占位仅建立目录结构，不表示已有工作记录或业务事实。已有项目文档保持原位；同名目录须核对内容和归属，
+`docs/README.md` 是文档入口与任务地图：按任务指向对应文档，当前事实排在决策与
+工作记录之前；只链接已有内容的页面，空目录不链接。初始化预建工作目录，以
+`.gitkeep` 保留空目录。占位仅建立目录结构，不表示已有工作记录或业务事实。
+`docs/testing.md` 是可选的测试分类与覆盖手册；存在时在任务地图按「写测试、
+分 kind」任务链接，不承载运行时行为事实。已有项目文档保持原位；同名目录须核对内容和归属，
 不得覆盖或自动接管。事实审计仍限定在 `docs/product/` 与 `docs/system/`。
 
 
@@ -91,15 +93,19 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 
 ## 根文档职责
 
-- `README.md` 面向项目用户与维护者，说明项目定位、用户使用起点和维护者的文档入口。
-  它可保留服务于这些目的的概览，但不重复`当前事实文档`中的详细产品或系统说明。
+- `README.md` 面向项目用户与维护者，说明项目定位、最短可运行路径和维护者的
+  文档入口。它可保留服务于这些目的的概览，但不重复`当前事实文档`中的产品或
+  系统行为；环境变量表、接口形状、错误文案等可观察契约只写在对应事实页。
 - `PROJECT.md` 仅面向项目维护者，记录项目专属的开发、验证与维护手册，包括环境、
   lint、test、build、CI 等价检查、生成物与目录约定。命令的可执行事实来源始终是
   仓库配置与脚本；生产运行和运维事实属于 `docs/system/operations/`。
+  验证命令集中在开头一张验证卡片，供 Agent 只读该表执行检查；接口、数据与
+  运行时行为不复述 `docs/system/` 事实页，只保留指向对应页面的链接。
 - `AGENTS.md` 仅面向在仓库中工作的 Agent，记录项目专属的 Agent 行为准则与必要例外，
-  不重复面向用户或维护者的材料。它要求 Agent 先读 `README.md`，再按工作
-  需要读取 `PROJECT.md` 与 `GLOSSARY.md`。MDF 只维护其中带 marker 的区块，其余
-  内容由仓库维护者负责。
+  不重复面向用户或维护者的材料。它要求 Agent 把 `docs/README.md` 当任务地图、
+  只打开与任务相关的当前事实页，并按工作需要读取 `README.md`、`PROJECT.md` 与
+  `GLOSSARY.md`；不通读文档目录，不把根文档当作行为事实来源。MDF 只维护其中带
+  marker 的区块，其余内容由仓库维护者负责。
 - `GLOSSARY.md` 面向所有读者维护稳定的领域词典，包括术语、同义词和易混淆概念；
   不记录实现细节、计划或工作状态。
 
@@ -152,7 +158,8 @@ ignored:
 
 每项只能包含仓库相对的 `path` 与非空 `reason`。路径须位于实现根目录，且必须匹配
 至少一个被跟踪实现文件；目录递归匹配。未被 `evidence` 引用的实现文件会产生
-warning，不阻断 audit，但必须在语义审阅中由用户确认。
+warning，不阻断 audit，但必须在语义审阅中由用户确认。锁文件、`.gitignore` 与
+版本钉等不承载行为的文件不产生该 warning。
 
 ## YAML 子集
 
@@ -180,6 +187,13 @@ Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # 
 checkout 的实际行为，并用代码、配置、schema、测试或生成物作为 `evidence`。
 计划、Proposal、Bug 和 Change 不得冒充`当前事实文档`。
 
+每份事实页独立可加载：正文自洽描述该主题的输入、输出、错误与不变量，
+不要求先读其他页面。`index.md` 等基线页只做路由与边界，不复述叶子页的契约，
+也不为整个子系统集中承担 evidence。正文面向工作中的 Agent 描述可观察行为；
+「代码在哪里」由 `docs/repowiki/` 或短路径列表承担，不写逐文件 walkthrough。
+产品四类基线为 `not_applicable` 时（如无终端用户面的后端），`docs/README.md`
+不展示空 product 目录，并写明 Agent 的行为参考面是 `docs/system/` 对应页面。
+
 ## 工作上下文
 
 `docs/context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
@@ -205,6 +219,10 @@ evidence:
 `evidence` 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式（裸字符串
 列表形态缺 verification 会报 finding）；`full validation` 下 `evidence` 在文档之后变更
 会报 `evidence.stale`。
+
+`verification` 优先写可执行的测试或命令；只写「阅读源码」时不得把实现步骤
+复述进 verification——正文已描述的行为不在 evidence 元数据里重复。
+无需为消除 warning 把不承载行为的文件写入 evidence 或 ignorelist。
 
 由脚本生成的文档额外声明 `generated`：
 

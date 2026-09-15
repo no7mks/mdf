@@ -22,7 +22,7 @@ evidence:
 
 ## 范围外
 
-{{CURRENT_OUT_OF_SCOPE}}
+{{CURRENT_OUT_OF_SCOPE_AND_NOT_YET_ASSEMBLED}}
 
 ## 外部依赖
 

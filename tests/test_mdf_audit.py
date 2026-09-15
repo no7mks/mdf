@@ -56,7 +56,6 @@ def test_audit_uncovered_file_is_warning_and_ignorelist_can_cover_it(
     generated.mkdir()
     (generated / "client.py").write_text("VALUE = 1\n", encoding="utf-8")
     init_git(repo)
-
     data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
     assert data["finding_count"] == 0
     assert [item["path"] for item in data["warnings"]] == [
@@ -78,6 +77,19 @@ def test_audit_uncovered_file_is_warning_and_ignorelist_can_cover_it(
             "reason": "generated client",
         }
     ]
+
+
+def test_audit_skips_non_behavioral_files(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    (repo / "src" / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    (repo / "src" / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
+    (repo / "src" / ".python-version").write_text("3.13\n", encoding="utf-8")
+    init_git(repo)
+
+    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
+    assert data["finding_count"] == 0
+    assert data["warning_count"] == 0
+    assert "src/uv.lock" in data["implementation_paths"]
 
 
 def test_audit_rejects_invalid_ignore_and_scope_paths(

@@ -13,6 +13,28 @@ from .yamlutil import parse_yaml, read_frontmatter
 
 IGNORE_PATH = ".mdf/audit-ignore.yaml"
 
+# 不承载行为的被跟踪实现文件：版本钉、锁文件与本地配置。
+# 它们不产生 audit.uncovered warning，也无需写入 evidence 或 ignorelist。
+NON_BEHAVIORAL_NAMES = {
+    ".gitattributes",
+    ".gitignore",
+    ".node-version",
+    ".nvmrc",
+    ".python-version",
+    ".tool-versions",
+    "Cargo.lock",
+    "Gemfile.lock",
+    "Pipfile.lock",
+    "composer.lock",
+    "go.sum",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "poetry.lock",
+    "rust-toolchain.toml",
+    "uv.lock",
+    "yarn.lock",
+}
+
 
 def _tracked_files(repo: Path, roots: list[Path]) -> list[Path]:
     result = run(["git", "ls-files", "-z"], cwd=repo)
@@ -215,7 +237,10 @@ def audit_payload(
             "audit.uncovered", "implementation file has no fact evidence",
             relative(repo, path), "warning",
         )
-        for path in sources if path not in covered and path not in ignored
+        for path in sources
+        if path not in covered
+        and path not in ignored
+        and path.name not in NON_BEHAVIORAL_NAMES
     ]
     payload = {
         "ok": not findings,
