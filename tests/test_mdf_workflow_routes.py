@@ -480,6 +480,16 @@ def test_role_intents_do_not_reuse_owner_session_switch():
     assert "不走步骤 4" in deliver
 
 
+def test_deliver_tracks_delivery_with_goal():
+    deliver = workflow("deliver")
+    assert "锁定一次交付及 owner worktree，创建 Goal" in deliver
+    assert "objective 写明交付标识与完成判据" in deliver
+    assert "每次 deliver 会话只创建一次" in deliver
+    assert "续办时不重建" in deliver
+    assert "核对 finish 实际成功后才置 complete" in deliver
+    assert "完成 Goal 并报告" in deliver
+
+
 def test_codewiki_session_is_created_by_analyze_repo():
     for name in ("codewiki-generate", "codewiki-update"):
         text = workflow(name)
