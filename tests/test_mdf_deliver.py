@@ -17,15 +17,25 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "步骤 5 必须取得 finish 的实际成功结果", "不会被 finish 删除的主 worktree",
         "不重放已经发生的发布操作", "release/hotfix 包含 finish 规定的 tag 与发版推送",
         "没有独立开发 intent 的剩余工作由主 Agent", "角色已集成并清理时读取 owner 的两路证据",
+        "尚未存在本次交付时委托", "references/start.md",
+        "$mdf deliver --auto-pilot", "死硬阻塞才停止",
+        "即将调用 `finish-gitflow` 之前", "不增加该关口",
+        "位置参数至多一个", "自动分辨", "分不清就询问",
+        "已有在途交付则报告错误并停止", "不续办、不重新 start",
     ):
         assert rule in text
     assert "不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件" in text
     for name in ("start", "design", "write-tests", "implement", "converge", "code-review", "finish"):
         assert f"references/{name}.md" in text
-    for name in ("design", "write-tests", "implement", "converge", "code-review"):
+    for name in ("start", "design", "write-tests", "implement", "converge", "code-review"):
         assert "deliver 内部委托时完成后返回调用方" in workflow(name)
+    assert "由 `$mdf deliver --auto-pilot` 委托时" in workflow("finish")
+    assert "不得自行调用 `finish-gitflow`" in workflow("finish")
     assert "不得将普通 next 自动升级为 deliver" in workflow("next")
-    assert "$mdf deliver" in workflow("help")
+    help_text = workflow("help")
+    assert "$mdf deliver" in help_text
+    assert "$mdf deliver --auto-pilot" in help_text
+    assert "$mdf deliver prp-001" in help_text
 
 
 def test_deliver_requires_independent_subagents_and_verified_worktrees():

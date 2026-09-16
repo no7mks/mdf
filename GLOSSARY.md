@@ -36,6 +36,12 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。主 worktree
 保持 develop；合入 develop 后 `$mdf start` 才看到新对象。
 
+## Auto-pilot
+
+`$mdf deliver --auto-pilot` 的持续交付模式：主 Agent 自行裁定原需用户确认的步骤，
+仅在 finish 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认；
+不可恢复的死硬阻塞仍停止。
+
 ## ADR
 
 Architecture Decision Record；记录重要且已决定的长期架构取舍。

@@ -327,7 +327,8 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 ## 与 intent 的关系
 
 deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 finish 命令，
-不新增 deliver CLI；负责持续委托、并行 subagent 的 worktree 身份核验与结果交接。
+不新增 deliver CLI；负责从尚未 start 起持续委托、并行 subagent 的 worktree
+身份核验与结果交接。位置参数 target 与 `--auto-pilot` 由 intent 解释，不是 CLI 参数。
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init`、`bootstrap`、`migrate` intent 使用 `doctor`、`init` 与 `validate`；

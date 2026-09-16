@@ -7,7 +7,8 @@
 │ 1 Resolve                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 目标不明或条件缺失 ────→ [询问或报告阻塞]
+                 ├──── 尚未 start ────────────→ [委托 start 后回到 1]
+                 ├──── 目标不明或条件缺失 ────→ [询问；auto-pilot 则自裁定或死硬阻塞]
                  │
                  ▼ 唯一交付目标
 ┌──────────────────────────────────┐
@@ -48,7 +49,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 定位 | 约束 | 锁定一次交付及 owner worktree，创建 Goal | 目标、分支、路径 | 2 | 询问或报告阻塞 |
+| 1 | 定位 | 约束 | 必要时先 start，锁定一次交付及 owner worktree，创建 Goal | 目标、分支、路径 | 2 | 询问或死硬阻塞 |
 | 2 | 选择 | 约束 | 核对当前证据，选择剩余步骤 | 有效产物、执行者、待办 | 完成 5；并行 4；其他 3 | 保留现场并报告 |
 | 3 | 执行 | 约束 | 续办单阶段，完成后返回外层 | 原流程证据 | 2 | 按原流程交接 |
 | 4 | 并行 | Subagent | 分派独立阶段，核对路径并等待交接 | 各路分支、提交、gate | 2 | 保留各路现场并报告 |
@@ -58,23 +59,73 @@
 
 ### 目标与持续授权
 
-调用 `$mdf deliver` 授权从当前状态连续执行本次交付剩余工作直到 finish 完成，
-包含原流程要求的本地提交、并行委托、集成与 finish 的 Gitflow 操作。
+调用 `$mdf deliver [<target>] [--auto-pilot]` 授权从当前状态连续执行本次交付
+剩余工作直到 finish 完成，含尚未完成的 start，以及原流程要求的本地提交、并行委托、
+集成与 finish 的 Gitflow 操作。target 是唯一位置参数，不是 `--` option；
+`--auto-pilot` 可在其前或后。两者都省略时仍是 deliver。
 feature/bugfix 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 用户明确限制提交、推送或只读时遵守限制；与 finish 完成条件冲突时说明并询问，不能声称完成。
-已有有效确认继续适用；设计确认、测试修改批准、目标变更和外部条件仍按原流程处理。
+已有有效确认继续适用。默认模式：设计确认、测试修改批准、目标变更和外部条件仍按原流程处理；
 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
+`--auto-pilot` 按下方策略把这些决定改为主 Agent 自裁定。
 
 步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。
-优先锁定用户指定的交付；否则由当前 feature/qa/dev、bugfix、hotfix 或 release 分支确定。
+先解析本次调用的 target（见下）；有唯一对象则锁定该交付。
+否则优先锁定用户在对话中指定的交付；再否则由当前 feature/qa/dev、bugfix、hotfix
+或 release 分支确定。
 feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `worktrees.owner.path`。
 其他分支使用 `git worktree list --porcelain` 中完整分支名对应的已有路径。
-从其他目录进入时，只有上下文明确唯一交付目标才可切到它；多个候选必须询问，不按最近目录猜测。
-若尚未 start，但用户已明确分支种类及 PRP/Bug/版本，则委托 `references/start.md`，
-按其规则补齐必要输入并使用返回的 owner 与 roles；不自动挑选待办，不调用初始化或规划流程。
-已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout 或临时创建另一套分支绕过。
+从其他目录进入时，只有上下文明确唯一交付目标才可切到它；多个候选必须询问，
+不按最近目录猜测。`--auto-pilot` 下多个在途交付仍无法唯一锁定时属死硬阻塞。
+尚未存在本次交付时委托 `references/start.md`：已由 target 或用户指定 kind 与
+PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认模式询问用户选择；
+`--auto-pilot` 由主 Agent 按仓库证据与对话上下文选定唯一目标。不调用初始化或规划流程，
+不发明 release/hotfix 版本。已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout
+或临时创建另一套分支绕过。start 返回后使用其 owner 与 roles，再创建 Goal。
 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 finish 删除的主 worktree 路径。
+
+### target
+
+位置参数至多一个；第二个及以后的非 option token 停止并询问。
+除 `--auto-pilot` 外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
+省略 target 时不在此步选型，继续上方既有锁定规则。
+
+按下列顺序自动分辨 Proposal 与 Bug，命中唯一对象即停止：
+
+1. 完整 ID：符合 `prp-<序号>` 则为 Proposal；符合 `bug-<4 位字符>` 则为 Bug。
+2. 否则运行 `list --repo "$REPO_ROOT"`（proposal 与 bug，不限 status），
+   在返回的 `id` 中精确匹配；仍无则用去掉 `prp-`/`bug-` 前缀的本体、以及 `path`
+   文件名中的 slug 各匹配一次。不匹配 title，不把 jot ID、SemVer 或路径当成功值。
+3. 唯一命中 Proposal → feature，将该 PRP ID 交给 start；唯一命中 Bug → bugfix，
+   将该 Bug ID 交给 start。对象已有在途交付则报告错误并停止，不续办、不重新 start。
+   Proposal 以 `list` 的 `in_progress` 为准；Bug 以本地已存在 `bugfix/<Bug ID>`
+   或其 worktree 为准。
+
+零命中、跨类型或多对象命中时询问，不猜测。`--auto-pilot` 对 target 分不清就询问，
+不自裁定。完整 ID 形态合法但 `list` 无此对象时报告缺失并停止。
+target 与当前已锁定的另一交付冲突时报告错误并停止，不改绑。
+
+### auto-pilot
+
+仅 `$mdf deliver --auto-pilot` 启用；默认 `$mdf deliver` 不启用。
+委托子 intent 时把本策略作为外层约束：原文中的询问、确认、批准与选择改由主 Agent
+依据仓库证据、已确认目标和本次范围自行裁定，并在摘要或 gate 中写明依据，
+不向用户提问、不等待确认。内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
+converge 的 `--test-approval` 记录该裁定与理由。不得削弱验收或把未实现目标判为完成。
+
+死硬阻塞才停止：CLI/Git/工具不可恢复失败；无可启动目标（无合格 ready PRP、无合格
+open Bug，且未指定合法 release/hotfix 版本）；已有交付缺少 worktree；用户明确只读
+或禁止提交/推送且与完成条件冲突；必须切换 worktree 但宿主无法由 Agent 完成；
+凭据、origin 一致性等仓库外条件缺失；同一失败连续三轮无进展；不改写用户明确禁止
+的范围就无法继续。target 分不清就询问，不列入自裁定。
+除此之外不因“想听用户意见”而暂停。
+
+唯一预定确认：finish 步骤 9 通过、即将调用 `finish-gitflow` 之前。展示将合入的目标
+主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
+取得明确确认后才执行 finish 步骤 10；拒绝则保留现场并停止，不合并、不删 worktree。
+此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
+独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 
 ### Goal
 
@@ -107,7 +158,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 bugfix/hotfix/release 使用对应 Bug、热修复目标或发布范围，不套用 feature 的阶段 gate。
 没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
-发现缺少设计决定或验收依据时询问；不虚构开发任务，也不把未实现的目标判定为完成。
+发现缺少设计决定或验收依据时：默认模式询问；`--auto-pilot` 能由仓库证据裁定则自裁定，
+否则属死硬阻塞。不虚构开发任务，也不把未实现的目标判定为完成。
 finish 已开始而代码发生变化时按 code-review 的复核规则处理后再续办 finish，不能跳过过期检查。
 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，
 不结束 deliver。步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。

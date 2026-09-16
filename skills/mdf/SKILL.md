@@ -31,35 +31,35 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 边界不明 ──────────────────→ 3 Dispatch
-                 ├──── 材料缺失 ──────────────────→ [停止并报告]
+                 ├──── 边界不明 ─────────────────────────────→ 3 Dispatch
+                 ├──── 材料缺失 ─────────────────────────────→ [停止并报告]
                  │
-                 ├──── bootstrap ─────────────────→ references/bootstrap.md
-                 ├──── init migrate / migrate ────→ references/migrate.md
-                 ├──── init ──────────────────────→ references/init.md
-                 ├──── intake ────────────────────→ references/intake.md
-                 ├──── next [--depth N] ──────────→ references/next.md
-                 ├──── deliver ───────────────────→ references/deliver.md
-                 ├──── start ─────────────────────→ references/start.md
-                 ├──── design ────────────────────→ references/design.md
-                 ├──── write-tests ───────────────→ references/write-tests.md
-                 ├──── implement ─────────────────→ references/implement.md
-                 ├──── converge ──────────────────→ references/converge.md
-                 ├──── code-review ───────────────→ references/code-review.md
-                 ├──── fact update ───────────────→ references/fact-update.md
-                 ├──── prp split ─────────────────→ references/prp-split.md
-                 ├──── finish ────────────────────→ references/finish.md
-                 ├──── fact audit ────────────────→ references/fact-audit.md
-                 ├──── clarify <议题> ────────────→ references/clarify.md
-                 ├──── bug create ────────────────→ references/bug-create.md
-                 ├──── prp create ────────────────→ references/prp-create.md
-                 ├──── prp review ────────────────→ references/prp-review.md
-                 ├──── archive ───────────────────→ references/archive.md
-                 ├──── codewiki generate ─────────→ references/codewiki-generate.md
-                 ├──── codewiki update ───────────→ references/codewiki-update.md
-                 ├──── jot / jot promote ─────────→ references/jot.md
-                 ├──── help / help <intent> ──────→ references/help.md
-                 └──── upgrade ───────────────────→ references/upgrade.md
+                 ├──── bootstrap ────────────────────────────→ references/bootstrap.md
+                 ├──── init migrate / migrate ───────────────→ references/migrate.md
+                 ├──── init ─────────────────────────────────→ references/init.md
+                 ├──── intake ───────────────────────────────→ references/intake.md
+                 ├──── next [--depth N] ─────────────────────→ references/next.md
+                 ├──── deliver [<target>] [--auto-pilot] ────→ references/deliver.md
+                 ├──── start ────────────────────────────────→ references/start.md
+                 ├──── design ───────────────────────────────→ references/design.md
+                 ├──── write-tests ──────────────────────────→ references/write-tests.md
+                 ├──── implement ────────────────────────────→ references/implement.md
+                 ├──── converge ─────────────────────────────→ references/converge.md
+                 ├──── code-review ──────────────────────────→ references/code-review.md
+                 ├──── fact update ──────────────────────────→ references/fact-update.md
+                 ├──── prp split ────────────────────────────→ references/prp-split.md
+                 ├──── finish ───────────────────────────────→ references/finish.md
+                 ├──── fact audit ───────────────────────────→ references/fact-audit.md
+                 ├──── clarify <议题> ───────────────────────→ references/clarify.md
+                 ├──── bug create ───────────────────────────→ references/bug-create.md
+                 ├──── prp create ───────────────────────────→ references/prp-create.md
+                 ├──── prp review ───────────────────────────→ references/prp-review.md
+                 ├──── archive ──────────────────────────────→ references/archive.md
+                 ├──── codewiki generate ────────────────────→ references/codewiki-generate.md
+                 ├──── codewiki update ──────────────────────→ references/codewiki-update.md
+                 ├──── jot / jot promote ────────────────────→ references/jot.md
+                 ├──── help / help <intent> ─────────────────→ references/help.md
+                 └──── upgrade ──────────────────────────────→ references/upgrade.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -79,12 +79,14 @@ disable-model-invocation: true
 只接受选择树所列的显式调用。裸调用或未知调用按 help 执行。`next [--depth N]`
 的深度可省略；`$mdf next?` 与 `$mdf next？` 不是独立 intent，步骤 1 视为
 `next` 并执行 `references/next.md`，不得当未知调用送 help。
+`$mdf deliver [<target>] [--auto-pilot]` 仍是 deliver，不是独立 intent。
+`--auto-pilot` 可在 target 前或后；target 由 deliver 解析。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与
 `$mdf migrate` 执行同一流程。next 可委托识别出的在途流程；
-deliver 可内部委托剩余交付阶段直到 finish；其他入口仍按显式调用路由。
+deliver 可内部委托从 start 起的剩余交付阶段直到 finish；其他入口仍按显式调用路由。
 
 **帮助**：裸调用、未知调用读取并执行 `references/help.md`。`$mdf help` 为显式调用，
 经 CLI 检查后同样执行该流程。不读取其他 intent、不检查仓库、不写入。

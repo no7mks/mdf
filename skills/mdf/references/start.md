@@ -43,6 +43,7 @@
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。
 feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 对照 `assets/templates/objectives.md`。
+独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -130,4 +131,5 @@ feature CLI 另固定 start_commit，在 owner 写入 changes/unreleased/<slug>/
 feature 的 qa/dev 不在本步切换。按 `references/common.md` 的「切换工作区」
 规则判定当前 agent 并切到该路径与分支，向用户给出应切到的绝对路径与分支名。
 未切到则留在 4，重复对应指引，不拆除已建 worktree 与分支。
-通过后结束，由用户手动触发 design 或通过 next 委托。
+独立调用通过后结束，由用户手动触发 design 或通过 next 委托。
+deliver 内部委托时返回调用方。

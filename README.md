@@ -17,7 +17,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；`next?` 问 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf deliver` | 从当前交付状态持续推进到 finish；可并行阶段强制分派 subagent |
+| `$mdf deliver [<target>] [--auto-pilot]` | 从 start 起持续推进到 finish；可并行阶段强制分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
@@ -39,7 +39,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
-`next` 单步续办，或调用 `deliver` 持续推进当前一次交付直到 finish：
+`next` 单步续办，或调用 `deliver` 从 start 起持续推进当前一次交付直到 finish：
 
 `start → design → [write-tests ∥ implement] → converge → code-review → finish`
 
@@ -49,7 +49,10 @@ code-review 支持 feature、bugfix、hotfix 和 release；首轮强制 3 个 su
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
 冲突自动尝试解决；集成产生新提交后走增量新一轮 code-review 与全量验证，再继续收口。
 deliver 对可并行的 write-tests 与 implement 强制分别分派 subagent，验证其已有 qa/dev worktree 身份，
-等待交接后再收敛。需要用户决定时暂停；release/hotfix 的 finish 包含 tag 与发版推送。
+等待交接后再收敛。尚未 start 时先委托 start。可传位置参数 target（PRP 或 Bug ID，自动分辨）。
+需要用户决定时暂停。
+`--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认；
+死硬阻塞仍停止。release/hotfix 的 finish 包含 tag 与发版推送。
 
 一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
 gate 检查共同基线与有效证据。start、write-tests 与 implement 均强制独立 worktree。

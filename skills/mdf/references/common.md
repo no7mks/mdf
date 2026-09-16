@@ -155,7 +155,7 @@ develop 占用者 dirty 时停止并报告，不改 checkout。
 
 验收：提交范围、staged diff 与 Conventional Commit 可追溯，或明确无改动。
 异常与交接：提交失败保留现场；只读、预览不产生提交。
-deliver 依据 `references/deliver.md` 内部串联剩余交付阶段，子 intent 完成后返回 deliver 继续。
+deliver 依据 `references/deliver.md` 内部串联从 start 起的剩余交付阶段，子 intent 完成后返回 deliver 继续。
 init 依据 `references/initialization.md` 自动转入 bootstrap 或 migrate 是明确的内部委托，不自动串联交付主线。
 
 ## 语言
