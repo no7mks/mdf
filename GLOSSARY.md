@@ -44,7 +44,8 @@ Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal�
 
 ## ADR
 
-Architecture Decision Record；记录重要且已决定的长期架构取舍。
+Architecture Decision Record；记录重要且已决定的长期架构取舍。文件为
+`docs/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，不编号。
 
 ## Proposal 状态
 

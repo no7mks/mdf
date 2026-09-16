@@ -124,18 +124,21 @@ EPOCH_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 _PRP_ID_BODY = r"(?:00[1-9]|0[1-9]\d|[1-9]\d{2,})"
 _SHORT_ID_BODY = r"[A-HJ-NP-Z2-9]{4}"
 _OBJECT_SLUG = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
+# ADR slug 与对象 slug 同形，但必须含字母，避免纯数字序号冒充主题。
+_ADR_SLUG = rf"(?=[a-z0-9-]*[a-z]){_OBJECT_SLUG}"
 OBJECT_FILE_RE = re.compile(
     rf"^((?:prp-{_PRP_ID_BODY}|bug-{_SHORT_ID_BODY}))-"
     rf"({_OBJECT_SLUG})\.md$"
 )
+ADR_FILE_RE = re.compile(rf"^({_ADR_SLUG})\.md$")
 JOT_ID_RE = re.compile(rf"^jot-{_SHORT_ID_BODY}$")
 PRP_ID_RE = re.compile(rf"^prp-{_PRP_ID_BODY}$")
 OBJECT_ID_RE = re.compile(
     rf"^(?:prp-{_PRP_ID_BODY}|bug-{_SHORT_ID_BODY}|jot-{_SHORT_ID_BODY}|"
-    rf"adr-\d{{4}})$"
+    rf"adr-{_ADR_SLUG})$"
 )
 OBJECT_ID_SLUG_RE = re.compile(
-    rf"^(?:prp-{_PRP_ID_BODY}|bug-[a-hj-np-z2-9]{{4}})$"
+    rf"^(?:prp-{_PRP_ID_BODY}|bug-[a-hj-np-z2-9]{{4}}|adr-{_OBJECT_SLUG})$"
 )
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"

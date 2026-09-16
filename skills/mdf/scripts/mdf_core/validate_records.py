@@ -1,9 +1,9 @@
-import re
 from pathlib import Path
 
-from .constants import MARKER_RE, OBJECT_FILE_RE
+from .constants import ADR_FILE_RE, MARKER_RE, OBJECT_FILE_RE
 from .errors import Finding, MDFError, add_finding
 from .paths import path_stays_in_repo, relative
+from .textutil import is_object_id_slug
 from .validate_objects import iter_object_files
 from .yamlutil import read_frontmatter
 
@@ -20,25 +20,34 @@ def validate_adrs(repo: Path, findings: list[Finding]) -> None:
         if path.is_symlink() or not path_stays_in_repo(repo, path):
             continue
         rel = relative(repo, path)
-        match = re.fullmatch(r"(\d{4})-([a-z0-9][a-z0-9-]*)\.md", path.name)
+        match = ADR_FILE_RE.fullmatch(path.name)
         if not match:
             add_finding(
                 findings,
                 "adr.filename",
-                "ADR filename must be NNNN-ascii-kebab-case.md",
+                "ADR filename must be ascii-kebab-case.md",
                 rel,
             )
             continue
+        slug = match.group(1)
+        if is_object_id_slug(slug):
+            add_finding(
+                findings,
+                "adr.slug_id",
+                "ADR filename slug must not match an object ID",
+                rel,
+            )
         try:
             metadata, body = read_frontmatter(path)
         except MDFError as exc:
             add_finding(findings, "adr.frontmatter", str(exc), rel)
             continue
-        if metadata.get("id") != f"adr-{match.group(1)}":
+        expected_id = f"adr-{slug}"
+        if metadata.get("id") != expected_id:
             add_finding(
                 findings,
                 "adr.id",
-                f"ADR id must equal adr-{match.group(1)}",
+                f"ADR id must equal {expected_id}",
                 rel,
             )
         if metadata.get("type") not in (None, "adr"):
@@ -114,8 +123,8 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
         for path in adr_root.glob("*.md"):
             if path.is_symlink() or not path_stays_in_repo(repo, path):
                 continue
-            match = re.fullmatch(r"(\d{4})-[a-z0-9][a-z0-9-]*\.md", path.name)
-            if match:
+            match = ADR_FILE_RE.fullmatch(path.name)
+            if match and not is_object_id_slug(match.group(1)):
                 known.add(f"adr-{match.group(1)}")
 
     validate_proposal_dependencies(

@@ -323,9 +323,9 @@ def test_non_fact_docs_do_not_expire_review_or_green(python_exe, tmp_path):
     commit(repo)
     before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
                           "--stage", "finish"))["result"]
-    adr = repo / "docs/adr/adr-0001-example.md"
+    adr = repo / "docs/adr/example.md"
     adr.parent.mkdir(exist_ok=True)
-    adr.write_text("# ADR-0001\n\n记录一次架构决策。\n")
+    adr.write_text("# 记录一次架构决策。\n")
     (repo / "AGENTS.md").write_text((repo / "AGENTS.md").read_text() + "\n补充说明。\n")
     (root / "CHANGE.md").write_text("# 草稿\n")
     after = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),

@@ -57,7 +57,7 @@ def test_proposal_accepts_direct_active_proposal_dependency(
             "object.depends_on_missing",
         ),
         (BUG_ID, "proposal.depends_on_type"),
-        ("adr-0001", "proposal.depends_on_type"),
+        ("adr-dependency", "proposal.depends_on_type"),
     ],
 )
 def test_proposal_rejects_missing_or_cross_type_dependency(
@@ -67,11 +67,11 @@ def test_proposal_rejects_missing_or_cross_type_dependency(
     expected_code: str,
 ):
     repo = copy_fixture(tmp_path)
-    if dependency == "adr-0001":
-        adr = repo / "docs" / "adr" / "0001-dependency.md"
+    if dependency == "adr-dependency":
+        adr = repo / "docs" / "adr" / "dependency.md"
         adr.parent.mkdir()
         adr.write_text(
-            "---\nid: adr-0001\ntype: adr\nstatus: accepted\n---\n\n# ADR\n",
+            "---\nid: adr-dependency\ntype: adr\nstatus: accepted\n---\n\n# ADR\n",
             encoding="utf-8",
         )
     replace(

@@ -67,6 +67,11 @@ def test_make_id_rejects_object_id_slug(python_exe: str):
     )
     assert result.returncode != 0
     assert "slug_is_id" in result.stderr
+    result = mdf(
+        python_exe, "make-id", "--type", "proposal", "--slug", "adr-use-sqlite"
+    )
+    assert result.returncode != 0
+    assert "slug_is_id" in result.stderr
 
 
 def test_new_short_id_includes_a_letter_and_a_digit():
@@ -197,6 +202,8 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
     assert OBJECT_ID_RE.fullmatch("prp-001")
     assert OBJECT_ID_RE.fullmatch("prp-1000")
     assert OBJECT_ID_RE.fullmatch("bug-2345")
+    assert OBJECT_ID_RE.fullmatch("adr-use-sqlite")
+    assert OBJECT_ID_RE.fullmatch("adr-0001") is None
     assert JOT_ID_RE.fullmatch("jot-AAAA")
     assert JOT_ID_RE.fullmatch("jot-2222")
     assert PRP_ID_RE.fullmatch("prp-ABCD") is None
@@ -213,3 +220,54 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
     )
     init_git(repo)
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
+def write_adr(repo: Path, name: str, identifier: str) -> None:
+    path = repo / "docs" / "adr" / name
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(
+        f"---\nid: {identifier}\ntype: adr\nstatus: accepted\n---\n\n# ADR\n",
+        encoding="utf-8",
+    )
+
+
+def adr_codes(python_exe: str, repo: Path) -> set[str]:
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    return {item["code"] for item in json.loads(result.stdout)["findings"]}
+
+
+def test_adr_id_equals_filename_slug(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    write_adr(repo, "use-sqlite.md", "adr-use-sqlite")
+    init_git(repo)
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
+def test_adr_rejects_legacy_numeric_id(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    write_adr(repo, "0001-use-sqlite.md", "adr-0001")
+    init_git(repo)
+    codes = adr_codes(python_exe, repo)
+    assert "adr.id" in codes
+
+
+def test_adr_rejects_id_not_matching_slug(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    write_adr(repo, "use-sqlite.md", "adr-0001")
+    init_git(repo)
+    assert "adr.id" in adr_codes(python_exe, repo)
+
+
+def test_adr_rejects_digit_only_slug(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    write_adr(repo, "0001.md", "adr-0001")
+    init_git(repo)
+    assert "adr.filename" in adr_codes(python_exe, repo)
+
+
+def test_adr_rejects_object_id_filename(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    write_adr(repo, "adr-use-sqlite.md", "adr-adr-use-sqlite")
+    init_git(repo)
+    assert "adr.slug_id" in adr_codes(python_exe, repo)

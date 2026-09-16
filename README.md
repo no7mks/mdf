@@ -89,7 +89,7 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 | 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新 |
 | 未分诊记录 | `docs/JOTS.md` |
 | 意图与工作 | Proposal、Bug、unreleased Change |
-| 决策 | `docs/adr/` |
+| 决策 | `docs/adr/`；按主题打开单份 |
 | 证据 | 测试、契约、生成物、配置和命令 |
 | 项目维护 | `PROJECT.md` |
 | Agent 指令 | `AGENTS.md`、`.mdf/manifest.yaml` |

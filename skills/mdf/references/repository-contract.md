@@ -124,7 +124,7 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 | `jots.md`                           | `docs/JOTS.md` 草稿本                 |
 | `changelog.md`                      | `CHANGELOG.md`                   |
 | `docs-*` / `product-*` / `system-*` | `当前事实文档`                   |
-| `adr.md`                            | `docs/adr/NNNN-slug.md`          |
+| `adr.md`                            | `docs/adr/<slug>.md`             |
 | `proposal.md`                       | Proposal                      |
 | `bug.md`                            | Bug                              |
 | `change.md`                         | unreleased 子 Change             |
@@ -203,6 +203,16 @@ checkout 的实际行为，并用代码、配置、schema、测试或生成物�
 `docs/context/research/` 保存本地或外部调研报告、候选方案和对比。`intake` 的来源只用于
 本次分诊，不保存为工作上下文。已确认的长期取舍另建 ADR；实现后的当前行为另写产品
 或系统`当前事实文档`。
+
+## ADR
+
+`docs/adr/` 保存已确认的长期取舍，不是`当前事实文档`，不填入`基线`。按主题打开
+单份，不顺序通读；当前行为写在产品或系统事实页，需要取舍时再打开对应 ADR。
+
+文件名为 `<slug>.md`，frontmatter `id` 必须为 `adr-<slug>`。slug 为英文 ASCII
+kebab-case，须含字母、不得为纯数字序号，且不得与对象 ID 同形。accepted 之后
+slug 不可改；推翻该取舍时将旧记录标为 superseded，并另写新主题文件。status 为
+accepted、superseded 或 deprecated。沟通时写完整 ID，如 `adr-use-sqlite`。
 
 ## Fact frontmatter：evidence 与 generated
 

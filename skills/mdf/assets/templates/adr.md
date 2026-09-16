@@ -1,11 +1,11 @@
 ---
-id: "adr-{{NUMBER}}"
+id: "adr-{{SLUG}}"
 type: adr
 status: accepted
 date: "{{YYYY_MM_DD}}"
 ---
 
-# {{NUMBER}}. {{TITLE}}
+# {{TITLE}}
 
 ## 背景与问题陈述
 

@@ -255,6 +255,18 @@ def test_repository_contract_defines_top_level_layout() -> None:
     assert "每项的理由" in contract
     assert "`docs/repowiki/` 存在时" in contract
     assert "不填入`基线`" in contract
+    assert "## ADR" in contract
+    assert "`docs/adr/<slug>.md`" in contract
+    assert "`adr-<slug>`" in contract
+    assert "NNNN-slug" not in contract
+    assert "accepted 之后" in contract
+    assert "slug 不可改" in contract
+    assert "须含字母" in contract
+    docs_readme = (skill / "assets" / "templates" / "docs-readme.md").read_text(
+        encoding="utf-8"
+    )
+    assert "按主题打开单份" in docs_readme
+    assert "按编号打开" not in docs_readme
 
 
 def test_object_ids_must_be_cited_with_type_prefix() -> None:
@@ -270,9 +282,11 @@ def test_object_ids_must_be_cited_with_type_prefix() -> None:
     assert "`prp-001`" in object_contract
     assert "`bug-C4D5`" in object_contract
     assert "`jot-E6F7`" in object_contract
-    assert "不得省略类型前缀或只写序号/短码" in object_contract
+    assert "`adr-use-sqlite`" in object_contract
+    assert "不得省略类型前缀或只写序号/短码/slug" in object_contract
     assert "`bug-`" in agents and "`prp-`" in agents and "`jot-`" in agents
-    assert "不得省略前缀或只写序号/短码" in agents
+    assert "`adr-`" in agents
+    assert "不得省略前缀或只写序号/短码/slug" in agents
 
 
 def test_unreleased_layout_allows_in_progress_delivery_without_change() -> None:

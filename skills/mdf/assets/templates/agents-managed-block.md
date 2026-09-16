@@ -14,8 +14,8 @@
   不存在时忽略。
 - `docs/product/`、`docs/system/` 只记录当前检出版本的事实，不混入待实现计划。
 - 维护改动按 `PROJECT.md` 的验证要求执行检查。
-- 沟通 Bug、Proposal、Jot 时写完整 ID（`bug-` / `prp-` / `jot-` 前缀），
-  不得省略前缀或只写序号/短码。
+- 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（`bug-` / `prp-` / `jot-` /
+  `adr-` 前缀），不得省略前缀或只写序号/短码/slug。
 - 仅在用户显式调用 `$mdf …` 时执行对应 MDF 流程，不自动触发其他用户入口。
 
 <!-- MDF:END -->
