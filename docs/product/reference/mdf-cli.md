@@ -208,9 +208,9 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
 `AGENTS.md` 区块和文档骨架。输出会列出拟创建或更新的文件和 diff；实际写入后
 manifest 保持 `initializing`，但会写入提供的 verification commands，不会切换到
-`ready`。init intent 经事实复核，bootstrap intent 经起步材料核对；两者均须校验并取得
+`ready`。migrate intent 经事实复核，bootstrap intent 经起步材料核对；两者均须校验并取得
 显式就绪确认，再改 ready、校验并提交。bootstrap 不调用 fact audit。
-Git 化和新旧项目的语义分流由外层 intent 完成，两个 intent 共用本 CLI。
+Git 化和新旧项目的语义分流由外层 intent 完成，init、bootstrap 与 migrate 共用本 CLI。
 
 ### `archive`
 
@@ -328,7 +328,7 @@ deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 finish
 不新增 deliver CLI；负责持续委托、并行 subagent 的 worktree 身份核验与结果交接。
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
-调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；
+调用：`init`、`bootstrap`、`migrate` intent 使用 `doctor`、`init` 与 `validate`；
 `next` intent 在 feature 交付分支上续办该 feature；否则 `next?` 用只读 `next`
 CLI 展示 PRP 蓝图；再否则优先续办在途流程，无在途时同样展示蓝图；
 `intake`、`prp create`、`prp review` 与 `prp split` 使用 `doctor`、`planning`、

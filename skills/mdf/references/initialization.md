@@ -1,6 +1,6 @@
 # 初始化公共规则
 
-由 init 与 bootstrap 按各自阶段调用，不是用户 intent。完整读取
+由 init、bootstrap 与 migrate 按各自阶段调用，不是用户 intent。完整读取
 `references/common.md` 与 `references/repository-contract.md`。
 调用方入口使用步骤 1；Git 准备使用 2；配置方案使用 3；材料落地及验收使用 4–5；
 确认启用使用 6–8。决策树按调用方入口选用，不是单链。
@@ -94,16 +94,18 @@
 部署配置可能只是模板，不能仅凭文件名判定；无法确定时先澄清。
 
 先只读检查已有 `.mdf/manifest.yaml`：ready 表示已经接入 MDF，即使尚无业务也由
-init 维护；initializing 不代表老仓库，应继续检查实际内容。不符合当前契约的既有
+migrate 维护；initializing 不代表老仓库，应继续检查实际内容。不符合当前契约的既有
 MDF 内容报告后停止，不推断历史语义。既有内容的校验在 Git 基础准备后执行。
 
 | 调用 | 项目状态 | 行为 |
 | --- | --- | --- |
 | init | 未就绪且没有实际实现或运行事实 | 说明依据，内部转入 bootstrap，返回其结果 |
-| init | 已有事实或已 ready | 继续 init |
-| bootstrap | 已有实际实现或运行事实 | 写入前报错、列证据并提示 `$mdf init` |
-| bootstrap | 已 ready | 停止，配置调整提示 `$mdf init` |
+| init | 已有事实或已 ready | 内部转入 migrate，返回其结果 |
+| bootstrap | 已有实际实现或运行事实 | 写入前报错、列证据并提示 `$mdf migrate` |
+| bootstrap | 已 ready | 停止，配置调整提示 `$mdf migrate` |
 | bootstrap | 未初始化或 initializing，且符合新仓库条件 | 建立起点或核对已有产物续办 |
+| migrate | 未就绪且没有实际实现或运行事实 | 写入前报错、列证据并提示 `$mdf bootstrap` |
+| migrate | 已有事实或已 ready | 继续 migrate |
 
 ### Git 基础
 
@@ -112,6 +114,7 @@ MDF 内容报告后停止，不推断历史语义。既有内容的校验在 Git
 入口允许普通目录和无提交的 Git 仓库。先用 `git rev-parse --show-toplevel` 检查边界；
 位于其他仓库内部时先澄清，不直接嵌套 `git init`，不把父仓库默认为目标。
 bootstrap 必须先通过新仓库判定，再执行本节，不能在拒绝老仓库前写入 `.git/`。
+migrate 必须先通过已有事实或 ready 判定，再执行本节，不能在拒绝新仓库前写入 `.git/`。
 
 确认纳管范围、忽略规则和分支调整方案后，由 Agent 完成 Git 化：
 
@@ -127,7 +130,8 @@ bootstrap 必须先通过新仓库判定，再执行本节，不能在拒绝老�
 
 Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 manifest 允许 ready，或仅
 `manifest.initializing` finding；其他 finding 报告后停止。CLI init 仍要求 Git 根目录，
-不负责语义判定、Git 化、提交或启用；两个 intent 共用该 CLI，不新增 bootstrap CLI。
+不负责语义判定、Git 化、提交或启用；init、bootstrap 与 migrate 共用该 CLI，
+不新增 bootstrap 或 migrate CLI。
 
 ### 配置与完成
 
@@ -156,7 +160,7 @@ AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范
 
 <a id="s5"></a>
 
-按调用方验收：init 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
+按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
 bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
 `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；已是 ready
 时须零 finding。其他 finding 修正、提交后重验。

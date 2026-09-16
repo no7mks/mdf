@@ -20,11 +20,11 @@ upgrade 不读取本文件。
 <a id="s-root"></a>
 
 next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
-除 init/bootstrap/next 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
+除 init/bootstrap/migrate/next 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
 用 `git -C <目标目录> rev-parse --show-toplevel` 解析为绝对 `REPO_ROOT`，再读取并执行对应流程。
 核对解析出的仓库确为用户目标；边界不明先澄清，澄清后重做本条；命令失败则报告并停止，
 不使用空值或上次调用的变量。
-clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共流程处理普通目录
+clarify 与 help 不要求 Git 仓库；init/bootstrap/migrate 由 initialization 公共流程处理普通目录
 与父仓库边界。upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
 
 ## 切换工作区
@@ -81,7 +81,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 交付分支：
 
 - master 不直接修改或提交内容，包括文档；hotfix 的修改也在 hotfix 分支完成。
-  init/bootstrap 的初始化落地及 finish 的 Gitflow 合并按各自专门契约执行。
+  init/bootstrap/migrate 的初始化落地及 finish 的 Gitflow 合并按各自专门契约执行。
   upgrade 替换已安装 Skill 并提交本次路径时，可在当前分支（含 master）提交这些路径，
   不改 `.mdf/` 与 `docs/`；该例外只约束 upgrade，见 `references/upgrade.md`。
 - 与当前交付分支工作相关的文档在当前分支更新，随该分支交付；包括规划记录、事实文档
@@ -156,7 +156,7 @@ develop 占用者 dirty 时停止并报告，不改 checkout。
 验收：提交范围、staged diff 与 Conventional Commit 可追溯，或明确无改动。
 异常与交接：提交失败保留现场；只读、预览不产生提交。
 deliver 依据 `references/deliver.md` 内部串联剩余交付阶段，子 intent 完成后返回 deliver 继续。
-init 依据 `references/initialization.md` 自动转入 bootstrap 是明确的内部委托，不自动串联交付主线。
+init 依据 `references/initialization.md` 自动转入 bootstrap 或 migrate 是明确的内部委托，不自动串联交付主线。
 
 ## 语言
 

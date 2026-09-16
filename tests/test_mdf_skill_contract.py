@@ -25,7 +25,9 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert not (skill / "workflows").exists()
     expected_commands = (
         "init",
+        "init migrate",
         "bootstrap",
+        "migrate",
         "intake",
         "next [--depth N]",
         "deliver",
@@ -97,6 +99,7 @@ def test_next_blueprint_reports_ready_dependency_graph() -> None:
 
 def test_init_and_doc_intents_load_internal_contracts() -> None:
     init = intent("init")
+    migrate = intent("migrate")
     intake = intent("intake")
     create = intent("prp-create")
     review = intent("prp-review")
@@ -104,38 +107,45 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     common = intent("common")
 
     assert "repository-contract.md" in init
+    assert "references/bootstrap.md" in init
+    assert "references/migrate.md" in init
     assert "intents.md" not in init
-    assert "形成`初始化方案`" in init
-    assert "再次显式调用 `$mdf init`" in init
-    assert "docs/context/research/" in init
-    assert "docs/context/requirements/" not in init
-    assert "$mdf intake" in init
-    assert "$mdf bug create" in init and "$mdf prp create" in init
     assert "| 1 | 入口 | 约束 |" in init
-    assert "| 2 | 盘点 | 约束 |" in init
-    assert "| 7 | 就绪 | 脚本 |" in init
-    assert "没有未说明的遗留文件" in init
-    assert "消除重复" in init
+    assert "| 2 | 分流 | 约束 |" in init
+    assert "内部执行 bootstrap 或 migrate" in init
+    assert "形成`初始化方案`" in migrate
+    assert "再次显式调用" in migrate
+    assert "`$mdf init migrate`" in migrate
+    assert "`$mdf migrate`" in migrate
+    assert "docs/context/research/" in migrate
+    assert "docs/context/requirements/" not in migrate
+    assert "$mdf intake" in migrate
+    assert "$mdf bug create" in migrate and "$mdf prp create" in migrate
+    assert "| 1 | 入口 | 约束 |" in migrate
+    assert "| 2 | 盘点 | 约束 |" in migrate
+    assert "| 7 | 就绪 | 脚本 |" in migrate
+    assert "没有未说明的遗留文件" in migrate
+    assert "消除重复" in migrate
     for root_document in (
         "`README.md`",
         "`PROJECT.md`",
         "`AGENTS.md`",
         "`GLOSSARY.md`",
     ):
-        assert root_document in init
-    assert "各自符合`根文档职责`" in init
-    assert "检查项目原有的全部文档" in init
-    assert "符合 CodeWiki 契约的 `docs/repowiki/`" in init
-    assert "盘点全部顶层项目项" in init
-    assert "顶层允许清单" in init
-    assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in init
-    assert "业务实现目录" in init
-    assert "`src/<目录>`" in init
-    assert "`tests/<目录>`" in init
-    assert "迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`" in init
-    assert "不得在未经确认时迁移或删除" in init
-    assert "项目原有文档与经确认迁移的顶层项目项" in init
-    inventory = init.split('<a id="s2"></a>', maxsplit=1)[1].split(
+        assert root_document in migrate
+    assert "各自符合`根文档职责`" in migrate
+    assert "检查项目原有的全部文档" in migrate
+    assert "符合 CodeWiki 契约的 `docs/repowiki/`" in migrate
+    assert "盘点全部顶层项目项" in migrate
+    assert "顶层允许清单" in migrate
+    assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in migrate
+    assert "业务实现目录" in migrate
+    assert "`src/<目录>`" in migrate
+    assert "`tests/<目录>`" in migrate
+    assert "迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`" in migrate
+    assert "不得在未经确认时迁移或删除" in migrate
+    assert "项目原有文档与经确认迁移的顶层项目项" in migrate
+    inventory = migrate.split('<a id="s2"></a>', maxsplit=1)[1].split(
         '<a id="s5"></a>', maxsplit=1
     )[0]
     assert "不做`事实复核`" in inventory
@@ -187,7 +197,7 @@ def test_repository_contract_defines_static_core_terms() -> None:
     contract = (skill / "references" / "repository-contract.md").read_text(
         encoding="utf-8"
     )
-    init = intent("init")
+    migrate = intent("migrate")
 
     assert "## 核心术语" in contract
     for term in (
@@ -209,9 +219,9 @@ def test_repository_contract_defines_static_core_terms() -> None:
     assert "closeout 时执行" not in terms
     assert "`全量审阅`" not in contract
     assert "`范围审阅`" not in contract
-    assert "`当前事实文档`" in init
-    assert "`validation`" in init
-    assert "`全量审阅`" in init
+    assert "`当前事实文档`" in migrate
+    assert "`validation`" in migrate
+    assert "`全量审阅`" in migrate
     assert "docs/context/requirements/" not in contract
     assert "docs/context/planning/" not in contract
 
@@ -279,7 +289,7 @@ def test_contracts_do_not_duplicate_intent_steps() -> None:
 
 def test_audit_is_reused_without_delivery_logic() -> None:
     audit = intent("fact-audit")
-    init = intent("init")
+    migrate = intent("migrate")
     finish = intent("finish")
 
     assert "只读" in audit
@@ -296,7 +306,7 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`develop...HEAD`" not in audit
     assert "`master...HEAD`" not in audit
     assert "`release-closeout`" not in audit
-    assert "`fact audit` 执行`全量审阅`" in init
+    assert "`fact audit` 执行`全量审阅`" in migrate
     assert "这是交付前检查，不是 audit" in finish
     assert "references/fact-update.md" in finish
     assert "release 为全量" in finish

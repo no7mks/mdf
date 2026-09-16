@@ -40,7 +40,7 @@ feature 交付分支即使带问号也不进入 3。步骤 1 的澄清是列出�
 ## 工作流（唯一执行契约）
 
 读取 `references/common.md`；蓝图分支另读 `references/object-contract.md`。
-续办尚未 Git 化的 init/bootstrap 时读取 `references/initialization.md`；
+续办尚未 Git 化的 init/bootstrap/migrate 时读取 `references/initialization.md`；
 续办 feature 时读取 `references/delivery-contract.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -65,14 +65,14 @@ feature 交付分支即使带问号也不进入 3。步骤 1 的澄清是列出�
   不因其他在途流程改走续办。
 - 在途推理：其余情况按下方规则识别在途流程。
 
-在途范围包括全部 MDF workflow：既包括交付主线与 deliver，也包括 init、bootstrap、intake、
+在途范围包括全部 MDF workflow：既包括交付主线与 deliver，也包括 init、bootstrap、migrate、intake、
 prp review、CodeWiki、clarify 等尚未完成的流程及其内部委托。
 结合当前对话的显式调用、已确认范围、待回答问题、失败与交接记录，以及目标现场识别。
 已经完成、取消或被用户替代的流程不算在途；draft PRP、open Bug 或待办事项本身不代表流程已启动。
 
 先核对本次目标；Git 仓库解析绝对 `REPO_ROOT` 并识别已有改动。
 判定 feature 交付分支时以当前 checkout 分支名为准。
-续办尚未 Git 化的 init/bootstrap 时按 `references/initialization.md` 核对普通目录和父仓库边界；
+续办尚未 Git 化的 init/bootstrap/migrate 时按 `references/initialization.md` 核对普通目录和父仓库边界；
 clarify 可仅依赖已确认议题，不要求 Git 仓库。不得在识别前统一要求 manifest ready 或 clean。
 
 按需核对 manifest、当前分支、相关 worktree、产物、验证与恢复记录。

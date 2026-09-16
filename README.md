@@ -12,7 +12,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf help` | 展示分组意图目录与调用示例 |
 | `$mdf help <intent>` | 展示该 intent 的用法要点 |
 | `$mdf bootstrap` | 为全新或几乎全新的项目建立 MDF 起点 |
-| `$mdf init` | 接入已有项目或调整 MDF 配置；新项目自动转入 bootstrap |
+| `$mdf init` | 接入已有项目或调整 MDF 配置；新项目转入 bootstrap，已有项目转入 migrate |
+| `$mdf init migrate` | 将已有项目材料与布局收敛到当前 MDF 结构；也可 `$mdf migrate` |
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；`next?` 问 PRP 蓝图 |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
@@ -67,9 +68,10 @@ gate 检查共同基线与有效证据。start、write-tests 与 implement 均�
 MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。协议、工具与
 schema 版本均为数字 `2`。
 
-init 与 bootstrap 都负责项目 Git 化，准备本地 master/develop，不强制远端。
+init、bootstrap 与 migrate 都负责项目 Git 化，准备本地 master/develop，不强制远端。
 bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已有实际实现或运行事实时，
-在写入前停止并提示 init。两者校验通过并经用户确认启用后进入 ready。
+在写入前停止并提示 migrate。init 按状态转入 bootstrap 或 migrate。校验通过并经用户
+确认启用后进入 ready。
 入口先识别已有改动，仅在具体操作需要时要求 clean。
 
 ## 信息分层

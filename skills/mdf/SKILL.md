@@ -1,8 +1,8 @@
 ---
 name: mdf
 description: >-
-  管理 Git 仓库的版本化文档与交付流程：项目起步、初始化、规划、分诊、CodeWiki、随手记录、
-  审计、收口、归档、帮助、自升级与逐题澄清。
+  管理 Git 仓库的版本化文档与交付流程：项目起步、初始化、已有项目迁移、规划、分诊、
+  CodeWiki、随手记录、审计、收口、归档、帮助、自升级与逐题澄清。
 disable-model-invocation: true
 ---
 
@@ -31,34 +31,35 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 边界不明 ────────────────→ 3 Dispatch
-                 ├──── 材料缺失 ────────────────→ [停止并报告]
+                 ├──── 边界不明 ──────────────────→ 3 Dispatch
+                 ├──── 材料缺失 ──────────────────→ [停止并报告]
                  │
-                 ├──── bootstrap ───────────────→ references/bootstrap.md
-                 ├──── init ────────────────────→ references/init.md
-                 ├──── intake ──────────────────→ references/intake.md
-                 ├──── next [--depth N] ────────→ references/next.md
-                 ├──── deliver ─────────────────→ references/deliver.md
-                 ├──── start ───────────────────→ references/start.md
-                 ├──── design ──────────────────→ references/design.md
-                 ├──── write-tests ─────────────→ references/write-tests.md
-                 ├──── implement ───────────────→ references/implement.md
-                 ├──── converge ────────────────→ references/converge.md
-                 ├──── code-review ─────────────→ references/code-review.md
-                 ├──── fact update ─────────────→ references/fact-update.md
-                 ├──── prp split ───────────────→ references/prp-split.md
-                 ├──── finish ──────────────────→ references/finish.md
-                 ├──── fact audit ──────────────→ references/fact-audit.md
-                 ├──── clarify <议题> ──────────→ references/clarify.md
-                 ├──── bug create ──────────────→ references/bug-create.md
-                 ├──── prp create ──────────────→ references/prp-create.md
-                 ├──── prp review ──────────────→ references/prp-review.md
-                 ├──── archive ─────────────────→ references/archive.md
-                 ├──── codewiki generate ───────→ references/codewiki-generate.md
-                 ├──── codewiki update ─────────→ references/codewiki-update.md
-                 ├──── jot / jot promote ───────→ references/jot.md
-                 ├──── help / help <intent> ────→ references/help.md
-                 └──── upgrade ─────────────────→ references/upgrade.md
+                 ├──── bootstrap ─────────────────→ references/bootstrap.md
+                 ├──── init migrate / migrate ────→ references/migrate.md
+                 ├──── init ──────────────────────→ references/init.md
+                 ├──── intake ────────────────────→ references/intake.md
+                 ├──── next [--depth N] ──────────→ references/next.md
+                 ├──── deliver ───────────────────→ references/deliver.md
+                 ├──── start ─────────────────────→ references/start.md
+                 ├──── design ────────────────────→ references/design.md
+                 ├──── write-tests ───────────────→ references/write-tests.md
+                 ├──── implement ─────────────────→ references/implement.md
+                 ├──── converge ──────────────────→ references/converge.md
+                 ├──── code-review ───────────────→ references/code-review.md
+                 ├──── fact update ───────────────→ references/fact-update.md
+                 ├──── prp split ─────────────────→ references/prp-split.md
+                 ├──── finish ────────────────────→ references/finish.md
+                 ├──── fact audit ────────────────→ references/fact-audit.md
+                 ├──── clarify <议题> ────────────→ references/clarify.md
+                 ├──── bug create ────────────────→ references/bug-create.md
+                 ├──── prp create ────────────────→ references/prp-create.md
+                 ├──── prp review ────────────────→ references/prp-review.md
+                 ├──── archive ───────────────────→ references/archive.md
+                 ├──── codewiki generate ─────────→ references/codewiki-generate.md
+                 ├──── codewiki update ───────────→ references/codewiki-update.md
+                 ├──── jot / jot promote ─────────→ references/jot.md
+                 ├──── help / help <intent> ──────→ references/help.md
+                 └──── upgrade ───────────────────→ references/upgrade.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -81,7 +82,8 @@ disable-model-invocation: true
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
-显式 init 可按其契约内部转入 bootstrap；next 可委托识别出的在途流程；
+显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与
+`$mdf migrate` 执行同一流程。next 可委托识别出的在途流程；
 deliver 可内部委托剩余交付阶段直到 finish；其他入口仍按显式调用路由。
 
 **帮助**：裸调用、未知调用读取并执行 `references/help.md`。`$mdf help` 为显式调用，
@@ -98,7 +100,7 @@ help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
 `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
 步骤 3 命中后核对目标根；边界不明澄清后回到 3，材料缺失则停止并报告。
 
-`$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`
-与 `$mdf help <intent>` 均由选择树路由；
+`$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`、
+`$mdf init migrate` 与 `$mdf help <intent>` 均由选择树路由；
 这些内部材料不是独立 Skill。 CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`；
 command 与用户 intent 不要求一一对应。CLI 统一解析目标 Git 根，不假设当前目录就是目标仓库。

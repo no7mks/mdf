@@ -180,7 +180,7 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     review = (skill / "references" / "prp-review.md").read_text(
         encoding="utf-8"
     )
-    init = (skill / "references" / "init.md").read_text(encoding="utf-8")
+    migrate = (skill / "references" / "migrate.md").read_text(encoding="utf-8")
     start = (skill / "references" / "start.md").read_text(encoding="utf-8")
     assert "系统 `grilling` skill" in clarify
     assert "委托它对议题执行压力测试" in clarify
@@ -193,6 +193,6 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
         clarify.split()
     )
     assert "内部 clarify intent" in create
-    assert "内部 clarify intent" in review and "内部 clarify intent" in init
+    assert "内部 clarify intent" in review and "内部 clarify intent" in migrate
     assert "内部 clarify intent" in start
     assert "明确确认才转" in review

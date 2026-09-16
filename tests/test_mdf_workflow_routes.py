@@ -66,7 +66,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "delivery-contract.md", "common.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 29
+    assert len(workflows) == 30
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -115,7 +115,7 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 
 
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
-    text = workflow("init")
+    text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
     assert "仅允许 initializing finding，或 ready 无 finding" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
@@ -178,7 +178,7 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "REPO_ROOT" in dispatch
     assert "不使用空值或上次调用的变量" in dispatch
     assert "clarify 与 help 不要求 Git 仓库" in dispatch
-    assert "init/bootstrap" in dispatch and "普通目录" in dispatch
+    assert "init/bootstrap/migrate" in dispatch and "普通目录" in dispatch
     assert "upgrade 解析 Git 根" in dispatch
     assert "不要求 manifest ready" in dispatch
 
@@ -276,7 +276,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
     assert rows(shared)[6][6] == "事实变化 5；其他保留现场停止"
-    assert rows(workflow("init"))[6][6] == "事实变化 6；未确认结束；其他停止"
+    assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认结束；其他停止"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
 
@@ -294,8 +294,8 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert "阻断原因与待确认项" in result
     assert "不得推进依赖审阅通过的步骤" in result
     assert "不自行修复或自动重试" in result
-    # 返回未通过仍允许 init 在当前审阅步骤修复；交付调用方继续使用失败出口。
-    assert "可修复则重验" in rows(workflow("init"))[5][6]
+    # 返回未通过仍允许 migrate 在当前审阅步骤修复；交付调用方继续使用失败出口。
+    assert "可修复则重验" in rows(workflow("migrate"))[5][6]
     assert rows(workflow("fact-update"))[2][6] == "停止并报告"
     assert rows(workflow("finish"))[3][6] == "停止并交接"
 
@@ -361,7 +361,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert table[1][5] == "交接并结束"
     assert table[1][6] == "说明阻塞与操作后结束"
     assert "全部 MDF workflow" in text
-    for name in ("init", "bootstrap", "intake", "prp review", "CodeWiki", "clarify"):
+    for name in ("init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki", "clarify"):
         assert name in text
     assert "不得在识别前统一要求 manifest ready 或 clean" in text
     assert "draft PRP、open Bug 或待办事项本身不代表流程已启动" in text
@@ -384,7 +384,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
 def test_next_dispatch_allows_non_git_and_delegated_continuation():
     entry = workflow("entry")
     common = workflow("common")
-    assert "除 init/bootstrap/next 外" in common
+    assert "除 init/bootstrap/migrate/next 外" in common
     assert "允许续办尚未 Git 化的初始化与无需仓库的 clarify" in common
     assert "next 可委托识别出的在途流程" in entry
     assert "一次 next 只续办一个所选 intent" in workflow("next")
@@ -504,14 +504,39 @@ def test_codewiki_session_is_created_by_analyze_repo():
     assert rows(workflow("codewiki-recovery"))[4][2] == "脚本"  # 移出为文件操作
 
 
+def test_init_dispatches_to_bootstrap_or_migrate():
+    text = workflow("init")
+    table = rows(text)
+    assert table[0][5] == "2"
+    assert table[1][3] == "内部执行 bootstrap 或 migrate"
+    assert table[1][5] == "结束"
+    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+    assert re.search(r"未就绪的新项目 ─+→ \[内部执行 bootstrap 并返回\]", diagram)
+    assert re.search(r"已有事实或已 ready ─+→ \[内部执行 migrate 并返回\]", diagram)
+    assert "references/bootstrap.md" in text
+    assert "references/migrate.md" in text
+    assert "`$mdf init migrate`" in text
+    migrate = workflow("migrate")
+    assert re.search(r"未就绪的新项目 ─+→ \[停止并提示 bootstrap\]", migrate.split(
+        "```text\n", 1
+    )[1].split("```", 1)[0])
+    assert "或 init 依据公共分流规则的内部委托" in migrate
+    assert "`$mdf init migrate`" in migrate
+
+
 def test_init_entry_is_read_only_and_existing_git_runs_doctor():
     table = rows(workflow("init"))
     assert table[0][2] == "约束"
     assert table[0][3] == "只读判定分流"
     text = workflow("init")
-    assert "必须运行 doctor" in text
-    assert "可运行 doctor" not in text
     assert "转入前不写入 `.git/`" in text
+    assert "内部执行 bootstrap 或 migrate" in text
+    migrate = workflow("migrate")
+    assert "必须运行 doctor" in migrate
+    assert "可运行 doctor" not in migrate
+    table = rows(migrate)
+    assert table[0][2] == "约束"
+    assert table[0][3] == "只读判定分流"
 
 
 def test_jot_promote_revalidates_without_rewriting():

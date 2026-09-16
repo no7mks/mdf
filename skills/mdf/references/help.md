@@ -73,7 +73,8 @@
 #### 起步
 
 - `$mdf bootstrap`：为全新或几乎全新的项目建立 MDF 起点
-- `$mdf init`：接入已有项目或调整配置；新项目转入 bootstrap
+- `$mdf init`：接入已有项目或调整配置；新项目转入 bootstrap，已有项目转入 migrate
+- `$mdf init migrate`：将已有项目材料与布局收敛到当前结构；也可 `$mdf migrate`
 
 #### 规划
 
@@ -117,6 +118,8 @@ $mdf help
 $mdf help start
 $mdf bootstrap
 $mdf init
+$mdf init migrate
+$mdf migrate
 $mdf next
 $mdf next?
 $mdf next --depth 2
@@ -146,8 +149,8 @@ $mdf clarify 要不要把缓存放到 Redis
 
 ### 主题
 
-主题键：`bootstrap`、`init`、`intake`、`jot`、`jot promote`、`bug create`、
-`prp create`、`prp review`、`prp split`、`clarify`、`next`、`deliver`、`start`、
+主题键：`bootstrap`、`init`、`init migrate`、`migrate`、`intake`、`jot`、`jot promote`、
+`bug create`、`prp create`、`prp review`、`prp split`、`clarify`、`next`、`deliver`、`start`、
 `design`、`write-tests`、`implement`、`converge`、`code-review`、`fact update`、
 `finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
 `upgrade`、`help`。
@@ -155,12 +158,22 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf bootstrap`
 用法：`$mdf bootstrap`
 用途：为全新或几乎全新的项目建立 MDF 起点。
-说明：不搭建业务工程或测试；已有实现时停止并提示 init。
+说明：不搭建业务工程或测试；已有实现时停止并提示 migrate。
 
 `$mdf init`
 用法：`$mdf init`
 用途：接入已有项目或调整 MDF 配置。
-说明：新项目自动转入 bootstrap；校验通过并确认后进入 ready。
+说明：新项目转入 bootstrap，已有项目转入 migrate。
+
+`$mdf init migrate`
+用法：`$mdf init migrate` 或 `$mdf migrate`
+用途：将已有项目材料与布局收敛到当前 MDF 结构。
+说明：init 的子 intent；也可由 `$mdf init` 内部委托；新项目停止并提示 bootstrap。
+
+`$mdf migrate`
+用法：`$mdf migrate` 或 `$mdf init migrate`
+用途：将已有项目材料与布局收敛到当前 MDF 结构。
+说明：与 `$mdf init migrate` 相同；新项目停止并提示 bootstrap。
 
 `$mdf intake`
 用法：`$mdf intake`

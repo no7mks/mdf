@@ -14,8 +14,8 @@
 │ 2 Audit CLI                      │
 └────────────────┬─────────────────┘
                  │
-                 ├──── init 且仅 initializing ────→ 3 Review facts
-                 ├──── 其他失败或缺失 ────────────→ [停止]
+                 ├──── migrate 且仅 initializing ────→ 3 Review facts
+                 ├──── 其他失败或缺失 ───────────────→ [停止]
                  │
                  ▼ CLI 成功
 ┌──────────────────────────────────┐
@@ -64,7 +64,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 范围 | 约束 | 确认调用方、状态及文档/实现审阅范围 | 类型、两类范围 | 2 | 停止 |
-| 2 | 映射 | 脚本 | 按精确范围运行 fact-audit CLI | 映射、findings | 3 | init 仅 initializing 则 3；其他停止 |
+| 2 | 映射 | 脚本 | 按精确范围运行 fact-audit CLI | 映射、findings | 3 | migrate 仅 initializing 则 3；其他停止 |
 | 3 | 事实 | 约束 | 逐份核对当前事实陈述及 evidence 与实现，并核对加载质量 | 事实复核、语义发现 | 4 | 无法复核则停止 |
 | 4 | 覆盖 | 约束 | 从实现反查产品与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | 警告 | 约束 | 逐条审阅未引用实现的 warning 并确认 | 逐条用户确认 | 6 | 无法审阅则停止 |
@@ -82,7 +82,7 @@
 它只读：不写入、移动、提交、生成持久报告或执行 `verification.commands`。
 
 确定类型和状态：fact update 委托时使用其明确范围，允许审阅调用方的同次写入；
-direct 执行`全量审阅`、manifest 必须 `ready`；init 为全量、允许 `initializing`；
+direct 执行`全量审阅`、manifest 必须 `ready`；migrate 为全量、允许 `initializing`；
 finish 的 release 为全量，其他分支为调用方给出实现和当前事实文档范围的范围审阅。
 审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
 
@@ -96,7 +96,7 @@ finish 的 release 为全量，其他分支为调用方给出实现和当前事�
 
 验收：范围、文档—`evidence` 映射、ignore 匹配、warnings、确定性 findings。
 
-通过条件：CLI 成功，或 init 调用时返回结构化结果且 findings 仅有
+通过条件：CLI 成功，或 migrate 调用时返回结构化结果且 findings 仅有
 `manifest.initializing`；后一种即使退出码为 2、ok 为 false 也继续审阅。
 异常与交接：其他调用失败或确定性 finding 时停止；不得把解析失败当作初始化豁免。
 
@@ -146,7 +146,7 @@ finish 的 release 为全量，其他分支为调用方给出实现和当前事�
 **校验**
 
 运行 `validate --repo "$REPO_ROOT" --scope full`（即 full validation），不运行验证命令；
-init 只允许 `manifest.initializing` finding。
+migrate 只允许 `manifest.initializing` finding。
 
 验收：validation findings。
 
@@ -160,7 +160,7 @@ init 只允许 `manifest.initializing` finding。
 
 验收：会话摘要和用户当场确认。
 
-通过条件：无语义 finding、无未确认 warning，且 validation 无阻断 finding 时通过；init 仅豁免
+通过条件：无语义 finding、无未确认 warning，且 validation 无阻断 finding 时通过；migrate 仅豁免
 `manifest.initializing`。该确认不跨调用复用。
 
 异常与交接：存在其他 finding、未确认 warning 或未取得用户确认时，报告审阅未通过、
