@@ -77,7 +77,7 @@
 | 2 | 内容 | 约束 | 逐题取得一条完整原文，不预判类型 | 完整输入 | 3 | 留在 2 询问 |
 | 3 | 追加 | 脚本 | 生成 ID，追加完整 marker 并 targeted 校验 | 条目、校验、diff | 结束 | 保留现场，停止 |
 | 4 | 选择 | 约束 | 按 jot-ID 读取唯一条目的完整 marker | 唯一 ID 与原文 | 5 | 留在 4 消歧 |
-| 5 | 澄清 | 脚本 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
+| 5 | 澄清 | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | 确认 | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
 | 7 | 创建 | 脚本 | 确认 slug，生成 ID、写初始对象并首次校验 | 对象、首次校验 | 8 | 保留两者，停止 |
 | 8 | 提升 | 脚本 | 复验后转状态、删 Jot、再复验并提交 | 两次校验、diff、提交 | 交接并结束 | 首次保留；二次回滚停止 |
@@ -162,8 +162,8 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、 Regression Evid
 **创建**
 
 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug 中唯一，
-且不得与对象 ID 同形。提升为 Proposal 时先运行 `planning ensure` 并按 start 切换
-到 planning 工作区，再调用
+且不得与对象 ID 同形。提升为 Proposal 时先运行 `planning ensure` 并按
+`references/common.md` 的「切换工作区」规则切换到 planning 工作区，再调用
 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`；提升为 Bug 时按
 `common.md` 归属处理，调用 `make-id --type bug --slug <slug>`。
 Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。

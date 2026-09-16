@@ -27,6 +27,47 @@ next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无�
 clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共流程处理普通目录
 与父仓库边界。upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
 
+## 切换工作区
+
+<a id="s-switch"></a>
+
+切换到已有 worktree 时，目标为绝对路径与完整分支名。已在该路径且当前分支
+正确即通过；不得再 `git worktree add`，不得只在原根 `cd` 冒充已切换。
+
+判定当前 agent：先看本会话可用工具，再看 `$MDF_ROOT` 是否位于
+`.cursor/skills`、`.codex/skills`、`.kiro/skills`、`.claude/skills` 或
+`.openclaw/skills`。工具与路径冲突时以工具为准。
+
+Cursor：立即对目标路径调用 `move_agent_to_root`（参数 `rootPath`）。
+禁止 `move_agent_to_cloned_root`（会 fetch origin，本地未推送分支会失败）。
+调用后必须新开 shell 再核对，不得沿用切换前的终端 cwd。无该工具时报告缺失
+并留在当前步骤，要求用户把工作区根打开为该路径。
+
+Codex：要求用户把当前对话接到已有目标 worktree，不要再创建：
+1. 点右上角 Environment 当前项（一般显示 Local）
+2. Continue in 选 New local worktree，不要选 Cloud
+3. 在 Hand off chat to worktree 中打开 Worktree 下拉，选名称等于
+   目标分支的已有项（如 `feature/<slug>`）
+4. 不要选 Create a new worktree
+对话框会保持该 worktree 的既有分支。给出应选项后等待用户完成，再核对。
+
+Kiro IDE：没有会话内切根工具。要求用户用 File > Open Folder 或
+`kiro <路径>` 打开目标绝对路径作为工作区根；禁止 Add Folder to Workspace。
+打开后在该根继续并核对。
+Kiro CLI：会话绑定启动目录。要求用户在目标路径下重新启动 `kiro-cli`；
+禁止只在原会话 `cd`。
+
+Claude Code：对目标路径调用 `EnterWorktree`。路径不在 `.claude/worktrees/`
+时需用户批准。禁止 `claude --worktree` 或在 `.claude/worktrees/` 另建副本。
+
+其他（含 OpenClaw）：把目标绝对路径交给用户，要求把工作区或进程 cwd
+打开到该路径后继续；禁止再创建 worktree。OpenClaw 不得用 `worktree: true`
+另建 checkout，可用 `--cwd` 指向已有路径后重启。
+
+核对必须在切换后的环境、新 shell 执行：`git rev-parse --show-toplevel`
+等于目标路径，`git branch --show-current` 等于目标分支。向用户展示这两项。
+未满足则留在当前步骤，重复对应指引，不拆除已建 worktree 与分支。
+
 ## 入口
 
 <a id="s2"></a>
@@ -51,7 +92,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   worktree：覆盖 `prp create`、`prp review`、`prp split`、intake 中的 Proposal、
   以及 `jot promote` 为 Proposal。不在当前目录开分支，不占用 develop checkout。
   调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
-  按 start 的切换规则切过去，重新解析目标根。提交后运行
+  按「切换工作区」规则切过去，重新解析目标根。提交后运行
   `planning land --repo "$REPO_ROOT"`，在占用 develop 的 worktree（须 clean）上
   no-ff 合入。新建 Proposal 的 ID 在该工作区按当前 checkout 的 `docs/proposals/`
   最大序号加一分配；合入 develop 后才对 `$mdf start` 可见。

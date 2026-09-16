@@ -42,7 +42,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 检查 | 脚本 | 运行 doctor 与 planning ensure，按 start 切换 | 工作区、in_progress | 2 | 未切换留 1；其他停止 |
+| 1 | 检查 | 约束 | 运行 doctor 与 planning ensure，切换至 planning | 工作区、in_progress | 2 | 未切换留 1；其他停止 |
 | 2 | 拆分 | 约束 | 确认拆分单元与全量 downstream | 确认、覆盖、downstream | 无需拆分结束；否则 3 | 停止并报告 |
 | 3 | 预检 | 脚本 | 确认 clean，预检并展示候选 | diff、非预览写入确认 | 仅预览结束；确认写入 4 | 失败或未确认则停止 |
 | 4 | 写入 | 脚本 | 去掉 dry-run 并改写全部下游依赖 | 校验、完整变更或恢复 | 结束 | 停止并报告 |
@@ -53,8 +53,8 @@
 
 `prp-split` CLI（包括 dry-run）操作前要求当前分支为 planning，且 clean worktree；
 预览不提交。入口先运行 `doctor --repo "$REPO_ROOT"` 与
-`planning ensure --repo "$REPO_ROOT"`，须 `normal_workflows_allowed`，并按 start
-切换进入 planning 工作区。
+`planning ensure --repo "$REPO_ROOT"`，须 `normal_workflows_allowed`，并按
+`references/common.md` 的「切换工作区」规则进入 planning 工作区。
 未开工以 `list --repo "$REPO_ROOT" --type proposal` 的 `in_progress` 为准，判定与
 `prp-review` 相同。
 非预览按公共规则整理本次改动；无关改动阻塞操作或相关范围不明时先澄清。

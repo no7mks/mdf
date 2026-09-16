@@ -210,28 +210,32 @@ def test_planning_intents_use_shared_planning_workspace():
     for name in ("prp-create", "prp-review", "intake", "prp-split"):
         text = workflow(name)
         assert "planning ensure" in text
-        assert "start" in text and "切换" in text
+        assert "切换工作区" in text
     jot = workflow("jot")
     assert "planning ensure" in jot
+    assert "切换工作区" in jot
     common = workflow("common")
     assert "`planning` 分支" in common
     assert "planning land" in common
+    assert "## 切换工作区" in common
 
 
 def test_start_switches_agent_to_owner_worktree():
     text = workflow("start")
     assert "创建成功进入 4" in text
-    assert "move_agent_to_root" in text
-    assert "move_agent_to_cloned_root" in text
-    assert "New local worktree" in text
-    assert "Create a new worktree" in text
-    assert "File > Open Folder" in text
-    assert "EnterWorktree" in text
-    assert "git rev-parse --show-toplevel" in text
-    assert "git branch --show-current" in text
-    assert "不得再 `git worktree add`" in text
-    assert "不得只在原根 `cd` 冒充已切换" in text
     assert "qa/dev 不在本步切换" in text
+    assert "切换工作区" in text
+    common = workflow("common")
+    assert "move_agent_to_root" in common
+    assert "move_agent_to_cloned_root" in common
+    assert "New local worktree" in common
+    assert "Create a new worktree" in common
+    assert "File > Open Folder" in common
+    assert "EnterWorktree" in common
+    assert "git rev-parse --show-toplevel" in common
+    assert "git branch --show-current" in common
+    assert "不得再 `git worktree add`" in common
+    assert "不得只在原根 `cd` 冒充已切换" in common
 
 
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():
@@ -507,7 +511,7 @@ def test_jot_promote_revalidates_without_rewriting():
     assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
     assert "回滚到\n步骤 7 完成状态" in jot
     table = rows(jot)
-    assert (table[4][1], table[4][2]) == ("澄清", "脚本")
+    assert (table[4][1], table[4][2]) == ("澄清", "约束")
     assert "首次保留；二次回滚停止" in table[7][6]
 
 

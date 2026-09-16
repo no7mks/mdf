@@ -58,7 +58,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | 运行 doctor 与 planning ensure，按 start 切换 | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 1 | 入口 | 约束 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | 选择 | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
 | 3 | 状态 | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
 | 4 | 澄清 | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
@@ -74,8 +74,8 @@
 **入口**
 
 解析 `REPO_ROOT` 并运行 `doctor`。运行
-`planning ensure --repo "$REPO_ROOT"`，按 start 的切换规则进入 JSON
-`worktree`（分支 `planning`），再重新解析目标根。
+`planning ensure --repo "$REPO_ROOT"`，按 `references/common.md` 的
+「切换工作区」规则进入 JSON `worktree`（分支 `planning`），再重新解析目标根。
 
 验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
 

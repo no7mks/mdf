@@ -31,6 +31,9 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 边界不明 ────────────────→ 3 Dispatch
+                 ├──── 材料缺失 ────────────────→ [停止并报告]
+                 │
                  ├──── bootstrap ───────────────→ references/bootstrap.md
                  ├──── init ────────────────────→ references/init.md
                  ├──── intake ──────────────────→ references/intake.md

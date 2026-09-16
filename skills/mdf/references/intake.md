@@ -7,7 +7,6 @@
 │ 1 Check entry                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 未切换 ───────→ 1 Check entry
                  ├──── 失败/缺失 ────→ [停止]
                  │
                  ▼ 通过
@@ -67,12 +66,12 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | 运行 doctor 与 planning ensure，按 start 切换 | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 1 | 入口 | 脚本 | 解析 REPO_ROOT 并运行 doctor | doctor 结构化结果 | 2 | 停止 |
 | 2 | 来源 | 约束 | 确认一次性来源及采用范围；逐题消歧 | 来源、已确认范围 | 3 | 等待澄清，2 |
 | 3 | 分类 | 脚本 | 用 `list` 查重并区分偏差与意图 | list 结果、对象清单 | 4 | 命中则停止；无法判定回 2 |
 | 4 | 澄清 | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
 | 5 | 确认 | 约束 | 展示对象、边界、排除项和直接依赖并确认 | 用户明确确认的清单 | 6 | 取消停止；来源 2；事实 4 |
-| 6 | 创建 | 脚本 | 确认 slug 与写入分支，生成 ID、写初始对象、校验回读 | 零 finding、对象与 diff | 7 | 保留现场，停止 |
+| 6 | 创建 | 约束 | Proposal 进 planning，Bug 按归属；写对象并校验回读 | 对象、零 finding、diff | 7 | 保留现场，停止 |
 | 7 | 报告 | 约束 | 报告对象、范围、依赖和后续显式入口 | 结果摘要 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -83,14 +82,12 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。运行
-`planning ensure --repo "$REPO_ROOT"`，按 start 的切换规则进入 JSON
-`worktree`（分支 `planning`），再重新解析目标根。
+解析 `REPO_ROOT` 并运行 `doctor`。本步不切换工作区；写入落点在步骤 6
+按对象类型确定。
 
-验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
+验收：`normal_workflows_allowed: true`。
 
-异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止；尚未切到
-planning 工作区时留在本步。
+异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
 
 <a id="s2"></a>
 
@@ -155,20 +152,30 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **创建**
 
 为每项提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。全部对象在当前 planning 工作区写入。
-Proposal 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
-按已有最大序号加一生成 ID；Bug 使用 `make-id --type bug --slug <slug>`。
-以模板写入 `docs/proposals/` 或 `docs/bugs/`；
+中唯一，且不得与对象 ID 同形。写入落点按对象类型确定：
+
+- Bug：按 `references/common.md` 的归属规则确定写入分支（与当前交付分支
+  工作相关在当前分支，无关在 develop）；使用 `make-id --type bug --slug <slug>`
+  生成 ID，以模板写入 `docs/bugs/`。
+- Proposal：在 planning 工作区写入。运行 `planning ensure --repo "$REPO_ROOT"`，
+  按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`
+  （分支 `planning`），重新解析目标根；使用
+  `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
+  按已有最大序号加一生成 ID，以模板写入 `docs/proposals/`；提交后运行
+  `planning land --repo "$REPO_ROOT"` 合入 develop。
+- 清单同时含两类时，先按归属完成 Bug 并提交，再切换 planning 完成 Proposal。
+
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
 Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否则省略字段，不写 `null`。
 
-全部对象写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，
+每处写入后在该工作区运行 `validate --repo "$REPO_ROOT" --scope targeted`，
 回读对象并对照模板、确认清单与完整 diff，核对 schema、必填章节、初始状态和依赖。
 
 验收：所有新建对象、校验退出 0 且零 finding、回读结果与 diff。
 
 异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象，
-不得宣称创建验收通过，不进入步骤 7 的成功报告。
+不得宣称创建验收通过，不进入步骤 7 的成功报告；尚未切到 planning 工作区时
+留在本步。
 
 <a id="s7"></a>
 
