@@ -275,6 +275,24 @@ def test_object_ids_must_be_cited_with_type_prefix() -> None:
     assert "不得省略前缀或只写序号/短码" in agents
 
 
+def test_unreleased_layout_allows_in_progress_delivery_without_change() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+    delivery = (skill / "references" / "delivery-contract.md").read_text(
+        encoding="utf-8"
+    )
+    objects = (skill / "references" / "object-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "不必先有 CHANGE.md" in contract
+    assert "finish 在同一目录补齐 CHANGE.md" in delivery
+    assert "CHANGE.md 出现前即可保存交付身份与材料" in objects
+    assert "finish 时" not in objects
+
+
 def test_contracts_do_not_duplicate_intent_steps() -> None:
     skill = skill_dir("mdf")
     object_contract = (skill / "references" / "object-contract.md").read_text(

@@ -27,7 +27,7 @@
 ├── GLOSSARY.md
 ├── CHANGELOG.md
 ├── changes/
-│   ├── unreleased/<slug>/              # CHANGE.md 与交付材料同级
+│   ├── unreleased/<slug>/              # 交付材料；CHANGE.md 完成后同级
 │   └── <major.minor.patch>/
 │       ├── CHANGE.md
 │       └── <slug>/                    # 材料与 CHANGE.md 同级
@@ -55,7 +55,8 @@
 不得覆盖或自动接管。事实审计仍限定在 `docs/product/` 与 `docs/system/`。
 
 
-`changes/unreleased/` 保存未版本化的子 Change 及其交付材料。每个稳定版本目录始终只有一个根
+`changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
+目录有交付身份即可存在，不必先有 CHANGE.md。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量

@@ -58,6 +58,56 @@ def test_doctor_reports_dirty_without_blocking_normal_workflows(
     assert (repo / "untracked.txt").read_text() == "dirty\n"
 
 
+def test_doctor_allows_in_progress_unreleased_delivery_without_change(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    git(repo, "branch", "-m", "master")
+    git(repo, "branch", "develop")
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    started = payload(
+        mdf(
+            python_exe,
+            "start",
+            "--repo",
+            str(repo),
+            "--kind",
+            "feature",
+            "--proposal",
+            "prp-001",
+            "--objectives-file",
+            str(obj),
+        )
+    )
+    work = Path(started["worktree"])
+    root = work / "changes/unreleased/service-health"
+    assert (root / "delivery.json").is_file()
+    assert (root / "objectives.md").is_file()
+    assert not (root / "CHANGE.md").exists()
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(work)))
+    assert data["state"] == "ready"
+    assert data["findings"] == []
+    assert data["normal_workflows_allowed"] is True
+    assert data["clean"] is True
+
+
+def test_doctor_rejects_unreleased_dir_without_change_or_identity(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    folder = repo / "changes/unreleased/orphan-slug"
+    folder.mkdir(parents=True)
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"] is False
+    codes = {item["code"] for item in data["findings"]}
+    assert "change.missing" in codes
+
+
 def test_doctor_allows_ignored_runtime_files(
     python_exe: str, tmp_path: Path
 ):

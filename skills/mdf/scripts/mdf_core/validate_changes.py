@@ -43,19 +43,21 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                         relative(repo, change_dir),
                     )
                 change = change_dir / "CHANGE.md"
-                if not change.is_file():
-                    add_finding(
-                        findings,
-                        "change.missing",
-                        "unreleased Change 目录需要 CHANGE.md",
-                        relative(repo, change_dir),
-                    )
-                else:
+                identity = change_dir / "delivery.json"
+                # start 写入身份；CHANGE.md 到 finish 才补齐。
+                if change.is_file():
                     validate_change_file(
                         repo,
                         change,
                         findings,
                         expected_slug=change_dir.name,
+                    )
+                elif not identity.is_file():
+                    add_finding(
+                        findings,
+                        "change.missing",
+                        "unreleased Change 目录需要 CHANGE.md",
+                        relative(repo, change_dir),
                     )
             continue
         if stable_semver(directory.name) is None:

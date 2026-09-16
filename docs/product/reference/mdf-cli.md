@@ -73,7 +73,9 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 报告目标路径的 Git 根、是否为 Git 根、worktree 是否 clean，及当前分支的
 解析结果。它还报告 `.mdf/manifest.yaml` 是否存在和 manifest 校验 findings。
 已初始化仓库会给出 manifest state；只有 state 为 `ready`
-且没有 finding 时，`normal_workflows_allowed` 才为 `true`。clean 单独报告，
+且没有 finding 时，`normal_workflows_allowed` 才为 `true`。进行中的
+`changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md
+不构成 finding。clean 单独报告，
 由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
 ### `validate`
