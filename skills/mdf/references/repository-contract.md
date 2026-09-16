@@ -27,7 +27,7 @@
 ├── GLOSSARY.md
 ├── CHANGELOG.md
 ├── changes/
-│   ├── unreleased/<slug>/              # 交付材料；CHANGE.md 完成后同级
+│   ├── unreleased/<slug>/              # feature/bugfix 材料；release/hotfix 用 <semver>/
 │   └── <major.minor.patch>/
 │       ├── CHANGE.md
 │       └── <slug>/                    # 材料与 CHANGE.md 同级
@@ -56,7 +56,9 @@
 
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
-目录有交付身份即可存在，不必先有 CHANGE.md。每个稳定版本目录始终只有一个根
+目录有交付身份即可存在，不必先有 CHANGE.md。code-review 记录写在对应
+`changes/unreleased/<slug>/code-review.md`：feature/bugfix 用交付 kebab-case slug，
+release/hotfix 用该分支稳定 SemVer。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量

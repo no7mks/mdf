@@ -448,6 +448,8 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "delivery.json 的 start_commit", "mdf-start-commit",
         "上一正式发布版本的 master commit/tag", "首次发布没有上一版本",
         "git diff <base_commit> <review_head>", "基线必须是当前 HEAD 的祖先",
+        "git diff <previous_final_head> <review_head>",
+        "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "bugfix/hotfix/release 不要求 feature 的 design/converge gate",
         "manifest 的全部 `verification.commands`", "最终 final_head",
@@ -457,8 +459,9 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
     assert "四种分支均须有完整且有效的三份独立审查" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
-    assert "无论是否冲突，都以集成后的 HEAD 重新执行完整 code-review" in finish
+    assert "都以集成后的 HEAD 执行增量新一轮" in finish
     assert "不复用集成前报告" in finish
+    assert "复核上轮问题" in finish
     assert "证据缺失或过期时内部执行 code-review" in finish
 
 

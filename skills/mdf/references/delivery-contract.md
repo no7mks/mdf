@@ -12,7 +12,7 @@ proposal、slug、branch、start_commit。
 起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
 
 开发材料自 start 起位于 `changes/unreleased/<prp-slug>/`：objectives.md、design.md、
-delivery.json、gates/；finish 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
+delivery.json、gates/、code-review.md；finish 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
 `changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
 objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只相对当前文件
 （`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。搬迁时 CLI 改写仍有效

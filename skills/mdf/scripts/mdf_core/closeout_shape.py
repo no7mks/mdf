@@ -13,6 +13,28 @@ from .paths import load_manifest, relative
 from .textutil import stable_semver
 
 
+def unreleased_change_slugs(repo: Path, version: str) -> list[str]:
+    unreleased = repo / "changes" / "unreleased"
+    if not unreleased.is_dir():
+        return []
+    names = sorted(
+        path.name
+        for path in unreleased.iterdir()
+        if path.is_dir() and not path.is_symlink()
+    )
+    unexpected = [
+        name for name in names
+        if stable_semver(name) is not None and name != version
+    ]
+    if unexpected:
+        raise MDFError(
+            "unreleased 中的 SemVer 目录必须等于当前收口版本",
+            code="unexpected_review_dir",
+            details={"unexpected": unexpected, "version": version},
+        )
+    return [name for name in names if stable_semver(name) is None]
+
+
 def validate_closeout_shape(
     repo: Path,
     spec: dict[str, Any],
@@ -96,16 +118,7 @@ def validate_closeout_shape(
             code="collision",
         )
 
-    unreleased = repo / "changes" / "unreleased"
-    actual_slugs = (
-        sorted(
-            path.name
-            for path in unreleased.iterdir()
-            if path.is_dir() and not path.is_symlink()
-        )
-        if unreleased.is_dir()
-        else []
-    )
+    actual_slugs = unreleased_change_slugs(repo, version)
     release_items = [
         {"slug": slug, "source": f"changes/unreleased/{slug}"}
         for slug in actual_slugs

@@ -252,6 +252,8 @@ def apply_moves_and_rewrites(
 
 
 def managed_delivery_markdown(path: Path) -> bool:
+    if path.name == "code-review.md":
+        return True
     return (path.name in {"objectives.md", "design.md"}
             and (path.parent / "delivery.json").is_file())
 

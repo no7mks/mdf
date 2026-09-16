@@ -290,7 +290,7 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 外层 finish intent 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
-由 Agent 自动尝试解决集成冲突；集成产生新提交后重新执行完整 code-review 与全量验证，
+由 Agent 自动尝试解决集成冲突；集成产生新提交后执行增量新一轮 code-review 与全量验证，
 再核对三份审查、主 Agent 复核与验证记录。该前置流程由 intent 执行，CLI 不代为集成或审查；
 非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
 
@@ -385,7 +385,8 @@ Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同�
 `--handoff` 要求 clean 与有效阶段指纹；审查者用 `--expected-head <hash>` 固定只读对象。
 
 `project-verify run --repo <仓库>` 执行 bugfix/hotfix/release 的全部 manifest 验证项，
-将成功或失败证据写入 `docs/context/research/code-review/<完整分支名>.verification.json`。
+将成功或失败证据写入 `changes/unreleased/<slug>/code-review.verification.json`。
+feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix 为该分支稳定 SemVer。
 `project-verify check` 只读核验输入指纹、分支及全绿状态；事实/收口文档不改变代码指纹。
 
 `codewiki-runtime [--directory <路径>]` 只在安装目录缺失时 clone，核对源码和 Git 状态，

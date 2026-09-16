@@ -129,6 +129,24 @@ def branch_details(name: str) -> dict[str, Any]:
     }
 
 
+def unreleased_slug(details: dict[str, Any]) -> str:
+    kind = details.get("kind")
+    if kind in {"release", "hotfix"}:
+        version = details.get("version")
+        if not isinstance(version, str) or stable_semver(version) is None:
+            raise MDFError(
+                "release/hotfix 审查目录必须使用稳定 SemVer",
+                code="bad_release_branch",
+            )
+        return version
+    if kind in {"feature", "bugfix"}:
+        slug = details.get("slug")
+        if not isinstance(slug, str) or not slug:
+            raise MDFError("交付 slug 缺失", code="unsupported_branch")
+        return slug
+    raise MDFError("需要 Gitflow 交付分支", code="unsupported_branch")
+
+
 def git_directory(repo: Path) -> Path:
     raw = run(["git", "rev-parse", "--git-dir"], cwd=repo).stdout.strip()
     path = Path(raw)

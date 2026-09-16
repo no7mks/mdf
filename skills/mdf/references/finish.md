@@ -140,9 +140,10 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 - 冲突时保留 merge 现场，Agent 按已确认目标、设计及两侧改动自动尝试 resolve，
   逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、需变更目标或
   无法解决时才停止询问，报告冲突与已尝试的修复。
-- 只要本次集成产生新提交，无论是否冲突，都以集成后的 HEAD 重新执行完整 code-review：
-  保留固定 base_commit，重新固定 review_head，启动三份独立全量审查，完成裁定、修复、
-  复核与全量项目验证。不复用集成前报告，也不将集成当作旧审查的修复续办。
+- 只要本次集成产生新提交，无论是否冲突，都以集成后的 HEAD 执行增量新一轮
+  code-review：左端点为集成前 final_head，重新固定 review_head，三人覆盖增量
+  范围并复核上轮问题，完成裁定、修复与全量项目验证。不复用集成前报告，也不将
+  集成当作旧审查的修复续办。无有效上轮记录时按首轮从交付起点审到集成后 HEAD。
 - 主线已包含且审查证据有效时无需重复合并或审查；证据缺失或过期时内部执行 code-review，
   通过后继续本次 finish。feature 仍须满足 code-review 的 design/converge 前置条件。
 
@@ -187,7 +188,8 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
 其他分支运行 `project-verify check --repo "$REPO_ROOT"`。
 两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤补验，并内部从
-`code-review.md` 步骤 1 执行完整审查（新审查三人全量，不把集成当修复续办）后复核，
+`code-review.md` 步骤 1 执行审查（有完整上轮记录则增量新一轮，否则首轮；
+不把集成当修复续办）后复核，
 不回退本流程步骤编号；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。

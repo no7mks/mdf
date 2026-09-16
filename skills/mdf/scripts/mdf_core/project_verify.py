@@ -2,7 +2,9 @@
 from .closeout_validate import run_verify_commands
 from .delivery_state import inventory, digest, git, safe, write_json, read_json
 from .errors import MDFError, emit
-from .gitutil import current_branch, branch_details, repo_path, require_git_root
+from .gitutil import (
+    current_branch, branch_details, repo_path, require_git_root, unreleased_slug,
+)
 from .paths import load_manifest
 from .verification import manifest_items
 
@@ -25,7 +27,12 @@ def command_project_verify(args):
         raise MDFError("验证需要 ready", code="manifest_not_ready")
     items = manifest_items(manifest)
     before = inputs(repo, items)
-    path = safe(repo, repo / "docs/context/research/code-review" / f"{branch}.verification.json")
+    details = branch_details(branch)
+    path = safe(
+        repo,
+        repo / "changes/unreleased" / unreleased_slug(details)
+        / "code-review.verification.json",
+    )
     if args.action == "check":
         result = read_json(path)
         if result.get("inputs") != before or result.get("branch") != branch or not result.get("all_passed"):

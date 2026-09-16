@@ -69,6 +69,9 @@ def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, t
     args = ["--repo", str(work)]
     payload(mdf(python_exe, "project-verify", "run", *args))
     payload(mdf(python_exe, "project-verify", "check", *args))
+    evidence = work / "changes/unreleased/bug-cd34/code-review.verification.json"
+    assert evidence.is_file()
+    assert not list((work / "docs/context/research").glob("code-review*"))
     (work / "src/service.py").write_text("changed = True\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
     manifest = work / ".mdf/manifest.yaml"
@@ -245,3 +248,7 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "三份报告有效且修复续办" in text
     assert "保留原 review_head，不覆盖原报告" in text
     assert "首轮未齐时进入 2 补齐" in text
+    assert "增量新一轮" in text
+    assert "git diff <previous_final_head> <review_head>" in text
+    assert "仍解决 / 复开 / 不适用" in text
+    assert "changes/unreleased/<slug>/code-review.md" in text

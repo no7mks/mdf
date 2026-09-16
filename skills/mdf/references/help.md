@@ -257,7 +257,7 @@ feature 交付分支上始终续办该 feature；非 feature 上的 `next?` 询�
 `$mdf code-review`
 用法：`$mdf code-review`
 用途：审查并修复实现、测试和 code smell。
-说明：支持 feature/bugfix/hotfix/release；首轮 3 个 subagent 各自全量审查，主 Agent 汇总修复。
+说明：支持 feature/bugfix/hotfix/release；首轮三人覆盖起点区间，后续增量并复核上轮问题。
 feature 位于 converge 之后；各分支均在 finish 前完成。
 
 `$mdf fact update`

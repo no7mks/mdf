@@ -215,6 +215,11 @@ def test_hotfix_closeout_uses_manifest_commands(
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
     init_git(repo)
     git(repo, "checkout", "-b", "hotfix/1.2.1")
+    review = repo / "changes/unreleased/1.2.1"
+    review.mkdir(parents=True)
+    (review / "code-review.md").write_text("# 审查\n\n通过。\n", encoding="utf-8")
+    git(repo, "add", "--", "changes/unreleased/1.2.1")
+    git(repo, "commit", "-m", "docs: 热修复审查记录")
     hotfix = json.dumps(
         {
             "fixed": [BUG_ID],
@@ -237,6 +242,8 @@ def test_hotfix_closeout_uses_manifest_commands(
     )
     assert applied["version"] == "1.2.1"
     assert (repo / "changes" / "1.2.1" / "CHANGE.md").is_file()
+    assert (repo / "changes" / "1.2.1" / "code-review.md").is_file()
+    assert not review.exists()
     assert (repo / "docs/bugs" / "archive" / "1.2" / BUG_NAME).is_file()
 
 

@@ -84,6 +84,20 @@ def apply_version_closeout(
                 "to": relative(repo, destination),
             }
         )
+    review_source = repo / "changes" / "unreleased" / context["version"]
+    if review_source.is_dir() and not review_source.is_symlink():
+        for path in sorted(review_source.iterdir()):
+            if not path.is_file() or path.is_symlink():
+                continue
+            destination = release_dir / path.name
+            moves[path] = destination
+            move_records.append(
+                {
+                    "kind": "repo",
+                    "from": relative(repo, path),
+                    "to": relative(repo, destination),
+                }
+            )
     epoch = ".".join(context["version"].split(".")[:2])
     archive_moves, _ = archive_plan(repo, epoch)
     archived: list[tuple[str, str]] = []
@@ -113,6 +127,8 @@ def apply_version_closeout(
         ),
     )
     apply_moves_and_rewrites(moves, rewrites)
+    if review_source.is_dir() and not any(review_source.iterdir()):
+        review_source.rmdir()
 
     release_dir.mkdir(parents=True, exist_ok=True)
     found_in_transitions: list[str] = []

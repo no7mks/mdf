@@ -108,6 +108,20 @@ def test_doctor_rejects_unreleased_dir_without_change_or_identity(
     assert "change.missing" in codes
 
 
+def test_doctor_allows_semver_unreleased_review_dir(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    folder = repo / "changes/unreleased/1.2.1"
+    folder.mkdir(parents=True)
+    (folder / "code-review.md").write_text("# 审查\n\n通过。\n", encoding="utf-8")
+    init_git(repo)
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["findings"] == []
+    assert data["normal_workflows_allowed"] is True
+
+
 def test_doctor_allows_ignored_runtime_files(
     python_exe: str, tmp_path: Path
 ):

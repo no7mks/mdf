@@ -34,17 +34,32 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             ):
-                if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", change_dir.name):
+                semver = stable_semver(change_dir.name) is not None
+                if not semver and not re.fullmatch(
+                    r"[a-z0-9][a-z0-9-]*", change_dir.name
+                ):
                     add_finding(
                         findings,
                         "change.directory",
                         "Unreleased change directory must be an ASCII "
-                        "kebab-case slug",
+                        "kebab-case slug or stable SemVer",
                         relative(repo, change_dir),
                     )
+                    continue
+                review = change_dir / "code-review.md"
+                if semver:
+                    if not review.is_file():
+                        add_finding(
+                            findings,
+                            "change.missing",
+                            "release/hotfix 审查目录需要 code-review.md",
+                            relative(repo, change_dir),
+                        )
+                    continue
                 change = change_dir / "CHANGE.md"
                 identity = change_dir / "delivery.json"
                 # start 写入身份；CHANGE.md 到 finish 才补齐。
+                # bugfix 可在补齐 CHANGE.md 前先写入 code-review.md。
                 if change.is_file():
                     validate_change_file(
                         repo,
@@ -52,7 +67,7 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                         findings,
                         expected_slug=change_dir.name,
                     )
-                elif not identity.is_file():
+                elif not identity.is_file() and not review.is_file():
                     add_finding(
                         findings,
                         "change.missing",

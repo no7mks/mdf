@@ -6,7 +6,7 @@ from typing import Any
 from . import doctor
 from .closeout_objects import active_objects
 from .closeout_stage import apply_closeout, summarize_closeout
-from .closeout_shape import validate_closeout_shape
+from .closeout_shape import unreleased_change_slugs, validate_closeout_shape
 from .closeout_validate import normalize_hotfix_change, run_verify_commands
 from .errors import MDFError, emit, serialize_findings
 from .gitutil import (
@@ -61,15 +61,7 @@ def derive_closeout_spec(
             code="invalid_closeout_spec",
         )
     if mode == "release":
-        slugs = (
-            sorted(
-                path.name
-                for path in (repo / "changes" / "unreleased").iterdir()
-                if path.is_dir() and not path.is_symlink()
-            )
-            if (repo / "changes" / "unreleased").is_dir()
-            else []
-        )
+        slugs = unreleased_change_slugs(repo, version)
         proposals: set[str] = set()
         fixed: set[str] = set()
         closed: set[str] = set()
