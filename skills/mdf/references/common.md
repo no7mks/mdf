@@ -36,23 +36,32 @@ clarify 与 help 不要求 Git 仓库；init/bootstrap 由 initialization 公共
 无法判定归属则停止。
 clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的文件设置额外豁免。
 
-写入或提交前读取当前分支，按本次工作与文档的归属确定落点，不按 intent 名称分配分支：
+写入或提交前读取当前分支，按本次工作与文档的归属确定落点，不按 intent 名称分配
+交付分支：
 
 - master 不直接修改或提交内容，包括文档；hotfix 的修改也在 hotfix 分支完成。
   init/bootstrap 的初始化落地及 finish 的 Gitflow 合并按各自专门契约执行。
   upgrade 替换已安装 Skill 并提交本次路径时，可在当前分支（含 master）提交这些路径，
   不改 `.mdf/` 与 `docs/`；该例外只约束 upgrade，见 `references/upgrade.md`。
-- 与当前分支工作相关的文档在当前分支更新，随该分支交付；包括规划记录、事实文档和 CodeWiki。
-  当前事实文档和 CodeWiki 必须反映该 checkout 的实际状态，不把未实现的计划写成事实。
-  调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，不替代任务管理。
-- 与当前分支工作无关的文档在 develop 更新；独立规划、记录和公共文档维护也按此规则处理。
-  develop 不存在时先明确创建基线，不擅自从未交付分支创建。
-- 新建 Proposal（含 `prp create`、intake 中的 Proposal、`prp split`、jot promote
-  为 Proposal）必须在 develop 上分配 ID、写入并提交；已有 Proposal 的修改仍按
-  工作归属落在当前分支或 develop。
-- 归属不明确时先询问。需改用 develop 时，在写入前选择安全切换或独立 worktree，
-  重新解析目标根并复查前置条件；不得自动搬运、暂存或提交已有改动来切换分支。
-  无法安全准备目标时保留现场并停止。detached HEAD 下不写入或提交。
+- 与当前交付分支工作相关的文档在当前分支更新，随该分支交付；包括规划记录、事实文档
+  和 CodeWiki。当前事实文档和 CodeWiki 必须反映该 checkout 的实际状态，不把未实现
+  的计划写成事实。调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，
+  不替代任务管理。
+- 规划写入使用唯一的 `planning` 分支与仓库同级 `<repo-name>-worktrees/planning`
+  worktree：覆盖 `prp create`、`prp review`、`prp split`、intake 中的 Proposal、
+  以及 `jot promote` 为 Proposal。不在当前目录开分支，不占用 develop checkout。
+  调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
+  按 start 的切换规则切过去，重新解析目标根。提交后运行
+  `planning land --repo "$REPO_ROOT"`，在占用 develop 的 worktree（须 clean）上
+  no-ff 合入。新建 Proposal 的 ID 在该工作区按当前 checkout 的 `docs/proposals/`
+  最大序号加一分配；合入 develop 后才对 `$mdf start` 可见。
+- 与当前交付分支工作无关、且不属于规划工作区的文档在 develop 更新；独立记录和公共
+  文档维护也按此规则处理。develop 不存在时先明确创建基线，不擅自从未交付分支创建。
+- 已有 Proposal 的修改若属于当前交付分支工作，仍在该交付分支更新；否则在 planning
+  工作区更新并合入 develop。
+- 归属不明确时先询问。需改用 develop 或 planning 时，在写入前选择安全切换或独立
+  worktree，重新解析目标根并复查前置条件；不得自动搬运、暂存或提交已有改动来切换
+  分支。无法安全准备目标时保留现场并停止。detached HEAD 下不写入或提交。
 
 只读查询、审计和预览不受上述写入分支限制，报告其实际 checkout；
 各交付阶段的角色分支、身份与 gate 限制仍须满足，不因文档相关而绕过。
@@ -95,6 +104,10 @@ Agent 可以主动创建本地提交，并应在形成有意义、可解释的�
 
 push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限推导。禁止 rebase，不擅自改写已有历史；
 异名分支使用 no-ff。阶段基线和集成要求见 `references/delivery-contract.md`。
+
+规划 intent 在本次规划提交后运行 `planning land --repo "$REPO_ROOT"`，把
+`planning` no-ff 合入占用 develop 的 worktree；无新提交则该命令为 no-op。
+develop 占用者 dirty 时停止并报告，不改 checkout。
 
 阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束，
 不仅为手动 commit 要求重调，也不自动触发下一个用户入口。

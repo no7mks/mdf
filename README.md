@@ -51,10 +51,12 @@ deliver 对可并行的 write-tests 与 implement 强制分别分派 subagent，
 
 一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
 gate 检查共同基线与有效证据。start、write-tests 与 implement 均强制独立 worktree。
+规划写入共用一个 `planning` 分支与 worktree。
 写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；提交不代表验收通过，
 也不替代用户确认。不夹带无关改动，远端与集成操作按各自流程授权。
-正常工作不在 master 直接修改或提交；文档与当前分支工作相关时在当前分支更新，否则在 develop 更新。
-新建 Proposal 只能在 develop 上分配 ID、写入并提交。
+正常工作不在 master 直接修改或提交。规划写入在唯一的 `planning` 工作区进行，
+合入 develop；与当前交付分支工作相关的文档在该分支更新。
+新建 Proposal 只能在 planning 上分配 ID、写入并提交，再合入 develop。
 初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
 材料自 start 起位于 `changes/unreleased/<slug>/`，与 CHANGE.md 同级，再随版本归档。
 

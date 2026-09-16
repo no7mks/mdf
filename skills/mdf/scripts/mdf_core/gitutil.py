@@ -87,11 +87,11 @@ def current_branch(repo: Path) -> str:
     return name
 
 
-def require_develop(repo: Path) -> None:
-    if current_branch(repo) != "develop":
+def require_planning(repo: Path) -> None:
+    if current_branch(repo) != "planning":
         raise MDFError(
-            "新建 Proposal 只能在 develop 上分配或写入",
-            code="proposal_not_on_develop",
+            "规划写入只能在 planning 分支上分配或写入",
+            code="proposal_not_on_planning",
         )
 
 

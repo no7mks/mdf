@@ -18,7 +18,7 @@ from .gitutil import (
     git_is_clean,
     git_root,
     repo_path,
-    require_develop,
+    require_planning,
     require_git_root,
 )
 from .proposals import next_prp_id
@@ -233,7 +233,7 @@ def command_make_id(args: argparse.Namespace) -> None:
             raise MDFError("Proposal ID 需要 --repo", code="missing_argument")
         repo = repo_path(args.repo)
         require_git_root(repo)
-        require_develop(repo)
+        require_planning(repo)
         first = int(next_prp_id(repo).split("-")[1])
         ids = [format_prp_id(first + offset) for offset in range(len(slugs))]
     else:

@@ -7,6 +7,7 @@
 │ 1 Check entry                    │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 未切换 ───────→ 1 Check entry
                  ├──── 失败/缺失 ────→ [停止]
                  │
                  ▼ 通过
@@ -66,7 +67,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
+| 1 | 入口 | 脚本 | 运行 doctor 与 planning ensure，按 start 切换 | doctor、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | 来源 | 约束 | 确认一次性来源及采用范围；逐题消歧 | 来源、已确认范围 | 3 | 等待澄清，2 |
 | 3 | 分类 | 脚本 | 用 `list` 查重并区分偏差与意图 | list 结果、对象清单 | 4 | 命中则停止；无法判定回 2 |
 | 4 | 澄清 | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
@@ -82,11 +83,14 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。
+解析 `REPO_ROOT` 并运行 `doctor`。运行
+`planning ensure --repo "$REPO_ROOT"`，按 start 的切换规则进入 JSON
+`worktree`（分支 `planning`），再重新解析目标根。
 
-验收：`normal_workflows_allowed: true`。
+验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
 
-异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
+异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止；尚未切到
+planning 工作区时留在本步。
 
 <a id="s2"></a>
 
@@ -151,8 +155,7 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **创建**
 
 为每项提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。清单含 Proposal 时，当前分支必须是 `develop`；
-仅创建 Bug 时按 `common.md` 的写入分支归属处理。
+中唯一，且不得与对象 ID 同形。全部对象在当前 planning 工作区写入。
 Proposal 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
 按已有最大序号加一生成 ID；Bug 使用 `make-id --type bug --slug <slug>`。
 以模板写入 `docs/proposals/` 或 `docs/bugs/`；

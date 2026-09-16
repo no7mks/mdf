@@ -109,6 +109,11 @@ def checkout_develop(repo: Path) -> None:
     git(repo, "checkout", "-b", "develop")
 
 
+def planning_worktree(python_exe: str, repo: Path) -> Path:
+    data = payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
+    return Path(data["worktree"])
+
+
 def load_core_module():
     scripts = skill_dir("mdf") / "scripts"
     scripts_str = str(scripts.resolve())

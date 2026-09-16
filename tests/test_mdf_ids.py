@@ -32,7 +32,7 @@ def test_make_id_proposal_requires_repo(python_exe: str):
     assert "missing_argument" in result.stderr
 
 
-def test_make_id_proposal_requires_develop(python_exe: str, tmp_path: Path):
+def test_make_id_proposal_requires_planning(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     result = mdf(
@@ -46,7 +46,19 @@ def test_make_id_proposal_requires_develop(python_exe: str, tmp_path: Path):
         "service-health",
     )
     assert result.returncode != 0
-    assert "proposal_not_on_develop" in result.stderr
+    assert "proposal_not_on_planning" in result.stderr
+    checkout_develop(repo)
+    result = mdf(
+        python_exe,
+        "make-id",
+        "--type",
+        "proposal",
+        "--repo",
+        str(repo),
+        "--slug",
+        "service-health",
+    )
+    assert "proposal_not_on_planning" in result.stderr
 
 
 def test_make_id_rejects_object_id_slug(python_exe: str):
@@ -99,6 +111,7 @@ def test_make_id_proposal_increments_from_existing(
     python_exe: str, tmp_path: Path
 ):
     repo = develop_repo(tmp_path)
+    work = planning_worktree(python_exe, repo)
     data = payload(
         mdf(
             python_exe,
@@ -106,7 +119,7 @@ def test_make_id_proposal_increments_from_existing(
             "--type",
             "proposal",
             "--repo",
-            str(repo),
+            str(work),
             "--slug",
             "mixed-id",
         )
@@ -119,7 +132,8 @@ def test_make_id_proposal_starts_at_001_when_empty(
     python_exe: str, tmp_path: Path
 ):
     repo = develop_repo(tmp_path)
-    (repo / "docs/proposals" / PRP_NAME).unlink()
+    work = planning_worktree(python_exe, repo)
+    (work / "docs/proposals" / PRP_NAME).unlink()
     data = payload(
         mdf(
             python_exe,
@@ -127,7 +141,7 @@ def test_make_id_proposal_starts_at_001_when_empty(
             "--type",
             "proposal",
             "--repo",
-            str(repo),
+            str(work),
             "--slug",
             "first-item",
         )
@@ -146,6 +160,7 @@ def test_make_id_proposal_drops_padding_after_999(
     )
     init_git(repo)
     checkout_develop(repo)
+    work = planning_worktree(python_exe, repo)
     data = payload(
         mdf(
             python_exe,
@@ -153,7 +168,7 @@ def test_make_id_proposal_drops_padding_after_999(
             "--type",
             "proposal",
             "--repo",
-            str(repo),
+            str(work),
             "--slug",
             "overflow",
         )

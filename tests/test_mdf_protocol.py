@@ -22,6 +22,7 @@ def test_make_id_proposal_uses_sequential_id_and_normalized_slug(
     repo = copy_fixture(tmp_path)
     init_git(repo)
     checkout_develop(repo)
+    work = planning_worktree(python_exe, repo)
     data = payload(
         mdf(
             python_exe,
@@ -29,7 +30,7 @@ def test_make_id_proposal_uses_sequential_id_and_normalized_slug(
             "--type",
             "proposal",
             "--repo",
-            str(repo),
+            str(work),
             "--slug",
             "  Audit Ready 42!  ",
         )

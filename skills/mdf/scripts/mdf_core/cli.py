@@ -152,6 +152,12 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--item", action="append", default=[])
     delivery.set_defaults(func=command_delivery)
 
+    from .planning import command_planning
+    planning = subparsers.add_parser("planning")
+    planning.add_argument("action", choices=("ensure", "land"))
+    planning.add_argument("--repo", required=True)
+    planning.set_defaults(func=command_planning)
+
     from .codewiki_runtime import command_codewiki_runtime
     runtime = subparsers.add_parser("codewiki-runtime")
     runtime.add_argument("--directory", default="~/.local/share/codewiki")

@@ -1,4 +1,6 @@
 """具名验证配置、PRP 拆分事务与依赖视图。"""
+from types import SimpleNamespace
+
 from mdf_test_support import *  # noqa: F403
 
 
@@ -110,26 +112,27 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     checkout_develop(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
-    args = ["prp-split", "--repo", str(repo), "--spec-file", str(spec)]
-    before = git(repo, "status", "--porcelain").stdout
+    work = planning_worktree(python_exe, repo)
+    args = ["prp-split", "--repo", str(work), "--spec-file", str(spec)]
+    before = git(work, "status", "--porcelain").stdout
     result = payload(mdf(python_exe, *args, "--dry-run"))
     assert len(result["files"]) == 4
-    assert git(repo, "status", "--porcelain").stdout == before
+    assert git(work, "status", "--porcelain").stdout == before
     payload(mdf(python_exe, *args))
-    assert 'status: "replaced"' in (repo / "docs/proposals" / PRP_NAME).read_text()
+    assert 'status: "replaced"' in (work / "docs/proposals" / PRP_NAME).read_text()
     assert 'depends_on: ["prp-003"]' in (
-        repo / "docs/proposals/prp-005-item-005.md"
+        work / "docs/proposals/prp-005-item-005.md"
     ).read_text()
     assert 'status: "draft"' in (
-        repo / "docs/proposals/prp-003-part-003.md"
+        work / "docs/proposals/prp-003-part-003.md"
     ).read_text()
     for name in (PRP_NAME, "prp-003-part-003.md", "prp-004-part-004.md"):
-        content = (repo / "docs/proposals" / name).read_text()
+        content = (work / "docs/proposals" / name).read_text()
         if milestone is None:
             assert "milestone:" not in content
         else:
             assert f'milestone: "{milestone}"' in content
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(work)))
 
 
 @pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', '"prp-001"',
@@ -158,19 +161,23 @@ def test_invalid_split_has_no_partial_writes(python_exe, tmp_path):
     spec["children"][0]["depends_on"] = ["prp-005"]
     path = tmp_path / "split.json"
     path.write_text(json.dumps(spec))
-    result = mdf(python_exe, "prp-split", "--repo", str(repo), "--spec-file", str(path))
+    work = planning_worktree(python_exe, repo)
+    result = mdf(python_exe, "prp-split", "--repo", str(work), "--spec-file", str(path))
     assert "invalid_proposals" in result.stderr
-    assert not git(repo, "status", "--porcelain").stdout
+    assert not git(work, "status", "--porcelain").stdout
 
 
-def test_split_requires_develop(python_exe, tmp_path):
+def test_split_requires_planning(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-005", ["prp-001"])
     init_git(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
     result = mdf(python_exe, "prp-split", "--repo", str(repo), "--spec-file", str(spec))
-    assert "proposal_not_on_develop" in result.stderr
+    assert "proposal_not_on_planning" in result.stderr
+    checkout_develop(repo)
+    result = mdf(python_exe, "prp-split", "--repo", str(repo), "--spec-file", str(spec))
+    assert "proposal_not_on_planning" in result.stderr
     assert not git(repo, "status", "--porcelain").stdout
 
 
@@ -261,9 +268,10 @@ def test_split_rejects_branch_record_even_when_current_tree_has_no_changes(pytho
     checkout_develop(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
-    result = mdf(python_exe, "prp-split", "--repo", str(repo), "--spec-file", str(spec))
+    work = planning_worktree(python_exe, repo)
+    result = mdf(python_exe, "prp-split", "--repo", str(work), "--spec-file", str(spec))
     assert "proposal_started" in result.stderr
-    assert not git(repo, "status", "--porcelain").stdout
+    assert not git(work, "status", "--porcelain").stdout
 
 
 def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, monkeypatch):
@@ -273,10 +281,11 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
     checkout_develop(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
+    work = planning_worktree(python_exe, repo).resolve()
     load_core_module()
     from mdf_core.prp_split import command_split
     original = Path.write_text
-    target = repo / "docs/proposals/prp-004-part-004.md"
+    target = work / "docs/proposals/prp-004-part-004.md"
 
     def fail_second(path, content, *args, **kwargs):
         if path == target:
@@ -285,5 +294,5 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
 
     monkeypatch.setattr(Path, "write_text", fail_second)
     with pytest.raises(OSError):
-        command_split(SimpleNamespace(repo=str(repo), spec_file=str(spec), dry_run=False))
-    assert not git(repo, "status", "--porcelain").stdout
+        command_split(SimpleNamespace(repo=str(work), spec_file=str(spec), dry_run=False))
+    assert not git(work, "status", "--porcelain").stdout

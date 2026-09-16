@@ -18,10 +18,10 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - `--repo` 接受目标仓库路径。除 `info`、`make-id --type bug`、`make-jot-id`、
   `branch --name` 和 `semver-check` 外，命令会按自身需要检查 Git 根、MDF
   manifest 或 clean worktree。`make-id --type proposal` 需要 Git 根且当前分支为
-  `develop`。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
+  `planning`。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
-  start、delivery integrate、finish-gitflow 与 upgrade 按各自协议执行提交、
+  start、delivery integrate、finish-gitflow、planning 与 upgrade 按各自协议执行提交、
   集成和远端操作。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
@@ -49,6 +49,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `worktree-check` | 分派路径、角色与交接核验 |
 | `project-verify` | 非 feature 全量验证与证据检查 |
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 |
+| `planning` | 规划工作区 |
 | `finish-gitflow` | Gitflow 合并 |
 | `upgrade` | 替换已安装 Skill |
 
@@ -138,7 +139,7 @@ python3 skills/mdf/scripts/mdf.py make-id \
 对象 ID 同形。命令生成新的对象 ID，并输出相应的 `prp-...` 或 `bug-...` 标识符和
 Markdown 文件名。
 Proposal ID 为 `prp-` 加自增序号：1–999 固定三位（`prp-001`），1000 起不再补零
-（`prp-1000`）。`make-id --type proposal` 必须提供 `--repo`，在 `develop` 上扫描
+（`prp-1000`）。`make-id --type proposal` 必须提供 `--repo`，在 `planning` 上扫描
 `docs/proposals/`（含 archive）已有文件名，取最大序号加一。Bug 与 Jot 仍为类型前缀加
 四位字符；每一位从大写英文字母（排除 `I`、`O`）与数字 `2` 至 `9` 中选择。新生成的
 四位字符至少包含一个字母和一个数字。完整形式如 `prp-001`、`bug-C4D5`、`jot-E6F7`；
@@ -265,6 +266,20 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 feature 写入 `changes/unreleased/<slug>/objectives.md` 时，把仓根风格的本地链接改成
 相对该目录的路径。
 
+### `planning`
+
+```bash
+python3 skills/mdf/scripts/mdf.py planning ensure --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
+```
+
+`ensure` 从本地 `develop` 创建或复用唯一的 `planning` 分支，以及仓库同级
+`<repo-name>-worktrees/planning` worktree；不在当前目录开分支。若该 worktree
+clean，则把 `develop` no-ff 合入 `planning`。JSON 含 `worktree`、`created`、
+`synced`。`land` 要求占用 `develop` 的 worktree clean，把 `planning` no-ff 合入
+`develop`；规划 worktree clean 时再把 `develop` 合回 `planning`。冲突 abort。
+不 fetch、不 push。`planning` 不是 Gitflow 交付分支。
+
 ### `finish-gitflow`
 
 ```bash
@@ -316,8 +331,9 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 调用：`init`、`bootstrap` intent 使用 `doctor`、`init` 与 `validate`；
 `next` intent 在 feature 交付分支上续办该 feature；否则 `next?` 用只读 `next`
 CLI 展示 PRP 蓝图；再否则优先续办在途流程，无在途时同样展示蓝图；
-`intake`、`bug create` 与 `prp create` 使用 `doctor`、`list` 与 `make-id`；
-`jot` 使用 `make-jot-id`，`jot promote` 另用 `list` 查重；`prp review` 使用 `list` 定位候选；
+`intake`、`prp create`、`prp review` 与 `prp split` 使用 `doctor`、`planning`、
+`list` 与 `make-id`；`bug create` 使用 `doctor`、`list` 与 `make-id`；
+`jot` 使用 `make-jot-id`，`jot promote` 另用 `list` 查重；
 `archive` intent 使用 `list` 与 `archive`；`start` intent 使用 `list` 与 `start`；
 `upgrade` intent 使用 `upgrade`；
 `finish` intent 还会调用 `branch`、`list`、`release-closeout` 和
@@ -351,7 +367,7 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 `needs_review` 为 `{groups, ungrouped}`：draft 带 `depends_on` 与 `blocked_by`；
 有 milestone 的按值分组，无归属放入 `ungrouped`。
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为
-`develop`，在完整预检后一次写入拆分结果。
+`planning`，在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，
 downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出候选文件全文，失败不留下部分拆分。
 子 PRP 继承原 PRP 的可选 `milestone`；原 PRP 未声明时省略该字段，不写 `null`。

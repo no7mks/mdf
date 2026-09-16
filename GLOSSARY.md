@@ -30,6 +30,12 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 
 通过 CodeWiki MCP 生成与更新的仓库结构 Wiki。
 
+## Planning 工作区
+
+唯一的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree，用于
+Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。主 worktree
+保持 develop；合入 develop 后 `$mdf start` 才看到新对象。
+
 ## ADR
 
 Architecture Decision Record；记录重要且已决定的长期架构取舍。

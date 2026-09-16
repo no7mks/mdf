@@ -206,6 +206,18 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert re.search(r"4 Switch worktree", diagram)
 
 
+def test_planning_intents_use_shared_planning_workspace():
+    for name in ("prp-create", "prp-review", "intake", "prp-split"):
+        text = workflow(name)
+        assert "planning ensure" in text
+        assert "start" in text and "切换" in text
+    jot = workflow("jot")
+    assert "planning ensure" in jot
+    common = workflow("common")
+    assert "`planning` 分支" in common
+    assert "planning land" in common
+
+
 def test_start_switches_agent_to_owner_worktree():
     text = workflow("start")
     assert "创建成功进入 4" in text

@@ -10,20 +10,21 @@ from test_mdf_gitflow_delivery import start_repo
 def test_batch_prp_ids_do_not_write_or_repeat(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     git(repo, "checkout", "develop")
-    head = source_head(repo)
-    data = payload(mdf(python_exe, "make-id", "--type", "proposal", "--repo", str(repo),
+    work = planning_worktree(python_exe, repo)
+    head = source_head(work)
+    data = payload(mdf(python_exe, "make-id", "--type", "proposal", "--repo", str(work),
                        "--slug", "part-one", "--slug", "part-two"))
     assert [item["id"] for item in data["items"]] == ["prp-002", "prp-003"]
     assert data["items"][1]["filename"] == "prp-003-part-two.md"
-    assert source_head(repo) == head
-    assert not git(repo, "status", "--porcelain").stdout
-    body = (repo / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
+    assert source_head(work) == head
+    assert not git(work, "status", "--porcelain").stdout
+    body = (work / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
     spec = {"source": "prp-001", "children": [
         {"id": item["id"], "filename": item["filename"], "depends_on": [], "body": body}
         for item in data["items"]], "downstream": {}, "rationale": "用户确认分成两项"}
     path = tmp_path / "split.json"
     path.write_text(json.dumps(spec))
-    args = ["prp-split", "--repo", str(repo), "--spec-file", str(path)]
+    args = ["prp-split", "--repo", str(work), "--spec-file", str(path)]
     preview = payload(mdf(python_exe, *args, "--dry-run"))
     applied = payload(mdf(python_exe, *args))
     assert preview["files"] == applied["files"]

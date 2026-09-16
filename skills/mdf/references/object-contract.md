@@ -25,8 +25,9 @@ milestone 依赖在该值下不存在 draft 或 ready PRP 时满足。禁止重�
 拆分必须同时改写所有原下游 PRP 引用；replaced 不表示依赖已满足。
 
 Proposal ID 为 `prp-` 加自增序号：1–999 固定三位并保留前导零（`prp-001`），
-1000 起不再补零（`prp-1000`）。序号取当前仓库 `docs/proposals/`（含 archive）
-已有文件名中的最大序号加一。新建 Proposal 只能在 develop 上分配 ID、写入并提交。
+1000 起不再补零（`prp-1000`）。序号取当前 checkout 的 `docs/proposals/`（含
+archive）已有文件名中的最大序号加一。新建 Proposal 只能在 planning 工作区分配
+ID、写入并提交，再合入 develop。
 Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
 沟通、引用与展示时必须写完整 ID，如 `prp-001`、`bug-C4D5`、`jot-E6F7`，
 不得省略类型前缀或只写序号/短码。

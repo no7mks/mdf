@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 
 from .errors import MDFError, emit
-from .gitutil import ensure_clean, repo_path, require_develop, require_git_root
+from .gitutil import ensure_clean, repo_path, require_planning, require_git_root
 from .paths import ensure_safe_managed_paths, load_manifest
 from .proposals import check_proposals, started
 from .constants import OBJECT_FILE_RE
@@ -87,7 +87,7 @@ def split_plan(repo, spec):
 def command_split(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
-    require_develop(repo)
+    require_planning(repo)
     ensure_safe_managed_paths(repo)
     if load_manifest(repo).get("state") != "ready":
         raise MDFError("当前操作需要 ready 仓库", code="manifest_not_ready")

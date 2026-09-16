@@ -165,7 +165,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf intake`
 用法：`$mdf intake`
 用途：将外部想法或临时来源分诊为 Bug 和/或多个 Proposal。
-说明：必填事实未确认时不写入对象。
+说明：在 planning 工作区写入；必填事实未确认时不写入对象。
 
 `$mdf jot`
 用法：`$mdf jot`
@@ -175,7 +175,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf jot promote`
 用法：`$mdf jot promote`
 用途：提升一条既有 Jot 为 Proposal 或 Bug，并移除原条目。
-说明：同一份待提交改动中完成提升与删除。
+说明：同一份待提交改动中完成提升与删除；提升为 Proposal 时在 planning 工作区进行。
 
 `$mdf bug create`
 用法：`$mdf bug create`
@@ -185,17 +185,17 @@ $mdf clarify 要不要把缓存放到 Redis
 `$mdf prp create`
 用法：`$mdf prp create`
 用途：按已确认内容手动创建一个 draft Proposal。
-说明：一次只创建一个对象；须在 develop 上创建并提交；随后需 `$mdf prp review`。
+说明：一次只创建一个对象；须在 planning 工作区创建并合入 develop；随后需 `$mdf prp review`。
 
 `$mdf prp review`
 用法：`$mdf prp review`
 用途：修订单个 active Proposal，验证后转为 ready。
-说明：终态或 archive 中的 Proposal 拒绝修改。
+说明：在 planning 工作区修订；终态或 archive 中的 Proposal 拒绝修改。
 
 `$mdf prp split`
 用法：`$mdf prp split`
 用途：拆分未开工 PRP，并完整改写依赖。
-说明：不拆已开工交付；须在 develop 上拆分并提交。
+说明：不拆已开工交付；须在 planning 工作区拆分并合入 develop。
 
 `$mdf clarify <议题>`
 用法：`$mdf clarify <议题>`
