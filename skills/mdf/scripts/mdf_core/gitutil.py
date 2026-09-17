@@ -65,17 +65,33 @@ def require_git_root(repo: Path) -> None:
         )
 
 
+_IN_PROGRESS_HEADS = ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD")
+
+
+def git_in_progress_head(repo: Path) -> str | None:
+    git_dir = git_directory(repo)
+    for name in _IN_PROGRESS_HEADS:
+        if (git_dir / name).is_file():
+            return name
+    return None
+
+
 def git_is_clean(repo: Path) -> bool:
+    if git_in_progress_head(repo) is not None:
+        return False
     result = run(["git", "status", "--porcelain"], cwd=repo)
     return not result.stdout.strip()
 
 
 def ensure_clean(repo: Path) -> None:
-    if not git_is_clean(repo):
-        raise MDFError(
-            "The Git worktree must be clean before this operation",
-            code="dirty_worktree",
-        )
+    if git_is_clean(repo):
+        return
+    head = git_in_progress_head(repo)
+    suffix = f" ({head} exists)" if head else ""
+    raise MDFError(
+        f"The Git worktree must be clean before this operation{suffix}",
+        code="dirty_worktree",
+    )
 
 
 def current_branch(repo: Path) -> str:

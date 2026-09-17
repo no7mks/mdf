@@ -8,6 +8,7 @@ from .errors import MDFError, emit
 from .gitutil import (
     current_branch,
     ensure_clean,
+    git_in_progress_head,
     git_is_clean,
     primary_worktree,
     repo_path,
@@ -33,6 +34,15 @@ def _exists(repo: Path, ref: str) -> bool:
 def merge_no_ff(repo: Path, source: str) -> bool:
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
+        if (
+            result.returncode != 1
+            and git_in_progress_head(repo) == "MERGE_HEAD"
+        ):
+            raise MDFError(
+                "未结束的合并（MERGE_HEAD 仍在）；"
+                "先完成提交或执行 git merge --abort",
+                code="unfinished_merge",
+            )
         _git(repo, "merge", "--abort", check=False)
         raise MDFError(
             f"Merge conflict: {source} -> {current_branch(repo)}; "
@@ -40,6 +50,8 @@ def merge_no_ff(repo: Path, source: str) -> bool:
             code="merge_conflict",
         )
     if not _git(repo, "status", "--porcelain").stdout.strip():
+        if git_in_progress_head(repo) == "MERGE_HEAD":
+            _git(repo, "merge", "--abort", check=False)
         return False
     target = current_branch(repo)
     _git(repo, "commit", "-m",
