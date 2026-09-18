@@ -88,10 +88,13 @@ PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认
 ### target
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
-除 `--auto-pilot`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--models` 外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
+除 `--auto-pilot`、`--roster`、`--qa-strategy`、`--dev-strategy`、
+`--review-strategy`、`--models` 外，以 `--` 开头的 token 不是 target，
+视为未知调用参数并停止。
+`--roster` 后跟 `solo` / `min-tdd` / `competing-pair` / `coop-pair`。
+尚未 start 时把 `--roster` 转交给 start；已有交付再带 `--roster` 则停止。
 `--qa-strategy` / `--dev-strategy` / `--review-strategy` 后跟一个取值；
-`--models` 后跟一个 token。委托 start、design、code-review 时原样转交。
+`--models` 后跟一个 token。委托 start、design、code-review 时原样转交细项。
 省略 target 时不在此步选型，继续上方既有锁定规则。
 
 按下列顺序自动分辨 Proposal 与 Bug，命中唯一对象即停止：

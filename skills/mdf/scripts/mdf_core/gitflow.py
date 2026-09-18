@@ -150,7 +150,8 @@ def command_start(args) -> None:
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
         args.kind, args.qa, args.dev, args.reviewers,
-        qa_strategy=args.qa_strategy, dev_strategy=args.dev_strategy,
+        named=args.roster, qa_strategy=args.qa_strategy,
+        dev_strategy=args.dev_strategy,
         review_strategy=args.review_strategy, models=args.models,
     )
     names = start_branches(branch, roster)

@@ -23,8 +23,9 @@ python -m pytest
 
 ## 交付流程与规划
 
-- `test_mdf_roster.py`：start 冻结人数与策略、人数抬升、winner / partition
-  集成、design 后锁定 qa/dev strategy，以及 0,0 在 owner 上写测试。
+- `test_mdf_roster.py`：start 冻结人数与策略、named roster 展开、人数抬升、
+  winner / partition 集成、design 后锁定 qa/dev strategy，以及 0,0 在 owner
+  上写测试。
 - `test_mdf_delivery.py`：设计基线、并行交接、收敛与审查权限、内容指纹失效、
   原地补齐 Change 及 Gitflow 冲突。
 - `test_mdf_verification_layers.py`：quick / full / 交付 suite 分层门禁与证据。

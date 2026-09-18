@@ -103,11 +103,16 @@ feature 使用 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`�
 不传 `--name`；CLI 从 PRP 文件名取出 slug。
 bugfix 使用 `--bug <Bug-ID>`，不传 `--name`；CLI 用该 ID 作为分支名。
 release/hotfix 使用 `--version <semver>`。
-未指定人数时 feature 默认 `--qa 1 --dev 1 --reviewers 3`，其他 kind 默认
-`0 0 3`。用户可改这三个整数；一侧为 0 另一侧 ≥1 时 CLI 把 0 抬成 1。
-未指定策略时 qa/dev 为 `best-of-n`，review 为 `replicate`。调用可带
-`--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`，
-原样传给 `start` CLI 冻结。`--models` 省略则不写入 roster。
+未指定 `--roster` 时 feature 默认 `min-tdd`（`--qa 1 --dev 1 --reviewers 3`，
+qa/dev `best-of-n`），其他 kind 默认 `solo`（`0 0 3`）。
+`--roster` 只在 start（及尚未 start 的 deliver）展开为人数与策略，不写入
+delivery.json。取值：`solo` / `min-tdd` / `competing-pair` / `coop-pair`。
+随后的 `--qa` 等细项覆盖展开结果。用户可改这三个整数；一侧为 0 另一侧 ≥1
+时 CLI 把 0 抬成 1。
+未指定细项策略时随 named roster：solo/min-tdd/competing-pair 为
+`best-of-n`+`replicate`，coop-pair 为 qa/dev `partition`。调用可带
+`--roster`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
+`--models`，原样传给 `start` CLI 冻结。`--models` 省略则不写入 roster。
 CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
 feature/bugfix/release 从本地 develop 创建，hotfix 从本地 master 创建。
 本地已有同名分支则失败，不检查远端。

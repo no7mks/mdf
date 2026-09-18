@@ -115,7 +115,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--qa", type=int)
     start.add_argument("--dev", type=int)
     start.add_argument("--reviewers", type=int)
-    from .roster import add_strategy_arguments
+    from .roster import add_named_roster_argument, add_strategy_arguments
+    add_named_roster_argument(start)
     add_strategy_arguments(start)
     start.set_defaults(func=command_start)
 

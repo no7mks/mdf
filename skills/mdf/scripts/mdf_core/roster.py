@@ -5,11 +5,34 @@ import re
 from .errors import MDFError
 from .gitutil import branch_details, run
 
-DEFAULTS = {
-    "feature": (1, 1, 3),
-    "bugfix": (0, 0, 3),
-    "release": (0, 0, 3),
-    "hotfix": (0, 0, 3),
+NAMED_ROSTERS = {
+    "solo": {
+        "qa": 0, "dev": 0, "reviewers": 3,
+        "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
+        "review_strategy": "replicate",
+    },
+    "min-tdd": {
+        "qa": 1, "dev": 1, "reviewers": 3,
+        "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
+        "review_strategy": "replicate",
+    },
+    "competing-pair": {
+        "qa": 2, "dev": 2, "reviewers": 3,
+        "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
+        "review_strategy": "replicate",
+    },
+    "coop-pair": {
+        "qa": 2, "dev": 2, "reviewers": 3,
+        "qa_strategy": "partition", "dev_strategy": "partition",
+        "review_strategy": "replicate",
+    },
+}
+
+KIND_ROSTER = {
+    "feature": "min-tdd",
+    "bugfix": "solo",
+    "release": "solo",
+    "hotfix": "solo",
 }
 
 QA_DEV_STRATEGIES = ("best-of-n", "partition")
@@ -76,15 +99,29 @@ def _strategies(qa_strategy, dev_strategy, review_strategy, models=None):
     return body
 
 
+def named_roster(name):
+    if name not in NAMED_ROSTERS:
+        raise MDFError(
+            f"roster 名必须是 {' / '.join(NAMED_ROSTERS)}",
+            code="invalid_roster",
+        )
+    return dict(NAMED_ROSTERS[name])
+
+
 def freeze_roster(kind, qa=None, dev=None, reviewers=None, *,
-                  qa_strategy=None, dev_strategy=None, review_strategy=None,
-                  models=None):
-    if kind not in DEFAULTS:
+                  named=None, qa_strategy=None, dev_strategy=None,
+                  review_strategy=None, models=None):
+    if kind not in KIND_ROSTER:
         raise MDFError("未知交付 kind", code="unsupported_branch")
-    default_qa, default_dev, default_reviewers = DEFAULTS[kind]
-    qa = default_qa if qa is None else qa
-    dev = default_dev if dev is None else dev
-    reviewers = default_reviewers if reviewers is None else reviewers
+    base = named_roster(KIND_ROSTER[kind] if named is None else named)
+    qa = base["qa"] if qa is None else qa
+    dev = base["dev"] if dev is None else dev
+    reviewers = base["reviewers"] if reviewers is None else reviewers
+    qa_strategy = base["qa_strategy"] if qa_strategy is None else qa_strategy
+    dev_strategy = base["dev_strategy"] if dev_strategy is None else dev_strategy
+    review_strategy = (
+        base["review_strategy"] if review_strategy is None else review_strategy
+    )
     return {
         **_counts(qa, dev, reviewers, coerce=True),
         **_strategies(qa_strategy, dev_strategy, review_strategy, models),
@@ -125,6 +162,10 @@ def add_strategy_arguments(parser):
     parser.add_argument("--dev-strategy", choices=QA_DEV_STRATEGIES)
     parser.add_argument("--review-strategy", choices=REVIEW_STRATEGIES)
     parser.add_argument("--models")
+
+
+def add_named_roster_argument(parser):
+    parser.add_argument("--roster", choices=tuple(NAMED_ROSTERS))
 
 
 def apply_roster_patch(current, patch, *, locked_qa_dev):

@@ -38,7 +38,9 @@ start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 roster 在 start 时冻结，写入 `delivery.json`（有交付材料时）与
 `branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
-owner 恒为 1。feature 默认 `1,1,3`，其他 kind 默认 `0,0,3`；四种 kind 都可改。
+owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,3` + best-of-n），
+其他 kind 默认 `solo`（`0,0,3`）。也可用 `competing-pair`（`2,2,3` 竞争）
+或 `coop-pair`（`2,2,3` 分工）。四种 kind 都可改人数或改名。
 qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
 `0,0` 时测试与实现都在 owner 上做。`≥1` 时 start 按人数建立
 `qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`。
@@ -53,12 +55,15 @@ index 全部合入，冲突视为分工重叠并停止。各路 stage gate 已�
 review 默认 `replicate`（每人覆盖同一份本轮范围）；`partition` 时按切片审查。
 owner 仍汇总裁定，不按票数。
 
-`$mdf start`、`$mdf design`、`$mdf deliver`、`$mdf code-review` 可带
-`--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`。
+`$mdf start`、`$mdf deliver` 可带 `--roster <name>`，只在尚未 start 时展开；
+已 start 后再带 `--roster` 停止。`$mdf start`、`$mdf design`、`$mdf deliver`、
+`$mdf code-review` 可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
+`--models`。
 这些是 intent 参数，不是独立 intent。start 冻结；之后由 Agent 调用
 `delivery roster` 写入。qa/dev strategy 在 design gate 后锁定。
-review_strategy 与 models 可在 code-review 覆盖。deliver 把同一组参数
-转交给委托的 start、design、code-review。未知 `--` token 停止询问。
+review_strategy 与 models 可在 code-review 覆盖。deliver 把 strategy /
+models 转交给 start、design、code-review；`--roster` 只转交 start。
+未知 `--` token 停止询问。
 `--models` 取随后一个 token；省略则不写、不问、不提。Agent 分派 subagent
 时现场解析该字符串。JSON 键为下划线形式。
 本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。

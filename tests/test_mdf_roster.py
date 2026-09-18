@@ -28,9 +28,15 @@ def test_freeze_roster_defaults_and_coercion():
     assert freeze_roster("feature", 0, 0, 2) == frozen(0, 0, 2)
     assert freeze_roster("feature", 0, 2, None) == frozen(1, 2, 3)
     assert freeze_roster("bugfix", 2, 0, 4) == frozen(2, 1, 4)
-    assert freeze_roster(
-        "feature", qa_strategy="partition", models="qa composer",
-    ) == frozen(1, 1, 3, qa_strategy="partition", models="qa composer")
+    assert freeze_roster("feature", named="solo") == frozen(0, 0, 3)
+    assert freeze_roster("bugfix", named="min-tdd") == frozen(1, 1, 3)
+    assert freeze_roster("feature", named="competing-pair") == frozen(2, 2, 3)
+    assert freeze_roster("feature", named="coop-pair") == frozen(
+        2, 2, 3, qa_strategy="partition", dev_strategy="partition",
+    )
+    assert freeze_roster("feature", 3, named="competing-pair") == frozen(3, 2, 3)
+    with pytest.raises(MDFError, match="roster 名必须是"):
+        freeze_roster("feature", named="squad")
     assert role_branch("qa", "feature/foo", 1) == "qa/feature/foo"
     assert role_branch("qa", "feature/foo", 2) == "qa/2/feature/foo"
     with pytest.raises(MDFError, match="至少为 1"):
@@ -94,6 +100,34 @@ def test_start_bugfix_can_set_reviewers_and_roles(python_exe, tmp_path):
     key = "branch.bugfix/bug-CD34.mdf-roster"
     raw = git(Path(plain["worktree"]), "config", "--local", "--get", key)
     assert json.loads(raw.stdout.strip()) == plain["roster"]
+
+
+def test_start_named_roster_expands_and_overlays(python_exe, tmp_path):
+    repo = local_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    coop = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--roster", "coop-pair",
+    ))
+    assert coop["roster"] == frozen(
+        2, 2, 3, qa_strategy="partition", dev_strategy="partition",
+    )
+    assert len(coop["roles"]["qa"]) == 2
+    assert len(coop["roles"]["dev"]) == 2
+    assert "named" not in coop["roster"]
+    (tmp_path / "overlay").mkdir()
+    repo2 = local_repo(tmp_path / "overlay")
+    obj2 = tmp_path / "overlay-objectives.md"
+    obj2.write_text("# 目标\n\n交付健康接口。\n")
+    mixed = payload(mdf(
+        python_exe, "start", "--repo", str(repo2), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj2),
+        "--roster", "competing-pair", "--qa", "3",
+    ))
+    assert mixed["roster"] == frozen(3, 2, 3)
+    assert len(mixed["roles"]["qa"]) == 3
 
 
 def test_start_freezes_strategy_and_models(python_exe, tmp_path):

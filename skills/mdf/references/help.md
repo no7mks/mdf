@@ -244,18 +244,18 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 qa/dev worktree 的 subagent。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
 收口（合入目标主线并删除源 worktree）前确认；死硬阻塞仍停止。
-可把 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`
-转交给 start、design、code-review。
+可把 `--roster`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
+`--models` 转交给 start；strategy / models 也可转交给 design、code-review。
+`--roster` 仅尚未 start 时有效。
 包含 finish 的合并及适用的 tag、发版推送。
 
 `$mdf start`
-用法：`$mdf start`；可带 `--qa-strategy` / `--dev-strategy` /
+用法：`$mdf start`；可带 `--roster` / `--qa-strategy` / `--dev-strategy` /
 `--review-strategy` / `--models`
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
-不在当前目录开分支，不 push。start 冻结 roster（feature 默认 1,1,3，其他
-默认 0,0,3）；人数 ≥1 时建立 qa/dev 角色树。qa/dev 默认 best-of-n，
-review 默认 replicate。
+不在当前目录开分支，不 push。start 冻结 roster（feature 默认 min-tdd，
+其他默认 solo）；人数 ≥1 时建立 qa/dev 角色树。
 
 `$mdf design`
 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
