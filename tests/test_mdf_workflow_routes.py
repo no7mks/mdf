@@ -271,17 +271,23 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "delivery worktree" not in implement
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
-    assert "全局 quick ∪ 本交付 suite" in contract
+    assert "全局 quick ∪ design policy `suites` 声明的交付 suite" in contract
     assert "关联 ≥1 个**已有**交付 suite" in contract
     assert "只跑了 quick" in contract
+    assert "非 feature 分支变更 `collections` 或新增交付 suite 名，一律需用户确认" in contract
     design_text = workflow("design")
     assert "验收到 quick 与本交付 suite 的映射" in design_text
     assert "suites" in design_text
-    assert "按 design 把用例写入全局 quick 或本交付 suite" in tests
+    assert "按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite" in tests
     assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in workflow("converge")
     review = workflow("code-review")
     assert "必须尝试补一条 quick 复现用例" in review
-    assert "changes/unreleased/<slug>/suites.json" in workflow("start")
+    assert "quick 复现（已补 <用例位置>" in review
+    assert "changes/unreleased/<slug>/suites.json" in review
+    assert "`missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联" in review
+    assert "`unknown_suite`" in review and "询问用户是否新建" in review
+    assert "suites.json" not in workflow("start")
+    assert "交付级 suite" not in contract and "下沉" not in contract
 
 
 def test_initialization_and_init_have_explicit_reaudit_routes():

@@ -25,18 +25,20 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 ## 验证命令
 
 `manifest.verification.commands` 中的具名可执行验证项。可选 `collections`
-划入全局 quick / full 或交付级 suite；`kind` 只是标签，不参与筛选。
+划入全局 quick / full 或交付 suite；`kind` 只是标签，不参与筛选。
 
 ## 验证集合
 
 三类必须区分的验证范围：
 
 - **quick**：全局 always-run。日常门禁；通常挂全部 UT 与声明为快速的 IT/e2e。
-- **full**：quick 的超集，另含慢速 IT/e2e。release / hotfix 使用。
+- **full**：全部验证项，含慢速 IT/e2e。release / hotfix 使用。
 - **交付 suite**：具名集合，覆盖某 feature 的本交付全量（含慢路径）。不是全局
   full，也不是「碰巧改到的 quick 文件」。
 
 未分层（所有命令都不写 `collections`）时，全部项同时属于 quick 与 full。
+**quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
+用例；原慢用例保留。
 
 ## CodeWiki
 

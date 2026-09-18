@@ -61,7 +61,7 @@ objectives 负责。分层后必须声明本交付 suite 名称，供 write-test
 分层后必须同时给出 `suites`，例如
 `{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}`。
 `protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置
-路径，包括交付级 suite；manifest 验证项由 Core 保护。`suites` 为本交付 suite
+路径，包括交付 suite；manifest 验证项由 Core 保护。`suites` 为本交付 suite
 名，不得使用 quick/full。
 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。

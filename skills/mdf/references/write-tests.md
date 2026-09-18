@@ -60,7 +60,7 @@ deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，�
 
 编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
 不从源码重新推断契约。
-按 design 把用例写入全局 quick 或本交付 suite（及额外关联的 suite）；更新
+按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite；更新
 manifest 验证项的 collections 属于本阶段授权，不得降低项目门槛或把慢项标进
 quick 来逃避分层。implement 不得擅自改测试。
 测试须能编译或加载执行；环境或导入故障不是有效完成证据。因尚未实现而产生的

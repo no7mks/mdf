@@ -97,7 +97,6 @@ def validate_items(items):
     layered = any(isinstance(item, dict) and "collections" in item for item in items)
     seen = set()
     has_quick = False
-    has_full = False
     for item in items:
         expected = LAYERED_KEYS if layered else BASE_KEYS
         if not isinstance(item, dict) or set(item) != expected:
@@ -116,14 +115,13 @@ def validate_items(items):
                     or any(not _name(name) for name in names)):
                 raise MDFError("collections 必须为非空唯一 kebab-case 名称列表",
                                code="invalid_verification")
-            if "quick" in names and "full" not in names:
-                raise MDFError("声明 quick 的验证项必须同时声明 full",
+            if "full" not in names:
+                raise MDFError("分层后每个验证项都必须属于 full",
                                code="invalid_verification")
             has_quick = has_quick or "quick" in names
-            has_full = has_full or "full" in names
         seen.add(identifier)
-    if layered and (not has_quick or not has_full):
-        raise MDFError("分层后 quick 与 full 均不得为空", code="invalid_verification")
+    if layered and not has_quick:
+        raise MDFError("分层后 quick 不得为空", code="invalid_verification")
     return items
 
 

@@ -216,10 +216,10 @@ def test_verification_collections_are_all_or_nothing(python_exe, tmp_path):
     manifest.write_text(original.replace(item, mixed))
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert "manifest.verification" in result.stdout
-    quick_only = item + "\n      collections: [quick]"
-    manifest.write_text(original.replace(item, quick_only))
-    result = mdf(python_exe, "validate", "--repo", str(repo))
-    assert "manifest.verification" in result.stdout
+    for names in ("[quick]", "[billing]"):
+        manifest.write_text(original.replace(item, item + f"\n      collections: {names}"))
+        result = mdf(python_exe, "validate", "--repo", str(repo))
+        assert "manifest.verification" in result.stdout
     layered = (
         item + "\n      collections: [quick, full]\n"
         "    - id: slow\n      kind: e2e\n      command: \"true\"\n"

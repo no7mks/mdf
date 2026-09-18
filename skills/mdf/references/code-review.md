@@ -102,6 +102,12 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate；
 读取对应 Bug、交付目标、版本材料及适用设计作为审查依据，不为形式创建 feature 材料。
 
+分层仓库的 bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
+（`{"suites":["<已有 suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从 manifest
+已有交付 suite 中选定 ≥1 个写入并提交；没有合适的已有 suite 时停止，询问用户
+是否新建，确认后先把该名称写入 manifest 验证项再关联。不得只关联 quick/full，
+不得未经确认新建。未分层不要求该文件。
+
 ### 三份独立审查
 
 主 Agent 向每个审查 subagent 派发任务时，必须以以下文字作为提示词 opening，
@@ -148,19 +154,21 @@ bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
 脚本按当前分支执行所需验证集合（release/hotfix 为全局 full；bugfix 为全局
 quick 加已关联交付 suite），逐项记录命令、退出状态与 `collections`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
-分层后 bugfix 缺少 `suites.json`、只跑了 quick、或引用尚未写入 manifest 的
-suite 名，均失败。finish 使用 `project-verify check --repo "$REPO_ROOT"`
+分层后 bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联；
+返回 `unknown_suite`（引用尚未写入 manifest 的名称）时停止，询问用户是否新建。
+证据只覆盖 quick 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
 核对输入指纹、集合与全绿结果。
 不能用仅检查文档结构的 full validation 代替业务验证。
 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
 非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价门禁之后）失败时，
-必须尝试补一条 quick 复现用例；无法下沉则在本轮记录写明原因。
+必须尝试补一条 quick 复现用例，并在本轮记录的「quick 复现」字段写明结果。
 
 四种分支均在 `changes/unreleased/<slug>/code-review.md` 按轮追加审查记录，
 每轮包含 round、审查种类（首轮 | 增量）、固定的交付 base_commit、本轮左端点
 （首轮 = base_commit，增量 = 上轮 final_head）、本轮 review_head、三份独立审查
 及其身份、本轮新发现、上轮问题复核表、逐项裁定、修复与复核、本轮结束后的
-最终 final_head、验证命令与结果、未解决项。先提交修复，再固定 final_head 并
+最终 final_head、验证命令与结果（含 `collections`）、quick 复现（已补 <用例位置>
+/ 未补 <原因> / 无非 quick 失败）、未解决项。先提交修复，再固定 final_head 并
 提交本轮记录。
 无有效未解决问题且验证全绿才可记录完成。feature 另运行
 `delivery record --stage code-review --summary <三份审查、裁定、修复与验证依据>` 并提交 gate。
@@ -173,7 +181,7 @@ finish 核对记录中的基线、三个审查结果、最终复核及验证均�
 但事实仍须另审。实现或目标变化后不得沿用通过结论：同次修复续办回到 3；
 新交付改动作为增量新一轮从 1 开始。finish 集成 develop/master 产生新提交后，
 一律作为增量新一轮从 1 开始，左端点为集成前 final_head，以集成后的 HEAD 重做
-  三份本轮范围审查与当前交付所需验证集合，即使合并无冲突或仅修改文档。不复用集成前报告，
+三份本轮范围审查与当前交付所需验证集合，即使合并无冲突或仅修改文档。不复用集成前报告，
 不把集成当修复续办。无有效上轮记录时按首轮从交付起点审到集成后 HEAD。
 feature 还须通过 CLI 指纹检查。
 记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。
