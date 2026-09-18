@@ -91,14 +91,14 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 入口 | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | 范围 | 约束 | 核对版本；no-ff 集成主线并内部执行 code-review | 集成、审查、版本 | 已收口 4；否则 3 | 停止 |
+| 2 | 范围 | 约束 | 核版本；no-ff 集成主线并内部 code-review | 集成、审查、版本 | 已收口 4；否则 3 | 状态不一致则停止 |
 | 3 | 材料 | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
-| 4 | 审阅 | 约束 | 运行 gate 检查；过期原地补验后复核 | 有效证据 | 已收口或 feature/bugfix 9；待收口 5 | 停止并交接 |
+| 4 | 审阅 | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | 输入 | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并取得用户接受 | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | 交接 | 约束 | 提交并核对交付条件 | clean、证据 | 有效 10；feature/bugfix 2 | release/hotfix 前进或条件未过则停止 |
+| 9 | 交接 | 约束 | 提交并核对交付条件 | clean、证据 | 通过→10 | feature/bugfix 前进回 2；其余前进或未过则停止 |
 | 10 | 合并 | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构

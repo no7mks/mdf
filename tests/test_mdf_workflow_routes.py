@@ -159,10 +159,11 @@ def test_codewiki_requires_verified_close_and_recoverable_failure():
 def test_finish_keeps_pending_closeout_on_the_release_path():
     text = workflow("finish")
     table = rows(text)
-    assert table[3][5] == "已收口或 feature/bugfix 9；待收口 5"
+    assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
     assert table[7][5] == "9"
-    assert table[8][5] == "有效 10；feature/bugfix 2"
-    assert "release/hotfix 前进或条件未过则停止" in table[8][6]
+    assert table[8][5] == "通过→10"
+    assert "feature/bugfix 前进回 2" in table[8][6]
+    assert "其余前进或未过则停止" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
     assert "preview" not in diagram and "预览" not in diagram
@@ -283,7 +284,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite" in tests
     converge = workflow("converge")
     assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in converge
-    assert "缺 suite 或阻塞停止" in converge
+    assert "缺 suite 回 write-tests" in converge
+    assert "阻塞停止" in converge
     assert "missing_delivery_suite ────→ [停止，回 write-tests]" in converge
     assert "返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入" in converge
     assert "suite key 已建" in tests
@@ -325,7 +327,7 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     # 返回未通过仍允许 migrate 在当前审阅步骤修复；交付调用方继续使用失败出口。
     assert "可修复则重验" in rows(workflow("migrate"))[5][6]
     assert rows(workflow("fact-update"))[2][6] == "停止并报告"
-    assert rows(workflow("finish"))[3][6] == "停止并交接"
+    assert rows(workflow("finish"))[3][6] == "未过则停止并交接"
 
 
 def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
@@ -385,7 +387,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
     assert table[0][5] == "feature/在途 2；无在途 3"
-    assert table[0][6] == "多候选则澄清；证据不足则报告阻塞"
+    assert table[0][6] == "多候选当场问；证据不足则报告阻塞"
     assert table[1][5] == "交接并结束"
     assert table[1][6] == "说明阻塞与操作后结束"
     assert table[2][1] == "委托"

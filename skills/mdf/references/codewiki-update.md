@@ -76,7 +76,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 入口 | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
-| 2 | 目录 | 约束 | 按契约逐项核对 Wiki standard | 目录与基线检查 | 3 | 空则 generate；非标列出项 |
+| 2 | 目录 | 约束 | 按契约逐项核对 Wiki standard | 目录与基线检查 | 3 | 空则要求 generate；非标列出项并停止 |
 | 3 | 分析 | 脚本 | MCP analyze_repo，读取完整 changes | 完整变更分类 | 4 | 走 recovery.md |
 | 4 | 变化 | 约束 | 分类代码变化；无变化则关闭并验收现场 | 分类、diff、workspace | 无变化结束；否则 5 | 走 recovery.md |
 | 5 | 映射 | 约束 | 核对既有树映射、级联范围与删页需求 | affected/cascade | 6 | 走 recovery.md |
