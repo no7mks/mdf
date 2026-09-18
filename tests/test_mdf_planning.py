@@ -206,24 +206,24 @@ def test_verification_items_validate_identity_and_kind(python_exe, tmp_path):
         assert "manifest.verification" in result.stdout
 
 
-def test_verification_collections_are_all_or_nothing(python_exe, tmp_path):
+def test_verification_suites_are_all_or_nothing(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     manifest = repo / ".mdf/manifest.yaml"
     original = manifest.read_text()
     item = '    - id: check\n      kind: custom\n      command: "true"'
-    mixed = item + "\n      collections: [quick, full]\n    - id: other\n      kind: custom\n      command: \"true\""
+    mixed = item + "\n      suites: [quick, full]\n    - id: other\n      kind: custom\n      command: \"true\""
     manifest.write_text(original.replace(item, mixed))
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert "manifest.verification" in result.stdout
     for names in ("[quick]", "[billing]"):
-        manifest.write_text(original.replace(item, item + f"\n      collections: {names}"))
+        manifest.write_text(original.replace(item, item + f"\n      suites: {names}"))
         result = mdf(python_exe, "validate", "--repo", str(repo))
         assert "manifest.verification" in result.stdout
     layered = (
-        item + "\n      collections: [quick, full]\n"
+        item + "\n      suites: [quick, full]\n"
         "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
-        "      collections: [full]"
+        "      suites: [full]"
     )
     manifest.write_text(original.replace(item, layered))
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))

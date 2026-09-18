@@ -226,7 +226,7 @@ def test_repository_contract_defines_static_core_terms() -> None:
         "`evidence`",
         "`基线`",
         "`验证命令`",
-        "`验证集合`",
+        "`验证 suite`",
         "`initializing`",
         "`ready`",
     ):

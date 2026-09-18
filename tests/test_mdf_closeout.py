@@ -42,7 +42,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert summary["moves"]
     assert summary["affected_files"]
     assert summary["verification"] == {
-        "collections": ["full"], "commands": ["true"], "executed": False,
+        "suites": ["full"], "commands": ["true"], "executed": False,
     }
     assert "confirmation_required" not in preview
     assert "digest" not in json.dumps(preview)

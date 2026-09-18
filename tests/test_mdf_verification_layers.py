@@ -1,4 +1,4 @@
-"""验证集合分层：quick / full / 交付 suite 的 gate 与证据。"""
+"""验证 suite 分层：quick / full / 交付 suite 的 gate 与证据。"""
 from mdf_test_support import *  # noqa: F403
 from test_mdf_delivery import commit, record, setup_delivery, sync_roles
 from test_mdf_gitflow_delivery import start_repo
@@ -30,7 +30,7 @@ def setup_layered_delivery(python_exe, tmp_path, body=None):
         "[see design.md](./design.md)\n"
     )
     layer_commands(work, body or (
-        UNLAYERED_ITEM + "\n      collections: [quick, full, billing]"
+        UNLAYERED_ITEM + "\n      suites: [quick, full, billing]"
     ))
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({
@@ -54,7 +54,7 @@ def test_layered_design_requires_suites(python_exe, tmp_path):
         (root / "objectives.md").read_text() + "\n[design.md](./design.md)\n"
     )
     (root / "design.md").write_text("# 设计\n\n[objectives.md](./objectives.md)\n")
-    layer_commands(work, UNLAYERED_ITEM + "\n      collections: [quick, full]")
+    layer_commands(work, UNLAYERED_ITEM + "\n      suites: [quick, full]")
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
     result = mdf(python_exe, "delivery", "record", "--repo", str(work), "--stage", "design",
@@ -74,14 +74,14 @@ def test_feature_quick_only_evidence_does_not_satisfy_delivery_suite(
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     evidence = json.loads((root / "gates/verification.json").read_text())
-    assert evidence["collections"] == ["quick", "billing"]
+    assert evidence["suites"] == ["quick", "billing"]
     assert evidence["all_passed"] is True
-    evidence["collections"] = ["quick"]
+    evidence["suites"] = ["quick"]
     (root / "gates/verification.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     )
     assert "stale_verification" in record(python_exe, repo, "converge").stderr
-    evidence["collections"] = ["quick", "billing"]
+    evidence["suites"] = ["quick", "billing"]
     (root / "gates/verification.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     )
@@ -98,5 +98,5 @@ def test_unlayered_verify_records_quick_and_full(python_exe, tmp_path):
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     evidence = json.loads((root / "gates/verification.json").read_text())
-    assert evidence["collections"] == ["quick", "full"]
+    assert evidence["suites"] == ["quick", "full"]
     payload(record(python_exe, repo, "converge"))

@@ -9,7 +9,7 @@ from .errors import MDFError, emit
 from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
 from .verification import (
-    is_layered, manifest_items, parse_suite_names, required_collections,
+    is_layered, manifest_items, parse_suite_names, required_suites,
     select_items,
 )
 from .closeout_validate import run_verify_commands
@@ -97,7 +97,7 @@ def verify(repo, root, data, selected):
     before = require_design(repo, root, data)
     items = manifest_items(load_manifest(repo))
     policy = gate(repo, root, "design")["policy"]
-    required = required_collections("feature", items, policy.get("suites") or [])
+    required = required_suites("feature", items, policy.get("suites") or [])
     targets = select_items(items, required)
     ids = {item["id"] for item in targets}
     if set(selected) - {item["id"] for item in items}:
@@ -120,7 +120,7 @@ def verify(repo, root, data, selected):
         failed = True
     ran = {item["id"] for item in results}
     complete = not selected and ran == ids
-    record = {"fingerprints": before, "results": results, "collections": required,
+    record = {"fingerprints": before, "results": results, "suites": required,
               "all_passed": not failed and complete}
     target = "verification" if not selected else "verification-partial"
     write_json(safe(repo, root / "gates" / f"{target}.json"), record)

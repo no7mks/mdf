@@ -139,8 +139,8 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 
 从确认方案提供八项基线、最近稳定版本、非空 `verification.commands` 和
 `implementation_roots`。从未发布时版本为 `none`；没有业务检查时可用 `git diff --check`。
-验证项默认未分层（不写 `collections`），门禁跑全部项。若确认分层，初始化 JSON
-须给每一项带 `collections`。
+验证项默认未分层（不写 `suites`），门禁跑全部项。若确认分层，初始化 JSON
+须给每一项带 `suites`。
 不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
 默认使用 `src`，已有模板使用实际目录并在 PROJECT 说明，不为 bootstrap 重排模板。
 

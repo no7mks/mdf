@@ -224,7 +224,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             "semver": result["semver"],
             "rewrites": result["rewrites"],
             "verification": {
-                "collections": ["full"],
+                "suites": ["full"],
                 "commands": context["validation_commands"],
                 "results": command_results,
             },

@@ -7,8 +7,8 @@ from .gitutil import (
 )
 from .paths import load_manifest
 from .verification import (
-    collections_cover, is_layered, manifest_items, parse_suite_names,
-    recorded_collections, required_collections, select_items,
+    suites_cover, is_layered, manifest_items, parse_suite_names,
+    recorded_suites, required_suites, select_items,
 )
 
 
@@ -45,7 +45,7 @@ def command_project_verify(args):
     suites = associated_suites(repo, slug) if kind == "bugfix" else None
     if kind == "bugfix" and is_layered(items) and not suites:
         raise MDFError("分层后 bugfix 必须关联已有交付 suite", code="missing_delivery_suite")
-    required = required_collections(kind, items, suites)
+    required = required_suites(kind, items, suites)
     targets = select_items(items, required)
     before = inputs(repo, items, required, suites)
     path = safe(
@@ -54,11 +54,11 @@ def command_project_verify(args):
     )
     if args.action == "check":
         result = read_json(path)
-        recorded = recorded_collections(result, items)
+        recorded = recorded_suites(result, items)
         if (result.get("inputs") != before or result.get("branch") != branch
-                or not collections_cover(recorded, required)
+                or not suites_cover(recorded, required)
                 or not result.get("all_passed")):
-            raise MDFError("所需验证集合失败或证据过期", code="stale_verification")
+            raise MDFError("所需 suite 失败或证据过期", code="stale_verification")
     else:
         results = []
         for item in targets:
@@ -73,12 +73,12 @@ def command_project_verify(args):
         passed = {item["id"] for item in results if item["passed"]}
         expected = {item["id"] for item in targets}
         result = {
-            "branch": branch, "collections": required, "inputs": before,
+            "branch": branch, "suites": required, "inputs": before,
             "head": git(repo, "rev-parse", "HEAD").stdout.strip(),
             "results": results,
             "all_passed": before == after and passed == expected,
         }
         write_json(path, result)
         if not result["all_passed"]:
-            raise MDFError("所需验证集合失败或输入变化", code="verify_command_failed", details=result)
+            raise MDFError("所需 suite 失败或输入变化", code="verify_command_failed", details=result)
     emit({"ok": True, "operation": f"project-verify-{args.action}", "result": result})

@@ -46,7 +46,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 在 design.md 中明确目标、非目标、接口、错误语义、
 验收到 quick 与本交付 suite 的映射及 verification 各项适用条件。测试仅对
 objectives 负责。分层后必须声明本交付 suite 名称，供 write-tests 把用例写入
-对应集合。
+对应 suite。
 设计前按任务从 `docs/README.md` 定位并读取相关当前事实页，在 design.md 列出
 当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。

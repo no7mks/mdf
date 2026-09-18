@@ -261,9 +261,9 @@ def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
     work = Path(created["worktree"])
     item = '    - id: check\n      kind: custom\n      command: "true"'
     layered = (
-        item + "\n      collections: [quick, full]\n"
+        item + "\n      suites: [quick, full]\n"
         "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
-        "      collections: [full, billing]"
+        "      suites: [full, billing]"
     )
     (work / ".mdf/manifest.yaml").write_text(
         (work / ".mdf/manifest.yaml").read_text().replace(item, layered, 1)
@@ -281,9 +281,9 @@ def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
     evidence = json.loads(
         (work / "changes/unreleased/bug-cd34/code-review.verification.json").read_text()
     )
-    assert evidence["collections"] == ["quick", "billing"]
+    assert evidence["suites"] == ["quick", "billing"]
     payload(mdf(python_exe, "project-verify", "check", *args))
-    evidence["collections"] = ["quick"]
+    evidence["suites"] = ["quick"]
     (work / "changes/unreleased/bug-cd34/code-review.verification.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     )
@@ -297,9 +297,9 @@ def test_layered_release_rejects_quick_only_evidence(python_exe, tmp_path):
     work = Path(created["worktree"])
     item = '    - id: check\n      kind: custom\n      command: "true"'
     layered = (
-        item + "\n      collections: [quick, full]\n"
+        item + "\n      suites: [quick, full]\n"
         "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
-        "      collections: [full]"
+        "      suites: [full]"
     )
     (work / ".mdf/manifest.yaml").write_text(
         (work / ".mdf/manifest.yaml").read_text().replace(item, layered, 1)
@@ -308,8 +308,8 @@ def test_layered_release_rejects_quick_only_evidence(python_exe, tmp_path):
     payload(mdf(python_exe, "project-verify", "run", *args))
     path = work / "changes/unreleased/1.3.0/code-review.verification.json"
     evidence = json.loads(path.read_text())
-    assert evidence["collections"] == ["full"]
+    assert evidence["suites"] == ["full"]
     assert {item["id"] for item in evidence["results"]} == {"check", "slow"}
-    evidence["collections"] = ["quick"]
+    evidence["suites"] = ["quick"]
     path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr

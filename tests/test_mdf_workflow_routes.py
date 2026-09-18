@@ -274,7 +274,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "全局 quick ∪ design policy `suites` 声明的交付 suite" in contract
     assert "关联 ≥1 个**已有**交付 suite" in contract
     assert "只跑了 quick" in contract
-    assert "非 feature 分支变更 `collections` 或新增交付 suite 名，一律需用户确认" in contract
+    assert "非 feature 分支变更 `suites` 或新增交付 suite 名，一律需用户确认" in contract
     design_text = workflow("design")
     assert "验收到 quick 与本交付 suite 的映射" in design_text
     assert "suites" in design_text
@@ -470,7 +470,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "bugfix/hotfix/release 不要求 feature 的 design/converge gate",
-        "按当前分支执行所需验证集合", "最终 final_head",
+        "按当前分支执行所需 suite", "最终 final_head",
     ):
         assert rule in text
     finish = workflow("finish")

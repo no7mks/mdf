@@ -84,9 +84,9 @@ def render_manifest(
             f"      kind: {yaml_quote(item['kind'])}",
             f"      command: {yaml_quote(item['command'])}",
         ])
-        if "collections" in item:
-            names = ", ".join(yaml_quote(name) for name in item["collections"])
-            command_lines.append(f"      collections: [{names}]")
+        if "suites" in item:
+            names = ", ".join(yaml_quote(name) for name in item["suites"])
+            command_lines.append(f"      suites: [{names}]")
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",

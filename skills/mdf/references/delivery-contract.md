@@ -46,8 +46,8 @@ write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
 通过 `delivery status/check/record/verify/integrate` 执行确定性操作。
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design。write-tests 写完可编译或可加载
-执行的测试即完成，不要求全绿；全绿由 converge 负责，且相对**当前交付所需验证
-集合**，不等于 manifest 里每一条命令。converge 需两路完成，
+执行的测试即完成，不要求全绿；全绿由 converge 负责，且相对**当前交付所需
+suite**，不等于 manifest 里每一条命令。converge 需两路完成，
 code-review 需收敛全绿，finish 需当前 code-review、事实审阅和验证证据有效。不能手填
 passed 代替 CLI 检查。
 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
@@ -56,9 +56,9 @@ passed 代替 CLI 检查。
 suite 的路径；manifest 的 verification.commands 始终属于测试门槛。路径可以是
 仓库相对文件、目录或 glob。分层后 design policy 必须另含 `suites`（非空交付
 suite 名列表，不得使用 quick/full）。
-单项重跑仅用于定位，不替代所需集合通过。`delivery verify` /
-`project-verify` / gate 记录必须写出实际跑过的 `collections`；feature 不得用
-「只跑了 quick」冒充已跑本交付 suite。未分层证据若无 `collections` 字段，视为
+单项重跑仅用于定位，不替代所需 suite 通过。`delivery verify` /
+`project-verify` / gate 记录必须写出实际跑过的 `suites`；feature 不得用
+「只跑了 quick」冒充已跑本交付 suite。未分层证据若无 `suites` 字段，视为
 已跑 quick 与 full（与全部项相同）。
 代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
 `fact-update` gate 绑定 `facts`、`implementation` 与 `design`：只改测试或验证配置不使
@@ -67,11 +67,11 @@ suite 名列表，不得使用 quick/full）。
 ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
 记录文件不参与其自身校验对象的指纹。缺失或过期时原地补验，不回退 intent。
 
-### 验证集合与执行矩阵
+### Suite 与执行矩阵
 
-协议只规定必须跑哪些集合；集合在仓库里如何实现由消费方决定。
+协议只规定必须跑哪些 suite；suite 在仓库里如何实现由消费方决定。
 
-| 交付 | 阶段 | 必须通过的集合 |
+| 交付 | 阶段 | 必须通过的 suite |
 | --- | --- | --- |
 | feature | write-tests | 仍只要求可执行测试已写；不要求全绿 |
 | feature | converge、code-review、finish | 全局 quick ∪ design policy `suites` 声明的交付 suite |
@@ -81,7 +81,7 @@ ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿�
 
 feature 必须在 design 声明本交付 suite：把验收映射到 quick（全局 always-run）或
 本交付 suite（含慢路径）。无慢用例时，本交付全量可以等于已写入 quick 的那些测试，
-但仍须作为 suite 声明并在验收时重跑。write-tests 把用例写进 `suites` 所列集合；
+但仍须作为 suite 声明并在验收时重跑。write-tests 把用例写进 `suites` 所列 suite；
 implement 不得擅自改测试。
 
 bugfix 不创建 design/write-tests/converge。分层后由 code-review 步骤 1 在
@@ -90,7 +90,7 @@ bugfix 不创建 design/write-tests/converge。分层后由 code-review 步骤 1
 不能只关联 quick 或 full。未分层时不要求该文件，行为与今天一致（跑全部项）。
 
 非 quick 用例一旦在 converge 之后失败（bugfix / release / hotfix 则为第一次跑
-所需集合之后），必须尝试补一条 quick 复现用例并纳入 always-run；原慢用例保留。
+所需 suite 之后），必须尝试补一条 quick 复现用例并纳入 always-run；原慢用例保留。
 结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，未补则写
 原因。code-review 可按既定目标自主补该用例；削弱门槛或改 skip/预期仍须用户批准。
 
@@ -99,11 +99,11 @@ bugfix 不创建 design/write-tests/converge。分层后由 code-review 步骤 1
 调用交付 intent 授权其必要的设计基线、阶段提交和工作分支集成，提交使用中文 Conventional Commit。
 只暂存当前阶段的必要路径；不得顺带提交无关用户改动。可以主动提交尚未完成的阶段产出，
 但须准确记录未完成状态；阶段提交不代表 gate 通过，不能绕过既有验收与审阅。
-首次 write-tests 按既定设计编写测试属于授权，含把用例写入 design 声明的集合并
-更新 manifest `collections`。implement 不自主修改测试。
+首次 write-tests 按既定设计编写测试属于授权，含把用例写入 design 声明的 suite 并
+更新 manifest `suites`。implement 不自主修改测试。
 converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
 code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
-非 feature 分支变更 `collections` 或新增交付 suite 名，一律需用户确认。
+非 feature 分支变更 `suites` 或新增交付 suite 名，一律需用户确认。
 架构优化可以建议；超出当前目标不直接实施。修复后在当前 intent 原地重验。
 
 fact update 可独立运行，也由 finish 前段内部调用，其事实审阅由 fact audit 完成。
