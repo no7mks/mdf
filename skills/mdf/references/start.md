@@ -121,6 +121,9 @@ CLI 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 固定�
 供 bugfix/hotfix code-review 使用；删除分支时该配置随分支删除，不设置 upstream。
 feature CLI 另固定 start_commit，在 owner 写入 changes/unreleased/<slug>/ 的目标和身份并提交。
 后续 write-tests / implement 改用 `roles` 路径。
+分层仓库的 bugfix 在 code-review 前写入
+`changes/unreleased/<slug>/suites.json`（`{"suites":["<已有 suite 名>"]}`），
+只关联 manifest 中已有交付 suite；新建须用户确认。未分层不要求该文件。
 创建成功进入 4，本步不结束。其他 kind 不创建 feature 阶段材料。
 
 <a id="s4"></a>

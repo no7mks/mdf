@@ -8,20 +8,29 @@ from .delivery_state import (
 from .errors import MDFError, emit
 from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
-from .verification import manifest_items
+from .verification import (
+    is_layered, manifest_items, parse_suite_names, required_collections,
+    select_items,
+)
 from .closeout_validate import run_verify_commands
 from .validate_links import require_existing_local_links
 
 
-def policy_input(raw):
+def policy_input(raw, items):
     policy = read_json(Path(raw)) if raw else None
-    if not policy or set(policy) != {"protected_paths"}:
-        raise MDFError("design 需要包含 protected_paths 的 policy JSON", code="invalid_policy")
+    expected = {"protected_paths", "suites"} if is_layered(items) else {"protected_paths"}
+    if not policy or set(policy) != expected:
+        raise MDFError(
+            "design 需要 protected_paths；分层后还必须声明 suites",
+            code="invalid_policy",
+        )
     paths = policy["protected_paths"]
     if (not isinstance(paths, list) or not paths
             or any(not isinstance(p, str) or not p.strip() or p.startswith("/")
                    or ".." in p.split("/") for p in paths)):
         raise MDFError("protected_paths 必须列出测试、fixture 和验证配置路径", code="invalid_policy")
+    if "suites" in policy:
+        policy["suites"] = parse_suite_names(policy["suites"])
     return policy
 
 
@@ -40,7 +49,7 @@ def record_stage(repo, root, data, args):
     if not args.summary or not args.summary.strip():
         raise MDFError("gate 需要非空语义审查摘要", code="missing_review")
     if stage == "design":
-        policy = policy_input(args.policy_file)
+        policy = policy_input(args.policy_file, manifest_items(load_manifest(repo)))
         require_existing_local_links(
             repo, [root / "objectives.md", root / "design.md"]
         )
@@ -87,12 +96,15 @@ def record_stage(repo, root, data, args):
 def verify(repo, root, data, selected):
     before = require_design(repo, root, data)
     items = manifest_items(load_manifest(repo))
-    ids = {item["id"] for item in items}
-    if set(selected) - ids:
+    policy = gate(repo, root, "design")["policy"]
+    required = required_collections("feature", items, policy.get("suites") or [])
+    targets = select_items(items, required)
+    ids = {item["id"] for item in targets}
+    if set(selected) - {item["id"] for item in items}:
         raise MDFError("未知验证项 ID", code="invalid_verification")
     results = []
     failed = False
-    for item in items:
+    for item in items if selected else targets:
         if selected and item["id"] not in selected:
             continue
         try:
@@ -106,8 +118,10 @@ def verify(repo, root, data, selected):
     after = fingerprints(repo, root, data)
     if before["code"] != after["code"] or before["design"] != after["design"]:
         failed = True
-    record = {"fingerprints": before, "results": results,
-              "all_passed": not failed and {r["id"] for r in results} == ids}
+    ran = {item["id"] for item in results}
+    complete = not selected and ran == ids
+    record = {"fingerprints": before, "results": results, "collections": required,
+              "all_passed": not failed and complete}
     target = "verification" if not selected else "verification-partial"
     write_json(safe(repo, root / "gates" / f"{target}.json"), record)
     if failed:

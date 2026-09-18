@@ -69,6 +69,7 @@ def summarize_closeout(repo: Path, context: dict[str, Any]) -> dict[str, Any]:
         "moves": moves,
         "affected_files": sorted(affected),
         "verification": {
+            "collections": ["full"],
             "commands": context["validation_commands"],
             "executed": False,
         },

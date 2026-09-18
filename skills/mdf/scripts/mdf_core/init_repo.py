@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import Any
 
 from .constants import (
     BASELINES,
@@ -73,9 +74,19 @@ def parse_baselines(values: list[str]) -> dict[str, dict[str, str]]:
 def render_manifest(
     baselines: dict[str, dict[str, str]],
     latest_release: str | None,
-    verification_commands: list[dict[str, str]],
+    verification_commands: list[dict[str, Any]],
     implementation_roots: list[str],
 ) -> str:
+    command_lines = []
+    for item in verification_commands:
+        command_lines.extend([
+            f"    - id: {yaml_quote(item['id'])}",
+            f"      kind: {yaml_quote(item['kind'])}",
+            f"      command: {yaml_quote(item['command'])}",
+        ])
+        if "collections" in item:
+            names = ", ".join(yaml_quote(name) for name in item["collections"])
+            command_lines.append(f"      collections: [{names}]")
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",
@@ -88,11 +99,7 @@ def render_manifest(
         ),
         "verification:",
         "  commands:",
-        *[line for item in verification_commands for line in (
-            f"    - id: {yaml_quote(item['id'])}",
-            f"      kind: {yaml_quote(item['kind'])}",
-            f"      command: {yaml_quote(item['command'])}",
-        )],
+        *command_lines,
         "implementation_roots:",
         *[f"  - {yaml_quote(root)}" for root in implementation_roots],
         "baselines:",
@@ -150,7 +157,7 @@ def init_files(
     baselines: dict[str, dict[str, str]],
     *,
     latest_release: str | None,
-    verification_commands: list[dict[str, str]],
+    verification_commands: list[dict[str, Any]],
     implementation_roots: list[str],
 ) -> dict[Path, str]:
     files = {

@@ -7,7 +7,9 @@ from pathlib import Path
 from .errors import MDFError
 from .gitutil import current_branch, run
 from .paths import load_manifest, path_stays_in_repo
-from .verification import manifest_items
+from .verification import (
+    collections_cover, manifest_items, recorded_collections, required_collections,
+)
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
 
@@ -159,9 +161,14 @@ def require_design(repo, root, data):
 def require_green(repo, root, data):
     record = gate(repo, root, "verification")
     current = fingerprints(repo, root, data)
+    items = manifest_items(load_manifest(repo))
+    policy = gate(repo, root, "design")["policy"]
+    required = required_collections("feature", items, policy.get("suites") or [])
+    recorded = recorded_collections(record, items)
     if (any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design"))
+            or not collections_cover(recorded, required)
             or not record.get("all_passed")):
-        raise MDFError("全量验证缺失或过期", code="stale_verification")
+        raise MDFError("所需验证集合缺失或过期", code="stale_verification")
     return current
 
 

@@ -252,3 +252,64 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "git diff <previous_final_head> <review_head>" in text
     assert "仍解决 / 复开 / 不适用" in text
     assert "changes/unreleased/<slug>/code-review.md" in text
+
+
+def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+                          "--bug", "bug-CD34"))
+    work = Path(created["worktree"])
+    item = '    - id: check\n      kind: custom\n      command: "true"'
+    layered = (
+        item + "\n      collections: [quick, full]\n"
+        "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
+        "      collections: [full, billing]"
+    )
+    (work / ".mdf/manifest.yaml").write_text(
+        (work / ".mdf/manifest.yaml").read_text().replace(item, layered, 1)
+    )
+    args = ["--repo", str(work)]
+    missing = mdf(python_exe, "project-verify", "run", *args)
+    assert "missing_delivery_suite" in missing.stderr
+    suites = work / "changes/unreleased/bug-cd34/suites.json"
+    suites.parent.mkdir(parents=True, exist_ok=True)
+    suites.write_text(json.dumps({"suites": ["unknown"]}) + "\n")
+    unknown = mdf(python_exe, "project-verify", "run", *args)
+    assert "unknown_suite" in unknown.stderr
+    suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
+    payload(mdf(python_exe, "project-verify", "run", *args))
+    evidence = json.loads(
+        (work / "changes/unreleased/bug-cd34/code-review.verification.json").read_text()
+    )
+    assert evidence["collections"] == ["quick", "billing"]
+    payload(mdf(python_exe, "project-verify", "check", *args))
+    evidence["collections"] = ["quick"]
+    (work / "changes/unreleased/bug-cd34/code-review.verification.json").write_text(
+        json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    )
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
+
+
+def test_layered_release_rejects_quick_only_evidence(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
+                          "--version", "1.3.0"))
+    work = Path(created["worktree"])
+    item = '    - id: check\n      kind: custom\n      command: "true"'
+    layered = (
+        item + "\n      collections: [quick, full]\n"
+        "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
+        "      collections: [full]"
+    )
+    (work / ".mdf/manifest.yaml").write_text(
+        (work / ".mdf/manifest.yaml").read_text().replace(item, layered, 1)
+    )
+    args = ["--repo", str(work)]
+    payload(mdf(python_exe, "project-verify", "run", *args))
+    path = work / "changes/unreleased/1.3.0/code-review.verification.json"
+    evidence = json.loads(path.read_text())
+    assert evidence["collections"] == ["full"]
+    assert {item["id"] for item in evidence["results"]} == {"check", "slow"}
+    evidence["collections"] = ["quick"]
+    path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr

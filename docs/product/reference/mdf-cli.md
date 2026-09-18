@@ -359,10 +359,12 @@ slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 | status | 只读列出交付身份、材料位置、阶段记录与 owner/qa/dev worktree 路径 |
 | check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
-| verify | 执行全部 verification；可用重复 `--item <id>` 做定位运行，全量记录不能由单项替代 |
+| verify | 执行当前交付所需验证集合并记录 `collections`；可用重复 `--item <id>` 做定位运行，所需集合记录不能由单项替代 |
 | integrate | clean feature 依次 no-ff 集成 qa 再 dev；冲突保留现场，完成后清理已合并本地工作分支 |
 
-design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["tests/","pyproject.toml"]}`。
+design record 需要 `--policy-file <JSON>`。未分层格式为
+`{"protected_paths":["tests/","pyproject.toml"]}`；分层后必须同时给出
+`suites`，例如 `{"protected_paths":["tests/"],"suites":["billing"]}`。
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
 阶段值为 design、write-tests、implement、converge、code-review、fact-update。
 
@@ -388,10 +390,14 @@ downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出�
 Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同设计，
 `--handoff` 要求 clean 与有效阶段指纹；审查者用 `--expected-head <hash>` 固定只读对象。
 
-`project-verify run --repo <仓库>` 执行 bugfix/hotfix/release 的全部 manifest 验证项，
-将成功或失败证据写入 `changes/unreleased/<slug>/code-review.verification.json`。
-feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix 为该分支稳定 SemVer。
-`project-verify check` 只读核验输入指纹、分支及全绿状态；事实/收口文档不改变代码指纹。
+`project-verify run --repo <仓库>` 按分支执行所需验证集合：release/hotfix 跑
+全局 full；bugfix 跑全局 quick 加 `changes/unreleased/<slug>/suites.json` 中
+已关联的交付 suite。未分层时跑全部项，证据 `collections` 为 `quick` 与 `full`。
+分层后 bugfix 缺少关联、引用未知 suite、或证据只覆盖 quick，检查失败。
+结果写入 `changes/unreleased/<slug>/code-review.verification.json`，含
+`collections`。feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix
+为该分支稳定 SemVer。
+`project-verify check` 只读核验输入指纹、分支、集合及全绿状态；事实/收口文档不改变代码指纹。
 
 `codewiki-runtime [--directory <路径>]` 只在安装目录缺失时 clone，核对源码和 Git 状态，
 只补缺失 venv 并检查导入，返回宿主所需 MCP 字段；不修改宿主配置或目标仓库。

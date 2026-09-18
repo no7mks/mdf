@@ -122,8 +122,10 @@
 
 对每个非生态必需且非 MDF 固定的顶层目录，使用内部 clarify intent 决定去处或顶层例外；本地或外部调研材料归入
 `docs/context/research/`，已确认决策归入 `docs/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与非空
-`verification.commands`。每项为 id、kind、command；初始化 CLI 用重复的
+`verification.commands`。每项为 id、kind、command，可选 collections；初始化 CLI 用重复的
 `--verification-item '{"id":"check","kind":"custom","command":"git diff --check"}'` 传入。
+已有未分层 commands 保持原样即可，行为与今天一致；若要分层，必须给**每一项**补
+`collections`，禁止只把子集标成 quick。
 
 验收：逐项决定与验证命令。
 

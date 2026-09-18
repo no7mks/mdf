@@ -14,6 +14,8 @@
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
 - `验证命令`：`manifest.verification.commands` 中由仓库执行的非空具名验证项列表。
+  可选 `collections` 划入全局 `quick` / `full` 或交付级 suite。
+- `验证集合`：quick（always-run）、full（quick 超集）与具名交付 suite。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
 - `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。
 
@@ -143,9 +145,31 @@ verification:
       command: "python3 -m pytest -q"
 ```
 
-`initializing` 与 `ready` 都要求非空具名条目列表，每项只含唯一 id、kind、非空 command。
-kind 为 unit/property/integration/e2e/lint/typecheck/build/custom；不强制各类齐全。
-初始化时通过 CLI 重复传入 `--verification-item` JSON 对象提供；没有业务检查的空仓库可使用 `git diff --check`。
+`initializing` 与 `ready` 都要求非空具名条目列表，每项含唯一 id、kind、非空
+command。kind 为 unit/property/integration/e2e/lint/typecheck/build/custom；
+不强制各类齐全。kind 只是标签，不参与筛选，不能单靠 kind 冒充分层。
+
+可选 `collections` 把命令划入全局集合或交付级 suite：
+
+```yaml
+      collections: [quick, full]
+```
+
+- 全部项都不写 `collections`：未分层。每项同时属于 quick 与 full，门禁跑全部项，
+  与未声明分层时的行为一致。
+- 任一项写了 `collections`：已分层。每一项都必须写非空、不重复的 kebab-case
+  名称列表；禁止只给部分项加字段而让其余项静默退出门禁。
+- `quick` 与 `full` 为全局集合。`full` 是 `quick` 的超集：声明 quick 的项必须
+  同时声明 full。分层后两者均不得为空；没有慢项时二者可以命令相同。
+- 其他名称是交付级 suite。同一命令可同时属于全局集合与 suite。suite 必须是可
+  引用的稳定名；消费方用独立 command、marker 或 source set 实现均可，MDF 只
+  消费与今日同级的可执行验证项列表。
+- lint / typecheck / build / `git diff --check` 等非测试项建议同时列入 quick
+  与 full，避免 release 漏掉静态检查。
+- 一次性 migrate：给每项补 `collections`。未分层仓库不要只把子集标成 quick。
+
+初始化时通过 CLI 重复传入 `--verification-item` JSON 对象提供；JSON 可含
+`collections`。没有业务检查的空仓库可使用 `git diff --check`。
 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 `implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、

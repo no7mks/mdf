@@ -271,6 +271,17 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "delivery worktree" not in implement
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
+    assert "全局 quick ∪ 本交付 suite" in contract
+    assert "关联 ≥1 个**已有**交付 suite" in contract
+    assert "只跑了 quick" in contract
+    design_text = workflow("design")
+    assert "验收到 quick 与本交付 suite 的映射" in design_text
+    assert "suites" in design_text
+    assert "按 design 把用例写入全局 quick 或本交付 suite" in tests
+    assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in workflow("converge")
+    review = workflow("code-review")
+    assert "必须尝试补一条 quick 复现用例" in review
+    assert "changes/unreleased/<slug>/suites.json" in workflow("start")
 
 
 def test_initialization_and_init_have_explicit_reaudit_routes():
@@ -453,7 +464,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "bugfix/hotfix/release 不要求 feature 的 design/converge gate",
-        "manifest 的全部 `verification.commands`", "最终 final_head",
+        "按当前分支执行所需验证集合", "最终 final_head",
     ):
         assert rule in text
     finish = workflow("finish")

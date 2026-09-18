@@ -98,7 +98,7 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止。
 运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
 仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
-并在步骤 4 全量重验。
+并在步骤 4 按所需集合重验。
 其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate；
 读取对应 Bug、交付目标、版本材料及适用设计作为审查依据，不为形式创建 feature 材料。
 
@@ -142,14 +142,19 @@ review_head、工作目录、目标、验收、适用设计材料与相关当前
 
 步骤 4：feature 先运行 `delivery check --stage code-review`；除 `stale_verification` 外的错误均停止。
 finish 本次集成产生新提交、返回 `stale_verification` 或本轮改动实现、测试、验证配置时，
-运行 `delivery verify` 全量重验；finish 集成后的强制重验优先于证据复用，即使仅修改文档。
+运行 `delivery verify` 按所需集合重验；finish 集成后的强制重验优先于证据复用，即使仅修改文档。
 仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
-脚本执行 manifest 的全部 `verification.commands`，逐项记录命令与退出状态，
+脚本按当前分支执行所需验证集合（release/hotfix 为全局 full；bugfix 为全局
+quick 加已关联交付 suite），逐项记录命令、退出状态与 `collections`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
-finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入指纹及全绿结果。
+分层后 bugfix 缺少 `suites.json`、只跑了 quick、或引用尚未写入 manifest 的
+suite 名，均失败。finish 使用 `project-verify check --repo "$REPO_ROOT"`
+核对输入指纹、集合与全绿结果。
 不能用仅检查文档结构的 full validation 代替业务验证。
 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
+非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价门禁之后）失败时，
+必须尝试补一条 quick 复现用例；无法下沉则在本轮记录写明原因。
 
 四种分支均在 `changes/unreleased/<slug>/code-review.md` 按轮追加审查记录，
 每轮包含 round、审查种类（首轮 | 增量）、固定的交付 base_commit、本轮左端点
@@ -168,7 +173,7 @@ finish 核对记录中的基线、三个审查结果、最终复核及验证均�
 但事实仍须另审。实现或目标变化后不得沿用通过结论：同次修复续办回到 3；
 新交付改动作为增量新一轮从 1 开始。finish 集成 develop/master 产生新提交后，
 一律作为增量新一轮从 1 开始，左端点为集成前 final_head，以集成后的 HEAD 重做
-三份本轮范围审查与全量项目验证，即使合并无冲突或仅修改文档。不复用集成前报告，
+  三份本轮范围审查与当前交付所需验证集合，即使合并无冲突或仅修改文档。不复用集成前报告，
 不把集成当修复续办。无有效上轮记录时按首轮从交付起点审到集成后 HEAD。
 feature 还须通过 CLI 指纹检查。
 记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。

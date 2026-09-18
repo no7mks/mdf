@@ -32,8 +32,9 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
-    from .verification import manifest_items
-    return [item["command"] for item in manifest_items(manifest)]
+    from .verification import manifest_items, select_items
+    items = manifest_items(manifest)
+    return [item["command"] for item in select_items(items, ["full"])]
 
 
 def derive_closeout_spec(
@@ -223,6 +224,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             "semver": result["semver"],
             "rewrites": result["rewrites"],
             "verification": {
+                "collections": ["full"],
                 "commands": context["validation_commands"],
                 "results": command_results,
             },

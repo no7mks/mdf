@@ -24,7 +24,19 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 
 ## 验证命令
 
-`manifest.verification.commands` 中交付前执行的命令。
+`manifest.verification.commands` 中的具名可执行验证项。可选 `collections`
+划入全局 quick / full 或交付级 suite；`kind` 只是标签，不参与筛选。
+
+## 验证集合
+
+三类必须区分的验证范围：
+
+- **quick**：全局 always-run。日常门禁；通常挂全部 UT 与声明为快速的 IT/e2e。
+- **full**：quick 的超集，另含慢速 IT/e2e。release / hotfix 使用。
+- **交付 suite**：具名集合，覆盖某 feature 的本交付全量（含慢路径）。不是全局
+  full，也不是「碰巧改到的 quick 文件」。
+
+未分层（所有命令都不写 `collections`）时，全部项同时属于 quick 与 full。
 
 ## CodeWiki
 
@@ -63,7 +75,8 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 
 objectives 是本次交付目标与验收约束，引用 PRP。Gate 是基于产物、内容指纹、验证与语义审查的阶段门禁。
 write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿。
-converge（收敛）集成测试和实现，持续修复实现直到项目全部验证项通过。
+converge（收敛）集成测试和实现，持续修复实现直到**当前交付所需验证集合**通过。
+「全绿」相对该集合，不等于 manifest 里每一条命令。
 
 ## 测试类别与 Code Smell
 

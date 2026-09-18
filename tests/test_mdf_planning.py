@@ -206,6 +206,29 @@ def test_verification_items_validate_identity_and_kind(python_exe, tmp_path):
         assert "manifest.verification" in result.stdout
 
 
+def test_verification_collections_are_all_or_nothing(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    manifest = repo / ".mdf/manifest.yaml"
+    original = manifest.read_text()
+    item = '    - id: check\n      kind: custom\n      command: "true"'
+    mixed = item + "\n      collections: [quick, full]\n    - id: other\n      kind: custom\n      command: \"true\""
+    manifest.write_text(original.replace(item, mixed))
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert "manifest.verification" in result.stdout
+    quick_only = item + "\n      collections: [quick]"
+    manifest.write_text(original.replace(item, quick_only))
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert "manifest.verification" in result.stdout
+    layered = (
+        item + "\n      collections: [quick, full]\n"
+        "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
+        "      collections: [full]"
+    )
+    manifest.write_text(original.replace(item, layered))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
 def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")

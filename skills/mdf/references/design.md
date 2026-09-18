@@ -44,7 +44,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 ### 范围与前置条件
 
 在 design.md 中明确目标、非目标、接口、错误语义、
-验收到测试类别的映射及 verification 各项适用条件。测试仅对 objectives 负责。
+验收到 quick 与本交付 suite 的映射及 verification 各项适用条件。测试仅对
+objectives 负责。分层后必须声明本交付 suite 名称，供 write-tests 把用例写入
+对应集合。
 设计前按任务从 `docs/README.md` 定位并读取相关当前事实页，在 design.md 列出
 当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
@@ -55,8 +57,12 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 设计 policy 与基线
 
-准备 policy JSON：`{"protected_paths": ["tests/", "pyproject.toml"]}`，列全项目实际的
-测试、fixture、快照、测试发现、覆盖率和告警配置路径；manifest 验证项由 Core 保护。
+准备 policy JSON：未分层为 `{"protected_paths": ["tests/", "pyproject.toml"]}`；
+分层后必须同时给出 `suites`，例如
+`{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}`。
+`protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置
+路径，包括交付级 suite；manifest 验证项由 Core 保护。`suites` 为本交付 suite
+名，不得使用 quick/full。
 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。

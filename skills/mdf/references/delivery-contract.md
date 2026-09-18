@@ -46,20 +46,53 @@ write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
 通过 `delivery status/check/record/verify/integrate` 执行确定性操作。
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design。write-tests 写完可编译或可加载
-执行的测试即完成，不要求全绿；全绿由 converge 负责。converge 需两路完成，
+执行的测试即完成，不要求全绿；全绿由 converge 负责，且相对**当前交付所需验证
+集合**，不等于 manifest 里每一条命令。converge 需两路完成，
 code-review 需收敛全绿，finish 需当前 code-review、事实审阅和验证证据有效。不能手填
 passed 代替 CLI 检查。
 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 
-设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置；manifest 的
-verification.commands 始终属于测试门槛。路径可以是仓库相对文件、目录或 glob。
-全绿按项目全部具名验证项判断；单项重跑仅用于定位，不替代全量通过。
+设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置，包括交付
+级 suite 的路径；manifest 的 verification.commands 始终属于测试门槛。路径可以是
+仓库相对文件、目录或 glob。分层后 design policy 必须另含 `suites`（非空交付
+suite 名列表，不得使用 quick/full）。
+单项重跑仅用于定位，不替代所需集合通过。`delivery verify` /
+`project-verify` / gate 记录必须写出实际跑过的 `collections`；feature 不得用
+「只跑了 quick」冒充已跑本交付 suite。未分层证据若无 `collections` 字段，视为
+已跑 quick 与 full（与全部项相同）。
 代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
 `fact-update` gate 绑定 `facts`、`implementation` 与 `design`：只改测试或验证配置不使
 事实审阅过期，但仍使全绿与 code-review 过期。
 `code` 指纹覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件；
 ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
 记录文件不参与其自身校验对象的指纹。缺失或过期时原地补验，不回退 intent。
+
+### 验证集合与执行矩阵
+
+协议只规定必须跑哪些集合；集合在仓库里如何实现由消费方决定。
+
+| 交付 | 阶段 | 必须通过的集合 |
+| --- | --- | --- |
+| feature / bugfix | write-tests | 仍只要求可执行测试已写；不要求全绿 |
+| feature | converge、code-review、finish | 全局 quick ∪ 本交付 suite（及 design 额外关联的 suite） |
+| bugfix | code-review、finish | 全局 quick ∪ 已关联交付 suite（≥1） |
+| release / hotfix | code-review、finish（及 `project-verify`） | 全局 full |
+| 任意 | 只改事实文档 | 不机械重跑全部业务验证；实现 / 测试 / 验证配置变更仍使对应验证过期 |
+
+feature 必须在 design 声明本交付 suite：把验收映射到 quick（全局 always-run）或
+本交付 suite（含慢路径）。无慢用例时，本交付全量可以等于已写入 quick 的那些测试，
+但仍须作为 suite 声明并在验收时重跑。write-tests 把用例写进对应集合；implement
+不得擅自改测试。
+
+bugfix 不创建 design/write-tests/converge。分层后必须在
+`changes/unreleased/<slug>/suites.json` 关联 ≥1 个**已有**交付 suite；默认不得
+新建 suite，除非用户明确确认后先把该名称写入 manifest 验证项，再关联。
+不能只关联 quick 或 full。未分层时不要求该文件，行为与今天一致（跑全部项）。
+
+非 quick 用例一旦在 converge 之后失败（bugfix / release / hotfix 则为第一次跑
+所需集合之后），必须尝试补一条能复现同一缺陷的 quick 用例并纳入 always-run；
+原慢用例保留。无法下沉时在审查记录写明原因。code-review 可按既定目标自主补该
+复现用例；削弱门槛或改 skip/预期仍须用户批准。
 
 ## 修改与提交权限
 

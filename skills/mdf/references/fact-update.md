@@ -85,7 +85,8 @@
 内部委托 fact audit 做双向只读审阅与 full validation；通过前不得声称事实同步完成。
 feature finish 调用时执行受影响验证，运行
 `delivery record --stage fact-update --summary <本次事实审阅确认与验证证据>`。
-只改事实文档不机械重跑全部业务验证；实现、测试或 verification 改变必须全量重验。
+只改事实文档不机械重跑全部业务验证；实现、测试或 verification 改变必须重跑
+当前交付所需验证集合。
 
 验收：fact audit 通过、验证结果、feature finish 委托时的 fact-update gate。
 

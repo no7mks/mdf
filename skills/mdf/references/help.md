@@ -98,7 +98,7 @@
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
-- `$mdf converge`：集成并持续修复到全量验证通过
+- `$mdf converge`：集成并持续修复到所需验证集合通过
 - `$mdf code-review`：审查并修复实现、测试和 code smell
 - `$mdf fact update`：同步当前事实；finish 前段自动调用
 - `$mdf finish`：按 Gitflow 分支完成审计与收口
@@ -269,8 +269,8 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 
 `$mdf converge`
 用法：`$mdf converge`
-用途：集成并持续修复到全量验证通过。
-说明：修复实现直到项目全部验证项通过。
+用途：集成并持续修复到所需验证集合通过。
+说明：修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
 
 `$mdf code-review`
 用法：`$mdf code-review`
