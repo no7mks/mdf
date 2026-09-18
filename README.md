@@ -75,10 +75,6 @@ gate 检查共同基线与有效证据。start 始终独立 worktree；write-tes
 材料自 start 起位于 `changes/unreleased/<slug>/`；CHANGE.md 在同级目录于交付完成时补齐，
 再随版本归档。
 
-供 MDF 维护者查阅的[确定性 CLI 参考](./docs/system/interfaces/mdf-cli.md)
-记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，
-不会随 Skill 安装。
-
 MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。协议、工具与
 schema 版本均为数字 `3`；manifest 或 `docs/` 布局不符合当前契约时 doctor 只给出
 指向 `$mdf migrate` 的 finding，由 migrate 一次性收敛，不提供旧版运行分支。
@@ -107,9 +103,9 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 | 领域术语 | `GLOSSARY.md` |
 
 Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
-验证，且不得混写未来计划。一条可观察契约只住一页，其他页只链接；路由页、
-`PROJECT.md`、主题叶、ADR、工作对象各有行数软硬限制，超硬限制由 fact audit 报
-`size.hard`，fact update 以拆页或下沉修复。fact update / fact audit 的 `--scope`
+验证，且不得混写未来计划。一条可观察契约只住一页，其他页只链接；文档按角色有
+行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
+fact update / fact audit 的 `--scope`
 默认 `branch`（起点以来实现改动该碰的事实页），`full` 整理知识面全树，finish 只用
 `branch`/`paths`。
 

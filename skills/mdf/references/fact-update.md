@@ -109,8 +109,8 @@ design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 声称事实同步完成。feature finish 调用时执行受影响验证。只改事实文档不机械重跑全部
 业务验证；实现、测试或 verification 改变必须重跑当前交付所需 suite。
 
-审阅结果分三类：通过；仅剩结构 finding（加载质量清单、`size.hard`、`size.soft`
-待拆）；其他未通过（事实错误、覆盖遗漏、validation 阻断）。
+审阅结果分三类：通过；仅剩结构 finding（加载质量清单、`size.hard` 待拆）；其他
+未通过（事实错误、覆盖遗漏、validation 阻断）。
 
 验收：fact audit 结论、验证结果。
 

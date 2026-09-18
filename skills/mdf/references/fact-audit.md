@@ -100,8 +100,8 @@ finish 的 release 为 `full`，其他分支为 `paths` 范围审阅，不得改
 **映射**
 
 调用 `fact-audit --scope <scope>`；`branch` 可带 `--base`，`paths` 带精确路径，
-`full` 不带路径。CLI 同时按 `repository-contract.md` 的体积表检查：`size.hard`
-是 finding，`size.soft` 是 warning。
+`full` 不带路径。CLI 同时按 `repository-contract.md` 的体积表检查：超出限制为
+`size.hard` finding。
 
 验收：范围、文档—`evidence` 映射、ignore 匹配、体积、warnings、确定性 findings。
 
@@ -122,15 +122,17 @@ finish 的 release 为 `full`，其他分支为 `paths` 范围审阅，不得改
 计入语义 finding：
 
 - 入口不过载：`README.md`、`PROJECT.md`、`AGENTS.md` 不复述事实页已记载的可观察
-  契约；`docs/README.md` 是任务地图，当前事实排在决策与工作记录之前，不链接空目录，
-  按任务只打开一份页面。
+  契约；仅维护者需要的内容不进 `README.md`，进 `PROJECT.md` 或任务地图指向的
+  `docs/system/` 主题叶。`docs/README.md` 是任务地图，当前事实排在决策与工作
+  记录之前，不链接空目录，按任务只打开一份页面。
 - 路由页只路由：`system/overview.md`、`user-guide/README.md`、切面 `index.md`
   不复述叶子契约，不集中承担 evidence。
 - 唯一归属：同一可观察契约只在一页；其他页只链接。对外能力在 `user-guide`，
   内部结构与仍生效约束在 `system/architecture`，内部契约在 `system/interfaces`。
-- 主题叶按主题拆：一页混多个主题、或该拆未拆（含 `size.hard`/`size.soft`）记为
-  结构 finding，修复方向是拆页或下沉，不是压缩措辞。
-- 读者分离：`user-guide` 只写使用者可观察的行为；维护者材料不混入。
+- 主题叶按主题拆：一页混多个主题、或该拆未拆（含 `size.hard`）记为结构
+  finding，修复方向是拆页或下沉，不是压缩措辞。
+- 读者分离：`user-guide` 只写使用者可观察的行为；维护者材料不混入。根
+  `README.md` 不写入仅维护者需要的手册。
 - ADR：`docs/context/adr/` 不复述当前结构；仍生效约束若只写在 ADR 而
   `system/architecture` 缺失，记为 finding。ADR 不按实现对齐。
 - 工作对象与调研：Proposal、Bug、Jot、research 未冒充当前事实、未被任务地图当成
@@ -157,8 +159,7 @@ finish 的 release 为 `full`，其他分支为 `paths` 范围审阅，不得改
 
 逐条审阅 CLI warning。
 
-验收：未被 evidence 引用且未被 ignorelist 覆盖的实现文件及用户当场确认；
-`size.soft` 逐条列为待拆建议，不要求当场确认，供 fact update 的结构阶段处理。
+验收：未被 evidence 引用且未被 ignorelist 覆盖的实现文件及用户当场确认。
 
 异常与交接：列入会话摘要后继续 6。
 
@@ -183,7 +184,7 @@ migrate 只允许 `manifest.initializing` finding。
 
 通过条件：无语义 finding（含结构 finding）、无 `size.hard`、无未确认 warning，且
 validation 无阻断 finding 时通过；migrate 仅豁免 `manifest.initializing`。
-`size.soft` 不阻断。该确认不跨调用复用。
+该确认不跨调用复用。
 
 异常与交接：存在其他 finding、未确认 warning 或未取得用户确认时，报告审阅未通过、
 阻断原因与待确认项，不得称审阅通过。独立调用报告后结束；内部委托返回未通过结果，

@@ -177,13 +177,14 @@ SYSTEM_DOC_TYPES = {
     "operations": "system-operations",
     "deviations.md": "system-deviations",
 }
-# 文档体积（物理行）：按加载角色分软硬限制；软限制超出为 warning，硬限制超出为
-# finding。GLOSSARY.md 与 changes/ 材料不检查。
-SIZE_ROUTER = ("router", 80, 120)
-SIZE_PROJECT = ("project", 200, 400)
-SIZE_FACT = ("fact", 400, 500)
-SIZE_ADR = ("adr", 200, 400)
-SIZE_WORK_ITEM = ("work-item", None, 500)
+# 文档体积（物理行）：按加载角色一条硬限制；超出为 size.hard finding。
+# GLOSSARY.md 与 changes/ 材料不检查。
+SIZE_ROUTER = ("router", 100)
+SIZE_README = ("readme", 200)
+SIZE_PROJECT = ("project", 100)
+SIZE_FACT = ("fact", 450)
+SIZE_ADR = ("adr", 300)
+SIZE_WORK_ITEM = ("work-item", 500)
 ENTRY_DOCUMENTS = ("README.md", "AGENTS.md", "PROJECT.md", "docs/README.md")
 CHANGELOG_CATEGORIES = (
     "Added",

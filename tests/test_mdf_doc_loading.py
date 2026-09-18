@@ -76,24 +76,22 @@ def test_adrs_live_under_context(python_exe: str, tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    ("relative_path", "lines", "expected"),
+    ("relative_path", "lines"),
     [
-        ("docs/README.md", 121, "size.hard"),
-        ("docs/README.md", 81, "size.soft"),
-        ("docs/system/overview.md", 121, "size.hard"),
-        ("docs/system/interfaces/index.md", 121, "size.hard"),
-        ("docs/system/interfaces/api.md", 501, "size.hard"),
-        ("docs/system/interfaces/api.md", 401, "size.soft"),
-        ("docs/user-guide/README.md", 121, "size.hard"),
-        ("docs/user-guide/topic.md", 401, "size.soft"),
-        ("PROJECT.md", 401, "size.hard"),
-        ("PROJECT.md", 201, "size.soft"),
-        ("docs/context/adr/use-sqlite.md", 401, "size.hard"),
-        ("docs/proposals/prp-001-service-health.md", 501, "size.hard"),
+        ("README.md", 201),
+        ("docs/README.md", 101),
+        ("docs/system/overview.md", 101),
+        ("docs/system/interfaces/index.md", 101),
+        ("docs/system/interfaces/api.md", 451),
+        ("docs/user-guide/README.md", 101),
+        ("docs/user-guide/topic.md", 451),
+        ("PROJECT.md", 101),
+        ("docs/context/adr/use-sqlite.md", 301),
+        ("docs/proposals/prp-001-service-health.md", 501),
     ],
 )
 def test_audit_enforces_size_limits_by_role(
-    python_exe: str, tmp_path: Path, relative_path: str, lines: int, expected: str
+    python_exe: str, tmp_path: Path, relative_path: str, lines: int
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
@@ -118,13 +116,10 @@ def test_audit_enforces_size_limits_by_role(
 
     result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     data = json.loads(result.stdout)
-    if expected == "size.hard":
-        assert result.returncode == 2
-        hits = [item for item in data["findings"] if item["code"] == "size.hard"]
-    else:
-        assert_ok(result)
-        hits = [item for item in data["warnings"] if item["code"] == "size.soft"]
+    assert result.returncode == 2
+    hits = [item for item in data["findings"] if item["code"] == "size.hard"]
     assert [item["path"] for item in hits] == [relative_path]
+    assert not any(item["code"] == "size.soft" for item in data["warnings"])
 
 
 def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):

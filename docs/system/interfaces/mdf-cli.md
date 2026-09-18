@@ -109,11 +109,10 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 
 它同时按文档角色检查体积（物理行；`AGENTS.md` 只计托管区块）：路由页
 （`docs/README.md`、`docs/user-guide/README.md`、`docs/system/overview.md`、切面
-`index.md`）、根 `README.md`、`AGENTS.md` 为 80/120；`PROJECT.md` 200/400；
-`docs/user-guide/`、`docs/system/` 主题叶 400/500；`docs/context/adr/` 200/400；
-Proposal、Bug、`docs/JOTS.md` 仅硬限制 500。超硬限制为 `size.hard` finding，超软
-限制为 `size.soft` warning。`full` 检查全部带角色文档；`branch`、`paths` 只检查
-范围内文档与本次改动到的入口页。
+`index.md`）、`AGENTS.md` 托管块与 `PROJECT.md` 为 100；根 `README.md` 为 200；
+`docs/user-guide/`、`docs/system/` 主题叶 450；`docs/context/adr/` 300；Proposal、
+Bug、`docs/JOTS.md` 为 500。超出为 `size.hard` finding。`full` 检查全部带角色
+文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。
 
 分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`），
 实现范围是起点以来改动的实现文件，文档范围是改动到的事实页与 evidence 引用这些实现

@@ -30,7 +30,7 @@ python -m pytest
   原地补齐 Change 及 Gitflow 冲突。
 - `test_mdf_verification_layers.py`：quick / full / 交付 suite 分层门禁与证据。
 - `test_mdf_doc_loading.py`：`docs/user-guide/` doc_type、`docs/context/adr/`、
-  `layout.migrate` / `manifest.schema` 指向 migrate、按角色行数软硬限制，以及
+  `layout.migrate` / `manifest.schema` 指向 migrate、按角色行数硬限制，以及
   fact-audit `--scope branch` 的范围映射。
 - `test_mdf_planning.py`：具名 verification、混态依赖树、milestone 依赖、拆分预检与失败恢复。
 - `test_mdf_planning_workspace.py`：常驻 planning 工作区与合入 develop。

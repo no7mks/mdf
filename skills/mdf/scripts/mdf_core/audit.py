@@ -287,8 +287,7 @@ def audit_payload(
             findings,
         )
         sized = documents
-    size_hard, size_soft = size_findings(repo, sized)
-    findings.extend(size_hard)
+    findings.extend(size_findings(repo, sized))
     ignored = _ignored_paths(repo, all_sources, roots, findings)
     mappings: list[dict[str, Any]] = []
     covered: set[Path] = set()
@@ -317,7 +316,7 @@ def audit_payload(
         if path not in covered
         and path not in ignored
         and path.name not in NON_BEHAVIORAL_NAMES
-    ] + size_soft
+    ]
     payload = {
         "ok": not findings,
         "operation": "audit",

@@ -310,7 +310,7 @@ branch/paths。独立调用须 manifest ready；布局或 schema 不符时提示
 用法：`$mdf fact audit [--scope branch|full|paths]`
 用途：只读审阅文档与实现的覆盖、证据、语义与加载质量（入口过载、唯一归属、
 路由页、体积、ADR 复述）。
-说明：只读；不执行 verification.commands。`size.hard` 阻断，`size.soft` 只提示。
+说明：只读；不执行 verification.commands。`size.hard` 阻断。
 
 `$mdf codewiki generate`
 用法：`$mdf codewiki generate`

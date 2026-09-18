@@ -84,20 +84,19 @@
 部署与观测在 `system/operations/<topic>`。其他页面只链接，不复述；架构问题以
 `system/architecture/` 为准，ADR 不作为当前结构来源。
 
-**体积**（物理行；软限制超出为 `size.soft` warning，硬限制超出为 `size.hard`
-finding，由 fact-audit CLI 检查）：
+**体积**（物理行；超出为 `size.hard` finding，由 fact-audit CLI 检查）：
 
-| 角色 | 软 | 硬 |
-| --- | --- | --- |
-| 路由页（见下）、根 `README.md`、`AGENTS.md` 托管块 | 80 | 120 |
-| `PROJECT.md` | 200 | 400 |
-| `user-guide/`、`system/` 主题叶 | 400 | 500 |
-| `context/adr/<slug>.md` | 200 | 400 |
-| Proposal、Bug、`JOTS.md` | — | 500 |
-| `GLOSSARY.md`、`changes/` 材料 | 不检查 | 不检查 |
+| 角色 | 限制 |
+| --- | --- |
+| 路由页（见下）、`AGENTS.md` 托管块、`PROJECT.md` | 100 |
+| 根 `README.md` | 200 |
+| `user-guide/`、`system/` 主题叶 | 450 |
+| `context/adr/<slug>.md` | 300 |
+| Proposal、Bug、`JOTS.md` | 500 |
+| `GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面
-`index.md`。超出硬限制的修复是拆页或下沉到主题叶，不是压缩措辞。
+`index.md`。超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。
 
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
@@ -141,15 +140,19 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 
 ## 根文档职责
 
-- `README.md` 面向项目用户与维护者，说明项目定位、最短可运行路径和两类读者的
-  文档入口（用户到 `docs/user-guide/README.md`，维护者到 `docs/README.md`）。
-  它可保留服务于这些目的的概览，但不重复`当前事实文档`中的用户或
-  系统行为；环境变量表、接口形状、错误文案等可观察契约只写在对应事实页。
+- `README.md` 面向项目用户，说明项目定位、最短可运行路径和用户文档入口
+  （`docs/user-guide/README.md`）。可保留服务于这些目的的概览，但不重复
+  `当前事实文档`中的用户或系统行为；环境变量表、接口形状、错误文案等可观察
+  契约只写在对应事实页。仅维护者需要的环境、验证、lint、CI、目录例外、发布
+  与仓库治理不得写入，改放 `PROJECT.md`；内部结构、接口与运维等当前事实按
+  渐进式披露下沉到任务地图指向的 `docs/system/` 主题叶。维护者入口可链到
+  `PROJECT.md` 与 `docs/README.md`，不在此展开手册。
 - `PROJECT.md` 仅面向项目维护者，记录项目专属的开发、验证与维护手册，包括环境、
   lint、test、build、CI 等价检查、生成物与目录约定。命令的可执行事实来源始终是
   仓库配置与脚本；生产运行和运维事实属于 `docs/system/operations/`。
   验证命令集中在开头一张验证卡片，供 Agent 只读该表执行检查；接口、数据与
-  运行时行为不复述 `docs/system/` 事实页，只保留指向对应页面的链接。
+  运行时行为不复述 `docs/system/` 事实页，只保留指向对应页面的链接。超过体积
+  限制时下沉到 `docs/system/`，不扩写进 `README.md`。
 - `AGENTS.md` 仅面向在仓库中工作的 Agent，记录项目专属的 Agent 行为准则与必要例外，
   不重复面向用户或维护者的材料。它要求 Agent 把 `docs/README.md` 当任务地图、
   只打开与任务相关的一份 `docs/system/` 主题叶，用 grep/CodeWiki 定位后只读命中

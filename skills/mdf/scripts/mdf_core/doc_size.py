@@ -15,6 +15,7 @@ from .constants import (
     SIZE_ADR,
     SIZE_FACT,
     SIZE_PROJECT,
+    SIZE_README,
     SIZE_ROUTER,
     SIZE_WORK_ITEM,
 )
@@ -22,7 +23,6 @@ from .errors import Finding
 from .paths import path_stays_in_repo, relative
 
 ROUTER_PATHS = {
-    "README.md",
     "AGENTS.md",
     "docs/README.md",
     "docs/user-guide/README.md",
@@ -31,7 +31,9 @@ ROUTER_PATHS = {
 WORK_ITEM_ROOTS = ("docs/proposals/", "docs/bugs/")
 
 
-def size_role(rel: str) -> tuple[str, int | None, int] | None:
+def size_role(rel: str) -> tuple[str, int] | None:
+    if rel == "README.md":
+        return SIZE_README
     if rel in ROUTER_PATHS:
         return SIZE_ROUTER
     if rel == "PROJECT.md":
@@ -80,33 +82,21 @@ def sizable_documents(repo: Path) -> list[Path]:
     )
 
 
-def size_findings(
-    repo: Path, paths: Iterable[Path]
-) -> tuple[list[Finding], list[Finding]]:
+def size_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
     findings: list[Finding] = []
-    warnings: list[Finding] = []
     for path in sorted(set(paths)):
         rel = relative(repo, path)
         role = size_role(rel)
         if role is None or not path.is_file():
             continue
-        name, soft, hard = role
+        name, limit = role
         count = line_count(path, rel)
-        if count > hard:
+        if count > limit:
             findings.append(
                 Finding(
                     "size.hard",
-                    f"{name} 文档 {count} 行，超过硬限制 {hard}；须拆页或下沉",
+                    f"{name} 文档 {count} 行，超过限制 {limit}；须拆页或下沉",
                     rel,
                 )
             )
-        elif soft is not None and count > soft:
-            warnings.append(
-                Finding(
-                    "size.soft",
-                    f"{name} 文档 {count} 行，超过软限制 {soft}；应考虑拆页",
-                    rel,
-                    "warning",
-                )
-            )
-    return findings, warnings
+    return findings

@@ -96,7 +96,7 @@ Architecture Decision Record；记录重要且已决定的长期架构取舍及�
 ## 加载质量
 
 fact audit 对文档结构的语义审阅：入口不过载、路由页只路由、唯一归属、主题拆页、
-读者分离、ADR 不复述当前结构。行数软硬限制由 CLI 检查（`size.soft` / `size.hard`）。
+读者分离、ADR 不复述当前结构。行数硬限制由 CLI 检查（`size.hard`）。
 
 ## Proposal 状态
 
