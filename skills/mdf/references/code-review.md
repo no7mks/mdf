@@ -105,7 +105,7 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 分层仓库的 bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
 （`{"suites":["<已有 suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从 manifest
 已有交付 suite 中选定 ≥1 个写入并提交；没有合适的已有 suite 时停止，询问用户
-是否新建，确认后先把该名称写入 manifest 验证项再关联。不得只关联 quick/full，
+是否新建，确认后先在 manifest `verification.suites` 新增该 key 再关联。不得只关联 quick/full，
 不得未经确认新建。未分层不要求该文件。
 
 ### 三份独立审查

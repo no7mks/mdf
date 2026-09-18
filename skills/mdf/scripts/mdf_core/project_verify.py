@@ -19,11 +19,11 @@ def associated_suites(repo, slug):
     return parse_suite_names(data["suites"])
 
 
-def inputs(repo, items, required, suites):
+def inputs(repo, verification, required, suites):
     files = {name: value for name, value in inventory(repo).items()
              if not name.startswith(("docs/", "changes/"))
              and not ("/" not in name and name.endswith(".md")) and name != ".mdf/manifest.yaml"}
-    return digest([files, items, required, suites])
+    return digest([files, verification.items, verification.suites, required, suites])
 
 
 def command_project_verify(args):
@@ -38,14 +38,13 @@ def command_project_verify(args):
     if manifest.get("state") != "ready":
         raise MDFError("验证需要 ready", code="manifest_not_ready")
     verification = manifest_verification(manifest)
-    items = verification.items
     slug = unreleased_slug(details)
     suites = associated_suites(repo, slug) if kind == "bugfix" else None
     if kind == "bugfix" and verification.layered and not suites:
         raise MDFError("分层后 bugfix 必须关联已有交付 suite", code="missing_delivery_suite")
     required = verification.required(kind, suites)
     targets = verification.select(required)
-    before = inputs(repo, items, required, suites)
+    before = inputs(repo, verification, required, suites)
     path = safe(
         repo,
         repo / "changes/unreleased" / slug / "code-review.verification.json",
@@ -65,9 +64,8 @@ def command_project_verify(args):
                 results.append({**item, **detail, "passed": True})
             except MDFError as exc:
                 results.append({**item, "passed": False, "error": exc.code, "details": exc.details})
-        after_items = manifest_verification(load_manifest(repo)).items
         after_suites = associated_suites(repo, slug) if kind == "bugfix" else None
-        after = inputs(repo, after_items, required, after_suites)
+        after = inputs(repo, manifest_verification(load_manifest(repo)), required, after_suites)
         passed = {item["id"] for item in results if item["passed"]}
         expected = {item["id"] for item in targets}
         result = {

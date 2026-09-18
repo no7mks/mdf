@@ -87,6 +87,12 @@ def test_feature_quick_only_evidence_does_not_satisfy_delivery_suite(
         json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     )
     payload(record(python_exe, repo, "converge"))
+    # 只改 suites 映射（不改 commands）也必须使全绿证据过期。
+    manifest = repo / ".mdf/manifest.yaml"
+    manifest.write_text(manifest.read_text().replace(
+        "    billing: [check]", "    billing: [check]\n    other: [check]", 1
+    ))
+    assert "stale_verification" in record(python_exe, repo, "code-review").stderr
 
 
 def test_unlayered_verify_records_quick_and_full(python_exe, tmp_path):

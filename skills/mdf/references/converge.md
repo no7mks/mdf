@@ -14,9 +14,10 @@
 │ 2 Verify                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 可修复实现问题 ──────────→ 2 Verify
-                 ├──── 需测试修改批准 ──────────→ [等待确认后返回本文件步骤 2]
-                 ├──── 外部阻塞或三轮无进展 ────→ [记录阻塞并停止]
+                 ├──── 可修复实现问题 ────────────→ 2 Verify
+                 ├──── 需测试修改批准 ────────────→ [等待确认后返回本文件步骤 2]
+                 ├──── missing_delivery_suite ────→ [停止，回 write-tests]
+                 ├──── 外部阻塞或三轮无进展 ──────→ [记录阻塞并停止]
                  │
                  ▼ 所需 suite 通过
 ┌──────────────────────────────────┐
@@ -36,7 +37,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 汇合 | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 2 | 停止并报告 |
-| 2 | 验证 | 约束 | 验证、修复实现并维护阻塞记录 | 所需 suite、阻塞记录 | 3 | 可修复则 2；需批准等待；阻塞记录后停止 |
+| 2 | 验证 | 约束 | 验证、修复实现并维护阻塞记录 | 所需 suite、阻塞记录 | 3 | 可修复 2；待批准；缺 suite 或阻塞停止 |
 | 3 | 收敛 | 脚本 | 所需 suite 通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
@@ -58,6 +59,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 运行 `delivery verify`；脚本执行全局 quick 与本交付 suite（design policy 的
 `suites`）。修复循环可用 `--item <id>` 定位失败项，但最终必须所需 suite 通过；
 只跑 quick 或未声明/未跑本交付 suite 不得记录全绿。
+返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入 manifest
+`verification.suites`：停止并报告，回 write-tests（qa 路）补齐后重新 integrate；
+不在 converge 现场改 manifest。
 可以自动修复实现。测试、fixture、快照、预期值、发现/跳过规则和验证配置增删改必须用户确认。
 取得确认后原地审查与重验，记录 `--test-approval <用户确认与修改理由>`；不回退 intent。
 不设总轮数上限。需要目标/设计决定、凭据或外部条件，或同一失败连续三轮无进展时，

@@ -34,7 +34,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 入口 | 约束 | 强制 qa worktree 并检查前置 gate | 角色 worktree、共同设计与底座 | 2 | 停止并报告 |
-| 2 | 用例 | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖 | 3 | 停止并报告 |
+| 2 | 用例 | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、suite key 已建 | 3 | 停止并报告 |
 | 3 | 记录 | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
@@ -60,9 +60,11 @@ deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，�
 
 编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
 不从源码重新推断契约。
-按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite；更新
-manifest `verification.suites` 成员属于本阶段授权，不得降低项目门槛或把慢项
-放进 quick 来逃避分层。implement 不得擅自改测试。
+按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite。design
+只声明 suite 名，manifest 此时可能尚无该 key：在 `verification.suites` 新增
+design 所列 key 并填入验证项 id 属于本阶段授权；记录 gate 前核对每个声明的
+key 都已存在且非空。不得降低项目门槛或把慢项放进 quick 来逃避分层。
+implement 不得擅自改测试。
 测试须能编译或加载执行；环境或导入故障不是有效完成证据。因尚未实现而产生的
 断言失败可以接受。本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。
 全绿由 converge 负责，且相对所需 suite。逐项审查 objectives 覆盖与断言。

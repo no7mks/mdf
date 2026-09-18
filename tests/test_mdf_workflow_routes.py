@@ -281,7 +281,16 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "验收到 quick 与本交付 suite 的映射" in design_text
     assert "suites" in design_text
     assert "按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite" in tests
-    assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in workflow("converge")
+    converge = workflow("converge")
+    assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in converge
+    assert "缺 suite 或阻塞停止" in converge
+    assert "missing_delivery_suite ────→ [停止，回 write-tests]" in converge
+    assert "返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入" in converge
+    assert "suite key 已建" in tests
+    assert "记录 gate 前核对每个声明的\nkey 都已存在且非空" in tests
+    assert "分层后 `delivery verify` / `project-verify` 证据必须含 `suites`，缺失视为过期" in contract
+    assert "不得带 `suites`" in design_text
+    assert "COLLECTIONS" not in (skill_dir("mdf") / "assets/templates/design.md").read_text()
     review = workflow("code-review")
     assert "必须尝试补一条 quick 复现用例" in review
     assert "quick 复现（已补 <用例位置>" in review

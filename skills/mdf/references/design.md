@@ -57,9 +57,11 @@ objectives 负责。分层后必须声明本交付 suite 名称，供 write-test
 
 ### 设计 policy 与基线
 
-准备 policy JSON：未分层为 `{"protected_paths": ["tests/", "pyproject.toml"]}`；
-分层后必须同时给出 `suites`，例如
+准备 policy JSON：未分层为 `{"protected_paths": ["tests/", "pyproject.toml"]}`，
+不得带 `suites`；分层后必须同时给出 `suites`，例如
 `{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}`。
+字段不符返回 `invalid_policy`，suite 名无效或占用 quick/full 返回
+`invalid_delivery_suite`，均停止并修正 policy 后重试。
 `protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置
 路径，包括交付 suite；manifest 验证项由 Core 保护。`suites` 为本交付 suite
 名，不得使用 quick/full。

@@ -7,7 +7,7 @@ from pathlib import Path
 from .errors import MDFError
 from .gitutil import current_branch, run
 from .paths import load_manifest, path_stays_in_repo
-from .verification import manifest_items, manifest_verification, suites_cover
+from .verification import manifest_verification, suites_cover
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
 
@@ -99,7 +99,9 @@ def fingerprints(repo, root, data, config=None):
     config = config or read_json(safe(repo, root / "gates/design.json")).get("policy", {})
     files = inventory(repo)
     protected = config.get("protected_paths", [])
-    commands = manifest_items(load_manifest(repo))
+    verification = manifest_verification(load_manifest(repo))
+    # suites 映射决定门禁跑什么，与 commands 一样属于验证配置。
+    commands = [verification.items, verification.suites]
     facts = {name: value for name, value in files.items()
              if name == "GLOSSARY.md" or (name.endswith(".md")
                  and name.startswith(("docs/product/", "docs/system/")))}

@@ -276,6 +276,11 @@ def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
     )
     assert evidence["suites"] == ["quick", "billing"]
     payload(mdf(python_exe, "project-verify", "check", *args))
+    manifest = work / ".mdf/manifest.yaml"
+    original = manifest.read_text()
+    manifest.write_text(original.replace("    billing: [slow]", "    billing: [check]", 1))
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
+    manifest.write_text(original)
     evidence["suites"] = ["quick"]
     (work / "changes/unreleased/bug-cd34/code-review.verification.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
