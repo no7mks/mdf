@@ -29,6 +29,10 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "bootstrap",
         "migrate",
         "intake",
+        "tree [--depth N]",
+        "prp tree",
+        "next?",
+        "next？",
         "next [--depth N]",
         "deliver [<target>] [--auto-pilot]",
         "codewiki generate",
@@ -58,6 +62,8 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "裸 `$mdf`" in entry
     assert "references/intake.md" in entry
     assert "references/next.md" in entry
+    assert "references/tree.md" in entry
+    assert (skill / "references" / "tree.md").is_file()
     assert "references/bug-create.md" in entry
     assert "references/prp-create.md" in entry
     assert (skill / "references" / "intake.md").is_file()
@@ -81,20 +87,32 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "可验证的演进记录" in entry
 
 
-def test_next_blueprint_reports_ready_dependency_graph() -> None:
-    text = intent("next")
-    assert "主报告仅 ready" in text
+def test_tree_renders_mixed_dependency_graph() -> None:
+    text = intent("tree")
+    assert "混态" in text
+    assert "● ready" in text
+    assert "○ draft" in text
+    assert "◇ 未满足的 milestone 依赖" in text
     assert "implemented/released" in text
     assert "blocked_by" in text
     assert "depends_on" in text
     assert "按 milestone 分组" in text
+    assert "不挂到其成员下" in text
     assert "prp review" in text
     assert "不创建或拆分" in text
     assert "默认 3" in text
     assert "正整数" in text
+    assert "$mdf next?" in text
+    assert "$mdf prp tree" in text
+
+
+def test_next_resumes_or_delegates_tree() -> None:
+    text = intent("next")
     assert "feature 交付步骤" in text
     assert "qa/feature/" in text
-    assert "问号蓝图" in text
+    assert "问号蓝图" not in text
+    assert "references/tree.md" in text
+    assert "委托 tree" in text
 
 
 def test_init_and_doc_intents_load_internal_contracts() -> None:

@@ -43,7 +43,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `release-closeout` | 版本收口 |
 | `start` | 创建分支 |
 | `list` | 对象清单 |
-| `next` | ready 依赖视图与 draft 列表 |
+| `tree` | draft/ready 混态依赖视图 |
 | `prp-split` | 未开工 PRP 拆分 |
 | `delivery` | 阶段 gate 与验证 |
 | `worktree-check` | 分派路径、角色与交接核验 |
@@ -332,8 +332,9 @@ deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 finish
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init`、`bootstrap`、`migrate` intent 使用 `doctor`、`init` 与 `validate`；
-`next` intent 在 feature 交付分支上续办该 feature；否则 `next?` 用只读 `next`
-CLI 展示 PRP 蓝图；再否则优先续办在途流程，无在途时同样展示蓝图；
+`tree` intent 用只读 `tree` CLI 展示 draft/ready 混态依赖视图；
+`next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，
+无在途时内部委托 tree；`$mdf next?` 直接进入 tree，不走 next；
 `intake`、`prp create`、`prp review` 与 `prp split` 使用 `doctor`、`planning`、
 `list` 与 `make-id`；`bug create` 使用 `doctor`、`list` 与 `make-id`；
 `jot` 使用 `make-jot-id`，`jot promote` 另用 `list` 查重；
@@ -365,9 +366,11 @@ design record 需要 `--policy-file <JSON>`，格式为 `{"protected_paths":["te
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
 阶段值为 design、write-tests、implement、converge、code-review、fact-update。
 
-`next` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
-`next --repo <仓库> [--depth 3]` 输出 trees、blocked、needs_review、hidden；只读，非法依赖失败。
-`needs_review` 为 `{groups, ungrouped}`：draft 带 `depends_on` 与 `blocked_by`；
+`tree` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
+`tree --repo <仓库> [--depth 3]` 输出 trees、index、hidden；只读，非法依赖失败。
+`trees` 为 draft 与 ready 的混态森林：子节点只挂在未满足的 active PRP 下，
+milestone 依赖留在 `blocked_by`，不展开为成员边。`index` 为
+`{groups, ungrouped}`：每项含 `status`、`depends_on` 与 `blocked_by`；
 有 milestone 的按值分组，无归属放入 `ungrouped`。
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为
 `planning`，在完整预检后一次写入拆分结果。

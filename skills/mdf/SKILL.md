@@ -38,6 +38,9 @@ disable-model-invocation: true
                  ├──── init migrate / migrate ───────────────→ references/migrate.md
                  ├──── init ─────────────────────────────────→ references/init.md
                  ├──── intake ───────────────────────────────→ references/intake.md
+                 ├──── tree [--depth N] ─────────────────────→ references/tree.md
+                 ├──── prp tree ─────────────────────────────→ references/tree.md
+                 ├──── next? / next？ ───────────────────────→ references/tree.md
                  ├──── next [--depth N] ─────────────────────→ references/next.md
                  ├──── deliver [<target>] [--auto-pilot] ────→ references/deliver.md
                  ├──── start ────────────────────────────────→ references/start.md
@@ -68,7 +71,7 @@ disable-model-invocation: true
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 调用 | 约束 | 只接受显式 intent；问号 next 仍是 next | 有效显式调用 | 2 | 帮助并结束 |
+| 1 | 调用 | 约束 | 只接受显式 intent；问号 next 走 tree | 有效显式调用 | 2 | 帮助并结束 |
 | 2 | 工具 | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 2 | 3 | 停止 |
 | 3 | 分流 | 约束 | 核对目标根并执行命中流程 | 目标根或豁免、流程结果 | 返回调用方 | 澄清后回到 3；其他停止 |
 
@@ -77,16 +80,18 @@ disable-model-invocation: true
 ### 调用与工具
 
 只接受选择树所列的显式调用。裸调用或未知调用按 help 执行。`next [--depth N]`
-的深度可省略；`$mdf next?` 与 `$mdf next？` 不是独立 intent，步骤 1 视为
-`next` 并执行 `references/next.md`，不得当未知调用送 help。
+与 `tree [--depth N]` 的深度可省略；`$mdf tree`、`$mdf prp tree`、
+`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，不得当未知调用送
+help。`$mdf next` 无问号时执行 `references/next.md`。
 `$mdf deliver [<target>] [--auto-pilot]` 仍是 deliver，不是独立 intent。
 `--auto-pilot` 可在 target 前或后；target 由 deliver 解析。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与
-`$mdf migrate` 执行同一流程。next 可委托识别出的在途流程；
-deliver 可内部委托从 start 起的剩余交付阶段直到 finish；其他入口仍按显式调用路由。
+`$mdf migrate` 执行同一流程。next 可委托识别出的在途流程，无在途时委托
+tree；deliver 可内部委托从 start 起的剩余交付阶段直到 finish；其他入口仍按
+显式调用路由。
 
 **帮助**：裸调用、未知调用读取并执行 `references/help.md`。`$mdf help` 为显式调用，
 经 CLI 检查后同样执行该流程。不读取其他 intent、不检查仓库、不写入。

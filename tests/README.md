@@ -24,6 +24,6 @@ python -m pytest
 ## 交付流程与规划
 
 - `test_mdf_delivery.py`：设计基线、并行交接、收敛与审查权限、内容指纹失效、原地补齐 Change 及 Gitflow 冲突。
-- `test_mdf_planning.py`：具名 verification、ready DAG、draft 阻塞、拆分预检与失败恢复。
+- `test_mdf_planning.py`：具名 verification、混态依赖树、milestone 依赖、拆分预检与失败恢复。
 - `test_mdf_planning_workspace.py`：常驻 planning 工作区与合入 develop。
 - 发布测试同时覆盖 implemented → released、过程材料留存与 Proposal 链接重写。

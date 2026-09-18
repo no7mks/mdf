@@ -66,7 +66,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "delivery-contract.md", "common.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 30
+    assert len(workflows) == 31
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -356,16 +356,18 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
 def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
-    assert table[0][5] == "feature/在途 2；问号/无在途 3"
+    assert table[0][5] == "feature/在途 2；无在途 3"
     assert table[0][6] == "多候选则澄清；证据不足则报告阻塞"
     assert table[1][5] == "交接并结束"
     assert table[1][6] == "说明阻塞与操作后结束"
+    assert table[2][1] == "委托"
+    assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
     for name in ("init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki", "clarify"):
         assert name in text
     assert "不得在识别前统一要求 manifest ready 或 clean" in text
     assert "draft PRP、open Bug 或待办事项本身不代表流程已启动" in text
-    assert "不把无法判定当作无在途而退回蓝图" in text
+    assert "也不把无法判定当作无在途而委托 tree" in text
     assert "列出候选并询问用户选择" in text
     assert "不能仅凭文件存在或历史 passed 判断阶段完成" in text
     assert "不重复执行其工作" in text
@@ -373,12 +375,11 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert "next 不代替方案确认、初始化启用确认或原流程要求的 Git 操作授权" in text
     assert "一次 next 只续办一个所选 intent" in text
     assert "用户仅要求查看时保持只读" in text
-    assert "仅确认没有在途流程，或非 feature 上的 `next?` 时进入本分支" in text
     assert "feature 交付步骤" in text
-    assert "问号蓝图" in text
+    assert "问号蓝图" not in text
     assert "$mdf next?" in text
-    assert "不因其他在途流程改走续办" in text
-    assert "feature 交付分支即使带问号也不进入 3" in text
+    assert "由选择树路由到 tree" in text
+    assert "只委托 tree" in text
 
 
 def test_next_dispatch_allows_non_git_and_delegated_continuation():

@@ -92,4 +92,4 @@ def test_list_skips_broken_files_and_does_not_require_ready(python_exe, tmp_path
     assert [item["path"] for item in data["skipped"]] == [
         "docs/bugs/bug-EF56-broken.md", "docs/bugs/notes.md", "docs/proposals/prp-003-noid.md"]
     assert all(item["reason"] for item in data["skipped"])
-    assert mdf(python_exe, "next", "--repo", str(repo)).returncode == 1
+    assert mdf(python_exe, "tree", "--repo", str(repo)).returncode == 1

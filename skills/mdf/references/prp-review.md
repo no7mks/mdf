@@ -104,7 +104,7 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 与 `in_progress` 为准：`in_progress` 已覆盖当前 checkout 的 `changes/` 下全部
 `delivery.json`，以及本地 `feature/*` 和 `origin/feature/*` 引用中的同类记录，
 任一记录的 `proposal` 命中目标 ID 即为 `true`。
-不能仅凭当前 checkout 没有开发材料或 `next` 未显示进行中，就判定未开工。
+不能仅凭当前 checkout 没有开发材料或 `tree` 未显示进行中，就判定未开工。
 已开工时报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP。
 `list` 因记录损坏失败或目标不在输出中时同样在写入前停止，报告缺失证据。
 仅 active draft/ready 且已确认未开工时继续；将既有 `ready` 转为 `draft`。

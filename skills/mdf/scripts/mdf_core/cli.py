@@ -115,15 +115,15 @@ def build_parser() -> argparse.ArgumentParser:
     start.set_defaults(func=command_start)
 
     from .list_objects import command_list
-    from .next_view import command_next
+    from .tree_view import command_tree
     from .prp_split import command_split
     from .delivery import command_delivery
     from .delivery_state import STAGES
 
-    next_parser = subparsers.add_parser("next")
-    next_parser.add_argument("--repo", required=True)
-    next_parser.add_argument("--depth", type=int, default=3)
-    next_parser.set_defaults(func=command_next)
+    tree_parser = subparsers.add_parser("tree")
+    tree_parser.add_argument("--repo", required=True)
+    tree_parser.add_argument("--depth", type=int, default=3)
+    tree_parser.set_defaults(func=command_tree)
 
     listing = subparsers.add_parser("list")
     listing.add_argument("--repo", required=True)

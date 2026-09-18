@@ -45,7 +45,7 @@
 - 裸 `$mdf`、未知调用或 `$mdf help`：展示「目录」
 - `$mdf help <intent>`：展示「主题」中对应条目
 - 主题名按空格或连字符等价，如 `fact update` 与 `fact-update`；
-  `next?`、`next？` 与 `next` 等价
+  `tree`、`prp tree`、`next?` 与 `next？` 等价
 
 未知主题时先输出一行 `未知 intent：<原文>`，再展示完整「目录」。
 不得猜测未列出的 intent。
@@ -85,11 +85,13 @@
 - `$mdf prp create`：按已确认内容手动创建 draft Proposal
 - `$mdf prp review`：修订单个 active Proposal，验证后转为 ready
 - `$mdf prp split`：拆分未开工 PRP，并完整改写依赖
+- `$mdf tree [--depth N]`：画出 draft/ready PRP 依赖树；也可
+  `$mdf prp tree` 或 `$mdf next?`
 - `$mdf clarify <议题>`：逐题压力测试计划、决策或想法
 
 #### 交付
 
-- `$mdf next [--depth N]`：续办在途；feature 上走交付；`next?` 问 PRP 蓝图
+- `$mdf next [--depth N]`：续办在途；feature 上走交付；无在途时委托 tree
 - `$mdf deliver [<target>] [--auto-pilot]`：从 start 起持续推进到 finish；可并行阶段强制 subagent 分别执行
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
@@ -123,6 +125,9 @@ $mdf migrate
 $mdf next
 $mdf next?
 $mdf next --depth 2
+$mdf tree
+$mdf prp tree
+$mdf tree --depth 2
 $mdf deliver
 $mdf deliver prp-001
 $mdf deliver bug-CD34 --auto-pilot
@@ -153,7 +158,8 @@ $mdf clarify 要不要把缓存放到 Redis
 ### 主题
 
 主题键：`bootstrap`、`init`、`init migrate`、`migrate`、`intake`、`jot`、`jot promote`、
-`bug create`、`prp create`、`prp review`、`prp split`、`clarify`、`next`、`deliver`、`start`、
+`bug create`、`prp create`、`prp review`、`prp split`、`tree`、`prp tree`、`clarify`、
+`next`、`deliver`、`start`、
 `design`、`write-tests`、`implement`、`converge`、`code-review`、`fact update`、
 `finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
 `upgrade`、`help`。
@@ -218,11 +224,16 @@ $mdf clarify 要不要把缓存放到 Redis
 用途：逐题压力测试计划、决策或想法。
 说明：议题不能为空；不要求 Git 仓库。
 
+`$mdf tree [--depth N]`
+用法：`$mdf tree`、`$mdf prp tree`、`$mdf next?` 或 `$mdf tree --depth N`
+用途：画出 draft/ready PRP 混态依赖树与 milestone 索引。
+说明：深度省略时默认 3；只读。问号版 next 进入本主题，不是 next。
+
 `$mdf next [--depth N]`
-用法：`$mdf next`、`$mdf next?` 或 `$mdf next --depth N`
-用途：续办在途流程；无在途时展示 ready PRP 蓝图。
-说明：深度省略时默认 3；一次只续办一个所选 intent。
-feature 交付分支上始终续办该 feature；非 feature 上的 `next?` 询问 PRP 蓝图。
+用法：`$mdf next` 或 `$mdf next --depth N`
+用途：续办在途流程；无在途时委托 tree。
+说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
+feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 
 `$mdf deliver [<target>] [--auto-pilot]`
 用法：`$mdf deliver`、`$mdf deliver <target>` 或 `$mdf deliver <target> --auto-pilot`
