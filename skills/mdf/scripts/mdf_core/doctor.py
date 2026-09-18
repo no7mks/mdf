@@ -5,6 +5,7 @@ from .paths import managed_symlinks
 from .validate_changes import validate_changes
 from .validate_evidence import validate_agents_block, validate_evidence
 from .validate_jots import validate_jots
+from .validate_layout import validate_layout
 from .validate_links import validate_links
 from .validate_manifest import validate_manifest
 from .validate_objects import iter_object_files, validate_object
@@ -26,6 +27,7 @@ def collect_findings(
             path.relative_to(repo).as_posix(),
         )
     manifest = validate_manifest(repo, findings)
+    validate_layout(repo, findings)
     validate_agents_block(repo, findings)
     validate_jots(repo, findings)
     for path in iter_object_files(repo, "proposal"):

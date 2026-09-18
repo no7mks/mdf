@@ -1,12 +1,14 @@
 ---
-title: "运行与运维"
+title: "{{TOPIC_TITLE}}"
 doc_type: system-operations
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# 运行与运维
+# {{TOPIC_TITLE}}
+
+本页是该主题的唯一归属页；其他页面只链接到这里，不复述。
 
 ## 构建与配置
 

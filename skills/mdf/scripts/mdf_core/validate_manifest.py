@@ -105,7 +105,7 @@ def validate_manifest(
         add_finding(
             findings,
             "manifest.schema",
-            f"schema_version must be {SCHEMA_VERSION}",
+            f"schema_version must be {SCHEMA_VERSION}；用 $mdf migrate 收敛到当前契约",
             ".mdf/manifest.yaml",
         )
     implementation_roots(repo, manifest, findings)

@@ -1,7 +1,7 @@
 # 仅为结构定义脚手架；以 `mdf.py init` 的渲染结果为准。
 # 每项基线在已文档化时只保留 `path`，在 not_applicable 时只保留 `reason`；写入前
 # 删除所有 {{...}} 标记。
-schema_version: 2
+schema_version: 3
 state: initializing
 versioning:
   strategy: semver
@@ -18,7 +18,7 @@ baselines:
     status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
     path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
     reason: "{{REASON_IF_NOT_APPLICABLE}}"
-  product_reference:
+  user_guide:
     status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
     path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
     reason: "{{REASON_IF_NOT_APPLICABLE}}"

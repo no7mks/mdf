@@ -160,8 +160,9 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 
 **材料**
 
-先委托 `references/fact-update.md`，传入步骤 2 的交付范围，
-同步受影响当前事实并内部完成 fact audit，再执行必要验证。release 的事实审阅使用全量范围。
+先委托 `references/fact-update.md`，以 `--scope paths` 传入步骤 2 的交付范围
+（release 为 `--scope full`），同步受影响当前事实、修范围内结构 finding 并内部完成
+fact audit，再执行必要验证；finish 不得改用 `full` 做全库结构整理。
 仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 code-review 有效；使用 start_commit
 到 HEAD 的固定范围，并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
 按分支准备材料：

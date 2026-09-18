@@ -59,7 +59,7 @@
 | 2 | 预览 | 脚本 | dry-run 拉取并列出目标、history 与 AGENTS 区块 | 旧/新基线、目标、history、区块计划 | 3 | 停止 |
 | 3 | 确认 | 约束 | 展示计划、提交摘要并取得明确替换确认 | 用户确认 | 4 | 拒绝则结束；未决留在 3 |
 | 4 | 替换 | 脚本 | 绑定确认 commit 后替换并提交 | 基线、目录、区块、提交 | 5 | 源变化回 2；其他停止 |
-| 5 | 报告 | 约束 | 报告结果、重读已安装 Skill 并按需提示文档迁移 | 结果摘要、新 Skill、提交 | 结束 | 停止 |
+| 5 | 报告 | 约束 | 报告结果、重读已安装 Skill，按 doctor 结果建议 migrate | 结果摘要、新 Skill、提交 | 结束 | 停止 |
 
 ## 术语与数据结构
 
@@ -71,9 +71,9 @@
 
 解析 `REPO_ROOT`。运行
 `python3 "$MDF_ROOT/scripts/mdf.py" info`，协议、工具与 schema 版本均须为
-数字 `2`。不要求 manifest、ready 或 clean worktree。
+数字 `3`。不要求 manifest、ready 或 clean worktree。
 
-验收：Git 根、三个版本为 2。
+验收：Git 根、三个版本为 3。
 
 通过条件：进入预览。异常与交接：停止，不得模拟 CLI。
 
@@ -148,9 +148,11 @@ CLI 用上游 `skills/mdf` 替换每个已安装
 **报告**
 
 报告旧基线、新基线、替换路径、`AGENTS.md` 区块结果和本地提交。不 push。
-`history` 摘要显示文档契约（模板、根文档职责或事实页契约）有变化时，
-提示用户运行 `$mdf fact audit`，按加载质量清单迁移既有文档；upgrade 本身
-不改 `docs/`。
+替换后运行 `doctor --repo "$REPO_ROOT"`：出现 `manifest.schema` 或 `layout.migrate`
+finding，或 `history` 摘要显示文档契约（模板、布局、根文档职责或事实页契约）有
+变化时，建议用户运行 `$mdf migrate` 收敛布局与 manifest；已在当前布局上的仓库
+可改用 `$mdf fact update --scope full` 整理结构。upgrade 本身不改 `.mdf/` 与
+`docs/`。
 从本次 `MDF_ROOT` 完整重读 `SKILL.md`；若更新了托管区块，同时重读 `AGENTS.md`。
 丢弃本次已读入的旧副本。同会话内后续 `$mdf` 调用按新 Skill 执行，
 不得要求新会话，也不得继续按旧流程操作。本 intent 仍在报告后结束，

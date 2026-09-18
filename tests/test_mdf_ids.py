@@ -223,8 +223,8 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
 
 
 def write_adr(repo: Path, name: str, identifier: str) -> None:
-    path = repo / "docs" / "adr" / name
-    path.parent.mkdir(exist_ok=True)
+    path = repo / "docs" / "context" / "adr" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         f"---\nid: {identifier}\ntype: adr\nstatus: accepted\n---\n\n# ADR\n",
         encoding="utf-8",

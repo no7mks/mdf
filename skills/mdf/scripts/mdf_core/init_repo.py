@@ -123,29 +123,23 @@ def template_text(name: str, fallback: str) -> str:
     return path.read_text(encoding="utf-8") if path.is_file() else fallback
 
 
+# not_applicable 基线对应的任务地图行；模板中每条链接独占一行。
+_INDEX_LINES_BY_BASELINE = {
+    "user_guide": (r"user-guide/README\.md",),
+    "system_boundary": (r"system/overview\.md",),
+    "deviations": (r"system/deviations\.md",),
+}
+
+
 def render_docs_index(baselines: dict[str, dict[str, str]]) -> str:
     text = template_text("docs-readme.md", "# 文档\n")
-    if baselines["system_boundary"]["status"] == "not_applicable":
-        text = re.sub(
-            r"^\| 了解系统能做什么、边界在哪 "
-            r"\| \[系统边界]\(system/overview\.md\) \|\n?",
-            "",
-            text,
-            flags=re.MULTILINE,
-        )
-        text = re.sub(
-            r"^  - \[系统边界]\(system/overview\.md\)\n?",
-            "",
-            text,
-            flags=re.MULTILINE,
-        )
-    if baselines["deviations"]["status"] == "not_applicable":
-        text = re.sub(
-            r"^  - \[已知偏差]\(system/deviations\.md\)\n?",
-            "",
-            text,
-            flags=re.MULTILINE,
-        )
+    for name, patterns in _INDEX_LINES_BY_BASELINE.items():
+        if baselines[name]["status"] != "not_applicable":
+            continue
+        for pattern in patterns:
+            text = re.sub(
+                rf"^.*\]\({pattern}\).*\n?", "", text, flags=re.MULTILINE
+            )
     return text
 
 
@@ -233,15 +227,12 @@ def init_files(
         repo / "docs/bugs",
         repo / "changes/unreleased",
         repo / "docs/context/research",
-        repo / "docs" / "product" / "tutorials",
-        repo / "docs" / "product" / "how-to",
-        repo / "docs" / "product" / "reference",
-        repo / "docs" / "product" / "explanation",
+        repo / "docs/context/adr",
+        repo / "docs" / "user-guide",
         repo / "docs" / "system" / "architecture",
         repo / "docs" / "system" / "interfaces",
         repo / "docs" / "system" / "data",
         repo / "docs" / "system" / "operations",
-        repo / "docs" / "adr",
     ):
         keep = path / ".gitkeep"
         if not keep.exists():

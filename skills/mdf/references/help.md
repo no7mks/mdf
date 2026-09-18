@@ -100,13 +100,14 @@
 - `$mdf implement`：按已确认设计实现
 - `$mdf converge`：集成并持续修复到所需 suite 通过
 - `$mdf code-review`：审查并修复实现、测试和 code smell
-- `$mdf fact update`：同步当前事实；finish 前段自动调用
+- `$mdf fact update [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
+  finish 前段自动调用
 - `$mdf finish`：按 Gitflow 分支完成审计与收口
 
 #### 维护
 
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
-- `$mdf fact audit`：审阅文档与实现的覆盖、证据和语义
+- `$mdf fact audit [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
@@ -145,6 +146,7 @@ $mdf implement
 $mdf converge
 $mdf code-review
 $mdf fact update
+$mdf fact update --scope full
 $mdf finish
 $mdf fact audit
 $mdf archive
@@ -288,9 +290,11 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
 
 `$mdf fact update`
-用法：`$mdf fact update`
-用途：同步当前事实并委托事实审阅。
-说明：finish 前段自动调用；独立调用须 manifest ready。
+用法：`$mdf fact update [--scope branch|full|paths]`
+用途：按实现对齐当前事实，再只修范围内的结构 finding，并委托事实审阅。
+说明：`branch` 为独立调用默认，取起点以来实现改动该碰的事实页；`full` 整理
+知识面全树（用户指南、系统事实、入口根文档、ADR 复述、体积）；finish 只用
+branch/paths。独立调用须 manifest ready；布局或 schema 不符时提示 migrate。
 
 `$mdf finish`
 用法：`$mdf finish`
@@ -303,9 +307,10 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 说明：仅用户要求预览时 dry-run；未要求则实际归档。
 
 `$mdf fact audit`
-用法：`$mdf fact audit`
-用途：审阅当前文档与实现的覆盖、证据和语义。
-说明：只读；不执行 verification.commands。
+用法：`$mdf fact audit [--scope branch|full|paths]`
+用途：只读审阅文档与实现的覆盖、证据、语义与加载质量（入口过载、唯一归属、
+路由页、体积、ADR 复述）。
+说明：只读；不执行 verification.commands。`size.hard` 阻断，`size.soft` 只提示。
 
 `$mdf codewiki generate`
 用法：`$mdf codewiki generate`
@@ -322,7 +327,8 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
 说明：先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换；更新已有
 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`。替换后在当前分支提交本次路径，
-不 push。随后重读新 Skill，同会话后续调用按新副本执行。
+不 push。随后重读新 Skill，同会话后续调用按新副本执行；doctor 报布局或 schema
+不符时建议 `$mdf migrate`。
 
 `$mdf help`
 用法：`$mdf help` 或 `$mdf help <intent>`

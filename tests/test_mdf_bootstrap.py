@@ -39,7 +39,7 @@ def test_new_project_can_reach_ready_without_fact_pages_or_remote(
         '{"id":"check","kind":"custom","command":"git diff --check"}',
     ))
     assert data["plan"]["state"] == "initializing"
-    assert not list((repo / "docs" / "product").rglob("*.md"))
+    assert not list((repo / "docs" / "user-guide").rglob("*.md"))
     assert not list((repo / "docs" / "system").rglob("*.md"))
     if with_template:
         assert (repo / root / "main.py").read_text() == 'print("Hello, world!")\n'

@@ -35,13 +35,14 @@
 │       ├── CHANGE.md
 │       └── <slug>/                    # 材料与 CHANGE.md 同级
 └── docs/
-    ├── README.md
+    ├── README.md             # 任务地图
     ├── JOTS.md
-    ├── product/
-    ├── system/
-    ├── adr/
+    ├── user-guide/           # 用户事实：README.md 路由 + 主题叶
+    ├── system/               # 维护者事实：overview.md + 切面目录/主题叶 + deviations.md
+    ├── context/
+    │   ├── adr/<slug>.md     # 已确认取舍的理由；不是当前事实
+    │   └── research/
     ├── repowiki/             # 可选；CodeWiki 受管生成物
-    ├── context/research/
     ├── proposals/
     │   ├── prp-<序号>-<slug>.md
     │   └── archive/<major.minor>/
@@ -50,12 +51,53 @@
         └── archive/<major.minor>/
 ```
 
-`docs/README.md` 是文档入口与任务地图：按任务指向对应文档，当前事实排在决策与
+`docs/README.md` 是文档入口与任务地图：按任务指向**一份**页面，当前事实排在决策与
 工作记录之前；只链接已有内容的页面，空目录不链接。初始化预建工作目录，以
 `.gitkeep` 保留空目录。占位仅建立目录结构，不表示已有工作记录或业务事实。
 `docs/testing.md` 是可选的测试分类与覆盖手册；存在时在任务地图按「写测试、
 分 kind」任务链接，不承载运行时行为事实。已有项目文档保持原位；同名目录须核对内容和归属，
-不得覆盖或自动接管。事实审计仍限定在 `docs/product/` 与 `docs/system/`。
+不得覆盖或自动接管。`docs/product/` 与 `docs/adr/` 不属于当前布局，存在即为
+`layout.migrate` finding，由 `$mdf migrate` 收敛。
+
+## 文档分类与按需加载
+
+`docs/` 按读者与用途分三类；audit 扫描全部 `docs/**` 与根 `README.md`、
+`PROJECT.md`、`AGENTS.md`、`GLOSSARY.md`，但只有当前事实按实现对齐。
+
+| 类 | 路径 | 默认加载 |
+| --- | --- | --- |
+| 任务地图 | `docs/README.md` | 常开；只做路由 |
+| 维护者事实 | `docs/system/`：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引 | 地图 → 一份主题叶 |
+| 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；不强制分类目录 | 维护者默认不开；改对外行为时必开 |
+| 决策 | `docs/context/adr/` | 只经 `adr-<slug>` 或事实页链接 |
+| 工作对象 | `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` | 只经 ID 或直达链接 |
+| 调研与 Wiki | `docs/context/research/`、`docs/repowiki/` | research 按需；Wiki 搜符号 |
+
+切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`。
+
+维护者/Agent 的默认路径是 `AGENTS.md` → `docs/README.md` → 一份 `docs/system/`
+主题叶；做验证时再开 `PROJECT.md`。用户的路径是根 `README.md` → `user-guide/README.md`
+→ 一份主题叶。grep 与 CodeWiki 只用于定位路径，定位后只读命中的那一份。
+
+**唯一归属**：一条可观察契约只住一页——对外能力在 `user-guide/<topic>`，内部结构与
+仍生效约束在 `system/architecture/<topic>`，内部契约与兼容性在 `system/interfaces/<topic>`，
+部署与观测在 `system/operations/<topic>`。其他页面只链接，不复述；架构问题以
+`system/architecture/` 为准，ADR 不作为当前结构来源。
+
+**体积**（物理行；软限制超出为 `size.soft` warning，硬限制超出为 `size.hard`
+finding，由 fact-audit CLI 检查）：
+
+| 角色 | 软 | 硬 |
+| --- | --- | --- |
+| 路由页（见下）、根 `README.md`、`AGENTS.md` 托管块 | 80 | 120 |
+| `PROJECT.md` | 200 | 400 |
+| `user-guide/`、`system/` 主题叶 | 400 | 500 |
+| `context/adr/<slug>.md` | 200 | 400 |
+| Proposal、Bug、`JOTS.md` | — | 500 |
+| `GLOSSARY.md`、`changes/` 材料 | 不检查 | 不检查 |
+
+路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面
+`index.md`。超出硬限制的修复是拆页或下沉到主题叶，不是压缩措辞。
 
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
@@ -99,8 +141,9 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 
 ## 根文档职责
 
-- `README.md` 面向项目用户与维护者，说明项目定位、最短可运行路径和维护者的
-  文档入口。它可保留服务于这些目的的概览，但不重复`当前事实文档`中的产品或
+- `README.md` 面向项目用户与维护者，说明项目定位、最短可运行路径和两类读者的
+  文档入口（用户到 `docs/user-guide/README.md`，维护者到 `docs/README.md`）。
+  它可保留服务于这些目的的概览，但不重复`当前事实文档`中的用户或
   系统行为；环境变量表、接口形状、错误文案等可观察契约只写在对应事实页。
 - `PROJECT.md` 仅面向项目维护者，记录项目专属的开发、验证与维护手册，包括环境、
   lint、test、build、CI 等价检查、生成物与目录约定。命令的可执行事实来源始终是
@@ -109,9 +152,10 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
   运行时行为不复述 `docs/system/` 事实页，只保留指向对应页面的链接。
 - `AGENTS.md` 仅面向在仓库中工作的 Agent，记录项目专属的 Agent 行为准则与必要例外，
   不重复面向用户或维护者的材料。它要求 Agent 把 `docs/README.md` 当任务地图、
-  只打开与任务相关的当前事实页，并按工作需要读取 `README.md`、`PROJECT.md` 与
-  `GLOSSARY.md`；不通读文档目录，不把根文档当作行为事实来源。MDF 只维护其中带
-  marker 的区块，其余内容由仓库维护者负责。
+  只打开与任务相关的一份 `docs/system/` 主题叶，用 grep/CodeWiki 定位后只读命中
+  的那一份，并按工作需要读取 `README.md`、`PROJECT.md` 与 `GLOSSARY.md`；不通读
+  文档目录，不把根文档当作行为事实来源。MDF 只维护其中带 marker 的区块，其余
+  内容由仓库维护者负责。
 - `GLOSSARY.md` 面向所有读者维护稳定的领域词典，包括术语、同义词和易混淆概念；
   不记录实现细节、计划或工作状态。
 
@@ -126,8 +170,9 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 | `docs-readme.md`                   | `docs/README.md` 文档入口        |
 | `jots.md`                           | `docs/JOTS.md` 草稿本                 |
 | `changelog.md`                      | `CHANGELOG.md`                   |
-| `docs-*` / `product-*` / `system-*` | `当前事实文档`                   |
-| `adr.md`                            | `docs/adr/<slug>.md`             |
+| `user-guide-readme.md`              | `docs/user-guide/README.md` 路由 |
+| `user-guide-topic.md` / `system-*`  | `当前事实文档`主题叶             |
+| `adr.md`                            | `docs/context/adr/<slug>.md`     |
 | `proposal.md`                       | Proposal                      |
 | `bug.md`                            | Bug                              |
 | `change.md`                         | unreleased 子 Change             |
@@ -135,8 +180,11 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 ## Manifest
 
 `.mdf/manifest.yaml` 是控制面。`schema_version` 必须为
-`2`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased`
-不是版本线值。它还包含共享`验证命令`：
+`3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased`
+不是版本线值。八项`基线`键为 `glossary`、`user_guide`、`system_boundary`、
+`architecture`、`interfaces`、`data`、`operations`、`deviations`；`user_guide`
+默认路径 `docs/user-guide/README.md`，其余 system 基线默认指向对应切面的路由页。
+它还包含共享`验证命令`：
 
 ```yaml
 verification:
@@ -218,28 +266,34 @@ Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # 
 
 ## 当前事实文档
 
-一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。产品和系统页面表达当前
-checkout 的实际行为，并用代码、配置、schema、测试或生成物作为 `evidence`。
-计划、Proposal、Bug 和 Change 不得冒充`当前事实文档`。
+一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。`docs/user-guide/` 与
+`docs/system/` 页面表达当前 checkout 的实际行为，并用代码、配置、schema、测试或
+生成物作为 `evidence`。计划、Proposal、Bug 和 Change 不得冒充`当前事实文档`。
+`docs/user-guide/**` 的 `doc_type` 为 `user-guide`；`docs/system/` 按切面目录取
+`system-*` 类型。
 
-每份事实页独立可加载：正文自洽描述该主题的输入、输出、错误与不变量，
-不要求先读其他页面。`index.md` 等基线页只做路由与边界，不复述叶子页的契约，
-也不为整个子系统集中承担 evidence。正文面向工作中的 Agent 描述可观察行为；
-「代码在哪里」由 `docs/repowiki/` 或短路径列表承担，不写逐文件 walkthrough。
-产品四类基线为 `not_applicable` 时（如无终端用户面的后端），`docs/README.md`
-不展示空 product 目录，并写明 Agent 的行为参考面是 `docs/system/` 对应页面。
+每份主题叶独立可加载：正文自洽描述该主题的输入、输出、错误与不变量，
+不要求先读其他页面；但不复述其他页已归属的契约（见「唯一归属」）。
+`overview.md`、`user-guide/README.md` 与切面 `index.md` 等路由页只做路由与边界，
+不复述叶子页的契约，也不为整个子系统集中承担 evidence。正文面向工作中的读者描述
+可观察行为；「代码在哪里」由 `docs/repowiki/` 或短路径列表承担，不写逐文件 walkthrough。
+`user_guide` 基线为 `not_applicable` 时（如无终端用户面的后端），`docs/README.md`
+不展示 user-guide，并写明行为参考面是 `docs/system/` 对应页面。
 
 ## 工作上下文
 
 `docs/context/` 不属于 SSOT，不填入`基线`，也不要求 fact frontmatter。
 `docs/context/research/` 保存本地或外部调研报告、候选方案和对比。`intake` 的来源只用于
-本次分诊，不保存为工作上下文。已确认的长期取舍另建 ADR；实现后的当前行为另写产品
-或系统`当前事实文档`。
+本次分诊，不保存为工作上下文。已确认的长期取舍写入 `docs/context/adr/`；实现后的
+当前行为另写 `user-guide` 或 `system` `当前事实文档`。
 
 ## ADR
 
-`docs/adr/` 保存已确认的长期取舍，不是`当前事实文档`，不填入`基线`。按主题打开
-单份，不顺序通读；当前行为写在产品或系统事实页，需要取舍时再打开对应 ADR。
+`docs/context/adr/` 保存已确认的长期取舍：问题、备选、为何选、被推翻的历史。
+它不是`当前事实文档`，不填入`基线`，不描述「现在系统长什么样」；仍生效的约束与
+后果写入 `docs/system/architecture/` 主题叶，ADR 只留理由并链接过去。按主题打开
+单份，不顺序通读；ADR 复述当前结构，或某条仍生效约束只存在于 ADR，都是 audit 的
+语义 finding。
 
 文件名为 `<slug>.md`，frontmatter `id` 必须为 `adr-<slug>`。slug 为英文 ASCII
 kebab-case，须含字母、不得为纯数字序号，且不得与对象 ID 同形。accepted 之后

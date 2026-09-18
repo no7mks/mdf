@@ -57,7 +57,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     audit = subparsers.add_parser("fact-audit")
     audit.add_argument("--repo", required=True)
-    audit.add_argument("--scope", choices=("full", "paths"), default="full")
+    audit.add_argument(
+        "--scope", choices=("full", "branch", "paths"), default="full"
+    )
+    audit.add_argument("--base")
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)

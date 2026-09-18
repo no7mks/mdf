@@ -97,9 +97,12 @@
 条件时停止，列依据并提示 `$mdf bootstrap`（或 `$mdf init`），提示前不写入 `.git/`。
 已 ready 的空仓库仍在 migrate 调整配置。已有 Git 的非新项目必须运行 doctor；
 尚未 Git 化的目录等到方案确认后由 initialization 段 2 准备 Git。不因普通目录、
-无提交或 dirty 一概拒绝。
+无提交或 dirty 一概拒绝。doctor 报 `manifest.schema` 或 `layout.migrate`（manifest
+或 `docs/` 布局不符合当前契约）是本 intent 的合法入口态，不是损坏：进入盘点，
+由步骤 3 决定 `docs/product/`、`docs/adr/` 等目录的去处并重写 manifest。
 
-验收：明确项目根、判定依据；已初始化仅允许 initializing finding，或 ready 无 finding。
+验收：明确项目根、判定依据；已初始化仅允许 initializing finding、
+`manifest.schema` 与 `layout.migrate` finding，或 ready 无 finding。
 
 异常与交接：边界或改动归属不明时澄清，其他 finding 报告后停止。中间反馈继续本次流程，不重查入口。
 
@@ -121,8 +124,14 @@
 **布局**
 
 对每个非生态必需且非 MDF 固定的顶层目录，使用内部 clarify intent 决定去处或顶层例外；本地或外部调研材料归入
-`docs/context/research/`，已确认决策归入 `docs/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与非空
-`verification.commands`。每项为 id、kind、command；初始化 CLI 用重复的
+`docs/context/research/`，已确认决策归入 `docs/context/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与非空
+`verification.commands`。`docs/` 内材料按 `repository-contract.md`「文档分类与
+按需加载」归位：面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，
+主题各一页）；边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶；
+仍生效的架构约束从 ADR 抽到 `docs/system/architecture/`，ADR 只留理由；
+`docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，落地后
+不得残留。`baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version`
+写为当前值。每项为 id、kind、command；初始化 CLI 用重复的
 `--verification-item '{"id":"check","kind":"custom","command":"git diff --check"}'` 传入。
 已有未分层 commands 保持原样即可，行为与今天一致；若要分层，手工在同级补
 `suites` 映射（含 `quick`），本 intent 不生成。
@@ -172,7 +181,8 @@
 
 **审阅**
 
-比较调用前后的 `GLOSSARY.md`、`docs/product/**` 与 `docs/system/**`，内部委托 `fact audit` 执行`全量审阅`。
+比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`，
+内部委托 `fact audit` 执行`全量审阅`（`--scope full`）。
 先提交本次事实与证据作为可审阅基线；审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 
 验收：事实复核、diff 与 full validation；仅允许 `manifest.initializing` finding。

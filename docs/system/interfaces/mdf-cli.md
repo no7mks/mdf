@@ -62,7 +62,7 @@ python3 skills/mdf/scripts/mdf.py info
 ```
 
 输出 `tool_version`、`protocol_version` 和 `schema_version`。当前三者都必须为
-数字 `2`；intent 以此拒绝错误或不兼容的 CLI。
+数字 `3`；intent 以此拒绝错误或不兼容的 CLI。
 
 ### `doctor`
 
@@ -75,8 +75,9 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 已初始化仓库会给出 manifest state；只有 state 为 `ready`
 且没有 finding 时，`normal_workflows_allowed` 才为 `true`。进行中的
 `changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md
-不构成 finding。clean 单独报告，
-由具体操作决定是否要求，不作为正常工作流的统一门槛。
+不构成 finding。`schema_version` 不是当前值报 `manifest.schema`；`docs/product/`
+或 `docs/adr/` 目录存在报 `layout.migrate`；两者都指向 `$mdf migrate`。clean 单独
+报告，由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
 ### `validate`
 
@@ -95,10 +96,29 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 ```
 
+`--scope` 可为 `full`（默认）、`branch` 或 `paths`。
+
 全量审计遍历 manifest 的 `implementation_roots` 与全部当前事实文档，输出实现范围、
 文档—`evidence` 映射、ignore 匹配、warnings 和 findings。未被 evidence 覆盖的实现
 文件是 warning，不会令命令失败；结构、范围、证据与 ignorelist 错误是 finding，并以
 状态码 `2` 失败。它不执行 `verification.commands`，不判断文本语义，也不写入文件。
+
+它同时按文档角色检查体积（物理行；`AGENTS.md` 只计托管区块）：路由页
+（`docs/README.md`、`docs/user-guide/README.md`、`docs/system/overview.md`、切面
+`index.md`）、根 `README.md`、`AGENTS.md` 为 80/120；`PROJECT.md` 200/400；
+`docs/user-guide/`、`docs/system/` 主题叶 400/500；`docs/context/adr/` 200/400；
+Proposal、Bug、`docs/JOTS.md` 仅硬限制 500。超硬限制为 `size.hard` finding，超软
+限制为 `size.soft` warning。`full` 检查全部带角色文档；`branch`、`paths` 只检查
+范围内文档与本次改动到的入口页。
+
+分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`），
+实现范围是起点以来改动的实现文件，文档范围是改动到的事实页与 evidence 引用这些实现
+的事实页，结果含 `base`：
+
+```bash
+python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
+  --scope branch --base <start_commit>
+```
 
 范围审计使用精确路径清单：
 
@@ -188,7 +208,7 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   --verification-item '{"id":"unit","kind":"unit","command":"python3 -m pytest -q"}'  \
   --implementation-root src \
   --baseline 'glossary=documented' \
-  --baseline 'product_reference=documented' \
+  --baseline 'user_guide=documented' \
   --baseline 'system_boundary=documented' \
   --baseline 'architecture=documented' \
   --baseline 'interfaces=documented' \
@@ -198,7 +218,7 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
 ```
 
 仅接受 Git 根目录，且远端默认分支不能是 `main`。`--latest-release` 为稳定
-SemVer 或 `none`。必须提供 glossary、product_reference、system_boundary、
+SemVer 或 `none`。必须提供 glossary、user_guide、system_boundary、
 architecture、interfaces、data、operations、deviations 这八项 baseline。
 `--implementation-root` 可重复，默认 `src`；每个根目录都会写入 manifest，并在首次
 初始化时建立为空目录。

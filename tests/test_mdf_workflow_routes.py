@@ -117,7 +117,8 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
-    assert "仅允许 initializing finding，或 ready 无 finding" in entry
+    assert "仅允许 initializing finding、" in entry
+    assert "`manifest.schema` 与 `layout.migrate` finding，或 ready 无 finding" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 
@@ -340,7 +341,7 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     assert "独立调用与 finish 委托均须满足" in entry
     assert "不写入、不提交" in entry
     assert "不将 `normal_workflows_allowed: true` 作为前置条件" in entry
-    assert "事实及 evidence 问题由步骤 2–3 按范围处理" in entry
+    assert "事实及 evidence 问题由步骤 2–4 按范围处理" in entry
     assert "写入分支按 `common.md` 的归属规则检查" in entry
     assert "独立调用仅记录 `branch.invalid`" not in entry
 
@@ -451,7 +452,8 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "提交本次路径" in text
     assert "不自动提交" not in text
     assert "重读" in text
-    assert "提示用户运行 `$mdf fact audit`" in text
+    assert "建议用户运行 `$mdf migrate`" in text
+    assert "`$mdf fact update --scope full`" in text
     assert "同会话" in text
     assert "提示在新会话" not in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]

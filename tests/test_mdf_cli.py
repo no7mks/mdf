@@ -12,9 +12,9 @@ def test_info_reports_protocol_versions(python_exe: str):
     data = payload(result)
     assert data["ok"] is True
     assert data["tool"] == "mdf"
-    assert data["protocol_version"] == 2
-    assert data["tool_version"] == 2
-    assert data["schema_version"] == 2
+    assert data["protocol_version"] == 3
+    assert data["tool_version"] == 3
+    assert data["schema_version"] == 3
 
 
 def test_doctor_reports_only_core_and_repository_state(
@@ -142,8 +142,8 @@ def test_validate_rejects_noncurrent_manifest_schema(
     repo = copy_fixture(tmp_path)
     replace(
         repo / ".mdf" / "manifest.yaml",
-        "schema_version: 2",
         "schema_version: 3",
+        "schema_version: 2",
     )
     init_git(repo)
 

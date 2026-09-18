@@ -159,7 +159,7 @@ def replace(path: Path, old: str, new: str) -> None:
 def all_not_applicable_baselines() -> list[str]:
     names = (
         "glossary",
-        "product_reference",
+        "user_guide",
         "system_boundary",
         "architecture",
         "interfaces",
@@ -178,7 +178,7 @@ def all_not_applicable_baselines() -> list[str]:
 def fixture_documented_baselines() -> list[str]:
     values = {
         "glossary": "GLOSSARY.md",
-        "product_reference": "docs/product/reference/capabilities.md",
+        "user_guide": "docs/user-guide/README.md",
         "system_boundary": "docs/system/overview.md",
         "architecture": "docs/system/architecture/current.md",
         "interfaces": "docs/system/interfaces/api.md",
@@ -225,7 +225,7 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "## 结果\n\n"
             "服务健康能力已经交付。\n\n"
             "## 已更新的当前文档\n\n"
-            "- docs/product/reference/capabilities.md\n\n"
+            "- docs/user-guide/README.md\n\n"
             "## 已知偏差\n\n"
             "无。\n"
         ),
@@ -237,7 +237,7 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
     path.write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 3,
                 "mode": "release",
                 "expected_branch": f"release/{version}",
                 "version": version,

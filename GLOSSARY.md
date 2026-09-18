@@ -75,8 +75,28 @@ Agent 分派时现场解析；省略则不讨论。reviewers 是 code-review 并
 
 ## ADR
 
-Architecture Decision Record；记录重要且已决定的长期架构取舍。文件为
-`docs/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，不编号。
+Architecture Decision Record；记录重要且已决定的长期架构取舍及其理由，不描述
+当前结构。文件为 `docs/context/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，
+不编号。
+
+## 任务地图
+
+`docs/README.md`；按任务把读者路由到一份页面的索引，不是阅读清单。
+
+## 路由页与主题叶
+
+路由页只做边界与链接（`docs/README.md`、`docs/user-guide/README.md`、
+`docs/system/overview.md`、切面 `index.md`）；主题叶是某一主题当前事实的唯一
+归属页，独立可加载。
+
+## 唯一归属
+
+一条可观察契约只写在一份主题叶；其他页面只链接，不复述。
+
+## 加载质量
+
+fact audit 对文档结构的语义审阅：入口不过载、路由页只路由、唯一归属、主题拆页、
+读者分离、ADR 不复述当前结构。行数软硬限制由 CLI 检查（`size.soft` / `size.hard`）。
 
 ## Proposal 状态
 

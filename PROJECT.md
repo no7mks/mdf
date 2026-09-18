@@ -51,5 +51,5 @@ python -m pytest
 
 - [README.md](README.md)：面向用户和维护者的项目入口。
 - [GLOSSARY.md](GLOSSARY.md)：MDF 领域术语。
-- [docs/product/reference/mdf-cli.md](docs/product/reference/mdf-cli.md)：CLI 参考。
+- [docs/system/interfaces/mdf-cli.md](docs/system/interfaces/mdf-cli.md)：CLI 参考。
 - [tests/README.md](tests/README.md)：测试结构与 fixture 说明。

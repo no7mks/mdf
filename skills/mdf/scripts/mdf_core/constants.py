@@ -35,9 +35,9 @@ except ImportError:  # pragma: no cover - Windows fallback
     fcntl = None
 
 
-TOOL_VERSION = 2
-PROTOCOL_VERSION = 2
-SCHEMA_VERSION = 2
+TOOL_VERSION = 3
+PROTOCOL_VERSION = 3
+SCHEMA_VERSION = 3
 # A Bug discovered on the current, not-yet-released line is deliberately not
 # represented as a fake SemVer.  ``unreleased`` is a state marker, not a
 # version and must never be used for fixed_in/released_in or release paths.
@@ -91,7 +91,7 @@ PROPOSAL_CLOSED_RESOLUTIONS = {"wont-do", "duplicate", "obsolete"}
 CHANGE_KINDS = {"feature", "bugfix", "release", "hotfix"}
 BASELINES = (
     "glossary",
-    "product_reference",
+    "user_guide",
     "system_boundary",
     "architecture",
     "interfaces",
@@ -101,7 +101,7 @@ BASELINES = (
 )
 BASELINE_PATHS = {
     "glossary": "GLOSSARY.md",
-    "product_reference": "docs/product/reference/index.md",
+    "user_guide": "docs/user-guide/README.md",
     "system_boundary": "docs/system/overview.md",
     "architecture": "docs/system/architecture/index.md",
     "interfaces": "docs/system/interfaces/index.md",
@@ -110,7 +110,7 @@ BASELINE_PATHS = {
     "deviations": "docs/system/deviations.md",
 }
 BASELINE_DOC_TYPES = {
-    "product_reference": "product-reference",
+    "user_guide": "user-guide",
     "system_boundary": "system-boundary",
     "architecture": "system-architecture",
     "interfaces": "system-interfaces",
@@ -146,7 +146,10 @@ MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)
 ALL_MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]]*]\(([^()]*(?:\([^()]*\)[^()]*)*)\)"
 )
-FACT_ROOTS = ("docs/product", "docs/system")
+FACT_ROOTS = ("docs/user-guide", "docs/system")
+ADR_ROOT = "docs/context/adr"
+# 不属于当前布局、须由 migrate 收敛的 docs 目录。
+RETIRED_DOC_DIRS = ("docs/product", "docs/adr")
 MANAGED_ROOTS = (
     ".mdf",
     "AGENTS.md",
@@ -156,23 +159,15 @@ MANAGED_ROOTS = (
     "changes",
     "docs",
 )
+USER_GUIDE_DOC_TYPE = "user-guide"
 DOC_TYPES = {
-    "product-tutorial",
-    "product-how-to",
-    "product-reference",
-    "product-explanation",
+    USER_GUIDE_DOC_TYPE,
     "system-boundary",
     "system-architecture",
     "system-interfaces",
     "system-data",
     "system-operations",
     "system-deviations",
-}
-PRODUCT_DOC_TYPES = {
-    "tutorials": "product-tutorial",
-    "how-to": "product-how-to",
-    "reference": "product-reference",
-    "explanation": "product-explanation",
 }
 SYSTEM_DOC_TYPES = {
     "overview.md": "system-boundary",
@@ -182,6 +177,14 @@ SYSTEM_DOC_TYPES = {
     "operations": "system-operations",
     "deviations.md": "system-deviations",
 }
+# 文档体积（物理行）：按加载角色分软硬限制；软限制超出为 warning，硬限制超出为
+# finding。GLOSSARY.md 与 changes/ 材料不检查。
+SIZE_ROUTER = ("router", 80, 120)
+SIZE_PROJECT = ("project", 200, 400)
+SIZE_FACT = ("fact", 400, 500)
+SIZE_ADR = ("adr", 200, 400)
+SIZE_WORK_ITEM = ("work-item", None, 500)
+ENTRY_DOCUMENTS = ("README.md", "AGENTS.md", "PROJECT.md", "docs/README.md")
 CHANGELOG_CATEGORIES = (
     "Added",
     "Changed",

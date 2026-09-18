@@ -373,7 +373,7 @@ def test_validation_rejects_leading_slash_as_site_root(
     overview = repo / "docs" / "system" / "overview.md"
     overview.write_text(
         overview.read_text(encoding="utf-8")
-        + "\n[Root](/docs/product/reference/capabilities.md)\n",
+        + "\n[Root](/docs/user-guide/README.md)\n",
         encoding="utf-8",
     )
     init_git(repo)

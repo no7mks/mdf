@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .constants import ADR_FILE_RE, MARKER_RE, OBJECT_FILE_RE
+from .constants import ADR_FILE_RE, ADR_ROOT, MARKER_RE, OBJECT_FILE_RE
 from .errors import Finding, MDFError, add_finding
 from .paths import path_stays_in_repo, relative
 from .textutil import is_object_id_slug
@@ -9,7 +9,7 @@ from .yamlutil import read_frontmatter
 
 
 def validate_adrs(repo: Path, findings: list[Finding]) -> None:
-    root = repo / "docs" / "adr"
+    root = repo / ADR_ROOT
     if (
         not root.is_dir()
         or root.is_symlink()
@@ -118,7 +118,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                     if metadata.get("type") == "proposal":
                         proposals[identifier] = metadata
                 known.add(identifier)
-    adr_root = repo / "docs" / "adr"
+    adr_root = repo / ADR_ROOT
     if adr_root.is_dir():
         for path in adr_root.glob("*.md"):
             if path.is_symlink() or not path_stays_in_repo(repo, path):

@@ -1,12 +1,14 @@
 ---
-title: "数据"
+title: "{{TOPIC_TITLE}}"
 doc_type: system-data
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# 数据
+# {{TOPIC_TITLE}}
+
+本页是该主题的唯一归属页；其他页面只链接到这里，不复述。
 
 ## 当前模型
 

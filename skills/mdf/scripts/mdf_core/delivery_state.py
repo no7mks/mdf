@@ -90,7 +90,7 @@ def fingerprints(repo, root, data, config=None):
     commands = [verification.items, verification.suites]
     facts = {name: value for name, value in files.items()
              if name == "GLOSSARY.md" or (name.endswith(".md")
-                 and name.startswith(("docs/product/", "docs/system/")))}
+                 and name.startswith(("docs/user-guide/", "docs/system/")))}
     # 文档与 Change 材料的改动不使实现审查或全绿失效；事实文档另由 facts 覆盖。
     code = {name: value for name, value in files.items()
             if name not in facts and not name.startswith(("changes/", "docs/"))

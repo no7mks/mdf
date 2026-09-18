@@ -1,12 +1,14 @@
 ---
-title: "架构"
+title: "{{TOPIC_TITLE}}"
 doc_type: system-architecture
 evidence:
   - path: "{{EVIDENCE_PATH}}"
     verification: "{{VERIFICATION_METHOD}}"
 ---
 
-# 架构
+# {{TOPIC_TITLE}}
+
+本页是该主题当前结构与仍生效约束的唯一归属页；理由与备选见相关 ADR。
 
 ## 运行视图
 

@@ -276,7 +276,7 @@ def test_repository_contract_defines_top_level_layout() -> None:
     assert "`docs/repowiki/` 存在时" in contract
     assert "不填入`基线`" in contract
     assert "## ADR" in contract
-    assert "`docs/adr/<slug>.md`" in contract
+    assert "`docs/context/adr/<slug>.md`" in contract
     assert "`adr-<slug>`" in contract
     assert "NNNN-slug" not in contract
     assert "accepted 之后" in contract
@@ -285,7 +285,7 @@ def test_repository_contract_defines_top_level_layout() -> None:
     docs_readme = (skill / "assets" / "templates" / "docs-readme.md").read_text(
         encoding="utf-8"
     )
-    assert "按主题打开单份" in docs_readme
+    assert "打开单份" in docs_readme
     assert "按编号打开" not in docs_readme
 
 
@@ -345,14 +345,17 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     finish = intent("finish")
 
     assert "只读" in audit
-    assert "执行`全量审阅`" in audit
+    assert "`全量审阅`（`--scope full`）" in audit
     assert "`事实复核`" in audit
     assert "从文档到实现" in audit
     assert "从实现到文档" in audit
     assert "加载质量" in audit
+    assert "唯一归属" in audit
+    assert "size.hard" in audit
+    assert "docs/context/adr/" in audit
     assert "## 审阅类型" in audit
-    assert "`全量审阅`：从文档和实现两个方向" in audit
-    assert "`范围审阅`：从文档和实现两个方向" in audit
+    assert "`全量审阅`（`--scope full`）：从文档和实现两个方向" in audit
+    assert "`范围审阅`（`--scope branch` 或 `paths`）：从文档和实现两个方向" in audit
     assert "`全量审阅`" in audit
     assert "`范围审阅`" in audit
     assert "`develop...HEAD`" not in audit

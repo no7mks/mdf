@@ -8,8 +8,8 @@ from .constants import (
     MARKER_RE,
     MDF_BLOCK_END,
     MDF_BLOCK_START,
-    PRODUCT_DOC_TYPES,
     SYSTEM_DOC_TYPES,
+    USER_GUIDE_DOC_TYPE,
 )
 from .errors import Finding, MDFError, add_finding
 from .gitutil import GitPathIndex, commit_is_after
@@ -86,8 +86,8 @@ def validate_evidence(
         else:
             parts = Path(rel).parts
             expected_doc_type: str | None = None
-            if len(parts) >= 4 and parts[:2] == ("docs", "product"):
-                expected_doc_type = PRODUCT_DOC_TYPES.get(parts[2])
+            if len(parts) >= 3 and parts[:2] == ("docs", "user-guide"):
+                expected_doc_type = USER_GUIDE_DOC_TYPE
             elif len(parts) >= 3 and parts[:2] == ("docs", "system"):
                 selector = parts[2]
                 expected_doc_type = SYSTEM_DOC_TYPES.get(selector)
@@ -95,7 +95,8 @@ def validate_evidence(
                 add_finding(
                     findings,
                     "fact.path",
-                    "Fact document is outside a supported product/system view",
+                    "Fact document is outside a supported user-guide/system "
+                    "view",
                     rel,
                 )
             elif metadata.get("doc_type") != expected_doc_type:

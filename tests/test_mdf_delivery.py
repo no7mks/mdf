@@ -98,7 +98,7 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     payload(record(python_exe, repo, "code-review"))
     payload(record(python_exe, repo, "fact-update"))
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
-    fact = repo / "docs/product/reference/capabilities.md"
+    fact = repo / "docs/user-guide/README.md"
     fact.write_text(fact.read_text() + "\n补充事实说明。\n")
     result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
     assert "stale_gate" in result.stderr
@@ -323,8 +323,8 @@ def test_non_fact_docs_do_not_expire_review_or_green(python_exe, tmp_path):
     commit(repo)
     before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
                           "--stage", "finish"))["result"]
-    adr = repo / "docs/adr/example.md"
-    adr.parent.mkdir(exist_ok=True)
+    adr = repo / "docs/context/adr/example.md"
+    adr.parent.mkdir(parents=True, exist_ok=True)
     adr.write_text("# 记录一次架构决策。\n")
     (repo / "AGENTS.md").write_text((repo / "AGENTS.md").read_text() + "\n补充说明。\n")
     (root / "CHANGE.md").write_text("# 草稿\n")
@@ -384,7 +384,7 @@ def test_record_design_rejects_repo_root_style_links(
     work = Path(data["worktree"])
     root = work / "changes/unreleased/service-health"
     (root / "design.md").write_text(
-        "# 设计\n\n[能力](docs/product/reference/capabilities.md)\n"
+        "# 设计\n\n[能力](docs/user-guide/README.md)\n"
     )
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
