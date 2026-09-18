@@ -161,11 +161,12 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 
 **材料**
 
-先委托 `references/fact-update.md`，以 `--scope paths` 传入步骤 2 的交付范围
-（release 为 `--scope full`），同步受影响当前事实、修范围内结构 finding 并内部完成
+先委托 `references/fact-update.md`，以 `--scope paths` 传入步骤 2 的交付范围，
+或等价 `--scope branch --base <该范围左端点>`（release 的左端点为上一正式发布）；
+同步受影响当前事实、修范围内结构 finding 并内部完成
 fact audit，再执行必要验证；finish 不得改用 `full` 做全库结构整理。
-仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 code-review 有效；使用 start_commit
-到 HEAD 的固定范围，并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
+仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 code-review 有效，
+并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
 按分支准备材料：
 
 - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 canonical CHANGE.md，
@@ -194,7 +195,8 @@ feature 运行 `delivery check --stage finish`，使用本次有效 code-review�
 不把集成当修复续办）后复核，
 不回退本流程步骤编号；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
-其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
+其他分支使用步骤 3 的本次 fact audit 结论；release 为上一正式发布以来的
+范围审阅，其他分支为范围审阅。
 
 验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full validation 通过。
 

@@ -116,11 +116,14 @@ Bug、`docs/JOTS.md` 为 500。超出为 `size.hard` finding。`full` 检查全�
 
 分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`），
 实现范围是起点以来改动的实现文件，文档范围是改动到的事实页与 evidence 引用这些实现
-的事实页，结果含 `base`：
+的事实页，结果含 `base`。`--base` 可以是 commit 或 tag；finish release 传入上一
+正式发布：
 
 ```bash
 python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --scope branch --base <start_commit>
+python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
+  --scope branch --base v1.2.0
 ```
 
 范围审计使用精确路径清单：

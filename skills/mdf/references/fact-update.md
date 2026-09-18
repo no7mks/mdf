@@ -68,6 +68,8 @@
 - `branch`：独立调用默认。交付分支以 `start_commit` 为起点，否则以 `develop` 的
   merge-base 为起点；范围是该起点以来实现改动该碰的事实页与被改到的路由链接，
   不是「分支上改过的 Markdown」。未改实现只想整理文档时显式用 `full`。
+  finish release 的 `--base` 为上一正式发布的 master commit/tag（与
+  code-review 同一左端点）；首次发布无上一版本时停止确认初始基线。
 - `full`：知识面全树——`docs/user-guide/**`、`docs/system/**`、入口根文档、
   `docs/context/adr/` 的复述检查与全部体积。结构 finding 可全改。
 - `paths`：调用方给出精确实现/文档路径。
@@ -79,7 +81,8 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 独立调用可在当前工作相关的 feature、bugfix、release 或 hotfix 分支同步事实；
 在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
 无关的独立维护在 develop 完成，不在 master 写入。
-finish 调用采用固定起点到 HEAD 的精确范围。
+finish 调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix 为
+start_commit，release 为上一正式发布。
 
 验收：doctor 结果、调用方类型、scope、事实与实现范围。
 

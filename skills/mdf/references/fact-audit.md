@@ -83,14 +83,17 @@
 `--scope` 三选一，与 fact update 共用：
 
 - `branch`：独立调用默认。交付分支以 `delivery.json` 的 `start_commit` 为 `--base`；
-  否则 CLI 取 `merge-base develop HEAD`。范围是该起点以来改动的实现文件、改动到的
-  事实页，以及 evidence 引用这些实现的事实页；同时检查改动到的入口页体积。
+  否则 CLI 取 `merge-base develop HEAD`。finish release 传入上一正式发布为
+  `--base`。范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
+  引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
 - `paths`：调用方给出精确实现/文档路径；finish 与 fact update 委托用此形式。
 
 确定类型和状态：fact update 委托时使用其明确范围，允许审阅调用方的同次写入；
 direct 调用 manifest 必须 `ready`；migrate 为 `full`、允许 `initializing`；
-finish 的 release 为 `full`，其他分支为 `paths` 范围审阅，不得改用 `full`。
+finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `paths`，其他
+分支为 `paths` 范围审阅，均不得改用 `full`。首次发布无上一版本时停止确认
+初始基线。
 审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
 
 验收：调用方、scope 与范围。

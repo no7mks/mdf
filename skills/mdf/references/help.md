@@ -294,7 +294,8 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 用途：按实现对齐当前事实，再只修范围内的结构 finding，并委托事实审阅。
 说明：`branch` 为独立调用默认，取起点以来实现改动该碰的事实页；`full` 整理
 知识面全树（用户指南、系统事实、入口根文档、ADR 复述、体积）；finish 只用
-branch/paths。独立调用须 manifest ready；布局或 schema 不符时提示 migrate。
+branch/paths，release 的 `--base` 为上一正式发布。独立调用须 manifest ready；
+布局或 schema 不符时提示 migrate。
 
 `$mdf finish`
 用法：`$mdf finish`
@@ -310,7 +311,8 @@ branch/paths。独立调用须 manifest ready；布局或 schema 不符时提示
 用法：`$mdf fact audit [--scope branch|full|paths]`
 用途：只读审阅文档与实现的覆盖、证据、语义与加载质量（入口过载、唯一归属、
 路由页、体积、ADR 复述）。
-说明：只读；不执行 verification.commands。`size.hard` 阻断。
+说明：只读；不执行 verification.commands。`size.hard` 阻断。finish release 的
+`--base` 为上一正式发布。
 
 `$mdf codewiki generate`
 用法：`$mdf codewiki generate`

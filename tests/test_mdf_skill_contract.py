@@ -367,7 +367,10 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`fact audit` 执行`全量审阅`" in migrate
     assert "这是交付前检查，不是 audit" in finish
     assert "references/fact-update.md" in finish
-    assert "release 为全量" in finish
+    assert "release 为 `--scope full`" not in finish
+    assert "release 的左端点为上一正式发布" in finish
+    assert "finish 的 release 为 `full`" not in audit
+    assert "`--base` 为上一正式发布" in audit
 
 
 def test_delivery_intents_consume_current_fact_pages() -> None:

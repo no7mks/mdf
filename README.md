@@ -107,7 +107,7 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当�
 行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
 fact update / fact audit 的 `--scope`
 默认 `branch`（起点以来实现改动该碰的事实页），`full` 整理知识面全树，finish 只用
-`branch`/`paths`。
+`branch`/`paths`；release 的 `branch` 基线为上一正式发布。
 
 `docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。

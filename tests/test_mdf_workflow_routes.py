@@ -134,6 +134,8 @@ def test_finish_updates_facts_before_preparing_materials():
     assert "- hotfix：" in prepare
     assert "材料不搬迁" in prepare
     assert "不要求 objectives、design、唯一 PRP 或 feature gate" in prepare
+    assert "--scope full" not in prepare
+    assert "release 的左端点为上一正式发布" in prepare
 
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():
