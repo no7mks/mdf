@@ -5,16 +5,19 @@ from test_mdf_gitflow_delivery import start_repo
 
 
 UNLAYERED_ITEM = '    - id: check\n      kind: custom\n      command: "true"'
+SLOW_ITEM = '    - id: slow\n      kind: e2e\n      command: "true"'
 
 
-def layer_commands(repo, body):
+def layer_commands(repo, suites, extra_items=()):
+    """在 commands 后追加同级 suites 映射；suites 为 YAML 行列表。"""
     path = repo / ".mdf/manifest.yaml"
     text = path.read_text()
     assert UNLAYERED_ITEM in text
+    body = "\n".join([UNLAYERED_ITEM, *extra_items, "  suites:", *suites])
     path.write_text(text.replace(UNLAYERED_ITEM, body, 1))
 
 
-def setup_layered_delivery(python_exe, tmp_path, body=None):
+def setup_layered_delivery(python_exe, tmp_path):
     repo, remote = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
     obj.write_text("# 目标\n\n实现健康状态接口。\n")
@@ -29,9 +32,7 @@ def setup_layered_delivery(python_exe, tmp_path, body=None):
         "[objectives.md](./objectives.md)\n"
         "[see design.md](./design.md)\n"
     )
-    layer_commands(work, body or (
-        UNLAYERED_ITEM + "\n      suites: [quick, full, billing]"
-    ))
+    layer_commands(work, ["    quick: [check]", "    billing: [check]"])
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({
         "protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"],
@@ -54,7 +55,7 @@ def test_layered_design_requires_suites(python_exe, tmp_path):
         (root / "objectives.md").read_text() + "\n[design.md](./design.md)\n"
     )
     (root / "design.md").write_text("# 设计\n\n[objectives.md](./objectives.md)\n")
-    layer_commands(work, UNLAYERED_ITEM + "\n      suites: [quick, full]")
+    layer_commands(work, ["    quick: [check]"])
     policy = tmp_path / "policy.json"
     policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
     result = mdf(python_exe, "delivery", "record", "--repo", str(work), "--stage", "design",

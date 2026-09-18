@@ -5,6 +5,7 @@ from mdf_test_support import *  # noqa: F403
 from test_mdf_delivery import setup_delivery, sync_roles, record, commit
 from test_mdf_upgrade import init_target, init_upstream, source_head
 from test_mdf_gitflow_delivery import start_repo
+from test_mdf_verification_layers import SLOW_ITEM, layer_commands
 
 
 def test_batch_prp_ids_do_not_write_or_repeat(python_exe, tmp_path):
@@ -259,15 +260,7 @@ def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
                           "--bug", "bug-CD34"))
     work = Path(created["worktree"])
-    item = '    - id: check\n      kind: custom\n      command: "true"'
-    layered = (
-        item + "\n      suites: [quick, full]\n"
-        "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
-        "      suites: [full, billing]"
-    )
-    (work / ".mdf/manifest.yaml").write_text(
-        (work / ".mdf/manifest.yaml").read_text().replace(item, layered, 1)
-    )
+    layer_commands(work, ["    quick: [check]", "    billing: [slow]"], [SLOW_ITEM])
     args = ["--repo", str(work)]
     missing = mdf(python_exe, "project-verify", "run", *args)
     assert "missing_delivery_suite" in missing.stderr
@@ -295,15 +288,7 @@ def test_layered_release_rejects_quick_only_evidence(python_exe, tmp_path):
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
                           "--version", "1.3.0"))
     work = Path(created["worktree"])
-    item = '    - id: check\n      kind: custom\n      command: "true"'
-    layered = (
-        item + "\n      suites: [quick, full]\n"
-        "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
-        "      suites: [full]"
-    )
-    (work / ".mdf/manifest.yaml").write_text(
-        (work / ".mdf/manifest.yaml").read_text().replace(item, layered, 1)
-    )
+    layer_commands(work, ["    quick: [check]"], [SLOW_ITEM])
     args = ["--repo", str(work)]
     payload(mdf(python_exe, "project-verify", "run", *args))
     path = work / "changes/unreleased/1.3.0/code-review.verification.json"

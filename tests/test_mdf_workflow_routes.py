@@ -274,7 +274,9 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "全局 quick ∪ design policy `suites` 声明的交付 suite" in contract
     assert "关联 ≥1 个**已有**交付 suite" in contract
     assert "只跑了 quick" in contract
-    assert "非 feature 分支变更 `suites` 或新增交付 suite 名，一律需用户确认" in contract
+    assert "非 feature 分支变更 `verification.suites` 或新增交付 suite 名，一律需用户确认" in contract
+    repo_contract = workflow("repository-contract")
+    assert "`quick` 必须存在；`full` 隐含为全部项，不得声明" in repo_contract
     design_text = workflow("design")
     assert "验收到 quick 与本交付 suite 的映射" in design_text
     assert "suites" in design_text

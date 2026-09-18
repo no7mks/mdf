@@ -206,26 +206,28 @@ def test_verification_items_validate_identity_and_kind(python_exe, tmp_path):
         assert "manifest.verification" in result.stdout
 
 
-def test_verification_suites_are_all_or_nothing(python_exe, tmp_path):
+def test_verification_suites_require_quick_and_known_ids(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     manifest = repo / ".mdf/manifest.yaml"
     original = manifest.read_text()
     item = '    - id: check\n      kind: custom\n      command: "true"'
-    mixed = item + "\n      suites: [quick, full]\n    - id: other\n      kind: custom\n      command: \"true\""
-    manifest.write_text(original.replace(item, mixed))
-    result = mdf(python_exe, "validate", "--repo", str(repo))
-    assert "manifest.verification" in result.stdout
-    for names in ("[quick]", "[billing]"):
-        manifest.write_text(original.replace(item, item + f"\n      suites: {names}"))
-        result = mdf(python_exe, "validate", "--repo", str(repo))
-        assert "manifest.verification" in result.stdout
-    layered = (
-        item + "\n      suites: [quick, full]\n"
-        "    - id: slow\n      kind: e2e\n      command: \"true\"\n"
-        "      suites: [full]"
+    assert item in original
+    invalid = (
+        "    billing: [check]",                      # 缺 quick
+        "    quick: [check]\n    full: [check]",     # 声明 full
+        "    quick: [missing]",                      # 引用不存在的 id
+        "    quick: [check, check]",                 # 重复
+        "    quick: []",                             # 空
     )
-    manifest.write_text(original.replace(item, layered))
+    for suites in invalid:
+        manifest.write_text(original.replace(item, item + "\n  suites:\n" + suites))
+        result = mdf(python_exe, "validate", "--repo", str(repo))
+        assert "manifest.verification" in result.stdout, suites
+    slow = '    - id: slow\n      kind: e2e\n      command: "true"'
+    manifest.write_text(original.replace(
+        item, f"{item}\n{slow}\n  suites:\n    quick: [check]\n    billing: [slow]"
+    ))
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
 
 

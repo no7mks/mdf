@@ -393,7 +393,8 @@ Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同�
 `project-verify run --repo <仓库>` 按分支执行所需 suite：release/hotfix 跑
 全局 full；bugfix 跑全局 quick 加 `changes/unreleased/<slug>/suites.json` 中
 已关联的交付 suite。未分层时跑全部项，证据 `suites` 为 `quick` 与 `full`。
-分层后每项都必须含 `full`（`manifest.verification` finding）。bugfix 缺少关联返回
+`verification.suites` 缺 `quick`、声明 `full` 或引用不存在的 id 为
+`manifest.verification` finding。bugfix 缺少关联返回
 `missing_delivery_suite`，引用未知 suite 返回 `unknown_suite`；证据只覆盖 quick 时
 `check` 返回 `stale_verification`。
 结果写入 `changes/unreleased/<slug>/code-review.verification.json`，含

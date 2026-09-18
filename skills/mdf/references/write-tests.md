@@ -61,8 +61,8 @@ deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，�
 编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
 不从源码重新推断契约。
 按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite；更新
-manifest 验证项的 suites 属于本阶段授权，不得降低项目门槛或把慢项标进
-quick 来逃避分层。implement 不得擅自改测试。
+manifest `verification.suites` 成员属于本阶段授权，不得降低项目门槛或把慢项
+放进 quick 来逃避分层。implement 不得擅自改测试。
 测试须能编译或加载执行；环境或导入故障不是有效完成证据。因尚未实现而产生的
 断言失败可以接受。本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。
 全绿由 converge 负责，且相对所需 suite。逐项审查 objectives 覆盖与断言。

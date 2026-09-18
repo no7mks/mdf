@@ -8,17 +8,14 @@ from .delivery_state import (
 from .errors import MDFError, emit
 from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
-from .verification import (
-    is_layered, manifest_items, parse_suite_names, required_suites,
-    select_items,
-)
+from .verification import manifest_verification, parse_suite_names
 from .closeout_validate import run_verify_commands
 from .validate_links import require_existing_local_links
 
 
-def policy_input(raw, items):
+def policy_input(raw, verification):
     policy = read_json(Path(raw)) if raw else None
-    expected = {"protected_paths", "suites"} if is_layered(items) else {"protected_paths"}
+    expected = {"protected_paths", "suites"} if verification.layered else {"protected_paths"}
     if not policy or set(policy) != expected:
         raise MDFError(
             "design 需要 protected_paths；分层后还必须声明 suites",
@@ -49,7 +46,7 @@ def record_stage(repo, root, data, args):
     if not args.summary or not args.summary.strip():
         raise MDFError("gate 需要非空语义审查摘要", code="missing_review")
     if stage == "design":
-        policy = policy_input(args.policy_file, manifest_items(load_manifest(repo)))
+        policy = policy_input(args.policy_file, manifest_verification(load_manifest(repo)))
         require_existing_local_links(
             repo, [root / "objectives.md", root / "design.md"]
         )
@@ -95,10 +92,11 @@ def record_stage(repo, root, data, args):
 
 def verify(repo, root, data, selected):
     before = require_design(repo, root, data)
-    items = manifest_items(load_manifest(repo))
+    verification = manifest_verification(load_manifest(repo))
+    items = verification.items
     policy = gate(repo, root, "design")["policy"]
-    required = required_suites("feature", items, policy.get("suites") or [])
-    targets = select_items(items, required)
+    required = verification.required("feature", policy.get("suites") or [])
+    targets = verification.select(required)
     ids = {item["id"] for item in targets}
     if set(selected) - {item["id"] for item in items}:
         raise MDFError("未知验证项 ID", code="invalid_verification")

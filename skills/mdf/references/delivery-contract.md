@@ -100,10 +100,10 @@ bugfix 不创建 design/write-tests/converge。分层后由 code-review 步骤 1
 只暂存当前阶段的必要路径；不得顺带提交无关用户改动。可以主动提交尚未完成的阶段产出，
 但须准确记录未完成状态；阶段提交不代表 gate 通过，不能绕过既有验收与审阅。
 首次 write-tests 按既定设计编写测试属于授权，含把用例写入 design 声明的 suite 并
-更新 manifest `suites`。implement 不自主修改测试。
+更新 manifest `verification.suites` 成员。implement 不自主修改测试。
 converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
 code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
-非 feature 分支变更 `suites` 或新增交付 suite 名，一律需用户确认。
+非 feature 分支变更 `verification.suites` 或新增交付 suite 名，一律需用户确认。
 架构优化可以建议；超出当前目标不直接实施。修复后在当前 intent 原地重验。
 
 fact update 可独立运行，也由 finish 前段内部调用，其事实审阅由 fact audit 完成。

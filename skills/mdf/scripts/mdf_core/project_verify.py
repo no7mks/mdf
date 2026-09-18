@@ -6,10 +6,7 @@ from .gitutil import (
     current_branch, branch_details, repo_path, require_git_root, unreleased_slug,
 )
 from .paths import load_manifest
-from .verification import (
-    suites_cover, is_layered, manifest_items, parse_suite_names,
-    recorded_suites, required_suites, select_items,
-)
+from .verification import manifest_verification, parse_suite_names, suites_cover
 
 
 def associated_suites(repo, slug):
@@ -40,13 +37,14 @@ def command_project_verify(args):
     manifest = load_manifest(repo)
     if manifest.get("state") != "ready":
         raise MDFError("验证需要 ready", code="manifest_not_ready")
-    items = manifest_items(manifest)
+    verification = manifest_verification(manifest)
+    items = verification.items
     slug = unreleased_slug(details)
     suites = associated_suites(repo, slug) if kind == "bugfix" else None
-    if kind == "bugfix" and is_layered(items) and not suites:
+    if kind == "bugfix" and verification.layered and not suites:
         raise MDFError("分层后 bugfix 必须关联已有交付 suite", code="missing_delivery_suite")
-    required = required_suites(kind, items, suites)
-    targets = select_items(items, required)
+    required = verification.required(kind, suites)
+    targets = verification.select(required)
     before = inputs(repo, items, required, suites)
     path = safe(
         repo,
@@ -54,7 +52,7 @@ def command_project_verify(args):
     )
     if args.action == "check":
         result = read_json(path)
-        recorded = recorded_suites(result, items)
+        recorded = verification.recorded(result)
         if (result.get("inputs") != before or result.get("branch") != branch
                 or not suites_cover(recorded, required)
                 or not result.get("all_passed")):
@@ -67,7 +65,7 @@ def command_project_verify(args):
                 results.append({**item, **detail, "passed": True})
             except MDFError as exc:
                 results.append({**item, "passed": False, "error": exc.code, "details": exc.details})
-        after_items = manifest_items(load_manifest(repo))
+        after_items = manifest_verification(load_manifest(repo)).items
         after_suites = associated_suites(repo, slug) if kind == "bugfix" else None
         after = inputs(repo, after_items, required, after_suites)
         passed = {item["id"] for item in results if item["passed"]}

@@ -7,9 +7,7 @@ from pathlib import Path
 from .errors import MDFError
 from .gitutil import current_branch, run
 from .paths import load_manifest, path_stays_in_repo
-from .verification import (
-    suites_cover, manifest_items, recorded_suites, required_suites,
-)
+from .verification import manifest_items, manifest_verification, suites_cover
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
 
@@ -161,10 +159,10 @@ def require_design(repo, root, data):
 def require_green(repo, root, data):
     record = gate(repo, root, "verification")
     current = fingerprints(repo, root, data)
-    items = manifest_items(load_manifest(repo))
+    verification = manifest_verification(load_manifest(repo))
     policy = gate(repo, root, "design")["policy"]
-    required = required_suites("feature", items, policy.get("suites") or [])
-    recorded = recorded_suites(record, items)
+    required = verification.required("feature", policy.get("suites") or [])
+    recorded = verification.recorded(record)
     if (any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design"))
             or not suites_cover(recorded, required)
             or not record.get("all_passed")):

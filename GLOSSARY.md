@@ -24,20 +24,20 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 
 ## 验证命令
 
-`manifest.verification.commands` 中的具名可执行验证项。可选 `suites`
-划入全局 quick / full 或交付 suite；`kind` 只是标签，不参与筛选。
+`manifest.verification.commands` 中的具名可执行验证项；`kind` 只是标签，
+不参与筛选。
 
 ## 验证 suite
 
-验证项通过 `suites` 字段归入一个或多个具名 suite。`quick` 与 `full` 是两个必备的
-全局 suite，其余名称是交付 suite：
+`manifest.verification.suites` 是 suite 名到验证项 id 列表的映射。`quick` 与
+`full` 是两个全局 suite，其余 key 是交付 suite：
 
-- **quick**：always-run。日常门禁；通常挂全部 UT 与声明为快速的 IT/e2e。
-- **full**：分层后每个验证项都必须属于的 suite，因此等于全部验证项。release / hotfix 使用。
+- **quick**：always-run，必须声明。日常门禁；通常挂全部 UT 与声明为快速的 IT/e2e。
+- **full**：隐含为全部验证项，不得声明。release / hotfix 使用。
 - **交付 suite**：覆盖某 feature 的本交付全量（含慢路径）。不是 full，也不是
   「碰巧改到的 quick 文件」。
 
-未分层（所有命令都不写 `suites`）时，全部项同时属于 quick 与 full。
+未分层（manifest 无 `suites`）时，全部项同时属于 quick 与 full。
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
 用例；原慢用例保留。
 

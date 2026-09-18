@@ -32,9 +32,8 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
-    from .verification import manifest_items, select_items
-    items = manifest_items(manifest)
-    return [item["command"] for item in select_items(items, ["full"])]
+    from .verification import manifest_verification
+    return [item["command"] for item in manifest_verification(manifest).select(["full"])]
 
 
 def derive_closeout_spec(
