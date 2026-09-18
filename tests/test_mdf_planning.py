@@ -69,6 +69,21 @@ def test_tree_mixed_dag_drafts_truncation_and_invalid_dependencies(
     assert "invalid_proposals" in mdf(python_exe, "tree", "--repo", str(repo)).stderr
 
 
+def test_tree_roots_order_depends_on_previous_milestone(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    add_prp(repo, "prp-002", ["阶段一"], status="draft", milestone="阶段二")
+    add_prp(repo, "prp-003", status="draft", milestone="阶段一")
+    init_git(repo)
+    data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
+    assert [node["id"] for node in data["trees"]] == [
+        "prp-001", "prp-003", "prp-002",
+    ]
+    roots = {node["id"]: node for node in data["trees"]}
+    assert roots["prp-002"]["blocked_by"] == ["阶段一"]
+    assert roots["prp-002"]["milestone"] == "阶段二"
+    assert roots["prp-003"]["milestone"] == "阶段一"
+
+
 def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-002", status="draft", milestone="阶段一")

@@ -85,7 +85,7 @@
 - `$mdf prp create`：按已确认内容手动创建 draft Proposal
 - `$mdf prp review`：修订单个 active Proposal，验证后转为 ready
 - `$mdf prp split`：拆分未开工 PRP，并完整改写依赖
-- `$mdf tree [--depth N]`：画出 draft/ready PRP 依赖树；也可
+- `$mdf tree [--depth N]`：按 milestone 分组画出 draft/ready PRP 依赖树；也可
   `$mdf prp tree` 或 `$mdf next?`
 - `$mdf clarify <议题>`：逐题压力测试计划、决策或想法
 
@@ -226,7 +226,7 @@ $mdf clarify 要不要把缓存放到 Redis
 
 `$mdf tree [--depth N]`
 用法：`$mdf tree`、`$mdf prp tree`、`$mdf next?` 或 `$mdf tree --depth N`
-用途：画出 draft/ready PRP 混态依赖树与 milestone 索引。
+用途：画出按 milestone 分组的 draft/ready PRP 混态依赖树与索引。
 说明：深度省略时默认 3；只读。问号版 next 进入本主题，不是 next。
 
 `$mdf next [--depth N]`

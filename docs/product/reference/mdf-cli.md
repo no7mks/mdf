@@ -381,7 +381,8 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 `tree` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
 `tree --repo <仓库> [--depth 3]` 输出 trees、index、hidden；只读，非法依赖失败。
 `trees` 为 draft 与 ready 的混态森林：子节点只挂在未满足的 active PRP 下，
-milestone 依赖留在 `blocked_by`，不展开为成员边。`index` 为
+milestone 依赖留在 `blocked_by`，不展开为成员边。根按 milestone 组排序：
+无 milestone 依赖的无归属根在前，被依赖的组在上，组内按 PRP ID。`index` 为
 `{groups, ungrouped}`：每项含 `status`、`depends_on` 与 `blocked_by`；
 有 milestone 的按值分组，无归属放入 `ungrouped`。
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为

@@ -10,6 +10,49 @@ def _title(objects, key):
                  if line.startswith("# ")), key)
 
 
+def _milestone(meta):
+    name = meta.get("milestone")
+    return name if isinstance(name, str) and name.strip() else None
+
+
+def _group_sort(name):
+    return (name is not None, name or "")
+
+
+def _ordered_roots(shown, prp_waiting, waiting, objects, active):
+    roots = [key for key in shown if not prp_waiting[key]]
+    buckets = {}
+    for key in roots:
+        buckets.setdefault(_milestone(objects[key][1]), []).append(key)
+    names = set(buckets)
+    incoming = {name: set() for name in names}
+    outgoing = {name: set() for name in names}
+    for key in roots:
+        src = _milestone(objects[key][1])
+        for dep in waiting[key]:
+            if dep in active or dep not in names or dep == src:
+                continue
+            incoming[src].add(dep)
+            outgoing[dep].add(src)
+    ready = sorted((name for name, preds in incoming.items() if not preds),
+                   key=_group_sort)
+    ordered = []
+    while ready:
+        name = ready.pop(0)
+        ordered.append(name)
+        nxts = []
+        for nxt in outgoing[name]:
+            incoming[nxt].discard(name)
+            if not incoming[nxt] and nxt not in ordered and nxt not in ready:
+                nxts.append(nxt)
+        ready.extend(nxts)
+        ready.sort(key=_group_sort)
+    for name in sorted(names, key=_group_sort):
+        if name not in ordered:
+            ordered.append(name)
+    return [key for name in ordered for key in sorted(buckets[name])]
+
+
 def _index(objects, waiting, in_progress, active_ids):
     groups, ungrouped = {}, []
     for key in active_ids:
@@ -19,8 +62,8 @@ def _index(objects, waiting, in_progress, active_ids):
                 "depends_on": list(meta["depends_on"]),
                 "blocked_by": waiting[key],
                 "in_progress": key in in_progress}
-        milestone = meta.get("milestone")
-        if isinstance(milestone, str) and milestone.strip():
+        milestone = _milestone(meta)
+        if milestone is not None:
             groups.setdefault(milestone, []).append(item)
         else:
             ungrouped.append(item)
@@ -62,8 +105,8 @@ def tree_view(repo, depth):
                   "blocked_by": waiting[key],
                   "in_progress": key in in_progress,
                   "title": _title(objects, key)}
-        milestone = meta.get("milestone")
-        if isinstance(milestone, str) and milestone.strip():
+        milestone = _milestone(meta)
+        if milestone is not None:
             result["milestone"] = milestone
         if key in seen:
             result["reference"] = True
@@ -73,7 +116,8 @@ def tree_view(repo, depth):
                               if key in prp_waiting[child]]
         return result
 
-    trees = [node(key) for key in sorted(shown) if not prp_waiting[key]]
+    trees = [node(key) for key in _ordered_roots(
+        shown, prp_waiting, waiting, objects, active)]
     return {"ok": True, "operation": "tree", "depth": depth, "trees": trees,
             "index": _index(objects, waiting, in_progress, sorted(active)),
             "hidden": sorted(key for key, value in levels.items()

@@ -92,12 +92,13 @@ def test_tree_renders_mixed_dependency_graph() -> None:
     assert "混态" in text
     assert "● ready" in text
     assert "○ draft" in text
-    assert "◇ 未满足的 milestone 依赖" in text
+    assert "↑ 上一组 milestone" in text
     assert "implemented/released" in text
     assert "blocked_by" in text
     assert "depends_on" in text
     assert "按 milestone 分组" in text
     assert "不挂到其成员下" in text
+    assert "从该根的树干直接向上接到上一组" in text
     assert "prp review" in text
     assert "不创建或拆分" in text
     assert "默认 3" in text
