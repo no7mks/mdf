@@ -51,6 +51,14 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次�
 Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。主 worktree
 保持 develop；合入 develop 后 `$mdf start` 才看到新对象。
 
+## Roster
+
+一次交付在 start 时冻结的参与人数：`qa`、`dev`、`reviewers`。owner 恒为 1，
+不计入可选人数。feature 默认 `1,1,3`，其他 kind 默认 `0,0,3`；四种 kind 都可改。
+qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 则抬成 1。`0,0` 时测试与实现都在
+owner 上做；`≥1` 时各有角色 worktree。同侧 ≥2 时并行互不知情，owner 选 base
+由该路吸收其余优点，converge 只合 winner。reviewers 是 code-review 并发人数。
+
 ## Auto-pilot
 
 `$mdf deliver --auto-pilot` 的持续交付模式：主 Agent 自行裁定原需用户确认的步骤，

@@ -240,7 +240,8 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 用途：锁定当前一次交付，必要时先 start，持续运行到 finish 完成。
 说明：target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。
 已有在途交付则报错，不续办。
-支持 feature/bugfix/hotfix/release；feature 两路可并行时强制分别使用 qa/dev worktree 的 subagent。
+支持 feature/bugfix/hotfix/release；roster ≥1 且两路可并行时强制分别使用
+qa/dev worktree 的 subagent。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
 收口（合入目标主线并删除源 worktree）前确认；死硬阻塞仍停止。
 包含 finish 的合并及适用的 tag、发版推送。
@@ -249,7 +250,8 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 用法：`$mdf start`
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
-不在当前目录开分支，不 push。feature 同时建立 qa/dev 角色树。
+不在当前目录开分支，不 push。start 冻结 roster（feature 默认 1,1,3，其他
+默认 0,0,3）；人数 ≥1 时建立 qa/dev 角色树。
 
 `$mdf design`
 用法：`$mdf design`
@@ -259,13 +261,13 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 `$mdf write-tests`
 用法：`$mdf write-tests`
 用途：按目标编写测试用例。
-说明：可与 implement 并行；切到已有 qa worktree，先 merge owner。
+说明：可与 implement 并行；roster ≥1 时切到已有 qa worktree，先 merge owner。
 写完可执行测试即完成，不要求全绿。
 
 `$mdf implement`
 用法：`$mdf implement`
 用途：按已确认设计实现。
-说明：不要求测试先完成；切到已有 dev worktree，先 merge owner。
+说明：不要求测试先完成；roster ≥1 时切到已有 dev worktree，先 merge owner。
 
 `$mdf converge`
 用法：`$mdf converge`
@@ -275,7 +277,8 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 `$mdf code-review`
 用法：`$mdf code-review`
 用途：审查并修复实现、测试和 code smell。
-说明：支持 feature/bugfix/hotfix/release；首轮三人覆盖起点区间，后续增量并复核上轮问题。
+说明：支持 feature/bugfix/hotfix/release；首轮按 roster.reviewers（默认 3）
+覆盖起点区间，后续增量并复核上轮问题。
 feature 位于 converge 之后；各分支均在 finish 前完成。
 
 `$mdf fact update`

@@ -261,10 +261,14 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `master` 创建。
 若新分支在本地已存在则失败，不检查远端。始终从基线在仓库同级
 `<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
-不在当前目录开分支；成功 JSON 含该 `worktree`。feature 同时建立
-`qa/feature/<slug>` 与 `dev/feature/<slug>`，JSON 含 `roles`。创建失败拆除已建 worktree 与分支。
+不在当前目录开分支；成功 JSON 含该 `worktree`、冻结后的 `roster` 与 `roles`
+列表。`--qa` / `--dev` / `--reviewers` 可省略：feature 默认 `1,1,3`，其他
+kind 默认 `0,0,3`。一侧为 0 另一侧 ≥1 时把 0 抬成 1。roster ≥1 时按人数建立
+`qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`。创建失败拆除已建
+worktree 与分支。
 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 保存完整起点 hash，
-供 bugfix/hotfix code-review 读取；不设置 upstream。分支删除时配置随分支清理。
+供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数。
+不设置 upstream。分支删除时配置随分支清理。
 feature 写入 `changes/unreleased/<slug>/objectives.md` 时，把仓根风格的本地链接改成
 相对该目录的路径。
 
@@ -291,7 +295,7 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 外层 finish intent 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
 由 Agent 自动尝试解决集成冲突；集成产生新提交后执行增量新一轮 code-review 与全量验证，
-再核对三份审查、主 Agent 复核与验证记录。该前置流程由 intent 执行，CLI 不代为集成或审查；
+再核对 roster.reviewers 份审查、主 Agent 复核与验证记录。该前置流程由 intent 执行，CLI 不代为集成或审查；
 非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
 
 feature/bugfix 不 fetch、不 push；以 `--no-ff --no-commit` 合并到本地 `develop`，
@@ -356,11 +360,11 @@ slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 
 | action | 输入与效果 |
 | --- | --- |
-| status | 只读列出交付身份、材料位置、阶段记录与 owner/qa/dev worktree 路径 |
+| status | 只读列出交付身份、roster、材料位置、阶段记录与 owner/qa/dev worktree 路径 |
 | check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行当前交付所需 suite 并记录 `suites`；可用重复 `--item <id>` 做定位运行，所需 suite 记录不能由单项替代 |
-| integrate | clean feature 依次 no-ff 集成 qa 再 dev；冲突保留现场，完成后清理已合并本地工作分支 |
+| integrate | clean owner 合入 winner；`n≥2` 须 `--qa-branch` / `--dev-branch`；完成后清理角色分支 |
 
 design record 需要 `--policy-file <JSON>`。未分层格式为
 `{"protected_paths":["tests/","pyproject.toml"]}`；分层后必须同时给出
@@ -386,7 +390,7 @@ downstream 是全部原下游 ID 到所需子 ID 列表的映射。预览输出�
 一次只读计算连续编号；多项返回 `items`，单项返回 `id` 与 `filename`。不预占编号，
 拆分使用该批候选构造 spec，后续身份冲突由预检拒绝，不提前写占位对象。
 
-`worktree-check --repo <角色路径> --owner <owner路径> --role <owner|qa|dev>` 只读核验
+`worktree-check --repo <角色路径> --owner <owner路径> --role <owner|qa|dev> [--index N]` 只读核验
 Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同设计，
 `--handoff` 要求 clean 与有效阶段指纹；审查者用 `--expected-head <hash>` 固定只读对象。
 
@@ -405,7 +409,8 @@ Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同�
 `codewiki-runtime [--directory <路径>]` 只在安装目录缺失时 clone，核对源码和 Git 状态，
 只补缺失 venv 并检查导入，返回宿主所需 MCP 字段；不修改宿主配置或目标仓库。
 
-`delivery integrate` 在清理前提交 `gates/integration.json`，固定两路最终提交及设计指纹。
+`delivery integrate` 在清理前提交 `gates/integration.json`，固定各角色最终提交、
+winner 列表及设计指纹。
 重复调用核验同一集成后只完成剩余清理；角色引用改变或无法证明已集成时停止。
 
 release/hotfix 的 `finish-gitflow` 在 Git common dir 的 `mdf/finish/<分支>.json` 保存发布进度，

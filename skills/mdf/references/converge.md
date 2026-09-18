@@ -44,10 +44,13 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-仅在 owner `feature/<slug>` 工作。运行 `delivery integrate`：脚本按 no-ff 合入 qa/dev，
-提交 `gates/integration.json` 固定设计指纹与两个角色的最终提交，再清理角色 worktree 和分支。
+仅在 owner 工作。roster 同侧 ≥2 时先评审各路：选一个做 base，让该 dev-x / qa-x
+参考其余优点并在该树上改完；不把各家合进 owner。然后运行 `delivery integrate`：
+`n=1` 不传 winner；`n≥2` 传入 `--qa-branch` / `--dev-branch` 为 winner；
+`n=0` 无角色可合。脚本 no-ff 只合入 winner，提交 `gates/integration.json`，
+再删除全部角色 worktree 和分支（含未入选者）。
 续办仍调用同一命令；脚本核对已记录提交是 owner 的祖先，现存角色未改变，随后只清理剩余角色。
-两路均已清理时同样核验记录，不重建角色、不再次合并。缺少有效记录却缺角色时停止并报告。
+角色均已清理时同样核验记录，不重建角色、不再次合并。缺少有效记录却缺角色时停止并报告。
 `stale_integration` 表示现场被其他操作改变，停止；普通清理失败保留记录，排除阻塞后原地重试。
 随后运行 `delivery check --stage converge`。
 使用 `delivery status` 返回的材料目录定位 `gates/converge-blocked.md`；不存在时无需创建。
@@ -60,8 +63,8 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 `suites`）。修复循环可用 `--item <id>` 定位失败项，但最终必须所需 suite 通过；
 只跑 quick 或未声明/未跑本交付 suite 不得记录全绿。
 返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入 manifest
-`verification.suites`：停止并报告，回 write-tests（qa 路）补齐后重新 integrate；
-不在 converge 现场改 manifest。
+`verification.suites`：停止并报告，回 write-tests 补齐后重新 integrate；
+角色树若已删除则在 owner 上补测。不在 converge 现场改 manifest。
 可以自动修复实现。测试、fixture、快照、预期值、发现/跳过规则和验证配置增删改必须用户确认。
 取得确认后原地审查与重验，记录 `--test-approval <用户确认与修改理由>`；不回退 intent。
 不设总轮数上限。需要目标/设计决定、凭据或外部条件，或同一失败连续三轮无进展时，

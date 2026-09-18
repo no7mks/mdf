@@ -5,27 +5,12 @@ import json
 from pathlib import Path
 
 from .errors import MDFError
-from .gitutil import current_branch, run
+from .gitutil import branch_details, current_branch, run, unreleased_slug
 from .paths import load_manifest, path_stays_in_repo
+from .roster import owner_branch, require_roster
 from .verification import manifest_verification, suites_cover
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
-
-
-def owner_branch(branch: str) -> str:
-    if branch.startswith(("qa/", "dev/")):
-        owner = branch.split("/", 1)[1]
-        if not owner.startswith("feature/"):
-            raise MDFError("阶段操作需要 feature/qa/dev 分支",
-                           code="unsupported_branch")
-        return owner
-    if branch.startswith("feature/"):
-        return branch
-    raise MDFError("阶段操作需要 feature/qa/dev 分支", code="unsupported_branch")
-
-
-def role_names(owner: str) -> dict[str, str]:
-    return {"qa": f"qa/{owner}", "dev": f"dev/{owner}"}
 
 
 def git(repo, *args, check=True):
@@ -59,15 +44,16 @@ def write_json(path, value):
 
 
 def locate(repo, slug=None):
-    branch = current_branch(repo)
+    owner = owner_branch(current_branch(repo))
     if slug is None:
-        slug = owner_branch(branch).split("/", 1)[1]
+        slug = unreleased_slug(branch_details(owner))
     root = safe(repo, repo / "changes" / "unreleased" / slug)
     if not (root / "delivery.json").is_file():
         raise MDFError("交付记录缺失", code="invalid_delivery")
     data = read_json(safe(repo, root / "delivery.json"))
-    if data.get("slug") != slug or data.get("branch") != f"feature/{slug}":
+    if data.get("slug") != slug or data.get("branch") != owner:
         raise MDFError("交付身份不匹配", code="invalid_delivery")
+    data["roster"] = require_roster(data.get("roster"))
     base = data.get("start_commit", "")
     if not isinstance(base, str) or len(base) != 40 or any(c not in "0123456789abcdef" for c in base):
         raise MDFError("起点必须为完整 commit hash", code="invalid_delivery")

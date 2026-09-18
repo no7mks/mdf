@@ -1,9 +1,10 @@
 """核验分派目录、角色分支、共同 Git 仓库与交接证据；不写入。"""
 from pathlib import Path
 
-from .delivery_state import git, locate, require_design, role_names, gate
+from .delivery_state import git, locate, require_design, gate
 from .errors import MDFError, emit
 from .gitutil import branch_details, current_branch, ensure_clean, repo_path, require_git_root, worktree_map
+from .roster import owner_branch, role_branch
 
 
 def common_dir(repo):
@@ -14,11 +15,18 @@ def command_worktree_check(args):
     repo, owner = repo_path(args.repo), repo_path(args.owner)
     require_git_root(repo)
     require_git_root(owner)
-    owner_branch = current_branch(owner)
-    if not branch_details(owner_branch)["supported"] or (args.role != "owner"
-                                                         and not owner_branch.startswith("feature/")):
+    owner_name = current_branch(owner)
+    if not branch_details(owner_name)["supported"]:
         raise MDFError("角色与 owner 交付类型不符", code="stage_branch")
-    expected = owner_branch if args.role == "owner" else role_names(owner_branch)[args.role]
+    if args.role != "owner" and owner_branch(owner_name) != owner_name:
+        raise MDFError("角色与 owner 交付类型不符", code="stage_branch")
+    index = args.index
+    if isinstance(index, bool) or not isinstance(index, int) or index < 1:
+        raise MDFError("index 必须是 ≥1 的整数", code="invalid_roster")
+    if args.role == "owner":
+        expected = owner_name
+    else:
+        expected = role_branch(args.role, owner_name, index)
     trees = worktree_map(owner)
     if (current_branch(repo) != expected or trees.get(expected, Path()).resolve() != repo
             or common_dir(repo) != common_dir(owner)
@@ -35,6 +43,9 @@ def command_worktree_check(args):
         current = require_design(repo, root, data)
         if current["design"] != require_design(owner, owner_root, owner_data)["design"]:
             raise MDFError("角色与 owner 的设计不同", code="stale_gate")
+        roster = data["roster"]
+        if args.role != "owner" and index > roster[args.role]:
+            raise MDFError("index 超出 roster", code="invalid_roster")
         result["fingerprints"] = current
         if args.handoff:
             ensure_clean(repo)

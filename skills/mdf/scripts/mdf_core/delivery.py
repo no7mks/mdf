@@ -8,6 +8,7 @@ from .delivery_state import (
 from .errors import MDFError, emit
 from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
+from .roster import parse_role_branch, role_branch
 from .verification import manifest_verification, parse_suite_names
 from .closeout_validate import run_verify_commands
 from .validate_links import require_existing_local_links
@@ -31,10 +32,24 @@ def policy_input(raw, verification):
     return policy
 
 
-def require_stage_branch(repo, stage):
+def require_stage_branch(repo, stage, data):
     branch = current_branch(repo)
-    allowed = {"write-tests": ("qa/",), "implement": ("dev/",)}
-    if not branch.startswith(allowed.get(stage, ("feature/",))):
+    owner = data["branch"]
+    roster = data["roster"]
+    parsed = parse_role_branch(branch)
+    if stage == "write-tests":
+        if roster["qa"] == 0:
+            allowed = branch == owner
+        else:
+            allowed = parsed is not None and parsed[1] == "qa"
+    elif stage == "implement":
+        if roster["dev"] == 0:
+            allowed = branch == owner
+        else:
+            allowed = parsed is not None and parsed[1] == "dev"
+    else:
+        allowed = branch == owner
+    if not allowed:
         raise MDFError("该阶段不允许在当前角色分支执行", code="stage_branch")
 
 
@@ -42,7 +57,7 @@ def record_stage(repo, root, data, args):
     stage = args.stage
     if stage not in STAGES:
         raise MDFError("record 需要有效阶段", code="invalid_stage")
-    require_stage_branch(repo, stage)
+    require_stage_branch(repo, stage, data)
     if not args.summary or not args.summary.strip():
         raise MDFError("gate 需要非空语义审查摘要", code="missing_review")
     if stage == "design":
@@ -136,7 +151,7 @@ def check(repo, root, data, stage):
         return require_finish(repo, root, data)
     current = require_design(repo, root, data)
     if stage in {"write-tests", "implement"}:
-        require_stage_branch(repo, stage)
+        require_stage_branch(repo, stage, data)
         return current
     if stage == "converge":
         for prerequisite in ("write-tests", "implement"):
@@ -171,24 +186,38 @@ def command_delivery(args):
         result = check(repo, root, data, args.stage)
     elif args.action == "integrate":
         from .delivery_git import integrate
-        result = integrate(repo, root, data, args.test_approval)
+        result = integrate(
+            repo, root, data, args.test_approval,
+            getattr(args, "qa_branch", None), getattr(args, "dev_branch", None),
+        )
     else:
         from .gitutil import worktree_map
-        from .delivery_state import role_names
         trees = worktree_map(repo)
         owner = data["branch"]
-        slots = {"owner": owner, **role_names(owner)}
+        roster = data["roster"]
+
+        def slot(name):
+            return {
+                "branch": name,
+                "path": str(trees[name]) if name in trees else None,
+            }
+
         result = {
             "delivery": data,
             "path": str(root.relative_to(repo)),
             "gates": [stage for stage in STAGES
                       if (root / "gates" / f"{stage}.json").exists()],
+            "roster": roster,
             "worktrees": {
-                key: {
-                    "branch": name,
-                    "path": str(trees[name]) if name in trees else None,
-                }
-                for key, name in slots.items()
+                "owner": slot(owner),
+                "qa": [
+                    {"index": index, **slot(role_branch("qa", owner, index))}
+                    for index in range(1, roster["qa"] + 1)
+                ],
+                "dev": [
+                    {"index": index, **slot(role_branch("dev", owner, index))}
+                    for index in range(1, roster["dev"] + 1)
+                ],
             },
         }
     emit({"ok": True, "operation": f"delivery-{args.action}", "result": result})

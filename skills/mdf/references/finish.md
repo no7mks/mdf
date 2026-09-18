@@ -141,13 +141,13 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
   逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、需变更目标或
   无法解决时才停止询问，报告冲突与已尝试的修复。
 - 只要本次集成产生新提交，无论是否冲突，都以集成后的 HEAD 执行增量新一轮
-  code-review：左端点为集成前 final_head，重新固定 review_head，三人覆盖增量
+  code-review：左端点为集成前 final_head，重新固定 review_head，按 roster.reviewers 覆盖增量
   范围并复核上轮问题，完成裁定、修复与所需 suite。不复用集成前报告，也不将
   集成当作旧审查的修复续办。无有效上轮记录时按首轮从交付起点审到集成后 HEAD。
 - 主线已包含且审查证据有效时无需重复合并或审查；证据缺失或过期时内部执行 code-review，
   通过后继续本次 finish。feature 仍须满足 code-review 的 design/converge 前置条件。
 
-四种分支均须有完整且有效的三份独立审查、主 Agent 裁定、修复复核与验证记录。
+四种分支均须有完整且有效的 roster.reviewers 份独立审查、主 Agent 裁定、修复复核与验证记录。
 已收口 release/hotfix 只核对已有集成与审查证据；若需要新集成或实现修改，停止报告收口状态不一致，
 不得覆盖版本目录或改写已开始发布的源提交。
 

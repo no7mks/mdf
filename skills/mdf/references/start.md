@@ -1,6 +1,6 @@
 # Start
 
-一次只启动一个交付 kind。feature 同时建立 owner 与 qa/dev 角色分支。
+一次只启动一个交付 kind。start 按 roster 建立 owner 与可选 qa/dev 角色分支。
 
 ## 决策树
 
@@ -102,34 +102,38 @@ PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写�
 feature 使用 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`，
 不传 `--name`；CLI 从 PRP 文件名取出 slug。
 bugfix 使用 `--bug <Bug-ID>`，不传 `--name`；CLI 用该 ID 作为分支名。
-release/hotfix 使用 `--version <semver>`；
+release/hotfix 使用 `--version <semver>`。
+未指定人数时 feature 默认 `--qa 1 --dev 1 --reviewers 3`，其他 kind 默认
+`0 0 3`。用户可改这三个整数；一侧为 0 另一侧 ≥1 时 CLI 把 0 抬成 1。
 CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
 feature/bugfix/release 从本地 develop 创建，hotfix 从本地 master 创建。
 本地已有同名分支则失败，不检查远端。
 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立
 worktree，路径等于分支名，`/` 为嵌套目录；不在当前目录开分支、不抢占当前
-checkout。feature 同时建立 owner `feature/<slug>` 与角色
-`qa/feature/<slug>`、`dev/feature/<slug>`；其他 kind 只建 owner。
-成功 JSON 的 `worktree` 是 owner 工作目录；feature 另含 `roles`。
-创建失败时拆除本次已建的全部 worktree 与分支。
+checkout。roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为
+`qa/2/<owner>`、`dev/2/<owner>`；`0,0` 只建 owner。
+成功 JSON 含 `worktree`（owner）、冻结后的 `roster` 与 `roles.qa` / `roles.dev`
+列表。创建失败时拆除本次已建的全部 worktree 与分支。
 
 验收：检查、本地分支与实际工作目录。
 
 异常与交接：创建前检查失败时不创建分支并报告 finding；创建中失败则拆除已建
 worktree 与分支。不推送，不设置 upstream。
 CLI 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 固定起点完整 hash，
-供 bugfix/hotfix code-review 使用；删除分支时该配置随分支删除，不设置 upstream。
-feature CLI 另固定 start_commit，在 owner 写入 changes/unreleased/<slug>/ 的目标和身份并提交。
-后续 write-tests / implement 改用 `roles` 路径。
-创建成功进入 4，本步不结束。其他 kind 不创建 feature 阶段材料；bugfix 的交付
-suite 关联由 code-review 步骤 1 写入，本步不写。
+供 bugfix/hotfix code-review 使用；并以 `branch.<owner>.mdf-roster` 冻结人数。
+删除分支时该配置随分支删除，不设置 upstream。
+feature 以及 roster ≥1 的其他 kind 在 owner 写入
+`changes/unreleased/<slug>/delivery.json`（含 roster）；feature 另写目标并提交。
+roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
+创建成功进入 4，本步不结束。roster `0,0` 的非 feature 不创建阶段材料；bugfix
+的交付 suite 关联由 code-review 步骤 1 写入，本步不写。
 
 <a id="s4"></a>
 
 **切换**
 
 目标固定为步骤 3 JSON 的 owner：`worktree` 绝对路径与 `branch` 完整分支名。
-feature 的 qa/dev 不在本步切换。按 `references/common.md` 的「切换工作区」
+qa/dev 不在本步切换。按 `references/common.md` 的「切换工作区」
 规则判定当前 agent 并切到该路径与分支，向用户给出应切到的绝对路径与分支名。
 未切到则留在 4，重复对应指引，不拆除已建 worktree 与分支。
 独立调用通过后结束，由用户手动触发 design 或通过 next 委托。

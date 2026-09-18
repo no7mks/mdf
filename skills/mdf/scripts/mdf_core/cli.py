@@ -112,6 +112,9 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--bug")
     start.add_argument("--objectives-file")
     start.add_argument("--version")
+    start.add_argument("--qa", type=int)
+    start.add_argument("--dev", type=int)
+    start.add_argument("--reviewers", type=int)
     start.set_defaults(func=command_start)
 
     from .list_objects import command_list
@@ -150,6 +153,8 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--policy-file")
     delivery.add_argument("--test-approval")
     delivery.add_argument("--item", action="append", default=[])
+    delivery.add_argument("--qa-branch")
+    delivery.add_argument("--dev-branch")
     delivery.set_defaults(func=command_delivery)
 
     from .planning import command_planning
@@ -168,6 +173,7 @@ def build_parser() -> argparse.ArgumentParser:
     worktree.add_argument("--repo", required=True)
     worktree.add_argument("--owner", required=True)
     worktree.add_argument("--role", choices=("owner", "qa", "dev"), required=True)
+    worktree.add_argument("--index", type=int, default=1)
     worktree.add_argument("--design-commit")
     worktree.add_argument("--expected-head")
     worktree.add_argument("--handoff", action="store_true")

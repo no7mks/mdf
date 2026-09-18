@@ -43,14 +43,14 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
     for rule in (
         "必须分别交给 subagent，不由主 Agent 串行代做",
         "两路已有一条运行时", "不得重复创建执行者",
-        "worktrees.qa.path", "worktrees.dev.path", "规范化后的 owner、qa、dev 路径必须两两不同",
+        "worktrees.qa", "worktrees.dev", "规范化后的 owner、qa、dev 路径必须两两不同",
         "worktree-check --repo <角色绝对路径> --owner <owner绝对路径>",
         "--design-commit <固定设计提交>", "--handoff",
         "主 Agent 分派前和 subagent 首次操作时都运行内部 CLI",
         "不得假设 subagent 继承主 Agent cwd", "不悄悄降级串行",
         "不在任一路仍运行时执行 converge 或删除角色 worktree",
         "tests（qa）或 implementation（dev）指纹", "同一可写 worktree 不并发派工",
-        "code-review 内部仍强制 3 个 subagent 同范围只读审查",
+        "code-review 内部按 roster.reviewers 启动独立 subagent",
         "仅一路未完成走步骤 3",
         "禁止把主 Agent 会话切离 owner",
         "禁止 `move_agent_to_root`",
@@ -76,8 +76,8 @@ def test_converge_can_resume_from_owner_after_role_cleanup(python_exe, tmp_path)
     assert not qa.exists() and not dev.exists()
     # 模拟集成清理后、全绿之前的中断；续办仅检查已集成的证据，不再次 integrate。
     status = payload(mdf(python_exe, "delivery", "status", "--repo", str(owner)))["result"]
-    assert status["worktrees"]["qa"]["path"] is None
-    assert status["worktrees"]["dev"]["path"] is None
+    assert status["worktrees"]["qa"][0]["path"] is None
+    assert status["worktrees"]["dev"][0]["path"] is None
     current = payload(mdf(python_exe, "delivery", "check", "--repo", str(owner),
                           "--stage", "converge"))["result"]
     for stage in ("write-tests", "implement"):

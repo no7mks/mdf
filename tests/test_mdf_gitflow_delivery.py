@@ -46,10 +46,11 @@ def test_start_does_not_require_origin(
     assert result["pushed"] is False
     assert "upstream" not in result
     assert result["branch"] == "feature/service-health"
-    assert result["roles"]["qa"]["branch"] == "qa/feature/service-health"
-    assert result["roles"]["dev"]["branch"] == "dev/feature/service-health"
-    assert Path(result["roles"]["qa"]["worktree"]).is_dir()
-    assert Path(result["roles"]["dev"]["worktree"]).is_dir()
+    assert result["roster"] == {"qa": 1, "dev": 1, "reviewers": 3}
+    assert result["roles"]["qa"][0]["branch"] == "qa/feature/service-health"
+    assert result["roles"]["dev"][0]["branch"] == "dev/feature/service-health"
+    assert Path(result["roles"]["qa"][0]["worktree"]).is_dir()
+    assert Path(result["roles"]["dev"][0]["worktree"]).is_dir()
     tracking = run(["git", "rev-parse", "--abbrev-ref", "@{upstream}"], cwd=work)
     assert tracking.returncode != 0
     assert git(repo, "branch", "--show-current").stdout.strip() == "master"
@@ -92,7 +93,7 @@ def test_start_uses_local_base_without_upstream(
     assert git(repo, "branch", "--show-current").stdout.strip() != result["branch"]
     if kind == "feature":
         expected = git(work, "rev-parse", "HEAD").stdout.strip()
-        qa = Path(result["roles"]["qa"]["worktree"])
+        qa = Path(result["roles"]["qa"][0]["worktree"])
         assert qa == repo.parent / f"{repo.name}-worktrees" / "qa" / Path(result["branch"])
         assert git(qa, "rev-parse", "HEAD").stdout.strip() == result["start_commit"]
     assert git(work, "rev-parse", "HEAD").stdout.strip() == expected
@@ -232,7 +233,7 @@ def test_start_feature_rejects_name_and_derives_slug_from_prp(
         "--proposal", "prp-001", "--objectives-file", str(obj),
     ))
     assert created["branch"] == "feature/service-health"
-    assert created["roles"]["qa"]["branch"] == "qa/feature/service-health"
+    assert created["roles"]["qa"][0]["branch"] == "qa/feature/service-health"
 
 
 def test_start_rewrites_repo_root_style_objectives_links(
@@ -280,7 +281,8 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
         "--bug", "bug-CD34",
     ))
     assert created["branch"] == "bugfix/bug-CD34"
-    assert "roles" not in created
+    assert created["roster"] == {"qa": 0, "dev": 0, "reviewers": 3}
+    assert created["roles"] == {"qa": [], "dev": []}
 
 
 @pytest.mark.parametrize("kind", ["bugfix", "hotfix"])

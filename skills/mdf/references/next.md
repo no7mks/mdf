@@ -49,8 +49,8 @@
 
 先按以下顺序判定，命中即停止：
 
-- feature 交付步骤：当前分支为 `feature/<slug>`、`qa/feature/<slug>` 或
-  `dev/feature/<slug>` 时，本次肯定是该 feature 的交付步骤，进入续办。
+- feature 交付步骤：当前分支为 Gitflow 交付分支，或 `qa/` / `dev/` 角色分支
+  （如 `qa/feature/`）时，本次肯定是该交付的步骤，进入续办。
   若该 feature 正由已显式启动的 deliver 协调，续办其未完成内部步骤后返回
   deliver。
 - 在途推理：其余情况按下方规则识别在途流程。

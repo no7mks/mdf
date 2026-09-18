@@ -21,7 +21,7 @@ def git_primary(repo):
 def role_paths(python_exe, owner):
     trees = payload(mdf(python_exe, "delivery", "status", "--repo", str(owner))
                     )["result"]["worktrees"]
-    return Path(trees["qa"]["path"]), Path(trees["dev"]["path"])
+    return Path(trees["qa"][0]["path"]), Path(trees["dev"][0]["path"])
 
 
 def sync_roles(python_exe, owner):
@@ -44,7 +44,7 @@ def setup_delivery(python_exe, tmp_path):
     assert work == (
         primary.parent / f"{primary.name}-worktrees" / "feature" / "service-health"
     )
-    qa = Path(data["roles"]["qa"]["worktree"])
+    qa = Path(data["roles"]["qa"][0]["worktree"])
     assert qa == (
         primary.parent / f"{primary.name}-worktrees" / "qa" / "feature"
         / "service-health"
@@ -257,12 +257,12 @@ def test_status_lists_role_worktrees(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     first = payload(mdf(python_exe, "delivery", "status", "--repo", str(repo))
                     )["result"]["worktrees"]
-    assert first["qa"]["branch"] == "qa/feature/service-health"
-    assert first["dev"]["branch"] == "dev/feature/service-health"
+    assert first["qa"][0]["branch"] == "qa/feature/service-health"
+    assert first["dev"][0]["branch"] == "dev/feature/service-health"
     qa, _dev = sync_roles(python_exe, repo)
     again = payload(mdf(python_exe, "delivery", "status", "--repo", str(qa))
                     )["result"]["worktrees"]
-    assert Path(again["qa"]["path"]) == qa
+    assert Path(again["qa"][0]["path"]) == qa
     assert Path(again["owner"]["path"]) == repo
 
 

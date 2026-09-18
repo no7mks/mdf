@@ -15,7 +15,16 @@ from .gitutil import (
     require_git_root,
     run,
     sibling_worktree,
+    unreleased_slug,
     worktree_map,
+)
+from .roster import (
+    freeze_roster,
+    resolve_roster,
+    role_branch,
+    role_branches,
+    start_branches,
+    write_roster_config,
 )
 from .textutil import slugify, stable_semver
 
@@ -139,9 +148,8 @@ def command_start(args) -> None:
                            code="invalid_version")
         suffix = args.version
     branch = f"{args.kind}/{suffix}"
-    names = [branch]
-    if args.kind == "feature":
-        names.extend([f"qa/{branch}", f"dev/{branch}"])
+    roster = freeze_roster(args.kind, args.qa, args.dev, args.reviewers)
+    names = start_branches(branch, roster)
     for name in names:
         if _exists(repo, f"refs/heads/{name}"):
             raise MDFError(f"Branch already exists: {name}",
@@ -160,35 +168,62 @@ def command_start(args) -> None:
         start_commit = _git(work, "rev-parse", "HEAD").stdout.strip()
         _git(work, "config", "--local",
              f"branch.{branch}.mdf-start-commit", start_commit)
-        if objectives is not None:
+        write_roster_config(work, branch, roster)
+        write_identity = objectives is not None or roster["qa"] > 0
+        if write_identity:
             from .delivery_state import safe, write_json
-            target = safe(work, work / "changes/unreleased" / suffix)
+            folder = suffix if args.kind == "feature" else unreleased_slug(
+                branch_details(branch)
+            )
+            target = safe(work, work / "changes/unreleased" / folder)
             if target.exists():
                 raise MDFError("交付 slug 已存在", code="collision")
             target.mkdir(parents=True)
-            dest = target / "objectives.md"
-            from .moves import rewrite_repo_root_style_links
-            objectives = rewrite_repo_root_style_links(work, dest, objectives)
-            dest.write_text(objectives, encoding="utf-8")
-            write_json(target / "delivery.json", {
-                "proposal": args.proposal, "slug": suffix,
-                "branch": branch, "start_commit": start_commit,
-            })
+            identity = {
+                "branch": branch, "roster": roster, "slug": folder,
+                "start_commit": start_commit,
+            }
+            if args.kind == "feature":
+                identity["proposal"] = args.proposal
+            elif args.kind == "bugfix":
+                identity["bug"] = args.bug
+            if objectives is not None:
+                dest = target / "objectives.md"
+                from .moves import rewrite_repo_root_style_links
+                objectives = rewrite_repo_root_style_links(
+                    work, dest, objectives
+                )
+                dest.write_text(objectives, encoding="utf-8")
+            write_json(target / "delivery.json", identity)
             _git(work, "add", "--", str(target.relative_to(work)))
-            _git(work, "commit", "-m",
-                 f"docs(delivery): 确认 {args.proposal} 交付目标")
+            message = (
+                f"docs(delivery): 确认 {args.proposal} 交付目标"
+                if args.kind == "feature"
+                else "docs(delivery): 冻结 roster"
+            )
+            _git(work, "commit", "-m", message)
     except MDFError:
         _discard(repo, created)
         raise
+    created_paths = {name: path for name, path in created}
     payload = {
         "ok": True, "operation": "start", "branch": branch, "base": base,
         "start_commit": start_commit, "worktree": str(work), "pushed": False,
+        "roster": roster,
+        "roles": {
+            role: [
+                {
+                    "index": index,
+                    "branch": role_branch(role, branch, index),
+                    "worktree": str(created_paths[
+                        role_branch(role, branch, index)
+                    ]),
+                }
+                for index in range(1, roster[role] + 1)
+            ]
+            for role in ("qa", "dev")
+        },
     }
-    if args.kind == "feature":
-        payload["roles"] = {
-            "qa": {"branch": created[1][0], "worktree": str(created[1][1])},
-            "dev": {"branch": created[2][0], "worktree": str(created[2][1])},
-        }
     emit(payload)
 
 
@@ -233,7 +268,7 @@ def command_finish_gitflow(args) -> None:
         raise MDFError("Branch develop must exist", code="missing_branch")
     complete_feature = None
     if kind == "feature":
-        from .delivery_state import locate, require_finish, role_names
+        from .delivery_state import locate, require_finish
         from .proposals import records
         from .prp_split import render
         root, data = locate(repo)
@@ -248,11 +283,6 @@ def command_finish_gitflow(args) -> None:
         path, proposal, body = records(repo)[data["proposal"]]
         if proposal["status"] != "ready":
             raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
-        primary = primary_worktree(repo)
-        trees = worktree_map(primary)
-        for name in role_names(source).values():
-            if _exists(repo, f"refs/heads/{name}") or name in trees:
-                raise MDFError("角色分支尚未集成", code="roles_pending")
         proposal_rel = path.relative_to(repo)
         def complete_feature(merge_repo: Path):
             # Only a successful merge to develop can mark the result implemented.
@@ -260,7 +290,14 @@ def command_finish_gitflow(args) -> None:
             merged, merged_body = read_frontmatter(target_path)
             target_path.write_text(render({**merged, "status": "implemented"}, merged_body))
             _git(merge_repo, "add", "--", str(proposal_rel))
+        finish_roster = data["roster"]
+    else:
+        finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)
+    trees = worktree_map(primary)
+    for name in role_branches(source, finish_roster):
+        if _exists(repo, f"refs/heads/{name}") or name in trees:
+            raise MDFError("角色分支尚未集成", code="roles_pending")
 
     def merge_into(target, incoming, hook=None):
         occupant = worktree_map(primary).get(target)

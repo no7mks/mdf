@@ -246,7 +246,7 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     from conftest import skill_dir
     text = (skill_dir("mdf") / "references/code-review.md").read_text()
     assert "修复续办 3；否则 2" in text
-    assert "三份报告有效且修复续办" in text
+    assert "已齐审查且修复续办" in text
     assert "保留原 review_head，不覆盖原报告" in text
     assert "首轮未齐时进入 2 补齐" in text
     assert "增量新一轮" in text

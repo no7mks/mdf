@@ -147,16 +147,18 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
-| feature 设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
-| feature 两路均未完成且前置条件满足 | 并行委托 `references/write-tests.md` 与 `references/implement.md` |
-| feature 仅一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成一路 |
-| feature 两路完成但未收敛 | 在 owner 委托 `references/converge.md` |
-| bugfix/hotfix/release 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
+| 有交付材料且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
+| roster ≥1 且 qa/dev 均有未完成路且前置条件满足 | 并行委托 `references/write-tests.md` 与 `references/implement.md` |
+| roster ≥1 仅一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成一路 |
+| roster `0,0` 的 feature 测试或实现未完成 | 主 Agent 在 owner 串行 write-tests 再 implement |
+| 测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
+| bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
 | 实现完成且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
-bugfix/hotfix/release 使用对应 Bug、热修复目标或发布范围，不套用 feature 的阶段 gate。
+bugfix/hotfix/release 在 roster `0,0` 时使用对应 Bug、热修复目标或发布范围，不套用
+feature 阶段 gate；roster ≥1 时走 design / write-tests / implement / converge。
 没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
 发现缺少设计决定或验收依据时：默认模式询问；`--auto-pilot` 能由仓库证据裁定则自裁定，
 否则属死硬阻塞。不虚构开发任务，也不把未实现的目标判定为完成。
@@ -167,13 +169,15 @@ finish 已开始而代码发生变化时按 code-review 的复核规则处理后
 ### 并行委托与 worktree 身份
 
 步骤 4：所有当前可并行且互不依赖的 intent 必须分别交给 subagent，不由主 Agent 串行代做。
-当前明确的并行组合为 feature 的 write-tests 与 implement，须已确认并提交同一 design 与共享底座。
+roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implement，须已确认并提交
+同一 design 与共享底座。qa 与 dev 互不传入路径；同侧多路亦互不传入兄弟路径。
 两路已有一条运行时，等待其结果并启动另一条可执行的空闲路；不得重复创建执行者。
 仅一路未完成走步骤 3，由主 Agent 用该角色绝对路径与 `git -C` 续办，不走步骤 4；
 禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。步骤 4 的 subagent
-按其 intent 切到角色 worktree。
+按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
-code-review 内部仍强制 3 个 subagent 同范围只读审查，按其契约执行，主 Agent 汇总修复。
+code-review 内部按 roster.reviewers 启动独立 subagent 同范围只读审查，按其契约执行，
+主 Agent 汇总修复。
 资源不足时等待已有执行者释放；无法提供所需 subagent 能力时报告阻塞，不悄悄降级串行。
 
 分派前主 Agent 从 owner 的 `delivery status` 取得现有绝对路径与分支名，
@@ -184,12 +188,12 @@ Git common dir、设计提交、对应 intent、读写边界与完成证据，�
 
 | subagent | 必须使用的路径与分支 | 写入职责 |
 | --- | --- | --- |
-| write-tests | `worktrees.qa.path`；`qa/feature/<slug>` | 原 write-tests 契约允许的测试、配置及阶段证据 |
-| implement | `worktrees.dev.path`；`dev/feature/<slug>` | 原 implement 契约允许的实现及阶段证据 |
-| code-review 的三名审查者 | owner 的同一绝对路径与固定 review_head | 只读，不建立角色 worktree |
+| write-tests | `worktrees.qa` 项的 path/branch（index 1 如 `qa/feature/<slug>`） | 测试、配置及阶段证据 |
+| implement | `worktrees.dev` 项的 path/branch（index 1 如 `dev/feature/<slug>`） | 实现及阶段证据 |
+| code-review 的审查者 | owner 的同一绝对路径与固定 review_head | 只读，不建立角色 worktree |
 
 主 Agent 分派前和 subagent 首次操作时都运行内部 CLI：
-`worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev>`。
+`worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev> [--index N]`。
 脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
 角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>` 再检查共同基线与指纹。
 审查者使用 `--role owner --expected-head <review_head>`，只读验证，不合并或写入。

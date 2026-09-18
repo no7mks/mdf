@@ -33,7 +33,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 强制 qa worktree 并检查前置 gate | 角色 worktree、共同设计与底座 | 2 | 停止并报告 |
+| 1 | 入口 | 约束 | 按 roster 进入 qa 或 owner 并检查 gate | worktree、设计与底座 | 2 | 停止并报告 |
 | 2 | 用例 | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、suite key 已建 | 3 | 停止并报告 |
 | 3 | 记录 | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
@@ -41,12 +41,16 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-先运行 `delivery status`，读取 `worktrees.qa.path`；缺树则停止。
-用 `git -C <qa 绝对路径>` 与该路径下的绝对文件路径操作。对 owner 分支执行
+先运行 `delivery status`，读取 `roster`。
+`roster.qa == 0` 时在 owner 编写测试，不切角色树。
+`roster.qa ≥ 1` 时读取 `worktrees.qa` 列表；缺对应树则停止。
+独立调用或只续办一路时用该项的 `path` 与 `branch`。deliver 对列表每一项分派
+独立 subagent，不把兄弟路径传入任务。
+用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作。角色树对 owner 分支执行
 `git merge --no-ff`；已在该 worktree 时仍先 merge。冲突保留现场。
-不得在 feature 上编写或补写测试（指 owner `feature/<slug>`，不是 kind）。
-独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与
-`qa/feature/<slug>`，不是 owner：Cursor 对该 qa 路径调用 `move_agent_to_root`
+`roster.qa ≥ 1` 时不得在 feature 上编写或补写测试（指 owner，不是 kind）。
+独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与分支（index 1
+形如 `qa/feature/<slug>`），不是 owner：Cursor 对该 qa 路径调用 `move_agent_to_root`
 （禁止 `move_agent_to_cloned_root`），新 shell 核对 toplevel 与当前分支；其他宿主
 打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止。
 deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。

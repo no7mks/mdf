@@ -257,13 +257,13 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "不在当前目录开分支" in start
     assert "write-tests 与 implement 后续都会依赖的共享代码底座" in design
     assert "底座未写入该基线则不得结束" in design
-    assert "worktrees.qa.path" in tests
+    assert "worktrees.qa" in tests
     assert "不得在 feature 上编写或补写测试" in tests
     assert "本阶段不要求项目全绿" in tests
     assert "不得因断言失败拒绝记录 gate" in tests
     assert "全绿由 converge 负责" in tests
     assert "不要求全绿" in contract
-    assert "worktrees.dev.path" in implement
+    assert "worktrees.dev" in implement
     assert "不得在 feature 上实现" in implement
     assert "git merge --no-ff" in tests
     assert "git merge --no-ff" in implement
@@ -460,13 +460,13 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     text = workflow("code-review")
     table = rows(text)
     assert table[1][2] == "Subagent"
-    assert "3 个独立 subagent" in table[1][3]
+    assert "roster.reviewers（默认 3）" in table[1][3]
     assert table[1][5] == "3"
     assert table[3][6] == "可修复则 3；其他停止"
     for rule in (
         "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
-        "三份结果全部返回前不修改", "以证据裁定，不按票数决定",
-        "不强制再次启动 3 个 subagent", "不足 3 个", "无法补齐则停止",
+        "全部审查结果返回前不修改", "以证据裁定，不按票数决定",
+        "不强制再次启动审查 subagent", "不足 roster.reviewers 个", "无法补齐则停止",
     ):
         assert rule in text
 
@@ -486,7 +486,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         assert rule in text
     finish = workflow("finish")
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
-    assert "四种分支均须有完整且有效的三份独立审查" in finish
+    assert "四种分支均须有完整且有效的 roster.reviewers 份独立审查" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
     assert "都以集成后的 HEAD 执行增量新一轮" in finish
     assert "不复用集成前报告" in finish

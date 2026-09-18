@@ -24,21 +24,29 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 主线为 start → design → [write-tests ∥ implement] → converge → code-review → finish。
 `fact-update` 是 CLI gate，只由 finish 前段内嵌的 fact update 记录；独立 `$mdf fact update`
 不记录 gate。它不是用户主线箭头上的一站。
-bugfix/hotfix/release 也须完成 code-review，范围与三份独立审查见 `references/code-review.md`；
-不要求 feature 的 design、write-tests、implement 或 converge 阶段。
+bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
+implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
+code-review 的独立审查份数取 roster.reviewers（默认 3），见 `references/code-review.md`。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
-可并行阶段强制分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
+可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
 Gitflow 收口前确认。
 不新增独立 Owner 调度服务或统一状态协议。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。
-feature 固定为 squad：start 同时建立 owner 与 `qa/feature/<slug>`、`dev/feature/<slug>`
-角色分支，三者同一 start 基线。design 只在 owner 提交共用代码底座；
-两路不得各自再写底座。design 不创建角色 worktree。
-write-tests 与 implement 切到已有 `qa/feature/<slug>` 或
-`dev/feature/<slug>`，入口先 no-ff merge owner，不得在 feature 上编写测试或实现。
+roster 在 start 时冻结，写入 `delivery.json`（有交付材料时）与
+`branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`。
+owner 恒为 1。feature 默认 `1,1,3`，其他 kind 默认 `0,0,3`；四种 kind 都可改。
+qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
+`0,0` 时测试与实现都在 owner 上做。`≥1` 时 start 按人数建立
+`qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`。
+design 只在 owner 提交共用代码底座；两路不得各自再写底座。
+design 不创建角色 worktree。
+write-tests 与 implement 在对应角色树上执行，入口先 no-ff merge owner；
+`0,0` 时在 owner 上编写测试与实现。qa 与 dev 互不传入路径。
+同侧 ≥2 时并行互不知情；owner 选一个做 base，由该路吸收其余优点，
+converge 只合入该 winner，其余丢弃。
 本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate

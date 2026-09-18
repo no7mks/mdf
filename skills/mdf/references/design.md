@@ -35,7 +35,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 确认 feature 的 start 记录与 objectives | PRP、start 记录、objectives | 2 | 停止并报告 |
+| 1 | 入口 | 约束 | 确认 start 记录与 objectives | PRP 或 Bug、start 记录、objectives | 2 | 停止并报告 |
 | 2 | 设计 | 约束 | 委托 clarify，确认设计、测试策略及双方共用代码底座 | 用户确认的设计与底座方案 | 3 | 停止并报告 |
 | 3 | 基线 | 脚本 | 写设计、policy 与底座，记录 gate 并提交共同基线 | gate、底座、设计基线提交 | 结束 | 停止并报告 |
 
@@ -51,6 +51,7 @@ objectives 负责。分层后必须声明本交付 suite 名称，供 write-test
 当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
+feature 的 objectives 由 start 写入；其他 kind 在 roster ≥1 时若缺则本步先写。
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库：
 类型、接口、错误语义、明确未实现的 stub 和最小测试设施，使两路从同一提交继续，
 不得各自再写一份底座。纯文档改动不制造代码；底座未就绪不得记录 design gate。
