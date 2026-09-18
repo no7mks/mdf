@@ -4,7 +4,7 @@ import json
 from .delivery_state import gate, git, matches, require_design, read_json, safe, write_json
 from .errors import MDFError
 from .gitutil import current_branch, ensure_clean, worktree_map
-from .roster import role_branches, winner_branch
+from .roster import merge_branches, role_branches
 
 
 def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
@@ -16,13 +16,17 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
     receipt_path = safe(repo, root / "gates/integration.json")
     receipt = read_json(receipt_path) if receipt_path.exists() else None
     expected_names = role_branches(data["branch"], data["roster"])
-    qa_winner = winner_branch("qa", data["branch"], data["roster"], qa_branch)
-    dev_winner = winner_branch("dev", data["branch"], data["roster"], dev_branch)
-    winners = [name for name in (qa_winner, dev_winner) if name is not None]
+    qa_merged = merge_branches(
+        "qa", data["branch"], data["roster"], qa_branch,
+    )
+    dev_merged = merge_branches(
+        "dev", data["branch"], data["roster"], dev_branch,
+    )
+    merged = [*qa_merged, *dev_merged]
     if receipt is not None:
         if (receipt.get("design") != current["design"]
                 or set(receipt.get("branches", {})) != set(expected_names)
-                or set(receipt.get("merged", [])) != set(winners)):
+                or set(receipt.get("merged", [])) != set(merged)):
             raise MDFError("集成记录与当前交付不一致", code="stale_integration")
         for branch, head in receipt["branches"].items():
             if branch in receipt.get("merged", []):
@@ -42,14 +46,12 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
             raise MDFError(f"缺少角色分支 {branch}", code="missing_role")
         if branch in worktrees:
             ensure_clean(worktrees[branch])
-    for winner, stage, role in (
-        (qa_winner, "write-tests", "qa"),
-        (dev_winner, "implement", "dev"),
+    for branch, stage, role in (
+        *((name, "write-tests", "qa") for name in qa_merged),
+        *((name, "implement", "dev") for name in dev_merged),
     ):
-        if winner is None:
-            continue
         rel = str((root / "gates" / f"{stage}.json").relative_to(repo))
-        shown = git(repo, "show", f"{winner}:{rel}", check=False)
+        shown = git(repo, "show", f"{branch}:{rel}", check=False)
         if shown.returncode:
             raise MDFError(f"角色分支缺少 {stage} 记录", code="stale_gate")
         try:
@@ -59,8 +61,8 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
                            code="invalid_delivery") from exc
         if record.get("fingerprints", {}).get("design") != current["design"]:
             raise MDFError("角色分支没有共同设计基线", code="stale_gate")
-        common = git(repo, "merge-base", "HEAD", winner).stdout.strip()
-        changed = git(repo, "diff", "--name-only", common, winner).stdout.splitlines()
+        common = git(repo, "merge-base", "HEAD", branch).stdout.strip()
+        changed = git(repo, "diff", "--name-only", common, branch).stdout.splitlines()
         protected = [name for name in changed
                      if matches(name, policy["protected_paths"])
                      or name == ".mdf/manifest.yaml"]
@@ -68,18 +70,28 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
             raise MDFError("实现分支修改了测试或验证规则",
                            code="test_approval_required",
                            details={"paths": protected})
-    for branch in winners:
+    for branch in merged:
         if not git(repo, "merge-base", "--is-ancestor", branch, "HEAD",
                     check=False).returncode:
             continue
         result = git(repo, "merge", "--no-ff", "--no-commit", branch, check=False)
         if result.returncode:
-            raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认",
-                           code="merge_conflict")
+            unmerged = git(repo, "diff", "--name-only", "--diff-filter=U"
+                           ).stdout.splitlines()
+            allowed = {
+                str((root / "gates" / name).relative_to(repo))
+                for name in ("write-tests.json", "implement.json")
+            }
+            if not unmerged or set(unmerged) - allowed:
+                raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认",
+                               code="merge_conflict")
+            for path in unmerged:
+                git(repo, "checkout", "--ours", "--", path)
+                git(repo, "add", "--", path)
         git(repo, "commit", "-m", f"chore(delivery): 集成 {branch}")
     receipt = {
         "design": current["design"],
-        "merged": winners,
+        "merged": merged,
         "branches": {
             branch: git(repo, "rev-parse", f"refs/heads/{branch}").stdout.strip()
             for branch in expected_names

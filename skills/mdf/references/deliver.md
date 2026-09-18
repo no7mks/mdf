@@ -88,7 +88,10 @@ PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认
 ### target
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
-除 `--auto-pilot` 外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
+除 `--auto-pilot`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
+`--models` 外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
+`--qa-strategy` / `--dev-strategy` / `--review-strategy` 后跟一个取值；
+`--models` 后跟一个 token。委托 start、design、code-review 时原样转交。
 省略 target 时不在此步选型，继续上方既有锁定规则。
 
 按下列顺序自动分辨 Proposal 与 Bug，命中唯一对象即停止：
@@ -176,8 +179,8 @@ roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implem
 禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。步骤 4 的 subagent
 按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
-code-review 内部按 roster.reviewers 启动独立 subagent 同范围只读审查，按其契约执行，
-主 Agent 汇总修复。
+code-review 内部按 roster.reviewers 启动独立 subagent 只读审查，按其契约执行，
+主 Agent 汇总修复。roster.models 有值时写入各路任务；没有则不提模型或 effort。
 资源不足时等待已有执行者释放；无法提供所需 subagent 能力时报告阻塞，不悄悄降级串行。
 
 分派前主 Agent 从 owner 的 `delivery status` 取得现有绝对路径与分支名，

@@ -148,7 +148,11 @@ def command_start(args) -> None:
                            code="invalid_version")
         suffix = args.version
     branch = f"{args.kind}/{suffix}"
-    roster = freeze_roster(args.kind, args.qa, args.dev, args.reviewers)
+    roster = freeze_roster(
+        args.kind, args.qa, args.dev, args.reviewers,
+        qa_strategy=args.qa_strategy, dev_strategy=args.dev_strategy,
+        review_strategy=args.review_strategy, models=args.models,
+    )
     names = start_branches(branch, roster)
     for name in names:
         if _exists(repo, f"refs/heads/{name}"):

@@ -46,7 +46,10 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 code-review 支持 feature、bugfix、hotfix 和 release；首轮按 roster.reviewers
 （默认 3）个 subagent 覆盖起点到 review_head；同一分支后续轮次只审上轮
-final_head 以来的增量，并复核上轮问题。
+final_head 以来的增量，并复核上轮问题。默认每人全范围（replicate），
+也可切片审查（partition）。qa/dev 默认 best-of-n，也可在 design 按 partition
+分工；`$mdf start` / `design` / `deliver` / `code-review` 可带
+`--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`。
 主 Agent 汇总裁定、修复并复核。前三种分支从固定起点审查，release 从上一正式发布版本审查。
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
 冲突自动尝试解决；集成产生新提交后走增量新一轮 code-review 与所需 suite，再继续收口。

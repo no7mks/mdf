@@ -7,7 +7,7 @@ from pathlib import Path
 from .errors import MDFError
 from .gitutil import branch_details, current_branch, run, unreleased_slug
 from .paths import load_manifest, path_stays_in_repo
-from .roster import owner_branch, require_roster
+from .roster import fingerprint_data, owner_branch, require_roster
 from .verification import manifest_verification, suites_cover
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
@@ -121,7 +121,8 @@ def fingerprints(repo, root, data, config=None):
             end = match.end(1) - match.start(0)
             return full[:start] + rewrite_link_raw(raw, canonical) + full[end:]
         design[name] = hashlib.sha256(ALL_MARKDOWN_LINK_RE.sub(normalize, text).encode()).hexdigest()
-    return {"design": digest([design, data, config]), "tests": digest([tests, commands]),
+    return {"design": digest([design, fingerprint_data(data), config]),
+            "tests": digest([tests, commands]),
             "implementation": digest(implementation), "code": digest([code, commands]),
             "facts": digest(facts)}
 

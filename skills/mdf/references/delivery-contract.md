@@ -36,7 +36,8 @@ Gitflow 收口前确认。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。
 roster 在 start 时冻结，写入 `delivery.json`（有交付材料时）与
-`branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`。
+`branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
+`qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
 owner 恒为 1。feature 默认 `1,1,3`，其他 kind 默认 `0,0,3`；四种 kind 都可改。
 qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
 `0,0` 时测试与实现都在 owner 上做。`≥1` 时 start 按人数建立
@@ -45,13 +46,26 @@ design 只在 owner 提交共用代码底座；两路不得各自再写底座。
 design 不创建角色 worktree。
 write-tests 与 implement 在对应角色树上执行，入口先 no-ff merge owner；
 `0,0` 时在 owner 上编写测试与实现。qa 与 dev 互不传入路径。
-同侧 ≥2 时并行互不知情；owner 选一个做 base，由该路吸收其余优点，
-converge 只合入该 winner，其余丢弃。
+同侧 ≥2 时并行互不知情。qa/dev 默认 `best-of-n`：owner 选 base 吸收优点，
+converge 只合 winner。`partition`：design 写明各 index 切片，converge 按
+index 全部合入，冲突视为分工重叠并停止。各路 stage gate 已在合入前按分支核验；
+同路径 `write-tests.json` / `implement.json` 冲突时保留先合入的版本。
+review 默认 `replicate`（每人覆盖同一份本轮范围）；`partition` 时按切片审查。
+owner 仍汇总裁定，不按票数。
+
+`$mdf start`、`$mdf design`、`$mdf deliver`、`$mdf code-review` 可带
+`--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`。
+这些是 intent 参数，不是独立 intent。start 冻结；之后由 Agent 调用
+`delivery roster` 写入。qa/dev strategy 在 design gate 后锁定。
+review_strategy 与 models 可在 code-review 覆盖。deliver 把同一组参数
+转交给委托的 start、design、code-review。未知 `--` token 停止询问。
+`--models` 取随后一个 token；省略则不写、不问、不提。Agent 分派 subagent
+时现场解析该字符串。JSON 键为下划线形式。
 本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate
 
-通过 `delivery status/check/record/verify/integrate` 执行确定性操作。
+通过 `delivery status/check/record/verify/integrate/roster` 执行确定性操作。
 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design。write-tests 写完可编译或可加载
 执行的测试即完成，不要求全绿；全绿由 converge 负责，且相对**当前交付所需

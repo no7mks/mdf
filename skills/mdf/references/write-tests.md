@@ -55,6 +55,8 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止。
 deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
 再运行 `delivery check --stage write-tests`。
+`qa_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
+roster.models 有值时写入本路任务；没有则不提模型或 effort。
 与 implement 互不前置，可并行。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。
 只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
 回 design 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；

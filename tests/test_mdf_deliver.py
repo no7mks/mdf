@@ -22,6 +22,8 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "即将调用 `finish-gitflow` 之前", "不增加该关口",
         "位置参数至多一个", "自动分辨", "分不清就询问",
         "已有在途交付则报告错误并停止", "不续办、不重新 start",
+        "--qa-strategy", "--dev-strategy", "--review-strategy", "--models",
+        "原样转交",
     ):
         assert rule in text
     assert "不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件" in text

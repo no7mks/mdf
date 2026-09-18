@@ -8,7 +8,14 @@ from .delivery_state import (
 from .errors import MDFError, emit
 from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
-from .roster import parse_role_branch, role_branch
+from .roster import (
+    apply_roster_patch,
+    owner_branch,
+    parse_role_branch,
+    read_roster_config,
+    role_branch,
+    write_roster_config,
+)
 from .verification import manifest_verification, parse_suite_names
 from .closeout_validate import run_verify_commands
 from .validate_links import require_existing_local_links
@@ -170,6 +177,41 @@ def check(repo, root, data, stage):
     return current
 
 
+def roster_patch(args):
+    patch = {}
+    for key in ("qa_strategy", "dev_strategy", "review_strategy", "models"):
+        value = getattr(args, key, None)
+        if value is not None:
+            patch[key] = value
+    return patch
+
+
+def update_roster(repo, args):
+    branch = current_branch(repo)
+    owner = owner_branch(branch)
+    if owner != branch:
+        raise MDFError("仅 owner 可更新 roster", code="stage_branch")
+    try:
+        root, data = locate(repo)
+    except MDFError as exc:
+        if exc.code != "invalid_delivery":
+            raise
+        updated = apply_roster_patch(
+            read_roster_config(repo, owner), roster_patch(args),
+            locked_qa_dev=False,
+        )
+        write_roster_config(repo, owner, updated)
+        return updated
+    locked = (root / "gates" / "design.json").exists()
+    updated = apply_roster_patch(
+        data["roster"], roster_patch(args), locked_qa_dev=locked,
+    )
+    data["roster"] = updated
+    write_json(safe(repo, root / "delivery.json"), data)
+    write_roster_config(repo, owner, updated)
+    return updated
+
+
 def command_delivery(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -177,6 +219,10 @@ def command_delivery(args):
     ensure_safe_managed_paths(repo)
     if load_manifest(repo).get("state") != "ready":
         raise MDFError("当前操作需要 ready 仓库", code="manifest_not_ready")
+    if args.action == "roster":
+        result = update_roster(repo, args)
+        emit({"ok": True, "operation": "delivery-roster", "result": result})
+        return
     root, data = locate(repo)
     if args.action == "record":
         result = record_stage(repo, root, data, args)

@@ -4,27 +4,49 @@ from test_mdf_gitflow_delivery import local_repo
 from test_mdf_delivery import record, commit
 
 
+def frozen(qa, dev, reviewers, **extra):
+    body = {
+        "qa": qa,
+        "dev": dev,
+        "reviewers": reviewers,
+        "qa_strategy": "best-of-n",
+        "dev_strategy": "best-of-n",
+        "review_strategy": "replicate",
+    }
+    body.update(extra)
+    return body
+
+
 def test_freeze_roster_defaults_and_coercion():
     load_core_module()
     from mdf_core.errors import MDFError
-    from mdf_core.roster import freeze_roster, role_branch, require_roster
-    assert freeze_roster("feature") == {"qa": 1, "dev": 1, "reviewers": 3}
-    assert freeze_roster("bugfix") == {"qa": 0, "dev": 0, "reviewers": 3}
-    assert freeze_roster("feature", 0, 0, 2) == {
-        "qa": 0, "dev": 0, "reviewers": 2,
-    }
-    assert freeze_roster("feature", 0, 2, None) == {
-        "qa": 1, "dev": 2, "reviewers": 3,
-    }
-    assert freeze_roster("bugfix", 2, 0, 4) == {
-        "qa": 2, "dev": 1, "reviewers": 4,
-    }
+    from mdf_core.roster import (
+        freeze_roster, merge_branches, role_branch, require_roster,
+    )
+    assert freeze_roster("feature") == frozen(1, 1, 3)
+    assert freeze_roster("bugfix") == frozen(0, 0, 3)
+    assert freeze_roster("feature", 0, 0, 2) == frozen(0, 0, 2)
+    assert freeze_roster("feature", 0, 2, None) == frozen(1, 2, 3)
+    assert freeze_roster("bugfix", 2, 0, 4) == frozen(2, 1, 4)
+    assert freeze_roster(
+        "feature", qa_strategy="partition", models="qa composer",
+    ) == frozen(1, 1, 3, qa_strategy="partition", models="qa composer")
     assert role_branch("qa", "feature/foo", 1) == "qa/feature/foo"
     assert role_branch("qa", "feature/foo", 2) == "qa/2/feature/foo"
     with pytest.raises(MDFError, match="至少为 1"):
         freeze_roster("feature", 1, 1, 0)
     with pytest.raises(MDFError, match="同时为 0"):
-        require_roster({"qa": 0, "dev": 1, "reviewers": 3})
+        require_roster(frozen(0, 1, 3))
+    with pytest.raises(MDFError, match="策略字段"):
+        require_roster({"qa": 1, "dev": 1, "reviewers": 3})
+    with pytest.raises(MDFError, match="qa_strategy"):
+        freeze_roster("feature", qa_strategy="compete")
+    roster = frozen(1, 2, 3, dev_strategy="partition")
+    assert merge_branches("dev", "feature/foo", roster, None) == [
+        "dev/feature/foo", "dev/2/feature/foo",
+    ]
+    with pytest.raises(MDFError, match="不要传 winner"):
+        merge_branches("dev", "feature/foo", roster, "dev/feature/foo")
 
 
 def test_start_feature_zero_roster_has_no_role_trees(python_exe, tmp_path):
@@ -36,7 +58,7 @@ def test_start_feature_zero_roster_has_no_role_trees(python_exe, tmp_path):
         "--proposal", "prp-001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "0",
     ))
-    assert result["roster"] == {"qa": 0, "dev": 0, "reviewers": 3}
+    assert result["roster"] == frozen(0, 0, 3)
     assert result["roles"] == {"qa": [], "dev": []}
     work = Path(result["worktree"])
     identity = json.loads(
@@ -55,7 +77,7 @@ def test_start_feature_two_devs_creates_indexed_branches(python_exe, tmp_path):
         "--proposal", "prp-001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "2",
     ))
-    assert result["roster"] == {"qa": 1, "dev": 2, "reviewers": 3}
+    assert result["roster"] == frozen(1, 2, 3)
     assert result["roles"]["qa"][0]["branch"] == "qa/feature/service-health"
     assert result["roles"]["dev"][1]["branch"] == "dev/2/feature/service-health"
     assert Path(result["roles"]["dev"][1]["worktree"]).is_dir()
@@ -67,11 +89,33 @@ def test_start_bugfix_can_set_reviewers_and_roles(python_exe, tmp_path):
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
         "--bug", "bug-CD34", "--reviewers", "2",
     ))
-    assert plain["roster"] == {"qa": 0, "dev": 0, "reviewers": 2}
+    assert plain["roster"] == frozen(0, 0, 2)
     assert plain["roles"] == {"qa": [], "dev": []}
     key = "branch.bugfix/bug-CD34.mdf-roster"
     raw = git(Path(plain["worktree"]), "config", "--local", "--get", key)
     assert json.loads(raw.stdout.strip()) == plain["roster"]
+
+
+def test_start_freezes_strategy_and_models(python_exe, tmp_path):
+    repo = local_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    result = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--qa-strategy", "partition", "--dev-strategy", "partition",
+        "--review-strategy", "partition", "--models", "qa composer",
+    ))
+    expected = frozen(
+        1, 1, 3, qa_strategy="partition", dev_strategy="partition",
+        review_strategy="partition", models="qa composer",
+    )
+    assert result["roster"] == expected
+    work = Path(result["worktree"])
+    identity = json.loads(
+        (work / "changes/unreleased/service-health/delivery.json").read_text()
+    )
+    assert identity["roster"] == expected
 
 
 def test_write_tests_on_owner_when_roster_zero(python_exe, tmp_path):
@@ -152,3 +196,106 @@ def test_integrate_two_devs_merges_winner_and_deletes_loser(
     assert not git(
         owner, "for-each-ref", "refs/heads/dev/2/feature/service-health",
     ).stdout
+
+
+def _design_feature(python_exe, tmp_path, *start_args):
+    repo = local_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    started = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj), *start_args,
+    ))
+    owner = Path(started["worktree"])
+    root = owner / "changes/unreleased/service-health"
+    (root / "design.md").write_text(
+        "# 设计\n\n[objectives.md](./objectives.md)\n"
+    )
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    return started, owner, root, policy
+
+
+def test_delivery_roster_locks_qa_dev_after_design(python_exe, tmp_path):
+    started, owner, root, policy = _design_feature(python_exe, tmp_path)
+    payload(mdf(
+        python_exe, "delivery", "roster", "--repo", str(owner),
+        "--qa-strategy", "partition", "--models", "review high",
+    ))
+    identity = json.loads((root / "delivery.json").read_text())
+    assert identity["roster"]["qa_strategy"] == "partition"
+    assert identity["roster"]["models"] == "review high"
+    payload(mdf(
+        python_exe, "delivery", "record", "--repo", str(owner), "--stage",
+        "design", "--policy-file", str(policy), "--summary", "确认设计",
+    ))
+    commit(owner)
+    locked = mdf(
+        python_exe, "delivery", "roster", "--repo", str(owner),
+        "--qa-strategy", "best-of-n",
+    )
+    assert "roster_locked" in locked.stderr
+    payload(mdf(
+        python_exe, "delivery", "roster", "--repo", str(owner),
+        "--review-strategy", "partition",
+    ))
+    commit(owner)
+    qa = Path(started["roles"]["qa"][0]["worktree"])
+    git(qa, "merge", "--no-ff", "--no-edit", "-m",
+        "chore(delivery): 合入 feature/service-health",
+        "feature/service-health")
+    payload(record(python_exe, qa, "write-tests"))
+
+
+def test_integrate_partition_merges_all_dev_branches(python_exe, tmp_path):
+    started, owner, root, policy = _design_feature(
+        python_exe, tmp_path, "--qa", "1", "--dev", "2",
+        "--dev-strategy", "partition",
+    )
+    payload(mdf(
+        python_exe, "delivery", "record", "--repo", str(owner), "--stage",
+        "design", "--policy-file", str(policy), "--summary", "确认设计",
+    ))
+    commit(owner)
+    qa = Path(started["roles"]["qa"][0]["worktree"])
+    first = Path(started["roles"]["dev"][0]["worktree"])
+    second = Path(started["roles"]["dev"][1]["worktree"])
+    message = "chore(delivery): 合入 feature/service-health"
+    for path in (qa, first, second):
+        git(path, "merge", "--no-ff", "--no-edit", "-m", message,
+            "feature/service-health")
+    payload(record(python_exe, qa, "write-tests"))
+    commit(qa)
+    (first / "src/one.py").write_text("one = 1\n")
+    payload(record(python_exe, first, "implement"))
+    commit(first)
+    (second / "src/two.py").write_text("two = 2\n")
+    payload(record(python_exe, second, "implement"))
+    commit(second)
+    unexpected = mdf(
+        python_exe, "delivery", "integrate", "--repo", str(owner),
+        "--dev-branch", "dev/2/feature/service-health",
+    )
+    assert "unexpected_winner" in unexpected.stderr
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    assert (owner / "src/one.py").read_text() == "one = 1\n"
+    assert (owner / "src/two.py").read_text() == "two = 2\n"
+    assert not first.exists() and not second.exists() and not qa.exists()
+
+
+def test_bugfix_roster_update_without_delivery_json(python_exe, tmp_path):
+    repo = local_repo(tmp_path)
+    started = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+        "--bug", "bug-CD34",
+    ))
+    work = Path(started["worktree"])
+    updated = payload(mdf(
+        python_exe, "delivery", "roster", "--repo", str(work),
+        "--review-strategy", "partition", "--models", "review high",
+    ))["result"]
+    assert updated["review_strategy"] == "partition"
+    assert updated["models"] == "review high"
+    key = "branch.bugfix/bug-CD34.mdf-roster"
+    raw = git(work, "config", "--local", "--get", key)
+    assert json.loads(raw.stdout.strip()) == updated

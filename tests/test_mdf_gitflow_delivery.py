@@ -46,7 +46,11 @@ def test_start_does_not_require_origin(
     assert result["pushed"] is False
     assert "upstream" not in result
     assert result["branch"] == "feature/service-health"
-    assert result["roster"] == {"qa": 1, "dev": 1, "reviewers": 3}
+    assert result["roster"] == {
+        "qa": 1, "dev": 1, "reviewers": 3,
+        "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
+        "review_strategy": "replicate",
+    }
     assert result["roles"]["qa"][0]["branch"] == "qa/feature/service-health"
     assert result["roles"]["dev"][0]["branch"] == "dev/feature/service-health"
     assert Path(result["roles"]["qa"][0]["worktree"]).is_dir()
@@ -281,7 +285,11 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
         "--bug", "bug-CD34",
     ))
     assert created["branch"] == "bugfix/bug-CD34"
-    assert created["roster"] == {"qa": 0, "dev": 0, "reviewers": 3}
+    assert created["roster"] == {
+        "qa": 0, "dev": 0, "reviewers": 3,
+        "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
+        "review_strategy": "replicate",
+    }
     assert created["roles"] == {"qa": [], "dev": []}
 
 

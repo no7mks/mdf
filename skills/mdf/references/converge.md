@@ -44,11 +44,16 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-仅在 owner 工作。roster 同侧 ≥2 时先评审各路：选一个做 base，让该 dev-x / qa-x
-参考其余优点并在该树上改完；不把各家合进 owner。然后运行 `delivery integrate`：
-`n=1` 不传 winner；`n≥2` 传入 `--qa-branch` / `--dev-branch` 为 winner；
-`n=0` 无角色可合。脚本 no-ff 只合入 winner，提交 `gates/integration.json`，
-再删除全部角色 worktree 和分支（含未入选者）。
+仅在 owner 工作。先读冻结 roster 的 qa/dev strategy。
+`best-of-n` 且同侧 ≥2 时先评审各路：选一个做 base，让该 dev-x / qa-x
+参考其余优点并在该树上改完；不把各家合进 owner。然后运行
+`delivery integrate`：`n=1` 不传 winner；`n≥2` 传入 `--qa-branch` /
+`--dev-branch` 为 winner；`n=0` 无角色可合。脚本 no-ff 只合入 winner。
+`partition` 不选 winner、不传 `--qa-branch` / `--dev-branch`；脚本按
+index 把该侧全部分支 no-ff 合入 owner。同路径 stage gate 冲突保留先合入版本；
+其余冲突视为分工重叠，保留现场并停止。
+两侧策略可不同。完成后提交 `gates/integration.json`，再删除全部角色
+worktree 和分支（含 `best-of-n` 未入选者）。
 续办仍调用同一命令；脚本核对已记录提交是 owner 的祖先，现存角色未改变，随后只清理剩余角色。
 角色均已清理时同样核验记录，不重建角色、不再次合并。缺少有效记录却缺角色时停止并报告。
 `stale_integration` 表示现场被其他操作改变，停止；普通清理失败保留记录，排除阻塞后原地重试。

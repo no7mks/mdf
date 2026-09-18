@@ -1,4 +1,4 @@
-"""交付 roster：人数冻结、角色分支名、可见身份。"""
+"""交付 roster：人数、并行策略、角色分支名。"""
 import json
 import re
 
@@ -11,6 +11,13 @@ DEFAULTS = {
     "release": (0, 0, 3),
     "hotfix": (0, 0, 3),
 }
+
+QA_DEV_STRATEGIES = ("best-of-n", "partition")
+REVIEW_STRATEGIES = ("replicate", "partition")
+COUNT_KEYS = ("qa", "dev", "reviewers")
+STRATEGY_KEYS = ("qa_strategy", "dev_strategy", "review_strategy")
+OPTIONAL_KEYS = ("models",)
+FINGERPRINT_KEYS = (*COUNT_KEYS, "qa_strategy", "dev_strategy")
 
 _ROLE = re.compile(
     r"^(?P<role>qa|dev)(?:/(?P<index>[1-9]\d*))?/"
@@ -35,20 +42,111 @@ def _counts(qa, dev, reviewers, *, coerce):
     return {"dev": dev, "qa": qa, "reviewers": reviewers}
 
 
-def freeze_roster(kind, qa=None, dev=None, reviewers=None):
+def _choice(name, value, allowed, default):
+    if value is None:
+        return default
+    if value not in allowed:
+        raise MDFError(
+            f"roster.{name} 必须是 {' 或 '.join(allowed)}",
+            code="invalid_roster",
+        )
+    return value
+
+
+def _models(value):
+    if not isinstance(value, str) or not value.strip():
+        raise MDFError("roster.models 必须是非空字符串", code="invalid_roster")
+    return value.strip()
+
+
+def _strategies(qa_strategy, dev_strategy, review_strategy, models=None):
+    body = {
+        "qa_strategy": _choice(
+            "qa_strategy", qa_strategy, QA_DEV_STRATEGIES, "best-of-n",
+        ),
+        "dev_strategy": _choice(
+            "dev_strategy", dev_strategy, QA_DEV_STRATEGIES, "best-of-n",
+        ),
+        "review_strategy": _choice(
+            "review_strategy", review_strategy, REVIEW_STRATEGIES, "replicate",
+        ),
+    }
+    if models is not None:
+        body["models"] = _models(models)
+    return body
+
+
+def freeze_roster(kind, qa=None, dev=None, reviewers=None, *,
+                  qa_strategy=None, dev_strategy=None, review_strategy=None,
+                  models=None):
     if kind not in DEFAULTS:
         raise MDFError("未知交付 kind", code="unsupported_branch")
     default_qa, default_dev, default_reviewers = DEFAULTS[kind]
     qa = default_qa if qa is None else qa
     dev = default_dev if dev is None else dev
     reviewers = default_reviewers if reviewers is None else reviewers
-    return _counts(qa, dev, reviewers, coerce=True)
+    return {
+        **_counts(qa, dev, reviewers, coerce=True),
+        **_strategies(qa_strategy, dev_strategy, review_strategy, models),
+    }
 
 
 def require_roster(value):
-    if not isinstance(value, dict) or set(value) != {"qa", "dev", "reviewers"}:
-        raise MDFError("roster 必须含 qa、dev、reviewers", code="invalid_roster")
-    return _counts(value["qa"], value["dev"], value["reviewers"], coerce=False)
+    allowed = set(COUNT_KEYS) | set(STRATEGY_KEYS) | set(OPTIONAL_KEYS)
+    if not isinstance(value, dict) or set(value) - allowed:
+        raise MDFError("roster 必须含 qa、dev、reviewers 与策略字段",
+                       code="invalid_roster")
+    missing = (set(COUNT_KEYS) | set(STRATEGY_KEYS)) - set(value)
+    if missing:
+        raise MDFError("roster 必须含 qa、dev、reviewers 与策略字段",
+                       code="invalid_roster")
+    return {
+        **_counts(value["qa"], value["dev"], value["reviewers"], coerce=False),
+        **_strategies(
+            value["qa_strategy"], value["dev_strategy"],
+            value["review_strategy"], value.get("models"),
+        ),
+    }
+
+
+def fingerprint_roster(roster):
+    roster = require_roster(roster)
+    return {key: roster[key] for key in FINGERPRINT_KEYS}
+
+
+def fingerprint_data(data):
+    payload = dict(data)
+    payload["roster"] = fingerprint_roster(data["roster"])
+    return payload
+
+
+def add_strategy_arguments(parser):
+    parser.add_argument("--qa-strategy", choices=QA_DEV_STRATEGIES)
+    parser.add_argument("--dev-strategy", choices=QA_DEV_STRATEGIES)
+    parser.add_argument("--review-strategy", choices=REVIEW_STRATEGIES)
+    parser.add_argument("--models")
+
+
+def apply_roster_patch(current, patch, *, locked_qa_dev):
+    current = require_roster(current)
+    if not patch:
+        raise MDFError("未指定要更新的 roster 字段", code="invalid_roster")
+    extra = set(patch) - set(STRATEGY_KEYS) - set(OPTIONAL_KEYS)
+    if extra:
+        raise MDFError("roster 更新只接受 strategy 与 models",
+                       code="invalid_roster")
+    if locked_qa_dev:
+        for key in ("qa_strategy", "dev_strategy"):
+            if key in patch and patch[key] != current[key]:
+                raise MDFError("design 后不能改 qa/dev strategy",
+                               code="roster_locked")
+    merged = dict(current)
+    for key, value in patch.items():
+        if key == "models":
+            merged["models"] = _models(value)
+        else:
+            merged[key] = value
+    return require_roster(merged)
 
 
 def role_branch(role, owner, index):
@@ -141,3 +239,15 @@ def winner_branch(role, owner, roster, specified):
         raise MDFError(f"{role} winner 不属于本次 roster",
                        code="invalid_winner")
     return specified
+
+
+def merge_branches(role, owner, roster, specified):
+    roster = require_roster(roster)
+    if roster[f"{role}_strategy"] == "partition":
+        if specified:
+            raise MDFError(f"{role} 为 partition 时不要传 winner",
+                           code="unexpected_winner")
+        return [role_branch(role, owner, index)
+                for index in range(1, roster[role] + 1)]
+    winner = winner_branch(role, owner, roster, specified)
+    return [] if winner is None else [winner]

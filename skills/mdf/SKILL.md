@@ -85,6 +85,9 @@ disable-model-invocation: true
 help。`$mdf next` 无问号时执行 `references/next.md`。
 `$mdf deliver [<target>] [--auto-pilot]` 仍是 deliver，不是独立 intent。
 `--auto-pilot` 可在 target 前或后；target 由 deliver 解析。
+start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`、
+`--review-strategy`、`--models`；由对应 intent 解析并写入 roster。
+未知 `--` token 停止询问。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。

@@ -105,6 +105,9 @@ bugfix 使用 `--bug <Bug-ID>`，不传 `--name`；CLI 用该 ID 作为分支名
 release/hotfix 使用 `--version <semver>`。
 未指定人数时 feature 默认 `--qa 1 --dev 1 --reviewers 3`，其他 kind 默认
 `0 0 3`。用户可改这三个整数；一侧为 0 另一侧 ≥1 时 CLI 把 0 抬成 1。
+未指定策略时 qa/dev 为 `best-of-n`，review 为 `replicate`。调用可带
+`--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`，
+原样传给 `start` CLI 冻结。`--models` 省略则不写入 roster。
 CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
 feature/bugfix/release 从本地 develop 创建，hotfix 从本地 master 创建。
 本地已有同名分支则失败，不检查远端。
@@ -120,7 +123,7 @@ checkout。roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 �
 异常与交接：创建前检查失败时不创建分支并报告 finding；创建中失败则拆除已建
 worktree 与分支。不推送，不设置 upstream。
 CLI 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 固定起点完整 hash，
-供 bugfix/hotfix code-review 使用；并以 `branch.<owner>.mdf-roster` 冻结人数。
+供 bugfix/hotfix code-review 使用；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
 删除分支时该配置随分支删除，不设置 upstream。
 feature 以及 roster ≥1 的其他 kind 在 owner 写入
 `changes/unreleased/<slug>/delivery.json`（含 roster）；feature 另写目标并提交。

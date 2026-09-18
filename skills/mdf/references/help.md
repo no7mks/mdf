@@ -244,19 +244,24 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 qa/dev worktree 的 subagent。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
 收口（合入目标主线并删除源 worktree）前确认；死硬阻塞仍停止。
+可把 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`
+转交给 start、design、code-review。
 包含 finish 的合并及适用的 tag、发版推送。
 
 `$mdf start`
-用法：`$mdf start`
+用法：`$mdf start`；可带 `--qa-strategy` / `--dev-strategy` /
+`--review-strategy` / `--models`
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
 不在当前目录开分支，不 push。start 冻结 roster（feature 默认 1,1,3，其他
-默认 0,0,3）；人数 ≥1 时建立 qa/dev 角色树。
+默认 0,0,3）；人数 ≥1 时建立 qa/dev 角色树。qa/dev 默认 best-of-n，
+review 默认 replicate。
 
 `$mdf design`
-用法：`$mdf design`
+用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
 用途：确认设计、测试策略和共享代码底座。
 说明：结束前必须提交 write-tests 与 implement 共用的代码底座。
+partition 时在 design.md 写明各 index 切片。
 
 `$mdf write-tests`
 用法：`$mdf write-tests`
@@ -275,11 +280,12 @@ qa/dev worktree 的 subagent。
 说明：修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
 
 `$mdf code-review`
-用法：`$mdf code-review`
+用法：`$mdf code-review`；可带 `--review-strategy` / `--models`
 用途：审查并修复实现、测试和 code smell。
 说明：支持 feature/bugfix/hotfix/release；首轮按 roster.reviewers（默认 3）
 覆盖起点区间，后续增量并复核上轮问题。
 feature 位于 converge 之后；各分支均在 finish 前完成。
+默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
 
 `$mdf fact update`
 用法：`$mdf fact update`

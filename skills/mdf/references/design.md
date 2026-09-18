@@ -69,3 +69,8 @@ feature 的 objectives 由 start 写入；其他 kind 在 roster ≥1 时若缺�
 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。
+调用可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、`--models`。
+若与已冻结值不同，记录 gate 前运行 `delivery roster` 写入；design gate
+已存在时不能改 qa/dev strategy。qa 或 dev 为 `partition` 时，design.md
+必须写明各 index 的切片（做什么、不做什么）；各路仍互不看代码。
+review 的 `partition` 可在本步预写切片计划，code-review 仍可覆盖。

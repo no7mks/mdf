@@ -53,11 +53,16 @@ Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal�
 
 ## Roster
 
-一次交付在 start 时冻结的参与人数：`qa`、`dev`、`reviewers`。owner 恒为 1，
-不计入可选人数。feature 默认 `1,1,3`，其他 kind 默认 `0,0,3`；四种 kind 都可改。
-qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 则抬成 1。`0,0` 时测试与实现都在
-owner 上做；`≥1` 时各有角色 worktree。同侧 ≥2 时并行互不知情，owner 选 base
-由该路吸收其余优点，converge 只合 winner。reviewers 是 code-review 并发人数。
+一次交付在 start 时冻结的参与人数与并行策略：`qa`、`dev`、`reviewers`，
+以及 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
+owner 恒为 1，不计入可选人数。feature 默认 `1,1,3`，其他 kind 默认 `0,0,3`；
+四种 kind 都可改。qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 则抬成 1。
+`0,0` 时测试与实现都在 owner 上做；`≥1` 时各有角色 worktree。
+qa/dev 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base 由该路吸收
+其余优点，converge 只合 winner。`partition`：design 派发切片，converge 按
+index 全部合入。review 默认 `replicate`（每人覆盖同一份本轮范围），可选
+`partition`（切片审查）；owner 汇总裁定，不按票数。`models` 为一句描述，
+Agent 分派时现场解析；省略则不讨论。reviewers 是 code-review 并发人数。
 
 ## Auto-pilot
 

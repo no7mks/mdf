@@ -115,6 +115,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--qa", type=int)
     start.add_argument("--dev", type=int)
     start.add_argument("--reviewers", type=int)
+    from .roster import add_strategy_arguments
+    add_strategy_arguments(start)
     start.set_defaults(func=command_start)
 
     from .list_objects import command_list
@@ -145,7 +147,7 @@ def build_parser() -> argparse.ArgumentParser:
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",
-        choices=("status", "check", "record", "verify", "integrate"),
+        choices=("status", "check", "record", "verify", "integrate", "roster"),
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--stage", choices=(*STAGES, "finish"))
@@ -155,6 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--item", action="append", default=[])
     delivery.add_argument("--qa-branch")
     delivery.add_argument("--dev-branch")
+    add_strategy_arguments(delivery)
     delivery.set_defaults(func=command_delivery)
 
     from .planning import command_planning

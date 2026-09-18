@@ -265,9 +265,12 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 列表。`--qa` / `--dev` / `--reviewers` 可省略：feature 默认 `1,1,3`，其他
 kind 默认 `0,0,3`。一侧为 0 另一侧 ≥1 时把 0 抬成 1。roster ≥1 时按人数建立
 `qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`。创建失败拆除已建
-worktree 与分支。
+worktree 与分支。`--qa-strategy` / `--dev-strategy` 默认 `best-of-n`，可选
+`partition`；`--review-strategy` 默认 `replicate`，可选 `partition`。
+`--models` 为一句可选描述，省略则不写入。这些参数对应 start/design/deliver/
+code-review 的 intent 参数，由 Agent 传入本命令冻结。
 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 保存完整起点 hash，
-供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数。
+供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
 不设置 upstream。分支删除时配置随分支清理。
 feature 写入 `changes/unreleased/<slug>/objectives.md` 时，把仓根风格的本地链接改成
 相对该目录的路径。
@@ -364,7 +367,8 @@ slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 | check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行当前交付所需 suite 并记录 `suites`；可用重复 `--item <id>` 做定位运行，所需 suite 记录不能由单项替代 |
-| integrate | clean owner 合入 winner；`n≥2` 须 `--qa-branch` / `--dev-branch`；完成后清理角色分支 |
+| integrate | 按 strategy 合入；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
+| roster | 更新 strategy / models；design 后不能改 qa/dev strategy |
 
 design record 需要 `--policy-file <JSON>`。未分层格式为
 `{"protected_paths":["tests/","pyproject.toml"]}`；分层后必须同时给出
