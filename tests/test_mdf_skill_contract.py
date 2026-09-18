@@ -129,8 +129,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "references/bootstrap.md" in init
     assert "references/migrate.md" in init
     assert "intents.md" not in init
-    assert "| 1 | 入口 | 约束 |" in init
-    assert "| 2 | 分流 | 约束 |" in init
+    assert "| 1 | Check entry | 约束 |" in init
+    assert "| 2 | Dispatch | 约束 |" in init
     assert "内部执行 bootstrap 或 migrate" in init
     assert "形成`初始化方案`" in migrate
     assert "再次显式调用" in migrate
@@ -140,9 +140,9 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "docs/context/requirements/" not in migrate
     assert "$mdf intake" in migrate
     assert "$mdf bug create" in migrate and "$mdf prp create" in migrate
-    assert "| 1 | 入口 | 约束 |" in migrate
-    assert "| 2 | 盘点 | 约束 |" in migrate
-    assert "| 7 | 就绪 | 脚本 |" in migrate
+    assert "| 1 | Check entry | 约束 |" in migrate
+    assert "| 2 | Inventory | 约束 |" in migrate
+    assert "| 7 | Enable workflows | 脚本 |" in migrate
     assert "没有未说明的遗留文件" in migrate
     assert "消除重复" in migrate
     for root_document in (

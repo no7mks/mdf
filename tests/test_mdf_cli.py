@@ -260,3 +260,63 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     assert "内部 clarify intent" in review and "内部 clarify intent" in migrate
     assert "内部 clarify intent" in start
     assert "明确确认才转" in review
+
+
+def test_prepare_git_inits_plain_directory_and_skips_existing_root(
+    python_exe: str, tmp_path: Path
+):
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    created = payload(mdf(python_exe, "prepare-git", "--repo", str(plain)))
+    assert created["created"] is True
+    assert created["branch"] == "master"
+    assert (plain / ".git").is_dir()
+
+    skipped = payload(mdf(python_exe, "prepare-git", "--repo", str(plain)))
+    assert skipped["created"] is False
+    assert skipped["branch"] == "master"
+
+    nested = plain / "child"
+    nested.mkdir()
+    result = mdf(python_exe, "prepare-git", "--repo", str(nested))
+    assert result.returncode != 0
+    assert "nested_git" in result.stderr
+
+
+def test_merge_no_ff_commits_or_keeps_conflict(python_exe: str, tmp_path: Path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "--initial-branch=master", "--template=")
+    git(repo, "commit", "--allow-empty", "-m", "base")
+    git(repo, "checkout", "-b", "topic")
+    (repo / "a.txt").write_text("topic\n", encoding="utf-8")
+    git(repo, "add", "a.txt")
+    git(repo, "commit", "-m", "topic")
+    git(repo, "checkout", "master")
+    merged = payload(
+        mdf(python_exe, "merge-no-ff", "--repo", str(repo), "--commit", "topic")
+    )
+    assert merged["merged"] is True
+    assert merged["branch"] == "master"
+
+    again = payload(
+        mdf(python_exe, "merge-no-ff", "--repo", str(repo), "--commit", "topic")
+    )
+    assert again["merged"] is False
+
+    git(repo, "checkout", "-b", "left")
+    (repo / "a.txt").write_text("left\n", encoding="utf-8")
+    git(repo, "add", "a.txt")
+    git(repo, "commit", "-m", "left")
+    git(repo, "checkout", "master")
+    git(repo, "checkout", "-b", "right")
+    (repo / "a.txt").write_text("right\n", encoding="utf-8")
+    git(repo, "add", "a.txt")
+    git(repo, "commit", "-m", "right")
+    conflict = mdf(
+        python_exe, "merge-no-ff", "--repo", str(repo), "--commit", "left"
+    )
+    assert conflict.returncode != 0
+    assert "merge_conflict" in conflict.stderr
+    assert (repo / ".git" / "MERGE_HEAD").is_file()
+

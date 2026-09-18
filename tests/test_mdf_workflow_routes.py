@@ -162,9 +162,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
     assert table[7][5] == "9"
-    assert table[8][5] == "通过→10"
-    assert "feature/bugfix 前进回 2" in table[8][6]
-    assert "其余前进或未过则停止" in table[8][6]
+    assert table[8][5] == "通过→10；feature/bugfix 前进→2"
+    assert "其余前进或未过则停" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
     assert "preview" not in diagram and "预览" not in diagram
@@ -193,7 +192,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
     assert table[2][5] == "4"
-    assert table[3][1] == "切换"
+    assert table[3][1] == "Switch worktree"
     assert table[3][2] == "约束"
     assert table[3][5] == "结束"
     assert table[3][6] == "留在 4 等待"
@@ -267,8 +266,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "不要求全绿" in contract
     assert "worktrees.dev" in implement
     assert "不得在 feature 上实现" in implement
-    assert "git merge --no-ff" in tests
-    assert "git merge --no-ff" in implement
+    assert "merge-no-ff" in tests
+    assert "merge-no-ff" in implement
     assert "delivery worktree" not in tests
     assert "delivery worktree" not in implement
     assert "入口先 no-ff merge owner" in contract
@@ -285,9 +284,9 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite" in tests
     converge = workflow("converge")
     assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in converge
-    assert "缺 suite 回 write-tests" in converge
+    assert "缺 suite 停并提示 `$mdf write-tests`" in converge
     assert "阻塞停止" in converge
-    assert "missing_delivery_suite ────→ [停止，回 write-tests]" in converge
+    assert "missing_delivery_suite ────→ [停止，提示 $mdf write-tests]" in converge
     assert "返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入" in converge
     assert "suite key 已建" in tests
     assert "记录 gate 前核对每个声明的\nkey 都已存在且非空" in tests
@@ -307,7 +306,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
     assert rows(shared)[6][6] == "事实变化 5；其他保留现场停止"
-    assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认结束；其他停止"
+    assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认则结束；否则停"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
 
@@ -388,10 +387,10 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
     assert table[0][5] == "feature/在途 2；无在途 3"
-    assert table[0][6] == "多候选当场问；证据不足则报告阻塞"
+    assert table[0][6] == "多候选则问；证据不足则阻塞"
     assert table[1][5] == "交接并结束"
     assert table[1][6] == "说明阻塞与操作后结束"
-    assert table[2][1] == "委托"
+    assert table[2][1] == "Delegate"
     assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
     for name in ("init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki", "clarify"):
@@ -582,11 +581,11 @@ def test_jot_promote_revalidates_without_rewriting():
     assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
     assert "回滚到\n步骤 7 完成状态" in jot
     table = rows(jot)
-    assert (table[4][1], table[4][2]) == ("澄清", "约束")
+    assert (table[4][1], table[4][2]) == ("Clarify", "约束")
     assert "首次保留；二次回滚停止" in table[7][6]
 
 
 def test_clarify_unavailable_facts_stop_like_cancel():
     table = rows(workflow("clarify"))
     assert "不可得" in table[2][6]
-    assert "取消/暂停/不可得则停止" in table[2][6] and "取消或失败停止" in table[1][6]
+    assert "取消或不可得则停" in table[2][6] and "取消或失败则停" in table[1][6]

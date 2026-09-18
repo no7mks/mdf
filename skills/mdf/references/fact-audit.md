@@ -14,10 +14,9 @@
 │ 2 Audit CLI                      │
 └────────────────┬─────────────────┘
                  │
-                 ├──── migrate 且仅 initializing ────→ 3 Review facts
-                 ├──── 其他失败或缺失 ───────────────→ [停止]
+                 ├──── 其他失败或缺失 ────→ [停止]
                  │
-                 ▼ CLI 成功
+                 ▼ CLI 成功或 migrate 仅 initializing
 ┌──────────────────────────────────┐
 │ 3 Review facts                   │
 └────────────────┬─────────────────┘
@@ -63,13 +62,13 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 范围 | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、两类范围 | 2 | 停止 |
-| 2 | 映射 | 脚本 | 按 scope 运行 fact-audit CLI | 映射、体积、findings | 3 | migrate 仅 initializing 则 3；其他停止 |
-| 3 | 事实 | 约束 | 逐份核对事实陈述及 evidence，按加载质量清单审阅结构 | 事实复核、语义发现 | 4 | 无法复核则停止 |
-| 4 | 覆盖 | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
-| 5 | 警告 | 约束 | 逐条审阅 warning：未引用实现须用户确认，`size.soft` 记为待拆 | 逐条处置 | 6 | 无法审阅则停止 |
-| 6 | 校验 | 脚本 | 运行 `validate --scope full`，不运行验证命令 | validation findings | 7 | 停止 |
-| 7 | 确认 | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
+| 1 | Resolve scope | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、两类范围 | 2 | 停止 |
+| 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI | 映射、体积、findings | 成功或 migrate 仅 initializing→3 | 停止 |
+| 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现 | 4 | 无法复核则停止 |
+| 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
+| 5 | Review warnings | 约束 | 逐条审阅 warning；未引用实现须确认 | 逐条处置 | 6 | 无法审阅则停止 |
+| 6 | Validate | 脚本 | 运行 `validate --scope full`，不运行验证命令 | validation findings | 7 | 停止 |
+| 7 | Confirm review | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
 

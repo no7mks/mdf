@@ -90,16 +90,16 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | 范围 | 约束 | 核版本；no-ff 集成主线并内部 code-review | 集成、审查、版本 | 已收口 4；否则 3 | 状态不一致则停止 |
-| 3 | 材料 | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
-| 4 | 审阅 | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
-| 5 | 输入 | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
-| 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并取得用户接受 | 完整覆盖、接受记录 | 8 | 停止 |
-| 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | 交接 | 约束 | 提交并核对交付条件 | clean、证据 | 通过→10 | feature/bugfix 前进回 2；其余前进或未过则停止 |
-| 10 | 合并 | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
+| 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
+| 2 | Integrate and review | 约束 | 核版本；merge-no-ff 集成并审查 | 集成、审查 | 已收口 4；否则 3 | 状态不一致则停 |
+| 3 | Prepare materials | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
+| 4 | Audit | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
+| 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
+| 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
+| 7 | Prepare closures | 脚本 | 用 `list` 列 Bug，准备 closures 并取得接受 | 完整覆盖、接受记录 | 8 | 停止 |
+| 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
+| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 通过→10；feature/bugfix 前进→2 | 其余前进或未过则停 |
+| 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构
 
@@ -136,10 +136,11 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 - feature/bugfix 使用本地 develop，不 fetch、不 push；release/hotfix 使用 master，
   先 fetch origin 并核对本地 master/develop 与远端一致，不自动覆盖分歧。
 - 确认 clean，记录目标主线的完整 commit；若它尚不是当前 HEAD 的祖先，
-  在交付分支运行 `git merge --no-ff <目标commit>`。禁止 rebase，不在主线上解决交付冲突。
-- 冲突时保留 merge 现场，Agent 按已确认目标、设计及两侧改动自动尝试 resolve，
-  逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、需变更目标或
-  无法解决时才停止询问，报告冲突与已尝试的修复。
+  运行 `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo "$REPO_ROOT"
+  --commit <目标commit>`。禁止 rebase，不在主线上解决交付冲突。
+  冲突时 CLI 保留 MERGE_HEAD；Agent 按已确认目标、设计及两侧改动自动尝试 resolve，
+  逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、
+  需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 只要本次集成产生新提交，无论是否冲突，都以集成后的 HEAD 执行增量新一轮
   code-review：左端点为集成前 final_head，重新固定 review_head，按 roster.reviewers 覆盖增量
   范围并复核上轮问题，完成裁定、修复与所需 suite。不复用集成前报告，也不将

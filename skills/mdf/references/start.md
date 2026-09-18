@@ -47,10 +47,10 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 参数 | 脚本 | 确认分支标识；feature 用 `list` 选定 PRP | 参数、list 结果 | feature 2；其他 3 | 留在 1 询问 |
-| 2 | 澄清 | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
-| 3 | 创建 | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 4 | 检查失败不创建；创建中失败拆除 |
-| 4 | 切换 | 约束 | 按当前 agent 把会话切到 owner worktree | cwd、分支 | 结束 | 留在 4 等待 |
+| 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | feature 2；其他 3 | 留在 1 询问 |
+| 2 | Clarify objectives | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
+| 3 | Start branch | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 4 | 检查失败不创建；创建中失败拆除 |
+| 4 | Switch worktree | 约束 | 按当前 agent 把会话切到 owner worktree | cwd、分支 | 结束 | 留在 4 等待 |
 
 ## 术语与数据结构
 

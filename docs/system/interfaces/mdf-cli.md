@@ -16,13 +16,15 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - 成功时命令向 stdout 输出 JSON；业务规则拒绝时输出 JSON 错误，
   并以非零状态退出。
 - `--repo` 接受目标仓库路径。除 `info`、`make-id --type bug`、`make-jot-id`、
-  `branch --name` 和 `semver-check` 外，命令会按自身需要检查 Git 根、MDF
-  manifest 或 clean worktree。`make-id --type proposal` 需要 Git 根且当前分支为
-  `planning`。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
+  `branch --name`、`semver-check` 和 `prepare-git` 外，命令会按自身需要检查 Git
+  根、MDF manifest 或 clean worktree。`prepare-git` 接受普通目录；已是其他仓
+  库内部路径时失败，不嵌套 `git init`。`make-id --type proposal` 需要 Git 根
+  且当前分支为 `planning`。`upgrade` 要求 Git 根，不要求 manifest 或 clean
+  worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
-  start、delivery integrate、finish-gitflow、planning 与 upgrade 按各自协议执行提交、
-  集成和远端操作。
+  start、delivery integrate、finish-gitflow、planning、upgrade 与 `merge-no-ff`
+  按各自协议执行提交、集成和远端操作。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
 
@@ -32,6 +34,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | --- | --- |
 | `info` | 版本信息 |
 | `doctor` | 仓库状态 |
+| `prepare-git` | 非 Git 目录初始化为 master |
+| `merge-no-ff` | 在当前分支 no-ff 合并指定提交 |
 | `init` | 初始化写入 |
 | `validate` | 确定性校验 |
 | `fact-audit` | 确定性审计 |
@@ -199,6 +203,27 @@ python3 skills/mdf/scripts/mdf.py semver-check \
 或 `Removed` 未声明 `--breaking` 时以状态码 `2` 失败。
 
 ## 仓库写入命令
+
+### `prepare-git`
+
+```bash
+python3 skills/mdf/scripts/mdf.py prepare-git --repo /path/to/directory
+```
+
+目标已是 Git 根时不改写，JSON `created` 为 false。普通目录执行
+`git init --initial-branch=master`，`created` 为 true。位于其他仓库内部时
+以 `nested_git` 失败，不嵌套初始化。不提交、不配置用户身份。
+
+### `merge-no-ff`
+
+```bash
+python3 skills/mdf/scripts/mdf.py merge-no-ff \
+  --repo /path/to/repository --commit develop
+```
+
+要求 `--repo` 为 Git 根且 worktree clean。把 `--commit` 解析出的提交
+`--no-ff` 合入当前分支。已是祖先时 `merged` 为 false。冲突保留
+`MERGE_HEAD`，以 `merge_conflict` 失败，不 abort。
 
 ### `init`
 

@@ -58,12 +58,12 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
-| 2 | 选择 | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
-| 3 | 状态 | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
-| 4 | 澄清 | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
-| 5 | 确认 | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
-| 6 | 就绪 | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
+| 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 2 | Select proposal | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
+| 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
+| 4 | Clarify | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
+| 5 | Confirm | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
+| 6 | Validate and ready | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
 

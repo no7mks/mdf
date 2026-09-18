@@ -61,12 +61,12 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
-| 2 | 目录 | 约束 | 核对 Wiki 目录不存在或为空 | 目录检查结果 | 3 | standard 则要求 update；非标列出项并停止 |
-| 3 | 分析 | 脚本 | MCP 分析，保存模块树并读取处理顺序 | 模块树、处理顺序 | 4 | 走 recovery.md |
-| 4 | 模块 | 脚本 | 按 leaf 到父页生成模块页，核对事实与图 | 页面、链接、图校验 | 5 | 修复后 4；否则走 recovery.md |
-| 5 | 基线 | 脚本 | 写 overview，关闭前验收通过才关闭会话 | 有效 metadata | 6 | 走 recovery.md |
-| 6 | 验收 | 约束 | 验收输出后复核提交并报告 | 内容、diff、提交 | 报告并结束 | 仅提交失败停止；验收失败走 recovery.md |
+| 1 | Check entry | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
+| 2 | Check output | 约束 | 核对 Wiki 目录不存在或为空 | 目录检查结果 | 3 | standard 则要求 update；非标列出项并停止 |
+| 3 | Analyze | 脚本 | MCP 分析，保存模块树并读取处理顺序 | 模块树、处理顺序 | 4 | 走 recovery.md |
+| 4 | Write modules | 脚本 | 按 leaf 到父页生成模块页并核图 | 页面、链接、图校验 | 5 | 修复后 4；否则走 recovery.md |
+| 5 | Close session | 脚本 | 写 overview，关闭前验收通过才关闭会话 | 有效 metadata | 6 | 走 recovery.md |
+| 6 | Verify output | 约束 | 验收后复核提交 | 内容、diff、提交 | 报告并结束 | 仅提交失败停止；验收失败走 recovery |
 
 ## 术语与数据结构
 

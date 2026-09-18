@@ -31,9 +31,9 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth | 2 | 停止并报告 |
-| 2 | 计算 | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
-| 3 | 展示 | 约束 | 画出按 milestone 分组的混态树与索引 | 树、索引、hidden | 结束 | 停止并报告 |
+| 1 | Check repo | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth | 2 | 停止并报告 |
+| 2 | Run CLI | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
+| 3 | Render tree | 约束 | 画出按 milestone 分组的混态树与索引 | 树、索引、hidden | 结束 | 停止并报告 |
 
 `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行本流程；
 也可由 next 在无在途时内部委托。可带 `--depth N`。
