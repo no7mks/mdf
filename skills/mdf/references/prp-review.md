@@ -93,7 +93,7 @@ planning 工作区时留在本步。
 
 验收：唯一对象。
 
-异常与交接：一次只问一个消歧问题。
+异常与交接：无法确定唯一对象时留在 2。
 
 <a id="s3"></a>
 
@@ -118,7 +118,7 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 
 **澄清**
 
-先查仓库证据，使用内部 clarify intent 按轮次澄清 Problem、Desired Outcome、 Scope 与可验证 Acceptance Criteria。
+先查仓库证据，使用内部 clarify intent 澄清 Problem、Desired Outcome、 Scope 与可验证 Acceptance Criteria。
 
 验收：完整 draft。
 

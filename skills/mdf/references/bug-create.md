@@ -84,7 +84,7 @@
 
 **对象**
 
-接收用户手动提供的单个 Bug 事实；一次只问一个问题，澄清范围、关键事实与取舍。
+接收用户手动提供的单个 Bug 事实；一次不得创建多个对象。
 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed` 对照 `title` 与正文查重，
 命中既有 Bug 时不新建，提示在既有对象中补充；不逐篇翻阅 `docs/bugs/`。
 外部想法、 当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
@@ -99,7 +99,7 @@
 
 **澄清**
 
-使用内部 clarify intent 按轮次澄清观察到的行为、期望行为、复现步骤、影响、 所需回归证据、`found_in`
+使用内部 clarify intent 澄清观察到的行为、期望行为、复现步骤、影响、 所需回归证据、`found_in`
 与 severity。
 
 验收：完整必填事实。

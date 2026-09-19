@@ -2,7 +2,7 @@
 name: mdf
 description: >-
   管理 Git 仓库的版本化文档与交付流程：项目起步、初始化、已有项目迁移、规划、分诊、
-  CodeWiki、随手记录、审计、收口、归档、帮助、自升级与逐题澄清。
+  CodeWiki、随手记录、审计、收口、归档、帮助、自升级与压力测试。
 disable-model-invocation: true
 ---
 

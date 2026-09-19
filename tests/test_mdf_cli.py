@@ -248,6 +248,11 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     start = (skill / "references" / "start.md").read_text(encoding="utf-8")
     assert "系统 `grilling` skill" in clarify
     assert "委托它对议题执行压力测试" in clarify
+    assert "问法由 grilling 规定" in clarify
+    assert "不可用时由本 intent 的步骤 3 本地澄清" in clarify
+    assert "调用方只提供议题与必须落地的事实" in clarify
+    assert "提问限制" not in clarify
+    assert "一次一个问题" not in clarify
     assert "报告该失败并停止" in clarify
     assert "不可用时进入 3" in clarify
     assert "等待回答后更新已确认决定与剩余疑问" in clarify

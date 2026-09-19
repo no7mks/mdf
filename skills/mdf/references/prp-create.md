@@ -88,7 +88,7 @@ planning 工作区时报告后停止或留在本步。
 
 **对象**
 
-接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象；一次只问一个问题，澄清范围、关键事实与取舍。
+接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象。
 运行 `list --repo "$REPO_ROOT" --type proposal` 对照 `title` 与正文查重，命中既有 PRP 时不新建，
 提示 `$mdf prp review`；该输出同时作为步骤 3、4 依赖候选与 milestone 值的来源，不逐篇翻阅 `docs/proposals/`。
 外部想法、当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
@@ -103,7 +103,7 @@ planning 工作区时报告后停止或留在本步。
 
 **澄清**
 
-使用内部 clarify intent 按轮次澄清 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria 与直接依赖。
+使用内部 clarify intent 澄清 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria 与直接依赖。
 
 验收：完整必填事实。
 

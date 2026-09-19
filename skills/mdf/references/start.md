@@ -82,7 +82,6 @@ bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，
 
 对照 ready PRP 与 `assets/templates/objectives.md`，
 使用内部 clarify intent，议题固定为「本次 feature 交付的目标、非目标、约束与可验证验收」。
-按轮次澄清该议题。
 objectives 用 `[prp-001](../../../docs/proposals/<filename>)` 引用 PRP，
 不另造需求来源，不改写 PRP。
 PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写目标，

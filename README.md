@@ -36,7 +36,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf fact update [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；finish 前段自动调用 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf fact audit [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
-| `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
+| `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用

@@ -67,7 +67,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 解析 REPO_ROOT 并运行 doctor | doctor 结构化结果 | 2 | 停止 |
-| 2 | Resolve source | 约束 | 确认一次性来源及采用范围；逐题消歧 | 来源、已确认范围 | 3 | 等待澄清，2 |
+| 2 | Resolve source | 约束 | 确认一次性来源及采用范围 | 来源、已确认范围 | 3 | 等待澄清，2 |
 | 3 | Classify | 脚本 | 用 `list` 查重并区分偏差与意图 | list 结果、对象清单 | 4 | 命中则停止；无法判定回 2 |
 | 4 | Clarify | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
 | 5 | Confirm list | 约束 | 展示对象、边界、排除项和直接依赖并确认 | 用户明确确认的清单 | 6 | 取消停止；来源 2；事实 4 |
@@ -93,7 +93,7 @@
 
 **来源**
 
-接收一句话、当前聊天上下文或外部文档为一次性来源；一次只问一个问题， 确认范围、关键事实与取舍；
+接收一句话、当前聊天上下文或外部文档为一次性来源；确认采用范围；
 除非用户明确要求保留，不得复制、归档或链接到仓库。
 
 验收：确认的来源采用范围。
@@ -120,7 +120,7 @@
 
 **澄清**
 
-使用内部 clarify intent 按轮次澄清成稿必要事实；
+使用内部 clarify intent 澄清成稿必要事实；
 Proposal 收敛 Problem、 Desired Outcome、Scope、可验证 Acceptance Criteria；
 Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、`found_in`
 与 active severity。

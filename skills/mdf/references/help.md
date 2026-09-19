@@ -87,7 +87,7 @@
 - `$mdf prp split`：拆分未开工 PRP，并完整改写依赖
 - `$mdf tree [--depth N]`：按 milestone 分组画出 draft/ready PRP 依赖树；也可
   `$mdf prp tree` 或 `$mdf next?`
-- `$mdf clarify <议题>`：逐题压力测试计划、决策或想法
+- `$mdf clarify <议题>`：压力测试计划、决策或想法
 
 #### 交付
 
@@ -223,7 +223,7 @@ $mdf clarify 要不要把缓存放到 Redis
 
 `$mdf clarify <议题>`
 用法：`$mdf clarify <议题>`
-用途：逐题压力测试计划、决策或想法。
+用途：压力测试计划、决策或想法。
 说明：议题不能为空；不要求 Git 仓库。
 
 `$mdf tree [--depth N]`

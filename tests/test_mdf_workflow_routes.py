@@ -198,7 +198,6 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[3][2] == "约束"
     assert table[3][5] == "结束"
     assert table[3][6] == "留在 4 等待"
-    assert "一次只问一个问题" not in text
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "$mdf prp review" in text
@@ -207,6 +206,29 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert re.search(r"feature 通过", diagram)
     assert re.search(r"创建成功", diagram)
     assert re.search(r"4 Switch worktree", diagram)
+
+
+def test_callers_do_not_prescribe_questioning_style():
+    forbidden = (
+        "一次只问一个问题",
+        "一次只问一个消歧问题",
+        "逐题",
+        "按轮次",
+        "提问限制",
+        "按限制委托",
+        "一次一个问题",
+        "对每个非生态必需",
+    )
+    root = skill_dir("mdf")
+    paths = [
+        root.parents[1] / "README.md",
+        root / "SKILL.md",
+        *sorted((root / "references").glob("*.md")),
+    ]
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in text, f"{path.name} contains {phrase!r}"
 
 
 def test_planning_intents_use_shared_planning_workspace():

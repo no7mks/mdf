@@ -74,7 +74,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 运行 `doctor`；按追加或提升分流 | 允许正常流程 | 追加 2；提升 4 | 停止 |
-| 2 | Read input | 约束 | 逐题取得一条完整原文，不预判类型 | 完整输入 | 3 | 留在 2 询问 |
+| 2 | Read input | 约束 | 取得一条完整原文，不预判类型 | 完整输入 | 3 | 留在 2 询问 |
 | 3 | Append | 脚本 | 生成 ID，追加完整 marker 并 targeted 校验 | 条目、校验、diff | 结束 | 保留现场，停止 |
 | 4 | Select jot | 约束 | 按 jot-ID 读取唯一条目的完整 marker | 唯一 ID 与原文 | 5 | 留在 4 消歧 |
 | 5 | Clarify | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
@@ -105,7 +105,7 @@
 
 验收：完整输入。
 
-异常与交接：一次只问一个问题。内容可为任何未定性信息，不要求预判类型、优先级或可行性。
+异常与交接：内容缺失时询问。内容可为任何未定性信息，不要求预判类型、优先级或可行性。
 
 <a id="s3"></a>
 
@@ -128,7 +128,7 @@
 
 验收：唯一条目与其正文。
 
-异常与交接：一次只问一个消歧问题。
+异常与交接：无法确定唯一条目时留在 4。
 
 <a id="s5"></a>
 
@@ -136,7 +136,7 @@
 
 先运行 `list --repo "$REPO_ROOT"` 对照 active Proposal 与 Bug 的 `id`、`title`、`status` 查重，
 命中既有对象时停止提升并提示 `$mdf prp review` 或补充既有 Bug；不逐篇翻阅对象目录。
-再查仓库证据，使用内部 clarify intent 按轮次将正文收敛为 Proposal 或 Bug；
+再查仓库证据，使用内部 clarify intent 将正文收敛为 Proposal 或 Bug；
 Proposal 收敛 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；
 Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、 Regression Evidence Required、 `found_in`
 与 active severity。
