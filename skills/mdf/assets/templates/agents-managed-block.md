@@ -2,12 +2,15 @@
 
 ## Mars Development Flow
 
-- 开始工作前把 `docs/README.md` 当任务地图：只打开与本次任务相关的一份
-  `docs/system/` 主题叶，不通读 `docs/system/` 或 `docs/user-guide/`。
+- 你的角色是维护者，不是终端用户。不要从根 `README.md` 或 `docs/user-guide/`
+  开始通读；维护工作先读 `PROJECT.md`（验证、技术栈、目录约定与文档入口）。
+- 系统入口是 `docs/system/overview.md`。需要全库任务地图时把 `docs/README.md`
+  当任务地图：只打开与本次任务相关的一份 `docs/system/` 主题叶，不通读
+  `docs/system/` 或 `docs/user-guide/`。
 - grep、CodeWiki 等搜索只用来定位路径；定位后只读命中的那一份或任务地图指定的
   一两份，不把全部命中读进上下文。
-- 按需读取根文档：`README.md` 用于项目定位与最短运行路径，`PROJECT.md` 用于
-  验证命令与目录例外，`GLOSSARY.md` 用于领域术语；不把它们当作行为事实来源。
+- `README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不把根文档当作
+  行为事实来源。最短可运行路径在 `docs/user-guide/`。
 - 当前行为以 `docs/system/` 与 `docs/user-guide/` 的事实页为准；一条契约只住
   一页，其他页只链接。事实页已覆盖的行为不从源码重新推断，除非本次要修改该行为
   或发现文档与实现冲突。

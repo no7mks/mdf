@@ -89,7 +89,8 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 
 | 类型 | 载体 |
 | --- | --- |
-| 任务地图 | `docs/README.md`；按任务只开一份页面 |
+| 用户入口 | 根 `README.md`：项目是干什么，并链到 user-guide |
+| 任务地图 | `docs/README.md`；维护者按任务只开一份页面 |
 | 维护者事实 | `docs/system/`：`overview.md` 路由 + 切面目录主题叶 + `deviations.md`；架构以 `architecture/` 为准 |
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；维护者默认不打开 |
 | 决策 | `docs/context/adr/`；只记录理由，按 `adr-<slug>` 打开单份 |

@@ -8,6 +8,7 @@ from .errors import Finding, MDFError, add_finding, emit, serialize_findings
 from .gitutil import git_path_tracked, repo_path, require_git_root, run
 from .paths import path_stays_in_repo, relative
 from .validate_evidence import fact_documents, frontmatter_evidence
+from .constants import SIZE_AGENTS_FILE
 from .validate_manifest import implementation_roots
 from .yamlutil import parse_yaml, read_frontmatter
 
@@ -197,6 +198,9 @@ def _ignored_paths(
         raw_path, reason = entry["path"], entry["reason"]
         candidate = Path(raw_path) if isinstance(raw_path, str) else Path()
         target = (repo / candidate).resolve()
+        agents_ignore = (
+            isinstance(raw_path, str) and candidate.as_posix() == "AGENTS.md"
+        )
         if (
             not isinstance(raw_path, str)
             or not raw_path.strip()
@@ -206,8 +210,15 @@ def _ignored_paths(
             or not reason.strip()
             or not target.exists()
             or target.is_symlink()
-            or not any(
-                target == root or root in target.parents for root in roots
+            or (
+                not agents_ignore
+                and not any(
+                    target == root or root in target.parents for root in roots
+                )
+            )
+            or (
+                agents_ignore
+                and (not target.is_file() or not git_path_tracked(repo, target))
             )
         ):
             add_finding(
@@ -224,6 +235,9 @@ def _ignored_paths(
             )
             continue
         seen.add(target)
+        if agents_ignore:
+            result[target] = {"path": raw_path, "reason": reason}
+            continue
         matched = [
             item for item in sources if item == target or target in item.parents
         ]
@@ -317,6 +331,25 @@ def audit_payload(
         and path not in ignored
         and path.name not in NON_BEHAVIORAL_NAMES
     ]
+    agents = repo / "AGENTS.md"
+    if (
+        (scope == "full" or agents in sized)
+        and agents.is_file()
+        and not agents.is_symlink()
+        and agents.resolve() not in ignored
+    ):
+        count = len(agents.read_text(encoding="utf-8").splitlines())
+        _, limit = SIZE_AGENTS_FILE
+        if count > limit:
+            warnings.append(
+                Finding(
+                    "agents.size",
+                    f"AGENTS.md 整份 {count} 行，超过 {limit}；"
+                    "可下沉到 PROJECT.md 或写入 audit-ignore",
+                    "AGENTS.md",
+                    "warning",
+                )
+            )
     payload = {
         "ok": not findings,
         "operation": "audit",
@@ -332,7 +365,8 @@ def audit_payload(
                 "ignore_path": rule["path"],
                 "reason": rule["reason"],
             }
-            for path, rule in sorted(ignored.items()) if path in sources
+            for path, rule in sorted(ignored.items())
+            if path in sources or relative(repo, path) == "AGENTS.md"
         ],
         "warning_count": len(warnings),
         "warnings": serialize_findings(warnings),

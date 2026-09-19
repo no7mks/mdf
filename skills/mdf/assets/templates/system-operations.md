@@ -8,24 +8,14 @@ evidence:
 
 # {{TOPIC_TITLE}}
 
-本页是该主题的唯一归属页；其他页面只链接到这里，不复述。
-
-## 构建与配置
-
-{{CURRENT_BUILD_AND_CONFIGURATION}}
+本页是该运维主题的唯一归属页；其他页面只链接到这里，不复述。
+运行时配置、可观测性、限制与恢复若已有专用叶，本页只链接，不复述那些契约。
+开发期 build/test 配置见 `PROJECT.md`。
 
 ## 部署
 
 {{CURRENT_DEPLOYMENT_MODEL}}
 
-## 可观测性
+## 本主题运维事实
 
-{{CURRENT_LOGS_METRICS_TRACES_AND_ALERTS}}
-
-## 恢复
-
-{{CURRENT_BACKUP_ROLLBACK_AND_RECOVERY}}
-
-## 运行限制
-
-{{CURRENT_OPERATIONAL_LIMITS}}
+{{CURRENT_OPERATIONS_FACTS}}

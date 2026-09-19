@@ -128,6 +128,7 @@
 `verification.commands`。`docs/` 内材料按 `repository-contract.md`「文档分类与
 按需加载」归位：面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，
 主题各一页）；边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶；
+`overview.md` 强制五类表按已有材料填链接或「不适用」，不批量创建空主题叶；
 仍生效的架构约束从 ADR 抽到 `docs/system/architecture/`，ADR 只留理由；
 `docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，落地后
 不得残留。`baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version`

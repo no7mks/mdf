@@ -95,8 +95,9 @@ start_commit，release 为上一正式发布。
 只更新范围内受影响的当前事实及 evidence；不修改 PRP、Bug、Change、objectives 或
 design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 `user-guide` 只在对外可观察行为有变时改；`system/architecture` 只在内部结构或仍
-生效约束有变时改。不为满足形式制造无关文档，不把计划写为当前事实。实现有问题时
-报告，不用文案掩盖。本步不改结构。
+生效约束有变时改。范围内实现出现配置、可观测、错误、鉴权或限制与恢复面时，把
+`overview.md` 对应行改为链接并按专用模板建叶；不为凑表造页。不为满足形式制造
+无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。本步不改结构。
 
 验收：事实 diff。
 

@@ -24,6 +24,7 @@
 
 ```text
 /
+├── README.md                 # 用户入口：项目是干什么 → user-guide
 ├── .mdf/manifest.yaml
 ├── AGENTS.md
 ├── PROJECT.md
@@ -61,12 +62,13 @@
 
 ## 文档分类与按需加载
 
-`docs/` 按读者与用途分三类；audit 扫描全部 `docs/**` 与根 `README.md`、
+`docs/` 按读者与用途分类；audit 扫描全部 `docs/**` 与根 `README.md`、
 `PROJECT.md`、`AGENTS.md`、`GLOSSARY.md`，但只有当前事实按实现对齐。
 
 | 类 | 路径 | 默认加载 |
 | --- | --- | --- |
-| 任务地图 | `docs/README.md` | 常开；只做路由 |
+| 用户入口 | 根 `README.md` | 非维护者从这里进；只定位并链到 user-guide |
+| 任务地图 | `docs/README.md` | 维护者按任务路由；不是用户入口 |
 | 维护者事实 | `docs/system/`：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引 | 地图 → 一份主题叶 |
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；不强制分类目录 | 维护者默认不开；改对外行为时必开 |
 | 决策 | `docs/context/adr/` | 只经 `adr-<slug>` 或事实页链接 |
@@ -75,14 +77,27 @@
 
 切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`。
 
-维护者/Agent 的默认路径是 `AGENTS.md` → `docs/README.md` → 一份 `docs/system/`
-主题叶；做验证时再开 `PROJECT.md`。用户的路径是根 `README.md` → `user-guide/README.md`
-→ 一份主题叶。grep 与 CodeWiki 只用于定位路径，定位后只读命中的那一份。
+两条加载路径（读者不同，入口不同）：
+
+| 读者 | 路径 |
+| --- | --- |
+| 用户（非维护者） | 根 `README.md` → `user-guide/` 一份主题叶 |
+| 维护者 / Agent | `AGENTS.md` → `PROJECT.md` → `docs/system/overview.md` |
+
+维护者需要全库任务地图或工作对象时，再把 `docs/README.md` 当任务地图，然后只打开
+一份主题叶。`user_guide` 为 `not_applicable` 时，根 `README.md` 仍是用户入口，
+改为链到 `PROJECT.md` 或 `docs/system/`。grep 与 CodeWiki 只用于定位路径，
+定位后只读命中的那一份。
 
 **唯一归属**：一条可观察契约只住一页——对外能力在 `user-guide/<topic>`，内部结构与
 仍生效约束在 `system/architecture/<topic>`，内部契约与兼容性在 `system/interfaces/<topic>`，
-部署与观测在 `system/operations/<topic>`。其他页面只链接，不复述；架构问题以
-`system/architecture/` 为准，ADR 不作为当前结构来源。
+部署与观测在 `system/operations/<topic>`。运行时配置、可观测性、错误模型、鉴权、
+限制与恢复分别住 `system/operations/configuration.md`、
+`system/operations/observability.md`、`system/interfaces/errors.md`、
+`system/interfaces/auth.md`、`system/operations/limits-and-recovery.md`
+（超 450 再拆）。`overview.md` 用固定表每行链到该叶或写「不适用：理由」；
+不预建空页。对外可见行为仍只住 user-guide，只链接。其他页面只链接，不复述；
+架构问题以 `system/architecture/` 为准，ADR 不作为当前结构来源。
 
 **体积**（物理行；超出为 `size.hard` finding，由 fact-audit CLI 检查）：
 
@@ -97,6 +112,8 @@
 
 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面
 `index.md`。超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。
+整份 `AGENTS.md`（含非托管正文）超过 200 行是 CLI warning `agents.size`，不是
+`size.hard`；写入 `.mdf/audit-ignore.yaml` 的 `path: AGENTS.md` 后不再提示。
 
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
@@ -140,25 +157,28 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 
 ## 根文档职责
 
-- `README.md` 面向项目用户，说明项目定位、最短可运行路径和用户文档入口
-  （`docs/user-guide/README.md`）。可保留服务于这些目的的概览，但不重复
+- `README.md` 面向项目用户，说明项目是干什么，并链到用户文档入口
+  （`docs/user-guide/README.md`）。不写最短可运行路径（住 user-guide 主题叶），
+  不写维护者入口（`AGENTS.md` 已指向 `PROJECT.md`）。可保留定位性概览，但不重复
   `当前事实文档`中的用户或系统行为；环境变量表、接口形状、错误文案等可观察
   契约只写在对应事实页。仅维护者需要的环境、验证、lint、CI、目录例外、发布
   与仓库治理不得写入，改放 `PROJECT.md`；内部结构、接口与运维等当前事实按
-  渐进式披露下沉到任务地图指向的 `docs/system/` 主题叶。维护者入口可链到
-  `PROJECT.md` 与 `docs/README.md`，不在此展开手册。
-- `PROJECT.md` 仅面向项目维护者，记录项目专属的开发、验证与维护手册，包括环境、
-  lint、test、build、CI 等价检查、生成物与目录约定。命令的可执行事实来源始终是
-  仓库配置与脚本；生产运行和运维事实属于 `docs/system/operations/`。
-  验证命令集中在开头一张验证卡片，供 Agent 只读该表执行检查；接口、数据与
-  运行时行为不复述 `docs/system/` 事实页，只保留指向对应页面的链接。超过体积
-  限制时下沉到 `docs/system/`，不扩写进 `README.md`。
-- `AGENTS.md` 仅面向在仓库中工作的 Agent，记录项目专属的 Agent 行为准则与必要例外，
-  不重复面向用户或维护者的材料。它要求 Agent 把 `docs/README.md` 当任务地图、
-  只打开与任务相关的一份 `docs/system/` 主题叶，用 grep/CodeWiki 定位后只读命中
-  的那一份，并按工作需要读取 `README.md`、`PROJECT.md` 与 `GLOSSARY.md`；不通读
-  文档目录，不把根文档当作行为事实来源。MDF 只维护其中带 marker 的区块，其余
-  内容由仓库维护者负责。
+  渐进式披露下沉到 `docs/system/` 主题叶。
+- `PROJECT.md` 仅面向项目维护者（含 Agent），是读完 `AGENTS.md` 后的第一份
+  项目文档。记录技术栈、环境、lint、test、build、CI 等价检查、生成物与目录约定。
+  命令的可执行事实来源始终是仓库配置与脚本；运行时配置属于
+  `docs/system/operations/configuration.md`。验证命令集中在开头一张验证卡片；
+  必链 `docs/system/overview.md` 与 `docs/README.md`，不展开强制五类明细。
+  接口、数据与运行时行为不复述 `docs/system/` 事实页。超过体积限制时下沉到
+  `docs/system/`，不扩写进 `README.md`。
+- `AGENTS.md` 仅面向在仓库中工作的 Agent。MDF 托管区块必须项目无关：Agent 默认
+  按维护者角色工作，第一跳是 `PROJECT.md`；再按任务打开 `docs/system/overview.md`，
+  或把 `docs/README.md` 当任务地图后只打开一份主题叶。用 grep/CodeWiki 定位后只读
+  命中的那一份。根 `README.md` 与 `docs/user-guide/` 是用户入口，不是 Agent 默认
+  起点。`README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不通读文档目录，
+  不把根文档当作行为事实来源。不要求写项目例外；托管块外若写入栈、配置或行为
+  契约，fact audit 记 `agents.project_content`。MDF 只维护其中带 marker 的区块，
+  其余内容由仓库维护者负责。
 - `GLOSSARY.md` 面向所有读者维护稳定的领域词典，包括术语、同义词和易混淆概念；
   不记录实现细节、计划或工作状态。
 
@@ -175,6 +195,7 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 | `changelog.md`                      | `CHANGELOG.md`                   |
 | `user-guide-readme.md`              | `docs/user-guide/README.md` 路由 |
 | `user-guide-topic.md` / `system-*`  | `当前事实文档`主题叶             |
+| `system-configuration.md` 等五类专用叶 | fact update 建页时用，init 不落地 |
 | `adr.md`                            | `docs/context/adr/<slug>.md`     |
 | `proposal.md`                       | Proposal                      |
 | `bug.md`                            | Bug                              |
@@ -242,10 +263,11 @@ ignored:
     reason: "由上游工具受管"
 ```
 
-每项只能包含仓库相对的 `path` 与非空 `reason`。路径须位于实现根目录，且必须匹配
-至少一个被跟踪实现文件；目录递归匹配。未被 `evidence` 引用的实现文件会产生
-warning，不阻断 audit，但必须在语义审阅中由用户确认。锁文件、`.gitignore` 与
-版本钉等不承载行为的文件不产生该 warning。
+每项只能包含仓库相对的 `path` 与非空 `reason`。路径须位于实现根目录且匹配
+至少一个被跟踪实现文件（目录递归匹配），或恰好为 `AGENTS.md`（用于记住
+`agents.size` 与 `agents.project_content`，不再每次提醒）。未被 `evidence`
+引用的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
+锁文件、`.gitignore` 与版本钉等不承载行为的文件不产生该 warning。
 
 ## YAML 子集
 

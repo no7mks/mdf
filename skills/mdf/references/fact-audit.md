@@ -126,12 +126,16 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 
 - 入口不过载：`README.md`、`PROJECT.md`、`AGENTS.md` 不复述事实页已记载的可观察
   契约；仅维护者需要的内容不进 `README.md`，进 `PROJECT.md` 或任务地图指向的
-  `docs/system/` 主题叶。`docs/README.md` 是任务地图，当前事实排在决策与工作
-  记录之前，不链接空目录，按任务只打开一份页面。
+  `docs/system/` 主题叶。根 `README.md` 不写最短可运行路径、不写维护者入口。
+  `AGENTS.md` 托管块必须项目无关；托管块外写栈、配置或行为契约记
+  `agents.project_content`（warning）。`docs/README.md` 是任务地图，当前事实排在
+  决策与工作记录之前，不链接空目录，按任务只打开一份页面。
 - 路由页只路由：`system/overview.md`、`user-guide/README.md`、切面 `index.md`
-  不复述叶子契约，不集中承担 evidence。
+  不复述叶子契约，不集中承担 evidence。`overview.md` 核心模块表五行齐：每行是
+  主题叶链接或「不适用：」加一句理由；缺行或缺理由记结构 finding。
 - 唯一归属：同一可观察契约只在一页；其他页只链接。对外能力在 `user-guide`，
   内部结构与仍生效约束在 `system/architecture`，内部契约在 `system/interfaces`。
+  运行时配置、可观测性、错误、鉴权、限制与恢复住契约规定的专用叶。
 - 主题叶按主题拆：一页混多个主题、或该拆未拆（含 `size.hard`）记为结构
   finding，修复方向是拆页或下沉，不是压缩措辞。
 - 读者分离：`user-guide` 只写使用者可观察的行为；维护者材料不混入。根
@@ -160,7 +164,9 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 
 **警告**
 
-逐条审阅 CLI warning。
+逐条审阅 CLI warning（含 `audit.uncovered` 与 `agents.size`）。
+`.mdf/audit-ignore.yaml` 已覆盖 `AGENTS.md` 时，不再确认 `agents.size` 与
+`agents.project_content`。
 
 验收：未被 evidence 引用且未被 ignorelist 覆盖的实现文件及用户当场确认。
 

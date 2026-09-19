@@ -20,6 +20,9 @@ evidence:
 
 ## 错误与失败行为
 
+错误模型的唯一归属是 `docs/system/interfaces/errors.md`；本页只链接，不复述。
+若本页自身就是该专用叶，记录当前失败契约：
+
 {{CURRENT_FAILURE_CONTRACTS}}
 
 ## 验证

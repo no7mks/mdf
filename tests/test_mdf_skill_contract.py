@@ -254,6 +254,8 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
 
     assert "## 根文档职责" in contract
     assert "`README.md` 面向项目用户" in contract
+    assert "用户（非维护者）" in contract
+    assert "├── README.md                 # 用户入口" in contract
     assert "仅维护者需要的环境、验证、lint、CI、目录例外、发布" in contract
     assert "`PROJECT.md` 仅面向项目维护者" in contract
     assert "| 根 `README.md` | 200 |" in contract
@@ -261,6 +263,16 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
     assert "把 `docs/README.md` 当任务地图" in contract
     assert "最短可运行路径" in contract
+    assert "核心模块" in (
+        skill / "assets" / "templates" / "system-overview.md"
+    ).read_text(encoding="utf-8")
+    assert "`agents.size`" in contract
+    assert "托管区块必须项目无关" in contract
+    assert "按维护者角色工作" in contract
+    agents_block = (skill / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8"
+    )
+    assert "你的角色是维护者" in agents_block
     assert "`GLOSSARY.md` 面向所有读者维护稳定的领域词典" in contract
 
 
@@ -371,6 +383,8 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "release 的左端点为上一正式发布" in finish
     assert "finish 的 release 为 `full`" not in audit
     assert "`--base` 为上一正式发布" in audit
+    assert "`agents.project_content`" in audit
+    assert "核心模块表" in audit
 
 
 def test_delivery_intents_consume_current_fact_pages() -> None:

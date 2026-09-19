@@ -130,7 +130,30 @@ def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):
     init_git(repo)
 
     data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
+    assert data["finding_count"] == 0
+    assert [item["code"] for item in data["warnings"]] == ["agents.size"]
+
+
+def test_agents_size_warning_can_be_ignored(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    agents = repo / "AGENTS.md"
+    text = agents.read_text(encoding="utf-8")
+    agents.write_text("\n".join(["自定义规则。"] * 300) + "\n" + text, encoding="utf-8")
+    (repo / ".mdf" / "audit-ignore.yaml").write_text(
+        "ignored:\n  - path: AGENTS.md\n    reason: 保留托管块外说明\n",
+        encoding="utf-8",
+    )
+    init_git(repo)
+    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
+    assert data["finding_count"] == 0
     assert data["warning_count"] == 0
+    assert data["ignored"] == [
+        {
+            "path": "AGENTS.md",
+            "ignore_path": "AGENTS.md",
+            "reason": "保留托管块外说明",
+        }
+    ]
 
 
 def test_glossary_and_changes_are_not_sized(python_exe: str, tmp_path: Path):
