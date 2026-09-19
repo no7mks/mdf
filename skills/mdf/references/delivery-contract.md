@@ -35,7 +35,8 @@ Gitflow 收口前确认。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。
-roster 在 start 时冻结，写入 `delivery.json`（有交付材料时）与
+roster 在 start 开分支前展示 member、strategy 与 models 并经确认后冻结，
+写入 `delivery.json`（有交付材料时）与
 `branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
 owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,3` + best-of-n），

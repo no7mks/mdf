@@ -193,19 +193,31 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "内部 clarify" in table[1][3]
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
+    assert table[2][1] == "Confirm roster"
+    assert table[2][2] == "约束"
+    assert "member、strategy 与 models" in table[2][3]
     assert table[2][5] == "4"
-    assert table[3][1] == "Switch worktree"
-    assert table[3][2] == "约束"
-    assert table[3][5] == "结束"
-    assert table[3][6] == "留在 4 等待"
+    assert table[2][6] == "拒绝停止；未决留 3"
+    assert table[3][1] == "Start branch"
+    assert table[3][5] == "5"
+    assert table[4][1] == "Switch worktree"
+    assert table[4][2] == "约束"
+    assert table[4][5] == "结束"
+    assert table[4][6] == "留在 5 等待"
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "$mdf prp review" in text
+    assert "qa_strategy" in text and "dev_strategy" in text
+    assert "review_strategy" in text
+    assert "省略则不写、不问、不提" in text
+    assert "不得把沉默当作同意" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert re.search(r"其他种类通过 ─+→ 3 Start branch", diagram)
+    assert re.search(r"其他种类通过 ─+→ 3 Confirm roster", diagram)
     assert re.search(r"feature 通过", diagram)
+    assert re.search(r"3 Confirm roster", diagram)
     assert re.search(r"创建成功", diagram)
-    assert re.search(r"4 Switch worktree", diagram)
+    assert re.search(r"4 Start branch", diagram)
+    assert re.search(r"5 Switch worktree", diagram)
 
 
 def test_callers_do_not_prescribe_questioning_style():
@@ -247,7 +259,7 @@ def test_planning_intents_use_shared_planning_workspace():
 
 def test_start_switches_agent_to_owner_worktree():
     text = workflow("start")
-    assert "创建成功进入 4" in text
+    assert "创建成功进入 5" in text
     assert "qa/dev 不在本步切换" in text
     assert "切换工作区" in text
     common = workflow("common")
