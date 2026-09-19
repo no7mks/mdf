@@ -79,15 +79,12 @@ Architecture Decision Record；记录重要且已决定的长期架构取舍及�
 当前结构。文件为 `docs/context/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，
 不编号。
 
-## 任务地图
-
-`docs/README.md`；按任务把读者路由到一份页面的索引，不是阅读清单。
-
 ## 路由页与主题叶
 
 路由页只做边界与链接（`docs/README.md`、`docs/user-guide/README.md`、
 `docs/system/overview.md`、切面 `index.md`）；主题叶是某一主题当前事实的唯一
-归属页，独立可加载。
+归属页，独立可加载。`docs/README.md` 是维护者文档入口，按要找的主题打开一份
+页面，不是阅读清单，也不是 Proposal、Bug 的工作清单。
 
 ## 唯一归属
 
@@ -120,5 +117,5 @@ converge（收敛）集成测试和实现，持续修复实现直到**当前交�
 
 ## 测试类别与 Code Smell
 
-UT 为单元测试，PT 为属性测试，E2E 为端到端测试；是否需要及失败标准由项目配置和设计约定。
+UT 为单元测试，PT 为属性测试，IT 为集成测试，E2E 为端到端测试；是否需要及失败标准由 `docs/system/testing/` 与设计约定。
 Code smell 指提示维护性或设计问题的代码特征，由 code-review 判断是否需要在当前范围修复。

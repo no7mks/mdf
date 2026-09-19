@@ -1,16 +1,17 @@
 # 文档
 
-本索引是任务地图：按任务只打开对应的一份页面，不通读目录。用 grep 或 CodeWiki
+本页只做路由：按要找的主题打开一份页面，不通读目录。用 grep 或 CodeWiki
 定位路径后，也只读命中的那一份。当前事实排在决策与工作记录之前；只链接已有
-内容的页面，空目录不列出。
+内容的页面，空目录不列出。Proposal、Bug 按 ID 打开，不把本页当工作清单。
 
-## 按任务找文档
+## 按要做的事找文档
 
-| 任务 | 打开 |
+| 想做什么 | 打开 |
 | --- | --- |
 | 了解系统能做什么、边界在哪 | [系统边界](system/overview.md) |
 | 核对配置、可观测性、错误、鉴权或限制与恢复 | [系统边界](system/overview.md) 核心模块表指向的一份主题叶 |
 | 修改或核对某个内部结构、接口、数据或运维行为 | `system/` 下对应切面的一份主题叶 |
+| 写测试、分 kind、核对失败语义与 skip | [测试约定](system/testing/index.md) 指向的一份主题叶 |
 | 修改或核对对外可观察行为 | [用户指南](user-guide/README.md) 指向的一份主题叶 |
 | 执行验证、了解目录例外 | [PROJECT.md](../PROJECT.md) |
 | 需要某项长期取舍的理由 | `context/adr/` 中被事实页或用户点名的一份 ADR |
@@ -19,7 +20,7 @@
 ## 当前事实
 
 维护者事实在 `system/`：切面目录 `architecture/`、`interfaces/`、`data/`、
-`operations/` 各放主题叶；架构问题以 `system/architecture/` 为准。
+`operations/`、`testing/` 各放主题叶；架构问题以 `system/architecture/` 为准。
 
 - [系统边界](system/overview.md)：边界与切面路由。
 - [已知偏差](system/deviations.md)：偏差索引，细节链到 Bug 或对应主题叶。

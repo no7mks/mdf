@@ -36,10 +36,10 @@
 │       ├── CHANGE.md
 │       └── <slug>/                    # 材料与 CHANGE.md 同级
 └── docs/
-    ├── README.md             # 任务地图
+    ├── README.md             # 文档入口
     ├── JOTS.md
     ├── user-guide/           # 用户事实：README.md 路由 + 主题叶
-    ├── system/               # 维护者事实：overview.md + 切面目录/主题叶 + deviations.md
+    ├── system/               # 维护者事实：overview.md + 切面/主题叶 + deviations.md + testing/
     ├── context/
     │   ├── adr/<slug>.md     # 已确认取舍的理由；不是当前事实
     │   └── research/
@@ -52,13 +52,15 @@
         └── archive/<major.minor>/
 ```
 
-`docs/README.md` 是文档入口与任务地图：按任务指向**一份**页面，当前事实排在决策与
-工作记录之前；只链接已有内容的页面，空目录不链接。初始化预建工作目录，以
+`docs/README.md` 是文档入口：按要找的主题指向**一份**页面，当前事实排在决策与
+工作记录之前；只链接已有内容的页面，空目录不链接。不是 Proposal、Bug 的工作清单。初始化预建工作目录，以
 `.gitkeep` 保留空目录。占位仅建立目录结构，不表示已有工作记录或业务事实。
-`docs/testing.md` 是可选的测试分类与覆盖手册；存在时在任务地图按「写测试、
-分 kind」任务链接，不承载运行时行为事实。已有项目文档保持原位；同名目录须核对内容和归属，
-不得覆盖或自动接管。`docs/product/` 与 `docs/adr/` 不属于当前布局，存在即为
-`layout.migrate` finding，由 `$mdf migrate` 收敛。
+`docs/system/testing/` 是必要的测试约定切面：init 写入 `index.md` 与起步叶
+`conventions.md`，陈述当前验证规则，不承载运行时行为事实。已有项目文档保持原位；
+同名目录须核对内容和归属，不得覆盖或自动接管。`docs/product/`、`docs/adr/` 与根
+`docs/testing.md` 不属于当前布局，存在即为 `layout.migrate` finding，由
+`$mdf migrate` 收敛。缺少 `docs/system/testing/index.md` 或其主题叶时为
+`layout.testing` finding。
 
 ## 文档分类与按需加载
 
@@ -68,14 +70,16 @@
 | 类 | 路径 | 默认加载 |
 | --- | --- | --- |
 | 用户入口 | 根 `README.md` | 非维护者从这里进；链到 `docs/user-guide/README.md` |
-| 任务地图 | `docs/README.md` | 维护者按任务路由；不是用户入口 |
-| 维护者事实 | `docs/system/`：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引 | 地图 → 一份主题叶 |
+| 文档入口 | `docs/README.md` | 维护者路由页；不是用户入口，也不是工作对象清单 |
+| 维护者事实 | `docs/system/`：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引；`testing/` 测试约定 | 地图 → 一份主题叶 |
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；不强制分类目录 | 维护者默认不开；改对外行为时必开 |
 | 决策 | `docs/context/adr/` | 只经 `adr-<slug>` 或事实页链接 |
 | 工作对象 | `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` | 只经 ID 或直达链接 |
 | 调研与 Wiki | `docs/context/research/`、`docs/repowiki/` | research 按需；Wiki 搜符号 |
 
-切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`。
+切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`、
+`testing/`。`testing/` 不是产品运行时切面，也不进入核心模块表或
+`manifest.baselines`。
 
 两条加载路径（读者不同，入口不同）：
 
@@ -84,8 +88,8 @@
 | 用户（非维护者） | 根 `README.md` → `user-guide/README.md` → 一份主题叶 |
 | 维护者 / Agent | `AGENTS.md` → `PROJECT.md` → `docs/system/overview.md` |
 
-维护者需要全库任务地图或工作对象时，再把 `docs/README.md` 当任务地图，然后只打开
-一份主题叶。`user_guide` 为 `not_applicable` 时，根 `README.md` 仍是用户入口，
+维护者需要按主题找文档或打开工作对象时，再打开 `docs/README.md`，然后只打开
+一份主题叶或对应 ID 的文件。`user_guide` 为 `not_applicable` 时，根 `README.md` 仍是用户入口，
 改为链到 `PROJECT.md` 或 `docs/system/`。grep 与 CodeWiki 只用于定位路径，
 定位后只读命中的那一份。
 
@@ -95,9 +99,13 @@
 限制与恢复分别住 `system/operations/configuration.md`、
 `system/operations/observability.md`、`system/interfaces/errors.md`、
 `system/interfaces/auth.md`、`system/operations/limits-and-recovery.md`
-（超 450 再拆）。`overview.md` 用核心模块表：五行是配置、可观测性、错误、
-鉴权、限制与恢复；每行链到对应五类专用叶或写「不适用：」加理由。
-不预建空页。对外可见行为仍只住 user-guide，只链接。其他页面只链接，不复述；
+（超 450 再拆）。测试分类、失败语义与 skip 住 `system/testing/<topic>`：
+`index.md` 只路由；起步叶为 `conventions.md`，主题混杂或超 450 再拆
+`kinds.md`、`failure.md`、`suites.md`、`environment.md`。`overview.md`
+用核心模块表：五行是配置、可观测性、错误、
+鉴权、限制与恢复；每行链到对应五类专用叶或写「不适用：」加理由。切面路由另链
+`testing/index.md`。不预建空页（`testing/` 的 init 起步叶除外）。对外可见行为
+仍只住 user-guide，只链接。其他页面只链接，不复述；
 架构问题以 `system/architecture/` 为准，ADR 不作为当前结构来源。
 
 **体积**（物理行；超出为 `size.hard` finding，由 fact-audit CLI 检查）：
@@ -149,9 +157,15 @@ Proposal、Bug 或 Change，也不应被当作当前事实或任务清单。
 ## 顶层布局
 
 顶层只保留项目入口、构建或包管理或部署配置、仓库治理文件和 MDF 固定项。
-MDF 工作记录统一位于 `docs/`，配置位于 `.mdf/`。业务实现
-应归入 `src/`，测试应归入 `tests/`；生成物应归入名称明确的子目录。生态惯例要求
-其他目录名时，须在 `PROJECT.md` 中说明。
+MDF 工作记录统一位于 `docs/`，配置位于 `.mdf/`。业务实现与测试按仓库形态分目录：
+
+- 单 module：业务实现归入 `src/`，测试归入 `tests/`。
+- 多 module：每个 module 保持可构建单元，业务实现归入 `<module>/src/`，
+  测试归入 `<module>/tests/`。module 目录（含各自包清单）属于顶层允许项，
+  不得摊平进仓库根 `src/<module>/` 与 `tests/<module>/`。
+
+生成物应归入名称明确的子目录。生态惯例要求其他目录名时，须在 `PROJECT.md`
+中说明。
 
 MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例外的顶层允许清单、
 每项的理由，以及业务实现、测试和生成物的实际目录。
@@ -168,13 +182,15 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 - `PROJECT.md` 仅面向项目维护者（含 Agent），是读完 `AGENTS.md` 后的第一份
   项目文档。记录技术栈、环境、lint、test、build、CI 等价检查、生成物与目录约定。
   命令的可执行事实来源始终是仓库配置与脚本；运行时配置属于
-  `docs/system/operations/configuration.md`。验证命令集中在开头一张验证卡片；
-  须含 `docs/system/overview.md` 与 `docs/README.md`，不展开核心模块表。
+  `docs/system/operations/configuration.md`。测试分类、失败语义与 skip 属于
+  `docs/system/testing/`。验证命令集中在开头一张验证卡片；
+  须含 `docs/system/overview.md`、`docs/README.md` 与
+  `docs/system/testing/index.md`，不展开核心模块表。
   接口、数据与运行时行为不复述 `docs/system/` 事实页。超过体积限制时下沉到
   `docs/system/`，不扩写进 `README.md`。
 - `AGENTS.md` 仅面向在仓库中工作的 Agent。MDF 托管区块必须项目无关：Agent 默认
-  按维护者角色工作，第一跳是 `PROJECT.md`；再按任务打开 `docs/system/overview.md`，
-  或把 `docs/README.md` 当任务地图后只打开一份主题叶。用 grep/CodeWiki 定位后只读
+  按维护者角色工作，第一跳是 `PROJECT.md`；再打开 `docs/system/overview.md`，
+  或从 `docs/README.md` 只打开一份主题叶。用 grep/CodeWiki 定位后只读
   命中的那一份。根 `README.md` 与 `docs/user-guide/` 是用户入口，不是 Agent 默认
   起点。`README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不通读文档目录，
   不把根文档当作行为事实来源。不要求写项目例外；托管块外若写入栈、配置或行为
@@ -197,6 +213,8 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 | `user-guide-readme.md`              | `docs/user-guide/README.md` 路由 |
 | `user-guide-topic.md` / `system-*`  | `当前事实文档`主题叶             |
 | `system-configuration.md` 等五类专用叶 | fact update 建页时用，init 不落地 |
+| `system-testing-index.md` / `system-testing-conventions.md` | init 写入 `testing/` |
+| `system-testing.md` | testing 主题叶拆页时用 |
 | `adr.md`                            | `docs/context/adr/<slug>.md`     |
 | `proposal.md`                       | Proposal                      |
 | `bug.md`                            | Bug                              |
@@ -255,6 +273,7 @@ init 不产出 `suites`。没有业务检查的空仓库可使用 `git diff --ch
 
 `implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、
 不为符号链接且位于仓库内。`fact audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
+单 module 通常为 `[src]`；多 module 列出各 `<module>/src`。
 
 `.mdf/audit-ignore.yaml` 是受 Git 跟踪的 audit 例外清单：
 

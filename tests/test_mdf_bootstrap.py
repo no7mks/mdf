@@ -40,7 +40,11 @@ def test_new_project_can_reach_ready_without_fact_pages_or_remote(
     ))
     assert data["plan"]["state"] == "initializing"
     assert not list((repo / "docs" / "user-guide").rglob("*.md"))
-    assert not list((repo / "docs" / "system").rglob("*.md"))
+    system_md = sorted(
+        path.relative_to(repo / "docs" / "system").as_posix()
+        for path in (repo / "docs" / "system").rglob("*.md")
+    )
+    assert system_md == ["testing/conventions.md", "testing/index.md"]
     if with_template:
         assert (repo / root / "main.py").read_text() == 'print("Hello, world!")\n'
         assert not (repo / "src").exists()

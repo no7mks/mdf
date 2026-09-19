@@ -206,7 +206,9 @@ def test_init_writes_files_from_assets_templates(
     project = (repo / "PROJECT.md").read_text(encoding="utf-8")
     assert project == (templates / "project.md").read_text(encoding="utf-8")
     assert "## 目录约定" in project
-    assert "`src/` 中的业务实现" in project
+    assert "单 module 为 `src/` 与 `tests/`" in project
+    assert "`<module>/src/`" in project
+    assert "`<module>/tests/`" in project
     assert "允许处于仓库顶层的例外" in project
 
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
@@ -221,6 +223,16 @@ def test_init_writes_files_from_assets_templates(
     assert (repo / "changes/unreleased/.gitkeep").is_file()
     assert not (repo / "docs/specs").exists()
     assert (repo / "docs/JOTS.md").is_file()
+    assert (repo / "docs/system/testing/index.md").is_file()
+    assert (repo / "docs/system/testing/conventions.md").is_file()
+    assert (repo / "docs/system/testing/index.md").read_text(
+        encoding="utf-8"
+    ) == (templates / "system-testing-index.md").read_text(encoding="utf-8")
+    assert (repo / "docs/system/testing/conventions.md").read_text(
+        encoding="utf-8"
+    ) == (templates / "system-testing-conventions.md").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_init_updates_existing_manifest_and_managed_block(

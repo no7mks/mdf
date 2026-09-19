@@ -107,8 +107,8 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表：五行必须是
 配置、可观测性、错误、鉴权、限制与恢复；每行「打开」列为主题叶链接或
 「不适用：」加一句理由。不合则 `overview.core_modules` finding。范围内的
-`PROJECT.md` 须含 `docs/system/overview.md` 与 `docs/README.md`，缺则
-`project.entry_links` finding。
+`PROJECT.md` 须含 `docs/system/overview.md`、`docs/README.md` 与
+`docs/system/testing/index.md`，缺则 `project.entry_links` finding。
 
 验收：范围、文档—`evidence` 映射、ignore 匹配、体积、核心模块表、
 入口指向、warnings、findings。
@@ -133,28 +133,28 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 结构与契约问题记语义 finding；`agents.project_content` 记 warning：
 
 - 入口不过载：`README.md`、`PROJECT.md`、`AGENTS.md` 不复述事实页已记载的可观察
-  契约；仅维护者需要的内容不进 `README.md`，进 `PROJECT.md` 或任务地图指向的
-  `docs/system/` 主题叶。根 `README.md` 不写最短可运行路径、不写维护者入口；
+  契约；仅维护者需要的内容不进 `README.md`，进 `PROJECT.md` 或 `docs/README.md`
+  指向的 `docs/system/` 主题叶。根 `README.md` 不写最短可运行路径、不写维护者入口；
   `user_guide` 非 `not_applicable` 时链到 `docs/user-guide/README.md`。
   `PROJECT.md` 入口指向由 CLI 报 `project.entry_links`。`AGENTS.md` 托管块必须
   项目无关；托管块外写栈、配置或行为契约记 warning `agents.project_content`，
-  不是语义 finding。`docs/README.md`
-  是任务地图，当前事实排在决策与工作记录之前，不链接空目录，按任务只打开
-  一份页面。
+  不是语义 finding。  `docs/README.md` 是文档入口，当前事实排在决策与工作记录之前，不链接空目录，
+  按要找的主题只打开一份页面，不当作 Proposal/Bug 工作清单。
 - 路由页只路由：`system/overview.md`、`user-guide/README.md`、切面 `index.md`
   不复述叶子契约，不集中承担 evidence。核心模块表形状由 CLI 报
   `overview.core_modules`；人工审「不适用」是否属实、链接是否指向五类专用叶。
 - 唯一归属：同一可观察契约只在一页；其他页只链接。对外能力在 `user-guide`，
   内部结构与仍生效约束在 `system/architecture`，内部契约在 `system/interfaces`。
   运行时配置、可观测性、错误、鉴权、限制与恢复住五类专用叶。
+  测试分类、失败语义与 skip 住 `system/testing/` 主题叶。
 - 主题叶按主题拆：一页混多个主题、或该拆未拆（含 `size.hard`）记为结构
   finding，修复方向是拆页或下沉，不是压缩措辞。
 - 读者分离：`user-guide` 只写使用者可观察的行为；维护者材料不混入。根
   `README.md` 不写入仅维护者需要的手册。
 - ADR：`docs/context/adr/` 不复述当前结构；仍生效约束若只写在 ADR 而
   `system/architecture` 缺失，记为 finding。ADR 不按实现对齐。
-- 工作对象与调研：Proposal、Bug、Jot、research 未冒充当前事实、未被任务地图当成
-  通读清单即可；不做拆页 refine。`docs/repowiki/` 不审、不改。
+- 工作对象与调研：Proposal、Bug、Jot、research 未冒充当前事实、未被
+  `docs/README.md` 当成通读清单即可；不做拆页 refine。`docs/repowiki/` 不审、不改。
 - `verification` 以可执行测试或命令为主，不把实现步骤写成源码 walkthrough。
 
 验收：事实复核、加载质量发现、warning、未触及理由。

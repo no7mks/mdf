@@ -146,7 +146,10 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 init 只产出 `commands`，未分层，门禁跑全部项。分层由消费方事后在 manifest
 同级补 `suites` 映射。
 不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
-默认使用 `src`，已有模板使用实际目录并在 PROJECT 说明，不为 bootstrap 重排模板。
+单 module 默认使用 `src`，多 module 使用各 `<module>/src`；已有模板使用实际目录并在
+PROJECT 说明，不为 bootstrap 重排模板。
+`docs/system/testing/` 由 init CLI 写入起步页，按确认的验证配置填写当前规则，
+不把尚未采用的 kind 写成事实。
 
 调用 `init` CLI 时传入完整配置：重复 `--baseline`、`--implementation-root` 与
 `--verification-item '{"id":"check","kind":"custom","command":"git diff --check"}'`。

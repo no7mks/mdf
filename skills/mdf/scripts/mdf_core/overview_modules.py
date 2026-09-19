@@ -104,6 +104,7 @@ def overview_core_module_findings(
 _PROJECT_ENTRY_PATHS = (
     "docs/system/overview.md",
     "docs/README.md",
+    "docs/system/testing/index.md",
 )
 
 

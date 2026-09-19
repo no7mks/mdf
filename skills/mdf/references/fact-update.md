@@ -98,7 +98,9 @@ design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 生效约束有变时改。范围内实现已有配置、可观测、错误、鉴权或限制与恢复的
 可观察契约时，写入对应五类专用叶（叶不存在则用下表模板新建），并把核心模块表
 该行改为链接。无该契约则不建叶、不改「不适用」行。不为凑表造页。不为满足形式
-制造无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。
+制造无关文档，不把计划写为当前事实。测试运行器、验证配置、skip 或失败语义有变
+时同步 `docs/system/testing/` 主题叶；主题混杂或超 450 再拆，不预建空拆页。
+实现有问题时报告，不用文案掩盖。
 本步不做加载质量改写（拆页、复述改链接、路由瘦身）。
 
 五类专用叶（页面均在 `docs/system/`，模板均在 `assets/templates/`）：
@@ -140,7 +142,8 @@ design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 只对步骤 3 记录的、且位于范围内的结构 finding 做最小改写：拆页或下沉到主题叶、
 把复述改为链接、把只在 ADR 里的仍生效约束写入 `system/architecture` 并在 ADR
 留链接、瘦身路由页、补核心模块表缺行或缺理由、按上表模板建缺的五类专用叶、
-在 `PROJECT.md` 写入 `docs/system/overview.md` 与 `docs/README.md`。
+在 `PROJECT.md` 写入 `docs/system/overview.md`、`docs/README.md` 与
+`docs/system/testing/index.md`。
 不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
 有改写则回到 3 重审；`4→3` 最多两次，第三次仍有结构 finding 则停止并报告。
 无改写或重审通过后按公共规则提交；feature finish 委托时由调用方统一提交，

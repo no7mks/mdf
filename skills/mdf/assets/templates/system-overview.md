@@ -40,6 +40,7 @@ evidence:
 - 接口：{{INTERFACE_TOPIC_LINKS}}
 - 数据：{{DATA_TOPIC_LINKS}}
 - 运行与运维：{{OPERATIONS_TOPIC_LINKS}}
+- 测试：[测试约定](testing/index.md)
 
 ## 核心模块
 

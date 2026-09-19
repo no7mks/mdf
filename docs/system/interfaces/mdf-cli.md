@@ -80,7 +80,9 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 且没有 finding 时，`normal_workflows_allowed` 才为 `true`。进行中的
 `changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md
 不构成 finding。`schema_version` 不是当前值报 `manifest.schema`；`docs/product/`
-或 `docs/adr/` 目录存在报 `layout.migrate`；两者都指向 `$mdf migrate`。clean 单独
+或 `docs/adr/` 目录、根 `docs/testing.md` 存在报 `layout.migrate`；缺少
+`docs/system/testing/index.md` 或其主题叶报 `layout.testing`；schema 与
+`layout.migrate` 指向 `$mdf migrate`。clean 单独
 报告，由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
 ### `validate`
@@ -257,7 +259,8 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 `git diff --check`。
 
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
-`AGENTS.md` 区块和文档骨架。输出会列出拟创建或更新的文件和 diff；实际写入后
+`AGENTS.md` 区块、`docs/system/testing/` 起步页和文档骨架。输出会列出拟创建或
+更新的文件和 diff；实际写入后
 manifest 保持 `initializing`，但会写入提供的 verification commands，不会切换到
 `ready`。migrate intent 经事实复核，bootstrap intent 经起步材料核对；两者均须校验并取得
 显式就绪确认，再改 ready、校验并提交。bootstrap 不调用 fact audit。

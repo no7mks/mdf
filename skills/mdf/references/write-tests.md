@@ -67,7 +67,8 @@ roster.models 有值时写入本路任务；没有则不提模型或 effort。
 ### 测试与交接证据
 
 编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
-不从源码重新推断契约。
+不从源码重新推断契约。项目级 kind、失败语义与 skip 以
+`docs/system/testing/` 为准，不在 design 复述。
 按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite。design
 只声明 suite 名，manifest 此时可能尚无该 key：在 `verification.suites` 新增
 design 所列 key 并填入验证项 id 属于本阶段授权；记录 gate 前核对每个声明的

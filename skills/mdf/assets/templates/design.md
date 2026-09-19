@@ -14,6 +14,8 @@
 
 ## 测试策略
 
+项目级 kind 与失败语义见 `docs/system/testing/`。本页只写本次交付映射。
+
 {{ACCEPTANCE_TO_QUICK_AND_DELIVERY_SUITE_MAPPING}}
 
 ## 验证配置

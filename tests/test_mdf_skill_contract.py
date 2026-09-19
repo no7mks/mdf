@@ -158,9 +158,12 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "盘点全部顶层项目项" in migrate
     assert "顶层允许清单" in migrate
     assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in migrate
-    assert "业务实现目录" in migrate
-    assert "`src/<目录>`" in migrate
-    assert "`tests/<目录>`" in migrate
+    assert "业务实现与测试" in migrate
+    assert "`<module>/src/`" in migrate
+    assert "`<module>/tests/`" in migrate
+    assert "`src/<目录>`" not in migrate
+    assert "`tests/<目录>`" not in migrate
+    assert "不得摊平" in migrate
     assert "迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`" in migrate
     assert "不得在未经确认时迁移或删除" in migrate
     assert "项目原有文档与经确认迁移的顶层项目项" in migrate
@@ -261,7 +264,7 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "| 根 `README.md` | 200 |" in contract
     assert "| 路由页（见下）、`AGENTS.md` 托管块、`PROJECT.md` | 100 |" in contract
     assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
-    assert "把 `docs/README.md` 当任务地图" in contract
+    assert "从 `docs/README.md` 只打开一份主题叶" in contract
     assert "最短可运行路径" in contract
     assert "核心模块" in (
         skill / "assets" / "templates" / "system-overview.md"
@@ -271,7 +274,9 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "固定表" not in contract
     assert "强制五类" not in contract
     assert "`user-guide/README.md` → 一份主题叶" in contract
-    assert "须含 `docs/system/overview.md` 与 `docs/README.md`" in contract
+    assert "须含 `docs/system/overview.md`、`docs/README.md` 与" in contract
+    assert "`docs/system/testing/`" in contract
+    assert "`layout.testing`" in contract
     assert "`agents.size`" in contract
     assert "托管区块必须项目无关" in contract
     assert "按维护者角色工作" in contract
@@ -290,7 +295,11 @@ def test_repository_contract_defines_top_level_layout() -> None:
 
     assert "## 顶层布局" in contract
     assert "顶层只保留项目入口" in contract
-    assert "业务实现\n应归入 `src/`，测试应归入 `tests/`" in contract
+    assert "单 module：业务实现归入 `src/`，测试归入 `tests/`" in contract
+    assert "`<module>/src/`" in contract
+    assert "`<module>/tests/`" in contract
+    assert "不得摊平进仓库根 `src/<module>/` 与 `tests/<module>/`" in contract
+    assert "列出各 `<module>/src`" in contract
     assert "MDF 不自动迁移或删除顶层项目项" in contract
     assert "顶层允许清单、" in contract
     assert "每项的理由" in contract
@@ -308,6 +317,11 @@ def test_repository_contract_defines_top_level_layout() -> None:
     )
     assert "打开单份" in docs_readme
     assert "按编号打开" not in docs_readme
+    assert "system/testing/index.md" in docs_readme
+    assert (skill / "assets" / "templates" / "system-testing-index.md").is_file()
+    assert (
+        skill / "assets" / "templates" / "system-testing-conventions.md"
+    ).is_file()
 
 
 def test_object_ids_must_be_cited_with_type_prefix() -> None:
@@ -416,6 +430,8 @@ def test_delivery_intents_consume_current_fact_pages() -> None:
 
     assert "当前事实锚点" in design
     assert "不得把计划写进既有事实页" in design
+    assert "`<module>/tests/`" in design
+    assert "不要只抄仓库根 `tests/`" in design
     assert "## 当前事实锚点" in template
     assert "以事实页为准" in tests
     assert "以事实页为准" in implement

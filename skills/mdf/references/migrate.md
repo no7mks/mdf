@@ -128,6 +128,8 @@
 `verification.commands`。`docs/` 内材料按 `repository-contract.md`「文档分类与
 按需加载」归位：面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，
 主题各一页）；边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶；
+测试约定进 `docs/system/testing/`（已有根 `docs/testing.md` 则迁入该切面）；
+缺 `index.md` 或主题叶时按模板补齐并按仓库证据填写；
 `overview.md` 核心模块表按已有材料填链接或「不适用」，不批量创建空主题叶；
 仍生效的架构约束从 ADR 抽到 `docs/system/architecture/`，ADR 只留理由；
 `docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，落地后
@@ -140,8 +142,11 @@
 验收：逐项决定与验证命令。
 
 异常与交接：无法分类时留在 3。仅含 `.gitkeep` 的占位目录按其未来职责迁移； 迁移目标已有实际内容时，
-在同一方案中移除 `.gitkeep`，否则保留。业务实现目录和测试目录建议迁入 `src/<目录>`/`tests/<目录>`，
-但不得在未经确认时迁移或删除。已接入 MDF 但暂无业务检查时可用 `git diff --check`；从未发布时最近稳定版本为 `none`。
+在同一方案中移除 `.gitkeep`，否则保留。单 module 的业务实现与测试建议迁入 `src/` 与
+`tests/`；多 module 建议迁入或保留 `<module>/src/` 与 `<module>/tests/`，
+不得摊平为仓库根 `src/<module>/` 与 `tests/<module>/`。但不得在未经确认时迁移或删除。
+已接入 MDF 但暂无业务检查时可用 `git diff --check`；从未发布时最近稳定版本为
+`none`。
 
 <a id="s4"></a>
 

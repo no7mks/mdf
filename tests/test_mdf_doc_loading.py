@@ -45,6 +45,53 @@ def test_retired_docs_directories_report_layout_migrate(python_exe: str, tmp_pat
     assert any("$mdf migrate" in item["message"] for item in data["findings"])
 
 
+def test_docs_testing_handbook_reports_layout_migrate(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    (repo / "docs" / "testing.md").write_text("# 旧测试手册\n", encoding="utf-8")
+    init_git(repo)
+
+    result = mdf(python_exe, "doctor", "--repo", str(repo))
+    data = payload(result)
+    codes = [item["code"] for item in data["findings"]]
+    assert "layout.migrate" in codes
+    assert any(
+        item["path"] == "docs/testing.md" for item in data["findings"]
+    )
+
+
+def test_missing_testing_facet_reports_layout_testing(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    for path in (repo / "docs" / "system" / "testing").glob("*.md"):
+        path.unlink()
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "layout.testing" in _codes(result)
+
+
+def test_testing_pages_require_system_testing_doc_type(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    page = repo / "docs" / "system" / "testing" / "conventions.md"
+    replace(page, "doc_type: system-testing", "doc_type: system-operations")
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "fact.doc_type_path" in _codes(result)
+
+    replace(page, "doc_type: system-operations", "doc_type: system-testing")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-q", "-m", "test: 修正 testing doc_type")
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
 def test_schema_version_mismatch_points_to_migrate(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     replace(repo / ".mdf" / "manifest.yaml", "schema_version: 3", "schema_version: 2")
@@ -82,6 +129,7 @@ def test_adrs_live_under_context(python_exe: str, tmp_path: Path):
         ("docs/README.md", 101),
         ("docs/system/overview.md", 101),
         ("docs/system/interfaces/index.md", 101),
+        ("docs/system/testing/index.md", 101),
         ("docs/system/interfaces/api.md", 451),
         ("docs/user-guide/README.md", 101),
         ("docs/user-guide/topic.md", 451),
@@ -207,7 +255,8 @@ def test_audit_reports_project_entry_links(python_exe: str, tmp_path: Path):
 
     (repo / "PROJECT.md").write_text(
         "# 维护手册\n\n"
-        "见 `docs/system/overview.md` 与 `docs/README.md`。\n",
+        "见 `docs/system/overview.md`、`docs/README.md` 与 "
+        "`docs/system/testing/index.md`。\n",
         encoding="utf-8",
     )
     git(repo, "add", "--all")

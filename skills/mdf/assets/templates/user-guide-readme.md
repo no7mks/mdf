@@ -12,7 +12,7 @@ evidence:
 最短可运行路径写在对应主题叶，不写在根 `README.md`。
 需要配置时只链接 `docs/system/operations/configuration.md`，不复述。
 
-## 按任务找页面
+## 按要做的事找页面
 
 | 想做什么 | 打开 |
 | --- | --- |

@@ -5,7 +5,8 @@
 ## 验证卡片
 
 Agent 执行维护改动时只读本节。以表格列出环境要求与 lint、test、build、
-CI 等价检查命令；命令以仓库配置和脚本为准。
+CI 等价检查命令；命令以仓库配置和脚本为准。kind、失败语义与 skip 见
+`docs/system/testing/index.md`，不在此复述。
 
 | 命令 | 预期结果 |
 | --- | --- |
@@ -24,10 +25,12 @@ CI 等价检查命令；命令以仓库配置和脚本为准。
 
 ## 目录约定
 
-- 记录 `src/` 中的业务实现、`tests/` 中的测试和生成物目录。
+- 记录业务实现与测试的实际目录：单 module 为 `src/` 与 `tests/`；多 module 为各
+  `<module>/src/` 与 `<module>/tests/`。并记录生成物目录。
 - 仅列出允许处于仓库顶层的例外项目项及其理由。
 
 ## 文档入口
 
-- 系统入口：`docs/system/overview.md`
-- 全库任务地图：`docs/README.md`
+- 系统边界：`docs/system/overview.md`
+- `docs/README.md`
+- 测试约定：`docs/system/testing/index.md`

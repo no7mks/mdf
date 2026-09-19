@@ -8,6 +8,8 @@ from .constants import (
     MDF_BLOCK_END,
     MDF_BLOCK_START,
     SCHEMA_VERSION,
+    TESTING_CONVENTIONS,
+    TESTING_INDEX,
 )
 from .errors import MDFError
 from .yamlutil import yaml_quote
@@ -123,7 +125,7 @@ def template_text(name: str, fallback: str) -> str:
     return path.read_text(encoding="utf-8") if path.is_file() else fallback
 
 
-# not_applicable 基线对应的任务地图行；模板中每条链接独占一行。
+# not_applicable 基线对应的文档入口链接行；模板中每条链接独占一行。
 _INDEX_LINES_BY_BASELINE = {
     "user_guide": (r"user-guide/README\.md",),
     "system_boundary": (r"system/overview\.md",),
@@ -237,6 +239,18 @@ def init_files(
         keep = path / ".gitkeep"
         if not keep.exists():
             files[keep] = ""
+    testing_index = repo / TESTING_INDEX
+    if not testing_index.exists():
+        files[testing_index] = template_text(
+            "system-testing-index.md",
+            "# 测试\n",
+        )
+    testing_conventions = repo / TESTING_CONVENTIONS
+    if not testing_conventions.exists():
+        files[testing_conventions] = template_text(
+            "system-testing-conventions.md",
+            "# 测试约定\n",
+        )
     return files
 
 

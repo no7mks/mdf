@@ -168,6 +168,7 @@ DOC_TYPES = {
     "system-data",
     "system-operations",
     "system-deviations",
+    "system-testing",
 }
 SYSTEM_DOC_TYPES = {
     "overview.md": "system-boundary",
@@ -176,7 +177,11 @@ SYSTEM_DOC_TYPES = {
     "data": "system-data",
     "operations": "system-operations",
     "deviations.md": "system-deviations",
+    "testing": "system-testing",
 }
+TESTING_INDEX = "docs/system/testing/index.md"
+TESTING_CONVENTIONS = "docs/system/testing/conventions.md"
+RETIRED_TESTING_HANDBOOK = "docs/testing.md"
 # 文档体积（物理行）：按加载角色一条硬限制；超出为 size.hard finding。
 # GLOSSARY.md 与 changes/ 材料不检查。
 SIZE_ROUTER = ("router", 100)
