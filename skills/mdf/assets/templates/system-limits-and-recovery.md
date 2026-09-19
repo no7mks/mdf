@@ -2,8 +2,8 @@
 title: "限制与恢复"
 doc_type: system-operations
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 限制与恢复
@@ -12,8 +12,8 @@ evidence:
 
 ## 运行限制
 
-{{CURRENT_OPERATIONAL_LIMITS}}
+{{MDF_CURRENT_OPERATIONAL_LIMITS}}
 
 ## 备份与回滚
 
-{{CURRENT_BACKUP_ROLLBACK_AND_RECOVERY}}
+{{MDF_CURRENT_BACKUP_ROLLBACK_AND_RECOVERY}}

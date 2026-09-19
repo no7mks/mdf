@@ -18,10 +18,10 @@ Architecture Decision Record；记录重要且已决定的长期架构取舍及�
 当前结构。文件为 `docs/context/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，
 不编号。
 
-### {{TERM}}
+### {{MDF_TERM}}
 
-{{DOMAIN_DEFINITION}}
+{{MDF_DOMAIN_DEFINITION}}
 
-**同义词：**{{SYNONYMS_OR_NONE}}
+**同义词：**{{MDF_SYNONYMS_OR_NONE}}
 
-**不要与以下概念混淆：**{{DISTINCTION_OR_NONE}}
+**不要与以下概念混淆：**{{MDF_DISTINCTION_OR_NONE}}

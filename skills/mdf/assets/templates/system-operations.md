@@ -1,12 +1,12 @@
 ---
-title: "{{TOPIC_TITLE}}"
+title: "{{MDF_TOPIC_TITLE}}"
 doc_type: system-operations
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
-# {{TOPIC_TITLE}}
+# {{MDF_TOPIC_TITLE}}
 
 本页是该运维主题的唯一归属页；其他页面只链接到这里，不复述。
 运行时配置、可观测性、限制与恢复若已有专用叶，本页只链接，不复述那些契约。
@@ -15,8 +15,8 @@ evidence:
 
 ## 部署
 
-{{CURRENT_DEPLOYMENT_MODEL}}
+{{MDF_CURRENT_DEPLOYMENT_MODEL}}
 
 ## 本主题运维事实
 
-{{CURRENT_OPERATIONS_FACTS}}
+{{MDF_CURRENT_OPERATIONS_FACTS}}

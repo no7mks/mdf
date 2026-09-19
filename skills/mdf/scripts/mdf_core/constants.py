@@ -142,7 +142,10 @@ OBJECT_ID_SLUG_RE = re.compile(
 )
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"
-MARKER_RE = re.compile(r"\{\{[^{}\n]+\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE)
+# 未填模板只认 {{MDF_ALL_CAPS_SNAKE}} 与行内 TODO；产品宏不是 MDF 槽。
+MARKER_RE = re.compile(
+    r"\{\{MDF_[A-Z][A-Z0-9_]*\}\}|(?:^|\s)TODO(?:\s|:|$)", re.MULTILINE
+)
 ALL_MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]]*]\(([^()]*(?:\([^()]*\)[^()]*)*)\)"
 )

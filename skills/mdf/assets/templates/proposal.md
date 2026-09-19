@@ -1,30 +1,30 @@
 ---
-id: "{{PROPOSAL_ID}}"
+id: "{{MDF_PROPOSAL_ID}}"
 type: proposal
 status: draft
 depends_on: []
 ---
 
-# {{TITLE}}
+# {{MDF_TITLE}}
 
 ## 问题
 
-{{CURRENT_PROBLEM}}
+{{MDF_CURRENT_PROBLEM}}
 
 ## 期望结果
 
-{{DESIRED_OUTCOME}}
+{{MDF_DESIRED_OUTCOME}}
 
 ## 范围
 
 ### 包含
 
-- {{IN_SCOPE_ITEM}}
+- {{MDF_IN_SCOPE_ITEM}}
 
 ### 不包含
 
-- {{OUT_OF_SCOPE_ITEM}}
+- {{MDF_OUT_OF_SCOPE_ITEM}}
 
 ## 验收标准
 
-- [ ] {{VERIFIABLE_CRITERION}}
+- [ ] {{MDF_VERIFIABLE_CRITERION}}

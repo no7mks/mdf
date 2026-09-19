@@ -2,8 +2,8 @@
 title: "配置"
 doc_type: system-operations
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 配置
@@ -14,12 +14,12 @@ evidence:
 
 ## 配置面
 
-{{CURRENT_RUNTIME_CONFIGURATION}}
+{{MDF_CURRENT_RUNTIME_CONFIGURATION}}
 
 ## 来源与优先级
 
-{{CURRENT_CONFIG_SOURCES_AND_PRECEDENCE}}
+{{MDF_CURRENT_CONFIG_SOURCES_AND_PRECEDENCE}}
 
 ## 验证
 
-{{HOW_TO_VERIFY_CONFIGURATION}}
+{{MDF_HOW_TO_VERIFY_CONFIGURATION}}

@@ -2,8 +2,8 @@
 title: "可观测性"
 doc_type: system-operations
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 可观测性
@@ -12,12 +12,12 @@ evidence:
 
 ## 日志
 
-{{CURRENT_LOGGING}}
+{{MDF_CURRENT_LOGGING}}
 
 ## 指标与追踪
 
-{{CURRENT_METRICS_AND_TRACES}}
+{{MDF_CURRENT_METRICS_AND_TRACES}}
 
 ## 告警
 
-{{CURRENT_ALERTS_OR_NONE}}
+{{MDF_CURRENT_ALERTS_OR_NONE}}

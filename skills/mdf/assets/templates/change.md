@@ -1,6 +1,6 @@
 ---
-change_kind: "{{CHANGE_KIND}}"
-source_branch: "{{SOURCE_BRANCH}}"
+change_kind: "{{MDF_CHANGE_KIND}}"
+source_branch: "{{MDF_SOURCE_BRANCH}}"
 proposals: []
 fixed: []
 closed: []
@@ -8,13 +8,13 @@ deferred: []
 adrs: []
 release_notes:
   Changed:
-    - "{{RELEASE_NOTE}}"
+    - "{{MDF_RELEASE_NOTE}}"
 breaking: false
 evidence:
   tests:
-    - "{{TEST_PATH}}"
+    - "{{MDF_TEST_PATH}}"
   commands:
-    - "{{RERUNNABLE_COMMAND}}"
+    - "{{MDF_RERUNNABLE_COMMAND}}"
   artifacts: []
 ---
 
@@ -22,11 +22,11 @@ evidence:
 
 ## 结果
 
-{{DELIVERED_RESULT}}
+{{MDF_DELIVERED_RESULT}}
 
 ## 已更新的当前文档
 
-- {{UPDATED_CURRENT_FACT_PATH}}
+- {{MDF_UPDATED_CURRENT_FACT_PATH}}
 
 ## 已知偏差
 

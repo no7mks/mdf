@@ -2,8 +2,8 @@
 title: "用户指南"
 doc_type: user-guide
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 用户指南
@@ -16,8 +16,8 @@ evidence:
 
 | 想做什么 | 打开 |
 | --- | --- |
-| {{USER_TASK}} | [{{TOPIC_TITLE}}]({{TOPIC_FILE}}) |
+| {{MDF_USER_TASK}} | [{{MDF_TOPIC_TITLE}}]({{MDF_TOPIC_FILE}}) |
 
 ## 主题页
 
-- [{{TOPIC_TITLE}}]({{TOPIC_FILE}})：{{ONE_LINE_SCOPE}}
+- [{{MDF_TOPIC_TITLE}}]({{MDF_TOPIC_FILE}})：{{MDF_ONE_LINE_SCOPE}}

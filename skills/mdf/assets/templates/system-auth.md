@@ -2,8 +2,8 @@
 title: "鉴权"
 doc_type: system-interfaces
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 鉴权
@@ -13,8 +13,8 @@ evidence:
 
 ## 身份与凭证
 
-{{CURRENT_IDENTITY_AND_CREDENTIALS}}
+{{MDF_CURRENT_IDENTITY_AND_CREDENTIALS}}
 
 ## 授权
 
-{{CURRENT_AUTHORIZATION_RULES}}
+{{MDF_CURRENT_AUTHORIZATION_RULES}}

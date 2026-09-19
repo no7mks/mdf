@@ -9,6 +9,77 @@ def _codes(result) -> list[str]:
     return [item["code"] for item in json.loads(result.stdout)["findings"]]
 
 
+def test_marker_re_matches_mdf_slots_not_product_macros():
+    load_core_module()
+    from mdf_core.constants import MARKER_RE
+
+    for text in (
+        "{{MDF_EVIDENCE_PATH}}",
+        "{{MDF_TITLE}}",
+        "{{MDF_YYYY_MM_DD}}",
+        "TODO: fill this",
+        "prefix TODO",
+        "TODO",
+    ):
+        assert MARKER_RE.search(text), text
+    for text in (
+        "{{EVIDENCE_PATH}}",
+        "{{TITLE}}",
+        "{{API_KEY}}",
+        "{{char}}",
+        "{{user}}",
+        "{{ user }}",
+        "`{{char}}`",
+        "```\n{{char}}\n```",
+        "{{#if}}{{/if}}",
+        "{{.Name}}",
+        "{{ FOO }}",
+        "{{FOO-BAR}}",
+        "{{foo_bar}}",
+        "{{MDF_}}",
+        "{{}}",
+        "TODOLIST",
+    ):
+        assert MARKER_RE.search(text) is None, text
+
+
+def test_template_slots_use_mdf_prefix():
+    load_core_module()
+    from mdf_core.constants import MARKER_RE
+
+    slot = re.compile(r"\{\{[^{}\n]+\}\}")
+    leftover: list[tuple[str, str]] = []
+    root = skill_dir("mdf") / "assets" / "templates"
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        for match in slot.finditer(path.read_text(encoding="utf-8")):
+            token = match.group(0)
+            if token == "{{MDF_...}}" or MARKER_RE.search(token):
+                continue
+            leftover.append((path.name, token))
+    assert leftover == []
+
+
+def test_fact_pages_allow_product_macros(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    page = repo / "docs" / "user-guide" / "README.md"
+    page.write_text(
+        page.read_text(encoding="utf-8")
+        + "\n角色宏为 `{{char}}`、{{ user }}、{{API_KEY}}。\n",
+        encoding="utf-8",
+    )
+    init_git(repo)
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+    replace(page, "`{{char}}`", "`{{MDF_EVIDENCE_PATH}}`")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-q", "-m", "test: 留下模板占位")
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert result.returncode != 0
+    assert "fact.marker" in _codes(result)
+
+
 def test_user_guide_pages_require_user_guide_doc_type(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     topic = repo / "docs" / "user-guide" / "health.md"

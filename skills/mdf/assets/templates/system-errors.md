@@ -2,8 +2,8 @@
 title: "错误"
 doc_type: system-interfaces
 evidence:
-  - path: "{{EVIDENCE_PATH}}"
-    verification: "{{VERIFICATION_METHOD}}"
+  - path: "{{MDF_EVIDENCE_PATH}}"
+    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 错误
@@ -13,8 +13,8 @@ evidence:
 
 ## 错误模型
 
-{{CURRENT_ERROR_MODEL}}
+{{MDF_CURRENT_ERROR_MODEL}}
 
 ## 失败行为
 
-{{CURRENT_FAILURE_CONTRACTS}}
+{{MDF_CURRENT_FAILURE_CONTRACTS}}
