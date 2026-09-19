@@ -14,9 +14,9 @@
 │ 2 Audit CLI                      │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 其他失败或缺失 ────→ [停止]
+                 ├──── 无法审阅 ────→ [停止]
                  │
-                 ▼ CLI 成功或 migrate 仅 initializing
+                 ▼ 可审阅
 ┌──────────────────────────────────┐
 │ 3 Review facts                   │
 └────────────────┬─────────────────┘
@@ -63,10 +63,10 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve scope | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、两类范围 | 2 | 停止 |
-| 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI | 映射、体积、findings | 成功或 migrate 仅 initializing→3 | 停止 |
-| 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现 | 4 | 无法复核则停止 |
+| 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI | 映射、体积、表与入口、findings | 可审阅→3 | 无法审阅则停止 |
+| 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
-| 5 | Review warnings | 约束 | 逐条审阅 warning；未引用实现须确认 | 逐条处置 | 6 | 无法审阅则停止 |
+| 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
 | 6 | Validate | 脚本 | 运行 `validate --scope full`，不运行验证命令 | validation findings | 7 | 停止 |
 | 7 | Confirm review | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
@@ -103,14 +103,22 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 **映射**
 
 调用 `fact-audit --scope <scope>`；`branch` 可带 `--base`，`paths` 带精确路径，
-`full` 不带路径。CLI 同时按 `repository-contract.md` 的体积表检查：超出限制为
-`size.hard` finding。
+`full` 不带路径。CLI 按 `repository-contract.md` 的体积表检查 `size.hard`。
+范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表：五行必须是
+配置、可观测性、错误、鉴权、限制与恢复；每行「打开」列为主题叶链接或
+「不适用：」加一句理由。不合则 `overview.core_modules` finding。范围内的
+`PROJECT.md` 须含 `docs/system/overview.md` 与 `docs/README.md`，缺则
+`project.entry_links` finding。
 
-验收：范围、文档—`evidence` 映射、ignore 匹配、体积、warnings、确定性 findings。
+验收：范围、文档—`evidence` 映射、ignore 匹配、体积、核心模块表、
+入口指向、warnings、findings。
 
-通过条件：CLI 成功，或 migrate 调用时返回结构化结果且 findings 仅有
-`manifest.initializing`；后一种即使退出码为 2、ok 为 false 也继续审阅。
-异常与交接：其他调用失败或确定性 finding 时停止；不得把解析失败当作初始化豁免。
+通过条件：得到可解析 payload。`size.hard`、`overview.core_modules`、
+`project.entry_links` 不在本步停止。migrate 仅 `manifest.initializing`
+也继续。
+异常与交接：无结构化输出，或 findings 含 `audit.scope`、`audit.base`、
+`audit.scope_path`、`audit.ignore_file`、`audit.ignore_rule` 时停止。
+不得把解析失败当作初始化豁免。
 
 ### 双向复核与确认
 
@@ -121,21 +129,24 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 从文档到实现执行`事实复核`：复核范围内每份当前事实文档、陈述和 `evidence`。
 范围内未复核的文档逐份记录未触及理由，供步骤 7 报告。
 
-同时按加载质量清单审阅范围内文档结构（`full` 覆盖 `docs/**` 与根文档），发现
-计入语义 finding：
+同时按加载质量清单审阅范围内文档结构（`full` 覆盖 `docs/**` 与根文档）。
+结构与契约问题记语义 finding；`agents.project_content` 记 warning：
 
 - 入口不过载：`README.md`、`PROJECT.md`、`AGENTS.md` 不复述事实页已记载的可观察
   契约；仅维护者需要的内容不进 `README.md`，进 `PROJECT.md` 或任务地图指向的
-  `docs/system/` 主题叶。根 `README.md` 不写最短可运行路径、不写维护者入口。
-  `AGENTS.md` 托管块必须项目无关；托管块外写栈、配置或行为契约记
-  `agents.project_content`（warning）。`docs/README.md` 是任务地图，当前事实排在
-  决策与工作记录之前，不链接空目录，按任务只打开一份页面。
+  `docs/system/` 主题叶。根 `README.md` 不写最短可运行路径、不写维护者入口；
+  `user_guide` 非 `not_applicable` 时链到 `docs/user-guide/README.md`。
+  `PROJECT.md` 入口指向由 CLI 报 `project.entry_links`。`AGENTS.md` 托管块必须
+  项目无关；托管块外写栈、配置或行为契约记 warning `agents.project_content`，
+  不是语义 finding。`docs/README.md`
+  是任务地图，当前事实排在决策与工作记录之前，不链接空目录，按任务只打开
+  一份页面。
 - 路由页只路由：`system/overview.md`、`user-guide/README.md`、切面 `index.md`
-  不复述叶子契约，不集中承担 evidence。`overview.md` 核心模块表五行齐：每行是
-  主题叶链接或「不适用：」加一句理由；缺行或缺理由记结构 finding。
+  不复述叶子契约，不集中承担 evidence。核心模块表形状由 CLI 报
+  `overview.core_modules`；人工审「不适用」是否属实、链接是否指向五类专用叶。
 - 唯一归属：同一可观察契约只在一页；其他页只链接。对外能力在 `user-guide`，
   内部结构与仍生效约束在 `system/architecture`，内部契约在 `system/interfaces`。
-  运行时配置、可观测性、错误、鉴权、限制与恢复住契约规定的专用叶。
+  运行时配置、可观测性、错误、鉴权、限制与恢复住五类专用叶。
 - 主题叶按主题拆：一页混多个主题、或该拆未拆（含 `size.hard`）记为结构
   finding，修复方向是拆页或下沉，不是压缩措辞。
 - 读者分离：`user-guide` 只写使用者可观察的行为；维护者材料不混入。根
@@ -146,9 +157,9 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
   通读清单即可；不做拆页 refine。`docs/repowiki/` 不审、不改。
 - `verification` 以可执行测试或命令为主，不把实现步骤写成源码 walkthrough。
 
-验收：事实复核、加载质量发现、未触及理由。
+验收：事实复核、加载质量发现、warning、未触及理由。
 
-异常与交接：记录语义 finding 后继续 4。
+异常与交接：记录语义 finding 或 `agents.project_content` 后继续 4。
 
 <a id="s4"></a>
 
@@ -164,11 +175,12 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 
 **警告**
 
-逐条审阅 CLI warning（含 `audit.uncovered` 与 `agents.size`）。
-`.mdf/audit-ignore.yaml` 已覆盖 `AGENTS.md` 时，不再确认 `agents.size` 与
-`agents.project_content`。
+逐条审阅 CLI warning（`audit.uncovered`、`agents.size`）以及步骤 3 记下的
+`agents.project_content`。`.mdf/audit-ignore.yaml` 已覆盖 `AGENTS.md` 时，
+不再确认 `agents.size` 与 `agents.project_content`。
 
-验收：未被 evidence 引用且未被 ignorelist 覆盖的实现文件及用户当场确认。
+验收：未被 evidence 引用且未被 ignorelist 覆盖的实现文件；未忽略的
+`agents.size` / `agents.project_content`；及用户当场确认。
 
 异常与交接：列入会话摘要后继续 6。
 
@@ -191,7 +203,8 @@ migrate 只允许 `manifest.initializing` finding。
 
 验收：会话摘要和用户当场确认。
 
-通过条件：无语义 finding（含结构 finding）、无 `size.hard`、无未确认 warning，且
+通过条件：无语义 finding（含结构 finding）、无 `size.hard`、无
+`overview.core_modules`、无 `project.entry_links`、无未确认 warning，且
 validation 无阻断 finding 时通过；migrate 仅豁免 `manifest.initializing`。
 该确认不跨调用复用。
 

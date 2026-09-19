@@ -78,7 +78,7 @@
 | 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
 | 3 | Configure | 约束 | 核对八项基线、版本、验证与实现根 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
 | 4 | Save baseline | 脚本 | 完成材料，保持 initializing 并复核提交 | 阶段提交、diff | 5 | 保留现场并报告 |
-| 5 | Validate | 约束 | 按调用方审阅并全量校验 | 仅 initializing finding | 返回调用方 | 可修复则 5；无法继续则停止 |
+| 5 | Validate | 约束 | 按调用方审阅并全量校验 | 仅 initializing finding | 返回调用方 | 可修则 5；两轮后停 |
 | 6 | Confirm activation | 约束 | 展示结果与方案并确认启用 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
 | 7 | Enable | 脚本 | 写 ready，全量校验、提交后再次核验 | 零 finding、就绪提交 | 8 | 事实变化 5；其他保留现场停止 |
 | 8 | Prepare branches | 脚本 | 按确认方案核对并补齐 master/develop | 本地分支及关系 | 返回调用方完成 | 保留现场并报告 |
@@ -169,7 +169,7 @@ AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范
 按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
 bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
 `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；已是 ready
-时须零 finding。其他 finding 修正、提交后重验。
+时须零 finding。其他 finding 修正、提交后重验；同一项两轮后无法继续。
 通过后返回调用方验收步骤；调用方进入启用阶段时从 6 继续。无法继续则保留现场并报告。
 
 <a id="s6"></a>
@@ -188,5 +188,6 @@ bootstrap 不调用 fact audit，full validation 是确定性契约校验，不�
 已有分支保留，缺少 develop 时按确认方案从 master 创建，不重置、不强制对齐。
 既有分支关系影响使用时报告具体问题并按确认方案处理，通过后才宣布完成。
 
-语义确认不因提交而省略。失败保留现场和阶段提交，不宣称已完成；同次可修复继续。
+语义确认不因提交而省略。失败保留现场和阶段提交，不宣称已完成；同次可修复继续，
+同一项两轮为限。
 暂停后的调用重新检查入口与已有成果，不因需要手动 commit 而要求重调。

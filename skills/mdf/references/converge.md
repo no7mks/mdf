@@ -37,7 +37,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Join | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 2 | 停止并报告 |
-| 2 | Verify | 约束 | 验证并修实现 | 所需 suite、阻塞记录 | 3 | 可修或待批准回 2；缺 suite 停并提示 `$mdf write-tests` |
+| 2 | Verify | 约束 | 验证并修实现 | suite、阻塞 | 3 | 可修或待批准回 2；缺 suite 停并提示 `$mdf write-tests`；阻塞停 |
 | 3 | Record | 脚本 | 所需 suite 通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构

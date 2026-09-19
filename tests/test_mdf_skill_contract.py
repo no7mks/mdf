@@ -266,6 +266,12 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "核心模块" in (
         skill / "assets" / "templates" / "system-overview.md"
     ).read_text(encoding="utf-8")
+    assert "核心模块表" in contract
+    assert "五类专用叶" in contract
+    assert "固定表" not in contract
+    assert "强制五类" not in contract
+    assert "`user-guide/README.md` → 一份主题叶" in contract
+    assert "须含 `docs/system/overview.md` 与 `docs/README.md`" in contract
     assert "`agents.size`" in contract
     assert "托管区块必须项目无关" in contract
     assert "按维护者角色工作" in contract
@@ -385,6 +391,18 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`--base` 为上一正式发布" in audit
     assert "`agents.project_content`" in audit
     assert "核心模块表" in audit
+    assert "`overview.core_modules`" in audit
+    assert "`project.entry_links`" in audit
+    assert "不是语义 finding" in audit
+    update = intent("fact-update")
+    assert "五类专用叶" in update
+    assert "`system-configuration.md`" in update
+    assert "`4→3` 最多两次" in update
+    assert "在 `PROJECT.md` 写入" in update
+    assert "适用 gate" in update
+    assert "强制五类表" not in migrate
+    assert "核心模块表" in migrate
+    assert "同一项两轮后仍在" in migrate
 
 
 def test_delivery_intents_consume_current_fact_pages() -> None:

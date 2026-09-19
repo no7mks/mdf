@@ -30,7 +30,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过，已收口或 feature/bugfix ────→ 9 Hand off
-                 ├──── 未通过或未确认 ───────────────────→ [停止并交接]
+                 ├──── 未通过 ───────────────────────────→ [停止并交接]
                  │
                  ▼ 通过，待收口的 release/hotfix
 ┌──────────────────────────────────┐
@@ -198,7 +198,8 @@ feature 运行 `delivery check --stage finish`，使用本次有效 code-review�
 其他分支使用步骤 3 的本次 fact audit 结论；release 为上一正式发布以来的
 范围审阅，其他分支为范围审阅。
 
-验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full validation 通过。
+验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full
+validation 通过。fact audit 未取得当场确认视为本步未通过。
 
 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。

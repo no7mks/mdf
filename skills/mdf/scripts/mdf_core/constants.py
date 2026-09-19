@@ -187,6 +187,14 @@ SIZE_FACT = ("fact", 450)
 SIZE_ADR = ("adr", 300)
 SIZE_WORK_ITEM = ("work-item", 500)
 ENTRY_DOCUMENTS = ("README.md", "AGENTS.md", "PROJECT.md", "docs/README.md")
+OVERVIEW_RELATIVE = "docs/system/overview.md"
+CORE_MODULE_ROWS = (
+    "配置",
+    "可观测性",
+    "错误",
+    "鉴权",
+    "限制与恢复",
+)
 CHANGELOG_CATEGORIES = (
     "Added",
     "Changed",

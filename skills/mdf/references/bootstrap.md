@@ -68,7 +68,7 @@
 | 2 | Clarify project | 约束 | 有限盘点；内部 clarify 目标、范围和硬约束 | 最低项目定义 | 3 | 留在 2 |
 | 3 | Confirm plan | 约束 | 确认材料去处、Git 方案、基线和验证配置 | 用户确认的起步方案 | 4 | 留在 3 |
 | 4 | Initialize | 脚本 | 调用 initialization #2+#4：Git、init、整理 | Git 基线、MDF 产物 | 5 | 保留现场并报告 |
-| 5 | Check materials | 约束 | initialization #5 | 仅 initializing finding | 6 | 发现事实则停；可修则 5 |
+| 5 | Check materials | 约束 | initialization #5 | 仅 initializing finding | 6 | 发现事实则停；可修则 5；两轮后停 |
 | 6 | Enable workflows | 脚本 | initialization #6-8 | 就绪提交、本地分支 | 结束 | 事实变化 5；未确认则结束 |
 
 ## 术语与数据结构
@@ -92,5 +92,6 @@
 提交后执行 full validation。
 这里不证明业务行为、不做事实审阅；若核对时发现实际实现或运行事实，停止并提示 migrate，
 保留已完成现场，不追加 fact audit 分支。
-其他核对或校验问题可修复时修正、提交后重验；无法继续时保留现场并报告阻塞，不循环重试。
+其他核对或校验问题可修复时修正、提交后重验；同一项两轮后无法继续。
+无法继续时保留现场并报告阻塞。
 步骤 6 未确认启用时保持 initializing 并结束，不写 ready。

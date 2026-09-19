@@ -67,7 +67,7 @@
 
 | 类 | 路径 | 默认加载 |
 | --- | --- | --- |
-| 用户入口 | 根 `README.md` | 非维护者从这里进；只定位并链到 user-guide |
+| 用户入口 | 根 `README.md` | 非维护者从这里进；链到 `docs/user-guide/README.md` |
 | 任务地图 | `docs/README.md` | 维护者按任务路由；不是用户入口 |
 | 维护者事实 | `docs/system/`：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引 | 地图 → 一份主题叶 |
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；不强制分类目录 | 维护者默认不开；改对外行为时必开 |
@@ -81,7 +81,7 @@
 
 | 读者 | 路径 |
 | --- | --- |
-| 用户（非维护者） | 根 `README.md` → `user-guide/` 一份主题叶 |
+| 用户（非维护者） | 根 `README.md` → `user-guide/README.md` → 一份主题叶 |
 | 维护者 / Agent | `AGENTS.md` → `PROJECT.md` → `docs/system/overview.md` |
 
 维护者需要全库任务地图或工作对象时，再把 `docs/README.md` 当任务地图，然后只打开
@@ -95,7 +95,8 @@
 限制与恢复分别住 `system/operations/configuration.md`、
 `system/operations/observability.md`、`system/interfaces/errors.md`、
 `system/interfaces/auth.md`、`system/operations/limits-and-recovery.md`
-（超 450 再拆）。`overview.md` 用固定表每行链到该叶或写「不适用：理由」；
+（超 450 再拆）。`overview.md` 用核心模块表：五行是配置、可观测性、错误、
+鉴权、限制与恢复；每行链到对应五类专用叶或写「不适用：」加理由。
 不预建空页。对外可见行为仍只住 user-guide，只链接。其他页面只链接，不复述；
 架构问题以 `system/architecture/` 为准，ADR 不作为当前结构来源。
 
@@ -168,7 +169,7 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
   项目文档。记录技术栈、环境、lint、test、build、CI 等价检查、生成物与目录约定。
   命令的可执行事实来源始终是仓库配置与脚本；运行时配置属于
   `docs/system/operations/configuration.md`。验证命令集中在开头一张验证卡片；
-  必链 `docs/system/overview.md` 与 `docs/README.md`，不展开强制五类明细。
+  须含 `docs/system/overview.md` 与 `docs/README.md`，不展开核心模块表。
   接口、数据与运行时行为不复述 `docs/system/` 事实页。超过体积限制时下沉到
   `docs/system/`，不扩写进 `README.md`。
 - `AGENTS.md` 仅面向在仓库中工作的 Agent。MDF 托管区块必须项目无关：Agent 默认

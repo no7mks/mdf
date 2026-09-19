@@ -164,6 +164,58 @@ def test_glossary_and_changes_are_not_sized(python_exe: str, tmp_path: Path):
     assert data["finding_count"] == 0 and data["warning_count"] == 0
 
 
+def test_audit_reports_overview_core_module_shape(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    overview = repo / "docs" / "system" / "overview.md"
+    text = overview.read_text(encoding="utf-8")
+    overview.write_text(
+        text.replace("| 鉴权 | 不适用：此夹具无鉴权面 |\n", ""),
+        encoding="utf-8",
+    )
+    init_git(repo)
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
+    assert result.returncode == 2
+    assert "overview.core_modules" in _codes(result)
+
+    overview.write_text(
+        text.replace(
+            "| 鉴权 | 不适用：此夹具无鉴权面 |",
+            "| 鉴权 | 不适用： |",
+        ),
+        encoding="utf-8",
+    )
+    git(repo, "add", "--all")
+    git(repo, "commit", "-q", "-m", "test: 空不适用理由")
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
+    assert result.returncode == 2
+    hits = [
+        item for item in json.loads(result.stdout)["findings"]
+        if item["code"] == "overview.core_modules"
+    ]
+    assert hits and "鉴权" in hits[0]["message"]
+
+
+def test_audit_reports_project_entry_links(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    (repo / "PROJECT.md").write_text("# 维护手册\n", encoding="utf-8")
+    init_git(repo)
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo))
+    assert result.returncode == 2
+    assert "project.entry_links" in _codes(result)
+
+    (repo / "PROJECT.md").write_text(
+        "# 维护手册\n\n"
+        "见 `docs/system/overview.md` 与 `docs/README.md`。\n",
+        encoding="utf-8",
+    )
+    git(repo, "add", "--all")
+    git(repo, "commit", "-q", "-m", "test: 补入口指向")
+    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
+    assert data["finding_count"] == 0
+
+
 def test_branch_scope_maps_changed_implementation_to_fact_pages(
     python_exe: str, tmp_path: Path
 ):

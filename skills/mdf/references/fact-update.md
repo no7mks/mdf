@@ -30,7 +30,7 @@
                  │
                  ├──── 有改写 ───────→ 3 Audit
                  ├──── 失败/缺失 ────→ [停止并报告]
-                 └──── 无改写 ───────→ [记录 gate 并结束]
+                 └──── 无改写 ───────→ [结束]
 ```
 
 ## 工作流（唯一执行契约）
@@ -41,9 +41,9 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
-| 2 | Align facts | 约束 | 按实现同步范围内当前事实及 evidence | 事实 diff | 3 | 停止并报告 |
+| 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
 | 3 | Audit | 约束 | 委托 fact audit；按变更验证 | 审阅、验证 | 4 | 停止并报告 |
-| 4 | Refine structure | 约束 | 只改范围内结构 finding 并记 gate | 结构 diff、gate | 改写回 3；否则结束 | 停止并报告 |
+| 4 | Refine structure | 约束 | 只改范围内结构 finding | 结构 diff、适用 gate | 改写回 3；否则结束 | 停止并报告 |
 
 ## 术语与数据结构
 
@@ -95,9 +95,21 @@ start_commit，release 为上一正式发布。
 只更新范围内受影响的当前事实及 evidence；不修改 PRP、Bug、Change、objectives 或
 design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 `user-guide` 只在对外可观察行为有变时改；`system/architecture` 只在内部结构或仍
-生效约束有变时改。范围内实现出现配置、可观测、错误、鉴权或限制与恢复面时，把
-`overview.md` 对应行改为链接并按专用模板建叶；不为凑表造页。不为满足形式制造
-无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。本步不改结构。
+生效约束有变时改。范围内实现已有配置、可观测、错误、鉴权或限制与恢复的
+可观察契约时，写入对应五类专用叶（叶不存在则用下表模板新建），并把核心模块表
+该行改为链接。无该契约则不建叶、不改「不适用」行。不为凑表造页。不为满足形式
+制造无关文档，不把计划写为当前事实。实现有问题时报告，不用文案掩盖。
+本步不做加载质量改写（拆页、复述改链接、路由瘦身）。
+
+五类专用叶（页面均在 `docs/system/`，模板均在 `assets/templates/`）：
+
+| 模块 | 页面 | 模板 |
+| --- | --- | --- |
+| 配置 | `operations/configuration.md` | `system-configuration.md` |
+| 可观测性 | `operations/observability.md` | `system-observability.md` |
+| 错误 | `interfaces/errors.md` | `system-errors.md` |
+| 鉴权 | `interfaces/auth.md` | `system-auth.md` |
+| 限制与恢复 | `operations/limits-and-recovery.md` | `system-limits-and-recovery.md` |
 
 验收：事实 diff。
 
@@ -113,8 +125,9 @@ design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 声称事实同步完成。feature finish 调用时执行受影响验证。只改事实文档不机械重跑全部
 业务验证；实现、测试或 verification 改变必须重跑当前交付所需 suite。
 
-审阅结果分三类：通过；仅剩结构 finding（加载质量清单、`size.hard` 待拆）；其他
-未通过（事实错误、覆盖遗漏、validation 阻断）。
+审阅结果分三类：通过；仅剩结构 finding（加载质量清单、`size.hard`、
+`overview.core_modules`、`project.entry_links`）；其他未通过（事实错误、
+覆盖遗漏、validation 阻断）。
 
 验收：fact audit 结论、验证结果。
 
@@ -126,9 +139,12 @@ design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 
 只对步骤 3 记录的、且位于范围内的结构 finding 做最小改写：拆页或下沉到主题叶、
 把复述改为链接、把只在 ADR 里的仍生效约束写入 `system/architecture` 并在 ADR
-留链接、瘦身路由页。不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
-有改写则回到 3 重审；无改写或重审通过后按公共规则提交，finish 委托时由调用方
-统一提交。feature finish 委托时运行
+留链接、瘦身路由页、补核心模块表缺行或缺理由、按上表模板建缺的五类专用叶、
+在 `PROJECT.md` 写入 `docs/system/overview.md` 与 `docs/README.md`。
+不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
+有改写则回到 3 重审；`4→3` 最多两次，第三次仍有结构 finding 则停止并报告。
+无改写或重审通过后按公共规则提交；feature finish 委托时由调用方统一提交，
+并运行
 `delivery record --stage fact-update --summary <本次事实审阅确认与验证证据>`。
 
 验收：结构 diff、适用提交、feature finish 委托时的 fact-update gate。
