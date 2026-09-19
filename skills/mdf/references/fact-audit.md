@@ -42,7 +42,8 @@
 │ 6 Validate                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── 失败且独立调用 ────→ [停止]
+                 ├──── 失败且内部委托 ────→ [返回未通过，调用方走失败分支]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -67,7 +68,7 @@
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
-| 6 | Validate | 脚本 | 运行 `validate --scope full`，不运行验证命令 | validation findings | 7 | 停止 |
+| 6 | Validate | 脚本 | 运行 full validation，不跑验证命令 | validation findings | 7 | 独立停止；委托返回未通过 |
 | 7 | Confirm review | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
@@ -102,8 +103,9 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 
 **映射**
 
-调用 `fact-audit --scope <scope>`；`branch` 可带 `--base`，`paths` 带精确路径，
-`full` 不带路径。CLI 按 `repository-contract.md` 的体积表检查 `size.hard`。
+调用 `fact-audit --scope <scope>`，必须显式传 `--scope`，不得省略。独立调用省略时传
+`--scope branch`。裸 CLI 省略时仍为 `full`，本流程不使用该默认。`branch` 可带
+`--base`，`paths` 带精确路径，`full` 不带路径。CLI 按 `repository-contract.md` 的体积表检查 `size.hard`。
 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表：五行必须是
 配置、可观测性、错误、鉴权、限制与恢复；每行「打开」列为主题叶链接或
 「不适用：」加一句理由。不合则 `overview.core_modules` finding。范围内的
@@ -180,7 +182,7 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 不再确认 `agents.size` 与 `agents.project_content`。
 
 验收：未被 evidence 引用且未被 ignorelist 覆盖的实现文件；未忽略的
-`agents.size` / `agents.project_content`；及用户当场确认。
+`agents.size` / `agents.project_content`；逐条处置记录。
 
 异常与交接：列入会话摘要后继续 6。
 
@@ -193,7 +195,7 @@ migrate 只允许 `manifest.initializing` finding。
 
 验收：validation findings。
 
-异常与交接：报告并停止。
+异常与交接：独立调用报告并停止；内部委托返回未通过，调用方走失败分支。
 
 <a id="s7"></a>
 

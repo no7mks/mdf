@@ -34,7 +34,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 按 roster 进入 qa/owner 并检查 gate | worktree、底座 | 2 | 缺底座则停并提示 `$mdf design` |
+| 1 | Check | 约束 | 按 roster 进入 qa/owner 并检查 gate | worktree、底座 | 2 | 缺底座提示 `$mdf design`；其他停止 |
 | 2 | Cases | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、suite key 已建 | 3 | 停止并报告 |
 | 3 | Record | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
@@ -54,7 +54,8 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与分支（index 1
 形如 `qa/feature/<slug>`），不是 owner：Cursor 对该 qa 路径调用 `move_agent_to_root`
 （禁止 `move_agent_to_cloned_root`），新 shell 核对 toplevel 与当前分支；其他宿主
-打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止。
+打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止，
+不按 common 留步等待：角色树已由 start 建好。
 deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
 再运行 `delivery check --stage write-tests`。
 `qa_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。

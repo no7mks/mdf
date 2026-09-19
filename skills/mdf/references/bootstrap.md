@@ -65,11 +65,11 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 约束 | 只读判定边界与状态 | 项目根、事实、MDF 状态 | 2 | 不明回 1；事实/ready 提示 migrate；停止 |
-| 2 | Clarify project | 约束 | 有限盘点；内部 clarify 目标、范围和硬约束 | 最低项目定义 | 3 | 留在 2 |
-| 3 | Confirm plan | 约束 | 确认材料去处、Git 方案、基线和验证配置 | 用户确认的起步方案 | 4 | 留在 3 |
+| 2 | Clarify project | 约束 | 有限盘点；内部 clarify，议题为起步目标、范围和硬约束 | 最低项目定义 | 3 | 留在 2 |
+| 3 | Confirm plan | 约束 | 调用 initialization #3；确认去处、Git、基线和验证 | 用户确认的起步方案 | 4 | 留在 3 |
 | 4 | Initialize | 脚本 | 调用 initialization #2+#4：Git、init、整理 | Git 基线、MDF 产物 | 5 | 保留现场并报告 |
 | 5 | Check materials | 约束 | initialization #5 | 仅 initializing finding | 6 | 发现事实则停；可修则 5；两轮后停 |
-| 6 | Enable workflows | 脚本 | initialization #6-8 | 就绪提交、本地分支 | 结束 | 事实变化 5；未确认则结束 |
+| 6 | Enable workflows | 脚本 | initialization #6-8 | 就绪提交、本地分支 | 结束 | 事实变化 5；未确认则结束；否则停 |
 
 ## 术语与数据结构
 

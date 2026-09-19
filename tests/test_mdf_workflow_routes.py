@@ -413,7 +413,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert table[0][5] == "feature/在途 2；无在途 3"
     assert table[0][6] == "多候选则问；证据不足则阻塞"
     assert table[1][5] == "交接并结束"
-    assert table[1][6] == "说明阻塞与操作后结束"
+    assert table[1][6] == "不足则说明；失败按原流程交接"
     assert table[2][1] == "Delegate"
     assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
@@ -489,7 +489,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     assert table[1][2] == "Subagent"
     assert "roster.reviewers（默认 3）" in table[1][3]
     assert table[1][5] == "3"
-    assert table[3][6] == "可修复则 3；其他停止"
+    assert table[3][6] == "缺 suite 则 1；可修则 3；否则停"
     for rule in (
         "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
         "全部审查结果返回前不修改", "以证据裁定，不按票数决定",

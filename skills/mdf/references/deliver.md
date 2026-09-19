@@ -8,6 +8,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 尚未 start ────────────→ [委托 start 后回到 1]
+                 ├──── start 失败 ────────────→ [按 start 交接]
                  ├──── 目标不明或条件缺失 ────→ [询问；auto-pilot 则自裁定或死硬阻塞]
                  │
                  ▼ 唯一交付目标
@@ -43,13 +44,13 @@
 ## 工作流（唯一执行契约）
 
 读取 `references/common.md`；feature 另读 `references/delivery-contract.md`。
-步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。
+步骤 4、5 由步骤 2 进入，不是步骤 3 的后续；框序受编号约束仍画在 3 之后。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 2 | 未 start 委托后回 1；询问或 auto-pilot 死硬阻塞 |
+| 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 2 | start 成功回 1；失败按 start 交接；否则询问 |
 | 2 | Select | 约束 | 按选择表选剩余步骤 | 产物、执行者、待办 | 完成 5；并行 4；其他 3 | 冲突或阻塞则保留现场并报告 |
 | 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 2 | 失败或待确认则按该 intent 交接 |
 | 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路分支、提交、gate | 2 | 保留各路现场并报告 |
@@ -81,7 +82,8 @@ feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `wo
 尚未存在本次交付时委托 `references/start.md`：已由 target 或用户指定 kind 与
 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认模式询问用户选择；
 `--auto-pilot` 由主 Agent 按仓库证据与对话上下文选定唯一目标。不调用初始化或规划流程，
-不发明 release/hotfix 版本。已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout
+不发明 release/hotfix 版本。start 成功后回到 1；start 失败或停止则按其交接结束，不回 1。
+已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout
 或临时创建另一套分支绕过。start 返回后使用其 owner 与 roles，再创建 Goal。
 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 finish 删除的主 worktree 路径。
 

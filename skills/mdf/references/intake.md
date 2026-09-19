@@ -144,6 +144,7 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 验收：只有用户明确确认清单才继续。
 
 异常与交接：取消或拒绝则停止；来源采用范围变化时回到 2；对象必填事实或边界需澄清时回到 4。
+来源变化与事实澄清同时成立时，以来源变化为准回到 2。
 
 ### 对象写入与交接
 

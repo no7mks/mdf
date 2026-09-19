@@ -79,11 +79,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 约束 | 只读判定分流 | 边界、事实、MDF 状态 | 2 | 不明回 1；新项目提示 bootstrap；其他停止 |
 | 2 | Inventory | 约束 | 盘点全部顶层项和文档，按职责分类 | 完整分类清单 | 3 | 停止并澄清 |
-| 3 | Clarify layout | 约束 | 确认去处、例外、核心模块表、基线与验证命令 | 逐项决定、完整配置 | 4 | 留在 3 澄清 |
+| 3 | Clarify layout | 约束 | 调用 initialization #3 确认配置 | 逐项决定、完整配置 | 4 | 留在 3 澄清 |
 | 4 | Confirm plan | 约束 | 展示源、目标、保留内容与初始化方案并确认 | 用户明确确认 | 5 | 未确认留在 4；分类 2；其他 3 |
 | 5 | Initialize | 脚本 | 调用 initialization #2+#4：init、归位并提交 | 归位表、根文档、提交 | 6 | 保留现场，停止 |
 | 6 | Audit facts | 约束 | 比较事实；提交后委托全量审阅并校验 | 事实复核、仅允许项 | 7 | 可修复则重验；无法继续则停止 |
-| 7 | Enable workflows | 脚本 | 调用 initialization #6-8 | 确认、校验、提交 | 结束 | 事实变化 6；未确认则结束；否则停 |
+| 7 | Enable workflows | 脚本 | 按序 initialization #6-8 | 确认、校验、提交 | 结束 | 事实变化 6；未确认则结束；否则停 |
 
 ## 术语与数据结构
 
@@ -123,7 +123,8 @@
 
 **布局**
 
-使用内部 clarify intent 确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外；本地或外部调研材料归入
+使用内部 clarify intent，议题为材料去处、顶层例外、基线与验证。
+确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外；本地或外部调研材料归入
 `docs/context/research/`，已确认决策归入 `docs/context/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与非空
 `verification.commands`。`docs/` 内材料按 `repository-contract.md`「文档分类与
 按需加载」归位：面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，

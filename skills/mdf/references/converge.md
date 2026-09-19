@@ -71,6 +71,7 @@ worktree 和分支（含 `best-of-n` 未入选者）。
 `verification.suites`：停止并报告，提示 `$mdf write-tests` 补齐后重新 integrate；
 角色树若已删除则在 owner 上补测。不在 converge 现场改 manifest。
 可以自动修复实现。测试、fixture、快照、预期值、发现/跳过规则和验证配置增删改必须用户确认。
+同时出现可修实现与待批准测试时，先取得测试修改批准，再修实现。
 取得确认后原地审查与重验，记录 `--test-approval <用户确认与修改理由>`；不回退 intent。
 不设总轮数上限。需要目标/设计决定、凭据或外部条件，或同一失败连续三轮无进展时，
 写入或更新 `gates/converge-blocked.md` 后阻塞停止，不宣称全绿。

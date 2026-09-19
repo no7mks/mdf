@@ -14,7 +14,9 @@
 │ 2 Integrate and review           │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 已收口且证据有效 ────→ 4 Audit
+                 ├──── 已收口且证据有效 ────→ 4 Recheck
+                 ├──── 集成冲突无法解决 ────→ [停止并询问]
+                 ├──── 内部审查失败 ────────→ [停止]
                  ├──── 状态不一致 ──────────→ [停止]
                  │
                  ▼ 待收口或 feature/bugfix
@@ -26,7 +28,7 @@
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 4 Audit                          │
+│ 4 Recheck                        │
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过，已收口或 feature/bugfix ────→ 9 Hand off
@@ -83,17 +85,17 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-完整读取 `references/common.md`、`references/fact-audit.md`、
-`references/repository-contract.md` 与 `references/object-contract.md`。
-完整读取 `references/code-review.md`；步骤 2 集成主线后内部执行所需的 code-review。
-步骤 3 读取并内部执行 `references/fact-update.md`。
+读取 `references/common.md`、`references/repository-contract.md` 与
+`references/object-contract.md`。步骤 2 需要审查时读取并内部执行
+`references/code-review.md`。步骤 3 读取并内部执行 `references/fact-update.md`。
+步骤 4 已收口路径需要审阅时读取并内部执行 `references/fact-audit.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | Integrate and review | 约束 | 核版本；merge-no-ff 集成并审查 | 集成、审查 | 已收口 4；否则 3 | 状态不一致则停 |
+| 2 | Integrate and review | 约束 | 核版本；集成并审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
-| 4 | Audit | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
+| 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 脚本 | 用 `list` 列 Bug，准备 closures 并取得接受 | 完整覆盖、接受记录 | 8 | 停止 |

@@ -4,7 +4,7 @@
 migrate。migrate 是 init 的子 intent：`$mdf init migrate`；也可 `$mdf migrate`。
 bootstrap 仍可直接调用。
 
-## 决策树
+## 选择树
 
 ```text
 ┌──────────────────────────────────┐

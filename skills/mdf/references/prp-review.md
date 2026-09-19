@@ -107,8 +107,8 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 不能仅凭当前 checkout 没有开发材料或 `tree` 未显示进行中，就判定未开工。
 已开工时报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP。
 `list` 因记录损坏失败或目标不在输出中时同样在写入前停止，报告缺失证据。
-仅 active draft/ready 且已确认未开工时继续；将既有 `ready` 转为 `draft`。
-进入本步骤即放弃 ready；取消、暂停、未确认或后续失败均保持 `draft`，不恢复 ready。
+仅 active draft/ready 且已确认未开工时继续；此时若为 `ready` 才写成 `draft`。
+取消、暂停、未确认或后续失败均保持 `draft`，不恢复 ready。
 
 验收：原状态、检查过的引用与材料范围、未开工结论，以及写回后的 draft 状态。
 
@@ -132,7 +132,7 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 
 验收：用户明确确认。
 
-异常与交接：保持 draft，可提交并准确说明尚未确认的状态；取得确认后继续，无须仅因提交而重调。
+异常与交接：未确认则保持 draft 并停止。阶段提交不构成确认；续办须再次进入本步取得确认。
 只有用户明确确认才转 `ready`。
 
 ### 就绪条件
