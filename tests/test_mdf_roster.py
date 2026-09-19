@@ -47,6 +47,13 @@ def test_freeze_roster_defaults_and_coercion():
         require_roster({"qa": 1, "dev": 1, "reviewers": 3})
     with pytest.raises(MDFError, match="qa_strategy"):
         freeze_roster("feature", qa_strategy="compete")
+    assert freeze_roster(
+        "feature", models={"code-review": "opus"},
+    ) == frozen(1, 1, 3, models={"code-review": "opus"})
+    with pytest.raises(MDFError, match="按 intent"):
+        require_roster(frozen(1, 1, 3, models="opus"))
+    with pytest.raises(MDFError, match="只接受"):
+        require_roster(frozen(1, 1, 3, models={"qa": "opus"}))
     roster = frozen(1, 2, 3, dev_strategy="partition")
     assert merge_branches("dev", "feature/foo", roster, None) == [
         "dev/feature/foo", "dev/2/feature/foo",
@@ -138,11 +145,14 @@ def test_start_freezes_strategy_and_models(python_exe, tmp_path):
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
         "--qa-strategy", "partition", "--dev-strategy", "partition",
-        "--review-strategy", "partition", "--models", "qa composer",
+        "--review-strategy", "partition",
+        "--write-tests-model", "composer",
+        "--code-review-model", "opus",
     ))
     expected = frozen(
         1, 1, 3, qa_strategy="partition", dev_strategy="partition",
-        review_strategy="partition", models="qa composer",
+        review_strategy="partition",
+        models={"write-tests": "composer", "code-review": "opus"},
     )
     assert result["roster"] == expected
     work = Path(result["worktree"])
@@ -254,11 +264,11 @@ def test_delivery_roster_locks_qa_dev_after_design(python_exe, tmp_path):
     started, owner, root, policy = _design_feature(python_exe, tmp_path)
     payload(mdf(
         python_exe, "delivery", "roster", "--repo", str(owner),
-        "--qa-strategy", "partition", "--models", "review high",
+        "--qa-strategy", "partition", "--code-review-model", "review high",
     ))
     identity = json.loads((root / "delivery.json").read_text())
     assert identity["roster"]["qa_strategy"] == "partition"
-    assert identity["roster"]["models"] == "review high"
+    assert identity["roster"]["models"] == {"code-review": "review high"}
     payload(mdf(
         python_exe, "delivery", "record", "--repo", str(owner), "--stage",
         "design", "--policy-file", str(policy), "--summary", "确认设计",
@@ -279,6 +289,20 @@ def test_delivery_roster_locks_qa_dev_after_design(python_exe, tmp_path):
         "chore(delivery): 合入 feature/service-health",
         "feature/service-health")
     payload(record(python_exe, qa, "write-tests"))
+
+
+def test_delivery_roster_merges_models_by_intent(python_exe, tmp_path):
+    _started, owner, root, _policy = _design_feature(
+        python_exe, tmp_path, "--write-tests-model", "composer",
+    )
+    payload(mdf(
+        python_exe, "delivery", "roster", "--repo", str(owner),
+        "--code-review-model", "opus",
+    ))
+    identity = json.loads((root / "delivery.json").read_text())
+    assert identity["roster"]["models"] == {
+        "write-tests": "composer", "code-review": "opus",
+    }
 
 
 def test_integrate_partition_merges_all_dev_branches(python_exe, tmp_path):
@@ -326,10 +350,10 @@ def test_bugfix_roster_update_without_delivery_json(python_exe, tmp_path):
     work = Path(started["worktree"])
     updated = payload(mdf(
         python_exe, "delivery", "roster", "--repo", str(work),
-        "--review-strategy", "partition", "--models", "review high",
+        "--review-strategy", "partition", "--code-review-model", "review high",
     ))["result"]
     assert updated["review_strategy"] == "partition"
-    assert updated["models"] == "review high"
+    assert updated["models"] == {"code-review": "review high"}
     key = "branch.bugfix/bug-CD34.mdf-roster"
     raw = git(work, "config", "--local", "--get", key)
     assert json.loads(raw.stdout.strip()) == updated

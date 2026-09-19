@@ -247,13 +247,15 @@ qa/dev worktree 的 subagent。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
 收口（合入目标主线并删除源 worktree）前确认；死硬阻塞仍停止。
 可把 `--roster`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--models` 转交给 start；strategy / models 也可转交给 design、code-review。
+`--write-tests-model`、`--implement-model`、`--code-review-model` 转交给
+start；strategy / models 也可转交给 design、code-review。
 `--roster` 仅尚未 start 时有效。
 包含 finish 的合并及适用的 tag、发版推送。
 
 `$mdf start`
 用法：`$mdf start`；可带 `--roster` / `--qa-strategy` / `--dev-strategy` /
-`--review-strategy` / `--models`
+`--review-strategy` / `--write-tests-model` / `--implement-model` /
+`--code-review-model`
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
 不在当前目录开分支，不 push。开分支前展示 member、strategy 与 models
@@ -283,7 +285,7 @@ partition 时在 design.md 写明各 index 切片。
 说明：修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
 
 `$mdf code-review`
-用法：`$mdf code-review`；可带 `--review-strategy` / `--models`
+用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
 用途：审查并修复实现、测试和 code smell。
 说明：支持 feature/bugfix/hotfix/release；首轮按 roster.reviewers（默认 3）
 覆盖起点区间，后续增量并复核上轮问题。

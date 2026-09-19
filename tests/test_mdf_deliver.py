@@ -22,10 +22,20 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "即将调用 `finish-gitflow` 之前", "不增加该关口",
         "位置参数至多一个", "自动分辨", "分不清就询问",
         "已有在途交付则报告错误并停止", "不续办、不重新 start",
-        "--qa-strategy", "--dev-strategy", "--review-strategy", "--models",
+        "--qa-strategy", "--dev-strategy", "--review-strategy",
+        "--write-tests-model", "--implement-model", "--code-review-model",
         "--roster", "已有交付再带 `--roster` 则停止", "原样转交细项",
+        "不得把其他 intent 的模型写入本路任务",
     ):
         assert rule in text
+    for name, key in (
+        ("write-tests", "write-tests"),
+        ("implement", "implement"),
+        ("code-review", "code-review"),
+    ):
+        body = workflow(name)
+        assert f"含 `{key}`" in body
+        assert "不得写入其他 intent 的模型" in body
     assert "不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件" in text
     for name in ("start", "design", "write-tests", "implement", "converge", "code-review", "finish"):
         assert f"references/{name}.md" in text

@@ -64,8 +64,10 @@ owner 恒为 1，不计入可选人数。可用 `--roster` 展开命名组合（
 qa/dev 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base 由该路吸收
 其余优点，converge 只合 winner。`partition`：design 派发切片，converge 按
 index 全部合入。review 默认 `replicate`（每人覆盖同一份本轮范围），可选
-`partition`（切片审查）；owner 汇总裁定，不按票数。`models` 为一句描述，
-Agent 分派时现场解析；省略则不讨论。reviewers 是 code-review 并发人数。
+`partition`（切片审查）；owner 汇总裁定，不按票数。`models` 按 intent 可选
+配置，键只允许 `write-tests`、`implement`、`code-review`，值为一句描述；
+Agent 分派该 intent 时现场解析；省略该键则该路不讨论模型。reviewers 是
+code-review 并发人数。
 
 ## Auto-pilot
 

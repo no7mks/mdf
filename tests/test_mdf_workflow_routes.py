@@ -209,7 +209,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "$mdf prp review" in text
     assert "qa_strategy" in text and "dev_strategy" in text
     assert "review_strategy" in text
-    assert "省略则不写、不问、不提" in text
+    assert "未带的 intent 不写、不问、不提" in text
     assert "不得把沉默当作同意" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"其他种类通过 ─+→ 3 Confirm roster", diagram)

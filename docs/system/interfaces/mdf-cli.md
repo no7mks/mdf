@@ -321,8 +321,9 @@ roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为
 `qa/2/<owner>`。创建失败拆除已建 worktree 与分支。
 `--qa-strategy` / `--dev-strategy` 默认 `best-of-n`，可选
 `partition`；`--review-strategy` 默认 `replicate`，可选 `partition`。
-`--models` 为一句可选描述，省略则不写入。这些参数对应 start/design/deliver/
-code-review 的 intent 参数，由 Agent 传入本命令冻结。
+`--write-tests-model` / `--implement-model` / `--code-review-model` 各为一句
+可选描述，按 intent 写入 `roster.models`；省略某 flag 则不写该键。这些参数
+对应 start/design/deliver/code-review 的 intent 参数，由 Agent 传入本命令冻结。
 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 保存完整起点 hash，
 供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
 不设置 upstream。分支删除时配置随分支清理。
@@ -422,7 +423,7 @@ slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行当前交付所需 suite 并记录 `suites`；可用重复 `--item <id>` 做定位运行，所需 suite 记录不能由单项替代 |
 | integrate | 按 strategy 合入；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
-| roster | 更新 strategy / models；design 后不能改 qa/dev strategy |
+| roster | 更新 strategy / 按 intent 的 models；design 后不能改 qa/dev strategy |
 
 design record 需要 `--policy-file <JSON>`。未分层格式为
 `{"protected_paths":["tests/","pyproject.toml"]}`；分层后必须同时给出

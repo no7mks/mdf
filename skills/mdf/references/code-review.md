@@ -126,8 +126,9 @@ review_head、工作目录、目标、验收、适用设计材料与相关当前
 范围检查正确性、验收覆盖、测试质量、code smell、架构合理性及非必要复杂度。
 不安排分工，不按文件、模块或领域拆分，不共享其他审查者结论。
 `partition` 时 owner 按 design 已有切片或本步切开的范围派工，每人只审自己那片；
-仍不共享其他审查者结论。调用可带 `--review-strategy` / `--models` 覆盖冻结值，
-派工前运行 `delivery roster` 写入。roster.models 有值时写入任务；没有则不提。
+仍不共享其他审查者结论。调用可带 `--review-strategy` / `--code-review-model` 覆盖冻结值，
+派工前运行 `delivery roster` 写入。roster.models 含 `code-review` 时写入该值；
+没有则不提。不得写入其他 intent 的模型。
 增量新一轮还必须带上轮已采纳项与未解决项；不能只看新 diff 假装旧问题消失。
 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
 主 Agent 在全部审查结果返回前不修改审查对象；subagent 只读审查，不修改文件或提交。
