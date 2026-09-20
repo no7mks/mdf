@@ -1,29 +1,29 @@
 ---
-id: "{{BUG_ID}}"
+id: "{{MDF_BUG_ID}}"
 type: bug
 status: open
 severity: major
-found_in: {{FOUND_IN}}
+found_in: {{MDF_FOUND_IN}}
 ---
 
-# {{TITLE}}
+# {{MDF_TITLE}}
 
 ## 观察到的行为
 
-{{OBSERVED_BEHAVIOR}}
+{{MDF_OBSERVED_BEHAVIOR}}
 
 ## 期望行为
 
-{{EXPECTED_BEHAVIOR}}
+{{MDF_EXPECTED_BEHAVIOR}}
 
 ## 复现步骤
 
-1. {{REPRODUCTION_STEP}}
+1. {{MDF_REPRODUCTION_STEP}}
 
 ## 影响
 
-{{IMPACT}}
+{{MDF_IMPACT}}
 
 ## 所需回归证据
 
-{{REQUIRED_REGRESSION_EVIDENCE}}
+{{MDF_REQUIRED_REGRESSION_EVIDENCE}}

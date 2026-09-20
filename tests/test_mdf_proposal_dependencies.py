@@ -68,8 +68,8 @@ def test_proposal_rejects_missing_or_cross_type_dependency(
 ):
     repo = copy_fixture(tmp_path)
     if dependency == "adr-dependency":
-        adr = repo / "docs" / "adr" / "dependency.md"
-        adr.parent.mkdir()
+        adr = repo / "docs" / "context" / "adr" / "dependency.md"
+        adr.parent.mkdir(parents=True)
         adr.write_text(
             "---\nid: adr-dependency\ntype: adr\nstatus: accepted\n---\n\n# ADR\n",
             encoding="utf-8",

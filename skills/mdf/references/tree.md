@@ -31,9 +31,9 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth | 2 | 停止并报告 |
-| 2 | 计算 | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
-| 3 | 展示 | 约束 | 画出按 milestone 分组的混态树与索引 | 树、索引、hidden | 结束 | 停止并报告 |
+| 1 | Check repo | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth | 2 | 停止并报告 |
+| 2 | Run CLI | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
+| 3 | Render tree | 脚本 | 原样展示 CLI 的 diagram、index 与 hidden | 树、索引、hidden | 结束 | 缺字段或格式不符则停止 |
 
 `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行本流程；
 也可由 next 在无在途时内部委托。可带 `--depth N`。
@@ -52,8 +52,10 @@ ready PRP 时满足。非法依赖停止，不输出误导性树。空结果明�
 
 ### 展示
 
-先输出图例，再按 CLI `trees` 顺序画按 milestone 分组的 unicode 混态树，
-最后输出索引与 hidden。组头不计入 depth。
+CLI `diagram` 已含图例与按 milestone 分组的 unicode 混态树。原样输出
+`diagram`、`index` 与 `hidden`，不得改画。缺任一字段则停止。`empty` 时
+`diagram` 为「无 draft 且无 ready。」；否则须含图例。
+组头不计入 depth。
 
 图例固定为：`● ready`、`○ draft`、`* in_progress`、`↩ 交叉引用`、
 `[milestone]`、`↑ 上一组 milestone`。
@@ -74,22 +76,6 @@ PRP ID。无归属根不写组头；其余每组先写组头 `[<值>]`，再画�
 上一组的未满足 milestone 时，在该根最左列写 `↑ <name>`。相邻但无
 milestone 依赖的组不加箭头。截断层不画，只报 `hidden`。树的下游不
 表示完成一个上游即可开工。
-
-```text
-[m4-py-session]
-○ prp-043 driver 契约
-├ ○ prp-044 session init
-│ └ ○ prp-045 记忆迁入
-└ ↩ prp-045 ← prp-043, prp-044
-[m5-client-on-py]
-○ prp-037 会话状态
-└ ○ prp-003 crush-client 契约
-○ prp-038 memory_sync
-└ ↩ prp-003 + prp-037, prp-038
-↑
-[m99-cutover]
-○ prp-004 正式部署与切流
-```
 
 索引按 milestone 分组，无归属另列；每项含 id、title、status、
 `depends_on`、`blocked_by` 与 `in_progress`。

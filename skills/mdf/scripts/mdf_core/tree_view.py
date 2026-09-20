@@ -72,6 +72,80 @@ def _index(objects, waiting, in_progress, active_ids):
             "ungrouped": ungrouped}
 
 
+_LEGEND = (
+    "● ready  ○ draft  * in_progress  ↩ 交叉引用  "
+    "[milestone]  ↑ 上一组 milestone"
+)
+
+
+def _is_prp(name):
+    return isinstance(name, str) and name.startswith("prp-")
+
+
+def _label(node, omit_ms):
+    if node.get("reference"):
+        blocked = ", ".join(node.get("blocked_by") or [])
+        suffix = f" ← {blocked}" if blocked else ""
+        return f"↩ {node['id']}{suffix}"
+    star = "*" if node.get("in_progress") else ""
+    extra = ""
+    milestone = node.get("milestone")
+    if milestone and not omit_ms:
+        extra = f" [{milestone}]"
+    mark = "●" if node["status"] == "ready" else "○"
+    return f"{mark} {node['id']} {node['title']}{star}{extra}"
+
+
+def _child_lines(children, prefix, group_ms):
+    lines = []
+    total = len(children)
+    for index, child in enumerate(children):
+        last = index == total - 1
+        branch = "└ " if last else "├ "
+        extend = "  " if last else "│ "
+        same = group_ms is not None and child.get("milestone") == group_ms
+        lines.append(prefix + branch + _label(child, same))
+        if not child.get("reference"):
+            lines.extend(_child_lines(
+                child.get("children") or [], prefix + extend, group_ms
+            ))
+    return lines
+
+
+def _root_groups(trees):
+    groups = []
+    for node in trees:
+        name = node.get("milestone")
+        if groups and groups[-1][0] == name:
+            groups[-1][1].append(node)
+        else:
+            groups.append((name, [node]))
+    return groups
+
+
+def render_diagram(trees, empty):
+    if empty:
+        return "无 draft 且无 ready。"
+    lines = [_LEGEND, ""]
+    previous = None
+    for name, roots in _root_groups(trees):
+        if previous is not None and any(
+            previous in (node.get("blocked_by") or []) for node in roots
+        ):
+            lines.append("↑")
+        if name is not None:
+            lines.append(f"[{name}]")
+        omit = name is not None
+        for node in roots:
+            for dep in node.get("blocked_by") or []:
+                if not _is_prp(dep) and dep != previous:
+                    lines.append(f"↑ {dep}")
+            lines.append(_label(node, omit))
+            lines.extend(_child_lines(node.get("children") or [], "", name))
+        previous = name
+    return "\n".join(lines)
+
+
 def tree_view(repo, depth):
     if type(depth) is not int or depth < 1:
         raise MDFError("depth 必须为正整数", code="invalid_depth")
@@ -118,11 +192,12 @@ def tree_view(repo, depth):
 
     trees = [node(key) for key in _ordered_roots(
         shown, prp_waiting, waiting, objects, active)]
+    empty = not active
     return {"ok": True, "operation": "tree", "depth": depth, "trees": trees,
             "index": _index(objects, waiting, in_progress, sorted(active)),
             "hidden": sorted(key for key, value in levels.items()
                              if value is not None and value > depth),
-            "empty": not active}
+            "empty": empty, "diagram": render_diagram(trees, empty)}
 
 
 def command_tree(args):

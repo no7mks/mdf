@@ -117,7 +117,8 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
-    assert "仅允许 initializing finding，或 ready 无 finding" in entry
+    assert "仅允许 initializing finding、" in entry
+    assert "`manifest.schema` 与 `layout.migrate` finding，或 ready 无 finding" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 
@@ -133,6 +134,8 @@ def test_finish_updates_facts_before_preparing_materials():
     assert "- hotfix：" in prepare
     assert "材料不搬迁" in prepare
     assert "不要求 objectives、design、唯一 PRP 或 feature gate" in prepare
+    assert "--scope full" not in prepare
+    assert "release 的左端点为上一正式发布" in prepare
 
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():
@@ -161,9 +164,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
     assert table[7][5] == "9"
-    assert table[8][5] == "通过→10"
-    assert "feature/bugfix 前进回 2" in table[8][6]
-    assert "其余前进或未过则停止" in table[8][6]
+    assert table[8][5] == "通过→10；feature/bugfix 前进→2"
+    assert "其余前进或未过则停" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
     assert "preview" not in diagram and "预览" not in diagram
@@ -191,20 +193,54 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "内部 clarify" in table[1][3]
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
+    assert table[2][1] == "Confirm roster"
+    assert table[2][2] == "约束"
+    assert "member、strategy 与 models" in table[2][3]
     assert table[2][5] == "4"
-    assert table[3][1] == "切换"
-    assert table[3][2] == "约束"
-    assert table[3][5] == "结束"
-    assert table[3][6] == "留在 4 等待"
-    assert "一次只问一个问题" not in text
+    assert table[2][6] == "拒绝停止；未决留 3"
+    assert table[3][1] == "Start branch"
+    assert table[3][5] == "5"
+    assert table[4][1] == "Switch worktree"
+    assert table[4][2] == "约束"
+    assert table[4][5] == "结束"
+    assert table[4][6] == "留在 5 等待"
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "$mdf prp review" in text
+    assert "qa_strategy" in text and "dev_strategy" in text
+    assert "review_strategy" in text
+    assert "未带的 intent 不写、不问、不提" in text
+    assert "不得把沉默当作同意" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert re.search(r"其他种类通过 ─+→ 3 Start branch", diagram)
+    assert re.search(r"其他种类通过 ─+→ 3 Confirm roster", diagram)
     assert re.search(r"feature 通过", diagram)
+    assert re.search(r"3 Confirm roster", diagram)
     assert re.search(r"创建成功", diagram)
-    assert re.search(r"4 Switch worktree", diagram)
+    assert re.search(r"4 Start branch", diagram)
+    assert re.search(r"5 Switch worktree", diagram)
+
+
+def test_callers_do_not_prescribe_questioning_style():
+    forbidden = (
+        "一次只问一个问题",
+        "一次只问一个消歧问题",
+        "逐题",
+        "按轮次",
+        "提问限制",
+        "按限制委托",
+        "一次一个问题",
+        "对每个非生态必需",
+    )
+    root = skill_dir("mdf")
+    paths = [
+        root.parents[1] / "README.md",
+        root / "SKILL.md",
+        *sorted((root / "references").glob("*.md")),
+    ]
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in text, f"{path.name} contains {phrase!r}"
 
 
 def test_planning_intents_use_shared_planning_workspace():
@@ -223,7 +259,7 @@ def test_planning_intents_use_shared_planning_workspace():
 
 def test_start_switches_agent_to_owner_worktree():
     text = workflow("start")
-    assert "创建成功进入 4" in text
+    assert "创建成功进入 5" in text
     assert "qa/dev 不在本步切换" in text
     assert "切换工作区" in text
     common = workflow("common")
@@ -266,8 +302,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "不要求全绿" in contract
     assert "worktrees.dev" in implement
     assert "不得在 feature 上实现" in implement
-    assert "git merge --no-ff" in tests
-    assert "git merge --no-ff" in implement
+    assert "merge-no-ff" in tests
+    assert "merge-no-ff" in implement
     assert "delivery worktree" not in tests
     assert "delivery worktree" not in implement
     assert "入口先 no-ff merge owner" in contract
@@ -284,9 +320,9 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite" in tests
     converge = workflow("converge")
     assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in converge
-    assert "缺 suite 回 write-tests" in converge
+    assert "缺 suite 停并提示 `$mdf write-tests`" in converge
     assert "阻塞停止" in converge
-    assert "missing_delivery_suite ────→ [停止，回 write-tests]" in converge
+    assert "missing_delivery_suite ────→ [停止，提示 $mdf write-tests]" in converge
     assert "返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入" in converge
     assert "suite key 已建" in tests
     assert "记录 gate 前核对每个声明的\nkey 都已存在且非空" in tests
@@ -306,7 +342,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
     assert rows(shared)[6][6] == "事实变化 5；其他保留现场停止"
-    assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认结束；其他停止"
+    assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认则结束；否则停"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
 
@@ -340,7 +376,7 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     assert "独立调用与 finish 委托均须满足" in entry
     assert "不写入、不提交" in entry
     assert "不将 `normal_workflows_allowed: true` 作为前置条件" in entry
-    assert "事实及 evidence 问题由步骤 2–3 按范围处理" in entry
+    assert "事实及 evidence 问题由步骤 2–4 按范围处理" in entry
     assert "写入分支按 `common.md` 的归属规则检查" in entry
     assert "独立调用仅记录 `branch.invalid`" not in entry
 
@@ -387,10 +423,10 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
     assert table[0][5] == "feature/在途 2；无在途 3"
-    assert table[0][6] == "多候选当场问；证据不足则报告阻塞"
+    assert table[0][6] == "多候选则问；证据不足则阻塞"
     assert table[1][5] == "交接并结束"
-    assert table[1][6] == "说明阻塞与操作后结束"
-    assert table[2][1] == "委托"
+    assert table[1][6] == "不足则说明；失败按原流程交接"
+    assert table[2][1] == "Delegate"
     assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
     for name in ("init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki", "clarify"):
@@ -451,7 +487,8 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "提交本次路径" in text
     assert "不自动提交" not in text
     assert "重读" in text
-    assert "提示用户运行 `$mdf fact audit`" in text
+    assert "建议用户运行 `$mdf migrate`" in text
+    assert "`$mdf fact update --scope full`" in text
     assert "同会话" in text
     assert "提示在新会话" not in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
@@ -464,7 +501,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     assert table[1][2] == "Subagent"
     assert "roster.reviewers（默认 3）" in table[1][3]
     assert table[1][5] == "3"
-    assert table[3][6] == "可修复则 3；其他停止"
+    assert table[3][6] == "缺 suite 则 1；可修则 3；否则停"
     for rule in (
         "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
         "全部审查结果返回前不修改", "以证据裁定，不按票数决定",
@@ -586,11 +623,11 @@ def test_jot_promote_revalidates_without_rewriting():
     assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
     assert "回滚到\n步骤 7 完成状态" in jot
     table = rows(jot)
-    assert (table[4][1], table[4][2]) == ("澄清", "约束")
+    assert (table[4][1], table[4][2]) == ("Clarify", "约束")
     assert "首次保留；二次回滚停止" in table[7][6]
 
 
 def test_clarify_unavailable_facts_stop_like_cancel():
     table = rows(workflow("clarify"))
     assert "不可得" in table[2][6]
-    assert "取消/暂停/不可得则停止" in table[2][6] and "取消或失败停止" in table[1][6]
+    assert "取消或不可得则停" in table[2][6] and "取消或失败则停" in table[1][6]

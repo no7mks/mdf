@@ -7,7 +7,8 @@
 │ 1 Check epoch                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── 缺失则询问 ──────────→ 1 Check epoch
+                 ├──── 未提供或格式无效 ────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -48,11 +49,11 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 版本 | 约束 | 校验 RELEASE_EPOCH 仅为精确 MAJOR.MINOR | 有效 epoch | 2 | 缺失则询问；未提供或格式无效则停止 |
-| 2 | 入口 | 脚本 | 在目标根运行 `doctor`，确认 ready | doctor 结果 | 3 | 停止 |
-| 3 | 预览 | 脚本 | 仅预览请求：确认 clean 并运行 dry-run | 预览结果或非预览跳过 | 预览结束；否则 4 | 停止 |
-| 4 | 分组 | 脚本 | 用 `list` 列终态对象，核对 duplicate/canonical 完整组 | list 结果、archive group | 5 | 停止 |
-| 5 | 归档 | 脚本 | 确认 clean，归档、全量校验并复核提交 | 产物、零 finding、diff | 结束 | 保留现场，停止 |
+| 1 | Check epoch | 约束 | 校验 RELEASE_EPOCH 为精确 MAJOR.MINOR | 有效 epoch | 2 | 缺失则询问；未提供或格式无效则停止 |
+| 2 | Check entry | 脚本 | 在目标根运行 `doctor`，确认 ready | doctor 结果 | 3 | 停止 |
+| 3 | Preview | 脚本 | 仅预览请求：确认 clean 并运行 dry-run | 预览结果或非预览跳过 | 预览结束；否则 4 | 停止 |
+| 4 | Check group | 脚本 | 用 `list` 列终态对象，核对 duplicate/canonical 完整组 | list 结果、archive group | 5 | 停止 |
+| 5 | Archive | 脚本 | 确认 clean，归档、全量校验并复核提交 | 产物、零 finding、diff | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
 

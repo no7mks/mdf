@@ -60,12 +60,12 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
-| 2 | 对象 | 脚本 | 用 `list` 查重并确认单个 Proposal | list 结果、唯一对象 | 3 | 命中则停止；否则留 2 |
-| 3 | 澄清 | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
-| 4 | 确认 | 约束 | 展示边界、排除项与依赖，取得 draft 确认 | 用户明确确认 | 5 | 取消停止；来源 2；事实 3 |
-| 5 | 创建 | 脚本 | 确认 slug，生成 ID、写 draft、校验并回读 | 零 finding、对象与 diff | 6 | 保留现场，停止 |
-| 6 | 报告 | 约束 | 报告 draft、事实、排除项与后续评审入口 | 结果摘要、依赖 | 结束 | 停止 |
+| 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 2 | Resolve proposal | 脚本 | 用 `list` 查重并确认单个 Proposal | list 结果、唯一对象 | 3 | 命中则停止；否则留 2 |
+| 3 | Clarify | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
+| 4 | Confirm | 约束 | 展示边界、排除项与依赖，取得 draft 确认 | 用户明确确认 | 5 | 取消停止；来源 2；事实 3 |
+| 5 | Create draft | 脚本 | 确认 slug，生成 ID、写 draft、校验并回读 | 零 finding、对象与 diff | 6 | 保留现场，停止 |
+| 6 | Report | 约束 | 报告 draft、事实、排除项与后续评审入口 | 结果摘要、依赖 | 结束 | 停止 |
 
 ## 术语与数据结构
 
@@ -81,14 +81,14 @@
 
 验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
 
-异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 或尚未切到
-planning 工作区时报告后停止或留在本步。
+异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止；尚未切到
+planning 工作区时留在本步。
 
 <a id="s2"></a>
 
 **对象**
 
-接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象；一次只问一个问题，澄清范围、关键事实与取舍。
+接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象。
 运行 `list --repo "$REPO_ROOT" --type proposal` 对照 `title` 与正文查重，命中既有 PRP 时不新建，
 提示 `$mdf prp review`；该输出同时作为步骤 3、4 依赖候选与 milestone 值的来源，不逐篇翻阅 `docs/proposals/`。
 外部想法、当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
@@ -103,7 +103,7 @@ planning 工作区时报告后停止或留在本步。
 
 **澄清**
 
-使用内部 clarify intent 按轮次澄清 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria 与直接依赖。
+使用内部 clarify intent 澄清 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria 与直接依赖。
 
 验收：完整必填事实。
 

@@ -44,6 +44,9 @@ def test_tree_mixed_dag_drafts_truncation_and_invalid_dependencies(
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     assert data["operation"] == "tree"
+    assert "● ready" in data["diagram"]
+    assert "prp-001" in data["diagram"]
+    assert "↩ prp-005" in data["diagram"]
     assert data["index"] == {
         "groups": [],
         "ungrouped": [
@@ -82,6 +85,9 @@ def test_tree_roots_order_depends_on_previous_milestone(python_exe, tmp_path):
     assert roots["prp-002"]["blocked_by"] == ["阶段一"]
     assert roots["prp-002"]["milestone"] == "阶段二"
     assert roots["prp-003"]["milestone"] == "阶段一"
+    assert "[阶段一]" in data["diagram"]
+    assert "[阶段二]" in data["diagram"]
+    assert "\n↑\n" in data["diagram"] or data["diagram"].splitlines().count("↑") >= 1
 
 
 def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path):

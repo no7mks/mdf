@@ -3,7 +3,8 @@
 由 init、bootstrap 与 migrate 按各自阶段调用，不是用户 intent。完整读取
 `references/common.md` 与 `references/repository-contract.md`。
 调用方入口使用步骤 1；Git 准备使用 2；配置方案使用 3；材料落地及验收使用 4–5；
-确认启用使用 6–8。决策树按调用方入口选用，不是单链。
+确认启用使用 6–8。决策树按调用方入口选用，不是单链；bootstrap/migrate 表写明
+所调用的步骤号。
 各段返回调用方；复用经核对仍有效的同次结果，不重复写入、审阅或确认。
 
 ## 决策树
@@ -13,9 +14,9 @@
 │ 1 Check boundary                 │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 不明确 ──────────────────→ [澄清后返回 1]
-                 ├──── 异常或不符合调用条件 ────→ [返回调用方分流或停止]
-                 └──── 判定完成 ────────────────→ [返回调用方]
+                 ├──── 不明确 ────────────→ [澄清后返回 1]
+                 ├──── 不符合调用条件 ────→ [按分流表返回调用方]
+                 └──── 判定完成 ──────────→ [返回调用方]
 
 ┌──────────────────────────────────┐
 │ 2 Prepare Git                    │
@@ -73,14 +74,14 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 边界 | 约束 | 写入前核对边界、事实与 MDF 状态 | 项目根与分流依据 | 返回调用方 | 不明则回 1；其他分流或停止 |
-| 2 | Git | 脚本 | 依确认方案准备 Git 基础，再运行 doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
-| 3 | 配置 | 约束 | 核对八项基线、版本、验证与实现根完整配置 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
-| 4 | 基线 | 脚本 | 完成材料，保持 initializing 并复核提交 | 阶段提交、diff | 5 | 保留现场并报告 |
-| 5 | 验收 | 约束 | 按调用方审阅并全量校验 | 仅 initializing finding | 返回调用方 | 可修复则 5；无法继续则停止 |
-| 6 | 确认 | 约束 | 展示结果、基线与分支方案，取得启用确认 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
-| 7 | 就绪 | 脚本 | 写 ready，全量校验、提交后再次核验 | 零 finding、就绪提交 | 8 | 事实变化 5；其他保留现场停止 |
-| 8 | 分支 | 脚本 | 按确认方案核对并补齐 master/develop | 本地分支及关系 | 返回调用方完成 | 保留现场并报告 |
+| 1 | Check boundary | 约束 | 写入前核对边界、事实与状态 | 项目根与分流依据 | 返回调用方 | 不明回 1；否则按分流表返回 |
+| 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
+| 3 | Configure | 约束 | 核对八项基线、版本、验证与实现根 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
+| 4 | Save baseline | 脚本 | 完成材料，保持 initializing 并复核提交 | 阶段提交、diff | 5 | 保留现场并报告 |
+| 5 | Validate | 约束 | 按调用方审阅并全量校验 | 仅 initializing finding | 返回调用方 | 可修则 5；两轮后停 |
+| 6 | Confirm activation | 约束 | 展示结果与方案并确认启用 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
+| 7 | Enable | 脚本 | 写 ready，全量校验、提交后再次核验 | 零 finding、就绪提交 | 8 | 事实变化 5；其他保留现场停止 |
+| 8 | Prepare branches | 脚本 | 按确认方案核对并补齐 master/develop | 本地分支及关系 | 返回调用方完成 | 保留现场并报告 |
 
 ## 术语与数据结构
 
@@ -116,10 +117,13 @@ MDF 内容报告后停止，不推断历史语义。既有内容的校验在 Git
 bootstrap 必须先通过新仓库判定，再执行本节，不能在拒绝老仓库前写入 `.git/`。
 migrate 必须先通过已有事实或 ready 判定，再执行本节，不能在拒绝新仓库前写入 `.git/`。
 
-确认纳管范围、忽略规则和分支调整方案后，由 Agent 完成 Git 化：
+确认纳管范围、忽略规则和分支调整方案后，先运行
+`python3 "$MDF_ROOT/scripts/mdf.py" prepare-git --repo "$REPO_ROOT"`：
+非 Git 目录初始化为 `master`，已是 Git 根则跳过，位于其他仓库内部则失败。
+再由 Agent 完成身份与基线提交：
 
-- 非 Git 项目执行 `git init --initial-branch=master`。先提交应纳管的既有项目内容作为
-  原始基线，再整理 MDF；空目录没有可提交内容时，不创建空提交，首个提交保存 MDF 起点。
+- 先提交应纳管的既有项目内容作为原始基线，再整理 MDF；空目录没有可提交内容时，
+  不创建空提交，首个提交保存 MDF 起点。
 - 已有 Git 历史保留。识别 staged、unstaged 和 untracked 改动，按公共规则确定归属，
   不通过提交全部改动换取 clean。没有提交身份时询问用户，不编造身份或修改全局配置。
 - 新仓库在 master 上落地。既有 main、缺少 master、当前工作分支或远端默认分支
@@ -142,7 +146,10 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 init 只产出 `commands`，未分层，门禁跑全部项。分层由消费方事后在 manifest
 同级补 `suites` 映射。
 不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
-默认使用 `src`，已有模板使用实际目录并在 PROJECT 说明，不为 bootstrap 重排模板。
+单 module 默认使用 `src`，多 module 使用各 `<module>/src`；已有模板使用实际目录并在
+PROJECT 说明，不为 bootstrap 重排模板。
+`docs/system/testing/` 由 init CLI 写入起步页，按确认的验证配置填写当前规则，
+不把尚未采用的 kind 写成事实。
 
 调用 `init` CLI 时传入完整配置：重复 `--baseline`、`--implementation-root` 与
 `--verification-item '{"id":"check","kind":"custom","command":"git diff --check"}'`。
@@ -165,7 +172,7 @@ AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范
 按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
 bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
 `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；已是 ready
-时须零 finding。其他 finding 修正、提交后重验。
+时须零 finding。其他 finding 修正、提交后重验；同一项两轮后无法继续。
 通过后返回调用方验收步骤；调用方进入启用阶段时从 6 继续。无法继续则保留现场并报告。
 
 <a id="s6"></a>
@@ -184,5 +191,6 @@ bootstrap 不调用 fact audit，full validation 是确定性契约校验，不�
 已有分支保留，缺少 develop 时按确认方案从 master 创建，不重置、不强制对齐。
 既有分支关系影响使用时报告具体问题并按确认方案处理，通过后才宣布完成。
 
-语义确认不因提交而省略。失败保留现场和阶段提交，不宣称已完成；同次可修复继续。
+语义确认不因提交而省略。失败保留现场和阶段提交，不宣称已完成；同次可修复继续，
+同一项两轮为限。
 暂停后的调用重新检查入口与已有成果，不因需要手动 commit 而要求重调。

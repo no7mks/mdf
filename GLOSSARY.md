@@ -64,8 +64,10 @@ owner 恒为 1，不计入可选人数。可用 `--roster` 展开命名组合（
 qa/dev 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base 由该路吸收
 其余优点，converge 只合 winner。`partition`：design 派发切片，converge 按
 index 全部合入。review 默认 `replicate`（每人覆盖同一份本轮范围），可选
-`partition`（切片审查）；owner 汇总裁定，不按票数。`models` 为一句描述，
-Agent 分派时现场解析；省略则不讨论。reviewers 是 code-review 并发人数。
+`partition`（切片审查）；owner 汇总裁定，不按票数。`models` 按 intent 可选
+配置，键只允许 `write-tests`、`implement`、`code-review`，值为一句描述；
+Agent 分派该 intent 时现场解析；省略该键则该路不讨论模型。reviewers 是
+code-review 并发人数。
 
 ## Auto-pilot
 
@@ -75,8 +77,26 @@ Agent 分派时现场解析；省略则不讨论。reviewers 是 code-review 并
 
 ## ADR
 
-Architecture Decision Record；记录重要且已决定的长期架构取舍。文件为
-`docs/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，不编号。
+Architecture Decision Record；记录重要且已决定的长期架构取舍及其理由，不描述
+当前结构。文件为 `docs/context/adr/<slug>.md`，ID 为 `adr-<slug>`；按主题打开，
+不编号。
+
+## 路由页与主题叶
+
+路由页只做边界与链接（`docs/README.md`、`docs/user-guide/README.md`、
+`docs/system/overview.md`、切面 `index.md`）；主题叶是某一主题当前事实的唯一
+归属页，独立可加载。`docs/README.md` 是维护者文档入口，按要找的主题打开一份
+页面，不是阅读清单，也不是 Proposal、Bug 的工作清单。
+
+## 唯一归属
+
+一条可观察契约只写在一份主题叶；其他页面只链接，不复述。
+
+## 加载质量
+
+fact audit 对文档结构的语义审阅：入口不过载、路由页只路由、唯一归属、主题拆页、
+读者分离、ADR 不复述当前结构、overview 核心模块表。行数硬限制由 CLI 检查
+（`size.hard`）；整份 `AGENTS.md` 超过 200 行为 warning `agents.size`。
 
 ## Proposal 状态
 
@@ -99,5 +119,5 @@ converge（收敛）集成测试和实现，持续修复实现直到**当前交�
 
 ## 测试类别与 Code Smell
 
-UT 为单元测试，PT 为属性测试，E2E 为端到端测试；是否需要及失败标准由项目配置和设计约定。
+UT 为单元测试，PT 为属性测试，IT 为集成测试，E2E 为端到端测试；是否需要及失败标准由 `docs/system/testing/` 与设计约定。
 Code smell 指提示维护性或设计问题的代码特征，由 code-review 判断是否需要在当前范围修复。

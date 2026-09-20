@@ -40,6 +40,12 @@ REVIEW_STRATEGIES = ("replicate", "partition")
 COUNT_KEYS = ("qa", "dev", "reviewers")
 STRATEGY_KEYS = ("qa_strategy", "dev_strategy", "review_strategy")
 OPTIONAL_KEYS = ("models",)
+MODEL_INTENTS = ("write-tests", "implement", "code-review")
+MODEL_ARGUMENTS = (
+    ("write-tests", "--write-tests-model"),
+    ("implement", "--implement-model"),
+    ("code-review", "--code-review-model"),
+)
 FINGERPRINT_KEYS = (*COUNT_KEYS, "qa_strategy", "dev_strategy")
 
 _ROLE = re.compile(
@@ -76,10 +82,34 @@ def _choice(name, value, allowed, default):
     return value
 
 
-def _models(value):
+def _model_value(value):
     if not isinstance(value, str) or not value.strip():
-        raise MDFError("roster.models 必须是非空字符串", code="invalid_roster")
+        raise MDFError("roster.models 的取值必须是非空字符串",
+                       code="invalid_roster")
     return value.strip()
+
+
+def _models(value):
+    if not isinstance(value, dict) or not value:
+        raise MDFError("roster.models 必须按 intent 给出非空对象",
+                       code="invalid_roster")
+    extra = set(value) - set(MODEL_INTENTS)
+    if extra:
+        raise MDFError(
+            "roster.models 只接受 write-tests、implement、code-review",
+            code="invalid_roster",
+        )
+    return {key: _model_value(value[key])
+            for key in MODEL_INTENTS if key in value}
+
+
+def models_from_args(args):
+    body = {}
+    for intent, flag in MODEL_ARGUMENTS:
+        value = getattr(args, flag.lstrip("-").replace("-", "_"), None)
+        if value is not None:
+            body[intent] = value
+    return _models(body) if body else None
 
 
 def _strategies(qa_strategy, dev_strategy, review_strategy, models=None):
@@ -161,7 +191,8 @@ def add_strategy_arguments(parser):
     parser.add_argument("--qa-strategy", choices=QA_DEV_STRATEGIES)
     parser.add_argument("--dev-strategy", choices=QA_DEV_STRATEGIES)
     parser.add_argument("--review-strategy", choices=REVIEW_STRATEGIES)
-    parser.add_argument("--models")
+    for _, flag in MODEL_ARGUMENTS:
+        parser.add_argument(flag)
 
 
 def add_named_roster_argument(parser):
@@ -184,7 +215,9 @@ def apply_roster_patch(current, patch, *, locked_qa_dev):
     merged = dict(current)
     for key, value in patch.items():
         if key == "models":
-            merged["models"] = _models(value)
+            body = dict(current.get("models") or {})
+            body.update(_models(value))
+            merged["models"] = body
         else:
             merged[key] = value
     return require_roster(merged)

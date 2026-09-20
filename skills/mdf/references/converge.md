@@ -16,7 +16,7 @@
                  │
                  ├──── 可修复实现问题 ────────────→ 2 Verify
                  ├──── 需测试修改批准 ────────────→ [等待确认后返回本文件步骤 2]
-                 ├──── missing_delivery_suite ────→ [停止，回 write-tests]
+                 ├──── missing_delivery_suite ────→ [停止，提示 $mdf write-tests]
                  ├──── 外部阻塞或三轮无进展 ──────→ [记录阻塞并停止]
                  │
                  ▼ 所需 suite 通过
@@ -36,9 +36,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 汇合 | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 2 | 停止并报告 |
-| 2 | 验证 | 约束 | 验证并修实现 | 所需 suite、阻塞记录 | 3 | 可修或待批准回 2；缺 suite 回 write-tests；阻塞停止 |
-| 3 | 收敛 | 脚本 | 所需 suite 通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
+| 1 | Join | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 2 | 停止并报告 |
+| 2 | Verify | 约束 | 验证并修实现 | suite、阻塞 | 3 | 可修或待批准回 2；缺 suite 停并提示 `$mdf write-tests`；阻塞停 |
+| 3 | Record | 脚本 | 所需 suite 通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
@@ -68,12 +68,13 @@ worktree 和分支（含 `best-of-n` 未入选者）。
 `suites`）。修复循环可用 `--item <id>` 定位失败项，但最终必须所需 suite 通过；
 只跑 quick 或未声明/未跑本交付 suite 不得记录全绿。
 返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入 manifest
-`verification.suites`：停止并报告，回 write-tests 补齐后重新 integrate；
+`verification.suites`：停止并报告，提示 `$mdf write-tests` 补齐后重新 integrate；
 角色树若已删除则在 owner 上补测。不在 converge 现场改 manifest。
 可以自动修复实现。测试、fixture、快照、预期值、发现/跳过规则和验证配置增删改必须用户确认。
+同时出现可修实现与待批准测试时，先取得测试修改批准，再修实现。
 取得确认后原地审查与重验，记录 `--test-approval <用户确认与修改理由>`；不回退 intent。
 不设总轮数上限。需要目标/设计决定、凭据或外部条件，或同一失败连续三轮无进展时，
-写入或更新 `gates/converge-blocked.md` 后停止，不宣称全绿。
+写入或更新 `gates/converge-blocked.md` 后阻塞停止，不宣称全绿。
 记录当前 HEAD、失败项与命令/退出状态（未执行则说明原因）、已尝试方案、阻塞原因、
 所需决定或外部条件，以及可检查的解除条件；状态标为未解决。
 写后回读并核对字段与 diff；写入失败时保留现场，在会话中报告同样内容和实际路径后停止。

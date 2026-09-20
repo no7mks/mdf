@@ -33,6 +33,17 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--repo", required=True)
     doctor.set_defaults(func=command_doctor)
 
+    from .git_ops import command_merge_no_ff, command_prepare_git
+
+    prepare_git = subparsers.add_parser("prepare-git")
+    prepare_git.add_argument("--repo", required=True)
+    prepare_git.set_defaults(func=command_prepare_git)
+
+    merge = subparsers.add_parser("merge-no-ff")
+    merge.add_argument("--repo", required=True)
+    merge.add_argument("--commit", required=True)
+    merge.set_defaults(func=command_merge_no_ff)
+
     init = subparsers.add_parser("init")
     init.add_argument("--repo", required=True)
     init.add_argument("--latest-release", required=True)
@@ -57,7 +68,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     audit = subparsers.add_parser("fact-audit")
     audit.add_argument("--repo", required=True)
-    audit.add_argument("--scope", choices=("full", "paths"), default="full")
+    audit.add_argument(
+        "--scope", choices=("full", "branch", "paths"), default="full"
+    )
+    audit.add_argument("--base")
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)

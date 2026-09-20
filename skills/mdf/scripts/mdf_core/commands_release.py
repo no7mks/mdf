@@ -8,6 +8,7 @@ from .closeout_objects import active_objects
 from .closeout_stage import apply_closeout, summarize_closeout
 from .closeout_shape import unreleased_change_slugs, validate_closeout_shape
 from .closeout_validate import normalize_hotfix_change, run_verify_commands
+from .constants import SCHEMA_VERSION
 from .errors import MDFError, emit, serialize_findings
 from .gitutil import (
     branch_details,
@@ -151,7 +152,7 @@ def derive_closeout_spec(
         )
     commands = manifest_verification_commands(manifest)
     return {
-        "schema_version": 2,
+        "schema_version": SCHEMA_VERSION,
         "mode": mode,
         "expected_branch": f"{mode}/{version}",
         "version": version,

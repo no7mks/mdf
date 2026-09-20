@@ -58,12 +58,12 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
-| 2 | 选择 | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
-| 3 | 状态 | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
-| 4 | 澄清 | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
-| 5 | 确认 | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
-| 6 | 就绪 | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
+| 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 2 | Select proposal | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
+| 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
+| 4 | Clarify | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
+| 5 | Confirm | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
+| 6 | Validate and ready | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
 
@@ -93,7 +93,7 @@ planning 工作区时留在本步。
 
 验收：唯一对象。
 
-异常与交接：一次只问一个消歧问题。
+异常与交接：无法确定唯一对象时留在 2。
 
 <a id="s3"></a>
 
@@ -107,8 +107,8 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 不能仅凭当前 checkout 没有开发材料或 `tree` 未显示进行中，就判定未开工。
 已开工时报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP。
 `list` 因记录损坏失败或目标不在输出中时同样在写入前停止，报告缺失证据。
-仅 active draft/ready 且已确认未开工时继续；将既有 `ready` 转为 `draft`。
-进入本步骤即放弃 ready；取消、暂停、未确认或后续失败均保持 `draft`，不恢复 ready。
+仅 active draft/ready 且已确认未开工时继续；此时若为 `ready` 才写成 `draft`。
+取消、暂停、未确认或后续失败均保持 `draft`，不恢复 ready。
 
 验收：原状态、检查过的引用与材料范围、未开工结论，以及写回后的 draft 状态。
 
@@ -118,7 +118,7 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 
 **澄清**
 
-先查仓库证据，使用内部 clarify intent 按轮次澄清 Problem、Desired Outcome、 Scope 与可验证 Acceptance Criteria。
+先查仓库证据，使用内部 clarify intent 澄清 Problem、Desired Outcome、 Scope 与可验证 Acceptance Criteria。
 
 验收：完整 draft。
 
@@ -132,7 +132,7 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 
 验收：用户明确确认。
 
-异常与交接：保持 draft，可提交并准确说明尚未确认的状态；取得确认后继续，无须仅因提交而重调。
+异常与交接：未确认则保持 draft 并停止。阶段提交不构成确认；续办须再次进入本步取得确认。
 只有用户明确确认才转 `ready`。
 
 ### 就绪条件

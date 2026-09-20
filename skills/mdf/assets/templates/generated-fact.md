@@ -1,14 +1,14 @@
 ---
-title: "{{TITLE}}"
-doc_type: "{{DOC_TYPE}}"
+title: "{{MDF_TITLE}}"
+doc_type: "{{MDF_DOC_TYPE}}"
 evidence:
-  - path: "{{SOURCE_PATH}}"
-    verification: "{{GENERATOR_COMMAND}}"
+  - path: "{{MDF_SOURCE_PATH}}"
+    verification: "{{MDF_GENERATOR_COMMAND}}"
 generated:
-  source: "{{SOURCE_PATH}}"
-  generator: "{{GENERATOR_PATH}}"
+  source: "{{MDF_SOURCE_PATH}}"
+  generator: "{{MDF_GENERATOR_PATH}}"
 ---
 
-# {{TITLE}}
+# {{MDF_TITLE}}
 
-{{GENERATED_CONTENT}}
+{{MDF_GENERATED_CONTENT}}

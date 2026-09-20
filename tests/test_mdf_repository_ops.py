@@ -60,10 +60,10 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     )
 
     reference = (
-        repo / "docs" / "product" / "reference" / "capabilities.md"
+        repo / "docs" / "user-guide" / "README.md"
     ).read_text(encoding="utf-8")
-    assert f"../../proposals/archive/1.2/{PRP_NAME}" in reference
-    assert f"../../proposals/{PRP_NAME}" not in reference
+    assert f"../proposals/archive/1.2/{PRP_NAME}" in reference
+    assert f"../proposals/{PRP_NAME}" not in reference
 
 
 def test_archive_never_rewrites_external_url_path_text(
@@ -178,20 +178,21 @@ def test_init_writes_files_from_assets_templates(
 
     templates = skill_dir("mdf") / "assets" / "templates"
     docs_index = (repo / "docs" / "README.md").read_text(encoding="utf-8")
-    expected_index = (templates / "docs-readme.md").read_text(encoding="utf-8")
-    # all_not_applicable baselines 移除 system boundary 与 deviations 相关行
-    expected_index = expected_index.replace(
-        "| 了解系统能做什么、边界在哪 | [系统边界](system/overview.md) |\n", ""
-    )
-    expected_index = expected_index.replace(
-        "  - [系统边界](system/overview.md)\n", ""
-    )
-    expected_index = expected_index.replace(
-        "  - [已知偏差](system/deviations.md)\n", ""
+    template_index = (templates / "docs-readme.md").read_text(encoding="utf-8")
+    # all_not_applicable baselines 移除 user-guide、system boundary 与 deviations 链接行
+    removed = ("](user-guide/README.md)", "](system/overview.md)", "](system/deviations.md)")
+    expected_index = "".join(
+        line for line in template_index.splitlines(keepends=True)
+        if not any(marker in line for marker in removed)
     )
     assert docs_index == expected_index
     assert docs_index != "# 文档\n"
+    assert "user-guide" not in docs_index.split("## 决策")[0].split("## 当前事实")[1]
     assert (repo / "docs/context/research/.gitkeep").is_file()
+    assert (repo / "docs/context/adr/.gitkeep").is_file()
+    assert (repo / "docs/user-guide/.gitkeep").is_file()
+    assert not (repo / "docs/product").exists()
+    assert not (repo / "docs/adr").exists()
     assert not (repo / "docs/context" / "requirements").exists()
     assert not (repo / "docs/context" / "planning").exists()
 
@@ -205,7 +206,9 @@ def test_init_writes_files_from_assets_templates(
     project = (repo / "PROJECT.md").read_text(encoding="utf-8")
     assert project == (templates / "project.md").read_text(encoding="utf-8")
     assert "## 目录约定" in project
-    assert "`src/` 中的业务实现" in project
+    assert "单 module 为 `src/` 与 `tests/`" in project
+    assert "`<module>/src/`" in project
+    assert "`<module>/tests/`" in project
     assert "允许处于仓库顶层的例外" in project
 
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
@@ -220,6 +223,16 @@ def test_init_writes_files_from_assets_templates(
     assert (repo / "changes/unreleased/.gitkeep").is_file()
     assert not (repo / "docs/specs").exists()
     assert (repo / "docs/JOTS.md").is_file()
+    assert (repo / "docs/system/testing/index.md").is_file()
+    assert (repo / "docs/system/testing/conventions.md").is_file()
+    assert (repo / "docs/system/testing/index.md").read_text(
+        encoding="utf-8"
+    ) == (templates / "system-testing-index.md").read_text(encoding="utf-8")
+    assert (repo / "docs/system/testing/conventions.md").read_text(
+        encoding="utf-8"
+    ) == (templates / "system-testing-conventions.md").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_init_updates_existing_manifest_and_managed_block(
@@ -241,11 +254,11 @@ def test_init_updates_existing_manifest_and_managed_block(
     payload(mdf(python_exe, *arguments))
 
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
-    assert "schema_version: 2" in manifest
+    assert "schema_version: 3" in manifest
     assert 'latest_release: "1.2.0"' in manifest
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
     assert agents.count("<!-- MDF:BEGIN -->") == 1
-    assert 'path: "docs/product/reference/capabilities.md"' in manifest
+    assert 'path: "docs/user-guide/README.md"' in manifest
     assert 'path: "docs/system/architecture/current.md"' in manifest
 
 

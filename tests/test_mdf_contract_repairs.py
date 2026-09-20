@@ -172,8 +172,8 @@ def test_bug_template_uses_a_bare_found_in_sentinel():
     template = skill_dir("mdf") / "assets" / "templates" / "bug.md"
     text = template.read_text(encoding="utf-8")
 
-    assert "found_in: {{FOUND_IN}}" in text
-    assert 'found_in: "{{FOUND_IN}}"' not in text
+    assert "found_in: {{MDF_FOUND_IN}}" in text
+    assert 'found_in: "{{MDF_FOUND_IN}}"' not in text
 
 
 def test_change_evidence_requires_non_empty_string_elements(

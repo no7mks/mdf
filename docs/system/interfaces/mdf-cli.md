@@ -16,13 +16,15 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - 成功时命令向 stdout 输出 JSON；业务规则拒绝时输出 JSON 错误，
   并以非零状态退出。
 - `--repo` 接受目标仓库路径。除 `info`、`make-id --type bug`、`make-jot-id`、
-  `branch --name` 和 `semver-check` 外，命令会按自身需要检查 Git 根、MDF
-  manifest 或 clean worktree。`make-id --type proposal` 需要 Git 根且当前分支为
-  `planning`。`upgrade` 要求 Git 根，不要求 manifest 或 clean worktree。
+  `branch --name`、`semver-check` 和 `prepare-git` 外，命令会按自身需要检查 Git
+  根、MDF manifest 或 clean worktree。`prepare-git` 接受普通目录；已是其他仓
+  库内部路径时失败，不嵌套 `git init`。`make-id --type proposal` 需要 Git 根
+  且当前分支为 `planning`。`upgrade` 要求 Git 根，不要求 manifest 或 clean
+  worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
-  start、delivery integrate、finish-gitflow、planning 与 upgrade 按各自协议执行提交、
-  集成和远端操作。
+  start、delivery integrate、finish-gitflow、planning、upgrade 与 `merge-no-ff`
+  按各自协议执行提交、集成和远端操作。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
 
@@ -32,6 +34,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | --- | --- |
 | `info` | 版本信息 |
 | `doctor` | 仓库状态 |
+| `prepare-git` | 非 Git 目录初始化为 master |
+| `merge-no-ff` | 在当前分支 no-ff 合并指定提交 |
 | `init` | 初始化写入 |
 | `validate` | 确定性校验 |
 | `fact-audit` | 确定性审计 |
@@ -62,7 +66,7 @@ python3 skills/mdf/scripts/mdf.py info
 ```
 
 输出 `tool_version`、`protocol_version` 和 `schema_version`。当前三者都必须为
-数字 `2`；intent 以此拒绝错误或不兼容的 CLI。
+数字 `3`；intent 以此拒绝错误或不兼容的 CLI。
 
 ### `doctor`
 
@@ -75,8 +79,11 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 已初始化仓库会给出 manifest state；只有 state 为 `ready`
 且没有 finding 时，`normal_workflows_allowed` 才为 `true`。进行中的
 `changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md
-不构成 finding。clean 单独报告，
-由具体操作决定是否要求，不作为正常工作流的统一门槛。
+不构成 finding。`schema_version` 不是当前值报 `manifest.schema`；`docs/product/`
+或 `docs/adr/` 目录、根 `docs/testing.md` 存在报 `layout.migrate`；缺少
+`docs/system/testing/index.md` 或其主题叶报 `layout.testing`；schema 与
+`layout.migrate` 指向 `$mdf migrate`。clean 单独
+报告，由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
 ### `validate`
 
@@ -95,10 +102,33 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 ```
 
+`--scope` 可为 `full`（默认）、`branch` 或 `paths`。
+
 全量审计遍历 manifest 的 `implementation_roots` 与全部当前事实文档，输出实现范围、
 文档—`evidence` 映射、ignore 匹配、warnings 和 findings。未被 evidence 覆盖的实现
 文件是 warning，不会令命令失败；结构、范围、证据与 ignorelist 错误是 finding，并以
 状态码 `2` 失败。它不执行 `verification.commands`，不判断文本语义，也不写入文件。
+
+它同时按文档角色检查体积（物理行；`AGENTS.md` 的 `size.hard` 只计托管区块）：路由页
+（`docs/README.md`、`docs/user-guide/README.md`、`docs/system/overview.md`、切面
+`index.md`）、`AGENTS.md` 托管块与 `PROJECT.md` 为 100；根 `README.md` 为 200；
+`docs/user-guide/`、`docs/system/` 主题叶 450；`docs/context/adr/` 300；Proposal、
+Bug、`docs/JOTS.md` 为 500。超出为 `size.hard` finding。整份 `AGENTS.md` 超过 200
+行另发 warning `agents.size`；`.mdf/audit-ignore.yaml` 可写 `path: AGENTS.md`
+记住后不再提示。`full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档
+与本次改动到的入口页。
+
+分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`），
+实现范围是起点以来改动的实现文件，文档范围是改动到的事实页与 evidence 引用这些实现
+的事实页，结果含 `base`。`--base` 可以是 commit 或 tag；finish release 传入上一
+正式发布：
+
+```bash
+python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
+  --scope branch --base <start_commit>
+python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
+  --scope branch --base v1.2.0
+```
 
 范围审计使用精确路径清单：
 
@@ -180,6 +210,27 @@ python3 skills/mdf/scripts/mdf.py semver-check \
 
 ## 仓库写入命令
 
+### `prepare-git`
+
+```bash
+python3 skills/mdf/scripts/mdf.py prepare-git --repo /path/to/directory
+```
+
+目标已是 Git 根时不改写，JSON `created` 为 false。普通目录执行
+`git init --initial-branch=master`，`created` 为 true。位于其他仓库内部时
+以 `nested_git` 失败，不嵌套初始化。不提交、不配置用户身份。
+
+### `merge-no-ff`
+
+```bash
+python3 skills/mdf/scripts/mdf.py merge-no-ff \
+  --repo /path/to/repository --commit develop
+```
+
+要求 `--repo` 为 Git 根且 worktree clean。把 `--commit` 解析出的提交
+`--no-ff` 合入当前分支。已是祖先时 `merged` 为 false。冲突保留
+`MERGE_HEAD`，以 `merge_conflict` 失败，不 abort。
+
 ### `init`
 
 ```bash
@@ -188,7 +239,7 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   --verification-item '{"id":"unit","kind":"unit","command":"python3 -m pytest -q"}'  \
   --implementation-root src \
   --baseline 'glossary=documented' \
-  --baseline 'product_reference=documented' \
+  --baseline 'user_guide=documented' \
   --baseline 'system_boundary=documented' \
   --baseline 'architecture=documented' \
   --baseline 'interfaces=documented' \
@@ -198,7 +249,7 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
 ```
 
 仅接受 Git 根目录，且远端默认分支不能是 `main`。`--latest-release` 为稳定
-SemVer 或 `none`。必须提供 glossary、product_reference、system_boundary、
+SemVer 或 `none`。必须提供 glossary、user_guide、system_boundary、
 architecture、interfaces、data、operations、deviations 这八项 baseline。
 `--implementation-root` 可重复，默认 `src`；每个根目录都会写入 manifest，并在首次
 初始化时建立为空目录。
@@ -208,7 +259,8 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 `git diff --check`。
 
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
-`AGENTS.md` 区块和文档骨架。输出会列出拟创建或更新的文件和 diff；实际写入后
+`AGENTS.md` 区块、`docs/system/testing/` 起步页和文档骨架。输出会列出拟创建或
+更新的文件和 diff；实际写入后
 manifest 保持 `initializing`，但会写入提供的 verification commands，不会切换到
 `ready`。migrate intent 经事实复核，bootstrap intent 经起步材料核对；两者均须校验并取得
 显式就绪确认，再改 ready、校验并提交。bootstrap 不调用 fact audit。
@@ -269,8 +321,9 @@ roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为
 `qa/2/<owner>`。创建失败拆除已建 worktree 与分支。
 `--qa-strategy` / `--dev-strategy` 默认 `best-of-n`，可选
 `partition`；`--review-strategy` 默认 `replicate`，可选 `partition`。
-`--models` 为一句可选描述，省略则不写入。这些参数对应 start/design/deliver/
-code-review 的 intent 参数，由 Agent 传入本命令冻结。
+`--write-tests-model` / `--implement-model` / `--code-review-model` 各为一句
+可选描述，按 intent 写入 `roster.models`；省略某 flag 则不写该键。这些参数
+对应 start/design/deliver/code-review 的 intent 参数，由 Agent 传入本命令冻结。
 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 保存完整起点 hash，
 供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
 不设置 upstream。分支删除时配置随分支清理。
@@ -371,7 +424,7 @@ slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
 | verify | 执行当前交付所需 suite 并记录 `suites`；可用重复 `--item <id>` 做定位运行，所需 suite 记录不能由单项替代 |
 | integrate | 按 strategy 合入；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
-| roster | 更新 strategy / models；design 后不能改 qa/dev strategy |
+| roster | 更新 strategy / 按 intent 的 models；design 后不能改 qa/dev strategy |
 
 design record 需要 `--policy-file <JSON>`。未分层格式为
 `{"protected_paths":["tests/","pyproject.toml"]}`；分层后必须同时给出

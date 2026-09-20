@@ -7,6 +7,7 @@
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 缺底座 ───────→ [停止，提示 $mdf design]
                  ├──── 失败/缺失 ────→ [停止并报告]
                  │
                  ▼ 通过
@@ -33,9 +34,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 按 roster 进入 qa 或 owner 并检查 gate | worktree、设计与底座 | 2 | 停止并报告 |
-| 2 | 用例 | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、suite key 已建 | 3 | 停止并报告 |
-| 3 | 记录 | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
+| 1 | Check | 约束 | 按 roster 进入 qa/owner 并检查 gate | worktree、底座 | 2 | 缺底座提示 `$mdf design`；其他停止 |
+| 2 | Cases | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、suite key 已建 | 3 | 停止并报告 |
+| 3 | Record | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
@@ -46,26 +47,30 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 `roster.qa ≥ 1` 时读取 `worktrees.qa` 列表；缺对应树则停止。
 独立调用或只续办一路时用该项的 `path` 与 `branch`。deliver 对列表每一项分派
 独立 subagent，不把兄弟路径传入任务。
-用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作。角色树对 owner 分支执行
-`git merge --no-ff`；已在该 worktree 时仍先 merge。冲突保留现场。
+用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作。角色树先运行
+`python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo <该绝对路径> --commit <owner 完整分支名>`
+合入 owner；已在该 worktree 时仍先合并。冲突保留现场。
 `roster.qa ≥ 1` 时不得在 feature 上编写或补写测试（指 owner，不是 kind）。
 独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与分支（index 1
 形如 `qa/feature/<slug>`），不是 owner：Cursor 对该 qa 路径调用 `move_agent_to_root`
 （禁止 `move_agent_to_cloned_root`），新 shell 核对 toplevel 与当前分支；其他宿主
-打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止。
+打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止，
+不按 common 留步等待：角色树已由 start 建好。
 deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
 再运行 `delivery check --stage write-tests`。
 `qa_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
-roster.models 有值时写入本路任务；没有则不提模型或 effort。
+roster.models 含 `write-tests` 时把该值写入本路任务；没有则不提模型或
+effort。不得写入其他 intent 的模型。
 与 implement 互不前置，可并行。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。
 只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
-回 design 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
+并提示 `$mdf design` 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
 不要求针对具体实现进行错误注入，也不强制先产生红灯。
 
 ### 测试与交接证据
 
 编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
-不从源码重新推断契约。
+不从源码重新推断契约。项目级 kind、失败语义与 skip 以
+`docs/system/testing/` 为准，不在 design 复述。
 按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite。design
 只声明 suite 名，manifest 此时可能尚无该 key：在 `verification.suites` 新增
 design 所列 key 并填入验证项 id 属于本阶段授权；记录 gate 前核对每个声明的

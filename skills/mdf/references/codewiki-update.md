@@ -32,7 +32,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 无代码变化且关闭后验收通过 ────→ [报告已最新并结束]
-                 ├──── 关闭或验收失败 ────────────────→ references/codewiki-recovery.md
+                 ├──── 无代码变化且关闭或验收失败 ────→ references/codewiki-recovery.md
                  │
                  ▼ 存在代码类变化
 ┌──────────────────────────────────┐
@@ -75,14 +75,14 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
-| 2 | 目录 | 约束 | 按契约逐项核对 Wiki standard | 目录与基线检查 | 3 | 空则要求 generate；非标列出项并停止 |
-| 3 | 分析 | 脚本 | MCP analyze_repo，读取完整 changes | 完整变更分类 | 4 | 走 recovery.md |
-| 4 | 变化 | 约束 | 分类代码变化；无变化则关闭并验收现场 | 分类、diff、workspace | 无变化结束；否则 5 | 走 recovery.md |
-| 5 | 映射 | 约束 | 核对既有树映射、级联范围与删页需求 | affected/cascade | 6 | 走 recovery.md |
-| 6 | 页面 | 脚本 | 最小修订受影响页，刷新父页与 overview | 实际写入文件 | 7 | 走 recovery.md |
-| 7 | 特殊实现 | 脚本 | 按证据重审 hack，按页面状态维护链接 | hack、overview 一致 | 8 | 删页或失败走 recovery.md |
-| 8 | 验收 | 约束 | 关闭前后验收，再提交并报告 | 基线、diff、提交 | 报告并结束 | 仅提交失败停止；其他走 recovery.md |
+| 1 | Check entry | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
+| 2 | Check standard | 约束 | 按契约逐项核对 Wiki standard | 目录与基线检查 | 3 | 空则要求 generate；非标列出项并停止 |
+| 3 | Analyze | 脚本 | MCP analyze_repo，读取完整 changes | 完整变更分类 | 4 | 走 recovery.md |
+| 4 | Check changes | 约束 | 分类变化；无变化则关闭验收 | 分类、diff、workspace | 无变化结束；否则 5 | 走 recovery.md |
+| 5 | Map modules | 约束 | 核对既有树映射、级联范围与删页需求 | affected/cascade | 6 | 走 recovery.md |
+| 6 | Update pages | 脚本 | 最小修订受影响页，刷新父页与 overview | 实际写入文件 | 7 | 走 recovery.md |
+| 7 | Review hacks | 脚本 | 按证据重审 hack，按页面状态维护链接 | hack、overview 一致 | 8 | 删页或失败走 recovery.md |
+| 8 | Close and verify | 约束 | 关闭前后验收再提交 | 基线、diff、提交 | 报告并结束 | 仅提交失败停止；否则走 recovery |
 
 ## 术语与数据结构
 

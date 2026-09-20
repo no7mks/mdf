@@ -20,6 +20,7 @@ from .gitutil import (
 )
 from .roster import (
     freeze_roster,
+    models_from_args,
     resolve_roster,
     role_branch,
     role_branches,
@@ -152,7 +153,8 @@ def command_start(args) -> None:
         args.kind, args.qa, args.dev, args.reviewers,
         named=args.roster, qa_strategy=args.qa_strategy,
         dev_strategy=args.dev_strategy,
-        review_strategy=args.review_strategy, models=args.models,
+        review_strategy=args.review_strategy,
+        models=models_from_args(args),
     )
     names = start_branches(branch, roster)
     for name in names:

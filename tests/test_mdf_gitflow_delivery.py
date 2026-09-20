@@ -247,8 +247,8 @@ def test_start_rewrites_repo_root_style_objectives_links(
     obj = tmp_path / "objectives.md"
     obj.write_text(
         f"# 目标\n\n[需求](docs/proposals/{PRP_NAME})\n"
-        "[能力](docs/product/reference/capabilities.md)\n"
-        "[外链](/docs/product/reference/capabilities.md)\n"
+        "[能力](docs/user-guide/README.md)\n"
+        "[外链](/docs/user-guide/README.md)\n"
     )
     data = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
@@ -257,8 +257,8 @@ def test_start_rewrites_repo_root_style_objectives_links(
     work = Path(data["worktree"])
     text = (work / "changes/unreleased/service-health/objectives.md").read_text()
     assert f"[需求](../../../docs/proposals/{PRP_NAME})" in text
-    assert "[能力](../../../docs/product/reference/capabilities.md)" in text
-    assert "[外链](/docs/product/reference/capabilities.md)" in text
+    assert "[能力](../../../docs/user-guide/README.md)" in text
+    assert "[外链](/docs/user-guide/README.md)" in text
 
 
 

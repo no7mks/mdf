@@ -265,7 +265,7 @@ def test_audit_rejects_ignored_untracked_evidence(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    reference = repo / "docs" / "product" / "reference" / "capabilities.md"
+    reference = repo / "docs" / "user-guide" / "README.md"
     replace(reference, "path: src/service.py", "path: ignored-evidence.txt")
     (repo / ".gitignore").write_text("ignored-evidence.txt\n", encoding="utf-8")
     (repo / "ignored-evidence.txt").write_text(
@@ -294,7 +294,7 @@ def test_audit_does_not_let_dirty_fact_docs_hide_stale_evidence(
     git(repo, "commit", "-m", "test: 提交晚于事实页的证据")
 
     fact_docs = [
-        *sorted((repo / "docs" / "product").rglob("*.md")),
+        *sorted((repo / "docs" / "user-guide").rglob("*.md")),
         *sorted((repo / "docs" / "system").rglob("*.md")),
     ]
     assert fact_docs

@@ -129,8 +129,8 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "references/bootstrap.md" in init
     assert "references/migrate.md" in init
     assert "intents.md" not in init
-    assert "| 1 | 入口 | 约束 |" in init
-    assert "| 2 | 分流 | 约束 |" in init
+    assert "| 1 | Check entry | 约束 |" in init
+    assert "| 2 | Dispatch | 约束 |" in init
     assert "内部执行 bootstrap 或 migrate" in init
     assert "形成`初始化方案`" in migrate
     assert "再次显式调用" in migrate
@@ -140,9 +140,9 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "docs/context/requirements/" not in migrate
     assert "$mdf intake" in migrate
     assert "$mdf bug create" in migrate and "$mdf prp create" in migrate
-    assert "| 1 | 入口 | 约束 |" in migrate
-    assert "| 2 | 盘点 | 约束 |" in migrate
-    assert "| 7 | 就绪 | 脚本 |" in migrate
+    assert "| 1 | Check entry | 约束 |" in migrate
+    assert "| 2 | Inventory | 约束 |" in migrate
+    assert "| 7 | Enable workflows | 脚本 |" in migrate
     assert "没有未说明的遗留文件" in migrate
     assert "消除重复" in migrate
     for root_document in (
@@ -158,9 +158,12 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "盘点全部顶层项目项" in migrate
     assert "顶层允许清单" in migrate
     assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in migrate
-    assert "业务实现目录" in migrate
-    assert "`src/<目录>`" in migrate
-    assert "`tests/<目录>`" in migrate
+    assert "业务实现与测试" in migrate
+    assert "`<module>/src/`" in migrate
+    assert "`<module>/tests/`" in migrate
+    assert "`src/<目录>`" not in migrate
+    assert "`tests/<目录>`" not in migrate
+    assert "不得摊平" in migrate
     assert "迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`" in migrate
     assert "不得在未经确认时迁移或删除" in migrate
     assert "项目原有文档与经确认迁移的顶层项目项" in migrate
@@ -253,11 +256,34 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     )
 
     assert "## 根文档职责" in contract
-    assert "`README.md` 面向项目用户与维护者" in contract
+    assert "`README.md` 面向项目用户" in contract
+    assert "用户（非维护者）" in contract
+    assert "├── README.md                 # 用户入口" in contract
+    assert "仅维护者需要的环境、验证、lint、CI、目录例外、发布" in contract
     assert "`PROJECT.md` 仅面向项目维护者" in contract
+    assert "| 根 `README.md` | 200 |" in contract
+    assert "| 路由页（见下）、`AGENTS.md` 托管块、`PROJECT.md` | 100 |" in contract
     assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
-    assert "把 `docs/README.md` 当任务地图" in contract
+    assert "从 `docs/README.md` 只打开一份主题叶" in contract
     assert "最短可运行路径" in contract
+    assert "核心模块" in (
+        skill / "assets" / "templates" / "system-overview.md"
+    ).read_text(encoding="utf-8")
+    assert "核心模块表" in contract
+    assert "五类专用叶" in contract
+    assert "固定表" not in contract
+    assert "强制五类" not in contract
+    assert "`user-guide/README.md` → 一份主题叶" in contract
+    assert "须含 `docs/system/overview.md`、`docs/README.md` 与" in contract
+    assert "`docs/system/testing/`" in contract
+    assert "`layout.testing`" in contract
+    assert "`agents.size`" in contract
+    assert "托管区块必须项目无关" in contract
+    assert "按维护者角色工作" in contract
+    agents_block = (skill / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8"
+    )
+    assert "你的角色是维护者" in agents_block
     assert "`GLOSSARY.md` 面向所有读者维护稳定的领域词典" in contract
 
 
@@ -269,14 +295,18 @@ def test_repository_contract_defines_top_level_layout() -> None:
 
     assert "## 顶层布局" in contract
     assert "顶层只保留项目入口" in contract
-    assert "业务实现\n应归入 `src/`，测试应归入 `tests/`" in contract
+    assert "单 module：业务实现归入 `src/`，测试归入 `tests/`" in contract
+    assert "`<module>/src/`" in contract
+    assert "`<module>/tests/`" in contract
+    assert "不得摊平进仓库根 `src/<module>/` 与 `tests/<module>/`" in contract
+    assert "列出各 `<module>/src`" in contract
     assert "MDF 不自动迁移或删除顶层项目项" in contract
     assert "顶层允许清单、" in contract
     assert "每项的理由" in contract
     assert "`docs/repowiki/` 存在时" in contract
     assert "不填入`基线`" in contract
     assert "## ADR" in contract
-    assert "`docs/adr/<slug>.md`" in contract
+    assert "`docs/context/adr/<slug>.md`" in contract
     assert "`adr-<slug>`" in contract
     assert "NNNN-slug" not in contract
     assert "accepted 之后" in contract
@@ -285,8 +315,13 @@ def test_repository_contract_defines_top_level_layout() -> None:
     docs_readme = (skill / "assets" / "templates" / "docs-readme.md").read_text(
         encoding="utf-8"
     )
-    assert "按主题打开单份" in docs_readme
+    assert "打开单份" in docs_readme
     assert "按编号打开" not in docs_readme
+    assert "system/testing/index.md" in docs_readme
+    assert (skill / "assets" / "templates" / "system-testing-index.md").is_file()
+    assert (
+        skill / "assets" / "templates" / "system-testing-conventions.md"
+    ).is_file()
 
 
 def test_object_ids_must_be_cited_with_type_prefix() -> None:
@@ -345,14 +380,17 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     finish = intent("finish")
 
     assert "只读" in audit
-    assert "执行`全量审阅`" in audit
+    assert "`全量审阅`（`--scope full`）" in audit
     assert "`事实复核`" in audit
     assert "从文档到实现" in audit
     assert "从实现到文档" in audit
     assert "加载质量" in audit
+    assert "唯一归属" in audit
+    assert "size.hard" in audit
+    assert "docs/context/adr/" in audit
     assert "## 审阅类型" in audit
-    assert "`全量审阅`：从文档和实现两个方向" in audit
-    assert "`范围审阅`：从文档和实现两个方向" in audit
+    assert "`全量审阅`（`--scope full`）：从文档和实现两个方向" in audit
+    assert "`范围审阅`（`--scope branch` 或 `paths`）：从文档和实现两个方向" in audit
     assert "`全量审阅`" in audit
     assert "`范围审阅`" in audit
     assert "`develop...HEAD`" not in audit
@@ -361,7 +399,24 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`fact audit` 执行`全量审阅`" in migrate
     assert "这是交付前检查，不是 audit" in finish
     assert "references/fact-update.md" in finish
-    assert "release 为全量" in finish
+    assert "release 为 `--scope full`" not in finish
+    assert "release 的左端点为上一正式发布" in finish
+    assert "finish 的 release 为 `full`" not in audit
+    assert "`--base` 为上一正式发布" in audit
+    assert "`agents.project_content`" in audit
+    assert "核心模块表" in audit
+    assert "`overview.core_modules`" in audit
+    assert "`project.entry_links`" in audit
+    assert "不是语义 finding" in audit
+    update = intent("fact-update")
+    assert "五类专用叶" in update
+    assert "`system-configuration.md`" in update
+    assert "`4→3` 最多两次" in update
+    assert "在 `PROJECT.md` 写入" in update
+    assert "适用 gate" in update
+    assert "强制五类表" not in migrate
+    assert "核心模块表" in migrate
+    assert "同一项两轮后仍在" in migrate
 
 
 def test_delivery_intents_consume_current_fact_pages() -> None:
@@ -375,6 +430,8 @@ def test_delivery_intents_consume_current_fact_pages() -> None:
 
     assert "当前事实锚点" in design
     assert "不得把计划写进既有事实页" in design
+    assert "`<module>/tests/`" in design
+    assert "不要只抄仓库根 `tests/`" in design
     assert "## 当前事实锚点" in template
     assert "以事实页为准" in tests
     assert "以事实页为准" in implement
@@ -392,6 +449,8 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "内部 clarify intent" in start
     assert "不写目标" in start
     assert "feature 2；其他 3" in start
+    assert "Confirm roster" in start
+    assert "member、strategy 与 models" in start
     assert "no-ff 合并到本地 develop" in finish
     assert "no-ff 合并到" in finish and "master" in finish
     assert "原子 push" in finish

@@ -3,10 +3,16 @@ from pathlib import Path
 from typing import Any
 
 from . import doctor
+from .doc_size import sizable_documents, size_findings, size_role
 from .errors import Finding, MDFError, add_finding, emit, serialize_findings
 from .gitutil import git_path_tracked, repo_path, require_git_root, run
+from .overview_modules import (
+    overview_core_module_findings,
+    project_entry_link_findings,
+)
 from .paths import path_stays_in_repo, relative
 from .validate_evidence import fact_documents, frontmatter_evidence
+from .constants import SIZE_AGENTS_FILE
 from .validate_manifest import implementation_roots
 from .yamlutil import parse_yaml, read_frontmatter
 
@@ -103,6 +109,60 @@ def _scope_paths(
     return sorted(set(implementation)), sorted(set(documents))
 
 
+def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str | None:
+    if base is None:
+        result = run(["git", "merge-base", "develop", "HEAD"], cwd=repo, check=False)
+        if result.returncode:
+            add_finding(
+                findings, "audit.base",
+                "branch audit needs --base or a local develop branch",
+            )
+            return None
+        return result.stdout.strip()
+    result = run(
+        ["git", "rev-parse", "--verify", "--quiet", f"{base}^{{commit}}"],
+        cwd=repo, check=False,
+    )
+    if result.returncode:
+        add_finding(findings, "audit.base", "branch audit base is not a commit", base)
+        return None
+    return result.stdout.strip()
+
+
+def _changed_paths(repo: Path, base: str) -> list[Path]:
+    """base 到当前工作区（含未提交）的改动路径。"""
+    result = run(["git", "diff", "--name-only", "-z", base, "--"], cwd=repo)
+    return sorted(
+        {
+            (repo / raw).resolve()
+            for raw in result.stdout.split("\0")
+            if raw and path_stays_in_repo(repo, (repo / raw).resolve())
+        }
+    )
+
+
+def _branch_scope(
+    repo: Path,
+    all_sources: list[Path],
+    facts: set[Path],
+    changed: list[Path],
+) -> tuple[list[Path], list[Path]]:
+    """实现范围是改动到的实现文件；文档范围是改动到的事实页及 evidence 引用这些实现的事实页。"""
+    implementation = [path for path in changed if path in set(all_sources)]
+    documents = {path for path in changed if path in facts}
+    touched = set(implementation)
+    for document in facts:
+        try:
+            metadata, _ = read_frontmatter(document)
+        except MDFError:
+            continue
+        for raw, _ in frontmatter_evidence(metadata):
+            if (repo / raw).resolve() in touched:
+                documents.add(document)
+                break
+    return implementation, sorted(documents)
+
+
 def _ignored_paths(
     repo: Path, sources: list[Path], roots: list[Path], findings: list[Finding]
 ) -> dict[Path, dict[str, str]]:
@@ -142,6 +202,9 @@ def _ignored_paths(
         raw_path, reason = entry["path"], entry["reason"]
         candidate = Path(raw_path) if isinstance(raw_path, str) else Path()
         target = (repo / candidate).resolve()
+        agents_ignore = (
+            isinstance(raw_path, str) and candidate.as_posix() == "AGENTS.md"
+        )
         if (
             not isinstance(raw_path, str)
             or not raw_path.strip()
@@ -151,8 +214,15 @@ def _ignored_paths(
             or not reason.strip()
             or not target.exists()
             or target.is_symlink()
-            or not any(
-                target == root or root in target.parents for root in roots
+            or (
+                not agents_ignore
+                and not any(
+                    target == root or root in target.parents for root in roots
+                )
+            )
+            or (
+                agents_ignore
+                and (not target.is_file() or not git_path_tracked(repo, target))
             )
         ):
             add_finding(
@@ -169,6 +239,9 @@ def _ignored_paths(
             )
             continue
         seen.add(target)
+        if agents_ignore:
+            result[target] = {"path": raw_path, "reason": reason}
+            continue
         matched = [
             item for item in sources if item == target or target in item.parents
         ]
@@ -188,23 +261,41 @@ def audit_payload(
     scope: str,
     implementation_paths: list[str],
     document_paths: list[str],
+    base: str | None = None,
 ) -> tuple[dict[str, Any], int]:
     findings = doctor.collect_findings(repo, full=True)
     from .paths import load_manifest
     roots = implementation_roots(repo, load_manifest(repo), [])
     facts = set(fact_documents(repo))
     all_sources = _tracked_files(repo, roots)
+    resolved_base: str | None = None
+    sized: list[Path]
     if scope == "full":
-        if implementation_paths or document_paths:
+        if implementation_paths or document_paths or base is not None:
             add_finding(
                 findings, "audit.scope", "full audit accepts no explicit paths"
             )
         sources, documents = all_sources, sorted(facts)
+        sized = sizable_documents(repo)
+    elif scope == "branch":
+        if implementation_paths or document_paths:
+            add_finding(
+                findings, "audit.scope", "branch audit accepts no explicit paths"
+            )
+        resolved_base = _resolve_base(repo, base, findings)
+        changed = _changed_paths(repo, resolved_base) if resolved_base else []
+        sources, documents = _branch_scope(repo, all_sources, facts, changed)
+        sized = documents + [
+            path for path in changed
+            if path not in facts and size_role(relative(repo, path)) is not None
+        ]
     else:
         if not implementation_paths and not document_paths:
             add_finding(
                 findings, "audit.scope", "paths audit requires explicit paths"
             )
+        if base is not None:
+            add_finding(findings, "audit.scope", "--base only applies to branch scope")
         sources, documents = _scope_paths(
             repo,
             implementation_paths,
@@ -213,6 +304,10 @@ def audit_payload(
             facts,
             findings,
         )
+        sized = documents
+    findings.extend(size_findings(repo, sized))
+    findings.extend(overview_core_module_findings(repo, documents))
+    findings.extend(project_entry_link_findings(repo, sized))
     ignored = _ignored_paths(repo, all_sources, roots, findings)
     mappings: list[dict[str, Any]] = []
     covered: set[Path] = set()
@@ -242,10 +337,30 @@ def audit_payload(
         and path not in ignored
         and path.name not in NON_BEHAVIORAL_NAMES
     ]
+    agents = repo / "AGENTS.md"
+    if (
+        (scope == "full" or agents in sized)
+        and agents.is_file()
+        and not agents.is_symlink()
+        and agents.resolve() not in ignored
+    ):
+        count = len(agents.read_text(encoding="utf-8").splitlines())
+        _, limit = SIZE_AGENTS_FILE
+        if count > limit:
+            warnings.append(
+                Finding(
+                    "agents.size",
+                    f"AGENTS.md 整份 {count} 行，超过 {limit}；"
+                    "可下沉到 PROJECT.md 或写入 audit-ignore",
+                    "AGENTS.md",
+                    "warning",
+                )
+            )
     payload = {
         "ok": not findings,
         "operation": "audit",
         "scope": scope,
+        "base": resolved_base,
         "repo": str(repo),
         "implementation_paths": [relative(repo, path) for path in sources],
         "document_paths": [relative(repo, path) for path in documents],
@@ -256,7 +371,8 @@ def audit_payload(
                 "ignore_path": rule["path"],
                 "reason": rule["reason"],
             }
-            for path, rule in sorted(ignored.items()) if path in sources
+            for path, rule in sorted(ignored.items())
+            if path in sources or relative(repo, path) == "AGENTS.md"
         ],
         "warning_count": len(warnings),
         "warnings": serialize_findings(warnings),
@@ -274,6 +390,7 @@ def command_audit(args: argparse.Namespace) -> None:
         args.scope,
         list(args.implementation_path),
         list(args.document_path),
+        args.base,
     )
     emit(payload)
     if exit_code:

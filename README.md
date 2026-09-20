@@ -33,10 +33,10 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf implement` | 按已确认设计实现 |
 | `$mdf converge` | 收敛：集成并持续修复到所需 suite 通过 |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
-| `$mdf fact update` | 同步当前事实并委托事实审阅；finish 前段自动调用 |
+| `$mdf fact update [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；finish 前段自动调用 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
-| `$mdf fact audit` | 审阅当前文档与实现的覆盖、证据和语义是否相符 |
-| `$mdf clarify <议题>` | 逐题压力测试计划、决策或想法 |
+| `$mdf fact audit [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
+| `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
@@ -51,7 +51,7 @@ final_head 以来的增量，并复核上轮问题。默认每人全范围（rep
 分工；`$mdf start` / `deliver` 可带 `--roster`（solo / min-tdd /
 competing-pair / coop-pair）。`$mdf start` / `design` / `deliver` /
 `code-review` 可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--models`。
+`--write-tests-model`、`--implement-model`、`--code-review-model`。
 主 Agent 汇总裁定、修复并复核。前三种分支从固定起点审查，release 从上一正式发布版本审查。
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
 冲突自动尝试解决；集成产生新提交后，仅非本交付 `docs/` 增量则跳过 code-review
@@ -76,12 +76,9 @@ gate 检查共同基线与有效证据。start 始终独立 worktree；write-tes
 材料自 start 起位于 `changes/unreleased/<slug>/`；CHANGE.md 在同级目录于交付完成时补齐，
 再随版本归档。
 
-供 MDF 维护者查阅的[确定性 CLI 参考](./docs/product/reference/mdf-cli.md)
-记录 `mdf.py` 的完整命令表、参数与实际副作用。该文档仅留在本仓库，
-不会随 Skill 安装。
-
 MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。协议、工具与
-schema 版本均为数字 `2`。
+schema 版本均为数字 `3`；manifest 或 `docs/` 布局不符合当前契约时 doctor 只给出
+指向 `$mdf migrate` 的 finding，由 migrate 一次性收敛，不提供旧版运行分支。
 
 init、bootstrap 与 migrate 都负责项目 Git 化，准备本地 master/develop，不强制远端。
 bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已有实际实现或运行事实时，
@@ -93,20 +90,26 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 
 | 类型 | 载体 |
 | --- | --- |
-| 文档入口 | `docs/README.md` |
-| 当前事实 | `docs/product/`、`docs/system/`、配置、schema、测试 |
+| 用户入口 | 根 `README.md`：项目是干什么，并链到 user-guide |
+| 文档入口 | `docs/README.md`；维护者按主题只开一份页面 |
+| 维护者事实 | `docs/system/`：`overview.md` 路由 + 切面目录主题叶 + `deviations.md` + `testing/`；架构以 `architecture/` 为准 |
+| 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；维护者默认不打开 |
+| 决策 | `docs/context/adr/`；只记录理由，按 `adr-<slug>` 打开单份 |
 | 工作上下文 | `docs/context/research/` |
-| 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新 |
+| 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新，用于按需搜索 |
 | 未分诊记录 | `docs/JOTS.md` |
 | 意图与工作 | Proposal、Bug、unreleased Change |
-| 决策 | `docs/adr/`；按主题打开单份 |
 | 证据 | 测试、契约、生成物、配置和命令 |
 | 项目维护 | `PROJECT.md` |
 | Agent 指令 | `AGENTS.md`、`.mdf/manifest.yaml` |
 | 领域术语 | `GLOSSARY.md` |
 
 Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
-验证，且不得混写未来计划。
+验证，且不得混写未来计划。一条可观察契约只住一页，其他页只链接；文档按角色有
+行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
+fact update / fact audit 的 `--scope`
+默认 `branch`（起点以来实现改动该碰的事实页），`full` 整理知识面全树，finish 只用
+`branch`/`paths`；release 的 `branch` 基线为上一正式发布。
 
 `docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。

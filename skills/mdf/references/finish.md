@@ -14,7 +14,9 @@
 │ 2 Integrate and review           │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 已收口且证据有效 ────→ 4 Audit
+                 ├──── 已收口且证据有效 ────→ 4 Recheck
+                 ├──── 集成冲突无法解决 ────→ [停止并询问]
+                 ├──── 内部审查失败 ────────→ [停止]
                  ├──── 状态不一致 ──────────→ [停止]
                  │
                  ▼ 待收口或 feature/bugfix
@@ -26,11 +28,11 @@
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 4 Audit                          │
+│ 4 Recheck                        │
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过，已收口或 feature/bugfix ────→ 9 Hand off
-                 ├──── 未通过或未确认 ───────────────────→ [停止并交接]
+                 ├──── 未通过 ───────────────────────────→ [停止并交接]
                  │
                  ▼ 通过，待收口的 release/hotfix
 ┌──────────────────────────────────┐
@@ -83,24 +85,23 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-完整读取 `references/common.md`、`references/fact-audit.md`、
-`references/repository-contract.md` 与 `references/object-contract.md`。
-完整读取 `references/code-review.md`；步骤 2 集成主线后，不可跳过时内部执行所需的
-code-review。
-步骤 3 读取并内部执行 `references/fact-update.md`。
+读取 `references/common.md`、`references/repository-contract.md` 与
+`references/object-contract.md`。步骤 2 需要审查时读取并内部执行
+`references/code-review.md`。步骤 3 读取并内部执行 `references/fact-update.md`。
+步骤 4 已收口路径需要审阅时读取并内部执行 `references/fact-audit.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 入口 | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | 范围 | 约束 | 核版本；no-ff 集成；跳过或 code-review | 集成、审查、版本 | 已收口 4；否则 3 | 状态不一致则停止 |
-| 3 | 材料 | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
-| 4 | 审阅 | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
-| 5 | 输入 | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
-| 6 | 热修复 | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | 对象 | 脚本 | 用 `list` 列 unreleased Bug，准备 closures 并取得用户接受 | 完整覆盖、接受记录 | 8 | 停止 |
-| 8 | 收口 | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | 交接 | 约束 | 提交并核对交付条件 | clean、证据 | 通过→10 | feature/bugfix 前进回 2；其余前进或未过则停止 |
-| 10 | 合并 | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
+| 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
+| 2 | Integrate and review | 约束 | 核版本；集成；跳过或审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
+| 3 | Prepare materials | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
+| 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
+| 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
+| 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
+| 7 | Prepare closures | 脚本 | 用 `list` 列 Bug，准备 closures 并取得接受 | 完整覆盖、接受记录 | 8 | 停止 |
+| 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
+| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 通过→10；feature/bugfix 前进→2 | 其余前进或未过则停 |
+| 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构
 
@@ -137,10 +138,11 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 - feature/bugfix 使用本地 develop，不 fetch、不 push；release/hotfix 使用 master，
   先 fetch origin 并核对本地 master/develop 与远端一致，不自动覆盖分歧。
 - 确认 clean，记录目标主线的完整 commit 与当前 HEAD；若它尚不是当前 HEAD 的祖先，
-  在交付分支运行 `git merge --no-ff <目标commit>`。禁止 rebase，不在主线上解决交付冲突。
-- 冲突时保留 merge 现场，Agent 按已确认目标、设计及两侧改动自动尝试 resolve，
-  逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、需变更目标或
-  无法解决时才停止询问，报告冲突与已尝试的修复。
+  运行 `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo "$REPO_ROOT"
+  --commit <目标commit>`。禁止 rebase，不在主线上解决交付冲突。
+  冲突时 CLI 保留 MERGE_HEAD；Agent 按已确认目标、设计及两侧改动自动尝试 resolve，
+  逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、
+  需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：不启动 code-review、
   不重验所需 suite，沿用上轮 final_head 与有效全绿；在 `code-review.md` 追加
@@ -170,10 +172,12 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 
 **材料**
 
-先委托 `references/fact-update.md`，传入步骤 2 的交付范围，
-同步受影响当前事实并内部完成 fact audit，再执行必要验证。release 的事实审阅使用全量范围。
-仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 code-review 有效；使用 start_commit
-到 HEAD 的固定范围，并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
+先委托 `references/fact-update.md`，以 `--scope paths` 传入步骤 2 的交付范围，
+或等价 `--scope branch --base <该范围左端点>`（release 的左端点为上一正式发布）；
+同步受影响当前事实、修范围内结构 finding 并内部完成
+fact audit，再执行必要验证；finish 不得改用 `full` 做全库结构整理。
+仅 feature 在委托前运行 `delivery check --stage fact-update`，确认 code-review 有效，
+并由 fact update 记录 fact-update gate。调用方统一提交本次事实与证据。
 按分支准备材料：
 
 - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 canonical CHANGE.md，
@@ -202,9 +206,11 @@ feature 运行 `delivery check --stage finish`，使用本次有效 code-review�
 不把集成当修复续办）后复核，
 不回退本流程步骤编号；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
-其他分支使用步骤 3 的本次 fact audit 结论；release 为全量，其他分支为范围审阅。
+其他分支使用步骤 3 的本次 fact audit 结论；release 为上一正式发布以来的
+范围审阅，其他分支为范围审阅。
 
-验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full validation 通过。
+验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full
+validation 通过。fact audit 未取得当场确认视为本步未通过。
 
 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。

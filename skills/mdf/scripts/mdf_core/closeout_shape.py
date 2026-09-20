@@ -7,6 +7,7 @@ from .closeout_validate import (
     require_exact_keys,
     require_spec_key,
 )
+from .constants import SCHEMA_VERSION
 from .errors import MDFError
 from .gitutil import current_branch
 from .paths import load_manifest, relative
@@ -41,10 +42,10 @@ def validate_closeout_shape(
 ) -> dict[str, Any]:
     if (
         type(spec.get("schema_version")) is not int
-        or spec.get("schema_version") != 2
+        or spec.get("schema_version") != SCHEMA_VERSION
     ):
         raise MDFError(
-            "closeout payload 的 schema_version 必须为 2",
+            f"closeout payload 的 schema_version 必须为 {SCHEMA_VERSION}",
             code="invalid_closeout_spec",
         )
     mode = require_spec_key(spec, "mode")

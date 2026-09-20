@@ -2,7 +2,7 @@
 name: mdf
 description: >-
   管理 Git 仓库的版本化文档与交付流程：项目起步、初始化、已有项目迁移、规划、分诊、
-  CodeWiki、随手记录、审计、收口、归档、帮助、自升级与逐题澄清。
+  CodeWiki、随手记录、审计、收口、归档、帮助、自升级与压力测试。
 disable-model-invocation: true
 ---
 
@@ -18,6 +18,7 @@ disable-model-invocation: true
 └────────────────┬─────────────────┘
                  │
                  ├──── 裸调用、未知调用 ────→ [帮助并结束]
+                 ├──── 未知 -- token ───────→ [停止询问]
                  │
                  ▼ 有效显式调用
 ┌──────────────────────────────────┐
@@ -71,9 +72,9 @@ disable-model-invocation: true
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 调用 | 约束 | 只接受显式 intent；问号 next 走 tree | 有效显式调用 | 2 | 帮助并结束 |
-| 2 | 工具 | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 2 | 3 | 停止 |
-| 3 | 分流 | 约束 | 核对目标根并执行命中流程 | 目标根或豁免、流程结果 | 返回调用方 | 边界不明回 3；材料缺失停止并报告 |
+| 1 | Accept call | 约束 | 只接受显式 intent；问号 next 走 tree | 有效显式调用 | 2 | 裸/未知则帮助；未知 -- 则停止询问 |
+| 2 | Check CLI | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 3 | 3 | 停止 |
+| 3 | Dispatch | 约束 | 先核目标根再执行命中流程 | 目标根或豁免、流程结果 | 返回调用方 | 不明回 3；缺材料停止并报告 |
 
 ## 术语与数据结构
 
@@ -87,8 +88,10 @@ help。`$mdf next` 无问号时执行 `references/next.md`。
 `--auto-pilot` 可在 target 前或后；target 由 deliver 解析。
 start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`、
-`--review-strategy`、`--models`；由对应 intent 解析并写入 roster。
-未知 `--` token 停止询问。
+`--review-strategy`、`--write-tests-model`、`--implement-model`、
+`--code-review-model`；由对应 intent 解析并写入 roster。
+fact update、fact audit 可带 `--scope branch|full|paths`（省略为 branch）。
+upgrade 可带 `--source`。未知 `--` token 停止询问。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
@@ -100,16 +103,16 @@ tree；deliver 可内部委托从 start 起的剩余交付阶段直到 finish；
 **帮助**：裸调用、未知调用读取并执行 `references/help.md`。`$mdf help` 为显式调用，
 经 CLI 检查后同样执行该流程。不读取其他 intent、不检查仓库、不写入。
 **MDF_ROOT**：本文件所在目录的绝对路径。确认 `scripts/mdf.py` 后运行
-`python3 "$MDF_ROOT/scripts/mdf.py" info`；协议、工具与 schema 版本均须为数字 `2`。
+`python3 "$MDF_ROOT/scripts/mdf.py" info`；协议、工具与 schema 版本均须为数字 `3`。
 工具缺失或检查失败时停止，不得模拟 CLI。
 
-完整读取选择树指定的 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
+步骤 3 先核对目标根（或该 intent 的豁免）；边界不明澄清后回到 3。
+再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理；
 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
 除 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
 help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
 `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
-步骤 3 命中后核对目标根；边界不明澄清后回到 3，材料缺失则停止并报告。
 
 `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`、
 `$mdf init migrate` 与 `$mdf help <intent>` 均由选择树路由；

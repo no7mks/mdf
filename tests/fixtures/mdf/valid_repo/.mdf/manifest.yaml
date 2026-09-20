@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 state: ready
 versioning:
   strategy: semver
@@ -13,9 +13,9 @@ baselines:
   glossary:
     status: documented
     path: GLOSSARY.md
-  product_reference:
+  user_guide:
     status: documented
-    path: docs/product/reference/capabilities.md
+    path: docs/user-guide/README.md
   system_boundary:
     status: documented
     path: docs/system/overview.md

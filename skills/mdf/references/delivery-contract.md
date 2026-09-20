@@ -36,7 +36,8 @@ Gitflow 收口前确认。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
 建立交付 worktree，路径等于分支名；不在当前目录开分支，不 fetch、不 push。
-roster 在 start 时冻结，写入 `delivery.json`（有交付材料时）与
+roster 在 start 开分支前展示 member、strategy 与 models 并经确认后冻结，
+写入 `delivery.json`（有交付材料时）与
 `branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
 owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,3` + best-of-n），
@@ -59,14 +60,17 @@ owner 仍汇总裁定，不按票数。
 `$mdf start`、`$mdf deliver` 可带 `--roster <name>`，只在尚未 start 时展开；
 已 start 后再带 `--roster` 停止。`$mdf start`、`$mdf design`、`$mdf deliver`、
 `$mdf code-review` 可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--models`。
+`--write-tests-model`、`--implement-model`、`--code-review-model`。
 这些是 intent 参数，不是独立 intent。start 冻结；之后由 Agent 调用
 `delivery roster` 写入。qa/dev strategy 在 design gate 后锁定。
-review_strategy 与 models 可在 code-review 覆盖。deliver 把 strategy /
-models 转交给 start、design、code-review；`--roster` 只转交 start。
+review_strategy 与 `models.code-review` 可在 code-review 覆盖。deliver 把
+strategy / models 转交给 start、design、code-review；`--roster` 只转交 start。
 未知 `--` token 停止询问。
-`--models` 取随后一个 token；省略则不写、不问、不提。Agent 分派 subagent
-时现场解析该字符串。JSON 键为下划线形式。
+每个 `--*-model` 取随后一个 token；未带的 intent 不写、不问、不提。
+`models` 按 intent 可选，键只允许 `write-tests`、`implement`、`code-review`。
+Agent 分派某 intent 的 subagent 时只读取并写入该键；没有则不提模型或
+effort。不得把其他 intent 的模型写入本路任务。策略字段的 JSON 键为下划线
+形式。
 本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate

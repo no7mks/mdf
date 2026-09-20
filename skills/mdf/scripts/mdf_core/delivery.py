@@ -10,6 +10,7 @@ from .gitutil import current_branch, repo_path, require_git_root
 from .paths import load_manifest
 from .roster import (
     apply_roster_patch,
+    models_from_args,
     owner_branch,
     parse_role_branch,
     read_roster_config,
@@ -179,10 +180,13 @@ def check(repo, root, data, stage):
 
 def roster_patch(args):
     patch = {}
-    for key in ("qa_strategy", "dev_strategy", "review_strategy", "models"):
+    for key in ("qa_strategy", "dev_strategy", "review_strategy"):
         value = getattr(args, key, None)
         if value is not None:
             patch[key] = value
+    models = models_from_args(args)
+    if models is not None:
+        patch["models"] = models
     return patch
 
 

@@ -52,6 +52,10 @@ def git_root(repo: Path) -> Path | None:
     return root
 
 
+def forget_git_root(repo: Path) -> None:
+    _GIT_ROOTS.pop(repo, None)
+
+
 def require_git_root(repo: Path) -> None:
     root = git_root(repo)
     if root is None:

@@ -29,8 +29,8 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 解析 | 约束 | 识别裸调用、help 或 help 主题 | 调用形态 | 2 | 停止 |
-| 2 | 展示 | 约束 | 按目录或主题原样输出固定正文 | 完整展示 | 结束 | 停止 |
+| 1 | Parse call | 约束 | 识别裸调用、help 或 help 主题 | 调用形态 | 2 | 停止 |
+| 2 | Render output | 约束 | 按目录或主题原样输出固定正文 | 完整展示 | 结束 | 停止 |
 
 ## 术语与数据结构
 
@@ -52,7 +52,7 @@
 
 验收：调用形态唯一。
 
-通过条件：进入展示。异常与交接：材料缺失则停止。
+通过条件：进入展示。异常与交接：本文件「目录」或「主题」正文缺失则停止。
 
 <a id="s2"></a>
 
@@ -87,7 +87,7 @@
 - `$mdf prp split`：拆分未开工 PRP，并完整改写依赖
 - `$mdf tree [--depth N]`：按 milestone 分组画出 draft/ready PRP 依赖树；也可
   `$mdf prp tree` 或 `$mdf next?`
-- `$mdf clarify <议题>`：逐题压力测试计划、决策或想法
+- `$mdf clarify <议题>`：压力测试计划、决策或想法
 
 #### 交付
 
@@ -100,13 +100,14 @@
 - `$mdf implement`：按已确认设计实现
 - `$mdf converge`：集成并持续修复到所需 suite 通过
 - `$mdf code-review`：审查并修复实现、测试和 code smell
-- `$mdf fact update`：同步当前事实；finish 前段自动调用
+- `$mdf fact update [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
+  finish 前段自动调用
 - `$mdf finish`：按 Gitflow 分支完成审计与收口
 
 #### 维护
 
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
-- `$mdf fact audit`：审阅文档与实现的覆盖、证据和语义
+- `$mdf fact audit [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
@@ -145,6 +146,7 @@ $mdf implement
 $mdf converge
 $mdf code-review
 $mdf fact update
+$mdf fact update --scope full
 $mdf finish
 $mdf fact audit
 $mdf archive
@@ -221,7 +223,7 @@ $mdf clarify 要不要把缓存放到 Redis
 
 `$mdf clarify <议题>`
 用法：`$mdf clarify <议题>`
-用途：逐题压力测试计划、决策或想法。
+用途：压力测试计划、决策或想法。
 说明：议题不能为空；不要求 Git 仓库。
 
 `$mdf tree [--depth N]`
@@ -245,17 +247,20 @@ qa/dev worktree 的 subagent。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
 收口（合入目标主线并删除源 worktree）前确认；死硬阻塞仍停止。
 可把 `--roster`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--models` 转交给 start；strategy / models 也可转交给 design、code-review。
+`--write-tests-model`、`--implement-model`、`--code-review-model` 转交给
+start；strategy / models 也可转交给 design、code-review。
 `--roster` 仅尚未 start 时有效。
 包含 finish 的合并及适用的 tag、发版推送。
 
 `$mdf start`
 用法：`$mdf start`；可带 `--roster` / `--qa-strategy` / `--dev-strategy` /
-`--review-strategy` / `--models`
+`--review-strategy` / `--write-tests-model` / `--implement-model` /
+`--code-review-model`
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
-不在当前目录开分支，不 push。start 冻结 roster（feature 默认 min-tdd，
-其他默认 solo）；人数 ≥1 时建立 qa/dev 角色树。
+不在当前目录开分支，不 push。开分支前展示 member、strategy 与 models
+并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；人数 ≥1
+时建立 qa/dev 角色树。
 
 `$mdf design`
 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
@@ -280,7 +285,7 @@ partition 时在 design.md 写明各 index 切片。
 说明：修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
 
 `$mdf code-review`
-用法：`$mdf code-review`；可带 `--review-strategy` / `--models`
+用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
 用途：审查并修复实现、测试和 code smell。
 说明：支持 feature/bugfix/hotfix/release；首轮按 roster.reviewers（默认 3）
 覆盖起点区间，后续增量并复核上轮问题。
@@ -288,9 +293,12 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
 
 `$mdf fact update`
-用法：`$mdf fact update`
-用途：同步当前事实并委托事实审阅。
-说明：finish 前段自动调用；独立调用须 manifest ready。
+用法：`$mdf fact update [--scope branch|full|paths]`
+用途：按实现对齐当前事实，再只修范围内的结构 finding，并委托事实审阅。
+说明：`branch` 为独立调用默认，取起点以来实现改动该碰的事实页；`full` 整理
+知识面全树（用户指南、系统事实、入口根文档、ADR 复述、体积）；finish 只用
+branch/paths，release 的 `--base` 为上一正式发布。独立调用须 manifest ready；
+布局或 schema 不符时提示 migrate。
 
 `$mdf finish`
 用法：`$mdf finish`
@@ -303,9 +311,11 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 说明：仅用户要求预览时 dry-run；未要求则实际归档。
 
 `$mdf fact audit`
-用法：`$mdf fact audit`
-用途：审阅当前文档与实现的覆盖、证据和语义。
-说明：只读；不执行 verification.commands。
+用法：`$mdf fact audit [--scope branch|full|paths]`
+用途：只读审阅文档与实现的覆盖、证据、语义与加载质量（入口过载、唯一归属、
+路由页、体积、ADR 复述）。
+说明：只读；不执行 verification.commands。`size.hard` 阻断。finish release 的
+`--base` 为上一正式发布。
 
 `$mdf codewiki generate`
 用法：`$mdf codewiki generate`
@@ -322,7 +332,8 @@ feature 位于 converge 之后；各分支均在 finish 前完成。
 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
 说明：先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换；更新已有
 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`。替换后在当前分支提交本次路径，
-不 push。随后重读新 Skill，同会话后续调用按新副本执行。
+不 push。随后重读新 Skill，同会话后续调用按新副本执行；doctor 报布局或 schema
+不符时建议 `$mdf migrate`。
 
 `$mdf help`
 用法：`$mdf help` 或 `$mdf help <intent>`

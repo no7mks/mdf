@@ -1,48 +1,48 @@
 # 仅为结构定义脚手架；以 `mdf.py init` 的渲染结果为准。
 # 每项基线在已文档化时只保留 `path`，在 not_applicable 时只保留 `reason`；写入前
-# 删除所有 {{...}} 标记。
-schema_version: 2
+# 删除所有 {{MDF_...}} 标记。
+schema_version: 3
 state: initializing
 versioning:
   strategy: semver
-  latest_release: {{QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
+  latest_release: {{MDF_QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
 verification:
   commands:
-    - id: "{{VERIFICATION_ID}}"
-      kind: "{{VERIFICATION_KIND}}"
-      command: "{{NON_EMPTY_VERIFICATION_COMMAND}}"
+    - id: "{{MDF_VERIFICATION_ID}}"
+      kind: "{{MDF_VERIFICATION_KIND}}"
+      command: "{{MDF_NON_EMPTY_VERIFICATION_COMMAND}}"
 implementation_roots:
-  - "{{REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
+  - "{{MDF_REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
 baselines:
   glossary:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
-  product_reference:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
+  user_guide:
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
   system_boundary:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
   architecture:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
   interfaces:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
   data:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
   operations:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
   deviations:
-    status: "{{DOCUMENTED_OR_NOT_APPLICABLE}}"
-    path: "{{REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
-    reason: "{{REASON_IF_NOT_APPLICABLE}}"
+    status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"
+    path: "{{MDF_REPOSITORY_RELATIVE_PATH_IF_DOCUMENTED}}"
+    reason: "{{MDF_REASON_IF_NOT_APPLICABLE}}"
