@@ -299,7 +299,8 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 外层 finish intent 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
-由 Agent 自动尝试解决集成冲突；集成产生新提交后执行增量新一轮 code-review 与全量验证，
+由 Agent 自动尝试解决集成冲突；集成产生新提交后，仅非本交付 `docs/` 增量则跳过
+code-review 与所需 suite，否则执行增量新一轮 code-review 与所需 suite，
 再核对 roster.reviewers 份审查、主 Agent 复核与验证记录。该前置流程由 intent 执行，CLI 不代为集成或审查；
 非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
 

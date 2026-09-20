@@ -490,9 +490,13 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
     assert "四种分支均须有完整且有效的 roster.reviewers 份独立审查" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
-    assert "都以集成后的 HEAD 执行增量新一轮" in finish
+    assert "不启动 code-review、" in finish
+    assert "不重验所需 suite" in finish
+    assert "本交付文档" in finish
+    assert "以集成后的 HEAD 执行增量新一轮" in finish
     assert "不复用集成前报告" in finish
     assert "复核上轮问题" in finish
+    assert "不得跳过" in finish
     assert "证据缺失或过期时内部执行 code-review" in finish
 
 
