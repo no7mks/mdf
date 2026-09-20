@@ -34,7 +34,7 @@ roster。见 `references/code-review.md`。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
 可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
-Gitflow 收口前确认。
+Gitflow 收口前确认；`--yolo` 跳过该确认。
 不新增独立 Owner 调度服务或统一状态协议。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`

@@ -34,7 +34,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "next?",
         "next？",
         "next [--depth N]",
-        "deliver [<target>] [--auto-pilot]",
+        "deliver [<target>] [--auto-pilot] [--yolo]",
         "codewiki generate",
         "codewiki update",
         "start",

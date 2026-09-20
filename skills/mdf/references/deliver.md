@@ -62,16 +62,16 @@
 
 ### 目标与持续授权
 
-调用 `$mdf deliver [<target>] [--auto-pilot]` 授权从当前状态连续执行本次交付
+调用 `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 授权从当前状态连续执行本次交付
 剩余工作直到 finish 完成，含尚未完成的 start，以及原流程要求的本地提交、并行委托、
 集成与 finish 的 Gitflow 操作。target 是唯一位置参数，不是 `--` option；
-`--auto-pilot` 可在其前或后。两者都省略时仍是 deliver。
+`--auto-pilot` 与 `--yolo` 可在其前或后。target 与这些 option 都省略时仍是 deliver。
 feature/bugfix 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 用户明确限制提交、推送或只读时遵守限制；与 finish 完成条件冲突时说明并询问，不能声称完成。
 已有有效确认继续适用。默认模式：设计确认、测试修改批准、目标变更和外部条件仍按原流程处理；
 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
-`--auto-pilot` 按下方策略把这些决定改为主 Agent 自裁定。
+`--auto-pilot` 与 `--yolo` 按下方策略把这些决定改为主 Agent 自裁定。
 
 步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。
 先解析本次调用的 target（见下）；有唯一对象则锁定该交付。
@@ -92,7 +92,7 @@ PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认
 ### target
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
-除 `--auto-pilot`、`--roster`、`--qa-strategy`、`--dev-strategy`、
+除 `--auto-pilot`、`--yolo`、`--roster`、`--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、
 `--code-review-model` 外，以 `--` 开头的 token 不是 target，
 视为未知调用参数并停止。
@@ -123,7 +123,9 @@ target 与当前已锁定的另一交付冲突时报告错误并停止，不改�
 
 ### auto-pilot
 
-仅 `$mdf deliver --auto-pilot` 启用；默认 `$mdf deliver` 不启用。
+仅 `$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo` 启用；默认 `$mdf deliver`
+不启用。`--yolo` 隐含本策略；下文写 `--auto-pilot` 处对 `--yolo` 同样适用，
+除非写明例外。
 委托子 intent 时把本策略作为外层约束：原文中的询问、确认、批准与选择改由主 Agent
 依据仓库证据、已确认目标和本次范围自行裁定，并在摘要或 gate 中写明依据，
 不向用户提问、不等待确认。内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
@@ -140,6 +142,7 @@ open Bug，且未指定合法 release/hotfix 版本）；已有交付缺少 work
 主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
 取得明确确认后才执行 finish 步骤 10；拒绝则保留现场并停止，不合并、不删 worktree。
 此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
+`--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 
 ### Goal

@@ -18,8 +18,8 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "不重放已经发生的发布操作", "release/hotfix 包含 finish 规定的 tag 与发版推送",
         "没有独立开发 intent 的剩余工作由主 Agent", "角色已集成并清理时读取 owner 的两路证据",
         "尚未存在本次交付时委托", "references/start.md",
-        "$mdf deliver --auto-pilot", "死硬阻塞才停止",
-        "即将调用 `finish-gitflow` 之前", "不增加该关口",
+        "$mdf deliver --auto-pilot", "$mdf deliver --yolo", "死硬阻塞才停止",
+        "即将调用 `finish-gitflow` 之前", "不增加该关口", "跳过此关口",
         "位置参数至多一个", "自动分辨", "分不清就询问",
         "已有在途交付则报告错误并停止", "不续办、不重新 start",
         "不 start、不改绑", "记入本次剩余开发工作",
@@ -48,10 +48,13 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         assert "deliver 内部委托时完成后返回调用方" in workflow(name)
     assert "由 `$mdf deliver --auto-pilot` 委托时" in workflow("finish")
     assert "不得自行调用 `finish-gitflow`" in workflow("finish")
+    assert "由 `$mdf deliver --yolo` 委托时" in workflow("finish")
+    assert "直接执行本步骤" in workflow("finish")
     assert "不得将普通 next 自动升级为 deliver" in workflow("next")
     help_text = workflow("help")
     assert "$mdf deliver" in help_text
     assert "$mdf deliver --auto-pilot" in help_text
+    assert "$mdf deliver --yolo" in help_text
     assert "$mdf deliver prp-001" in help_text
 
 

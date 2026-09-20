@@ -289,9 +289,10 @@ feature/bugfix 必须有规范 child Change。
 
 **合并**
 
-由 `$mdf deliver --auto-pilot` 委托时，步骤 9 通过后必须返回 deliver，待其取得
-用户对 Gitflow 收口的确认后才执行本步骤；不得自行调用 `finish-gitflow`。
-独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
+由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 则步骤 9 通过后必须返回
+deliver，待其取得用户对 Gitflow 收口的确认后才执行本步骤；
+不得自行调用 `finish-gitflow`。由 `$mdf deliver --yolo` 委托时步骤 9 通过后
+直接执行本步骤，不返回确认。独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 调用 `finish-gitflow --repo "$REPO_ROOT"`。feature/bugfix 不 fetch、不 push；
 no-ff 合并到本地 develop，删除本地源分支。角色分支仍在则失败。
 release/hotfix 要求 origin；首次调用 fetch 后要求本地 master/develop 与远端一致；

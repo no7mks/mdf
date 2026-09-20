@@ -32,38 +32,38 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 边界不明 ─────────────────────────────→ 3 Dispatch
-                 ├──── 材料缺失 ─────────────────────────────→ [停止并报告]
+                 ├──── 边界不明 ──────────────────────────────────────→ 3 Dispatch
+                 ├──── 材料缺失 ──────────────────────────────────────→ [停止并报告]
                  │
-                 ├──── bootstrap ────────────────────────────→ references/bootstrap.md
-                 ├──── init migrate / migrate ───────────────→ references/migrate.md
-                 ├──── init ─────────────────────────────────→ references/init.md
-                 ├──── intake ───────────────────────────────→ references/intake.md
-                 ├──── tree [--depth N] ─────────────────────→ references/tree.md
-                 ├──── prp tree ─────────────────────────────→ references/tree.md
-                 ├──── next? / next？ ───────────────────────→ references/tree.md
-                 ├──── next [--depth N] ─────────────────────→ references/next.md
-                 ├──── deliver [<target>] [--auto-pilot] ────→ references/deliver.md
-                 ├──── start ────────────────────────────────→ references/start.md
-                 ├──── design ───────────────────────────────→ references/design.md
-                 ├──── write-tests ──────────────────────────→ references/write-tests.md
-                 ├──── implement ────────────────────────────→ references/implement.md
-                 ├──── converge ─────────────────────────────→ references/converge.md
-                 ├──── code-review ──────────────────────────→ references/code-review.md
-                 ├──── fact update ──────────────────────────→ references/fact-update.md
-                 ├──── prp split ────────────────────────────→ references/prp-split.md
-                 ├──── finish ───────────────────────────────→ references/finish.md
-                 ├──── fact audit ───────────────────────────→ references/fact-audit.md
-                 ├──── clarify <议题> ───────────────────────→ references/clarify.md
-                 ├──── bug create ───────────────────────────→ references/bug-create.md
-                 ├──── prp create ───────────────────────────→ references/prp-create.md
-                 ├──── prp review ───────────────────────────→ references/prp-review.md
-                 ├──── archive ──────────────────────────────→ references/archive.md
-                 ├──── codewiki generate ────────────────────→ references/codewiki-generate.md
-                 ├──── codewiki update ──────────────────────→ references/codewiki-update.md
-                 ├──── jot / jot promote ────────────────────→ references/jot.md
-                 ├──── help / help <intent> ─────────────────→ references/help.md
-                 └──── upgrade ──────────────────────────────→ references/upgrade.md
+                 ├──── bootstrap ─────────────────────────────────────→ references/bootstrap.md
+                 ├──── init migrate / migrate ────────────────────────→ references/migrate.md
+                 ├──── init ──────────────────────────────────────────→ references/init.md
+                 ├──── intake ────────────────────────────────────────→ references/intake.md
+                 ├──── tree [--depth N] ──────────────────────────────→ references/tree.md
+                 ├──── prp tree ──────────────────────────────────────→ references/tree.md
+                 ├──── next? / next？ ────────────────────────────────→ references/tree.md
+                 ├──── next [--depth N] ──────────────────────────────→ references/next.md
+                 ├──── deliver [<target>] [--auto-pilot] [--yolo] ────→ references/deliver.md
+                 ├──── start ─────────────────────────────────────────→ references/start.md
+                 ├──── design ────────────────────────────────────────→ references/design.md
+                 ├──── write-tests ───────────────────────────────────→ references/write-tests.md
+                 ├──── implement ─────────────────────────────────────→ references/implement.md
+                 ├──── converge ──────────────────────────────────────→ references/converge.md
+                 ├──── code-review ───────────────────────────────────→ references/code-review.md
+                 ├──── fact update ───────────────────────────────────→ references/fact-update.md
+                 ├──── prp split ─────────────────────────────────────→ references/prp-split.md
+                 ├──── finish ────────────────────────────────────────→ references/finish.md
+                 ├──── fact audit ────────────────────────────────────→ references/fact-audit.md
+                 ├──── clarify <议题> ────────────────────────────────→ references/clarify.md
+                 ├──── bug create ────────────────────────────────────→ references/bug-create.md
+                 ├──── prp create ────────────────────────────────────→ references/prp-create.md
+                 ├──── prp review ────────────────────────────────────→ references/prp-review.md
+                 ├──── archive ───────────────────────────────────────→ references/archive.md
+                 ├──── codewiki generate ─────────────────────────────→ references/codewiki-generate.md
+                 ├──── codewiki update ───────────────────────────────→ references/codewiki-update.md
+                 ├──── jot / jot promote ─────────────────────────────→ references/jot.md
+                 ├──── help / help <intent> ──────────────────────────→ references/help.md
+                 └──── upgrade ───────────────────────────────────────→ references/upgrade.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -84,8 +84,8 @@ disable-model-invocation: true
 与 `tree [--depth N]` 的深度可省略；`$mdf tree`、`$mdf prp tree`、
 `$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，不得当未知调用送
 help。`$mdf next` 无问号时执行 `references/next.md`。
-`$mdf deliver [<target>] [--auto-pilot]` 仍是 deliver，不是独立 intent。
-`--auto-pilot` 可在 target 前或后；target 由 deliver 解析。
+`$mdf deliver [<target>] [--auto-pilot] [--yolo]` 仍是 deliver，不是独立 intent。
+`--auto-pilot` 与 `--yolo` 可在 target 前或后；target 由 deliver 解析。
 start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、

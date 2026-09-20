@@ -124,7 +124,7 @@ owner）、strategy（`qa_strategy`、`dev_strategy`、`review_strategy`）。
 未带的 intent 不写、不问、不提。
 用户可改人数或策略；改后按上列规则重新展示，不得静默沿用旧值。
 必须取得明确确认才进入创建；不得把沉默当作同意。
-由 `$mdf deliver --auto-pilot` 委托时本步按已给参数与上述默认值自裁定，
+由 `$mdf deliver --auto-pilot` 或 `--yolo` 委托时本步按已给参数与上述默认值自裁定，
 不向用户提问。
 
 验收：用户明确确认将冻结的 roster。
