@@ -174,10 +174,10 @@ quick 加已关联交付 suite），逐项记录命令、退出状态与 `suites
 分层后 bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联；
 返回 `unknown_suite`（引用尚未写入 manifest 的名称）时停止，询问用户是否新建。
 证据只覆盖 quick 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
-核对输入指纹、suite 与全绿结果。
+核对输入 fingerprint、suite 与全绿结果。
 不能用仅检查文档结构的 full validation 代替业务验证。
 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
-非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价门禁之后）失败时，
+非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价 gate 之后）失败时，
 必须尝试补一条 quick 复现用例，并在本轮记录的「quick 复现」字段写明结果。
 
 四种分支均在 `changes/unreleased/<slug>/code-review.md` 按轮追加审查记录，
@@ -201,5 +201,5 @@ finish 核对记录中的基线、各轮应派份数的审查结果、最终复�
 一律作为增量新一轮从 1 开始，左端点为集成前 final_head，以集成后的 HEAD 重做
 1 份本轮范围审查与当前交付所需 suite。不复用集成前报告。无有效上轮记录时
 按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
-feature 还须通过 CLI 指纹检查。
+feature 还须通过 CLI fingerprint 检查。
 记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。

@@ -63,8 +63,8 @@
 | 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | Resolve proposal | 脚本 | 用 `list` 查重并确认单个 Proposal | list 结果、唯一对象 | 3 | 命中则停止；否则留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
-| 4 | Confirm | 约束 | 展示边界、排除项与依赖，取得 draft 确认 | 用户明确确认 | 5 | 取消停止；来源 2；事实 3 |
-| 5 | Create draft | 脚本 | 确认 slug，生成 ID、写 draft、校验并回读 | 零 finding、对象与 diff | 6 | 保留现场，停止 |
+| 4 | Confirm | 约束 | 展示边界、排除项与依赖，取得 draft 确认 | 用户明确确认 | 5 | 取消停止；来源变回 2；否则事实 3 |
+| 5 | Create draft | 脚本 | 写 draft、校验、提交并 planning land | 零 finding、diff、land | 6 | 保留现场，停止 |
 | 6 | Report | 约束 | 报告 draft、事实、排除项与后续评审入口 | 结果摘要、依赖 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -136,6 +136,7 @@ planning 工作区时留在本步。
 
 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、
 确认事实与完整 diff，核对 schema、必填章节、`draft` 状态和依赖。
+通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 
 验收：draft Proposal、校验退出 0 且零 finding、回读结果与 diff。
 

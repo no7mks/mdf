@@ -61,7 +61,7 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
         "主 Agent 分派前和 subagent 首次操作时都运行内部 CLI",
         "不得假设 subagent 继承主 Agent cwd", "不悄悄降级串行",
         "不在任一路仍运行时执行 converge 或删除角色 worktree",
-        "tests（qa）或 implementation（dev）指纹", "同一可写 worktree 不并发派工",
+        "tests（qa）或 implementation（dev）fingerprint", "同一可写 worktree 不并发派工",
         "code-review 内部按 roster.reviewers 启动独立 subagent",
         "仅一路未完成走步骤 3",
         "禁止把主 Agent 会话切离 owner",

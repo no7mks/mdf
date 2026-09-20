@@ -31,7 +31,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check repo | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth | 2 | 停止并报告 |
+| 1 | Check repo | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth、manifest ready | 2 | 停止并报告 |
 | 2 | Run CLI | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
 | 3 | Render tree | 脚本 | 原样展示 CLI 的 diagram、index 与 hidden | 树、索引、hidden | 结束 | 缺字段或格式不符则停止 |
 

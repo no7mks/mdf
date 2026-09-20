@@ -62,7 +62,7 @@
 | 1 | Check entry | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
 | 2 | Resolve bug | 脚本 | 用 `list` 查重并确认单个 Bug | list 结果、唯一对象 | 3 | 命中则停止；否则留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐行为、复现、影响及必填字段 | 完整必填事实 | 4 | 不写对象，停止 |
-| 4 | Confirm | 约束 | 展示边界和排除范围，取得明确 open 确认 | 用户确认 | 5 | 取消停止；来源 2；事实 3 |
+| 4 | Confirm | 约束 | 展示边界和排除范围，取得明确 open 确认 | 用户确认 | 5 | 取消停止；来源变回 2；否则事实 3 |
 | 5 | Create bug | 脚本 | 确认 slug，生成 ID、写 open、校验并回读 | 零 finding、对象与 diff | 6 | 保留现场，停止 |
 | 6 | Report | 约束 | 报告 open Bug、确认事实和排除范围 | 结果摘要 | 结束 | 停止 |
 
@@ -85,7 +85,7 @@
 **对象**
 
 接收用户手动提供的单个 Bug 事实；一次不得创建多个对象。
-运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed` 对照 `title` 与正文查重，
+运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected` 对照 `title` 与正文查重，
 命中既有 Bug 时不新建，提示在既有对象中补充；不逐篇翻阅 `docs/bugs/`。
 外部想法、 当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
 
