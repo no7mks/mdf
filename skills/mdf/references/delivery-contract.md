@@ -69,11 +69,13 @@ owner 仍汇总裁定，不按票数。
 review_strategy 与 `models.code-review` 可在 code-review 覆盖。deliver 把
 strategy / models 转交给 start、design、code-review；`--roster` 只转交 start。
 未知 `--` token 停止询问。
-每个 `--*-model` 取随后一个 token；未带的 intent 不写、不问、不提。
+每个 `--*-model` 取随后一个 token（口语整句，可含空格）；未带的 intent 不写、
+不问、不提。
 `models` 按 intent 可选，键只允许 `write-tests`、`implement`、`code-review`。
-Agent 分派某 intent 的 subagent 时只读取并写入该键；没有则不提模型或
-effort。不得把其他 intent 的模型写入本路任务。策略字段的 JSON 键为下划线
-形式。
+值为一句口语描述：可点名一个或多个模型，不要求官方 id 或固定分隔格式。
+Agent 分派某 intent 的 subagent 时只读取并写入该键，现场解析并选用；该路有
+多名执行者时可把多个模型分给他们。没有则不提模型或 effort。不得把其他
+intent 的模型写入本路任务。策略字段的 JSON 键为下划线形式。
 本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate

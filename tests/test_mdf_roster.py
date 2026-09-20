@@ -52,6 +52,9 @@ def test_freeze_roster_defaults_and_coercion():
     assert freeze_roster(
         "feature", models={"code-review": "opus"},
     ) == frozen(1, 1, 2, models={"code-review": "opus"})
+    assert freeze_roster(
+        "feature", models={"code-review": "opus 和 sonnet"},
+    ) == frozen(1, 1, 2, models={"code-review": "opus 和 sonnet"})
     with pytest.raises(MDFError, match="按 intent"):
         require_roster(frozen(1, 1, 3, models="opus"))
     with pytest.raises(MDFError, match="只接受"):

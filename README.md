@@ -51,7 +51,8 @@ final_head 以来的增量，并复核上轮问题。默认每人全范围（rep
 分工；`$mdf start` / `deliver` 可带 `--roster`（solo / min-tdd /
 competing-pair / coop-pair）。`$mdf start` / `design` / `deliver` /
 `code-review` 可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--write-tests-model`、`--implement-model`、`--code-review-model`。
+`--write-tests-model`、`--implement-model`、`--code-review-model`；
+值为口语描述，可点名一个或多个模型。
 主 Agent 汇总裁定、修复并复核。前三种分支从固定起点审查，release 从上一正式发布版本审查。
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
 冲突自动尝试解决；集成产生新提交后，仅非本交付 `docs/` 增量则跳过 code-review

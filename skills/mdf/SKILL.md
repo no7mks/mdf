@@ -89,7 +89,8 @@ help。`$mdf next` 无问号时执行 `references/next.md`。
 start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、
-`--code-review-model`；由对应 intent 解析并写入 roster。
+`--code-review-model`；由对应 intent 解析并写入 roster。`--*-model` 值为口语
+描述，可点名一个或多个模型。
 fact update、fact audit 可带 `--scope branch|full|paths`（省略为 branch）。
 upgrade 可带 `--source`。未知 `--` token 停止询问。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。

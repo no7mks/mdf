@@ -111,7 +111,8 @@ PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写�
 解析将冻结的 roster：未指定 `--roster` 时 feature 默认 `min-tdd`，其他 kind
 默认 `solo`；再叠加本次 `--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、
-`--code-review-model` 与对话中已确认的人数。一侧为 0 另一侧 ≥1
+`--code-review-model` 与对话中已确认的人数。对话里口语点名的模型（可多个、
+不要求官方 id）写入对应 `--*-model` 一句字符串。一侧为 0 另一侧 ≥1
 时把 0 抬成 1。未指定细项策略时随 named roster：solo/min-tdd/competing-pair
 为 `best-of-n`+`replicate`，coop-pair 为 qa/dev `partition`。
 `--roster` 取值：`solo` / `min-tdd` / `competing-pair` / `coop-pair`。
@@ -119,7 +120,7 @@ PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写�
 向用户展示 named roster（显式名称或 kind 默认）、member（owner 恒为 1，以及
 `qa`、`dev`、`reviewers` 人数与将创建的 qa/dev 角色分支；`0,0` 只建
 owner）、strategy（`qa_strategy`、`dev_strategy`、`review_strategy`）。
-若本次带了任一 `--*-model`，按 intent 展示对应字符串。
+若本次带了任一 `--*-model`，按 intent 展示对应字符串（口语，可多个模型）。
 未带的 intent 不写、不问、不提。
 用户可改人数或策略；改后按上列规则重新展示，不得静默沿用旧值。
 必须取得明确确认才进入创建；不得把沉默当作同意。

@@ -28,6 +28,7 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "--write-tests-model", "--implement-model", "--code-review-model",
         "--roster", "已有交付再带 `--roster` 则停止", "原样转交细项",
         "不得把其他 intent 的模型写入本路任务",
+        "口语描述", "可多个模型", "现场解析",
     ):
         assert rule in text
     for name, key in (
@@ -38,6 +39,8 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         body = workflow(name)
         assert f"含 `{key}`" in body
         assert "不得写入其他 intent 的模型" in body
+        assert "按口语描述现场解析" in body
+        assert "可多个模型" in body
     assert "不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件" in text
     for name in ("start", "design", "write-tests", "implement", "converge", "code-review", "finish"):
         assert f"references/{name}.md" in text

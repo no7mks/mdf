@@ -213,6 +213,8 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "未带的 intent 不写、不问、不提" in text
     assert "不得把沉默当作同意" in text
     assert "已锁定的 release 或 hotfix 上修复 Bug 不走本 intent" in text
+    assert "口语点名的模型" in text
+    assert "不要求官方 id" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"其他种类通过 ─+→ 3 Confirm roster", diagram)
     assert re.search(r"feature 通过", diagram)

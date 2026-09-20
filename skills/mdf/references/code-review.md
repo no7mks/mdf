@@ -133,7 +133,8 @@ review_head、工作目录、目标、验收、适用设计材料与相关当前
 不安排分工，不按文件、模块或领域拆分，不共享其他审查者结论。
 `partition` 时 owner 按 design 已有切片或本步切开的范围派工，每人只审自己那片；
 仍不共享其他审查者结论。调用可带 `--review-strategy` / `--code-review-model` 覆盖冻结值，
-派工前运行 `delivery roster` 写入。roster.models 含 `code-review` 时写入该值；
+派工前运行 `delivery roster` 写入。roster.models 含 `code-review` 时写入该值，
+按口语描述现场解析（可多个模型，可分给本轮多名审查者）；
 没有则不提。不得写入其他 intent 的模型。
 增量新一轮还必须带上轮已采纳项与未解决项；不能只看新 diff 假装旧问题消失。
 finish 集成增量轮（1 人）只使用该已汇总清单，不得把上轮多份独立报告交给本轮

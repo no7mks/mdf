@@ -259,8 +259,8 @@ start；strategy / models 也可转交给 design、code-review。
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
 不在当前目录开分支，不 push。开分支前展示 member、strategy 与 models
-并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；人数 ≥1
-时建立 qa/dev 角色树。
+并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；`--*-model`
+为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
 
 `$mdf design`
 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
