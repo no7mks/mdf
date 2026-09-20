@@ -26,7 +26,8 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 不记录 gate。它不是用户主线箭头上的一站。
 bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
 implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
-code-review 的独立审查份数取 roster.reviewers（默认 3），见 `references/code-review.md`。
+code-review 的独立审查份数取 roster.reviewers（默认 3）；finish 集成产生的
+不可跳过增量新一轮为 1，不改冻结 roster。见 `references/code-review.md`。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
 可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在

@@ -147,14 +147,17 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
   跳过说明（merge commit、路径清单）。本交付文档 = 当前对象文件（feature 的
   PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象）以及本分支自
   start_commit 到集成前 HEAD 改过的 `docs/` 路径。路径不明则不可跳过。
-- 不可跳过时，以集成后的 HEAD 执行增量新一轮 code-review：左端点为集成前
-  final_head，重新固定 review_head，按 roster.reviewers 覆盖增量并复核上轮问题，
+- 不可跳过时，上轮多人结论必须已由 owner 汇总进已采纳/未解决清单并固定
+  final_head，不得把上轮多份原文交给本轮唯一 reviewer 去合并。然后
+  以集成后的 HEAD 执行增量新一轮 code-review：左端点为集成前 final_head，
+  重新固定 review_head，本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
   完成裁定、修复与所需 suite。不复用集成前报告，也不将集成当作旧审查的修复续办。
-  无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过。
+  无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为
+  roster.reviewers。
 - 主线已包含且审查证据有效时无需重复合并或审查；证据缺失或过期时内部执行 code-review，
   通过后继续本次 finish。feature 仍须满足 code-review 的 design/converge 前置条件。
 
-四种分支均须有完整且有效的 roster.reviewers 份独立审查、主 Agent 裁定、修复复核与验证记录。
+四种分支均须有完整且有效的各轮应派份数独立审查、主 Agent 裁定、修复复核与验证记录。
 已收口 release/hotfix 只核对已有集成与审查证据；若需要新集成或实现修改，停止报告收口状态不一致，
 不得覆盖版本目录或改写已开始发布的源提交。
 

@@ -468,7 +468,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     for rule in (
         "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
         "全部审查结果返回前不修改", "以证据裁定，不按票数决定",
-        "不强制再次启动审查 subagent", "不足 roster.reviewers 个", "无法补齐则停止",
+        "不强制再次启动审查 subagent", "不足本轮应派人数", "无法补齐则停止",
     ):
         assert rule in text
 
@@ -488,7 +488,9 @@ def test_code_review_covers_branch_starts_and_previous_release():
         assert rule in text
     finish = workflow("finish")
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
-    assert "四种分支均须有完整且有效的 roster.reviewers 份独立审查" in finish
+    assert "四种分支均须有完整且有效的各轮应派份数独立审查" in finish
+    assert "本轮应派人数为 1" in finish
+    assert "不得把上轮多份原文交给本轮唯一 reviewer 去合并" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
     assert "不启动 code-review、" in finish
     assert "不重验所需 suite" in finish
