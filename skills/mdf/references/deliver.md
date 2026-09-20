@@ -27,12 +27,14 @@
                  │
                  ├──── 阶段完成 ────────→ 2 Select
                  └──── 失败或待确认 ────→ [按原流程交接]
+
 ┌──────────────────────────────────┐
 │ 4 Parallel                       │
 └────────────────┬─────────────────┘
                  │
                  ├──── 全部交接通过 ────→ 2 Select
                  └──── 失败或待确认 ────→ [保留各路现场并报告]
+
 ┌──────────────────────────────────┐
 │ 5 Report                         │
 └────────────────┬─────────────────┘
@@ -153,7 +155,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 步骤 2 结合原步骤、对话确认、未完成子步骤、产物、Git 历史及执行者状态判断。
 按下表自上而下命中即停止，不并行套用多行。
 已完成且证据有效的阶段不重做；不能仅凭 gate 文件存在或一次 check 成功判断整个阶段完成，
-还须核对该阶段要求的提交、语义结论和相关内容指纹。过期证据按原阶段规则补审补验。
+还须核对该阶段要求的提交、语义结论和相关内容 fingerprint。过期证据按原阶段规则补审补验。
 角色尚在时从对应 qa/dev worktree 读取各路 gate 与提交，不因 owner 尚未合入就重复分派。
 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
@@ -212,7 +214,7 @@ Git common dir、设计提交、对应 intent、读写边界与完成证据，�
 主 Agent 分派前和 subagent 首次操作时都运行内部 CLI：
 `worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev> [--index N]`。
 脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
-角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>` 再检查共同基线与指纹。
+角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>` 再检查共同基线与 fingerprint。
 审查者使用 `--role owner --expected-head <review_head>`，只读验证，不合并或写入。
 
 所有命令显式指定该 worktree 的工作目录或 `git -C`，文件写入使用该 worktree 下的绝对路径。
@@ -225,7 +227,7 @@ Git common dir、设计提交、对应 intent、读写边界与完成证据，�
 一条失败时保留另一条已完成产物；如需修改共同设计，先暂停所有仍在写入的执行者。
 各路交接报告实际绝对路径、分支、最终提交 hash、gate 路径、验证/自检结果及未解决项。
 主 Agent 对各路再次调用同一 worktree-check，传入固定设计提交并追加 `--handoff`；
-脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）指纹。
+脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）fingerprint。
 失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
 合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。
 

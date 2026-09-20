@@ -83,7 +83,7 @@
 | 5 | Clarify | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | Confirm | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
 | 7 | Create object | 脚本 | 确认 slug，生成 ID、写初始对象并首次校验 | 对象、首次校验 | 8 | 保留两者，停止 |
-| 8 | Promote | 脚本 | 复验后转状态、删 Jot、再复验并提交 | 两次校验、diff、提交 | 交接并结束 | 首次保留；二次回滚停止 |
+| 8 | Promote | 脚本 | 复验、提交；Proposal 再 land | 校验、diff、提交、land | 交接并结束 | 首次保留；二次回滚停止 |
 
 ## 术语与数据结构
 
@@ -115,7 +115,8 @@
 
 **追加**
 
-调用 `make-jot-id`、生成简短标题、在 `docs/JOTS.md` 末尾追加完整 marker 条目， 保留原始含义和细节，再运行
+调用 `make-jot-id`、从原文压缩一句短标题（不另写生成器），
+在 `docs/JOTS.md` 末尾追加完整 marker 条目，保留原始含义和细节，再运行
 `targeted validation`。
 
 验收：新增条目和 diff。
@@ -190,3 +191,4 @@ Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。
 
 异常与交接：第一次失败保留两者，第二次失败先回滚再保留两者，均报告 findings。
 成功时将本次创建与移除作为同一个独立 commit 提交。
+提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。

@@ -16,7 +16,7 @@ delivery.json、gates/、code-review.md；finish 在同一目录补齐 CHANGE.md
 `changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
 objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只相对当前文件
 （`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。搬迁时 CLI 改写仍有效
-的相对路径。delivery.json 与 gate 内路径一律仓库相对；指纹规范化用仓库相对或
+的相对路径。delivery.json 与 gate 内路径一律仓库相对；fingerprint 规范化用仓库相对或
 `@delivery/`，不是第二种 href 写法。
 
 ## 阶段与执行责任
@@ -29,7 +29,8 @@ implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
 release 与 hotfix 可在 owner 上直接修复已确认的 open Bug，标为 `fixed`；不另开
 bugfix 分支，也不写 bugfix child Change。
 code-review 的独立审查份数取冻结的 roster.reviewers（solo 默认 1，min-tdd
-默认 2，pair 类默认 3），见 `references/code-review.md`。
+默认 2，pair 类默认 3）；finish 集成产生的不可跳过增量新一轮为 1，不改冻结
+roster。见 `references/code-review.md`。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
 可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
@@ -78,7 +79,7 @@ effort。不得把其他 intent 的模型写入本路任务。策略字段的 JS
 ## Gate
 
 通过 `delivery status/check/record/verify/integrate/roster` 执行确定性操作。
-每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容指纹；避免并行写同一状态文件。
+每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容 fingerprint；避免并行写同一状态文件。
 write-tests 和 implement 只要求已提交 design。write-tests 写完可编译或可加载
 执行的测试即完成，不要求全绿；全绿由 converge 负责，且相对**当前交付所需
 suite**，不等于 manifest 里每一条命令。converge 需两路完成，
@@ -97,9 +98,9 @@ suite 名列表，不得使用 quick/full）。
 代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
 `fact-update` gate 绑定 `facts`、`implementation` 与 `design`：只改测试或验证配置不使
 事实审阅过期，但仍使全绿与 code-review 过期。
-`code` 指纹覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件；
+`code` fingerprint 覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件；
 ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
-记录文件不参与其自身校验对象的指纹。缺失或过期时原地补验，不回退 intent。
+记录文件不参与其自身校验对象的 fingerprint。缺失或过期时原地补验，不回退 intent。
 
 ### Suite 与执行矩阵
 

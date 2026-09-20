@@ -93,14 +93,14 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | Integrate and review | 约束 | 核版本；集成并审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
+| 2 | Integrate and review | 约束 | 核版本；集成；跳过或审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 脚本 | 用 `list` 列 Bug，准备 closures 并取得接受 | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 通过→10；feature/bugfix 前进→2 | 其余前进或未过则停 |
+| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 10 | feature/bugfix 前进→2；其余前进或未过则停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
 
 ## 术语与数据结构
@@ -137,20 +137,29 @@ release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 c
 
 - feature/bugfix 使用本地 develop，不 fetch、不 push；release/hotfix 使用 master，
   先 fetch origin 并核对本地 master/develop 与远端一致，不自动覆盖分歧。
-- 确认 clean，记录目标主线的完整 commit；若它尚不是当前 HEAD 的祖先，
+- 确认 clean，记录目标主线的完整 commit 与当前 HEAD；若它尚不是当前 HEAD 的祖先，
   运行 `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo "$REPO_ROOT"
   --commit <目标commit>`。禁止 rebase，不在主线上解决交付冲突。
   冲突时 CLI 保留 MERGE_HEAD；Agent 按已确认目标、设计及两侧改动自动尝试 resolve，
   逐项核对后提交 merge。不得整侧覆盖或削弱测试来消除冲突；语义不明、
   需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
-- 只要本次集成产生新提交，无论是否冲突，都以集成后的 HEAD 执行增量新一轮
-  code-review：左端点为集成前 final_head，重新固定 review_head，按 roster.reviewers 覆盖增量
-  范围并复核上轮问题，完成裁定、修复与所需 suite。不复用集成前报告，也不将
-  集成当作旧审查的修复续办。无有效上轮记录时按首轮从交付起点审到集成后 HEAD。
+- 本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
+  全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：不启动 code-review、
+  不重验所需 suite，沿用上轮 final_head 与有效全绿；在 `code-review.md` 追加
+  跳过说明（merge commit、路径清单）。本交付文档 = 当前对象文件（feature 的
+  PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象）以及本分支自
+  start_commit 到集成前 HEAD 改过的 `docs/` 路径。路径不明则不可跳过。
+- 不可跳过时，上轮多人结论必须已由 owner 汇总进已采纳/未解决清单并固定
+  final_head，不得把上轮多份原文交给本轮唯一 reviewer 去合并。然后
+  以集成后的 HEAD 执行增量新一轮 code-review：左端点为集成前 final_head，
+  重新固定 review_head，本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
+  完成裁定、修复与所需 suite。不复用集成前报告，也不将集成当作旧审查的修复续办。
+  无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为
+  roster.reviewers。
 - 主线已包含且审查证据有效时无需重复合并或审查；证据缺失或过期时内部执行 code-review，
   通过后继续本次 finish。feature 仍须满足 code-review 的 design/converge 前置条件。
 
-四种分支均须有完整且有效的 roster.reviewers 份独立审查、主 Agent 裁定、修复复核与验证记录。
+四种分支均须有完整且有效的各轮应派份数独立审查、主 Agent 裁定、修复复核与验证记录。
 已收口 release/hotfix 只核对已有集成与审查证据；若需要新集成或实现修改，停止报告收口状态不一致，
 不得覆盖版本目录或改写已开始发布的源提交。
 

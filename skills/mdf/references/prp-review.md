@@ -63,7 +63,7 @@
 | 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
 | 4 | Clarify | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
 | 5 | Confirm | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
-| 6 | Validate and ready | 脚本 | 先校验 draft，通过才写 ready 并回读 | 校验结果、回读状态 | 结束 | 保留现场，停止 |
+| 6 | Validate and ready | 脚本 | 校验后写 ready、提交并 planning land | 回读状态、land | 结束 | 保留现场，停止 |
 
 ## 术语与数据结构
 
@@ -142,6 +142,7 @@ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
 **就绪**
 
 先在 `draft` 状态运行 `targeted validation`，通过后转为 `ready`。
+回读确认状态为 `ready` 后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 
 验收：validation 通过；写回后回读对象，确认状态为 `ready`。
 

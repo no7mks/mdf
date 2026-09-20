@@ -257,13 +257,13 @@ verification:
     billing: [unit, billing-e2e]
 ```
 
-- 无 `suites`：未分层。全部项同时属于 quick 与 full，门禁跑全部项，与今日一致。
+- 无 `suites`：未分层。全部项同时属于 quick 与 full，gate 跑全部项，与今日一致。
 - 有 `suites`：已分层。key 为 kebab-case suite 名，value 为非空、不重复且都存在于
   `commands[].id` 的列表。`quick` 必须存在；`full` 隐含为全部项，不得声明。
 - 除 `quick` 外的 key 是交付 suite。同一 id 可属多个 suite；不属任何 suite 的项
   只由 full 跑。suite 名须稳定，供 design policy 与 bugfix `suites.json` 引用。
 - lint / typecheck / build / `git diff --check` 等非测试项建议列入 quick，
-  避免日常门禁漏掉静态检查。
+  避免日常 gate 漏掉静态检查。
 - 由未分层改为分层是一次手工修改 manifest：补 `suites` 映射。不涉及
   `$mdf init migrate`。
 

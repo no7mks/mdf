@@ -143,7 +143,7 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 
 从确认方案提供八项基线、最近稳定版本、非空 `verification.commands` 和
 `implementation_roots`。从未发布时版本为 `none`；没有业务检查时可用 `git diff --check`。
-init 只产出 `commands`，未分层，门禁跑全部项。分层由消费方事后在 manifest
+init 只产出 `commands`，未分层，gate 跑全部项。分层由消费方事后在 manifest
 同级补 `suites` 映射。
 不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
 单 module 默认使用 `src`，多 module 使用各 `<module>/src`；已有模板使用实际目录并在

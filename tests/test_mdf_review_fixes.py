@@ -245,11 +245,15 @@ def test_codewiki_runtime_checks_existing_environment_without_installing(tmp_pat
 def test_review_resume_routes_to_repair_without_replacing_initial_head():
     from conftest import skill_dir
     text = (skill_dir("mdf") / "references/code-review.md").read_text()
-    assert "修复续办 3；否则 2" in text
+    assert "修复续办 3；无新则结束；否则 2" in text
     assert "已齐审查且修复续办" in text
     assert "保留原 review_head，不覆盖原报告" in text
     assert "首轮未齐时进入 2 补齐" in text
     assert "增量新一轮" in text
+    assert "已齐审查且无新改动" in text
+    assert "非本交付 `docs/` 不是新的交付改动" in text
+    assert "finish 集成增量轮为 1" in text
+    assert "不得把上轮多份独立报告交给本轮" in text
     assert "git diff <previous_final_head> <review_head>" in text
     assert "仍解决 / 复开 / 不适用" in text
     assert "changes/unreleased/<slug>/code-review.md" in text

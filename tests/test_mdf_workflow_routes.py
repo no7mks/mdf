@@ -105,7 +105,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
 def test_archive_preview_is_terminal_and_apply_requires_non_preview():
     text = workflow("archive")
     table = rows(text)
-    assert table[2][5] == "预览结束；否则 4"
+    assert table[2][5] == "预览结束；非预览 4"
     assert "不进入实际归档" in text
     assert "仅非预览调用授权运行" in text
     diagram = text.split("```text", 1)[1].split("```", 1)[0]
@@ -164,7 +164,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
     assert table[7][5] == "9"
-    assert table[8][5] == "通过→10；feature/bugfix 前进→2"
+    assert table[8][5] == "10"
+    assert "feature/bugfix 前进→2" in table[8][6]
     assert "其余前进或未过则停" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
@@ -423,10 +424,10 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
 def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
-    assert table[0][5] == "feature/在途 2；无在途 3"
+    assert table[0][5] == "在途 2；无在途 3"
     assert table[0][6] == "多候选则问；证据不足则阻塞"
-    assert table[1][5] == "交接并结束"
-    assert table[1][6] == "不足则说明；失败按原流程交接"
+    assert table[1][5] == "查看或不足则说明；可推进则执行"
+    assert table[1][6] == "按原流程交接"
     assert table[2][1] == "Delegate"
     assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
@@ -506,7 +507,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     for rule in (
         "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
         "全部审查结果返回前不修改", "以证据裁定，不按票数决定",
-        "不强制再次启动审查 subagent", "不足 roster.reviewers 个", "无法补齐则停止",
+        "不强制再次启动审查 subagent", "不足本轮应派人数", "无法补齐则停止",
     ):
         assert rule in text
 
@@ -526,11 +527,17 @@ def test_code_review_covers_branch_starts_and_previous_release():
         assert rule in text
     finish = workflow("finish")
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
-    assert "四种分支均须有完整且有效的 roster.reviewers 份独立审查" in finish
+    assert "四种分支均须有完整且有效的各轮应派份数独立审查" in finish
+    assert "本轮应派人数为 1" in finish
+    assert "不得把上轮多份原文交给本轮唯一 reviewer 去合并" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
-    assert "都以集成后的 HEAD 执行增量新一轮" in finish
+    assert "不启动 code-review、" in finish
+    assert "不重验所需 suite" in finish
+    assert "本交付文档" in finish
+    assert "以集成后的 HEAD 执行增量新一轮" in finish
     assert "不复用集成前报告" in finish
     assert "复核上轮问题" in finish
+    assert "不得跳过" in finish
     assert "证据缺失或过期时内部执行 code-review" in finish
 
 
@@ -573,7 +580,7 @@ def test_codewiki_session_is_created_by_analyze_repo():
     generate = workflow("codewiki-generate")
     assert "读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`" in generate
     assert "save_module_tree` 并读取其写出的 `processing_order.json`" in generate
-    assert rows(workflow("codewiki-recovery"))[4][2] == "脚本"  # 移出为文件操作
+    assert rows(workflow("codewiki-recovery"))[4][2] == "约束"  # 搬移为确认后的文件操作
 
 
 def test_init_dispatches_to_bootstrap_or_migrate():
@@ -581,7 +588,7 @@ def test_init_dispatches_to_bootstrap_or_migrate():
     table = rows(text)
     assert table[0][5] == "2"
     assert table[1][3] == "内部执行 bootstrap 或 migrate"
-    assert table[1][5] == "结束"
+    assert table[1][5] == "按选择树结束"
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"未就绪的新项目 ─+→ \[内部执行 bootstrap 并返回\]", diagram)
     assert re.search(r"已有事实或已 ready ─+→ \[内部执行 migrate 并返回\]", diagram)
