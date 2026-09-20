@@ -47,7 +47,7 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 核对范围、前置条件及续办证据 | 基线、报告、检查结果 | 修复续办 3；否则 2 | 停止并报告 |
-| 2 | Review | Subagent | 按 roster.reviewers（默认 3）启动独立 subagent 覆盖本轮 | N 份完整审查 | 3 | 停止并报告 |
+| 2 | Review | Subagent | 按 roster.reviewers 启动独立 subagent 覆盖本轮 | N 份完整审查 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 汇总裁定、修复并复核 | 发现、裁定、修复依据 | 4 | 保留现场并报告 |
 | 4 | Record | 脚本 | 按需重验、保存证据并提交 | 审查记录、验证、提交 | 结束 | 缺 suite 则 1；可修则 3；否则停 |
 
@@ -119,7 +119,7 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 > 以最严苛的白盒测试专家视角审查实现代码和测试用例，主动挑战实现逻辑与测试的充分性，
 > 寻找隐藏缺陷和覆盖盲区。以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
 
-步骤 2 按 roster.reviewers（默认 3）启动独立 subagent。
+步骤 2 按冻结的 roster.reviewers 启动独立 subagent。
 `review_strategy` 默认 `replicate`：各审查者收到相同的交付
 base_commit、本轮左端点、
 review_head、工作目录、目标、验收、适用设计材料与相关当前事实页，均覆盖本轮

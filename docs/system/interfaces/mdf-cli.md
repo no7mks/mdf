@@ -315,7 +315,7 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 `<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
 不在当前目录开分支；成功 JSON 含该 `worktree`、冻结后的 `roster` 与 `roles`
 列表。`--roster` 为 `solo` / `min-tdd` / `competing-pair` / `coop-pair`：
-feature 默认 `min-tdd`，其他 kind 默认 `solo`。省略时按 kind 展开；再叠
+feature 默认 `min-tdd`（`1,1,2`），其他 kind 默认 `solo`（`0,0,1`）。省略时按 kind 展开；再叠
 `--qa` / `--dev` / `--reviewers` 与策略细项。一侧为 0 另一侧 ≥1 时把 0 抬成 1。
 roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为
 `qa/2/<owner>`。创建失败拆除已建 worktree 与分支。

@@ -75,7 +75,8 @@ release/hotfix 要稳定 SemVer。
 feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP；
 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，
-不得另选 slug。
+不得另选 slug。已锁定的 release 或 hotfix 上修复 Bug 不走本 intent，
+不创建 bugfix 分支。
 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`，
 只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选，按 `id` 与 `title` 供用户选择；
 不逐篇翻阅 `docs/proposals/`。

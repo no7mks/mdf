@@ -236,6 +236,7 @@ release notes 至少一项非空。
 **对象**
 
 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
+本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed`，取 `found_in` 为 `unreleased`
 的条目作为待分类清单，不逐篇翻阅 `docs/bugs/`。
 对每个 active 且 `found_in: unreleased` 的 Bug 分类： fixed 经二次验证后由 CLI 关闭并写 fixed_in，

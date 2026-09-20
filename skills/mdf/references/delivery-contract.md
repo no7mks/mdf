@@ -26,7 +26,10 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 不记录 gate。它不是用户主线箭头上的一站。
 bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
 implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
-code-review 的独立审查份数取 roster.reviewers（默认 3），见 `references/code-review.md`。
+release 与 hotfix 可在 owner 上直接修复已确认的 open Bug，标为 `fixed`；不另开
+bugfix 分支，也不写 bugfix child Change。
+code-review 的独立审查份数取冻结的 roster.reviewers（solo 默认 1，min-tdd
+默认 2，pair 类默认 3），见 `references/code-review.md`。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
 可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
@@ -39,8 +42,8 @@ roster 在 start 开分支前展示 member、strategy 与 models 并经确认后
 写入 `delivery.json`（有交付材料时）与
 `branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
-owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,3` + best-of-n），
-其他 kind 默认 `solo`（`0,0,3`）。也可用 `competing-pair`（`2,2,3` 竞争）
+owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,2` + best-of-n），
+其他 kind 默认 `solo`（`0,0,1`）。也可用 `competing-pair`（`2,2,3` 竞争）
 或 `coop-pair`（`2,2,3` 分工）。四种 kind 都可改人数或改名。
 qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
 `0,0` 时测试与实现都在 owner 上做。`≥1` 时 start 按人数建立

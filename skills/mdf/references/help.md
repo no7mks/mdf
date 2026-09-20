@@ -287,8 +287,8 @@ partition 时在 design.md 写明各 index 切片。
 `$mdf code-review`
 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
 用途：审查并修复实现、测试和 code smell。
-说明：支持 feature/bugfix/hotfix/release；首轮按 roster.reviewers（默认 3）
-覆盖起点区间，后续增量并复核上轮问题。
+说明：支持 feature/bugfix/hotfix/release；首轮按冻结的 roster.reviewers
+覆盖起点区间（solo 默认 1，min-tdd 默认 2，pair 类默认 3），后续增量并复核上轮问题。
 feature 位于 converge 之后；各分支均在 finish 前完成。
 默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
 

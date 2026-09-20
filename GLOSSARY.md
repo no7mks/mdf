@@ -56,7 +56,7 @@ Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal�
 一次交付在 start 时冻结的参与人数与并行策略：`qa`、`dev`、`reviewers`，
 以及 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
 owner 恒为 1，不计入可选人数。可用 `--roster` 展开命名组合（不写入材料）：
-`solo` 为 `0,0,3`；`min-tdd` 为 `1,1,3` + best-of-n；`competing-pair` 为
+`solo` 为 `0,0,1`；`min-tdd` 为 `1,1,2` + best-of-n；`competing-pair` 为
 `2,2,3` + best-of-n；`coop-pair` 为 `2,2,3` + partition。feature 默认
 `min-tdd`，其他 kind 默认 `solo`。细项可覆盖展开结果。qa 与 dev 只能同时
 为 0 或都 ≥1；一侧为 0 则抬成 1。`0,0` 时测试与实现都在 owner 上做；`≥1`

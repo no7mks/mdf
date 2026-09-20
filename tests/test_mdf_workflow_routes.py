@@ -211,6 +211,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "review_strategy" in text
     assert "未带的 intent 不写、不问、不提" in text
     assert "不得把沉默当作同意" in text
+    assert "已锁定的 release 或 hotfix 上修复 Bug 不走本 intent" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"其他种类通过 ─+→ 3 Confirm roster", diagram)
     assert re.search(r"feature 通过", diagram)
@@ -499,7 +500,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     text = workflow("code-review")
     table = rows(text)
     assert table[1][2] == "Subagent"
-    assert "roster.reviewers（默认 3）" in table[1][3]
+    assert "按 roster.reviewers 启动独立 subagent" in table[1][3]
     assert table[1][5] == "3"
     assert table[3][6] == "缺 suite 则 1；可修则 3；否则停"
     for rule in (

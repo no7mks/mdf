@@ -22,6 +22,8 @@ def test_deliver_continues_until_actual_finish_and_preserves_approvals():
         "即将调用 `finish-gitflow` 之前", "不增加该关口",
         "位置参数至多一个", "自动分辨", "分不清就询问",
         "已有在途交付则报告错误并停止", "不续办、不重新 start",
+        "不 start、不改绑", "记入本次剩余开发工作",
+        "不另开 bugfix", "不写 bugfix child Change",
         "--qa-strategy", "--dev-strategy", "--review-strategy",
         "--write-tests-model", "--implement-model", "--code-review-model",
         "--roster", "已有交付再带 `--roster` 则停止", "原样转交细项",

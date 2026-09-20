@@ -23,13 +23,15 @@ def test_freeze_roster_defaults_and_coercion():
     from mdf_core.roster import (
         freeze_roster, merge_branches, role_branch, require_roster,
     )
-    assert freeze_roster("feature") == frozen(1, 1, 3)
-    assert freeze_roster("bugfix") == frozen(0, 0, 3)
+    assert freeze_roster("feature") == frozen(1, 1, 2)
+    assert freeze_roster("bugfix") == frozen(0, 0, 1)
+    assert freeze_roster("release") == frozen(0, 0, 1)
+    assert freeze_roster("hotfix") == frozen(0, 0, 1)
     assert freeze_roster("feature", 0, 0, 2) == frozen(0, 0, 2)
-    assert freeze_roster("feature", 0, 2, None) == frozen(1, 2, 3)
+    assert freeze_roster("feature", 0, 2, None) == frozen(1, 2, 2)
     assert freeze_roster("bugfix", 2, 0, 4) == frozen(2, 1, 4)
-    assert freeze_roster("feature", named="solo") == frozen(0, 0, 3)
-    assert freeze_roster("bugfix", named="min-tdd") == frozen(1, 1, 3)
+    assert freeze_roster("feature", named="solo") == frozen(0, 0, 1)
+    assert freeze_roster("bugfix", named="min-tdd") == frozen(1, 1, 2)
     assert freeze_roster("feature", named="competing-pair") == frozen(2, 2, 3)
     assert freeze_roster("feature", named="coop-pair") == frozen(
         2, 2, 3, qa_strategy="partition", dev_strategy="partition",
@@ -49,7 +51,7 @@ def test_freeze_roster_defaults_and_coercion():
         freeze_roster("feature", qa_strategy="compete")
     assert freeze_roster(
         "feature", models={"code-review": "opus"},
-    ) == frozen(1, 1, 3, models={"code-review": "opus"})
+    ) == frozen(1, 1, 2, models={"code-review": "opus"})
     with pytest.raises(MDFError, match="按 intent"):
         require_roster(frozen(1, 1, 3, models="opus"))
     with pytest.raises(MDFError, match="只接受"):
@@ -71,7 +73,7 @@ def test_start_feature_zero_roster_has_no_role_trees(python_exe, tmp_path):
         "--proposal", "prp-001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "0",
     ))
-    assert result["roster"] == frozen(0, 0, 3)
+    assert result["roster"] == frozen(0, 0, 2)
     assert result["roles"] == {"qa": [], "dev": []}
     work = Path(result["worktree"])
     identity = json.loads(
@@ -90,7 +92,7 @@ def test_start_feature_two_devs_creates_indexed_branches(python_exe, tmp_path):
         "--proposal", "prp-001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "2",
     ))
-    assert result["roster"] == frozen(1, 2, 3)
+    assert result["roster"] == frozen(1, 2, 2)
     assert result["roles"]["qa"][0]["branch"] == "qa/feature/service-health"
     assert result["roles"]["dev"][1]["branch"] == "dev/2/feature/service-health"
     assert Path(result["roles"]["dev"][1]["worktree"]).is_dir()
@@ -150,7 +152,7 @@ def test_start_freezes_strategy_and_models(python_exe, tmp_path):
         "--code-review-model", "opus",
     ))
     expected = frozen(
-        1, 1, 3, qa_strategy="partition", dev_strategy="partition",
+        1, 1, 2, qa_strategy="partition", dev_strategy="partition",
         review_strategy="partition",
         models={"write-tests": "composer", "code-review": "opus"},
     )

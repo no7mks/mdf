@@ -7,12 +7,12 @@ from .gitutil import branch_details, run
 
 NAMED_ROSTERS = {
     "solo": {
-        "qa": 0, "dev": 0, "reviewers": 3,
+        "qa": 0, "dev": 0, "reviewers": 1,
         "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
         "review_strategy": "replicate",
     },
     "min-tdd": {
-        "qa": 1, "dev": 1, "reviewers": 3,
+        "qa": 1, "dev": 1, "reviewers": 2,
         "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
         "review_strategy": "replicate",
     },
