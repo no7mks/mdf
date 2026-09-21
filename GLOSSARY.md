@@ -126,6 +126,12 @@ write-tests 完成条件是测试已编写且可编译或可加载执行，不�
 converge（收敛）集成测试和实现，持续修复实现直到**当前交付所需 suite**通过。
 「全绿」相对该 suite，不等于 manifest 里每一条命令。
 
+## 联调通道
+
+worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。本机对端直接写入其
+`inbox/`；另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
+消息种类为 `ping`、`send`、`bug-request`、`end`。
+
 ## 测试类别与 Code Smell
 
 UT 为单元测试，PT 为属性测试，IT 为集成测试，E2E 为端到端测试；是否需要及失败标准由 `docs/system/testing/` 与设计约定。

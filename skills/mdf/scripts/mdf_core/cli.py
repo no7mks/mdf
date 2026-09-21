@@ -214,6 +214,31 @@ def build_parser() -> argparse.ArgumentParser:
     upgrade.add_argument("--dry-run", action="store_true")
     upgrade.add_argument("--expected-commit")
     upgrade.set_defaults(func=command_upgrade)
+
+    from .integrate import command_integrate
+
+    integrate = subparsers.add_parser("integrate")
+    integrate.add_argument(
+        "action",
+        choices=("init", "peer", "send", "poll", "listen", "status"),
+    )
+    integrate.add_argument("--repo", required=True)
+    integrate.add_argument("--name")
+    integrate.add_argument("--target")
+    integrate.add_argument("--token")
+    integrate.add_argument("--to")
+    integrate.add_argument(
+        "--kind", choices=("ping", "send", "bug-request", "end")
+    )
+    integrate.add_argument("--reply-to")
+    integrate.add_argument("--body")
+    integrate.add_argument("--observed")
+    integrate.add_argument("--expected")
+    integrate.add_argument("--repro")
+    integrate.add_argument("--impact")
+    integrate.add_argument("--timeout", type=float)
+    integrate.add_argument("--bind", default="127.0.0.1:8765")
+    integrate.set_defaults(func=command_integrate)
     return parser
 
 

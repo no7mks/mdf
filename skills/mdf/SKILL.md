@@ -63,7 +63,8 @@ disable-model-invocation: true
                  ├──── codewiki update ───────────────────────────────→ references/codewiki-update.md
                  ├──── jot / jot promote ─────────────────────────────→ references/jot.md
                  ├──── help / help <intent> ──────────────────────────→ references/help.md
-                 └──── upgrade ───────────────────────────────────────→ references/upgrade.md
+                 ├──── upgrade ───────────────────────────────────────→ references/upgrade.md
+                 └──── integrate ─────────────────────────────────────→ references/integrate.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -116,6 +117,7 @@ help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
 `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
 
 `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`、
-`$mdf init migrate` 与 `$mdf help <intent>` 均由选择树路由；
+`$mdf init migrate`、`$mdf help <intent>` 与 `$mdf integrate` 均由选择树路由；
+integrate 的 init、peer、send、poll、listen、status 不是独立 intent。
 这些内部材料不是独立 Skill。 CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`；
 command 与用户 intent 不要求一一对应。CLI 统一解析目标 Git 根，不假设当前目录就是目标仓库。

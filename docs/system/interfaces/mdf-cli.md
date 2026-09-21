@@ -24,8 +24,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   `branch --name`、`semver-check` 和 `prepare-git` 外，命令会按自身需要检查 Git
   根、MDF manifest 或 clean worktree。`prepare-git` 接受普通目录；已是其他仓
   库内部路径时失败，不嵌套 `git init`。`make-id --type proposal` 需要 Git 根
-  且当前分支为 `planning`。`upgrade` 要求 Git 根，不要求 manifest 或 clean
-  worktree。
+  且当前分支为 `planning`。`upgrade` 与 `integrate` 要求 Git 根，不要求
+  manifest 或 clean worktree。
 - 对象写入类 CLI 本身不创建提交；外层写入型 intent 允许并鼓励主动本地提交，
   包括如实标注状态的阶段成果，不夹带无关改动，不替代用户确认或验收。
   start、delivery integrate、finish-gitflow、planning、upgrade 与 `merge-no-ff`
@@ -61,6 +61,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `planning` | 规划工作区 |
 | `finish-gitflow` | Gitflow 合并 |
 | `upgrade` | 替换已安装 Skill |
+| `integrate` | 联调 inbox 与可选 HTTP |
 
 ## 只读命令
 
@@ -494,3 +495,27 @@ release/hotfix 的 `finish-gitflow` 在 Git common dir 的 `mdf/finish/<分支>.
 重试核对实际引用，跳过已完成的合并/tag；推送响应丢失时查询远端后继续。
 源 worktree 已移除时，可从主 worktree 使用 `--source <原release/hotfix分支>` 恢复清理。
 本地/远端被其他操作改变时拒绝恢复；不会强制对齐或覆盖既有 tag。
+
+### `integrate`
+
+```bash
+python3 skills/mdf/scripts/mdf.py integrate init --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py integrate peer --repo /path/to/repository \
+  --name backend --target /absolute/peer
+python3 skills/mdf/scripts/mdf.py integrate send --repo /path/to/repository \
+  --to backend --body "看到超时"
+python3 skills/mdf/scripts/mdf.py integrate poll --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py integrate listen --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
+```
+
+要求 Git 根，不要求 manifest 或 clean worktree，不创建提交。
+`init` 创建 `.integration/inbox/` 与 session token，并在 `.gitignore` 写入
+`.integration/`。`peer --target` 接受绝对路径、`http://host:port`，或本仓
+worktree 的分支名。`send` 省略 `--kind` 时种类为 `send`。本机 path 对端把
+消息原子写入对方 inbox。`listen` 默认绑 `127.0.0.1:8765`，只接受 POST，
+把请求落成 inbox 文件后返回已写入；`ping` 不校验 token，其余种类的 `auth`
+必须等于本侧 token；收到 `end` 后进程退出 0。`poll` 阻塞到一条未交出的
+消息后退出 0；`--timeout` 到期也退出 0，且 `timeout` 为 true。
+`bug-request` 需要 `--observed`、`--expected`、`--repro`、`--impact`。
+监听不创建 Bug，也不解释 `send` 正文。

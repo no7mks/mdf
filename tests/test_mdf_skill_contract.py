@@ -52,6 +52,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "help",
         "help <intent>",
         "upgrade",
+        "integrate",
     )
     for command in expected_commands:
         assert command in entry

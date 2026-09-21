@@ -26,6 +26,7 @@ next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无�
 不使用空值或上次调用的变量。
 clarify 与 help 不要求 Git 仓库；init/bootstrap/migrate 由 initialization 公共流程处理普通目录
 与父仓库边界。upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
+integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
 
 ## 切换工作区
 

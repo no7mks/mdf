@@ -111,6 +111,7 @@
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
+- `$mdf integrate`：在 worktree 之间收发联调消息；跨机器时可选 HTTP
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
 
@@ -155,6 +156,7 @@ $mdf prp split
 $mdf codewiki generate
 $mdf codewiki update
 $mdf upgrade
+$mdf integrate
 $mdf clarify 要不要把缓存放到 Redis
 ```
 
@@ -165,7 +167,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `next`、`deliver`、`start`、
 `design`、`write-tests`、`implement`、`converge`、`code-review`、`fact update`、
 `finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
-`upgrade`、`help`。
+`upgrade`、`integrate`、`help`。
 
 `$mdf bootstrap`
 用法：`$mdf bootstrap`
@@ -342,6 +344,13 @@ branch/paths，release 的 `--base` 为上一正式发布。独立调用须 mani
 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`。替换后在当前分支提交本次路径，
 不 push。随后重读新 Skill，同会话后续调用按新副本执行；doctor 报布局或 schema
 不符时建议 `$mdf migrate`。
+
+`$mdf integrate`
+用法：`$mdf integrate`
+用途：在两个 worktree 之间收发联调消息。
+说明：本机写入对方 `.integration/inbox/`。跨机器时对方显式启动 HTTP，
+默认只绑 `127.0.0.1`。种类为 `ping`、`send`、`bug-request`、`end`；
+省略 `--kind` 时是 `send`。`bug-request` 不直接创建 Bug。
 
 `$mdf help`
 用法：`$mdf help` 或 `$mdf help <intent>`
