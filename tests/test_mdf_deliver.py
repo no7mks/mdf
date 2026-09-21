@@ -71,6 +71,8 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
         "不在任一路仍运行时执行 converge 或删除角色 worktree",
         "tests（qa）或 implementation（dev）fingerprint", "同一可写 worktree 不并发派工",
         "code-review 内部按 roster.reviewers 启动独立 subagent",
+        "design 与 converge 不走步骤 4",
+        "由各 intent 自行启动恰好 1 个 owner",
         "仅一路未完成走步骤 3",
         "禁止把主 Agent 会话切离 owner",
         "禁止 `move_agent_to_root`",

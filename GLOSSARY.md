@@ -68,7 +68,8 @@ index 全部合入。review 默认 `replicate`（每人覆盖同一份本轮范�
 配置，键只允许 `write-tests`、`implement`、`code-review`。值为一句口语描述，
 可点名一个或多个模型，不要求官方 id。Agent 分派该 intent 时现场解析并选用；
 该路有多名执行者时可把多个模型分给他们。省略该键则该路不讨论模型。reviewers
-是 code-review 并发人数。
+是 code-review 并发人数。design 的 Baseline 与 converge 各由对应 intent 启动
+恰好 1 个 owner subagent，不计入 roster，不可配人数。
 
 ## Auto-pilot
 

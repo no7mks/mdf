@@ -35,6 +35,8 @@ roster。见 `references/code-review.md`。
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
 可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
 Gitflow 收口前确认；`--yolo` 跳过该确认。
+design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，
+不计入 roster；deliver 步骤 4 只覆盖可并行的 qa/dev。
 不新增独立 Owner 调度服务或统一状态协议。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
@@ -51,6 +53,10 @@ qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 �
 `qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`。
 design 只在 owner 提交共用代码底座；两路不得各自再写底座。
 design 不创建角色 worktree。
+Clarify 由当前 Agent 在主会话完成；Baseline 由该 intent 启动恰好 1 个
+owner subagent 写入。converge 由该 intent 启动恰好 1 个 owner subagent
+执行集成、验证与记录；测试修改批准回主会话。均不可配人数；无法启动则
+停止，不降级由当前 Agent 代做。
 write-tests 与 implement 在对应角色树上执行，入口先 no-ff merge owner；
 `0,0` 时在 owner 上编写测试与实现。qa 与 dev 互不传入路径。
 同侧 ≥2 时并行互不知情。qa/dev 默认 `best-of-n`：owner 选 base 吸收优点，

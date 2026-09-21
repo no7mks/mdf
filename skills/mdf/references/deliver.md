@@ -197,6 +197,8 @@ roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implem
 禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。步骤 4 的 subagent
 按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
+design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner
+subagent。主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
 code-review 内部按 roster.reviewers 启动独立 subagent 只读审查，按其契约执行，
 主 Agent 汇总修复。分派时只把该 intent 在 roster.models 中的值写入对应任务，
 按口语描述现场解析（可多个模型）；

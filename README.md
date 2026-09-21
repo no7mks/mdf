@@ -59,7 +59,8 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 与所需 suite，否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
 deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent，
 验证其已有 qa/dev worktree 身份，
-等待交接后再收敛。尚未 start 时先委托 start。可传位置参数 target（PRP 或 Bug ID，自动分辨）。
+等待交接后再收敛。design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个
+owner subagent，不计入 roster。尚未 start 时先委托 start。可传位置参数 target（PRP 或 Bug ID，自动分辨）。
 需要用户决定时暂停。
 `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认；
 `--yolo` 同等自裁定且跳过该确认；死硬阻塞仍停止。release/hotfix 的 finish 包含 tag 与发版推送。

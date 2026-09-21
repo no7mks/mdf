@@ -527,6 +527,54 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
         assert rule in text
 
 
+def test_design_and_converge_launch_one_owner_subagent():
+    design = workflow("design")
+    table = rows(design)
+    assert table[1][2] == "约束"
+    assert table[2][1] == "Baseline"
+    assert table[2][2] == "Subagent"
+    assert table[2][6] == "缺确认回 2；可修正则 3；否则停"
+    for rule in (
+        "启动恰好 1 个 owner subagent 执行步骤 3",
+        "不计入 roster，不可配人数",
+        "当前 Agent 执行步骤 1–2 与交接核验",
+        "不得代写 design.md、底座或 design gate",
+        "不降级代做",
+        "不对同一\nowner 另开第二个",
+        "缺确认则停止该 subagent 并回步骤 2",
+        "不在 subagent 内 grilling",
+        "delivery check --stage design",
+        "不以完成摘要替代",
+    ):
+        assert rule in design
+    converge = workflow("converge")
+    table = rows(converge)
+    assert table[0][1] == "Dispatch"
+    assert table[0][2] == "Subagent"
+    assert "启动恰好 1 个 owner subagent 执行步骤 2–4" in table[0][3]
+    assert table[2][1] == "Verify"
+    assert "可修或待批准回 3" in table[2][6]
+    for rule in (
+        "当前 Agent 不得代做 Join、Verify 或 Record",
+        "不计入 roster，不可配人数",
+        "不对同一\nowner 另开第二个",
+        "需测试修改批准时 subagent 停止并交出未决",
+        "resume\n同一 subagent",
+        "--auto-pilot` / `--yolo` 由 subagent 自裁定并记录批准",
+        "不回主会话提问",
+        "delivery check --stage converge",
+        "主会话确认后 resume 回 3",
+    ):
+        assert rule in converge
+    contract = workflow("delivery-contract")
+    assert "design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent" in contract
+    assert "deliver 步骤 4 只覆盖可并行的 qa/dev" in contract
+    help_text = workflow("help")
+    assert "Baseline 由本 intent 派恰好 1 个 owner" in help_text
+    assert "本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录" in help_text
+    assert "不走 deliver 步骤 4" in help_text
+
+
 def test_code_review_covers_branch_starts_and_previous_release():
     text = workflow("code-review")
     for rule in (

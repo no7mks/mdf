@@ -244,7 +244,8 @@ feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 说明：target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。
 已有在途交付则报错，不续办。
 支持 feature/bugfix/hotfix/release；roster ≥1 且两路可并行时强制分别使用
-qa/dev worktree 的 subagent。
+qa/dev worktree 的 subagent。design 的 Baseline 与 converge 由各 intent
+自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
 收口（合入目标主线并删除源 worktree）前确认；`--yolo` 同等自裁定且跳过该确认；
 死硬阻塞仍停止。
@@ -267,7 +268,8 @@ start；strategy / models 也可转交给 design、code-review。
 `$mdf design`
 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
 用途：确认设计、测试策略和共享代码底座。
-说明：结束前必须提交 write-tests 与 implement 共用的代码底座。
+说明：Clarify 在当前会话；Baseline 由本 intent 派恰好 1 个 owner
+subagent 写设计与共用代码底座。不计入 roster。
 partition 时在 design.md 写明各 index 切片。
 
 `$mdf write-tests`
@@ -284,7 +286,9 @@ partition 时在 design.md 写明各 index 切片。
 `$mdf converge`
 用法：`$mdf converge`
 用途：集成并持续修复到所需 suite 通过。
-说明：修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
+说明：本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录；
+测试修改批准回主会话。不计入 roster。
+修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
 
 `$mdf code-review`
 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`

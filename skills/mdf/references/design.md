@@ -21,6 +21,7 @@
 │ 3 Baseline                       │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 缺确认 ─────────────────→ 2 Clarify
                  ├──── policy/suite 可修正 ────→ 3 Baseline
                  ├──── 通过 ───────────────────→ [结束]
                  └──── 其他失败/缺失 ──────────→ [停止并报告]
@@ -32,13 +33,15 @@
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 步骤 2 读取并内部执行 `references/clarify.md`；确认的是方案稿，底座文件由步骤 3 写入。
-确认后，步骤 3 按 `assets/templates/design.md` 写入设计。
+确认后，本 intent 启动恰好 1 个 owner subagent 执行步骤 3：按
+`assets/templates/design.md` 写入设计、共用代码底座并记录 gate。
+独立调用与 deliver 委托都如此；不计入 roster，不可配人数。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 确认 start 记录与 objectives | PRP 或 Bug、start 记录、objectives | 2 | 停止并报告 |
 | 2 | Clarify | 约束 | 委托 clarify，确认设计、测试策略及双方共用代码底座 | 用户确认的设计与底座方案 | 3 | 停止并报告 |
-| 3 | Baseline | 脚本 | 写设计、policy 与底座并提交基线 | gate、底座、基线提交 | 结束 | 可修正则 3；其他停止 |
+| 3 | Baseline | Subagent | 写设计、底座并提交基线 | gate、底座、基线提交 | 结束 | 缺确认回 2；可修正则 3；否则停 |
 
 ## 术语与数据结构
 
@@ -58,6 +61,26 @@ feature 的 objectives 由 start 写入；其他 kind 在 roster ≥1 时若缺�
 类型、接口、错误语义、明确未实现的 stub 和最小测试设施，使两路从同一提交继续，
 不得各自再写一份底座。纯文档改动不制造代码；底座未就绪不得记录 design gate。
 
+### Baseline 分派
+
+当前 Agent 执行步骤 1–2 与交接核验，不得代写 design.md、底座或 design gate。
+无法提供 subagent 时停止，不降级代做。已有 Baseline 执行者先等待，不对同一
+owner 另开第二个。
+调用可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
+`--write-tests-model`、`--implement-model`、`--code-review-model`。
+若与已冻结值不同，启动步骤 3 前运行 `delivery roster` 写入；design gate
+已存在时不能改 qa/dev strategy。
+分派前与结束后运行
+`worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
+任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，以及步骤 2 已确认
+的设计与底座方案原文。将会话根切到 owner。不得要求重新 clarify，不得把未确认
+内容当作已确认。缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
+policy/suite 可修正时由该 subagent 内部留在步骤 3。
+`--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
+subagent 只写 design.md、policy、共用代码底座、design gate 与本阶段提交。
+结束后当前 Agent 再运行 `delivery check --stage design`；不以完成摘要替代。
+gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留现场并停止。
+
 ### 设计 policy 与基线
 
 准备 policy JSON：未分层为 `{"protected_paths": ["tests/", "pyproject.toml"]}`，
@@ -72,9 +95,6 @@ feature 的 objectives 由 start 写入；其他 kind 在 roster ≥1 时若缺�
 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。
-调用可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--write-tests-model`、`--implement-model`、`--code-review-model`。
-若与已冻结值不同，记录 gate 前运行 `delivery roster` 写入；design gate
-已存在时不能改 qa/dev strategy。qa 或 dev 为 `partition` 时，design.md
+qa 或 dev 为 `partition` 时，design.md
 必须写明各 index 的切片（做什么、不做什么）；各路仍互不看代码。
 review 的 `partition` 可在本步预写切片计划，code-review 仍可覆盖。

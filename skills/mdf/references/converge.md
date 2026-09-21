@@ -4,24 +4,31 @@
 
 ```text
 ┌──────────────────────────────────┐
-│ 1 Join                           │
+│ 1 Dispatch                       │
+└────────────────┬─────────────────┘
+                 │
+                 ├──── 失败/缺失 ────→ [停止并报告]
+                 │
+                 ▼ 已派
+┌──────────────────────────────────┐
+│ 2 Join                           │
 └────────────────┬─────────────────┘
                  │
                  ├──── 失败/缺失 ────→ [停止并报告]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 2 Verify                         │
+│ 3 Verify                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 可修复实现问题 ────────────→ 2 Verify
-                 ├──── 需测试修改批准 ────────────→ [等待确认后返回本文件步骤 2]
+                 ├──── 可修复实现问题 ────────────→ 3 Verify
+                 ├──── 需测试修改批准 ────────────→ [主会话确认后 resume 回 3]
                  ├──── missing_delivery_suite ────→ [停止，提示 $mdf write-tests]
                  ├──── 外部阻塞或三轮无进展 ──────→ [记录阻塞并停止]
                  │
                  ▼ 所需 suite 通过
 ┌──────────────────────────────────┐
-│ 3 Record                         │
+│ 4 Record                         │
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过 ─────────→ [结束]
@@ -33,14 +40,30 @@
 读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
+独立调用与 deliver 委托均由本 intent 启动恰好 1 个 owner subagent 执行步骤 2–4；
+当前 Agent 不得代做 Join、Verify 或 Record。不计入 roster，不可配人数。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Join | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 2 | 停止并报告 |
-| 2 | Verify | 约束 | 验证并修实现 | suite、阻塞 | 3 | 可修或待批准回 2；缺 suite 停并提示 `$mdf write-tests`；阻塞停 |
-| 3 | Record | 脚本 | 所需 suite 通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
+| 1 | Dispatch | Subagent | 启动恰好 1 个 owner subagent 执行步骤 2–4 | 已派执行者 | 2 | 停止并报告 |
+| 2 | Join | 约束 | 按模式集成或检查 gate，复核设计与续办记录 | 两路 gate、续办检查 | 3 | 停止并报告 |
+| 3 | Verify | 约束 | 验证并修实现 | suite、阻塞 | 4 | 可修或待批准回 3；缺 suite 停并提示 `$mdf write-tests`；阻塞停 |
+| 4 | Record | 脚本 | 所需 suite 通过后记录 converge gate 并提交 | 全绿证据、gate、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
+
+### 执行者
+
+无法提供 subagent 时停止，不降级代做。已有 converge 执行者先等待，不对同一
+owner 另开第二个。subagent 将会话根切到 owner。
+分派前与结束后运行
+`worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
+任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，以及适用的
+`--auto-pilot` / `--yolo`。结束后当前 Agent 再运行
+`delivery check --stage converge`；不以完成摘要替代。
+需测试修改批准时 subagent 停止并交出未决；当前 Agent 在主会话确认后 resume
+同一 subagent，传入 `--test-approval <用户确认与修改理由>`。
+`--auto-pilot` / `--yolo` 由 subagent 自裁定并记录批准，不回主会话提问。
 
 ### 范围与前置条件
 
@@ -80,6 +103,6 @@ worktree 和分支（含 `best-of-n` 未入选者）。
 写后回读并核对字段与 diff；写入失败时保留现场，在会话中报告同样内容和实际路径后停止。
 该文件独立于 gate JSON，不要求已有 converge gate；不得为保存失败而调用
 `delivery record --stage converge`，也不手工创建或修改 gate JSON。
-所需 suite 通过后，如有阻塞记录，补记解除证据并标为已解决，回读核对后进入步骤 3；
+所需 suite 通过后，如有阻塞记录，补记解除证据并标为已解决，回读核对后进入步骤 4；
 记录更新失败则保留现场并停止，不宣称本阶段完成。
 运行 `delivery record --stage converge --summary <收敛结果>`；如需测试批准，一并传入批准记录。
