@@ -18,7 +18,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf deliver [<target>] [--auto-pilot]` | 从 start 起持续推进到 finish；可并行阶段强制分派 subagent |
+| `$mdf deliver [<target>] [--auto-pilot] [--yolo]` | 从 start 起持续推进到 finish；可并行阶段强制分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
@@ -44,14 +44,15 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 `start → design → [write-tests ∥ implement] → converge → code-review → finish`
 
-code-review 支持 feature、bugfix、hotfix 和 release；首轮按 roster.reviewers
-（默认 3）个 subagent 覆盖起点到 review_head；同一分支后续轮次只审上轮
+code-review 支持 feature、bugfix、hotfix 和 release；首轮按冻结的
+roster.reviewers 个 subagent 覆盖起点到 review_head；同一分支后续轮次只审上轮
 final_head 以来的增量，并复核上轮问题。默认每人全范围（replicate），
 也可切片审查（partition）。qa/dev 默认 best-of-n，也可在 design 按 partition
 分工；`$mdf start` / `deliver` 可带 `--roster`（solo / min-tdd /
 competing-pair / coop-pair）。`$mdf start` / `design` / `deliver` /
 `code-review` 可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--write-tests-model`、`--implement-model`、`--code-review-model`。
+`--write-tests-model`、`--implement-model`、`--code-review-model`；
+值为口语描述，可点名一个或多个模型。
 主 Agent 汇总裁定、修复并复核。前三种分支从固定起点审查，release 从上一正式发布版本审查。
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
 冲突自动尝试解决；集成产生新提交后，仅非本交付 `docs/` 增量则跳过 code-review
@@ -61,7 +62,7 @@ deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 
 等待交接后再收敛。尚未 start 时先委托 start。可传位置参数 target（PRP 或 Bug ID，自动分辨）。
 需要用户决定时暂停。
 `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认；
-死硬阻塞仍停止。release/hotfix 的 finish 包含 tag 与发版推送。
+`--yolo` 同等自裁定且跳过该确认；死硬阻塞仍停止。release/hotfix 的 finish 包含 tag 与发版推送。
 
 一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
 gate 检查共同基线与有效证据。start 始终独立 worktree；write-tests 与 implement

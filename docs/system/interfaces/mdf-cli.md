@@ -320,14 +320,15 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 `<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
 不在当前目录开分支；成功 JSON 含该 `worktree`、冻结后的 `roster` 与 `roles`
 列表。`--roster` 为 `solo` / `min-tdd` / `competing-pair` / `coop-pair`：
-feature 默认 `min-tdd`，其他 kind 默认 `solo`。省略时按 kind 展开；再叠
+feature 默认 `min-tdd`（`1,1,2`），其他 kind 默认 `solo`（`0,0,1`）。省略时按 kind 展开；再叠
 `--qa` / `--dev` / `--reviewers` 与策略细项。一侧为 0 另一侧 ≥1 时把 0 抬成 1。
 roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为
 `qa/2/<owner>`。创建失败拆除已建 worktree 与分支。
 `--qa-strategy` / `--dev-strategy` 默认 `best-of-n`，可选
 `partition`；`--review-strategy` 默认 `replicate`，可选 `partition`。
 `--write-tests-model` / `--implement-model` / `--code-review-model` 各为一句
-可选描述，按 intent 写入 `roster.models`；省略某 flag 则不写该键。这些参数
+可选口语描述，可点名一个或多个模型，按 intent 写入 `roster.models`；省略某
+flag 则不写该键。含空格时整句作为一个 token。这些参数
 对应 start/design/deliver/code-review 的 intent 参数，由 Agent 传入本命令冻结。
 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 保存完整起点 hash，
 供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
@@ -396,7 +397,7 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 
 deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 finish 命令，
 不新增 deliver CLI；负责从尚未 start 起持续委托、并行 subagent 的 worktree
-身份核验与结果交接。位置参数 target 与 `--auto-pilot` 由 intent 解释，不是 CLI 参数。
+身份核验与结果交接。位置参数 target 与 `--auto-pilot`、`--yolo` 由 intent 解释，不是 CLI 参数。
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后
 调用：`init`、`bootstrap`、`migrate` intent 使用 `doctor`、`init` 与 `validate`；

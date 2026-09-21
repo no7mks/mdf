@@ -47,7 +47,7 @@ def test_start_does_not_require_origin(
     assert "upstream" not in result
     assert result["branch"] == "feature/service-health"
     assert result["roster"] == {
-        "qa": 1, "dev": 1, "reviewers": 3,
+        "qa": 1, "dev": 1, "reviewers": 2,
         "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
         "review_strategy": "replicate",
     }
@@ -286,7 +286,7 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
     ))
     assert created["branch"] == "bugfix/bug-CD34"
     assert created["roster"] == {
-        "qa": 0, "dev": 0, "reviewers": 3,
+        "qa": 0, "dev": 0, "reviewers": 1,
         "qa_strategy": "best-of-n", "dev_strategy": "best-of-n",
         "review_strategy": "replicate",
     }

@@ -56,7 +56,7 @@ Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal�
 一次交付在 start 时冻结的参与人数与并行策略：`qa`、`dev`、`reviewers`，
 以及 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
 owner 恒为 1，不计入可选人数。可用 `--roster` 展开命名组合（不写入材料）：
-`solo` 为 `0,0,3`；`min-tdd` 为 `1,1,3` + best-of-n；`competing-pair` 为
+`solo` 为 `0,0,1`；`min-tdd` 为 `1,1,2` + best-of-n；`competing-pair` 为
 `2,2,3` + best-of-n；`coop-pair` 为 `2,2,3` + partition。feature 默认
 `min-tdd`，其他 kind 默认 `solo`。细项可覆盖展开结果。qa 与 dev 只能同时
 为 0 或都 ≥1；一侧为 0 则抬成 1。`0,0` 时测试与实现都在 owner 上做；`≥1`
@@ -65,14 +65,20 @@ qa/dev 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base �
 其余优点，converge 只合 winner。`partition`：design 派发切片，converge 按
 index 全部合入。review 默认 `replicate`（每人覆盖同一份本轮范围），可选
 `partition`（切片审查）；owner 汇总裁定，不按票数。`models` 按 intent 可选
-配置，键只允许 `write-tests`、`implement`、`code-review`，值为一句描述；
-Agent 分派该 intent 时现场解析；省略该键则该路不讨论模型。reviewers 是
-code-review 并发人数。
+配置，键只允许 `write-tests`、`implement`、`code-review`。值为一句口语描述，
+可点名一个或多个模型，不要求官方 id。Agent 分派该 intent 时现场解析并选用；
+该路有多名执行者时可把多个模型分给他们。省略该键则该路不讨论模型。reviewers
+是 code-review 并发人数。
 
 ## Auto-pilot
 
 `$mdf deliver --auto-pilot` 的持续交付模式：主 Agent 自行裁定原需用户确认的步骤，
 仅在 finish 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认；
+不可恢复的死硬阻塞仍停止。
+
+## Yolo
+
+`$mdf deliver --yolo`：启用 auto-pilot，并跳过 finish 的 Gitflow 收口确认。
 不可恢复的死硬阻塞仍停止。
 
 ## ADR

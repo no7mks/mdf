@@ -62,16 +62,16 @@
 
 ### 目标与持续授权
 
-调用 `$mdf deliver [<target>] [--auto-pilot]` 授权从当前状态连续执行本次交付
+调用 `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 授权从当前状态连续执行本次交付
 剩余工作直到 finish 完成，含尚未完成的 start，以及原流程要求的本地提交、并行委托、
 集成与 finish 的 Gitflow 操作。target 是唯一位置参数，不是 `--` option；
-`--auto-pilot` 可在其前或后。两者都省略时仍是 deliver。
+`--auto-pilot` 与 `--yolo` 可在其前或后。target 与这些 option 都省略时仍是 deliver。
 feature/bugfix 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 用户明确限制提交、推送或只读时遵守限制；与 finish 完成条件冲突时说明并询问，不能声称完成。
 已有有效确认继续适用。默认模式：设计确认、测试修改批准、目标变更和外部条件仍按原流程处理；
 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
-`--auto-pilot` 按下方策略把这些决定改为主 Agent 自裁定。
+`--auto-pilot` 与 `--yolo` 按下方策略把这些决定改为主 Agent 自裁定。
 
 步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。
 先解析本次调用的 target（见下）；有唯一对象则锁定该交付。
@@ -92,7 +92,7 @@ PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认
 ### target
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
-除 `--auto-pilot`、`--roster`、`--qa-strategy`、`--dev-strategy`、
+除 `--auto-pilot`、`--yolo`、`--roster`、`--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、
 `--code-review-model` 外，以 `--` 开头的 token 不是 target，
 视为未知调用参数并停止。
@@ -108,10 +108,14 @@ PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认
 2. 否则运行 `list --repo "$REPO_ROOT"`（proposal 与 bug，不限 status），
    在返回的 `id` 中精确匹配；仍无则用去掉 `prp-`/`bug-` 前缀的本体、以及 `path`
    文件名中的 slug 各匹配一次。不匹配 title，不把 jot ID、SemVer 或路径当成功值。
-3. 唯一命中 Proposal → feature，将该 PRP ID 交给 start；唯一命中 Bug → bugfix，
-   将该 Bug ID 交给 start。对象已有在途交付则报告错误并停止，不续办、不重新 start。
-   Proposal 以 `list` 的 `in_progress` 为准；Bug 以本地已存在 `bugfix/<Bug ID>`
-   或其 worktree 为准。
+3. 唯一命中 Proposal → feature，将该 PRP ID 交给 start。Proposal 对象
+   已有在途交付则报告错误并停止，不续办、不重新 start；以 `list` 的
+   `in_progress` 为准。
+   唯一命中 Bug：本地已存在 `bugfix/<Bug ID>` 或其 worktree 时，该 bugfix 为
+   在途交付；若当前已锁定另一交付则报告错误并停止，不续办、不重新 start。
+   当前已锁定 release 或 hotfix、Bug 为 active `open` 且无上述 bugfix 分支时，
+   不 start、不改绑，将该 Bug 记入本次剩余开发工作。
+   否则 → bugfix，将该 Bug ID 交给 start。
 
 零命中、跨类型或多对象命中时询问，不猜测。`--auto-pilot` 对 target 分不清就询问，
 不自裁定。完整 ID 形态合法但 `list` 无此对象时报告缺失并停止。
@@ -119,7 +123,9 @@ target 与当前已锁定的另一交付冲突时报告错误并停止，不改�
 
 ### auto-pilot
 
-仅 `$mdf deliver --auto-pilot` 启用；默认 `$mdf deliver` 不启用。
+仅 `$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo` 启用；默认 `$mdf deliver`
+不启用。`--yolo` 隐含本策略；下文写 `--auto-pilot` 处对 `--yolo` 同样适用，
+除非写明例外。
 委托子 intent 时把本策略作为外层约束：原文中的询问、确认、批准与选择改由主 Agent
 依据仓库证据、已确认目标和本次范围自行裁定，并在摘要或 gate 中写明依据，
 不向用户提问、不等待确认。内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
@@ -136,6 +142,7 @@ open Bug，且未指定合法 release/hotfix 版本）；已有交付缺少 work
 主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
 取得明确确认后才执行 finish 步骤 10；拒绝则保留现场并停止，不合并、不删 worktree。
 此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
+`--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 
 ### Goal
@@ -169,8 +176,10 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
-bugfix/hotfix/release 在 roster `0,0` 时使用对应 Bug、热修复目标或发布范围，不套用
-feature 阶段 gate；roster ≥1 时走 design / write-tests / implement / converge。
+bugfix 在 roster `0,0` 时使用对应 Bug；release/hotfix 使用发布或热修复范围，
+并可在 owner 上直接修已确认的 open Bug（完成后标为 `fixed`，不另开 bugfix、
+不写 bugfix child Change）。不套用 feature 阶段 gate；roster ≥1 时走 design /
+write-tests / implement / converge。
 没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
 发现缺少设计决定或验收依据时：默认模式询问；`--auto-pilot` 能由仓库证据裁定则自裁定，
 否则属死硬阻塞。不虚构开发任务，也不把未实现的目标判定为完成。
@@ -189,7 +198,8 @@ roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implem
 按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
 code-review 内部按 roster.reviewers 启动独立 subagent 只读审查，按其契约执行，
-主 Agent 汇总修复。分派时只把该 intent 在 roster.models 中的值写入对应任务；
+主 Agent 汇总修复。分派时只把该 intent 在 roster.models 中的值写入对应任务，
+按口语描述现场解析（可多个模型）；
 没有该键则该路不提模型或 effort。不得把其他 intent 的模型写入本路任务。
 资源不足时等待已有执行者释放；无法提供所需 subagent 能力时报告阻塞，不悄悄降级串行。
 

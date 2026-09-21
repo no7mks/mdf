@@ -60,8 +60,8 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
 再运行 `delivery check --stage implement`。
 `dev_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
-roster.models 含 `implement` 时把该值写入本路任务；没有则不提模型或
-effort。不得写入其他 intent 的模型。
+roster.models 含 `implement` 时把该值写入本路任务，按口语描述现场解析
+（可多个模型）；没有则不提模型或 effort。不得写入其他 intent 的模型。
 测试完成不是前置条件。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。只修改实现；只使用 design 基线已提交的
 共享代码底座，发现缺失时停止并提示 `$mdf design`，不得本路自行创建底座。
 测试争议反馈给用户，不改断言或配置绕过验证。

@@ -92,7 +92,7 @@
 #### 交付
 
 - `$mdf next [--depth N]`：续办在途；feature 上走交付；无在途时委托 tree
-- `$mdf deliver [<target>] [--auto-pilot]`：从 start 起持续推进到 finish；可并行阶段强制 subagent 分别执行
+- `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 finish；可并行阶段强制 subagent 分别执行
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
@@ -133,6 +133,7 @@ $mdf deliver
 $mdf deliver prp-001
 $mdf deliver bug-CD34 --auto-pilot
 $mdf deliver --auto-pilot
+$mdf deliver --yolo
 $mdf start
 $mdf jot
 $mdf jot promote
@@ -237,15 +238,16 @@ $mdf clarify 要不要把缓存放到 Redis
 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
 feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
 
-`$mdf deliver [<target>] [--auto-pilot]`
-用法：`$mdf deliver`、`$mdf deliver <target>` 或 `$mdf deliver <target> --auto-pilot`
+`$mdf deliver [<target>] [--auto-pilot] [--yolo]`
+用法：`$mdf deliver`、`$mdf deliver <target>`、`$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo`
 用途：锁定当前一次交付，必要时先 start，持续运行到 finish 完成。
 说明：target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。
 已有在途交付则报错，不续办。
 支持 feature/bugfix/hotfix/release；roster ≥1 且两路可并行时强制分别使用
 qa/dev worktree 的 subagent。
 默认遇到需用户决定或外部阻塞时暂停。`--auto-pilot` 由 Agent 自裁定，仅在 Gitflow
-收口（合入目标主线并删除源 worktree）前确认；死硬阻塞仍停止。
+收口（合入目标主线并删除源 worktree）前确认；`--yolo` 同等自裁定且跳过该确认；
+死硬阻塞仍停止。
 可把 `--roster`、`--qa-strategy`、`--dev-strategy`、`--review-strategy`、
 `--write-tests-model`、`--implement-model`、`--code-review-model` 转交给
 start；strategy / models 也可转交给 design、code-review。
@@ -259,8 +261,8 @@ start；strategy / models 也可转交给 design、code-review。
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
 不在当前目录开分支，不 push。开分支前展示 member、strategy 与 models
-并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；人数 ≥1
-时建立 qa/dev 角色树。
+并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；`--*-model`
+为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
 
 `$mdf design`
 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
@@ -287,8 +289,8 @@ partition 时在 design.md 写明各 index 切片。
 `$mdf code-review`
 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
 用途：审查并修复实现、测试和 code smell。
-说明：支持 feature/bugfix/hotfix/release；首轮按 roster.reviewers（默认 3）
-覆盖起点区间，后续增量并复核上轮问题。
+说明：支持 feature/bugfix/hotfix/release；首轮按冻结的 roster.reviewers
+覆盖起点区间（solo 默认 1，min-tdd 默认 2，pair 类默认 3），后续增量并复核上轮问题。
 feature 位于 converge 之后；各分支均在 finish 前完成。
 默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
 

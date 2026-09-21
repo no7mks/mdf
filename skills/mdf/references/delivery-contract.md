@@ -26,12 +26,15 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 不记录 gate。它不是用户主线箭头上的一站。
 bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
 implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
-code-review 的独立审查份数取 roster.reviewers（默认 3）；finish 集成产生的
-不可跳过增量新一轮为 1，不改冻结 roster。见 `references/code-review.md`。
+release 与 hotfix 可在 owner 上直接修复已确认的 open Bug，标为 `fixed`；不另开
+bugfix 分支，也不写 bugfix child Change。
+code-review 的独立审查份数取冻结的 roster.reviewers（solo 默认 1，min-tdd
+默认 2，pair 类默认 3）；finish 集成产生的不可跳过增量新一轮为 1，不改冻结
+roster。见 `references/code-review.md`。
 用户手动触发主线 intent，或显式调用 next 委托下一阶段；
 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
 可并行阶段按 roster 分别委托 subagent；`--auto-pilot` 由主 Agent 自裁定，仅在
-Gitflow 收口前确认。
+Gitflow 收口前确认；`--yolo` 跳过该确认。
 不新增独立 Owner 调度服务或统一状态协议。
 当前执行者承担该阶段的协调与语义审查。
 start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>`
@@ -40,8 +43,8 @@ roster 在 start 开分支前展示 member、strategy 与 models 并经确认后
 写入 `delivery.json`（有交付材料时）与
 `branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
-owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,3` + best-of-n），
-其他 kind 默认 `solo`（`0,0,3`）。也可用 `competing-pair`（`2,2,3` 竞争）
+owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,2` + best-of-n），
+其他 kind 默认 `solo`（`0,0,1`）。也可用 `competing-pair`（`2,2,3` 竞争）
 或 `coop-pair`（`2,2,3` 分工）。四种 kind 都可改人数或改名。
 qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
 `0,0` 时测试与实现都在 owner 上做。`≥1` 时 start 按人数建立
@@ -66,11 +69,13 @@ owner 仍汇总裁定，不按票数。
 review_strategy 与 `models.code-review` 可在 code-review 覆盖。deliver 把
 strategy / models 转交给 start、design、code-review；`--roster` 只转交 start。
 未知 `--` token 停止询问。
-每个 `--*-model` 取随后一个 token；未带的 intent 不写、不问、不提。
+每个 `--*-model` 取随后一个 token（口语整句，可含空格）；未带的 intent 不写、
+不问、不提。
 `models` 按 intent 可选，键只允许 `write-tests`、`implement`、`code-review`。
-Agent 分派某 intent 的 subagent 时只读取并写入该键；没有则不提模型或
-effort。不得把其他 intent 的模型写入本路任务。策略字段的 JSON 键为下划线
-形式。
+值为一句口语描述：可点名一个或多个模型，不要求官方 id 或固定分隔格式。
+Agent 分派某 intent 的 subagent 时只读取并写入该键，现场解析并选用；该路有
+多名执行者时可把多个模型分给他们。没有则不提模型或 effort。不得把其他
+intent 的模型写入本路任务。策略字段的 JSON 键为下划线形式。
 本地工作分支不推送。禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
 ## Gate

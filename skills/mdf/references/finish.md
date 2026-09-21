@@ -246,6 +246,7 @@ release notes 至少一项非空。
 **对象**
 
 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
+本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed`，取 `found_in` 为 `unreleased`
 的条目作为待分类清单，不逐篇翻阅 `docs/bugs/`。
 对每个 active 且 `found_in: unreleased` 的 Bug 分类： fixed 经二次验证后由 CLI 关闭并写 fixed_in，
@@ -289,9 +290,10 @@ feature/bugfix 必须有规范 child Change。
 
 **合并**
 
-由 `$mdf deliver --auto-pilot` 委托时，步骤 9 通过后必须返回 deliver，待其取得
-用户对 Gitflow 收口的确认后才执行本步骤；不得自行调用 `finish-gitflow`。
-独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
+由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 则步骤 9 通过后必须返回
+deliver，待其取得用户对 Gitflow 收口的确认后才执行本步骤；
+不得自行调用 `finish-gitflow`。由 `$mdf deliver --yolo` 委托时步骤 9 通过后
+直接执行本步骤，不返回确认。独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 调用 `finish-gitflow --repo "$REPO_ROOT"`。feature/bugfix 不 fetch、不 push；
 no-ff 合并到本地 develop，删除本地源分支。角色分支仍在则失败。
 release/hotfix 要求 origin；首次调用 fetch 后要求本地 master/develop 与远端一致；
