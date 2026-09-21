@@ -2,8 +2,10 @@
 """Deterministic local tooling for Mars Development Flow.
 
 Every successful command writes one JSON object to stdout. Expected failures
-are JSON on stderr and use a non-zero exit status. The implementation uses only
-the Python standard library only, including the built-in YAML subset parser.
+write a JSON object as the last line of stderr and use a non-zero exit status.
+Verification may first stream progress and child output to stderr. The
+implementation uses only the Python standard library, including the built-in
+YAML subset parser.
 """
 
 from __future__ import annotations

@@ -171,6 +171,8 @@ bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
 脚本按当前分支执行所需 suite（release/hotfix 为全局 full；bugfix 为全局
 quick 加已关联交付 suite），逐项记录命令、退出状态与 `suites`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
+验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON
+与落盘证据。每条命令限时 600 秒，超时终止 process group。
 分层后 bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联；
 返回 `unknown_suite`（引用尚未写入 manifest 的名称）时停止，询问用户是否新建。
 证据只覆盖 quick 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`

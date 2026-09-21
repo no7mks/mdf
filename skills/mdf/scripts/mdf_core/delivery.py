@@ -18,7 +18,7 @@ from .roster import (
     write_roster_config,
 )
 from .verification import manifest_verification, parse_suite_names
-from .closeout_validate import run_verify_commands
+from .verify_run import run_verify_command
 from .validate_links import require_existing_local_links
 
 
@@ -125,11 +125,21 @@ def verify(repo, root, data, selected):
         raise MDFError("未知验证项 ID", code="invalid_verification")
     results = []
     failed = False
-    for item in items if selected else targets:
-        if selected and item["id"] not in selected:
-            continue
+    source = items if selected else targets
+    planned = [
+        item for item in source
+        if not selected or item["id"] in selected
+    ]
+    total = len(planned)
+    for index, item in enumerate(planned, 1):
         try:
-            result = run_verify_commands(repo, [item["command"]])[0]
+            result = run_verify_command(
+                repo,
+                item["command"],
+                label=item["id"],
+                index=index,
+                total=total,
+            )
             result["passed"] = True
         except MDFError as exc:
             failed = True

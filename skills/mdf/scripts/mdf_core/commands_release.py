@@ -7,7 +7,8 @@ from . import doctor
 from .closeout_objects import active_objects
 from .closeout_stage import apply_closeout, summarize_closeout
 from .closeout_shape import unreleased_change_slugs, validate_closeout_shape
-from .closeout_validate import normalize_hotfix_change, run_verify_commands
+from .closeout_validate import normalize_hotfix_change
+from .verify_run import run_verify_commands
 from .constants import SCHEMA_VERSION
 from .errors import MDFError, emit, serialize_findings
 from .gitutil import (
@@ -18,6 +19,7 @@ from .gitutil import (
     require_git_root,
 )
 from .paths import ensure_safe_managed_paths, load_manifest
+from .verification import manifest_verification
 from .yamlutil import read_frontmatter
 
 
@@ -33,7 +35,6 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
-    from .verification import manifest_verification
     return [item["command"] for item in manifest_verification(manifest).select(["full"])]
 
 
@@ -196,9 +197,11 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         )
         return
 
+    verify_items = manifest_verification(manifest).select(["full"])
     command_results = run_verify_commands(
         repo,
         context["validation_commands"],
+        labels=[item["id"] for item in verify_items],
     )
     ensure_clean(repo)
     spec["verify_command_results"] = command_results

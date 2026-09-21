@@ -1,5 +1,5 @@
 """非 feature 审查的验证及内容绑定证据。"""
-from .closeout_validate import run_verify_commands
+from .verify_run import run_verify_command
 from .delivery_state import inventory, digest, git, safe, write_json, read_json
 from .errors import MDFError, emit
 from .gitutil import (
@@ -58,12 +58,23 @@ def command_project_verify(args):
             raise MDFError("所需 suite 失败或证据过期", code="stale_verification")
     else:
         results = []
-        for item in targets:
+        planned = list(targets)
+        total = len(planned)
+        for index, item in enumerate(planned, 1):
             try:
-                detail = run_verify_commands(repo, [item["command"]])[0]
+                detail = run_verify_command(
+                    repo,
+                    item["command"],
+                    label=item["id"],
+                    index=index,
+                    total=total,
+                )
                 results.append({**item, **detail, "passed": True})
             except MDFError as exc:
-                results.append({**item, "passed": False, "error": exc.code, "details": exc.details})
+                results.append({
+                    **item, "passed": False, "error": exc.code,
+                    "details": exc.details,
+                })
         after_suites = associated_suites(repo, slug) if kind == "bugfix" else None
         after = inputs(repo, manifest_verification(load_manifest(repo)), required, after_suites)
         passed = {item["id"] for item in results if item["passed"]}

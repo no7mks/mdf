@@ -1,4 +1,3 @@
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -184,49 +183,3 @@ def require_spec_key(spec: dict[str, Any], key: str) -> Any:
             code="invalid_closeout_spec",
         )
     return spec[key]
-
-
-def run_verify_commands(
-    repo: Path, commands: list[str]
-) -> list[dict[str, Any]]:
-    results: list[dict[str, Any]] = []
-    for command in commands:
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=repo,
-                shell=True,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False,
-                timeout=600,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise MDFError(
-                f"verification command 超时（600 秒）: {command}",
-                code="verify_command_failed",
-                details={
-                    "command": command,
-                    "timeout_seconds": 600,
-                    "results": results,
-                },
-            ) from exc
-        entry = {
-            "command": command,
-            "exit_code": completed.returncode,
-        }
-        results.append(entry)
-        if completed.returncode != 0:
-            raise MDFError(
-                f"verification command 失败: {command}",
-                code="verify_command_failed",
-                details={
-                    "command": command,
-                    "exit_code": completed.returncode,
-                    "stdout_tail": completed.stdout[-2000:],
-                    "stderr_tail": completed.stderr[-2000:],
-                    "results": results,
-                },
-            )
-    return results

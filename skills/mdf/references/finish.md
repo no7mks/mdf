@@ -204,7 +204,8 @@ feature 运行 `delivery check --stage finish`，使用本次有效 code-review�
 两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤补验，并内部从
 `code-review.md` 步骤 1 执行审查（有完整上轮记录则增量新一轮，否则首轮；
 不把集成当修复续办）后复核，
-不回退本流程步骤编号；语义或实现变化必须补审补验。其他失败走本步骤的失败去向。
+不回退本流程步骤编号；语义或实现变化必须补审补验。补验 run 期间 stderr 为
+子进程原文，判定读退出码与落盘 JSON。其他失败走本步骤的失败去向。
 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
 其他分支使用步骤 3 的本次 fact audit 结论；release 为上一正式发布以来的
 范围审阅，其他分支为范围审阅。

@@ -13,8 +13,13 @@
 python3 skills/mdf/scripts/mdf.py <command> [options]
 ```
 
-- 成功时命令向 stdout 输出 JSON；业务规则拒绝时输出 JSON 错误，
-  并以非零状态退出。
+- 成功时命令向 stdout 输出 JSON；业务规则拒绝时 stderr 最后一行为 JSON 错误，
+  并以非零状态退出。长验证（`project-verify run`、`delivery verify`、
+  `release-closeout`）期间 stderr 可含进度行与子进程原文；解析失败时取
+  stderr 最后一行 JSON，失败细节也可读落盘证据中的 `stdout_tail` /
+  `stderr_tail`。
+- 每条验证命令限时 600 秒；超时按 process group 终止，错误 details 含已捕获
+  的 `stdout_tail` / `stderr_tail`。
 - `--repo` 接受目标仓库路径。除 `info`、`make-id --type bug`、`make-jot-id`、
   `branch --name`、`semver-check` 和 `prepare-git` 外，命令会按自身需要检查 Git
   根、MDF manifest 或 clean worktree。`prepare-git` 接受普通目录；已是其他仓
@@ -462,6 +467,9 @@ Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同�
 `manifest.verification` finding。bugfix 缺少关联返回
 `missing_delivery_suite`，引用未知 suite 返回 `unknown_suite`；证据只覆盖 quick 时
 `check` 返回 `stale_verification`。
+运行期间 stderr 输出 `[i/N] start <id>`、子进程原文、可选 30 秒心跳
+`[i/N] running <id> (Ns)`，以及 `[i/N] done exit=<code> (Ns)`。每条命令 600 秒
+超时，超时终止 process group，details 含 partial tail。
 结果写入 `changes/unreleased/<slug>/code-review.verification.json`，含
 `suites`。feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix
 为该分支稳定 SemVer。
