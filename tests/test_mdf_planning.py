@@ -58,6 +58,13 @@ def test_tree_mixed_dag_drafts_truncation_and_invalid_dependencies(
             index_item("prp-007", ["prp-006"], ["prp-006"]),
         ],
     }
+    assert data["table"].splitlines()[:2] == [
+        "| id | title | status | in_progress | depends_on | blocked_by | milestone |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    assert "| prp-001 | Service health | ready | false |  |  |  |" in data["table"]
+    assert "| prp-006 | Service health | draft | false |  |  |  |" in data["table"]
+    assert data["table"].endswith("\nhidden:")
     roots = {node["id"]: node for node in data["trees"]}
     assert set(roots) == {"prp-001", "prp-006"}
     assert roots["prp-006"]["status"] == "draft"
@@ -67,6 +74,9 @@ def test_tree_mixed_dag_drafts_truncation_and_invalid_dependencies(
     assert children[0]["children"][0]["blocked_by"] == ["prp-003", "prp-004"]
     shallow = payload(mdf(python_exe, "tree", "--repo", str(repo), "--depth", "1"))
     assert shallow["hidden"] == ["prp-003", "prp-004", "prp-005", "prp-007"]
+    assert shallow["table"].endswith(
+        "\nhidden: prp-003, prp-004, prp-005, prp-007"
+    )
     assert mdf(python_exe, "tree", "--repo", str(repo), "--depth", "0").returncode != 0
     add_prp(repo, "prp-008", ["prp-099"])
     assert "invalid_proposals" in mdf(python_exe, "tree", "--repo", str(repo)).stderr
@@ -119,6 +129,15 @@ def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path)
             index_item("prp-005", ["prp-001"], ["prp-001"], "draft"),
         ],
     }
+    lines = data["table"].splitlines()
+    assert lines[2] == "| prp-001 | Service health | ready | false |  |  |  |"
+    assert lines[3] == (
+        "| prp-005 | Service health | draft | false | prp-001 | prp-001 |  |"
+    )
+    assert "| 阶段一 |" in data["table"] and "| 阶段二 |" in data["table"]
+    assert lines[4].endswith("| 阶段一 |")
+    assert lines[6].endswith("| 阶段二 |")
+    assert data["table"].endswith("\nhidden:")
 
 
 def split_spec(repo):

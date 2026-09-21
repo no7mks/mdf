@@ -123,6 +123,51 @@ def _root_groups(trees):
     return groups
 
 
+def _md_cell(value):
+    if value is True:
+        text = "true"
+    elif value is False:
+        text = "false"
+    elif isinstance(value, list):
+        text = ", ".join(str(item) for item in value)
+    elif value is None:
+        text = ""
+    else:
+        text = str(value)
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _table_row(values):
+    return "| " + " | ".join(_md_cell(value) for value in values) + " |"
+
+
+_TABLE_COLUMNS = (
+    "id", "title", "status", "in_progress", "depends_on", "blocked_by",
+    "milestone",
+)
+
+
+def render_table(index, hidden):
+    lines = [
+        _table_row(_TABLE_COLUMNS),
+        "| " + " | ".join("---" for _ in _TABLE_COLUMNS) + " |",
+    ]
+    for item in index["ungrouped"]:
+        lines.append(_table_row([
+            item["id"], item["title"], item["status"], item["in_progress"],
+            item["depends_on"], item["blocked_by"], "",
+        ]))
+    for group in index["groups"]:
+        for item in group["items"]:
+            lines.append(_table_row([
+                item["id"], item["title"], item["status"],
+                item["in_progress"], item["depends_on"], item["blocked_by"],
+                group["milestone"],
+            ]))
+    hidden_line = "hidden: " + ", ".join(hidden) if hidden else "hidden:"
+    return "\n".join(lines + ["", hidden_line])
+
+
 def render_diagram(trees, empty):
     if empty:
         return "无 draft 且无 ready。"
@@ -193,11 +238,13 @@ def tree_view(repo, depth):
     trees = [node(key) for key in _ordered_roots(
         shown, prp_waiting, waiting, objects, active)]
     empty = not active
+    index = _index(objects, waiting, in_progress, sorted(active))
+    hidden = sorted(key for key, value in levels.items()
+                    if value is not None and value > depth)
     return {"ok": True, "operation": "tree", "depth": depth, "trees": trees,
-            "index": _index(objects, waiting, in_progress, sorted(active)),
-            "hidden": sorted(key for key, value in levels.items()
-                             if value is not None and value > depth),
-            "empty": empty, "diagram": render_diagram(trees, empty)}
+            "index": index, "hidden": hidden, "empty": empty,
+            "diagram": render_diagram(trees, empty),
+            "table": render_table(index, hidden)}
 
 
 def command_tree(args):

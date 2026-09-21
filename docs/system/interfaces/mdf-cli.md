@@ -439,12 +439,14 @@ converge/integrate 的测试规则变更需要 `--test-approval <用户确认记
 阶段值为 design、write-tests、implement、converge、code-review、fact-update。
 
 `tree` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
-`tree --repo <仓库> [--depth 3]` 输出 trees、index、hidden；只读，非法依赖失败。
+`tree --repo <仓库> [--depth 3]` 输出 trees、index、hidden、diagram 与 table；
+只读，非法依赖失败。
 `trees` 为 draft 与 ready 的混态森林：子节点只挂在未满足的 active PRP 下，
 milestone 依赖留在 `blocked_by`，不展开为成员边。根按 milestone 组排序：
 无 milestone 依赖的无归属根在前，被依赖的组在上，组内按 PRP ID。`index` 为
 `{groups, ungrouped}`：每项含 `status`、`depends_on` 与 `blocked_by`；
-有 milestone 的按值分组，无归属放入 `ungrouped`。
+有 milestone 的按值分组，无归属放入 `ungrouped`。`diagram` 为 unicode 混态树；
+`table` 为 Markdown 索引表，无归属行在前，末行报 hidden。
 `prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为
 `planning`，在完整预检后一次写入拆分结果。
 输入包含 source、children、downstream、rationale；children 每项含 filename、id、depends_on、body，

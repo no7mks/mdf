@@ -33,7 +33,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check repo | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth、manifest ready | 2 | 停止并报告 |
 | 2 | Run CLI | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
-| 3 | Render tree | 脚本 | 原样展示 CLI 的 diagram、index 与 hidden | 树、索引、hidden | 结束 | 缺字段或格式不符则停止 |
+| 3 | Render tree | 约束 | diagram 入 text 围栏，table 原样成表格 | 树、索引、hidden | 结束 | 缺字段或格式不符则停止 |
 
 `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行本流程；
 也可由 next 在无在途时内部委托。可带 `--depth N`。
@@ -52,9 +52,13 @@ ready PRP 时满足。非法依赖停止，不输出误导性树。空结果明�
 
 ### 展示
 
-CLI `diagram` 已含图例与按 milestone 分组的 unicode 混态树。原样输出
-`diagram`、`index` 与 `hidden`，不得改画。缺任一字段则停止。`empty` 时
-`diagram` 为「无 draft 且无 ready。」；否则须含图例。
+CLI `diagram` 已含图例与按 milestone 分组的 unicode 混态树。必须把
+`diagram` 放入 text 围栏块原样输出，保留换行；不得写成普通段落。
+CLI `table` 已是一张 Markdown 索引表，必须原样输出，不得放入围栏块，
+不得改画成 json 或其他列表。不得再展示 `index` JSON。缺 `diagram`、
+`table` 或 `hidden` 则停止。
+`empty` 时 `diagram` 为「无 draft 且无 ready。」，仍放入围栏块；
+`table` 仍含表头与 `hidden:` 行。非空时 `diagram` 须含图例。
 组头不计入 depth。
 
 图例固定为：`● ready`、`○ draft`、`* in_progress`、`↩ 交叉引用`、
@@ -78,4 +82,5 @@ milestone 依赖的组不加箭头。截断层不画，只报 `hidden`。树的�
 表示完成一个上游即可开工。
 
 索引按 milestone 分组，无归属另列；每项含 id、title、status、
-`depends_on`、`blocked_by` 与 `in_progress`。
+`depends_on`、`blocked_by` 与 `in_progress`。`table` 合成一张表，
+无归属行在前，其后按组；末行为 `hidden:` 加被截断 ID。

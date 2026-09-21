@@ -423,6 +423,19 @@ def test_documented_archive_commands_work_from_outside_target(python_exe, tmp_pa
             assert (repo / "docs/proposals" / "archive" / "1.2" / PRP_NAME).is_file()
 
 
+def test_tree_renders_diagram_in_fence_and_index_as_table():
+    text = workflow("tree")
+    table = rows(text)
+    assert table[2][1] == "Render tree"
+    assert table[2][2] == "约束"
+    assert "text 围栏" in table[2][3] and "表格" in table[2][3]
+    assert "text 围栏块" in text
+    assert "不得放入围栏块" in text
+    assert "不得改画成 json" in text
+    assert "不得再展示 `index` JSON" in text
+    assert "仍含表头与 `hidden:` 行" in text
+
+
 def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
     table = rows(text)
