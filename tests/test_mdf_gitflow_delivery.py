@@ -80,6 +80,11 @@ def test_start_uses_local_base_without_upstream(
         ]
     elif kind == "bugfix":
         identifier = ["--bug", "bug-CD34"]
+    elif kind == "release":
+        identifier = [
+            "--version", "1.3.0",
+            "--objectives-file", str(write_release_objectives(tmp_path)),
+        ]
     else:
         identifier = ["--version", "1.3.0"]
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
@@ -100,6 +105,17 @@ def test_start_uses_local_base_without_upstream(
         qa = Path(result["roles"]["qa"][0]["worktree"])
         assert qa == repo.parent / f"{repo.name}-worktrees" / "qa" / Path(result["branch"])
         assert git(qa, "rev-parse", "HEAD").stdout.strip() == result["start_commit"]
+    elif kind == "release":
+        expected = git(work, "rev-parse", "HEAD").stdout.strip()
+        assert expected != result["start_commit"]
+        root = work / "changes/unreleased/1.3.0"
+        assert (root / "objectives.md").is_file()
+        assert (root / "delivery.json").is_file()
+        identity = json.loads((root / "delivery.json").read_text())
+        assert identity["branch"] == "release/1.3.0"
+        assert identity["start_commit"] == result["start_commit"]
+        doctor = payload(mdf(python_exe, "doctor", "--repo", str(work)))
+        assert doctor["findings"] == []
     assert git(work, "rev-parse", "HEAD").stdout.strip() == expected
     tracking = run(["git", "rev-parse", "--abbrev-ref", "@{upstream}"], cwd=work)
     assert tracking.returncode != 0
@@ -308,3 +324,27 @@ def test_review_start_stays_fixed_when_parent_moves(python_exe, tmp_path, kind):
     assert saved == data["start_commit"]
     assert saved != git(repo, "rev-parse", data["base"]).stdout.strip()
     assert git(work, "diff", saved, "HEAD").stdout == ""
+
+
+def test_start_release_requires_objectives_and_rejects_markers(
+    python_exe: str, tmp_path: Path,
+):
+    repo = local_repo(tmp_path)
+    missing = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "release",
+        "--version", "1.3.0",
+    )
+    assert "missing_objectives" in missing.stderr
+    template = tmp_path / "blank.md"
+    template.write_text("# 发布目标\n\n{{MDF_RELEASE_SCOPE}}\n")
+    marked = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "release",
+        "--version", "1.3.0", "--objectives-file", str(template),
+    )
+    assert "missing_objectives" in marked.stderr
+    hotfix = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
+        "--version", "1.2.1", "--objectives-file",
+        str(write_release_objectives(tmp_path)),
+    )
+    assert "unexpected_objectives" in hotfix.stderr

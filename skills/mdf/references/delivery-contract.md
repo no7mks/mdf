@@ -6,14 +6,19 @@
 ## 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。start 经内部 clarify 确认
-目标、非目标、约束与可验证验收，objectives 引用 PRP，避免复制另一个需求来源。
+目标、非目标、约束与可验证验收；feature 的 objectives 引用 PRP，避免复制另一个
+需求来源。release 的 objectives 写本版收口范围、预发布工作、非目标与可验证验收，
+不引用单个 PRP；该分支承担上线前预发布（含跨仓联调），不得实施新 PRP。
+hotfix 不写 objectives。
 slug 取自 PRP 文件名，start 固定使用，不随标题修改。delivery.json 记录
 proposal、slug、branch、start_commit。
 起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
 
 开发材料自 start 起位于 `changes/unreleased/<prp-slug>/`：objectives.md、design.md、
 delivery.json、gates/、code-review.md；finish 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
-`changes/<version>/<prp-slug>/`。代码、测试、fixture 留在项目原位置，大日志不要求提交。
+`changes/<version>/<prp-slug>/`。release 材料位于 `changes/unreleased/<semver>/`：
+start 写入 objectives.md 与 delivery.json；design 等阶段材料仅 roster ≥1 时出现。
+代码、测试、fixture 留在项目原位置，大日志不要求提交。
 objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只相对当前文件
 （`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。搬迁时 CLI 改写仍有效
 的相对路径。delivery.json 与 gate 内路径一律仓库相对；fingerprint 规范化用仓库相对或

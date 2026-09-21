@@ -264,6 +264,8 @@ start；strategy / models 也可转交给 design、code-review。
 不在当前目录开分支，不 push。开分支前展示 member、strategy 与 models
 并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；`--*-model`
 为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
+release 开分支前确认发布目标（预发布工作，含跨仓联调；不实施新 PRP）。
+hotfix 不写 objectives。
 
 `$mdf design`
 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数

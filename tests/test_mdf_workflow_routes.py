@@ -190,7 +190,7 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
 def test_start_clarifies_feature_objectives_before_branch():
     text = workflow("start")
     table = rows(text)
-    assert table[0][5] == "feature 2；其他 3"
+    assert table[0][5] == "feature/release 2；其他 3"
     assert "内部 clarify" in table[1][3]
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
@@ -207,6 +207,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[4][6] == "留在 5 等待"
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
+    assert "assets/templates/release-objectives.md" in text
     assert "$mdf prp review" in text
     assert "qa_strategy" in text and "dev_strategy" in text
     assert "review_strategy" in text
@@ -215,9 +216,10 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "已锁定的 release 或 hotfix 上修复 Bug 不走本 intent" in text
     assert "口语点名的模型" in text
     assert "不要求官方 id" in text
+    assert "不得实施新 PRP" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert re.search(r"其他种类通过 ─+→ 3 Confirm roster", diagram)
-    assert re.search(r"feature 通过", diagram)
+    assert re.search(r"bugfix/hotfix 通过 ─+→ 3 Confirm roster", diagram)
+    assert re.search(r"feature/release 通过", diagram)
     assert re.search(r"3 Confirm roster", diagram)
     assert re.search(r"创建成功", diagram)
     assert re.search(r"4 Start branch", diagram)
@@ -585,6 +587,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "bugfix/hotfix/release 不要求 feature 的 design/converge gate",
+        "审查基线仍为上一正式发布", "objectives.md",
         "按当前分支执行所需 suite", "最终 final_head",
     ):
         assert rule in text

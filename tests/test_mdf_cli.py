@@ -122,6 +122,35 @@ def test_doctor_allows_semver_unreleased_review_dir(
     assert data["normal_workflows_allowed"] is True
 
 
+def test_doctor_allows_semver_unreleased_identity_without_review(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    folder = repo / "changes/unreleased/1.3.0"
+    folder.mkdir(parents=True)
+    (folder / "delivery.json").write_text("{}\n", encoding="utf-8")
+    (folder / "objectives.md").write_text("# 发布目标\n\n本版收口。\n")
+    init_git(repo)
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["findings"] == []
+    assert data["normal_workflows_allowed"] is True
+
+
+def test_doctor_rejects_empty_semver_unreleased_dir(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    folder = repo / "changes/unreleased/1.3.0"
+    folder.mkdir(parents=True)
+    init_git(repo)
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"] is False
+    codes = {item["code"] for item in data["findings"]}
+    assert "change.missing" in codes
+
+
 def test_doctor_allows_ignored_runtime_files(
     python_exe: str, tmp_path: Path
 ):

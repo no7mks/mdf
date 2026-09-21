@@ -166,19 +166,21 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
-| 有交付材料且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
+| feature 或 roster ≥1，且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
 | roster ≥1 且 qa/dev 均有未完成路且前置条件满足 | 并行委托 `references/write-tests.md` 与 `references/implement.md` |
 | roster ≥1 仅一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成一路 |
 | roster `0,0` 的 feature 测试或实现未完成 | 主 Agent 在 owner 串行 write-tests 再 implement |
-| 测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
+| feature 或 roster ≥1，测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
 | 实现完成且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
-bugfix 在 roster `0,0` 时使用对应 Bug；release/hotfix 使用发布或热修复范围，
-并可在 owner 上直接修已确认的 open Bug（完成后标为 `fixed`，不另开 bugfix、
-不写 bugfix child Change）。不套用 feature 阶段 gate；roster ≥1 时走 design /
+bugfix 在 roster `0,0` 时使用对应 Bug。release 对照 `objectives.md` 完成计划内
+预发布工作（含跨仓联调证据），并可在 owner 上直接修已确认的 open Bug
+（完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change）。不得实施新 PRP；
+缺能力则推迟或作废本次 release，回 develop 开 feature。hotfix 使用热修复范围，
+同样可直接修 Bug。不套用 feature 阶段 gate；roster ≥1 时走 design /
 write-tests / implement / converge。
 没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
 发现缺少设计决定或验收依据时：默认模式询问；`--auto-pilot` 能由仓库证据裁定则自裁定，

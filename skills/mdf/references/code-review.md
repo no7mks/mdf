@@ -107,8 +107,10 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
 仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
 并在步骤 4 按所需 suite 重验。
-其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate；
-读取对应 Bug、交付目标、版本材料及适用设计作为审查依据，不为形式创建 feature 材料。
+其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate。
+release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
+审查基线仍为上一正式发布。hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
+不为形式创建 feature 材料。
 
 分层仓库的 bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
 （`{"suites":["<已有 suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从 manifest

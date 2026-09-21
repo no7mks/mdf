@@ -202,7 +202,8 @@ def test_project_verify_progress_uses_global_total(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "release",
-        "--version", "1.3.0",
+        "--version", "1.3.0", "--objectives-file",
+        str(write_release_objectives(tmp_path)),
     ))
     work = Path(created["worktree"])
     path = work / ".mdf/manifest.yaml"

@@ -64,6 +64,8 @@ owner subagent，不计入 roster。尚未 start 时先委托 start。可传位�
 需要用户决定时暂停。
 `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认；
 `--yolo` 同等自裁定且跳过该确认；死硬阻塞仍停止。release/hotfix 的 finish 包含 tag 与发版推送。
+release 从 develop 开分支前确认发布目标；该分支承担上线前预发布（含跨仓联调），
+不实施新 PRP。code-review 基线仍为上一正式发布。
 
 一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
 gate 检查共同基线与有效证据。start 始终独立 worktree；write-tests 与 implement

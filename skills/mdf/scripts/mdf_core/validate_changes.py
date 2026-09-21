@@ -48,11 +48,13 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                     continue
                 review = change_dir / "code-review.md"
                 if semver:
-                    if not review.is_file():
+                    identity = change_dir / "delivery.json"
+                    if not identity.is_file() and not review.is_file():
                         add_finding(
                             findings,
                             "change.missing",
-                            "release/hotfix 审查目录需要 code-review.md",
+                            "release/hotfix 目录需要 delivery.json 或 "
+                            "code-review.md",
                             relative(repo, change_dir),
                         )
                     continue

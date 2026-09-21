@@ -28,6 +28,14 @@ BUG_ID_RE = re.compile(r"^bug-[A-HJ-NP-Z2-9]{4}$")
 JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
 
 
+def write_release_objectives(
+    tmp_path: Path, name: str = "release-objectives.md",
+) -> Path:
+    path = tmp_path / name
+    path.write_text("# 发布目标\n\n本版收口与预发布验收。\n", encoding="utf-8")
+    return path
+
+
 def mdf(python_exe: str, *args: str, cwd: Path | None = None):
     """调用同一进程内的 CLI，避免每个命令再起一个 Python 解释器。"""
     scripts = str((skill_dir("mdf") / "scripts").resolve())

@@ -312,8 +312,9 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 `feature` 必须有 `--proposal` 与 `--objectives-file`，slug 由 PRP 文件名决定，
 禁止 `--name`。`bugfix` 必须有 `--bug <Bug ID>`，分支名为 `bugfix/<Bug ID>`，
 禁止 `--name`。
-`release` 与 `hotfix` 必须有稳定 SemVer 的 `--version`。命令要求 clean worktree
-和本地基线分支存在。不要求 origin，不 fetch、不 push。
+`release` 必须有稳定 SemVer 的 `--version` 与 `--objectives-file`。
+`hotfix` 必须有稳定 SemVer 的 `--version`，禁止 `--objectives-file`。
+命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
 
 feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `master` 创建。
 若新分支在本地已存在则失败，不检查远端。始终从基线在仓库同级
@@ -334,7 +335,8 @@ flag 则不写该键。含空格时整句作为一个 token。这些参数
 供 bugfix/hotfix code-review 读取；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
 不设置 upstream。分支删除时配置随分支清理。
 feature 写入 `changes/unreleased/<slug>/objectives.md` 时，把仓根风格的本地链接改成
-相对该目录的路径。
+相对该目录的路径。release 同样写入 `changes/unreleased/<semver>/objectives.md` 与
+`delivery.json`，与 roster 无关。
 
 ### `planning`
 
@@ -421,6 +423,8 @@ intent 和测试的确定性基础，不是面向最终用户的直接产品入�
 feature start 要求 `--proposal <ID> --objectives-file <文件>`，不接受 `--name`；
 slug 取自 PRP 文件名。确认的目标文本先从文件读取，
 新分支记录固定起点与 slug，写入材料并提交，不 push。缺 PRP、依赖阻塞或已开工时拒绝。
+release start 要求 `--version <semver> --objectives-file <文件>`；确认的发布目标写入
+`changes/unreleased/<semver>/`，不 push。
 
 `delivery <action> --repo <仓库>`：
 

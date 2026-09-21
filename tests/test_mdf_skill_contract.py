@@ -448,7 +448,8 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "不 fetch、不要求 origin、不 push" in start
     assert "内部 clarify intent" in start
     assert "不写目标" in start
-    assert "feature 2；其他 3" in start
+    assert "feature/release 2；其他 3" in start
+    assert "release-objectives.md" in start
     assert "Confirm roster" in start
     assert "member、strategy 与 models" in start
     assert "no-ff 合并到本地 develop" in finish

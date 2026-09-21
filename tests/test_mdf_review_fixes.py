@@ -183,7 +183,11 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
 @pytest.mark.parametrize("advance,pushed", [("develop", True), ("develop", False), ("master", True)])
 def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_path, kind, advance, pushed):
     repo, remote = start_repo(tmp_path)
-    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind, "--version", "1.2.1"))
+    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind,
+                          "--version", "1.2.1", *([
+                              "--objectives-file",
+                              str(write_release_objectives(tmp_path)),
+                          ] if kind == "release" else [])))
     work = Path(created["worktree"])
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
@@ -295,7 +299,8 @@ def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
 def test_layered_release_rejects_quick_only_evidence(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
-                          "--version", "1.3.0"))
+                          "--version", "1.3.0", "--objectives-file",
+                          str(write_release_objectives(tmp_path))))
     work = Path(created["worktree"])
     layer_commands(work, ["    quick: [check]"], [SLOW_ITEM])
     args = ["--repo", str(work)]

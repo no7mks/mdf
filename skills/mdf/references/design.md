@@ -56,7 +56,8 @@ objectives 负责。项目级 kind 与失败语义以 `docs/system/testing/` 为
 当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
-feature 的 objectives 由 start 写入；其他 kind 在 roster ≥1 时若缺则本步先写。
+feature 与 release 的 objectives 由 start 写入；bugfix/hotfix 在 roster ≥1 时
+若缺则本步先写。
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库：
 类型、接口、错误语义、明确未实现的 stub 和最小测试设施，使两路从同一提交继续，
 不得各自再写一份底座。纯文档改动不制造代码；底座未就绪不得记录 design gate。

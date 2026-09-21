@@ -10,10 +10,10 @@
 │ 1 Resolve branch                 │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ───────→ [留在 1 询问]
-                 ├──── 其他种类通过 ────→ 3 Confirm roster
+                 ├──── 失败/缺失 ─────────────→ [留在 1 询问]
+                 ├──── bugfix/hotfix 通过 ────→ 3 Confirm roster
                  │
-                 ▼ feature 通过
+                 ▼ feature/release 通过
 ┌──────────────────────────────────┐
 │ 2 Clarify objectives             │
 └────────────────┬─────────────────┘
@@ -56,7 +56,7 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | feature 2；其他 3 | 留在 1 询问 |
+| 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | feature/release 2；其他 3 | 留在 1 询问 |
 | 2 | Clarify objectives | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
 | 4 | Start branch | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 5 | 检查失败不创建；创建中失败拆除 |
@@ -71,19 +71,21 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 **参数**
 
 一次只要求一个分支的类型和必要标识：feature 要 PRP ID，bugfix 要 Bug ID，
-release/hotfix 要稳定 SemVer。
+release/hotfix 要稳定 SemVer；feature 与 release 还要确认的 objectives。
 feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP；
 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，
 不得另选 slug。已锁定的 release 或 hotfix 上修复 Bug 不走本 intent，
 不创建 bugfix 分支。
+release 必须绑定稳定 SemVer；本版范围是 start 时已在 develop 的 child Change，
+不得把新 PRP 当作本版实现范围。hotfix 不写 objectives。
 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`，
 只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选，按 `id` 与 `title` 供用户选择；
 不逐篇翻阅 `docs/proposals/`。
 用户未指定 Bug 时运行 `list --repo "$REPO_ROOT" --type bug --status open`，
 按 `id` 与 `title` 供用户选择；不逐篇翻阅 `docs/bugs/`。
 
-验收：明确参数；feature 另确认 PRP，bugfix 另确认 Bug。
+验收：明确参数；feature 另确认 PRP，bugfix 另确认 Bug，release 另确认版本与目标。
 
 异常与交接：询问。不得从自然语言猜测版本。
 
@@ -91,14 +93,20 @@ bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，
 
 **澄清**
 
-对照 ready PRP 与 `assets/templates/objectives.md`，
+feature 对照 ready PRP 与 `assets/templates/objectives.md`，
 使用内部 clarify intent，议题固定为「本次 feature 交付的目标、非目标、约束与可验证验收」。
 objectives 用 `[prp-001](../../../docs/proposals/<filename>)` 引用 PRP，
 不另造需求来源，不改写 PRP。
 PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写目标，
 提示 `$mdf prp review`。
+release 对照 `changes/unreleased/` 中非 SemVer 子目录的 child Change，以及
+`assets/templates/release-objectives.md`。使用内部 clarify intent，议题固定为
+「本版收口范围、预发布工作、非目标与可验证验收」。本版范围写入 start 时的
+child Change 清单；跨仓 pin 写 repo 与 branch/commit/version；仓外联调证据的
+记录方式写入验收。允许在本分支改 Bug、配置、文档与联调证据；不得实施新 PRP，
+缺能力则推迟或作废本次 release，回 develop 开 feature。
+hotfix 与 bugfix 不进入本步骤。
 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
-其他种类不进入本步骤。
 
 验收：确认目标与共同理解。
 
@@ -139,7 +147,8 @@ owner）、strategy（`qa_strategy`、`dev_strategy`、`review_strategy`）。
 feature 使用 `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>`，
 不传 `--name`；CLI 从 PRP 文件名取出 slug。
 bugfix 使用 `--bug <Bug-ID>`，不传 `--name`；CLI 用该 ID 作为分支名。
-release/hotfix 使用 `--version <semver>`。
+release 使用 `--version <semver> --objectives-file <步骤 2 确认文件>`。
+hotfix 使用 `--version <semver>`，不传 `--objectives-file`。
 将步骤 3 确认的 roster 传给 CLI：选用 named 时传 `--roster`；人数以
 `--qa`、`--dev`、`--reviewers` 传入；策略以 `--qa-strategy`、
 `--dev-strategy`、`--review-strategy` 传入；有某 intent 的 model 时传对应
@@ -164,10 +173,11 @@ worktree 与分支。不推送，不设置 upstream。
 CLI 在本地 Git config 的 `branch.<完整分支名>.mdf-start-commit` 固定起点完整 hash，
 供 bugfix/hotfix code-review 使用；并以 `branch.<owner>.mdf-roster` 冻结人数与策略。
 删除分支时该配置随分支删除，不设置 upstream。
-feature 以及 roster ≥1 的其他 kind 在 owner 写入
-`changes/unreleased/<slug>/delivery.json`（含 roster）；feature 另写目标并提交。
+feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.json`
+（含 roster）及 `objectives.md` 并提交。roster ≥1 的 bugfix/hotfix 写入
+`delivery.json`（含 roster），不写 objectives。
 roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
-创建成功进入 5，本步不结束。roster `0,0` 的非 feature 不创建阶段材料；bugfix
+创建成功进入 5，本步不结束。roster `0,0` 的 bugfix/hotfix 不创建阶段材料；bugfix
 的交付 suite 关联由 code-review 步骤 1 写入，本步不写。
 
 <a id="s5"></a>

@@ -126,7 +126,9 @@
 
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
-目录有交付身份即可存在，不必先有 CHANGE.md。code-review 记录写在对应
+目录有交付身份即可存在，不必先有 CHANGE.md。release 的
+`changes/unreleased/<semver>/` 自 start 起即可存在（objectives.md 与
+delivery.json）；hotfix 仅 roster ≥1 时写入 delivery.json。code-review 记录写在对应
 `changes/unreleased/<slug>/code-review.md`：feature/bugfix 用交付 kebab-case slug，
 release/hotfix 用该分支稳定 SemVer。每个稳定版本目录始终只有一个根
 `CHANGE.md`。
