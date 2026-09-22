@@ -38,7 +38,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf fact audit [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
-| `$mdf integrate` | 在 worktree 之间收发联调消息；跨机器时可选 HTTP |
+| `$mdf integrate` | 在 worktree 之间收发联调消息；通道打开后持续 poll；跨机器时可选 HTTP |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
 `next` 单步续办，或调用 `deliver` 从 start 起持续推进当前一次交付直到 finish：

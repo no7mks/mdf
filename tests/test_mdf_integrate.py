@@ -116,7 +116,7 @@ def test_branch_name_resolves_to_worktree(tmp_path: Path, python_exe: str) -> No
     assert got["message"]["body"] == "在分支上"
 
 
-def test_http_requires_token_after_ping_and_end_stops_listen(
+def test_http_requires_token_after_ping_and_end_keeps_listen(
     tmp_path: Path, python_exe: str
 ) -> None:
     sender = _repo(tmp_path, "sender")
@@ -192,7 +192,32 @@ def test_http_requires_token_after_ping_and_end_stops_listen(
                 "--to", "remote", "--kind", "end",
             )
         )
-        assert proc.wait(timeout=5) == 0
+        assert proc.poll() is None
+        payload(
+            mdf(
+                python_exe, "integrate", "send", "--repo", str(sender),
+                "--to", "remote", "--body", "仍在监听",
+            )
+        )
+        ended = payload(
+            mdf(
+                python_exe, "integrate", "poll", "--repo", str(receiver),
+                "--timeout", "2",
+            )
+        )
+        assert ended["message"]["kind"] == "end"
+        later = payload(
+            mdf(
+                python_exe, "integrate", "poll", "--repo", str(receiver),
+                "--timeout", "2",
+            )
+        )
+        assert later["message"]["body"] == "仍在监听"
+        status = payload(
+            mdf(python_exe, "integrate", "status", "--repo", str(receiver))
+        )
+        assert status["listen"] == started["listen"]
+        assert status["pending"] == 0
     finally:
         if proc.poll() is None:
             proc.kill()
@@ -201,10 +226,3 @@ def test_http_requires_token_after_ping_and_end_stops_listen(
             proc.stdout.close()
         if proc.stderr is not None:
             proc.stderr.close()
-    ended = payload(
-        mdf(python_exe, "integrate", "poll", "--repo", str(receiver), "--timeout", "2")
-    )
-    assert ended["message"]["kind"] == "end"
-    status = payload(mdf(python_exe, "integrate", "status", "--repo", str(receiver)))
-    assert status["listen"] == ""
-    assert status["pending"] == 0

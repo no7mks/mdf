@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-import threading
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
@@ -48,8 +47,6 @@ class Handler(BaseHTTPRequestHandler):
             self._json(409, {"ok": False, "error": "duplicate_id"})
             return
         self._json(200, {"ok": True, "id": message["id"]})
-        if message["kind"] == "end":
-            threading.Thread(target=self.server.shutdown, daemon=True).start()
 
     def _json(self, status: int, payload: dict[str, Any]) -> None:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
