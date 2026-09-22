@@ -164,9 +164,9 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
     assert table[7][5] == "9"
-    assert table[8][5] == "10"
-    assert "feature/bugfix 前进→2" in table[8][6]
-    assert "其余前进或未过则停" in table[8][6]
+    assert "无关口 10" in table[8][5] and "deliver 6" in table[8][5]
+    assert "feature/bugfix 回 2" in table[8][6]
+    assert "其余停" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert "有写入" not in diagram and "无写入" not in diagram
     assert "preview" not in diagram and "预览" not in diagram

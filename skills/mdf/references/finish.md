@@ -72,14 +72,17 @@
                  ├──── 主线前进，feature/bugfix ────→ 2 Integrate and review
                  ├──── 主线前进，release/hotfix ────→ [报告并停止]
                  ├──── 交付条件未通过 ──────────────→ [报告并停止]
+                 ├──── 通过且须 Gitflow 确认 ───────→ [返回 deliver 步骤 6]
                  │
-                 ▼ 必要提交完成且交付条件通过
+                 ▼ 通过且无 Gitflow 确认关口
 ┌──────────────────────────────────┐
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ─────────→ [结束]
-                 └──── 失败/缺失 ────→ [报告现场并询问]
+                 ├──── 通过 ──────────────────→ [结束]
+                 ├──── 失败且用户决定继续 ────→ 10 Finish Gitflow
+                 ├──── 失败且未决 ────────────→ 10 Finish Gitflow
+                 └──── 失败且用户停止 ────────→ [报告现场并停止]
 ```
 
 ## 工作流（唯一执行契约）
@@ -102,8 +105,8 @@
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 约束 | 待收入 fixed 先委托 verify-fix，再准备 closures | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 10 | feature/bugfix 前进→2；其余前进或未过则停 |
-| 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
+| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 无关口 10；须确认回 deliver 6 | feature/bugfix 回 2；其余停 |
+| 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构
 
@@ -298,10 +301,11 @@ feature/bugfix 必须有规范 child Change。
 
 **合并**
 
-由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 则步骤 9 通过后必须返回
-deliver，待其取得用户对 Gitflow 收口的确认后才执行本步骤；
+由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 且步骤 9 通过，必须返回
+deliver 步骤 6，待其取得确认后才执行本步骤；
 不得自行调用 `finish-gitflow`。由 `$mdf deliver --yolo` 委托时步骤 9 通过后
 直接执行本步骤，不返回确认。独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
+拒绝则不执行本步骤。
 调用 `finish-gitflow --repo "$REPO_ROOT"`。feature/bugfix 不 fetch、不 push；
 no-ff 合并到本地 develop，删除本地源分支。角色分支仍在则失败。
 release/hotfix 要求 origin；首次调用 fetch 后要求本地 master/develop 与远端一致；
@@ -312,8 +316,9 @@ no-ff 合并到 master，创建注释 `v<semver>` tag，再 no-ff 合并 master 
 验收：合并、tag 与（release/hotfix 的）推送结果。
 
 异常与交接：停止并报告当前分支、已完成合并、 tag 与推送状态；冲突时 CLI abort 当前 merge，
-但不得声称此前已完成的合并也被回退。 不继续推送或删分支，询问用户如何继续；
-必要修复按确认范围由 Agent 复核并提交；后续 Git 操作按用户决定继续。
+但不得声称此前已完成的合并也被回退。不继续推送或删分支，询问用户如何继续。
+用户决定继续或尚未决定则回到步骤 10，再调用同一命令或继续询问。用户停止则停止。
+必要修复按确认范围由 Agent 复核并提交。
 
 release/hotfix 首次发布前，CLI 在 Git common dir 的 `mdf/finish/<完整分支名>.json`
 保存源提交、origin、目标起点及后续进度。失败后取得用户继续决定，再调用同一命令；

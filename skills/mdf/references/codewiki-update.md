@@ -78,7 +78,7 @@
 | 1 | Check entry | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
 | 2 | Check standard | 约束 | 按契约逐项核对 Wiki standard | 目录与基线检查 | 3 | 空则要求 generate；非标列出项并停止 |
 | 3 | Analyze | 脚本 | MCP analyze_repo，读取完整 changes | 完整变更分类 | 4 | 走 recovery.md |
-| 4 | Check changes | 约束 | 分类变化；无变化则关闭验收 | 分类、diff、workspace | 无变化结束；否则 5 | 走 recovery.md |
+| 4 | Check changes | 约束 | 分类变化 | diff、workspace | 无变化已验收结束；有代码则 5 | 关闭或验收失败则 recovery |
 | 5 | Map modules | 约束 | 核对既有树映射、级联范围与删页需求 | affected/cascade | 6 | 走 recovery.md |
 | 6 | Update pages | 脚本 | 最小修订受影响页，刷新父页与 overview | 实际写入文件 | 7 | 走 recovery.md |
 | 7 | Review hacks | 脚本 | 按证据重审 hack，按页面状态维护链接 | hack、overview 一致 | 8 | 删页或失败走 recovery.md |

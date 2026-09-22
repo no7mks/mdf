@@ -28,9 +28,9 @@
 │ 4 Refine structure               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 有改写 ────────────────────→ 3 Audit
                  ├──── 第三次仍有结构 finding ────→ [停止并报告]
                  ├──── 失败/缺失 ─────────────────→ [停止并报告]
+                 ├──── 有改写 ────────────────────→ 3 Audit
                  └──── 无改写 ────────────────────→ [结束]
 ```
 
@@ -44,7 +44,7 @@
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
 | 3 | Audit | 约束 | 委托 fact audit；按变更验证 | 审阅、验证 | 4 | 停止并报告 |
-| 4 | Refine structure | 约束 | 只改范围内结构 finding | 结构 diff、适用 gate | 改写回 3；否则结束 | 超两次或失败则停 |
+| 4 | Refine structure | 约束 | 改结构 | gate | 未超次改写回 3；无改写且无超次 finding 结束 | 超次 finding 或失败则停 |
 
 ## 术语与数据结构
 
@@ -146,11 +146,13 @@ design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 在 `PROJECT.md` 写入 `docs/system/overview.md`、`docs/README.md` 与
 `docs/system/testing/index.md`。
 不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
-有改写则回到 3 重审；`4→3` 最多两次，第三次仍有结构 finding 则停止并报告。
+有改写则回到 3 重审；`4→3` 最多两次。
+第三次仍有结构 finding（表中的超次 finding）则停止并报告，即使本步已经改写也不回 3。
+无结构 finding 时无改写结束，含第三次审阅已通过。失败与无改写互斥。
 无改写或重审通过后按公共规则提交；feature finish 委托时由调用方统一提交，
 并运行
 `delivery record --stage fact-update --summary <本次事实审阅确认与验证证据>`。
 
-验收：结构 diff、适用提交、feature finish 委托时的 fact-update gate。
+验收：结构 diff、适用 gate、适用提交、feature finish 委托时的 fact-update gate。
 
-异常与交接：写入失败保留现场；gate 记录失败时停止并报告，不声称事实同步完成。
+异常与交接：写入失败保留现场并停止，不按无改写结束；gate 记录失败时停止并报告，不声称事实同步完成。
