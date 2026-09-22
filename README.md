@@ -32,6 +32,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf write-tests` | 按目标编写可执行测试；不要求全绿 |
 | `$mdf implement` | 按已确认设计实现 |
 | `$mdf converge` | 收敛：集成并持续修复到所需 suite 通过 |
+| `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
+| `$mdf verify-fix [<bug-id>]` | 二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复） |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；finish 前段自动调用 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |

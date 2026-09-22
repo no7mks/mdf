@@ -59,10 +59,12 @@ Bug 不使用 `depends_on`。一般关联只在正文中说明。正文必须包
 只接受稳定 SemVer。
 
 Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。`open` 表示待修复；
-`fixed` 表示已修复、等待独立验证；只有二次验证通过才转为 `closed`。可在
-bugfix、feature、release 或 hotfix 交付中把 Bug 标为 `fixed`。release 与 hotfix
-上直接修复时不创建 bugfix 分支或 bugfix child Change；该 Bug 进入版本根 Change
-或 hotfix 结果的 `fixed` outcome。`rejected` 是终态，且必须有 `reject-reason`：
+`fixed` 表示已修复、等待独立二次验证；二次验证通过后才在发版收口转为
+`closed`。可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、
+release 或 hotfix 交付。
+release 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change；该 Bug
+进入版本根 Change 或 hotfix 结果的 `fixed` outcome。独立修复不写 child Change。
+`rejected` 是终态，且必须有 `reject-reason`：
 `wont-fix`、`not-a-bug`、`cannot-reproduce`、`obsolete` 或 `duplicate`。非
 duplicate 的 `open`、`fixed`、`closed` Bug 必须有 `critical`、`major` 或
 `trivial` 三值 severity。`fixed_in` 只允许在 `closed` Bug 中，且必须是稳定

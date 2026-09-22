@@ -32,7 +32,12 @@ objectives/design 是受管可搬迁 Markdown。仓内 Markdown 本地链接只�
 bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
 implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
 release 与 hotfix 可在 owner 上直接修复已确认的 open Bug，标为 `fixed`；不另开
-bugfix 分支，也不写 bugfix child Change。
+bugfix 分支，也不写 bugfix child Change。独立 `$mdf fix` 在当前 checkout
+澄清、先记录有效红灯再修复并验证单个 open Bug，标为 `fixed`；不 start、
+不切分支、不走交付主线、不记录 gate、不 code-review、不 finish，
+也不由 deliver 内部委托。独立 `$mdf verify-fix` 对已 `fixed` 的 Bug 跑复现
+用例并只审这次修复；release/hotfix 的 finish 在关闭这些对象前内部委托，
+不标 `closed`。
 code-review 的独立审查份数取冻结的 roster.reviewers（solo 默认 1，min-tdd
 默认 2，pair 类默认 3）；finish 集成产生的不可跳过增量新一轮为 1，不改冻结
 roster。见 `references/code-review.md`。

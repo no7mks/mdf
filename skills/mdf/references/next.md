@@ -60,7 +60,7 @@
 表步骤 1「在途 2」同时覆盖上述 feature 交付与非 feature 的唯一在途。
 
 在途范围包括全部 MDF workflow：既包括交付主线与 deliver，也包括 init、
-bootstrap、migrate、intake、prp review、CodeWiki、clarify 等尚未完成的流程
+bootstrap、migrate、intake、prp review、CodeWiki、clarify、fix、verify-fix 等尚未完成的流程
 及其内部委托。
 结合当前对话的显式调用、已确认范围、待回答问题、失败与交接记录，以及目标
 现场识别。

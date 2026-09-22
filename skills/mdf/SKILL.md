@@ -49,6 +49,8 @@ disable-model-invocation: true
                  ├──── write-tests ───────────────────────────────────→ references/write-tests.md
                  ├──── implement ─────────────────────────────────────→ references/implement.md
                  ├──── converge ──────────────────────────────────────→ references/converge.md
+                 ├──── fix <bug-id> [--yolo] ─────────────────────────→ references/fix.md
+                 ├──── verify-fix [<bug-id>] ─────────────────────────→ references/verify-fix.md
                  ├──── code-review ───────────────────────────────────→ references/code-review.md
                  ├──── fact update ───────────────────────────────────→ references/fact-update.md
                  ├──── prp split ─────────────────────────────────────→ references/prp-split.md
@@ -87,6 +89,10 @@ disable-model-invocation: true
 help。`$mdf next` 无问号时执行 `references/next.md`。
 `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 仍是 deliver，不是独立 intent。
 `--auto-pilot` 与 `--yolo` 可在 target 前或后；target 由 deliver 解析。
+`$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后，仅自动确认
+内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
+`$mdf verify-fix [<bug-id>]` 仍是 verify-fix；无 ID 时只在 release/hotfix 上
+处理待收入的 `fixed` Bug。
 start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、

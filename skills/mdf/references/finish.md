@@ -54,7 +54,8 @@
 │ 7 Prepare closures               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── verify-fix 未通过 ────→ [停止]
+                 ├──── 失败/缺失 ────────────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -89,6 +90,7 @@
 `references/object-contract.md`。步骤 2 需要审查时读取并内部执行
 `references/code-review.md`。步骤 3 读取并内部执行 `references/fact-update.md`。
 步骤 4 已收口路径需要审阅时读取并内部执行 `references/fact-audit.md`。
+步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -98,7 +100,7 @@
 | 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | Prepare closures | 脚本 | 用 `list` 列 Bug，准备 closures 并取得接受 | 完整覆盖、接受记录 | 8 | 停止 |
+| 7 | Prepare closures | 约束 | 待收入 fixed 先委托 verify-fix，再准备 closures | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 10 | feature/bugfix 前进→2；其余前进或未过则停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 实际结果 | 结束 | 报告现场并询问 |
@@ -245,11 +247,17 @@ release notes 至少一项非空。
 
 **对象**
 
+先识别将作为本版 `fixed` outcome 收入的 Bug：`status: fixed` 且
+`found_in: unreleased`，以及 child Change `fixed:` 中仍为 `fixed` 的 ID。
+清单非空时内部执行 `references/verify-fix.md`，传入这些 ID；未通过则走本步骤
+失败，不准备 closures，不关闭对象。已有记录且当前 HEAD 上复现用例与审查范围
+仍有效则视为通过。无待收入 `fixed` Bug 则跳过委托。
 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed`，取 `found_in` 为 `unreleased`
 的条目作为待分类清单，不逐篇翻阅 `docs/bugs/`。
-对每个 active 且 `found_in: unreleased` 的 Bug 分类： fixed 经二次验证后由 CLI 关闭并写 fixed_in，
+对每个 active 且 `found_in: unreleased` 的 Bug 分类： `fixed` 须已通过本步
+委托的 verify-fix，再由 CLI 关闭并写 `fixed_in`；
 rejected 使用既有 reject-reason， deferred 保持 open；critical 仅 fixed；
 major deferred/wont-fix 要用户接受、理由和 follow-up； duplicate 不进 outcome，canonical 与 duplicate 一并归档。
 

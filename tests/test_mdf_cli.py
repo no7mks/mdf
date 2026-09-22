@@ -293,6 +293,17 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     assert "内部 clarify intent" in create
     assert "内部 clarify intent" in review and "内部 clarify intent" in migrate
     assert "内部 clarify intent" in start
+    fix = (skill / "references" / "fix.md").read_text(encoding="utf-8")
+    assert "内部执行 `references/clarify.md`" in fix
+    assert "`--yolo` 时主 Agent 依据仓库证据与 Bug" in fix
+    assert "不由 deliver 内部委托" in fix
+    assert "未记录有效红灯不得改生产实现" in fix
+    verify_fix = (skill / "references" / "verify-fix.md").read_text(
+        encoding="utf-8"
+    )
+    assert "只要求这些复现用例通过" in verify_fix
+    assert "不调用 `$mdf code-review`" in verify_fix
+    assert "导入错误、编译失败或环境故障不算有效红灯" in fix
     assert "明确确认才转" in review
 
 

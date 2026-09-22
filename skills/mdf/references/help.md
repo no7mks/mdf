@@ -99,6 +99,8 @@
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
 - `$mdf converge`：集成并持续修复到所需 suite 通过
+- `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
+- `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
 - `$mdf code-review`：审查并修复实现、测试和 code smell
 - `$mdf fact update [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   finish 前段自动调用
@@ -146,6 +148,10 @@ $mdf design
 $mdf write-tests
 $mdf implement
 $mdf converge
+$mdf fix bug-CD34
+$mdf fix bug-CD34 --yolo
+$mdf verify-fix
+$mdf verify-fix bug-CD34
 $mdf code-review
 $mdf fact update
 $mdf fact update --scope full
@@ -165,7 +171,7 @@ $mdf clarify 要不要把缓存放到 Redis
 主题键：`bootstrap`、`init`、`init migrate`、`migrate`、`intake`、`jot`、`jot promote`、
 `bug create`、`prp create`、`prp review`、`prp split`、`tree`、`prp tree`、`clarify`、
 `next`、`deliver`、`start`、
-`design`、`write-tests`、`implement`、`converge`、`code-review`、`fact update`、
+`design`、`write-tests`、`implement`、`converge`、`fix`、`verify-fix`、`code-review`、`fact update`、
 `finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
 `upgrade`、`integrate`、`help`。
 
@@ -294,6 +300,23 @@ partition 时在 design.md 写明各 index 切片。
 测试修改批准回主会话。不计入 roster。
 修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
 
+`$mdf fix <bug-id>`
+用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
+用途：在当前 checkout 澄清、确认 failing test、修复并验证一个已有 open Bug，
+标为 `fixed`。
+说明：修复实现前必须有针对该 Bug 的有效红灯；没有就先写测试并确认失败。
+不切分支、不 start、不 code-review、不 finish。`--yolo` 由 Agent 自裁定
+内部 clarify，不向用户提问；不跳过红灯，也不代替测试门槛批准。
+二次验证走 `$mdf verify-fix`，不在本 intent 把对象标为 `closed`。
+
+`$mdf verify-fix [<bug-id>]`
+用法：`$mdf verify-fix` 或 `$mdf verify-fix <bug-id>`
+用途：二次验证已 `fixed` 的 Bug：只跑复现用例，失败则修到通过，并仅审这次
+修复的代码。
+说明：release/hotfix 的 `$mdf finish` 在准备关闭这些 Bug 前内部委托。
+不标 `closed`、不写 `fixed_in`、不跑全局 full。无 ID 时只处理当前
+release/hotfix 上待收入的 `fixed` Bug。
+
 `$mdf code-review`
 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
 用途：审查并修复实现、测试和 code smell。
@@ -313,7 +336,8 @@ branch/paths，release 的 `--base` 为上一正式发布。独立调用须 mani
 `$mdf finish`
 用法：`$mdf finish`
 用途：按 Gitflow 分支完成审计与收口。
-说明：提交不代替用户确认或验收。
+说明：提交不代替用户确认或验收。release/hotfix 收入 `fixed` Bug 前内部委托
+`$mdf verify-fix`。
 
 `$mdf archive`
 用法：`$mdf archive`

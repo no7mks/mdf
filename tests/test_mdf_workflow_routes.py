@@ -66,7 +66,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "delivery-contract.md", "common.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 32
+    assert len(workflows) == 34
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -281,6 +281,77 @@ def test_start_switches_agent_to_owner_worktree():
     assert "不得只在原根 `cd` 冒充已切换" in common
 
 
+def test_fix_is_branch_agnostic_and_stops_at_fixed():
+    text = workflow("fix")
+    table = rows(text)
+    assert [row[1] for row in table] == [
+        "Check", "Clarify", "Reproduce", "Repair", "Record",
+    ]
+    assert table[1][2] == "约束"
+    assert table[2][1] == "Reproduce"
+    assert table[2][3] == "确认或编写该 Bug 的有效红灯测试"
+    assert table[3][6] == "未满三轮且下一步明确则 4；否则停止"
+    assert table[4][5] == "结束"
+    for rule in (
+        "不切分支", "不 start", "不走交付主线", "不 code-review", "不 finish",
+        "不由 deliver 内部委托", "不读取当前 Gitflow kind",
+        "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
+        "`--yolo` 时主 Agent 依据仓库证据与 Bug",
+        "不代替该项批准", "不按分支 kind 选择 suite",
+        "不调用 `project-verify` 或\n`delivery verify`",
+        "master 不直接修改或提交",
+        "标为 `fixed`",
+        "未记录有效红灯不得改生产实现",
+        "导入错误、编译失败或环境故障不算有效红灯",
+        "`--yolo` 不跳过本步",
+        "本步不得改生产实现",
+    ):
+        assert rule in text
+    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+    assert re.search(r"未满三轮且下一步明确 ─+→ 4 Repair", diagram)
+    assert re.search(r"有效红灯已记录", diagram)
+    assert re.search(r"不修复，停止", diagram)
+    help_text = workflow("help")
+    assert "$mdf fix <bug-id> [--yolo]" in help_text
+    keys = help_text.split("### 主题", 1)[1].split("`$mdf bootstrap`", 1)[0]
+    assert "`fix`" in keys
+    contract = workflow("delivery-contract")
+    assert "独立 `$mdf fix`" in contract
+    assert "也不由 deliver 内部委托" in contract
+
+
+def test_verify_fix_is_second_verification_before_closeout():
+    text = workflow("verify-fix")
+    table = rows(text)
+    assert [row[1] for row in table] == ["Check", "Verify", "Review", "Record"]
+    assert table[1][6] == "可修或待批准回 2；三轮无进展则停"
+    assert table[2][6] == "有可修回 2；需决定则停"
+    for rule in (
+        "不标 `closed`", "不写 `fixed_in`", "不跑全局",
+        "不替代 `$mdf code-review`",
+        "只要求这些复现用例通过",
+        "不调用 `$mdf code-review`",
+        "不按\n上一正式发布或 start_commit 做整分支审查",
+        "不派 roster.reviewers",
+        "可修复实现问题",
+        "finish 内部委托时完成后返回调用方",
+        "不由 deliver 直接委托",
+        "verify-fix.md",
+    ):
+        assert rule in text
+    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+    assert re.search(r"可修复实现问题 ─+→ 2 Verify", diagram)
+    assert re.search(r"有可修问题 ─+→ 2 Verify", diagram)
+    finish = workflow("finish")
+    assert "references/verify-fix.md" in finish
+    assert "待收入 fixed 先委托 verify-fix" in finish
+    assert "verify-fix 未通过" in finish
+    help_text = workflow("help")
+    assert "$mdf verify-fix [<bug-id>]" in help_text
+    keys = help_text.split("### 主题", 1)[1].split("`$mdf bootstrap`", 1)[0]
+    assert "`verify-fix`" in keys
+
+
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():
     text = workflow("implement")
     assert text.index("逐项对照 objectives") < text.index("delivery record")
@@ -448,7 +519,10 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert table[2][1] == "Delegate"
     assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
-    for name in ("init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki", "clarify"):
+    for name in (
+        "init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki",
+        "clarify", "fix", "verify-fix",
+    ):
         assert name in text
     assert "不得在识别前统一要求 manifest ready 或 clean" in text
     assert "draft PRP、open Bug 或待办事项本身不代表流程已启动" in text

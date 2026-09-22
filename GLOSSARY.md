@@ -11,8 +11,9 @@ Proposal 或 Bug。Jot 不是 Proposal/Bug 的 `draft` 状态，也不是 Change
 
 ## Bug 状态
 
-Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经二次验证后转为
-`closed`；`rejected` 是终态，并由 `reject-reason` 记录拒绝原因。
+Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
+`$mdf verify-fix` 二次验证后，在 release/hotfix 收口转为 `closed`；
+`rejected` 是终态，并由 `reject-reason` 记录拒绝原因。
 
 ## 当前事实文档
 
