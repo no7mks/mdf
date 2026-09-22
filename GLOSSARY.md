@@ -131,8 +131,8 @@ converge（收敛）集成测试和实现，持续修复实现直到**当前交�
 
 worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。本机对端直接写入其
 `inbox/`；另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
-消息种类为 `ping`、`send`、`bug-request`、`end`。通道打开后持续 poll，
-直到收口或用户停止。联调测试默认由客户端主导。
+消息种类为 `ping`、`send`、`bug-request`、`end`。通道打开后 poll 常驻直到
+收口或用户停止。双方用通道沟通，不要只 poll 干等。联调测试默认由客户端主导。
 
 ## 测试类别与 Code Smell
 

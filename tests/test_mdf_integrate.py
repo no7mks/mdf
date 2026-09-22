@@ -5,10 +5,58 @@ from __future__ import annotations
 import json
 import select
 import subprocess
+import time
 from pathlib import Path
 
 from conftest import skill_dir
 from mdf_test_support import assert_ok, git, init_git, mdf, payload
+
+
+def _poll_proc(
+    python_exe: str, repo: Path, *extra: str
+) -> subprocess.Popen:
+    cli = skill_dir("mdf") / "scripts" / "mdf.py"
+    return subprocess.Popen(
+        [
+            python_exe, str(cli), "integrate", "poll",
+            "--repo", str(repo), *extra,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
+def _stop(proc: subprocess.Popen) -> None:
+    if proc.poll() is None:
+        proc.kill()
+        proc.wait(timeout=5)
+    if proc.stdout is not None:
+        proc.stdout.close()
+    if proc.stderr is not None:
+        proc.stderr.close()
+
+
+def _next_event(proc: subprocess.Popen, timeout: float = 5) -> dict:
+    assert proc.stdout is not None
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        remaining = deadline - time.monotonic()
+        ready, _, _ = select.select([proc.stdout], [], [], remaining)
+        assert ready, "poll 没有输出"
+        line = proc.stdout.readline()
+        assert line, "poll stdout 关闭"
+        return json.loads(line)
+    raise AssertionError("poll 等待输出超时")
+
+
+def _next_message(proc: subprocess.Popen, timeout: float = 5) -> dict:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        event = _next_event(proc, timeout=max(0.05, deadline - time.monotonic()))
+        if event.get("event") == "message":
+            return event["message"]
+    raise AssertionError("poll 没有交出消息")
 
 
 def _repo(path: Path, name: str) -> Path:
@@ -19,7 +67,7 @@ def _repo(path: Path, name: str) -> Path:
     return repo
 
 
-def test_local_send_defaults_to_send_and_polls_once(tmp_path: Path, python_exe: str) -> None:
+def test_local_send_keeps_poll_running(tmp_path: Path, python_exe: str) -> None:
     left = _repo(tmp_path, "left")
     right = _repo(tmp_path, "right")
     payload(mdf(python_exe, "integrate", "init", "--repo", str(left)))
@@ -34,27 +82,43 @@ def test_local_send_defaults_to_send_and_polls_once(tmp_path: Path, python_exe: 
             "--name", "right", "--target", str(right),
         )
     )
-    sent = payload(
-        mdf(
-            python_exe, "integrate", "send", "--repo", str(left),
-            "--to", "right", "--body", "看到超时",
+    proc = _poll_proc(python_exe, right)
+    try:
+        waiting = _next_event(proc)
+        assert waiting["event"] == "waiting"
+        assert waiting["ok"] is True
+        sent = payload(
+            mdf(
+                python_exe, "integrate", "send", "--repo", str(left),
+                "--to", "right", "--body", "看到超时",
+            )
         )
-    )
-    assert sent["kind"] == "send"
-    assert sent["transport"] == "path"
-    got = payload(
-        mdf(python_exe, "integrate", "poll", "--repo", str(right), "--timeout", "2")
-    )
-    message = got["message"]
-    assert message["body"] == "看到超时"
-    assert message["kind"] == "send"
-    assert message["from"]["repo"] == "left"
-    assert message["token"] == again["token"]
-    missed = payload(
-        mdf(python_exe, "integrate", "poll", "--repo", str(right), "--timeout", "0.2")
-    )
-    assert missed["timeout"] is True
-    assert missed["message"] is None
+        assert sent["kind"] == "send"
+        assert sent["transport"] == "path"
+        message = _next_message(proc)
+        assert message["body"] == "看到超时"
+        assert message["kind"] == "send"
+        assert message["from"]["repo"] == "left"
+        assert message["token"] == again["token"]
+        assert proc.poll() is None
+    finally:
+        _stop(proc)
+
+
+def test_poll_timeout_exits_after_waiting(tmp_path: Path, python_exe: str) -> None:
+    repo = _repo(tmp_path, "solo")
+    payload(mdf(python_exe, "integrate", "init", "--repo", str(repo)))
+    proc = _poll_proc(python_exe, repo, "--timeout", "0.3")
+    try:
+        waiting = _next_event(proc)
+        assert waiting["event"] == "waiting"
+        timed_out = _next_event(proc)
+        assert timed_out["event"] == "timeout"
+        assert timed_out["message"] is None
+        proc.wait(timeout=2)
+        assert proc.returncode == 0
+    finally:
+        _stop(proc)
 
 
 def test_bug_request_requires_fields_and_round_trips(tmp_path: Path, python_exe: str) -> None:
@@ -82,13 +146,14 @@ def test_bug_request_requires_fields_and_round_trips(tmp_path: Path, python_exe:
             "--repro", "调用一次", "--impact", "联调阻断",
         )
     )
-    got = payload(
-        mdf(python_exe, "integrate", "poll", "--repo", str(right), "--timeout", "2")
-    )
-    body = got["message"]["body"]
-    assert body["observed"] == "超时"
-    assert body["impact"] == "联调阻断"
-    assert got["message"]["reply_to"] == "earlier"
+    proc = _poll_proc(python_exe, right)
+    try:
+        got = _next_message(proc)
+        assert got["reply_to"] == "earlier"
+        assert got["body"]["observed"] == "超时"
+        assert got["body"]["impact"] == "联调阻断"
+    finally:
+        _stop(proc)
 
 
 def test_branch_name_resolves_to_worktree(tmp_path: Path, python_exe: str) -> None:
@@ -110,10 +175,11 @@ def test_branch_name_resolves_to_worktree(tmp_path: Path, python_exe: str) -> No
             "--to", "demo", "--body", "在分支上",
         )
     )
-    got = payload(
-        mdf(python_exe, "integrate", "poll", "--repo", str(other), "--timeout", "2")
-    )
-    assert got["message"]["body"] == "在分支上"
+    proc = _poll_proc(python_exe, other)
+    try:
+        assert _next_message(proc)["body"] == "在分支上"
+    finally:
+        _stop(proc)
 
 
 def test_http_requires_token_after_ping_and_end_keeps_listen(
@@ -172,57 +238,32 @@ def test_http_requires_token_after_ping_and_end_keeps_listen(
                 "--to", "remote", "--body", "跨机器",
             )
         )
-        first = payload(
-            mdf(
-                python_exe, "integrate", "poll", "--repo", str(receiver),
-                "--timeout", "2",
+        poller = _poll_proc(python_exe, receiver)
+        try:
+            assert _next_message(poller)["kind"] == "ping"
+            assert _next_message(poller)["body"] == "跨机器"
+            payload(
+                mdf(
+                    python_exe, "integrate", "send", "--repo", str(sender),
+                    "--to", "remote", "--kind", "end",
+                )
             )
-        )
-        assert first["message"]["kind"] == "ping"
-        second = payload(
-            mdf(
-                python_exe, "integrate", "poll", "--repo", str(receiver),
-                "--timeout", "2",
+            assert proc.poll() is None
+            payload(
+                mdf(
+                    python_exe, "integrate", "send", "--repo", str(sender),
+                    "--to", "remote", "--body", "仍在监听",
+                )
             )
-        )
-        assert second["message"]["body"] == "跨机器"
-        payload(
-            mdf(
-                python_exe, "integrate", "send", "--repo", str(sender),
-                "--to", "remote", "--kind", "end",
+            assert _next_message(poller)["kind"] == "end"
+            assert _next_message(poller)["body"] == "仍在监听"
+            assert poller.poll() is None
+            status = payload(
+                mdf(python_exe, "integrate", "status", "--repo", str(receiver))
             )
-        )
-        assert proc.poll() is None
-        payload(
-            mdf(
-                python_exe, "integrate", "send", "--repo", str(sender),
-                "--to", "remote", "--body", "仍在监听",
-            )
-        )
-        ended = payload(
-            mdf(
-                python_exe, "integrate", "poll", "--repo", str(receiver),
-                "--timeout", "2",
-            )
-        )
-        assert ended["message"]["kind"] == "end"
-        later = payload(
-            mdf(
-                python_exe, "integrate", "poll", "--repo", str(receiver),
-                "--timeout", "2",
-            )
-        )
-        assert later["message"]["body"] == "仍在监听"
-        status = payload(
-            mdf(python_exe, "integrate", "status", "--repo", str(receiver))
-        )
-        assert status["listen"] == started["listen"]
-        assert status["pending"] == 0
+            assert status["listen"] == started["listen"]
+            assert status["pending"] == 0
+        finally:
+            _stop(poller)
     finally:
-        if proc.poll() is None:
-            proc.kill()
-            proc.wait(timeout=5)
-        if proc.stdout is not None:
-            proc.stdout.close()
-        if proc.stderr is not None:
-            proc.stderr.close()
+        _stop(proc)

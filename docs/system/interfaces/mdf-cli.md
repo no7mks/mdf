@@ -515,8 +515,9 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 worktree 的分支名。`send` 省略 `--kind` 时种类为 `send`。本机 path 对端把
 消息原子写入对方 inbox。`listen` 默认绑 `127.0.0.1:8765`，只接受 POST，
 把请求落成 inbox 文件后返回已写入；`ping` 不校验 token，其余种类的 `auth`
-必须等于本侧 token。listen 保持服务，收到 `end` 不退出。`poll` 阻塞到一条
-未交出的消息后退出 0；`--timeout` 到期也退出 0，且 `timeout` 为 true。
-单次 poll 退出不表示联调结束。
+必须等于本侧 token。listen 保持服务，收到 `end` 不退出。`poll` 常驻，stdout
+一行一个 JSON：启动即 `waiting`，约每 1 分钟再打一次；取出消息为 `message`，
+进程不因此退出。Agent 语义结束后再停掉。`--timeout` 仅测试，到期 `timeout`
+事件后退出 0。
 `bug-request` 需要 `--observed`、`--expected`、`--repro`、`--impact`。
 监听不创建 Bug，也不解释 `send` 正文。

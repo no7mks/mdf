@@ -54,7 +54,10 @@ def command_integrate(args: Any) -> None:
     elif action == "send":
         emit(_send(repo, args))
     elif action == "poll":
-        emit(_poll(repo, args.timeout))
+        try:
+            _poll(repo, args.timeout)
+        except KeyboardInterrupt:
+            return
     elif action == "listen":
         _listen(repo, args.bind)
     elif action == "status":
@@ -270,17 +273,28 @@ def _deliver_http(peer: dict[str, Any], message: dict[str, Any]) -> None:
         raise MDFError("对端未确认写入", code="bad_response")
 
 
-def _poll(repo: Path, timeout: float | None) -> dict[str, Any]:
+_POLL_SLEEP = 0.05
+_WAIT_LOG = 60.0
+
+
+def _poll(repo: Path, timeout: float | None) -> None:
     root = _root(repo)
     deadline = None if timeout is None else time.monotonic() + timeout
+    last_wait = 0.0
     while True:
+        now = time.monotonic()
+        if deadline is not None and now >= deadline:
+            emit({"event": "timeout", "message": None, "ok": True})
+            return
         message = next_pending(root)
         if message is not None:
             mark_seen(root, str(message["id"]))
-            return {"ok": True, "timeout": False, "message": message}
-        if deadline is not None and time.monotonic() >= deadline:
-            return {"ok": True, "timeout": True, "message": None}
-        time.sleep(0.05)
+            emit({"event": "message", "message": message, "ok": True})
+            continue
+        if last_wait == 0.0 or now - last_wait >= _WAIT_LOG:
+            emit({"event": "waiting", "ok": True})
+            last_wait = now
+        time.sleep(_POLL_SLEEP)
 
 
 def _listen(repo: Path, bind: str) -> None:

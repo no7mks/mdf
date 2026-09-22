@@ -42,7 +42,7 @@ def serialize_findings(findings: Iterable[Finding]) -> list[dict[str, Any]]:
 
 
 def emit(payload: dict[str, Any]) -> None:
-    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
 
 
 def add_finding(

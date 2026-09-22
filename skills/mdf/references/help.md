@@ -113,7 +113,7 @@
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
-- `$mdf integrate`：在 worktree 之间收发联调消息；通道打开后持续 poll；跨机器时可选 HTTP
+- `$mdf integrate`：在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
 
@@ -373,9 +373,10 @@ branch/paths，release 的 `--base` 为上一正式发布。独立调用须 mani
 用法：`$mdf integrate`
 用途：在两个 worktree 之间收发联调消息。
 说明：本机写入对方 `.integration/inbox/`。跨机器时对方显式启动 HTTP，
-默认只绑 `127.0.0.1`，收到 `end` 也不退出。通道打开后持续 poll，
-直到收口或用户停止。联调测试默认由客户端主导：先确认计划，
-能热修复的当场修并补 reproduce 用例后提交；不能当场修的记录 bug 后继续。
+默认只绑 `127.0.0.1`，收到 `end` 也不退出。通道打开后 poll 常驻，stdout 打
+`waiting` / `message`；语义结束或用户停止时才停掉。联调测试默认由客户端主导：
+先确认计划，能热修复的当场修并补 reproduce 用例后提交；不能当场修的记录 bug
+后继续。双方用通道 `send` 沟通，不要只 poll 干等。
 种类为 `ping`、`send`、`bug-request`、`end`；省略 `--kind` 时是 `send`。
 `bug-request` 不直接创建 Bug。
 
