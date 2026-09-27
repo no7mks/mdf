@@ -25,9 +25,21 @@ def test_doctor_reports_only_core_and_repository_state(
 
     data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
     assert data["initialized"] is False
-    assert data["findings"] == []
+    assert {item["code"] for item in data["findings"]} == {"layout.testing"}
     assert data["normal_workflows_allowed"] is False
     assert "entry_skills" not in data
+
+
+def test_doctor_reports_retired_layout_without_manifest(python_exe: str, tmp_path: Path):
+    repo = tmp_path / "repo"
+    (repo / "docs/product").mkdir(parents=True)
+    (repo / "docs/product/note.md").write_text("旧产品说明。\n", encoding="utf-8")
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["initialized"] is False
+    codes = {item["code"] for item in data["findings"]}
+    assert "layout.migrate" in codes
+    assert data["is_git_root"] is False
 
 
 def test_doctor_reports_ready_v2_repository(python_exe: str, tmp_path: Path):

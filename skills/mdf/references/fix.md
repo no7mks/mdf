@@ -127,8 +127,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - 验证顺序：
   1. 先让该红灯测试转绿。
   2. 再按所需回归证据重跑对应命令直到通过；记录命令、退出状态、结果及对应证据项。
-  3. 随后运行 `quick-run --repo "$REPO_ROOT"`（依次执行 manifest 的 lint、build、quick），须退出 0；
-     记录结果 JSON 的 `head`、逐项 `log` 与 quick `report`。非零时按 details 中失败项的 `error` 修复。
+  3. 随后运行 `quick-run --repo "$REPO_ROOT"`（依次执行 manifest 的 lint、build、quick），须退出 0。
+     - 成功读 stdout 的 `result`：`head`、逐项 `log` 与 quick `report`。
+     - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
+     - 不把进度行当结果，不为查看输出而重跑。
 - ❌ 不按分支 kind 选择 smoke 或 release，
   不调用 `project-verify` 或 `delivery verify` 冒充本 intent 完成。
 - 不要求 feature 的 design/converge gate。

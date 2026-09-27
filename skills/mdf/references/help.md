@@ -380,7 +380,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - 默认源 `http://10.1.5.65:8929/mars/mdf`；`--source` 覆盖。
     - 先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换。
     - 更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`；替换后在当前分支提交本次路径，不 push。
-    - 随后重读新 Skill，同会话后续调用按新副本执行；doctor finding 指向 `$mdf migrate` 时建议运行。
+    - 随后重读新 Skill。仅不符合契约的 code 才建议 `$mdf migrate`。
 
 - `$mdf integrate`
   - 用法：`$mdf integrate`

@@ -13,6 +13,13 @@ from .validate_records import validate_adrs, validate_record_references
 from .validate_release import validate_changelog, validate_release_history
 
 
+def collect_uninitialized_findings(repo: Path) -> list[Finding]:
+    """无 manifest 时仍检查布局，使退休目录能在分流前被看见。"""
+    findings: list[Finding] = []
+    validate_layout(repo, findings)
+    return findings
+
+
 def collect_findings(
     repo: Path,
     *,

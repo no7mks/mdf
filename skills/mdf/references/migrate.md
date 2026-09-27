@@ -102,8 +102,8 @@
   - 提示前不写入 `.git/`。
 - 已 ready 的空仓库仍在 migrate 调整配置。
 - MDF 内容不符合当前契约时，即使尚无业务事实也继续 migrate。
-- 已有 manifest 时入口就运行 doctor，不要求已是 Git 根；finding 记入盘点。
-- 尚未 Git 化且没有 manifest 时 finding 为空，Git 化留到步骤 5。
+- 入口一律运行 doctor，不要求已是 Git 根，也不要求已有 manifest；finding 记入盘点。
+- 没有 manifest 时 doctor 只报布局 finding。`layout.migrate` 继续 migrate，不提示 bootstrap。
 - 不因普通目录、无提交或 dirty 一概拒绝。
 - doctor finding 不是拒绝理由：本 intent 正是收敛这些 finding。
   - 全部 finding 记入盘点清单，由步骤 3 逐项处置。

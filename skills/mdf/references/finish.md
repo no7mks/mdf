@@ -230,7 +230,10 @@
   - 再内部从 `code-review.md` 步骤 1 执行审查后复核。
     - 有完整上轮记录则增量新一轮，否则首轮；不把集成当修复续办。
   - 不回退本流程步骤编号；语义或实现变化必须补审补验。
-  - 补验 run 期间 stderr 为子进程原文，判定读退出码与落盘 JSON。
+  - 补验期间 stderr 为进度与子进程原文。
+  - 成功：读退出码、stdout JSON 或落盘证据。
+  - 失败：读 stderr 最后一行 JSON。
+    - 用其中的 `error` 区分 `stale_gate`、`stale_verification` 与其他失败。
 - 其他失败走本步骤的失败去向。
 - fact audit：
   - 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。

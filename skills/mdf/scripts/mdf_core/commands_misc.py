@@ -57,7 +57,10 @@ def command_doctor(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     root = git_root(repo)
     initialized = manifest_path(repo).is_file()
-    findings = doctor.collect_findings(repo, full=True) if initialized else []
+    if initialized:
+        findings = doctor.collect_findings(repo, full=True)
+    else:
+        findings = doctor.collect_uninitialized_findings(repo)
     branch: dict[str, Any] | None = None
     branch_error: str | None = None
     if root == repo:

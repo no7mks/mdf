@@ -379,7 +379,7 @@ def test_init_entry_is_read_only_and_existing_git_runs_doctor():
     assert "转入前不写入 `.git/`" in text
     assert "内部执行 bootstrap 或 migrate" in text
     migrate = workflow("migrate")
-    assert "入口就运行 doctor" in migrate
+    assert "入口一律运行 doctor" in migrate
     assert "可运行 doctor" not in migrate
     table = rows(migrate)
     assert table[0][2] == "约束"

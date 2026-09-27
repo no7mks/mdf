@@ -90,13 +90,16 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 对清单中每个 Bug，对照其「所需回归证据」确认复现用例通过。
 
 - 取证：
-  - 当前分支为 bugfix/hotfix/release 且 `project-verify check` 退出 0 时读取其报告（`summary.json`）。
-    - 该 test 结果为 passed 时直接引用报告路径与 test 名，不重跑。
+  - 当前分支为 bugfix/hotfix/release 且 `project-verify check` 退出 0 时，读 stdout 的 `result`。
+    - 用 `results[].report.cases` 判断该 test 是否 passed。
+    - 报告目录是 `results[].log`，其中才有 `summary.json`。
+    - passed 时引用该目录与 test 名，不重跑。
   - 否则按 `docs/system/testing/` 的命令模板点名执行对应 test case 或 test；
     证据另给可执行命令时运行该命令。
   - ⚠️ `common.md` 非零退出规则的明确例外：check 非零退出不走失败去向，只改用上一条点名执行。
-- 只要求这些复现用例通过；本步修改了实现时另运行 `quick-run --repo "$REPO_ROOT"`，须退出 0，
-  记录其 `head`、逐项 `log` 与 quick `report`。
+- 只要求这些复现用例通过；本步修改了实现时另运行 `quick-run --repo "$REPO_ROOT"`，须退出 0。
+  - 成功读 stdout 的 `result`：`head`、逐项 `log` 与 quick `report`。
+  - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`），不把进度行当结果。
 - 缺可执行复现命令时停止并报告，提示先 `$mdf fix` 补红灯，不在本步新造用例。
 - 失败且可修实现时原地修复并重验。
   - 可修复指同一失败未满三轮且下一步明确；否则视为无法完成。

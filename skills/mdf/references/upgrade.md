@@ -173,9 +173,12 @@ upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
 
 替换后运行 `doctor --repo "$REPO_ROOT"`：
 
-- 出现以下任一情况时，建议用户运行 `$mdf migrate` 收敛布局与 manifest：
-  - 任一指向 `$mdf migrate` 的 finding，至少含 `manifest.schema`、`layout.migrate`、`manifest.verification`。
-  - `history` 摘要显示文档契约（模板、布局、根文档职责或事实页契约）有变化。
+- 出现以下 finding code 时，建议用户运行 `$mdf migrate`：
+  - `manifest.schema`、`layout.migrate`、`manifest.verification`。
+  - 其余非法 manifest 或布局 finding，例如 `manifest.state`、`manifest.invalid`。
+  - ❌ 不因 `manifest.initializing` 或 `layout.testing` 建议 migrate。
+- `history` 摘要显示文档契约有变化时，同样建议 `$mdf migrate`。
+  - 含模板、布局、根文档职责或事实页契约。
 - 已在当前布局上的仓库可改用 `$mdf fact update --scope full` 整理结构。
 - upgrade 本身不改 `.mdf/` 的受跟踪内容与 `docs/`。
 

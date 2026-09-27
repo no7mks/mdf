@@ -109,6 +109,9 @@ migrate 维护；initializing 不代表老仓库，应继续检查实际内容�
 
 不符合当前契约的既有 MDF 内容由 migrate 收敛，即使尚无业务事实；不推断历史语义：
 
+- 入口一律运行 `doctor`，不要求 Git 根，也不要求已有 manifest。
+- 没有 manifest 时 doctor 仍报告布局 finding。
+  - `layout.migrate` 即不符合契约，走 migrate，不先 bootstrap。
 - 不符合当前契约只看 finding code，不看文案里有没有 `$mdf migrate`：
   - 收敛类：`manifest.schema`、`layout.migrate`、`manifest.verification`。
   - 其余非法 manifest 或布局 finding，例如 `manifest.state`、`manifest.invalid`。
