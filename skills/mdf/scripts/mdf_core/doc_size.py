@@ -21,6 +21,7 @@ from .constants import (
 )
 from .errors import Finding
 from .paths import path_stays_in_repo, relative
+from .prose import structure_issues
 
 ROUTER_PATHS = {
     "AGENTS.md",
@@ -50,15 +51,20 @@ def size_role(rel: str) -> tuple[str, int] | None:
     return None
 
 
-def line_count(path: Path, rel: str) -> int:
+def role_text(path: Path, rel: str) -> str:
+    """该文档受 MDF 约束的文本；AGENTS.md 只取托管区块。"""
     text = path.read_text(encoding="utf-8")
     if rel == "AGENTS.md":
         start = text.find(MDF_BLOCK_START)
         end = text.find(MDF_BLOCK_END)
         if start < 0 or end < start:
-            return 0
+            return ""
         text = text[start : end + len(MDF_BLOCK_END)]
-    return len(text.splitlines())
+    return text
+
+
+def line_count(path: Path, rel: str) -> int:
+    return len(role_text(path, rel).splitlines())
 
 
 def sizable_documents(repo: Path) -> list[Path]:
@@ -99,4 +105,15 @@ def size_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
                     rel,
                 )
             )
+    return findings
+
+
+def structure_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
+    findings: list[Finding] = []
+    for path in sorted(set(paths)):
+        rel = relative(repo, path)
+        if size_role(rel) is None or rel == "docs/JOTS.md" or not path.is_file():
+            continue
+        for number, code, message in structure_issues(role_text(path, rel)):
+            findings.append(Finding(code, f"第 {number} 行：{message}", rel))
     return findings

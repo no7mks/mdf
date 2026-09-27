@@ -158,6 +158,8 @@ finish 的 release 为 `branch`（`--base` 为上一正式发布）或等价 `pa
 - 工作对象与调研：Proposal、Bug、Jot、research 未冒充当前事实、未被
   `docs/README.md` 当成通读清单即可；不做拆页 refine。`docs/repowiki/` 不审、不改。
 - `verification` 以可执行测试或命令为主，不把实现步骤写成源码 walkthrough。
+- 文档结构：按 `references/doc-structure.md`。硬限制由 CLI 报 `prose.*`；
+  人工审软限制与内容形态，大段文字改为列表、表格或图。
 
 验收：事实复核、加载质量发现、warning、未触及理由。
 
@@ -208,7 +210,7 @@ migrate 只允许 `manifest.initializing` finding。
 与时间写入调用方材料目录的 `fact-audit.md`（如 `changes/unreleased/<slug>/fact-audit.md`）
 并随调用方材料提交；独立调用只在会话中确认。
 
-通过条件：无语义 finding（含结构 finding）、无 `size.hard`、无
+通过条件：无语义 finding（含结构 finding）、无 `size.hard`、无 `prose.*`、无
 `overview.core_modules`、无 `project.entry_links`、无未确认 warning，且
 validation 无阻断 finding 时通过；migrate 仅豁免 `manifest.initializing`。
 该确认不跨调用复用。

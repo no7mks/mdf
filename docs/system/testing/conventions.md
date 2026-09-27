@@ -12,9 +12,11 @@
 - `tests/e2e/<功能块>/`：在临时 Git 仓库中以子进程调用 `mdf.py` 或 `mdf-deploy.sh`
   的 CLI E2E。
 - 全部测试 hermetic：只依赖 Python 标准库、Git、pytest 与 pytest-xdist，不访问网络。
-- 共用 helper：`mdf_test_support.py`（fixture 仓库与 CLI 调用）、`support_delivery.py`、
-  `support_upgrade.py`、`support_planning.py`、`support_routes.py`；
-  `fixtures/mdf/valid_repo/` 是合成仓库。
+- 共用 helper：
+  - `mdf_test_support.py`：fixture 仓库与 CLI 调用。
+  - `support_delivery.py`、`support_upgrade.py`、`support_planning.py`、`support_routes.py`：
+    各功能块 E2E 的准备与文档解析。
+  - `fixtures/mdf/valid_repo/`：合成仓库。
 
 ## 失败语义
 
@@ -26,11 +28,16 @@
 
 ## 报告
 
-每次运行都写 JUnit XML：设了 `MDF_REPORT_DIR` 时写到 `$MDF_REPORT_DIR/junit.xml`，
-否则写到 `.test-reports/<UTC 时间戳>-<pid>/junit.xml`；`junit_logging = all` 让报告带上
-各 test 捕获的输出。测试中对未接入 MDF 的临时目录调用 CLI 时，其运行日志写到
-`.test-reports/mdf-logs/`。`.test-reports/` 已被 `.gitignore` 忽略，每次运行清理 7 天前的
-条目。失败时先读报告中的 `<failure>` 与捕获输出，不为看输出而重跑。
+每次运行都写 JUnit XML，`junit_logging = all` 让报告带上各 test 捕获的输出。
+
+| 情形 | 位置 |
+| --- | --- |
+| 设了 `MDF_REPORT_DIR` | `$MDF_REPORT_DIR/junit.xml` |
+| 未设 | `.test-reports/<UTC 时间戳>-<pid>/junit.xml` |
+| 测试中对未接入 MDF 的临时目录调用 CLI | 运行日志写到 `.test-reports/mdf-logs/` |
+
+- `.test-reports/` 已被 `.gitignore` 忽略，每次运行清理 7 天前的条目。
+- ⚠️ 失败时先读报告中的 `<failure>` 与捕获输出，不为看输出而重跑。
 
 ## 入口
 

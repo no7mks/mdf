@@ -174,6 +174,11 @@ MDF 工作记录统一位于 `docs/`，配置位于 `.mdf/`；`.mdf/logs/` 与 `
 MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例外的顶层允许清单、
 每项的理由，以及业务实现、测试和生成物的实际目录。
 
+## 文档结构
+
+MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规则；CLI `fact-audit`
+对硬限制报 `prose.*` finding。
+
 ## 根文档职责
 
 - `README.md` 面向项目用户，说明项目是干什么，并链到用户文档入口

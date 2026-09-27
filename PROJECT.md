@@ -28,11 +28,14 @@ MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
 ## 发布与安装
 
 - 只关注当前 MDF skill set 发布后的可用性，不保留、解释、检测或兼容历史版本。
-- `install` 只在目标 Agent Skills 目录中尚无 `mdf` 时从干净工作区的 `HEAD` 写入
-  当前发布内容，并在 `references/.version` 写入完整 commit hash；维护者升级须先
-  运行 `unistall`。已安装项目可用 `$mdf upgrade` 从上游默认分支替换已安装 Skill，
-  并更新已有 `AGENTS.md` 的 MDF 托管区块。`diff` 以该 commit 为基线分别比较本地与
-  目标。两者与 upgrade 都不得删除目标仓库的 `.mdf/` 或 `docs/` 产出物。
+- `install`：只在目标 Agent Skills 目录中尚无 `mdf` 时运行。
+  - 从干净工作区的 `HEAD` 写入当前发布内容。
+  - 在 `references/.version` 写入完整 commit hash。
+  - 维护者升级须先运行 `unistall`。
+  - 已安装项目可用 `$mdf upgrade` 从上游默认分支替换已安装 Skill，并更新已有
+    `AGENTS.md` 的 MDF 托管区块。
+- `diff`：以该 commit 为基线，分别比较本地与目标。
+- ⚠️ install、diff 与 upgrade 都不得删除目标仓库的 `.mdf/` 或 `docs/` 产出物。
 
 ## 文件规模
 
@@ -42,6 +45,18 @@ MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
   - 400 行是软限制；超过后可为了可读性拆分。500 行是硬限制；超过时必须评估
     是否拆分，若保留单文件，须在文件开头明确记载不拆分的理由。
 - 自动检查执行列宽 120 和行数 500 的硬限制；软限制及拆分例外的理由由审查确认。
+
+## 文档结构
+
+MDF 自身的 Markdown（Skill、intent、模板、`docs/`、根文档）与目标仓库文档共用一套结构规则，
+定义见 `skills/mdf/references/doc-structure.md`。
+
+- 硬限制由 `tests/lint/test_prose_structure.py` 检查，与目标仓库 fact audit 的
+  `prose.*` finding 使用同一分析器。
+- 尚未改写的文件列在 `tests/lint/prose_baseline.txt`，只减不增：
+  - 不在清单中的文件必须满足硬限制。
+  - 清单中的文件一旦达标，lint 要求把它移出清单。
+- 软限制与内容形态规则由审查确认。
 
 ## 文案语言
 

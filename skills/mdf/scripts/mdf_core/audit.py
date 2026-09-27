@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from . import doctor
-from .doc_size import sizable_documents, size_findings, size_role
+from .doc_size import sizable_documents, size_findings, size_role, structure_findings
 from .errors import Finding, MDFError, add_finding, emit, serialize_findings
 from .gitutil import git_path_tracked, repo_path, require_git_root, run
 from .overview_modules import (
@@ -306,6 +306,7 @@ def audit_payload(
         )
         sized = documents
     findings.extend(size_findings(repo, sized))
+    findings.extend(structure_findings(repo, sized))
     findings.extend(overview_core_module_findings(repo, documents))
     findings.extend(project_entry_link_findings(repo, sized))
     ignored = _ignored_paths(repo, all_sources, roots, findings)

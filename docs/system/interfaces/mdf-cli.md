@@ -129,6 +129,17 @@ Bug、`docs/JOTS.md` 为 500。超出为 `size.hard` finding。整份 `AGENTS.md
 记住后不再提示。`full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档
 与本次改动到的入口页。
 
+同一检查面还按 `skills/mdf/references/doc-structure.md` 报结构硬限制（`docs/JOTS.md` 除外，
+`AGENTS.md` 只查托管区块）：
+
+| code | 触发条件 |
+| --- | --- |
+| `prose.block` | 连续散文超过 6 行 |
+| `prose.sentence` | 单句显示宽度超过 120 |
+| `prose.list_item` | 单个列表项超过 4 行 |
+| `prose.section` | 一个标题下散文合计超过 15 行 |
+| `prose.emoji` | 出现 ⚠️ ✅ ❌ 💡 📌 以外的 emoji |
+
 分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`），
 实现范围是起点以来改动的实现文件，文档范围是改动到的事实页与 evidence 引用这些实现
 的事实页，结果含 `base`。`--base` 可以是 commit 或 tag；finish release 传入上一

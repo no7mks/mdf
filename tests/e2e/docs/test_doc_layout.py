@@ -358,3 +358,17 @@ def test_branch_scope_rejects_paths_and_missing_base(python_exe: str, tmp_path: 
     )
     assert result.returncode == 2
     assert "audit.scope" in _codes(result)
+
+
+def test_audit_reports_prose_structure_in_fact_pages_only_managed_agents(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    page = repo / "docs/system/testing/conventions.md"
+    page.write_text(page.read_text() + "\n" + "".join(f"第{i}行说明。\n" for i in range(7)))
+    agents = repo / "AGENTS.md"
+    agents.write_text(agents.read_text() + "\n" + "项目自有说明。\n" * 8)
+    init_git(repo)
+    data = json.loads(mdf(python_exe, "fact-audit", "--repo", str(repo)).stdout)
+    prose = [item for item in data["findings"] if item["code"].startswith("prose.")]
+    assert [(item["code"], item["path"]) for item in prose] == [
+        ("prose.block", "docs/system/testing/conventions.md"),
+    ]

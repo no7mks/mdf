@@ -4,9 +4,10 @@
 
 - 你的角色是维护者，不是终端用户。不要从根 `README.md` 或 `docs/user-guide/`
   开始通读；维护工作先读 `PROJECT.md`（验证、技术栈、目录约定与文档入口）。
-- 系统边界是 `docs/system/overview.md`。需要按主题找文档时打开 `docs/README.md`：
-  只打开与本次相关的一份 `docs/system/` 主题叶，不通读
-  `docs/system/` 或 `docs/user-guide/`。
+- 系统边界是 `docs/system/overview.md`。
+- 需要按主题找文档时打开 `docs/README.md`。
+  - 只打开与本次相关的一份 `docs/system/` 主题叶。
+  - 不通读 `docs/system/` 或 `docs/user-guide/`。
 - grep、CodeWiki 等搜索只用来定位路径；定位后只读命中的那一份或 `docs/README.md`
   指定的一两份，不把全部命中读进上下文。
 - `README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不把根文档当作
