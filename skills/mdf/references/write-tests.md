@@ -76,6 +76,7 @@ design policy `suites` 所列 named suite；归属写在代码里（marker、目
 design 所列 named suite 尚无文档时，在 `docs/system/testing/` 补该 suite 的一节或
 一页属于本阶段授权；记录 gate 前核对每个声明的 named suite 都已文档化且有成员。
 不得降低项目门槛；非 hermetic 的 test case 不进 quick，超预算的 test case 不进 quick 或 smoke。
+新写的 test case 按依赖切分，同一 test case 内的 test 依赖一致，不写运行时 skip。
 implement 不得擅自改测试。
 测试须能编译或加载执行；环境或导入故障不是有效完成证据。因尚未实现而产生的
 断言失败可以接受。本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。

@@ -137,7 +137,9 @@
 不得残留。`baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version`
 写为当前值。不符合当前形状的 `verification`（如 `commands` 列表、`suites` 映射）按
 `delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、release；
-原 named 分组只写进 `docs/system/testing/`，不写回 manifest。初始化 CLI 用
+原 named 分组只写进 `docs/system/testing/`，不写回 manifest。既有运行时 skip、
+提前返回或 xfail 在方案中逐个列出处置（按依赖拆分 test case、移出 suite 或登记 Bug），
+经用户确认后落地。初始化 CLI 用
 `--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选 `--budget` 传入。
 
 验收：逐项决定与验证命令。

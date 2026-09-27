@@ -136,7 +136,8 @@ ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿�
 xfail 或 xpass，以及 suite 未选中任何 test。test case 是否属于本次 target 由 suite
 的成员选择规则在收集阶段决定；不得在运行时按环境变量、配置或资源是否可用去 skip
 或提前返回。external 资源未就绪即失败。已知缺陷登记为 Bug 并把对应 test 移出
-suite，不用 xfail 保留。
+suite，不用 xfail 保留。test case 内有 test 依赖当前 suite 不具备的条件时，按依赖
+拆成多个 test case 分别归入合适的 suite；不得整体移出，也不得保留 skip。
 
 Core 只看退出码。项目须让入口命令或测试运行器在上述情况下非零退出，并把配置写进
 `docs/system/testing/`；code-review 核对该配置。第三方依赖产生、本项目无法修复的
