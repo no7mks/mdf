@@ -82,10 +82,10 @@ def _init(repo: Path) -> dict[str, Any]:
         token = str(read_yaml(session_path).get("token") or "")
         listen = str(read_yaml(session_path).get("listen") or "")
     else:
-        token = secrets.token_urlsafe(18)
+        token = secrets.token_hex(18)
         listen = ""
     if not token:
-        token = secrets.token_urlsafe(18)
+        token = secrets.token_hex(18)
     write_session(repo, token, listen)
     _ensure_gitignore(repo)
     (root / "peers.yaml").touch(exist_ok=True)
