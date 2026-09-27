@@ -27,8 +27,10 @@
 ## 报告
 
 每次运行都写 JUnit XML：设了 `MDF_REPORT_DIR` 时写到 `$MDF_REPORT_DIR/junit.xml`，
-否则写到 `.test-reports/<UTC 时间戳>-<pid>/junit.xml`（已被 `.gitignore` 忽略，由维护者
-自行清理）。失败时先读该报告中的 `<failure>`，不为看输出而重跑。
+否则写到 `.test-reports/<UTC 时间戳>-<pid>/junit.xml`；`junit_logging = all` 让报告带上
+各 test 捕获的输出。测试中对未接入 MDF 的临时目录调用 CLI 时，其运行日志写到
+`.test-reports/mdf-logs/`。`.test-reports/` 已被 `.gitignore` 忽略，每次运行清理 7 天前的
+条目。失败时先读报告中的 `<failure>` 与捕获输出，不为看输出而重跑。
 
 ## 入口
 

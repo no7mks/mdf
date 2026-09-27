@@ -44,7 +44,8 @@ def _write_progress(index: int, total: int, body: str) -> None:
 class _StreamTee:
     """Forward bytes as UTF-8 and keep a bounded decoded tail."""
 
-    def __init__(self, last_output: list[float]) -> None:
+    def __init__(self, last_output: list[float], sink: Any = None) -> None:
+        self.sink = sink
         self.tail = ""
         self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         self._ends_newline = True
@@ -59,6 +60,8 @@ class _StreamTee:
         self.tail = (self.tail + text)[-TAIL_CHARS:]
         self._ends_newline = text.endswith("\n")
         self._last_output[0] = time.monotonic()
+        if self.sink is not None:
+            self.sink.write(text)
         _write_stderr(text)
 
     def finish(self) -> None:
@@ -66,6 +69,8 @@ class _StreamTee:
         if text:
             self.tail = (self.tail + text)[-TAIL_CHARS:]
             self._ends_newline = text.endswith("\n")
+            if self.sink is not None:
+                self.sink.write(text)
             _write_stderr(text)
         if not self._ends_newline:
             _write_stderr("\n")
@@ -180,18 +185,23 @@ def run_verify_command(
     index: int = 1,
     total: int = 1,
     timeout: float | None = None,
-    report_suite: str | None = None,
+    entry: str | None = None,
+    junit: bool = False,
 ) -> dict[str, Any]:
+    """entry 非空时在 .mdf/reports/<时间戳>-<entry>/ 保存完整输出；junit 时另校验报告。"""
     env = None
-    report_dir = None
-    if report_suite is not None:
-        report_dir = new_report_dir(repo, report_suite)
-        env = {**os.environ, ENV_NAME: str(report_dir)}
+    run_dir = None
+    sinks: list[Any] = [None, None]
+    if entry is not None:
+        run_dir = new_report_dir(repo, entry)
+        env = {**os.environ, ENV_NAME: str(run_dir)}
+        sinks = [open(run_dir / name, "w", encoding="utf-8")
+                 for name in ("stdout.log", "stderr.log")]
     display = _progress_label(label if label is not None else command)
     _write_progress(index, total, f"start {display}")
     last_output = [time.monotonic()]
-    stdout_tee = _StreamTee(last_output)
-    stderr_tee = _StreamTee(last_output)
+    stdout_tee = _StreamTee(last_output, sinks[0])
+    stderr_tee = _StreamTee(last_output, sinks[1])
     started = time.monotonic()
     timed_out = False
     proc: subprocess.Popen[bytes] | None = None
@@ -225,19 +235,24 @@ def run_verify_command(
             if timed_out or proc.poll() is None:
                 _stop_process(proc)
             _join_readers(proc, threads, (stdout_tee, stderr_tee))
+        for sink in sinks:
+            if sink is not None:
+                sink.close()
     elapsed = time.monotonic() - started
     exit_code = -1 if proc is None or proc.returncode is None else proc.returncode
     _write_progress(
         index, total, f"done exit={exit_code} ({elapsed:.0f}s)"
     )
-    entry: dict[str, Any] = {"command": command, "exit_code": exit_code}
+    result: dict[str, Any] = {"command": command, "exit_code": exit_code}
     report_error = None
-    if report_dir is not None:
+    if run_dir is not None:
+        result["log"] = str(run_dir.relative_to(repo))
+    if run_dir is not None and junit:
         try:
-            entry["report"] = summarize(repo, report_dir, report_suite)
+            result["report"] = summarize(repo, run_dir, entry)
         except MDFError as exc:
             report_error = exc
-            entry["report"] = exc.details
+            result["report"] = exc.details
     if timed_out:
         limit = _timeout_value(timeout)
         raise MDFError(
@@ -248,7 +263,7 @@ def run_verify_command(
                 "timeout_seconds": limit,
                 "stdout_tail": stdout_tee.tail[-TAIL_CHARS:],
                 "stderr_tail": stderr_tee.tail[-TAIL_CHARS:],
-                **({"report": entry["report"]} if "report" in entry else {}),
+                **{key: result[key] for key in ("log", "report") if key in result},
             },
         )
     if exit_code != 0:
@@ -260,7 +275,7 @@ def run_verify_command(
                 "exit_code": exit_code,
                 "stdout_tail": stdout_tee.tail[-TAIL_CHARS:],
                 "stderr_tail": stderr_tee.tail[-TAIL_CHARS:],
-                **({"report": entry["report"]} if "report" in entry else {}),
+                **{key: result[key] for key in ("log", "report") if key in result},
             },
         )
     if report_error is not None:
@@ -268,9 +283,9 @@ def run_verify_command(
             f"{report_error}: {command}",
             code=report_error.code,
             details={"command": command, "exit_code": exit_code,
-                     "report": entry["report"]},
+                     **{key: result[key] for key in ("log", "report") if key in result}},
         )
-    return entry
+    return result
 
 
 def run_verify_commands(
@@ -279,7 +294,8 @@ def run_verify_commands(
     *,
     labels: list[str] | None = None,
     timeouts: list[float | None] | None = None,
-    report_suites: list[str | None] | None = None,
+    entries: list[str | None] | None = None,
+    junits: list[bool] | None = None,
 ) -> list[dict[str, Any]]:
     names = (
         labels if labels is not None and len(labels) == len(commands) else None
@@ -301,9 +317,8 @@ def run_verify_commands(
                 index=offset + 1,
                 total=total,
                 timeout=limits[offset] if limits is not None else None,
-                report_suite=(
-                    report_suites[offset] if report_suites is not None else None
-                ),
+                entry=entries[offset] if entries is not None else None,
+                junit=junits[offset] if junits is not None else False,
             )
         except MDFError as exc:
             details = dict(exc.details) if isinstance(exc.details, dict) else {}

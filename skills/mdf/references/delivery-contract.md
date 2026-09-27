@@ -149,14 +149,15 @@ warning 或 deprecated 只可精确豁免：写明类别、来源模块与理由
 
 每次运行 suite（含 named suite）都必须产出 JUnit XML 报告。Core 为每次运行新建
 `.mdf/reports/<时间戳>-<suite>/`，以环境变量 `MDF_REPORT_DIR` 传给入口命令，命令把
-XML 写进该目录；`.mdf/reports/` 由 Core 自带 `.gitignore` 忽略，全部保留，由用户
-自行清理。test case 取 `<testcase>` 的 `classname`，缺失时取所在 `<testsuite>` 的
+XML 写进该目录；lint 与 build 也各有运行目录。每个运行目录都保存该命令完整的
+`stdout.log` 与 `stderr.log`；`.mdf/reports/` 由 Core 自带 `.gitignore` 忽略，7 天前的条目
+自动清理，见 `common.md`「日志与报告」。test case 取 `<testcase>` 的 `classname`，缺失时取所在 `<testsuite>` 的
 `name`；项目须配置运行器使其对应 test case。
 - Core 解析后在同目录写 `summary.json`：test case 级的结果与用时，及其下 test 级的
   结果与用时。gate 与 code-review 证据记录报告路径与 test case 级汇总。
 - 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
-- 点名执行 test case 或 test 只用于定位，不强制报告。
+- 点名执行 test case 或 test 只用于定位，不强制 JUnit 报告，但完整输出须 tee 进 `.mdf/logs/`。
 
 ### 验证 suite
 

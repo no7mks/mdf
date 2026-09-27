@@ -203,9 +203,8 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         context["validation_commands"],
         labels=[item["id"] for item in verify_items],
         timeouts=[item["budget"] for item in verify_items],
-        report_suites=[
-            item["id"] if item["id"] in SUITES else None for item in verify_items
-        ],
+        entries=[item["id"] for item in verify_items],
+        junits=[item["id"] in SUITES for item in verify_items],
     )
     ensure_clean(repo)
     spec["verify_command_results"] = command_results

@@ -131,6 +131,22 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 验收：失败现场、findings 与等待状态已报告。
 异常与交接：本条即失败汇；不自行回滚，除非当前 intent 另有恢复规则。
 
+## 日志与报告
+
+<a id="logs"></a>
+
+凡在 MDF 引导下执行的命令（Core CLI、测试、lint、build、doctor、fact audit 等）都必须
+留下足以诊断失败的完整日志或报告，失败时先读日志与报告，不为查看输出而重跑。
+- Core CLI 每次调用自动写 `.mdf/logs/<时间戳>-<命令>/`（`stdout.log`、`stderr.log`、
+  `meta.json`）；位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
+  尚无 `.mdf/` 的目录写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
+- Core 代跑的验证入口在 `.mdf/reports/<时间戳>-<入口>/` 保存完整输出，suite 另有
+  JUnit XML 与 `summary.json`，见 `delivery-contract.md`「测试报告」。
+- Agent 直接运行的命令（点名执行、项目脚本、调试命令等）须把完整 stdout 与 stderr
+  写入 `.mdf/logs/<时间戳>-<名称>.log`（如 `<命令> 2>&1 | tee <文件>`），并在汇报中给出路径。
+- `.mdf/logs/` 与 `.mdf/reports/` 由其中的 `.gitignore` 忽略；Core 每次运行删除其中
+  7 天前的条目。
+
 ## 交接
 
 <a id="s5"></a>

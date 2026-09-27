@@ -1,23 +1,16 @@
 """suite 运行的 JUnit XML 报告：目录分配、解析与失败判定。"""
 import json
-import time
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 from .errors import MDFError
+from .run_logs import REPORTS as REPORTS_ROOT, ignored_dir, stamp
 
-REPORTS_ROOT = ".mdf/reports"
 ENV_NAME = "MDF_REPORT_DIR"
 
 
-def new_report_dir(repo, suite):
-    root = Path(repo) / REPORTS_ROOT
-    root.mkdir(parents=True, exist_ok=True)
-    ignore = root / ".gitignore"
-    if not ignore.is_file():
-        ignore.write_text("*\n")
-    stamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
-    path = root / f"{stamp}{time.time_ns() % 1_000_000_000:09d}Z-{suite}"
+def new_report_dir(repo, entry):
+    path = ignored_dir(Path(repo) / REPORTS_ROOT) / f"{stamp()}-{entry}"
     path.mkdir()
     return path
 

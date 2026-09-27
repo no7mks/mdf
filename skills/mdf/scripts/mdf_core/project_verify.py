@@ -70,7 +70,8 @@ def command_project_verify(args):
                     index=index,
                     total=total,
                     timeout=item["budget"],
-                    report_suite=item["id"] if item["id"] in SUITES else None,
+                    entry=item["id"],
+                    junit=item["id"] in SUITES,
                 )
                 results.append({**item, **detail, "passed": True})
             except MDFError as exc:
@@ -98,5 +99,5 @@ def command_suite_run(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
     name = parse_suite_names([args.name])[0]
-    result = run_verify_command(repo, args.command, label=name, report_suite=name)
+    result = run_verify_command(repo, args.command, label=name, entry=name, junit=True)
     emit({"ok": True, "operation": "suite-run", "result": result})

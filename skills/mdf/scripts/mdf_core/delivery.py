@@ -129,7 +129,8 @@ def verify(repo, root, data):
                 index=index,
                 total=total,
                 timeout=item["budget"],
-                report_suite=item["id"] if item["id"] in SUITES else None,
+                entry=item["id"],
+                junit=item["id"] in SUITES,
             )
             result["passed"] = True
         except MDFError as exc:

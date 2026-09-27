@@ -23,6 +23,8 @@
 - `docs/system/`、`docs/user-guide/` 只记录当前检出版本的事实，不混入待实现计划。
 - 维护改动按 `PROJECT.md` 的验证要求执行检查。测试分类、失败语义与 skip 以
   `docs/system/testing/` 为准。
+- 执行的每条命令都要留下完整日志或报告：Agent 直接运行的命令把 stdout 与 stderr
+  tee 进 `.mdf/logs/<时间戳>-<名称>.log`；失败时先读日志与报告，不为查看输出而重跑。
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（`bug-` / `prp-` / `jot-` /
   `adr-` 前缀），不得省略前缀或只写序号/短码/slug。
 - 仅在用户显式调用 `$mdf …` 时执行对应 MDF 流程，不自动触发其他用户入口。

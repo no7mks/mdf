@@ -11,8 +11,14 @@ import pytest
 
 from _support import REPO_ROOT, Skill, discover_skills
 
+sys.path.insert(0, str(REPO_ROOT / "skills" / "mdf" / "scripts"))
+from mdf_core.run_logs import prune  # noqa: E402
+
 # Make the venv interpreter that runs pytest the one the tests shell out to.
 PYTHON = sys.executable
+
+# 未接入 MDF 的临时目录上的 CLI 日志落到本仓库的 .test-reports/，不写用户目录。
+os.environ.setdefault("MDF_LOG_DIR", str(REPO_ROOT / ".test-reports" / "mdf-logs"))
 
 # 临时仓库与被测 CLI 的提交身份统一由环境提供，省去逐仓库 git config。
 for _key in ("GIT_AUTHOR", "GIT_COMMITTER"):
@@ -48,7 +54,12 @@ def pytest_generate_tests(metafunc):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config: pytest.Config) -> None:
-    """每次运行都写 JUnit XML：优先 MDF_REPORT_DIR，否则 .test-reports/<时间戳>/。"""
+    """每次运行都写 JUnit XML（优先 MDF_REPORT_DIR），并清理 .test-reports/ 中 7 天前的内容。"""
+    if hasattr(config, "workerinput"):
+        return
+    reports = REPO_ROOT / ".test-reports"
+    prune(reports)
+    prune(reports / "mdf-logs")
     if config.option.xmlpath:
         return
     root = os.environ.get("MDF_REPORT_DIR")

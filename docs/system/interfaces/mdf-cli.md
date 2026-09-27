@@ -18,6 +18,10 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   `release-closeout`）期间 stderr 可含进度行与子进程原文；解析失败时取
   stderr 最后一行 JSON，失败细节也可读落盘证据中的 `stdout_tail` /
   `stderr_tail`。
+- 每次调用在主仓库 `.mdf/logs/<时间戳>-<命令>/` 写 `stdout.log`、`stderr.log` 与
+  `meta.json`（argv、cwd、退出码、用时），参数错误也记录；尚无 `.mdf/` 时写到
+  `MDF_LOG_DIR` 或 `~/.mdf/logs/`。失败 JSON 带 `log` 路径；内部异常先把 traceback
+  写入 stderr。每次调用清理 `.mdf/logs/` 与当前仓库 `.mdf/reports/` 中 7 天前的条目。
 - suite 命令受预算限时（默认 quick 30、smoke 300 秒，可由 `verification.budgets`
   覆盖）；lint、build 与未设预算的 release 不限时。超出预算按 process group 终止并
   失败，错误 details 含已捕获的 `stdout_tail` / `stderr_tail`。
@@ -490,10 +494,11 @@ group 并失败，details 含 partial tail；lint、build 与未设预算的 rel
 `delivery verify`、`project-verify run` 与 `release-closeout` 执行 quick、smoke、release
 时，为每次运行新建 `.mdf/reports/<时间戳>-<suite>/`，以 `MDF_REPORT_DIR` 传给命令，
 命令结束后解析其中的 JUnit XML，写入 `summary.json`，并把路径与 test case 级汇总记入
-结果的 `report`。缺报告返回 `missing_test_report`，无法解析返回 `invalid_test_report`，
+结果的 `report`。lint 与 build 也各建运行目录；每个运行目录保存完整的 `stdout.log`、
+`stderr.log`，路径记入结果的 `log`。缺报告返回 `missing_test_report`，无法解析返回 `invalid_test_report`，
 不含 test 返回 `empty_test_report`，含 failure、error 或 skipped 返回
 `test_report_failed`；这些情况即使退出码为 0 也判失败。`.mdf/reports/` 由其中的
-`.gitignore` 忽略，报告全部保留。
+`.gitignore` 忽略，保留 7 天。
 
 `suite-run --repo <仓库> --name <named suite> --command <命令>` 以同样方式为 named suite
 新建报告目录、运行命令并校验报告，输出命令结果与 `report`；不写 gate。名称不得为

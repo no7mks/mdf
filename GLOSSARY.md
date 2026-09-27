@@ -48,10 +48,11 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
 hermetic UT 或 PT；原慢用例保留。
 
-## 测试报告
+## 测试报告与运行日志
 
-每次 suite 运行写入 `.mdf/reports/<时间戳>-<suite>/` 的 JUnit XML 与 Core 生成的
-`summary.json`，含 test case 级与 test 级的结果和用时。
+测试报告是每次 suite 运行写入 `.mdf/reports/<时间戳>-<suite>/` 的 JUnit XML 与 Core
+生成的 `summary.json`，含 test case 级与 test 级的结果和用时。运行日志是命令完整的
+stdout 与 stderr：Core CLI 写 `.mdf/logs/`，验证入口写各自的运行目录。两者保留 7 天。
 
 ## Hermetic
 

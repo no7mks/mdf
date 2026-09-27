@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+import traceback
 
 from .commands_misc import (
     command_archive,
@@ -16,6 +17,7 @@ from .commands_misc import (
 from .audit import command_audit
 from .commands_release import command_release_closeout
 from .errors import MDFError
+from .run_logs import RunLog
 from .gitflow import command_finish_gitflow, command_start
 from .upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
 
@@ -244,54 +246,49 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+def _failure(code: str, message: str, details, log: RunLog) -> int:
+    print(
+        json.dumps(
+            {
+                "ok": False,
+                "error": code,
+                "message": message,
+                "details": details,
+                "log": str(log.path),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        file=sys.stderr,
+    )
+    return 1
+
+
+def _run(argv: list[str], log: RunLog) -> int:
+    args = build_parser().parse_args(argv)
     try:
         args.func(args)
         return 0
     except MDFError as exc:
-        print(
-            json.dumps(
-                {
-                    "ok": False,
-                    "error": exc.code,
-                    "message": str(exc),
-                    "details": exc.details,
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            ),
-            file=sys.stderr,
-        )
-        return 1
+        return _failure(exc.code, str(exc), exc.details, log)
     except (OSError, UnicodeError) as exc:
-        print(
-            json.dumps(
-                {
-                    "ok": False,
-                    "error": "operation_failed",
-                    "message": str(exc),
-                    "details": None,
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            ),
-            file=sys.stderr,
-        )
-        return 1
+        traceback.print_exc(file=sys.stderr)
+        return _failure("operation_failed", str(exc), None, log)
     except Exception as exc:  # pragma: no cover - defensive CLI boundary
-        print(
-            json.dumps(
-                {
-                    "ok": False,
-                    "error": "internal_error",
-                    "message": str(exc),
-                    "details": None,
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            ),
-            file=sys.stderr,
-        )
-        return 1
+        traceback.print_exc(file=sys.stderr)
+        return _failure("internal_error", str(exc), None, log)
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    log = RunLog(argv)
+    code = 1
+    with log:
+        try:
+            code = _run(argv, log)
+        except SystemExit as exc:
+            code = exc.code if isinstance(exc.code, int) else int(exc.code is not None)
+            raise
+        finally:
+            log.finish(code)
+    return code
