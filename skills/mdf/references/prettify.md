@@ -74,10 +74,12 @@
   - ❌ `<path>...` 与 `--scope full` 或 `--scope branch` 同用时停止询问。
   - ❌ `--scope paths` 未列路径时停止询问。
 - `--scope branch` 的起点同 `fact-audit.md` 的 branch 规则：
-  - 交付分支取 `delivery.json` 的 `start_commit`，否则取 `git merge-base develop HEAD`。
+  - 交付分支取 `delivery.json` 的 `start_commit`。
+  - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`，再没有则取 `git merge-base develop HEAD`。
   - 取不到起点时停止并报告。
   - 用 `git diff --name-only <base>`（含未提交改动）与 `git ls-files --others --exclude-standard` 列出改动。
-  - 从中筛出下方允许改写的 Markdown，逐个作为 `--path`。
+  - 从中筛出仍存在、带角色且不在下方「不改」之列的 Markdown，逐个作为 `--path`。
+  - 清单为空时报告「无待美化文档」并结束，不调用 `prose-check`。
 - 步骤 1 拒绝不允许的路径：`docs/JOTS.md`、`docs/repowiki/**`、非 Markdown 或仓库外路径。
   - 显式列出这类路径时停止并报告，不静默跳过。
 - 写入分支遵守 `common.md` 的写入规则。

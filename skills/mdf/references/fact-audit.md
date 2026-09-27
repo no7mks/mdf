@@ -63,7 +63,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve scope | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、两类范围 | 2 | 停止 |
+| 1 | Resolve scope | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、范围、state | 2 | 停止 |
 | 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI | 映射、体积、表与入口、findings | 可审阅→3 | 无法审阅则停止 |
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
@@ -85,8 +85,8 @@
 `--scope` 三选一，与 fact update 共用；列出 `<path>...` 即 `paths`，
 与 `--scope full` 或 `--scope branch` 同用时停止询问：
 
-- `branch`：独立调用默认。交付分支以 `delivery.json` 的 `start_commit` 为 `--base`；
-  否则 CLI 取 `merge-base develop HEAD`。finish release 传入上一正式发布为
+- `branch`：独立调用默认。交付分支以 `delivery.json` 的 `start_commit` 为 `--base`，没有时取 git config
+  `branch.<owner 分支>.mdf-start-commit`；都没有才由 CLI 取 `merge-base develop HEAD`。finish release 传入上一正式发布为
   `--base`。范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
   引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
@@ -97,9 +97,9 @@
 | 调用方 | 范围与状态 |
 | --- | --- |
 | fact update 委托 | 与 fact update 相同的 `--scope`、`--base` 与路径，允许审阅调用方的同次写入 |
-| direct 调用 | manifest 必须 `ready` |
+| direct 调用 | 步骤 1 运行 `doctor --repo "$REPO_ROOT"` 读取 state，非 `ready` 即停止 |
 | migrate | `full`，允许 `initializing` |
-| finish 的 release | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
+| finish 的 release 与已收口 hotfix（直接委托） | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
 | finish 的其他分支 | 经 fact update 委托，与其 `--scope` 相同（`paths` 或等价 `branch`），不得改用 `full` |
 
 首次发布无上一版本时停止确认初始基线。
@@ -262,6 +262,7 @@ validation 已由步骤 6 判定通过，本步不再复核。
 - 无语义 finding（含结构 finding）。
 - 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
 - 无未确认 warning。
+- 无其他 CLI finding（如 `audit.ignore_duplicate`、`audit.ignore_empty`）。
 
 该确认不跨调用复用。
 

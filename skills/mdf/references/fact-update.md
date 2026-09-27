@@ -145,8 +145,8 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 结果分四类：
 
 - 通过。
-- 仅剩结构 finding：加载质量清单、`size.hard`、`overview.core_modules`、`project.entry_links`。
-- 其他未通过：事实错误、覆盖遗漏、validation 阻断。
+- 仅剩结构 finding：加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
+- 其他未通过：事实错误、覆盖遗漏、validation 阻断、未确认 warning、未取得用户确认。
 - 验证失败：所需验证命令失败或缺少结果。
 
 验收：fact audit 结论、验证结果。
@@ -168,6 +168,7 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 - 按上表模板建缺的五类专用叶。
 - 在 `PROJECT.md` 写入 `docs/system/overview.md`、`docs/README.md` 与
   `docs/system/testing/index.md`。
+- `prose.*`：按 `references/doc-structure.md` 结构化改写，规则同 `references/prettify.md`「检查与改写」。
 
 不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
 
@@ -175,8 +176,9 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 - 第三次仍有结构 finding（表中的超次 finding）则停止并报告，即使本步已经改写也不回 3。
 - 无结构 finding 时无改写结束，含第三次审阅已通过。失败与无改写互斥。
 - 无改写或重审通过后按公共规则提交。
-  - feature finish 委托时由调用方统一提交；并运行
-    `delivery record --stage fact-update --summary <本次事实审阅确认与验证证据>`。
+  - finish 委托时（各分支）由调用方统一提交。
+  - feature finish 委托时另运行 `delivery record --repo "$REPO_ROOT" --stage fact-update`。
+    - `--summary` 写本次事实审阅确认与验证证据。
 
 验收：结构 diff、适用 gate、适用提交、feature finish 委托时的 fact-update gate。
 

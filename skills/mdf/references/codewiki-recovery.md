@@ -1,7 +1,8 @@
 # CodeWiki Recovery
 
 由 CodeWiki 生成、更新流程在失败或需要重建时读取；不构成新的公开 intent。
-调用方提供 `REPO_ROOT`、session ID、实际 workspace、写入记录、失败步骤与 diff。
+调用方提供 `REPO_ROOT`、session ID、实际 workspace、写入记录、失败步骤、失败原因（含是否需要重建或删页）
+与 diff。
 步骤 2 与 3 互斥，均由步骤 1 进入，不是彼此的后续；框序受编号约束仍为 1–5。
 仅处理 MCP 失败、输出验收失败或必要重建；输出已验收且仅 Git 暂存或提交失败，
 由调用方保留产物并处理提交，不进入本流程。
