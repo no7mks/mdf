@@ -1,7 +1,9 @@
 # 文档结构规则
 
-适用于 MDF 管理的全部 Markdown：根文档、`docs/**`（`docs/JOTS.md` 除外）、`AGENTS.md`
-托管区块，以及 MDF 自身的 Skill 与模板。修复方向是结构化，不是压缩措辞或删减信息。
+本规则适用于 MDF 管理的全部 Markdown，修复方向是结构化，不是压缩措辞或删减信息。
+
+- 目标仓库：根文档、`docs/**`（`docs/JOTS.md` 除外）与 `AGENTS.md` 托管区块。
+- MDF 自身：Skill、intent、模板、`docs/` 与根文档。
 
 **机械限制**：硬限制由 CLI `fact-audit` 报 `prose.*` finding，软限制由审阅判断。
 

@@ -1,6 +1,5 @@
 # 尚未按 references/doc-structure.md 改写的文件；只减不增，达标后移出。
 GLOSSARY.md
-PROJECT.md
 README.md
 docs/system/interfaces/mdf-cli.md
 skills/mdf/SKILL.md
@@ -16,7 +15,6 @@ skills/mdf/references/converge.md
 skills/mdf/references/deliver.md
 skills/mdf/references/delivery-contract.md
 skills/mdf/references/design.md
-skills/mdf/references/doc-structure.md
 skills/mdf/references/fact-audit.md
 skills/mdf/references/fact-update.md
 skills/mdf/references/finish.md

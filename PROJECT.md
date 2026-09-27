@@ -48,8 +48,8 @@ MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
 
 ## 文档结构
 
-MDF 自身的 Markdown（Skill、intent、模板、`docs/`、根文档）与目标仓库文档共用一套结构规则，
-定义见 `skills/mdf/references/doc-structure.md`。
+MDF 自身的 Markdown 与目标仓库文档共用一套结构规则，定义见
+`skills/mdf/references/doc-structure.md`。MDF 自身范围包括 Skill、intent、模板、`docs/` 与根文档。
 
 - 硬限制由 `tests/lint/test_prose_structure.py` 检查，与目标仓库 fact audit 的
   `prose.*` finding 使用同一分析器。
