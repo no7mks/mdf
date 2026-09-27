@@ -151,7 +151,9 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 
 从确认方案提供八项基线、最近稳定版本、`verification` 的五个入口（lint、build、
 quick、smoke、release）、可选预算覆盖和 `implementation_roots`。从未发布时版本为
-`none`；没有对应检查的入口可用 `git diff --check` 或 `true`。suite 语义与预算见
+`none`；lint、build 没有对应检查时可用 `git diff --check` 或 `true`，quick、smoke、release
+必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令
+（如 `pytest --junitxml="$MDF_REPORT_DIR/junit.xml"`）。suite 语义与预算见
 `delivery-contract.md`「验证 suite」。
 不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
 单 module 默认使用 `src`，多 module 使用各 `<module>/src`；已有模板使用实际目录并在

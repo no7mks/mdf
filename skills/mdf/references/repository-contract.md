@@ -246,7 +246,9 @@ verification:
 ```
 
 - `lint`、`build`、`quick`、`smoke`、`release` 五项都必须声明为非空命令，不得有其他
-  键；没有对应检查时写 `"true"`。每项是一条入口命令，不列单个 test 或 test case。
+  键；lint、build 没有对应检查时写 `"true"`，quick、smoke、release 必须是把 JUnit XML
+  写进 `$MDF_REPORT_DIR` 的真实运行器命令，占位命令必然失败。
+  每项是一条入口命令，不列单个 test 或 test case。
 - 可选 `budgets` 覆盖 suite 的时间预算（正整数秒），只接受 `quick`、`smoke`、
   `release`。默认 quick 30、smoke 300，release 与 lint、build 无上限。
 - Core 按 `lint → build → quick → smoke|release` 顺序执行，suite 超出预算视为失败。
@@ -258,7 +260,8 @@ verification:
 - 不符合本形状的 `verification` 是 finding，由 `$mdf migrate` 收敛。
 
 初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--release`，可重复
-`--budget <suite>=<秒数>`。没有业务检查的空仓库可全部使用 `git diff --check`。
+`--budget <suite>=<秒数>`。没有业务检查的空仓库 lint、build 可用 `git diff --check`；
+suite 在出现第一个 test 前无法通过，由首个交付的 write-tests 补齐。
 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 `implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、

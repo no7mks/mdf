@@ -263,6 +263,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "单独提问并记录" in finish
     assert "确认单独提问" in workflow("fact-audit")
     assert "不重跑" in workflow("verify-fix")
+    assert "既有 suite 命令未产出报告时" in workflow("migrate")
+    assert "占位命令必然失败" in workflow("repository-contract")
     assert "`unknown_suite`" not in review and "询问用户是否新建" in workflow("deliver")
     assert "suites.json" not in workflow("start")
     assert "交付级 suite" not in contract and "下沉" not in contract

@@ -139,7 +139,10 @@
 `delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、release；
 原 named 分组只写进 `docs/system/testing/`，不写回 manifest。既有运行时 skip、
 提前返回或 xfail 在方案中逐个列出处置（按依赖拆分 test case、移出 suite 或登记 Bug），
-经用户确认后落地。初始化 CLI 用
+经用户确认后落地。quick、smoke、release 必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令：
+既有 suite 命令未产出报告时，在方案中写明为其运行器增加 JUnit 输出（如 pytest
+`--junitxml`、PHPUnit `--log-junit`、Vitest `--reporter=junit`、Jest `jest-junit`）与
+test case 分组配置（`classname` 对应 test case）。初始化 CLI 用
 `--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选 `--budget` 传入。
 
 验收：逐项决定与验证命令。
@@ -148,7 +151,7 @@
 在同一方案中移除 `.gitkeep`，否则保留。单 module 的业务实现与测试建议迁入 `src/` 与
 `tests/`；多 module 建议迁入或保留 `<module>/src/` 与 `<module>/tests/`，
 不得摊平为仓库根 `src/<module>/` 与 `tests/<module>/`。但不得在未经确认时迁移或删除。
-已接入 MDF 但暂无业务检查时可用 `git diff --check`；从未发布时最近稳定版本为
+已接入 MDF 但暂无业务检查时 lint、build 可用 `git diff --check`；从未发布时最近稳定版本为
 `none`。
 
 <a id="s4"></a>

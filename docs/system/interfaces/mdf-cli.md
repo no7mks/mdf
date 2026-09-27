@@ -270,7 +270,8 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 `NAME=not_applicable:原因`。
 `--lint`、`--build`、`--quick`、`--smoke`、`--release` 都必须提供非空命令；
 `--budget <suite>=<秒数>` 可重复，只接受 quick、smoke、release 的正整数，写入
-`verification.budgets`。没有业务检查的空仓库可使用 `git diff --check`。
+`verification.budgets`。没有业务检查的空仓库 lint、build 可使用 `git diff --check`；
+quick、smoke、release 须写出 JUnit XML，占位命令会以 `missing_test_report` 失败。
 
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
 `AGENTS.md` 区块、`docs/system/testing/` 起步页和文档骨架。输出会列出拟创建或
