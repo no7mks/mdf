@@ -42,11 +42,16 @@ def test_malformed_yaml_is_rejected(text):
 
 
 def test_quoted_values_round_trip():
-    """PT：不含控制字符的任意文本经 yaml_quote 写出后按原值读回。"""
+    """PT：任意文本（含换行、Tab 等控制字符）经 yaml_quote 写出后按原值读回。"""
     yamlutil, _ = core()
-    alphabet = string.ascii_letters + string.digits + string.punctuation + " 中文é"
+    alphabet = string.printable + "中文é\x00\x1b"
     rng = random.Random(20260927)
     for _ in range(2000):
         value = "".join(rng.choice(alphabet) for _ in range(rng.randint(0, 16)))
         parsed = yamlutil.parse_yaml_subset(f"k: {yamlutil.yaml_quote(value)}\n")
         assert parsed["k"] == value, value
+
+
+def test_hand_written_invalid_escapes_keep_backslashes():
+    yamlutil, _ = core()
+    assert yamlutil.parse_yaml_subset('k: "C:\\\\tmp and \\q"\n')["k"] == "C:\\tmp and \\q"

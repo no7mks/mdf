@@ -30,9 +30,13 @@ def strip_inline_comment(value: str) -> str:
 
 
 def unescape_double_quoted(value: str) -> str:
-    return (
-        value.replace("\\\\", "\x00").replace('\\"', '"').replace("\x00", "\\")
-    )
+    """按 JSON 转义解码，与 yaml_quote 对称；含非法转义的手写值退回只还原反斜杠与引号。"""
+    try:
+        return json.loads(f'"{value}"')
+    except ValueError:
+        return (
+            value.replace("\\\\", "\x00").replace('\\"', '"').replace("\x00", "\\")
+        )
 
 
 def split_flow_items(inside: str) -> list[str]:
