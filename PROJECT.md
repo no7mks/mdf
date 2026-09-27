@@ -11,17 +11,19 @@
 ## 本地验证
 
 MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
+`python -m pip install -r tests/requirements-test.txt`。
 
-```bash
-python -m pip install -r tests/requirements-test.txt
-python -m pytest
-```
+| 入口 | 命令 | 何时跑 |
+| --- | --- | --- |
+| lint | `python -m pytest tests/lint` | 任何改动 |
+| build | `python -m compileall -q skills/mdf/scripts` | 任何改动 |
+| quick | `python -m pytest tests/unit` | 任何改动 |
+| smoke | `python -m pytest tests/unit tests/e2e` | 改动收口 |
+| release | `python -m pytest tests/unit tests/e2e` | 发布前 |
 
-`pytest.ini` 默认 `-n auto` 并行；全量验证不要加 `-n0` 串行。调试单个测试时才用 `-n0`。
-
-改动某项协议或工作流时，先运行对应测试，再运行完整测试集。
-
-验证输出中的 warning、skip、note 和 deprecated 都视为失败，必须处理后才能交付。
+改动某功能块时另跑其 named suite；各 suite、预算、失败语义与报告见
+[docs/system/testing/conventions.md](docs/system/testing/conventions.md)。
+`pytest.ini` 默认 `-n auto` 并行，只在点名调试时用 `-n0`。
 
 ## 发布与安装
 
@@ -53,4 +55,5 @@ python -m pytest
 - [GLOSSARY.md](GLOSSARY.md)：MDF 领域术语。
 - [docs/system/interfaces/mdf-cli.md](docs/system/interfaces/mdf-cli.md)：本仓库
   `mdf.py` 的完整命令表、参数与实际副作用；不随 Skill 安装。
-- [tests/README.md](tests/README.md)：测试结构与 fixture 说明。
+- [docs/system/testing/conventions.md](docs/system/testing/conventions.md)：测试层级、
+  失败语义、报告与各 suite。

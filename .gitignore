@@ -4,6 +4,7 @@ __pycache__/
 
 # Test caches and virtual environments
 .pytest_cache/
+.test-reports/
 .venv/
 venv/
 

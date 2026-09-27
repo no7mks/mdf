@@ -87,7 +87,7 @@ def payload(result):
 
 def copy_fixture(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
-    shutil.copytree(FIXTURE, repo)
+    shutil.copytree(FIXTURE, repo, ignore=shutil.ignore_patterns("__pycache__"))
     return repo
 
 

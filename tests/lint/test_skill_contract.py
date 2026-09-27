@@ -1,0 +1,489 @@
+"""唯一 MDF Skill 的入口与内部 intent 契约测试。"""
+from __future__ import annotations
+import re
+from conftest import skill_dir
+
+
+def intent(name: str) -> str:
+    text = (skill_dir("mdf") / "references" / f"{name}.md").read_text(
+        encoding="utf-8"
+    )
+    text = re.sub(r"\s+", " ", text)
+    return re.sub(r"(?<=[\u4e00-\u9fff，。；：、]) (?=[\u4e00-\u9fff])", "", text)
+
+
+def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
+    skill = skill_dir("mdf")
+    entry = (skill / "SKILL.md").read_text(encoding="utf-8")
+
+    assert [path.name for path in skill.parent.iterdir() if path.is_dir()] == [
+        "mdf"
+    ]
+    assert not (skill / "workflows").exists()
+    expected_commands = (
+        "init",
+        "init migrate",
+        "bootstrap",
+        "migrate",
+        "intake",
+        "tree [--depth N]",
+        "prp tree",
+        "next?",
+        "next？",
+        "next [--depth N]",
+        "deliver [<target>] [--auto-pilot] [--yolo]",
+        "codewiki generate",
+        "codewiki update",
+        "start",
+        "jot",
+        "jot promote",
+        "bug create",
+        "prp create",
+        "prp review",
+        "archive",
+        "finish",
+        "fact audit",
+        "fact update",
+        "design", "write-tests", "implement", "converge", "fix <bug-id> [--yolo]",
+        "verify-fix [<bug-id>]",
+        "code-review", "prp split",
+        "clarify <议题>",
+        "help",
+        "help <intent>",
+        "upgrade",
+        "integrate",
+    )
+    for command in expected_commands:
+        assert command in entry
+    routes = re.findall(r"[├└]──── (.+?) ─+→ references/[a-z-]+\.md", entry)
+    commands = [command for route in routes for command in route.split(" / ")]
+    assert len(commands) == len(expected_commands)
+    assert set(commands) == set(expected_commands)
+    assert "裸 `$mdf`" in entry
+    assert "references/intake.md" in entry
+    assert "references/next.md" in entry
+    assert "references/tree.md" in entry
+    assert (skill / "references" / "tree.md").is_file()
+    assert "references/bug-create.md" in entry
+    assert "references/prp-create.md" in entry
+    assert (skill / "references" / "intake.md").is_file()
+    assert (skill / "references" / "next.md").is_file()
+    assert not (skill / "references" / "mvp.md").exists()
+    assert "doc derive" not in entry
+    assert not (skill / "references" / "doc-derive.md").exists()
+    assert "references/prp-review.md" in entry
+    assert "references/archive.md" in entry
+    assert "references/codewiki-generate.md" in entry
+    assert "references/codewiki-update.md" in entry
+    assert "references/jot.md" in entry
+    assert "references/help.md" in entry
+    assert "references/upgrade.md" in entry
+    assert (skill / "references" / "help.md").is_file()
+    assert (skill / "references" / "upgrade.md").is_file()
+    assert "$mdf <intent>" in entry
+    assert "mdf.py\" <command>" in entry
+    assert "版本化文档与交付流程" in entry
+    assert "已确认决策与`当前事实文档`分开" in entry
+    assert "可验证的演进记录" in entry
+
+
+def test_tree_renders_mixed_dependency_graph() -> None:
+    text = intent("tree")
+    assert "混态" in text
+    assert "● ready" in text
+    assert "○ draft" in text
+    assert "↑ 上一组 milestone" in text
+    assert "implemented/released" in text
+    assert "blocked_by" in text
+    assert "depends_on" in text
+    assert "按 milestone 分组" in text
+    assert "不挂到其成员下" in text
+    assert "从该根的树干直接向上接到上一组" in text
+    assert "prp review" in text
+    assert "不创建或拆分" in text
+    assert "默认 3" in text
+    assert "正整数" in text
+    assert "$mdf next?" in text
+    assert "$mdf prp tree" in text
+
+
+def test_next_resumes_or_delegates_tree() -> None:
+    text = intent("next")
+    assert "feature 交付步骤" in text
+    assert "qa/feature/" in text
+    assert "问号蓝图" not in text
+    assert "references/tree.md" in text
+    assert "委托 tree" in text
+
+
+def test_init_and_doc_intents_load_internal_contracts() -> None:
+    init = intent("init")
+    migrate = intent("migrate")
+    intake = intent("intake")
+    create = intent("prp-create")
+    review = intent("prp-review")
+    archive = intent("archive")
+    common = intent("common")
+
+    assert "repository-contract.md" in init
+    assert "references/bootstrap.md" in init
+    assert "references/migrate.md" in init
+    assert "intents.md" not in init
+    assert "| 1 | Check entry | 约束 |" in init
+    assert "| 2 | Dispatch | 约束 |" in init
+    assert "内部执行 bootstrap 或 migrate" in init
+    assert "形成`初始化方案`" in migrate
+    assert "再次显式调用" in migrate
+    assert "`$mdf init migrate`" in migrate
+    assert "`$mdf migrate`" in migrate
+    assert "docs/context/research/" in migrate
+    assert "docs/context/requirements/" not in migrate
+    assert "$mdf intake" in migrate
+    assert "$mdf bug create" in migrate and "$mdf prp create" in migrate
+    assert "| 1 | Check entry | 约束 |" in migrate
+    assert "| 2 | Inventory | 约束 |" in migrate
+    assert "| 7 | Enable workflows | 脚本 |" in migrate
+    assert "没有未说明的遗留文件" in migrate
+    assert "消除重复" in migrate
+    for root_document in (
+        "`README.md`",
+        "`PROJECT.md`",
+        "`AGENTS.md`",
+        "`GLOSSARY.md`",
+    ):
+        assert root_document in migrate
+    assert "各自符合`根文档职责`" in migrate
+    assert "检查项目原有的全部文档" in migrate
+    assert "符合 CodeWiki 契约的 `docs/repowiki/`" in migrate
+    assert "盘点全部顶层项目项" in migrate
+    assert "顶层允许清单" in migrate
+    assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in migrate
+    assert "业务实现与测试" in migrate
+    assert "`<module>/src/`" in migrate
+    assert "`<module>/tests/`" in migrate
+    assert "`src/<目录>`" not in migrate
+    assert "`tests/<目录>`" not in migrate
+    assert "不得摊平" in migrate
+    assert "迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`" in migrate
+    assert "不得在未经确认时迁移或删除" in migrate
+    assert "项目原有文档与经确认迁移的顶层项目项" in migrate
+    inventory = migrate.split('<a id="s2"></a>', maxsplit=1)[1].split(
+        '<a id="s5"></a>', maxsplit=1
+    )[0]
+    assert "不做`事实复核`" in inventory
+    assert "`evidence`" not in inventory
+    assert "生成的 Markdown 正文、标题与列表使用简体中文" in common
+    assert "须写完整前缀 ID，不得省略前缀或只写序号/短码" in common
+    assert "核对简体中文、英文保留范围与完整前缀 ID" in common
+    for document in (review,):
+        assert "object-contract.md" in document
+        assert "内部 clarify intent" in document
+        assert "normal_workflows_allowed" in document
+        assert "先在 `draft` 状态运行 `targeted validation`" in document
+    assert "object-contract.md" in intake
+    assert "内部 clarify intent" in intake
+    assert "normal_workflows_allowed" in intake
+    assert "按已有最大序号加一生成 ID" in intake
+    assert "英文 ASCII kebab-case slug" in intake
+    assert "一句话、当前聊天上下文或外部文档" in intake
+    assert "偏差建 Bug" in intake
+    assert "待实现意图建一个或多个 Proposal" in intake
+    assert "不得复制、归档或链接到仓库" in intake
+    assert "必填事实仍无法确认时停止，不得写入任何对象" in intake
+    assert "只有用户明确确认清单才继续" in intake
+    assert "implemented/released Proposal ID" in intake
+    assert "Proposal 初始状态为 `draft`，Bug 初始状态为 `open`" in intake
+    assert "显式调用 `$mdf prp review`" in intake
+    assert "外部想法、当前聊天上下文或外部文档必须显式调用" in create
+    assert "$mdf intake" in create
+    assert "一次不得创建多个对象" in create
+    assert "用户手动提供的单个 Proposal 事实" in create
+    assert "released/rejected/replaced/implemented 或 archive Proposal 拒绝修改" in review
+    assert "released/rejected/replaced Proposal 可归档" in archive
+
+
+def test_jot_intent_preserves_raw_input_until_promotion() -> None:
+    jot = intent("jot")
+
+    assert "make-jot-id" in jot
+    assert "docs/JOTS.md" in jot
+    assert "完整 marker 条目" in jot
+    assert "保留新对象、原 Jot" in jot
+    assert "Proposal 写为 `draft`，Bug 写为 `open`" in jot
+    assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
+    assert "同一个独立 commit" in jot
+
+
+def test_repository_contract_defines_static_core_terms() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+    migrate = intent("migrate")
+
+    assert "## 核心术语" in contract
+    for term in (
+        "`当前事实文档`",
+        "`事实复核`",
+        "`审阅`",
+        "`validation`",
+        "`evidence`",
+        "`基线`",
+        "`验证命令`",
+        "`验证 suite`",
+        "`initializing`",
+        "`ready`",
+    ):
+        assert term in contract
+    terms = contract.split("## 固定布局", maxsplit=1)[0]
+    assert "`audit`" not in terms
+    assert "`init`" not in terms
+    assert "`finish`" not in terms
+    assert "closeout 时执行" not in terms
+    assert "`全量审阅`" not in contract
+    assert "`范围审阅`" not in contract
+    assert "`当前事实文档`" in migrate
+    assert "`validation`" in migrate
+    assert "`全量审阅`" in migrate
+    assert "docs/context/requirements/" not in contract
+    assert "docs/context/planning/" not in contract
+
+
+def test_repository_contract_defines_root_document_responsibilities() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## 根文档职责" in contract
+    assert "`README.md` 面向项目用户" in contract
+    assert "用户（非维护者）" in contract
+    assert "├── README.md                 # 用户入口" in contract
+    assert "仅维护者需要的环境、验证、lint、CI、目录例外、发布" in contract
+    assert "`PROJECT.md` 仅面向项目维护者" in contract
+    assert "| 根 `README.md` | 200 |" in contract
+    assert "| 路由页（见下）、`AGENTS.md` 托管块、`PROJECT.md` | 100 |" in contract
+    assert "`AGENTS.md` 仅面向在仓库中工作的 Agent" in contract
+    assert "从 `docs/README.md` 只打开一份主题叶" in contract
+    assert "最短可运行路径" in contract
+    assert "核心模块" in (
+        skill / "assets" / "templates" / "system-overview.md"
+    ).read_text(encoding="utf-8")
+    assert "核心模块表" in contract
+    assert "五类专用叶" in contract
+    assert "固定表" not in contract
+    assert "强制五类" not in contract
+    assert "`user-guide/README.md` → 一份主题叶" in contract
+    assert "须含 `docs/system/overview.md`、`docs/README.md` 与" in contract
+    assert "`docs/system/testing/`" in contract
+    assert "`layout.testing`" in contract
+    assert "`agents.size`" in contract
+    assert "托管区块必须项目无关" in contract
+    assert "按维护者角色工作" in contract
+    agents_block = (skill / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8"
+    )
+    assert "你的角色是维护者" in agents_block
+    assert "`GLOSSARY.md` 面向所有读者维护稳定的领域词典" in contract
+
+
+def test_repository_contract_defines_top_level_layout() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## 顶层布局" in contract
+    assert "顶层只保留项目入口" in contract
+    assert "单 module：业务实现归入 `src/`，测试归入 `tests/`" in contract
+    assert "`<module>/src/`" in contract
+    assert "`<module>/tests/`" in contract
+    assert "不得摊平进仓库根 `src/<module>/` 与 `tests/<module>/`" in contract
+    assert "列出各 `<module>/src`" in contract
+    assert "MDF 不自动迁移或删除顶层项目项" in contract
+    assert "顶层允许清单、" in contract
+    assert "每项的理由" in contract
+    assert "`docs/repowiki/` 存在时" in contract
+    assert "不填入`基线`" in contract
+    assert "## ADR" in contract
+    assert "`docs/context/adr/<slug>.md`" in contract
+    assert "`adr-<slug>`" in contract
+    assert "NNNN-slug" not in contract
+    assert "accepted 之后" in contract
+    assert "slug 不可改" in contract
+    assert "须含字母" in contract
+    docs_readme = (skill / "assets" / "templates" / "docs-readme.md").read_text(
+        encoding="utf-8"
+    )
+    assert "打开单份" in docs_readme
+    assert "按编号打开" not in docs_readme
+    assert "system/testing/index.md" in docs_readme
+    assert (skill / "assets" / "templates" / "system-testing-index.md").is_file()
+    assert (
+        skill / "assets" / "templates" / "system-testing-conventions.md"
+    ).is_file()
+
+
+def test_object_ids_must_be_cited_with_type_prefix() -> None:
+    skill = skill_dir("mdf")
+    object_contract = (skill / "references" / "object-contract.md").read_text(
+        encoding="utf-8"
+    )
+    agents = (skill / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "必须写完整 ID" in object_contract
+    assert "`prp-001`" in object_contract
+    assert "`bug-C4D5`" in object_contract
+    assert "`jot-E6F7`" in object_contract
+    assert "`adr-use-sqlite`" in object_contract
+    assert "不得省略类型前缀或只写序号/短码/slug" in object_contract
+    assert "`bug-`" in agents and "`prp-`" in agents and "`jot-`" in agents
+    assert "`adr-`" in agents
+    assert "不得省略前缀或只写序号/短码/slug" in agents
+
+
+def test_unreleased_layout_allows_in_progress_delivery_without_change() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "repository-contract.md").read_text(
+        encoding="utf-8"
+    )
+    delivery = (skill / "references" / "delivery-contract.md").read_text(
+        encoding="utf-8"
+    )
+    objects = (skill / "references" / "object-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "不必先有 CHANGE.md" in contract
+    assert "finish 在同一目录补齐 CHANGE.md" in delivery
+    assert "CHANGE.md 出现前即可保存交付身份与材料" in objects
+    assert "finish 时" not in objects
+
+
+def test_contracts_do_not_duplicate_intent_steps() -> None:
+    skill = skill_dir("mdf")
+    object_contract = (skill / "references" / "object-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert not (skill / "references" / "intents.md").exists()
+    assert "$mdf " not in object_contract
+    assert "release-closeout" not in object_contract
+    assert "finish 时" not in object_contract
+
+
+def test_audit_is_reused_without_delivery_logic() -> None:
+    audit = intent("fact-audit")
+    migrate = intent("migrate")
+    finish = intent("finish")
+
+    assert "只读" in audit
+    assert "`全量审阅`（`--scope full`）" in audit
+    assert "`事实复核`" in audit
+    assert "从文档到实现" in audit
+    assert "从实现到文档" in audit
+    assert "加载质量" in audit
+    assert "唯一归属" in audit
+    assert "size.hard" in audit
+    assert "docs/context/adr/" in audit
+    assert "## 审阅类型" in audit
+    assert "`全量审阅`（`--scope full`）：从文档和实现两个方向" in audit
+    assert "`范围审阅`（`--scope branch` 或 `paths`）：从文档和实现两个方向" in audit
+    assert "`全量审阅`" in audit
+    assert "`范围审阅`" in audit
+    assert "`develop...HEAD`" not in audit
+    assert "`master...HEAD`" not in audit
+    assert "`release-closeout`" not in audit
+    assert "`fact audit` 执行`全量审阅`" in migrate
+    assert "这是交付前检查，不是 audit" in finish
+    assert "references/fact-update.md" in finish
+    assert "release 为 `--scope full`" not in finish
+    assert "release 的左端点为上一正式发布" in finish
+    assert "finish 的 release 为 `full`" not in audit
+    assert "`--base` 为上一正式发布" in audit
+    assert "`agents.project_content`" in audit
+    assert "核心模块表" in audit
+    assert "`overview.core_modules`" in audit
+    assert "`project.entry_links`" in audit
+    assert "不是语义 finding" in audit
+    update = intent("fact-update")
+    assert "五类专用叶" in update
+    assert "`system-configuration.md`" in update
+    assert "`4→3` 最多两次" in update
+    assert "在 `PROJECT.md` 写入" in update
+    assert "适用 gate" in update
+    assert "强制五类表" not in migrate
+    assert "核心模块表" in migrate
+    assert "同一项两轮后仍在" in migrate
+
+
+def test_delivery_intents_consume_current_fact_pages() -> None:
+    design = intent("design")
+    tests = intent("write-tests")
+    implement = intent("implement")
+    review = intent("code-review")
+    template = (skill_dir("mdf") / "assets" / "templates" / "design.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "当前事实锚点" in design
+    assert "不得把计划写进既有事实页" in design
+    assert "`<module>/tests/`" in design
+    assert "不要只抄仓库根 `tests/`" in design
+    assert "## 当前事实锚点" in template
+    assert "以事实页为准" in tests
+    assert "以事实页为准" in implement
+    assert "不从源码重新推断契约" in implement
+    assert "相关当前事实页" in review
+    assert "回归基线" in review
+
+
+def test_start_and_finish_define_strict_gitflow_operations() -> None:
+    start = intent("start")
+    finish = intent("finish")
+
+    assert "master" in start and "develop" in start
+    assert "不 fetch、不要求 origin、不 push" in start
+    assert "内部 clarify intent" in start
+    assert "不写目标" in start
+    assert "feature/release 2；其他 3" in start
+    assert "release-objectives.md" in start
+    assert "Confirm roster" in start
+    assert "member、strategy 与 models" in start
+    assert "no-ff 合并到本地 develop" in finish
+    assert "no-ff 合并到" in finish and "master" in finish
+    assert "原子 push" in finish
+    assert "v<semver>" in finish
+
+
+def test_codewiki_intents_use_a_managed_mcp_wiki_contract() -> None:
+    skill = skill_dir("mdf")
+    contract = (skill / "references" / "codewiki-contract.md").read_text(
+        encoding="utf-8"
+    )
+    generate = intent("codewiki-generate")
+    update = intent("codewiki-update")
+
+    assert "docs/repowiki/" in contract
+    assert "metadata.json" in contract
+    assert "module_tree.json" in contract
+    assert "first_module_tree.json" in contract
+    assert "mdf-codewiki: managed" in contract
+    assert "provider" in contract and "API key" in contract
+    assert "CodeWiki CLI" in contract
+    assert "hacks.md" in contract
+    assert "偏离同类功能的普通路径" in contract
+    assert "V2" not in contract
+    assert "analyze_repo" in generate
+    assert "save_module_tree" in generate
+    assert "close_session" in generate
+    assert "待确认" in generate
+    assert "$mdf codewiki update" in generate
+    assert "no_changes: true" in update
+    assert "不调用 `analyze_repo`" in update
+    assert "$mdf codewiki generate" in update
+    assert "MCP-only" in update
+    assert "在 `overview.md` 加入链接" in update
+    assert "V2" not in generate and "V2" not in update

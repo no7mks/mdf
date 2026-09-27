@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -45,9 +46,22 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("skill", skills, ids=[s.name for s in skills])
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config: pytest.Config) -> None:
+    """每次运行都写 JUnit XML：优先 MDF_REPORT_DIR，否则 .test-reports/<时间戳>/。"""
+    if config.option.xmlpath:
+        return
+    root = os.environ.get("MDF_REPORT_DIR")
+    if not root:
+        stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+        root = str(REPO_ROOT / ".test-reports" / f"{stamp}-{os.getpid()}")
+    config.option.xmlpath = str(Path(root) / "junit.xml")
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Make skipped tests fail the suite."""
+    """skipped、xfailed 与 xpassed 都使本次运行失败。"""
     terminal = session.config.pluginmanager.get_plugin("terminalreporter")
-    skipped = terminal.stats.get("skipped", []) if terminal else []
-    if skipped and exitstatus == pytest.ExitCode.OK:
+    stats = terminal.stats if terminal else {}
+    if (any(stats.get(key) for key in ("skipped", "xfailed", "xpassed"))
+            and exitstatus == pytest.ExitCode.OK):
         session.exitstatus = pytest.ExitCode.TESTS_FAILED

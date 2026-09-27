@@ -143,4 +143,4 @@ upgrade 都不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
 ## 维护
 
 维护环境、验证命令与仓库约束见 [`PROJECT.md`](PROJECT.md)；测试范围和说明见
-[tests/README.md](./tests/README.md)。
+[docs/system/testing/conventions.md](./docs/system/testing/conventions.md)。
