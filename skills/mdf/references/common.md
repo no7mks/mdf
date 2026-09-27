@@ -144,6 +144,9 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   JUnit XML 与 `summary.json`，见 `delivery-contract.md`「测试报告」。
 - Agent 直接运行的命令（点名执行、项目脚本、调试命令等）须把完整 stdout 与 stderr
   写入 `.mdf/logs/<时间戳>-<名称>.log`（如 `<命令> 2>&1 | tee <文件>`），并在汇报中给出路径。
+- 用 grep、head、tail 等过滤或截断输出时，完整输出须先落盘再截取（如
+  `set -o pipefail; <命令> 2>&1 | tee <文件> | tail -n 50`），不得直接把命令输出管道给
+  截断命令；判定成败以原命令的退出码为准，不以截断命令的退出码为准。
 - `.mdf/logs/` 与 `.mdf/reports/` 由其中的 `.gitignore` 忽略；Core 每次运行删除其中
   7 天前的条目。
 

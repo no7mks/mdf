@@ -487,3 +487,13 @@ def test_codewiki_intents_use_a_managed_mcp_wiki_contract() -> None:
     assert "MCP-only" in update
     assert "在 `overview.md` 加入链接" in update
     assert "V2" not in generate and "V2" not in update
+
+
+def test_common_rules_require_logs_before_truncation() -> None:
+    common = (skill_dir("mdf") / "references" / "common.md").read_text(encoding="utf-8")
+    assert "完整输出须先落盘再截取" in common
+    assert "不以截断命令的退出码为准" in common
+    block = (skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8"
+    )
+    assert "先完整落盘再截取" in block
