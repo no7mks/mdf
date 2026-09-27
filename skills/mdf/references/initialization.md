@@ -109,7 +109,12 @@ migrate 维护；initializing 不代表老仓库，应继续检查实际内容�
 
 不符合当前契约的既有 MDF 内容由 migrate 收敛，即使尚无业务事实；不推断历史语义：
 
-- 只读检查 manifest 与布局（已有 Git 时运行 `doctor`），出现指向 `$mdf migrate` 的 finding 即为不符合。
+- 不符合当前契约只看 finding code，不看文案里有没有 `$mdf migrate`：
+  - 收敛类：`manifest.schema`、`layout.migrate`、`manifest.verification`。
+  - 其余非法 manifest 或布局 finding，例如 `manifest.state`、`manifest.invalid`。
+- ❌ 不算不符合契约：`manifest.initializing`、`layout.testing`。
+  - 前者在未 ready 时总会出现，文案同时提到 init、migrate 与 bootstrap。
+  - 后者由随后的 init CLI 写入。
 - init 转入 migrate，bootstrap 写入前停止并提示 `$mdf migrate`。
 - 其余校验在 Git 基础准备后执行。
 

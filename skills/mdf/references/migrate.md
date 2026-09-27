@@ -237,10 +237,10 @@
 
 **审阅**
 
+- 步骤 5 的阶段提交就是审阅基线。本步不再另做一次提交。
 - 比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`。
-- 内部委托 `fact audit` 执行`全量审阅`（`--scope full`）。
+- 内部委托 `fact audit` 执行`全量审阅`（`--scope full`），审的是已提交内容。
 - 按 `initialization.md` 段 5 执行 full validation。
-- 先提交本次事实与证据作为可审阅基线。
 - 审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 
 验收：事实复核、diff 与 full validation；仅允许 `manifest.initializing` finding。

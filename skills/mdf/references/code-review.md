@@ -222,7 +222,9 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
     依次执行 lint、build、quick 与 smoke（bugfix）或 release（release/hotfix）。
     - 逐项记录命令、预算、退出状态、报告汇总与 `suites`。
   - 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
-  - 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON 与落盘证据。
+  - 验证期间 stderr 为进度与子进程原文。
+  - 成功：读退出码、stdout 的 JSON，或落盘证据。
+  - 失败：读 stderr 最后一行 JSON。
   - suite 超出预算即终止 process group 并判为失败。
   - 重跑时另以 `suite-run` 执行 named suite：
     - bugfix：`suites.json` 所列。
