@@ -203,7 +203,10 @@ migrate 只允许 `manifest.initializing` finding。
 
 返回审阅类型、两类范围、映射、warnings、复核文档、语义/validation findings 与未触及理由。
 
-验收：会话摘要和用户当场确认。
+验收：会话摘要和用户当场确认。确认单独提问，只问本次审阅结论是否确认，不与 Bug 分诊、
+收口、补验等其他决定放在同一问；用户答复其他议题不视为确认。由调用方委托时，把确认原话
+与时间写入调用方材料目录的 `fact-audit.md`（如 `changes/unreleased/<slug>/fact-audit.md`）
+并随调用方材料提交；独立调用只在会话中确认。
 
 通过条件：无语义 finding（含结构 finding）、无 `size.hard`、无
 `overview.core_modules`、无 `project.entry_links`、无未确认 warning，且

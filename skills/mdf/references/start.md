@@ -116,8 +116,8 @@ hotfix 与 bugfix 不进入本步骤。
 
 **确认**
 
-解析将冻结的 roster：未指定 `--roster` 时 feature 默认 `min-tdd`，其他 kind
-默认 `solo`；再叠加本次 `--qa-strategy`、`--dev-strategy`、
+解析将冻结的 roster：未指定 `--roster` 时 feature 默认 `min-tdd`，release 默认
+`solo` 加 3 名 partition reviewer，bugfix 与 hotfix 默认 `solo`；再叠加本次 `--qa-strategy`、`--dev-strategy`、
 `--review-strategy`、`--write-tests-model`、`--implement-model`、
 `--code-review-model` 与对话中已确认的人数。对话里口语点名的模型（可多个、
 不要求官方 id）写入对应 `--*-model` 一句字符串。一侧为 0 另一侧 ≥1

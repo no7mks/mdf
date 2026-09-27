@@ -47,6 +47,9 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 `start → design → [write-tests ∥ implement] → converge → code-review → finish`
 
+bugfix、release、hotfix 同样先测后审：`start → 开发 → verify → code-review → finish`；收口复用
+有效的验证证据，不重跑 release suite。
+
 code-review 支持 feature、bugfix、hotfix 和 release；首轮按冻结的
 roster.reviewers 个 subagent 覆盖起点到 review_head；同一分支后续轮次只审上轮
 final_head 以来的增量，并复核上轮问题。默认每人全范围（replicate），

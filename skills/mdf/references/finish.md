@@ -206,8 +206,9 @@ bugfix 的对象状态按既有契约处理。release/hotfix 按后续收口步�
 
 feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
 其他分支运行 `project-verify check --repo "$REPO_ROOT"`。
-两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤补验，并内部从
-`code-review.md` 步骤 1 执行审查（有完整上轮记录则增量新一轮，否则首轮；
+两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤补验：先测后审，
+bugfix/hotfix/release 按 `deliver.md`「先测后审」修到全绿，feature 按 converge 规则重验，
+再内部从 `code-review.md` 步骤 1 执行审查（有完整上轮记录则增量新一轮，否则首轮；
 不把集成当修复续办）后复核，
 不回退本流程步骤编号；语义或实现变化必须补审补验。补验 run 期间 stderr 为
 子进程原文，判定读退出码与落盘 JSON。其他失败走本步骤的失败去向。
@@ -216,7 +217,8 @@ feature 运行 `delivery check --stage finish`，使用本次有效 code-review�
 范围审阅，其他分支为范围审阅。
 
 验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full
-validation 通过。fact audit 未取得当场确认视为本步未通过。
+validation 通过。fact audit 未取得当场确认视为本步未通过；确认按 `fact-audit.md` 步骤 7
+单独提问并记录，不与 Bug 分诊、收口或补验等其他决定合并。
 
 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。
@@ -272,11 +274,15 @@ major deferred/wont-fix 要用户接受、理由和 follow-up； duplicate 不�
 
 调用 `release-closeout`；版本根 Change 聚合 child outcomes/evidence，
 evidence 按首次出现顺序去重并追加 manifest 验证命令。CLI 操作前要求 clean；
-主动提交本次必要材料，不夹带无关改动。运行实际收口，在目标仓库执行验证命令，保持 clean 后写入。
+主动提交本次必要材料，不夹带无关改动。运行实际收口：`project-verify` 证据在当前输入下
+仍有效且命令一致时，CLI 复用其结果写入版本 Change，不重跑验证；否则在目标仓库执行验证
+命令，保持 clean 后写入。步骤 4 已确认证据有效，正常收口不再运行 release suite。
 
-验收：CLI 退出 0、命令结果、收口产物和完整 diff。
+验收：CLI 退出 0、命令结果（含 `reused`）、收口产物和完整 diff。
 
-通过条件：成功到 9。异常与交接：失败保留现场并停止，报告命令结果与实际写入。
+通过条件：成功到 9。异常与交接：失败保留现场并停止，报告命令结果与实际写入；
+post-validation 失败时 details 的 `findings` 与 `written` 即原因与已落地写入，不为查看
+原因再运行 doctor。
 
 ### 提交与 Gitflow
 

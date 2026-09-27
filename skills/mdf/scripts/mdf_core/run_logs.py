@@ -18,6 +18,19 @@ def stamp():
     return time.strftime("%Y%m%dT%H%M%S", time.gmtime()) + f"{time.time_ns() % 10**9:09d}Z"
 
 
+def unique_dir(root, name):
+    """在 root 下新建 <时间戳>-<name>；并发进程同名时追加序号。"""
+    base = f"{stamp()}-{name}"
+    for index in range(1, 1000):
+        path = Path(root) / (base if index == 1 else f"{base}-{index}")
+        try:
+            path.mkdir()
+            return path
+        except FileExistsError:
+            continue
+    raise FileExistsError(base)
+
+
 def ignored_dir(path):
     """建目录并在其中放 `*` 的 .gitignore，使内容不进 Git、不影响 clean 与指纹。"""
     path = Path(path)
@@ -104,8 +117,7 @@ class RunLog:
 
     def __init__(self, argv):
         command = re.sub(r"[^a-z0-9-]+", "-", (argv[0] if argv else "none").lower())
-        self.path = _log_root(argv) / f"{stamp()}-{command or 'none'}"
-        self.path.mkdir()
+        self.path = unique_dir(_log_root(argv), command or "none")
         self.argv = list(argv)
         self.started = time.time()
 

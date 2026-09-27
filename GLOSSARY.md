@@ -76,7 +76,8 @@ Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal�
 owner 恒为 1，不计入可选人数。可用 `--roster` 展开命名组合（不写入材料）：
 `solo` 为 `0,0,1`；`min-tdd` 为 `1,1,2` + best-of-n；`competing-pair` 为
 `2,2,3` + best-of-n；`coop-pair` 为 `2,2,3` + partition。feature 默认
-`min-tdd`，其他 kind 默认 `solo`。细项可覆盖展开结果。qa 与 dev 只能同时
+`min-tdd`，release 默认 `solo` 且 reviewers 为 3、review 为 `partition`，其他 kind 默认
+`solo`。细项可覆盖展开结果。qa 与 dev 只能同时
 为 0 或都 ≥1；一侧为 0 则抬成 1。`0,0` 时测试与实现都在 owner 上做；`≥1`
 时各有角色 worktree。
 qa/dev 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base 由该路吸收

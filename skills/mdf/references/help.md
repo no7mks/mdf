@@ -270,7 +270,7 @@ start；strategy / models 也可转交给 design、code-review。
 用途：按 Gitflow 创建本地交付分支。
 说明：始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，
 不在当前目录开分支，不 push。开分支前展示 member、strategy 与 models
-并确认后冻结 roster（feature 默认 min-tdd，其他默认 solo）；`--*-model`
+并确认后冻结 roster（feature 默认 min-tdd，release 默认 solo 加 3 名 partition reviewer，其他默认 solo）；`--*-model`
 为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
 release 开分支前确认发布目标（预发布工作，含跨仓联调；不实施新 PRP）。
 hotfix 不写 objectives。

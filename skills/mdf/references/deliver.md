@@ -193,7 +193,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | roster `0,0` 的 feature 测试或实现未完成 | 主 Agent 在 owner 串行 write-tests 再 implement |
 | feature 或 roster ≥1，测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
-| 实现完成且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
+| bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 | 在 owner 按下文「先测后审」验证并修到全绿 |
+| 已全绿（feature 已收敛）且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
@@ -209,6 +210,20 @@ write-tests / implement / converge。
 finish 已开始而代码发生变化时按 code-review 的复核规则处理后再续办 finish，不能跳过过期检查。
 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，
 不结束 deliver。步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。
+
+### 先测后审
+
+bugfix/hotfix/release 在审查前先验证（feature 由 converge 完成同样的事）：
+- bugfix 先关联 `changes/unreleased/<slug>/suites.json`（`{"suites":["<named suite 名>"]}`）：
+  按修复改动涉及的全部功能块，从 `docs/system/testing/` 已文档化的 named suite 中逐个选定
+  并提交；没有合适的 suite 时询问用户是否新建，确认后先补该 suite 的文档再关联。不得关联
+  lint/build/quick/smoke/release/full。
+- 运行 `project-verify run --repo "$REPO_ROOT"`（bugfix 到 smoke，release/hotfix 到 release），
+  bugfix 另以 `suite-run` 执行所列 named suite。失败时读报告与日志定位，在已确认范围内修复
+  实现后重跑，直到全绿；测试、预期或验证门槛的修改须用户确认。需要目标决定、外部条件或
+  同一失败连续三轮无进展时阻塞停止。
+- 已有证据经 `project-verify check` 仍有效时不重跑。全绿后提交，再进入审查；审查修复使证据
+  过期时由 code-review 步骤 4 重验。
 
 ### 并行委托与 worktree 身份
 

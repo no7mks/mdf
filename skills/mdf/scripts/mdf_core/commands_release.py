@@ -12,11 +12,13 @@ from .verify_run import run_verify_commands
 from .constants import SCHEMA_VERSION
 from .errors import MDFError, emit, serialize_findings
 from .gitutil import (
+    _status_paths,
     branch_details,
     current_branch,
     ensure_clean,
     repo_path,
     require_git_root,
+    run,
 )
 from .paths import ensure_safe_managed_paths, load_manifest
 from .verification import SUITES, manifest_verification
@@ -36,6 +38,32 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
     return [item["command"] for item in manifest_verification(manifest).plan("release")]
+
+
+def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:
+    """project-verify 证据在当前输入下仍有效且命令一致时，复用其结果而不重跑。"""
+    from .project_verify import evidence_path, valid_evidence
+
+    evidence = valid_evidence(repo)
+    if evidence is None:
+        return None
+    results = evidence.get("results") or []
+    if [item.get("command") for item in results] != commands:
+        return None
+    return {
+        "path": str(evidence_path(repo).relative_to(repo)),
+        "results": [
+            {key: item[key] for key in ("command", "exit_code", "log", "report")
+             if key in item}
+            for item in results
+        ],
+    }
+
+
+def written_paths(repo: Path) -> list[str]:
+    raw = run(["git", "status", "--porcelain", "-z", "--untracked-files=all"],
+              cwd=repo, check=False).stdout
+    return sorted(_status_paths(raw))
 
 
 def derive_closeout_spec(
@@ -198,14 +226,18 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         return
 
     verify_items = manifest_verification(manifest).plan("release")
-    command_results = run_verify_commands(
-        repo,
-        context["validation_commands"],
-        labels=[item["id"] for item in verify_items],
-        timeouts=[item["budget"] for item in verify_items],
-        entries=[item["id"] for item in verify_items],
-        junits=[item["id"] in SUITES for item in verify_items],
-    )
+    reused = reusable_results(repo, context["validation_commands"])
+    if reused is not None:
+        command_results = reused["results"]
+    else:
+        command_results = run_verify_commands(
+            repo,
+            context["validation_commands"],
+            labels=[item["id"] for item in verify_items],
+            timeouts=[item["budget"] for item in verify_items],
+            entries=[item["id"] for item in verify_items],
+            junits=[item["id"] in SUITES for item in verify_items],
+        )
     ensure_clean(repo)
     spec["verify_command_results"] = command_results
     context = validate_closeout_shape(repo, spec)
@@ -213,9 +245,12 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     post_findings = doctor.collect_findings(repo, full=True)
     if post_findings:
         raise MDFError(
-            "release closeout 的 post-validation 失败；请依据 git 工作树状态人工检查",
+            "release closeout 的 post-validation 失败；写入已落在工作树且未提交",
             code="post_validation_failed",
-            details={"findings": serialize_findings(post_findings)},
+            details={
+                "findings": serialize_findings(post_findings),
+                "written": written_paths(repo),
+            },
         )
     emit(
         {
@@ -233,6 +268,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
                 "suites": ["quick", "release"],
                 "commands": context["validation_commands"],
                 "results": command_results,
+                "reused": reused["path"] if reused is not None else None,
             },
             "audit": {"deterministic": "passed"},
         }

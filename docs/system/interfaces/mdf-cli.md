@@ -306,9 +306,11 @@ clean worktree、`manifest.state: ready` 与 full validation 零 finding。
 
 release 会从所有 `changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
 提供 `--hotfix-change-json`。可用 `--closures-json` 覆盖或补充收口结果，
-`--deferred-acceptance-json` 记录 deferred 的接受信息。正常运行会依次执行 manifest
-的 lint、build、quick、release，保持 worktree clean 后写入版本 Change、归档对象和链接重写，并在
-最后再次 full validate；`--dry-run` 不执行验证命令或写入。
+`--deferred-acceptance-json` 记录 deferred 的接受信息。正常运行时，若 `project-verify` 证据在
+当前输入下仍有效且其命令序列与 manifest 的 lint、build、quick、release 一致，直接复用其结果，
+输出 `verification.reused` 为证据路径；否则依次执行这些命令，`reused` 为 null。随后保持
+worktree clean 后写入版本 Change、归档对象和链接重写，并在最后再次 full validate；后校验
+失败时 details 含 `findings` 与已写入路径 `written`。`--dry-run` 不执行验证命令或写入。
 
 ### `start`
 
@@ -330,7 +332,8 @@ feature、bugfix 和 release 从本地 `develop` 创建，hotfix 从本地 `mast
 `<repo-name>-worktrees/<worktree-name>` 建立 worktree，路径等于分支名，
 不在当前目录开分支；成功 JSON 含该 `worktree`、冻结后的 `roster` 与 `roles`
 列表。`--roster` 为 `solo` / `min-tdd` / `competing-pair` / `coop-pair`：
-feature 默认 `min-tdd`（`1,1,2`），其他 kind 默认 `solo`（`0,0,1`）。省略时按 kind 展开；再叠
+feature 默认 `min-tdd`（`1,1,2`）；release 默认 `solo` 但 reviewers 为 3、review 为
+`partition`；bugfix 与 hotfix 默认 `solo`（`0,0,1`）。省略时按 kind 展开；再叠
 `--qa` / `--dev` / `--reviewers` 与策略细项。一侧为 0 另一侧 ≥1 时把 0 抬成 1。
 roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为
 `qa/2/<owner>`。创建失败拆除已建 worktree 与分支。

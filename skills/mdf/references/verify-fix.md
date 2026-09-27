@@ -75,8 +75,10 @@ finish 委托时使用调用方传入的待收入 ID 列表，不再自行扩大
 
 ### 复现验证
 
-对清单中每个 Bug，对照其「所需回归证据」运行复现用例：按 `docs/system/testing/`
-的命令模板点名执行对应 test case 或 test；证据另给可执行命令时运行该命令。
+对清单中每个 Bug，对照其「所需回归证据」确认复现用例通过：`project-verify check` 有效，
+且其报告（`summary.json`）中该 test 结果为 passed 时，直接引用报告路径与 test 名，不重跑；
+否则按 `docs/system/testing/` 的命令模板点名执行对应 test case 或 test，证据另给可执行
+命令时运行该命令。
 只要求这些复现用例通过；本步修改了实现时另跑 manifest 的 lint、build、quick。
 缺可执行复现命令时停止并报告，提示先 `$mdf fix` 补红灯，不在本步新造用例。
 失败且可修实现时原地修复并重验。可修复指同一失败未满三轮且下一步明确；
@@ -96,8 +98,8 @@ finish 委托时使用调用方传入的待收入 ID 列表，不再自行扩大
 
 ### 记录
 
-在 `changes/unreleased/<semver>/verify-fix.md` 按 Bug 追加：ID、复现命令、
-退出状态、结果、审查路径范围、HEAD、结论。release/hotfix 的 `<semver>`
+在 `changes/unreleased/<semver>/verify-fix.md` 按 Bug 追加：ID、复现命令与退出状态
+（或引用的报告路径与 test 名）、结果、审查路径范围、HEAD、结论。release/hotfix 的 `<semver>`
 取当前分支版本；目录可与 `objectives.md` 同级新建。
 记录须使 finish 能判断「该 ID 在当前 HEAD 上复现用例已通过且审查完成」。
 HEAD 前进或复现命令变化则记录过期，须重跑步骤 2–3。

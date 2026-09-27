@@ -56,7 +56,8 @@ roster 在 start 开分支前展示 member、strategy 与 models 并经确认后
 `branch.<owner>.mdf-roster`：`qa`、`dev`、`reviewers`，以及
 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
 owner 恒为 1。feature 默认 named roster `min-tdd`（`1,1,2` + best-of-n），
-其他 kind 默认 `solo`（`0,0,1`）。也可用 `competing-pair`（`2,2,3` 竞争）
+release 默认 `solo` 但 reviewers 为 3、`review_strategy` 为 `partition`，bugfix 与
+hotfix 默认 `solo`（`0,0,1`）；点名 `--roster` 时不叠加该 release 默认。也可用 `competing-pair`（`2,2,3` 竞争）
 或 `coop-pair`（`2,2,3` 分工）。四种 kind 都可改人数或改名。
 qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
 `0,0` 时测试与实现都在 owner 上做。`≥1` 时 start 按人数建立
@@ -180,8 +181,8 @@ XML 写进该目录；lint 与 build 也各有运行目录。每个运行目录�
 | --- | --- | --- | --- |
 | feature | write-tests | 只要求可执行测试已写；不要求全绿 | — |
 | feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 所列 named suite |
-| bugfix | code-review、finish | lint、build、quick、smoke | `suites.json` 所列 named suite（≥1） |
-| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、release | — |
+| bugfix | Verify、code-review、finish | lint、build、quick、smoke | `suites.json` 所列 named suite（≥1） |
+| release / hotfix | Verify、code-review、finish（及 `project-verify`） | lint、build、quick、release | — |
 | 任意 | 只改事实文档 | 不机械重跑业务验证；实现、测试或验证配置变更仍使对应验证过期 | — |
 
 named suite 不在 manifest，Core 不在门禁中执行也不核对其名称是否已文档化；Agent 以
@@ -195,7 +196,9 @@ named suite 按功能块划分并跨交付长期复用，不按 feature、迭代
 功能块时才新建 named suite。feature、bugfix 收口只跑 smoke 与涉及的 named suite，
 不跑 release，更不跑 full。
 
-bugfix 不创建 design/write-tests/converge。由 code-review 步骤 1 在
+bugfix、release、hotfix 都先测后审：审查前由 deliver 的 Verify 阶段修到全绿；之后只在指纹
+变化时重验，收口复用有效证据，不重跑 release suite。
+bugfix 不创建 design/write-tests/converge。由 Verify 阶段在
 `changes/unreleased/<slug>/suites.json` 关联修复涉及的全部功能块中**已文档化**的
 named suite（≥1）；默认不得新建，用户明确确认后先在 `docs/system/testing/` 补该
 suite 的文档，再关联。

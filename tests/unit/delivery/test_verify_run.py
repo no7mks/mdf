@@ -118,18 +118,15 @@ def test_batch_fail_fast_skips_later_commands(tmp_path):
 
 
 def test_timeout_includes_partial_tail_and_returns_promptly(tmp_path):
-    command = py_c(
-        "import sys, time; sys.stdout.write('partial'); "
-        "sys.stdout.flush(); time.sleep(10)"
-    )
+    command = "printf partial; exec sleep 10"
     started = time.monotonic()
     _, error, text = run_captured(
-        tmp_path, command, label="sleep", timeout=0.4
+        tmp_path, command, label="sleep", timeout=2
     )
     elapsed = time.monotonic() - started
-    assert elapsed < 6
+    assert elapsed < 8
     assert error is not None
-    assert error.details["timeout_seconds"] == 0.4
+    assert error.details["timeout_seconds"] == 2
     assert "partial" in error.details["stdout_tail"]
     assert "done exit=" in text
 

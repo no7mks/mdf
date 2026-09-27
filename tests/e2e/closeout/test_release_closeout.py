@@ -265,3 +265,44 @@ def test_closeout_requires_clean_worktree_for_preview_and_apply(
         result = mdf(python_exe, *release_arguments(repo), *suffix)
         assert result.returncode != 0
         assert "dirty_worktree" in result.stderr
+
+
+def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    runs = tmp_path / "release-runs"
+    replace(repo / ".mdf/manifest.yaml", '\n  release: "',
+            f'\n  release: "echo run >> {runs} && ')
+    prepare_release(repo)
+    review = repo / "changes/unreleased/1.3.0/code-review.md"
+    review.parent.mkdir(parents=True)
+    review.write_text("# 审查记录\n\n无未解决问题。\n")
+    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 提交验证证据")
+    assert runs.read_text() == "run\n"
+
+    applied = payload(mdf(python_exe, *release_arguments(repo)))
+    assert applied["verification"]["reused"] == (
+        "changes/unreleased/1.3.0/code-review.verification.json"
+    )
+    assert runs.read_text() == "run\n"
+    assert applied["verification"]["results"][3]["report"]["suite"] == "release"
+
+
+def test_closeout_runs_commands_when_evidence_is_stale(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    runs = tmp_path / "release-runs"
+    replace(repo / ".mdf/manifest.yaml", '\n  release: "',
+            f'\n  release: "echo run >> {runs} && ')
+    prepare_release(repo)
+    review = repo / "changes/unreleased/1.3.0/code-review.md"
+    review.parent.mkdir(parents=True)
+    review.write_text("# 审查记录\n\n无未解决问题。\n")
+    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    (repo / "src/extra.py").write_text("changed = True\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 证据之后修改实现")
+
+    applied = payload(mdf(python_exe, *release_arguments(repo)))
+    assert applied["verification"]["reused"] is None
+    assert runs.read_text() == "run\nrun\n"

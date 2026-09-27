@@ -91,3 +91,23 @@ def test_validation_rejects_symlink_in_managed_docs(
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert result.returncode != 0
     assert "path.symlink" in result.stdout
+
+
+@pytest.mark.parametrize("record", [".mdf/manifest.yaml", "CHANGELOG.md"])
+def test_release_records_cannot_be_evidence(python_exe, tmp_path, record):
+    repo = copy_fixture(tmp_path)
+    page = repo / "docs/system/testing/conventions.md"
+    replace(page, "  - path: GLOSSARY.md", f"  - path: {record}")
+    init_git(repo)
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    assert "evidence.record" in result.stdout
+
+
+def test_route_page_does_not_expire_when_its_leaf_changes(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    leaf = repo / "docs/system/testing/conventions.md"
+    leaf.write_text(leaf.read_text() + "\n补充一句约定。\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 叶子页晚于路由页更新")
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))

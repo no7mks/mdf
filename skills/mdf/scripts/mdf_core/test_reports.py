@@ -4,15 +4,13 @@ import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 from .errors import MDFError
-from .run_logs import REPORTS as REPORTS_ROOT, ignored_dir, stamp
+from .run_logs import REPORTS as REPORTS_ROOT, ignored_dir, unique_dir
 
 ENV_NAME = "MDF_REPORT_DIR"
 
 
 def new_report_dir(repo, entry):
-    path = ignored_dir(Path(repo) / REPORTS_ROOT) / f"{stamp()}-{entry}"
-    path.mkdir()
-    return path
+    return unique_dir(ignored_dir(Path(repo) / REPORTS_ROOT), entry)
 
 
 def _seconds(raw):

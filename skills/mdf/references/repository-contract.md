@@ -354,6 +354,10 @@ evidence:
 列表形态缺 verification 会报 finding）；`full validation` 下 `evidence` 在文档之后变更
 会报 `evidence.stale`。
 
+`.mdf/manifest.yaml`、`CHANGELOG.md`、`docs/JOTS.md`、`changes/**`、`docs/proposals/**`、
+`docs/bugs/**` 是发版流程会改写的记录，不能作为 evidence（`evidence.record`）。evidence
+为另一份当前事实文档时只核对存在与已跟踪，不比较提交先后；过期只相对实现、测试、配置等
+非事实文件判定，同一次提交中的文件互不算「晚于」。
 `verification` 优先写可执行的测试或命令；只写「阅读源码」时不得把实现步骤
 复述进 verification——正文已描述的行为不在 evidence 元数据里重复。
 无需为消除 warning 把不承载行为的文件写入 evidence 或 ignorelist。

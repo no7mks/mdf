@@ -62,6 +62,14 @@ def fact_documents(repo: Path) -> Iterable[Path]:
     return sorted(found)
 
 
+RECORD_FILES = (".mdf/manifest.yaml", "CHANGELOG.md", "docs/JOTS.md")
+RECORD_DIRS = ("changes/", "docs/proposals/", "docs/bugs/")
+
+
+def _is_record(rel: str) -> bool:
+    return rel in RECORD_FILES or rel.startswith(RECORD_DIRS)
+
+
 def validate_evidence(
     repo: Path,
     findings: list[Finding],
@@ -69,7 +77,9 @@ def validate_evidence(
     check_staleness: bool,
 ) -> None:
     index = GitPathIndex(repo)
-    for doc in fact_documents(repo):
+    documents = list(fact_documents(repo))
+    fact_paths = {doc.resolve() for doc in documents}
+    for doc in documents:
         rel = relative(repo, doc)
         try:
             metadata, body = read_frontmatter(doc)
@@ -160,6 +170,15 @@ def validate_evidence(
                     rel,
                 )
                 continue
+            if _is_record(relative(repo, candidate)):
+                add_finding(
+                    findings,
+                    "evidence.record",
+                    "发版流程会改写的记录文件不能作为 evidence，改引实现、测试或配置: "
+                    f"{evidence_path}",
+                    rel,
+                )
+                continue
             if not method:
                 add_finding(
                     findings,
@@ -167,7 +186,8 @@ def validate_evidence(
                     f"Evidence lacks a verification method: {evidence_path}",
                     rel,
                 )
-            if not check_staleness:
+            # 事实页之间的引用只是链接；比较先后会让路由页随叶子页或收口的链接改写连锁过期。
+            if not check_staleness or candidate in fact_paths:
                 continue
             if not index.tracked(candidate):
                 add_finding(

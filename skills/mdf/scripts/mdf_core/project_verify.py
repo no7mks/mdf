@@ -29,9 +29,7 @@ def inputs(repo, verification, required, suites):
     return digest([files, verification.config(), required, suites])
 
 
-def command_project_verify(args):
-    repo = repo_path(args.repo)
-    require_git_root(repo)
+def _context(repo):
     branch = current_branch(repo)
     details = branch_details(branch)
     kind = details["kind"]
@@ -46,17 +44,44 @@ def command_project_verify(args):
     if kind == "bugfix" and not suites:
         raise MDFError("bugfix 必须在 suites.json 关联 named suite", code="missing_delivery_suite")
     required = required_suites(kind)
-    targets = verification.plan(required_suite(kind))
-    before = inputs(repo, verification, required, suites)
-    path = safe(
-        repo,
-        repo / "changes/unreleased" / slug / "code-review.verification.json",
+    return {
+        "branch": branch, "kind": kind, "slug": slug, "suites": suites,
+        "verification": verification, "required": required,
+        "targets": verification.plan(required_suite(kind)),
+        "inputs": inputs(repo, verification, required, suites),
+        "path": safe(repo, repo / "changes/unreleased" / slug / "code-review.verification.json"),
+    }
+
+
+def evidence_path(repo):
+    return _context(repo)["path"]
+
+
+def valid_evidence(repo):
+    """当前输入指纹下仍有效的全绿证据；无记录或已过期时返回 None。"""
+    context = _context(repo)
+    if not context["path"].is_file():
+        return None
+    result = read_json(context["path"])
+    if (result.get("inputs") != context["inputs"] or result.get("branch") != context["branch"]
+            or not suites_cover(recorded_suites(result), context["required"])
+            or not result.get("all_passed")):
+        return None
+    return result
+
+
+def command_project_verify(args):
+    repo = repo_path(args.repo)
+    require_git_root(repo)
+    context = _context(repo)
+    branch, kind, slug = context["branch"], context["kind"], context["slug"]
+    required, targets, before, path = (
+        context["required"], context["targets"], context["inputs"], context["path"],
     )
     if args.action == "check":
-        result = read_json(path)
-        if (result.get("inputs") != before or result.get("branch") != branch
-                or not suites_cover(recorded_suites(result), required)
-                or not result.get("all_passed")):
+        read_json(path)
+        result = valid_evidence(repo)
+        if result is None:
             raise MDFError("所需 suite 失败或证据过期", code="stale_verification")
     else:
         results = []

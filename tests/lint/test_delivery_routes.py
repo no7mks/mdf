@@ -220,7 +220,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
     assert "| feature | converge、code-review、finish | lint、build、quick、smoke |" in contract
-    assert "| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、release |" in contract
+    assert "| release / hotfix | Verify、code-review、finish（及 `project-verify`） | lint、build、quick、release |" in contract
     assert "关联修复涉及的全部功能块中**已文档化**的" in contract
     assert "Core 不在门禁中执行也不核对其名称是否已文档化" in contract
     assert "每次运行 suite（含 named suite）都必须产出 JUnit XML 报告" in contract
@@ -252,8 +252,18 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "必须尝试补一条 quick 复现用例" in review
     assert "quick 复现（已补 <用例位置>" in review
     assert "changes/unreleased/<slug>/suites.json" in review
-    assert "`missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联" in review
-    assert "`unknown_suite`" not in review and "询问用户是否新建" in review
+    assert "不在未全绿的 HEAD 上派审查" in review
+    assert "只有本轮修复或集成改动了实现" in review
+    deliver = workflow("deliver")
+    assert "### 先测后审" in deliver
+    assert "| bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 |" in deliver
+    assert deliver.index("验证证据缺失、过期或失败") < deliver.index("已全绿（feature 已收敛）且审查缺失或过期")
+    finish = workflow("finish")
+    assert "正常收口不再运行 release suite" in finish
+    assert "单独提问并记录" in finish
+    assert "确认单独提问" in workflow("fact-audit")
+    assert "不重跑" in workflow("verify-fix")
+    assert "`unknown_suite`" not in review and "询问用户是否新建" in workflow("deliver")
     assert "suites.json" not in workflow("start")
     assert "交付级 suite" not in contract and "下沉" not in contract
 
@@ -264,7 +274,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     assert table[1][2] == "Subagent"
     assert "按 roster.reviewers 启动独立 subagent" in table[1][3]
     assert table[1][5] == "3"
-    assert table[3][6] == "缺 suite 则 1；可修则 3；否则停"
+    assert table[3][6] == "可修则 3；否则停"
     for rule in (
         "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
         "全部审查结果返回前不修改", "以证据裁定，不按票数决定",

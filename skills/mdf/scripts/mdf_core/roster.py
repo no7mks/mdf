@@ -34,6 +34,10 @@ KIND_ROSTER = {
     "release": "solo",
     "hotfix": "solo",
 }
+# 未点名 roster 时按 kind 覆盖默认组合；release 审查面最大，默认 3 人分片审查。
+KIND_DEFAULTS = {
+    "release": {"reviewers": 3, "review_strategy": "partition"},
+}
 
 QA_DEV_STRATEGIES = ("best-of-n", "partition")
 REVIEW_STRATEGIES = ("replicate", "partition")
@@ -144,6 +148,8 @@ def freeze_roster(kind, qa=None, dev=None, reviewers=None, *,
     if kind not in KIND_ROSTER:
         raise MDFError("未知交付 kind", code="unsupported_branch")
     base = named_roster(KIND_ROSTER[kind] if named is None else named)
+    if named is None:
+        base.update(KIND_DEFAULTS.get(kind, {}))
     qa = base["qa"] if qa is None else qa
     dev = base["dev"] if dev is None else dev
     reviewers = base["reviewers"] if reviewers is None else reviewers

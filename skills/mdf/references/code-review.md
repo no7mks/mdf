@@ -31,7 +31,6 @@
 │ 4 Record                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 缺 suites.json ──────→ 1 Check
                  ├──── 重验失败且可修复 ────→ 3 Repair
                  ├──── 通过 ────────────────→ [结束]
                  └──── 其他失败或缺失 ──────→ [停止并报告]
@@ -50,7 +49,7 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 | 1 | Check | 约束 | 核对范围、前置条件及续办证据 | 基线、报告、检查结果 | 修复续办 3；无新则结束；否则 2 | 停止并报告 |
 | 2 | Review | Subagent | 按 roster.reviewers 启动独立 subagent 覆盖本轮 | N 份完整审查 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 汇总裁定、修复并复核 | 发现、裁定、修复依据 | 4 | 保留现场并报告 |
-| 4 | Record | 脚本 | 按需重验、保存证据并提交 | 审查记录、验证、提交 | 结束 | 缺 suite 则 1；可修则 3；否则停 |
+| 4 | Record | 脚本 | 按需重验、保存证据并提交 | 审查记录、验证、提交 | 结束 | 可修则 3；否则停 |
 
 ## 术语与数据结构
 
@@ -107,16 +106,16 @@ feature 保留前置要求：运行 `delivery status` 定位材料，读取 desi
 运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
 仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
 并在步骤 4 按所需 suite 重验。
-其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate。
+其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate，
+但同样先测后审：运行 `project-verify check --repo "$REPO_ROOT"`，证据缺失、过期或失败时
+停止并报告，由 deliver 的 Verify 阶段（`deliver.md`「先测后审」）修到全绿后再审查，
+不在未全绿的 HEAD 上派审查。
 release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
 审查基线仍为上一正式发布。hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
 不为形式创建 feature 材料。
 
-bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
-（`{"suites":["<named suite 名>"]}`）：文件缺失时，按修复改动涉及的全部功能块从
-`docs/system/testing/` 已文档化的 named suite 中逐个选定写入并提交；没有合适的
-suite 时停止，询问用户是否新建，确认后先补该 suite 的文档再关联。不得关联
-lint/build/quick/smoke/release/full，不得未经确认新建。
+bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；本步骤只核对其
+覆盖本次改动涉及的全部功能块。
 
 ### 独立审查
 
@@ -175,14 +174,14 @@ finish 本次集成产生新提交且增量不可跳过、返回 `stale_verifica
 测试、验证配置时，运行 `delivery verify` 按所需 suite 重验，并重跑 design 所列
 named suite。仅非本交付 `docs/` 的集成
 不强制重验。仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
-bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
+bugfix/hotfix/release 先运行 `project-verify check`；只有本轮修复或集成改动了实现、
+测试或验证配置使证据过期时，才运行 `project-verify run --repo "$REPO_ROOT"`，
 脚本按当前分支执行所需 suite：依次执行 lint、build、quick 与 smoke（bugfix）或 release
 （release/hotfix），逐项记录命令、预算、退出状态、报告汇总与 `suites`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON
 与落盘证据。suite 超出预算即终止 process group 并判为失败。
-bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
-bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联。
+重跑时 bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
 证据未覆盖所需 suite 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
 核对输入 fingerprint、suite 与全绿结果。
 不能用仅检查文档结构的 full validation 代替业务验证。
