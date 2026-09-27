@@ -7,7 +7,7 @@ from .gitutil import (
 )
 from .paths import load_manifest
 from .verification import (
-    manifest_verification, parse_suite_names, recorded_suites, required_suite,
+    SUITES, manifest_verification, parse_suite_names, recorded_suites, required_suite,
     required_suites, suites_cover,
 )
 
@@ -70,6 +70,7 @@ def command_project_verify(args):
                     index=index,
                     total=total,
                     timeout=item["budget"],
+                    report_suite=item["id"] if item["id"] in SUITES else None,
                 )
                 results.append({**item, **detail, "passed": True})
             except MDFError as exc:
@@ -91,3 +92,11 @@ def command_project_verify(args):
         if not result["all_passed"]:
             raise MDFError("所需 suite 失败或输入变化", code="verify_command_failed", details=result)
     emit({"ok": True, "operation": f"project-verify-{args.action}", "result": result})
+
+
+def command_suite_run(args):
+    repo = repo_path(args.repo)
+    require_git_root(repo)
+    name = parse_suite_names([args.name])[0]
+    result = run_verify_command(repo, args.command, label=name, report_suite=name)
+    emit({"ok": True, "operation": "suite-run", "result": result})

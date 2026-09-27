@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import MDFError
+from .test_reports import ENV_NAME, new_report_dir, summarize
 
 TAIL_CHARS = 2000
 HEARTBEAT_SECONDS = 30
@@ -179,7 +180,13 @@ def run_verify_command(
     index: int = 1,
     total: int = 1,
     timeout: float | None = None,
+    report_suite: str | None = None,
 ) -> dict[str, Any]:
+    env = None
+    report_dir = None
+    if report_suite is not None:
+        report_dir = new_report_dir(repo, report_suite)
+        env = {**os.environ, ENV_NAME: str(report_dir)}
     display = _progress_label(label if label is not None else command)
     _write_progress(index, total, f"start {display}")
     last_output = [time.monotonic()]
@@ -198,6 +205,7 @@ def run_verify_command(
             stderr=subprocess.PIPE,
             bufsize=0,
             start_new_session=True,
+            env=env,
         )
         threads = [
             threading.Thread(
@@ -222,7 +230,14 @@ def run_verify_command(
     _write_progress(
         index, total, f"done exit={exit_code} ({elapsed:.0f}s)"
     )
-    entry = {"command": command, "exit_code": exit_code}
+    entry: dict[str, Any] = {"command": command, "exit_code": exit_code}
+    report_error = None
+    if report_dir is not None:
+        try:
+            entry["report"] = summarize(repo, report_dir, report_suite)
+        except MDFError as exc:
+            report_error = exc
+            entry["report"] = exc.details
     if timed_out:
         limit = _timeout_value(timeout)
         raise MDFError(
@@ -233,6 +248,7 @@ def run_verify_command(
                 "timeout_seconds": limit,
                 "stdout_tail": stdout_tee.tail[-TAIL_CHARS:],
                 "stderr_tail": stderr_tee.tail[-TAIL_CHARS:],
+                **({"report": entry["report"]} if "report" in entry else {}),
             },
         )
     if exit_code != 0:
@@ -244,7 +260,15 @@ def run_verify_command(
                 "exit_code": exit_code,
                 "stdout_tail": stdout_tee.tail[-TAIL_CHARS:],
                 "stderr_tail": stderr_tee.tail[-TAIL_CHARS:],
+                **({"report": entry["report"]} if "report" in entry else {}),
             },
+        )
+    if report_error is not None:
+        raise MDFError(
+            f"{report_error}: {command}",
+            code=report_error.code,
+            details={"command": command, "exit_code": exit_code,
+                     "report": entry["report"]},
         )
     return entry
 
@@ -255,6 +279,7 @@ def run_verify_commands(
     *,
     labels: list[str] | None = None,
     timeouts: list[float | None] | None = None,
+    report_suites: list[str | None] | None = None,
 ) -> list[dict[str, Any]]:
     names = (
         labels if labels is not None and len(labels) == len(commands) else None
@@ -276,6 +301,9 @@ def run_verify_commands(
                 index=offset + 1,
                 total=total,
                 timeout=limits[offset] if limits is not None else None,
+                report_suite=(
+                    report_suites[offset] if report_suites is not None else None
+                ),
             )
         except MDFError as exc:
             details = dict(exc.details) if isinstance(exc.details, dict) else {}

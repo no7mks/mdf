@@ -193,11 +193,17 @@ def build_parser() -> argparse.ArgumentParser:
     worktree.add_argument("--handoff", action="store_true")
     worktree.set_defaults(func=command_worktree_check)
 
-    from .project_verify import command_project_verify
+    from .project_verify import command_project_verify, command_suite_run
     verification = subparsers.add_parser("project-verify")
     verification.add_argument("action", choices=("run", "check"))
     verification.add_argument("--repo", required=True)
     verification.set_defaults(func=command_project_verify)
+
+    suite_run = subparsers.add_parser("suite-run")
+    suite_run.add_argument("--repo", required=True)
+    suite_run.add_argument("--name", required=True)
+    suite_run.add_argument("--command", required=True)
+    suite_run.set_defaults(func=command_suite_run)
 
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)

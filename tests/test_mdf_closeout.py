@@ -42,7 +42,8 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert summary["moves"]
     assert summary["affected_files"]
     assert summary["verification"] == {
-        "suites": ["quick", "release"], "commands": ["true"] * 4, "executed": False,
+        "suites": ["quick", "release"],
+        "commands": ["true", "true", SUITE_OK, SUITE_OK], "executed": False,
     }
     assert "confirmation_required" not in preview
     assert "digest" not in json.dumps(preview)
@@ -52,9 +53,15 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
 
     applied = payload(mdf(python_exe, *arguments))
     assert applied["dry_run"] is False
-    assert applied["verification"]["results"] == [
-        {"command": "true", "exit_code": 0}
-    ] * 4
+    results = applied["verification"]["results"]
+    assert [(item["command"], item["exit_code"]) for item in results] == [
+        ("true", 0), ("true", 0), (SUITE_OK, 0), (SUITE_OK, 0),
+    ]
+    assert "report" not in results[0]
+    assert results[3]["report"]["suite"] == "release"
+    assert results[3]["report"]["tests"] == 1
+    assert (repo / results[3]["report"]["path"] / "summary.json").is_file()
+    assert ".mdf/reports" not in git(repo, "status", "--porcelain", "--ignored=no").stdout
     release_dir = repo / "changes" / "1.3.0"
     assert (release_dir / "CHANGE.md").is_file()
     assert (release_dir / "service-health" / "CHANGE.md").is_file()
@@ -94,8 +101,8 @@ def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
     repo = copy_fixture(tmp_path)
     replace(
         repo / ".mdf" / "manifest.yaml",
-        'release: "true"',
-        'release: "touch verification-marker"',
+        '\n  release: "',
+        '\n  release: "touch verification-marker && ',
     )
     prepare_release(repo)
     arguments = release_arguments(repo)

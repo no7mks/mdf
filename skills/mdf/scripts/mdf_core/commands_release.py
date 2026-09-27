@@ -19,7 +19,7 @@ from .gitutil import (
     require_git_root,
 )
 from .paths import ensure_safe_managed_paths, load_manifest
-from .verification import manifest_verification
+from .verification import SUITES, manifest_verification
 from .yamlutil import read_frontmatter
 
 
@@ -203,6 +203,9 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         context["validation_commands"],
         labels=[item["id"] for item in verify_items],
         timeouts=[item["budget"] for item in verify_items],
+        report_suites=[
+            item["id"] if item["id"] in SUITES else None for item in verify_items
+        ],
     )
     ensure_clean(repo)
     spec["verify_command_results"] = command_results

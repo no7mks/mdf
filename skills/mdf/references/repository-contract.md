@@ -250,6 +250,8 @@ verification:
   `release`。默认 quick 30、smoke 300，release 与 lint、build 无上限。
 - Core 按 `lint → build → quick → smoke|release` 顺序执行，suite 超出预算视为失败。
   build 不计入预算；依赖下载与镜像拉取放进 build。
+- suite 命令必须把 JUnit XML 报告写进环境变量 `MDF_REPORT_DIR` 所指目录，见
+  `delivery-contract.md`「测试报告」。
 - suite 的语义与各 gate 所需 suite 见 `delivery-contract.md`「验证 suite」。
   named suite 与 full（全部 test case）不写入 manifest。
 - 不符合本形状的 `verification` 是 finding，由 `$mdf migrate` 收敛。

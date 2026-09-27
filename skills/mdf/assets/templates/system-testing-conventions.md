@@ -33,8 +33,9 @@ test case 不属于某 suite 时由成员选择规则排除，不在运行时 sk
 
 ## Suite
 
-每个 suite 一节，写明目的、入口命令、成员选择规则、预算、环境，以及点名执行
-test case / test 的命令模板。named suite 按同样格式追加。
+每个 suite 一节，写明目的、入口命令（须把 JUnit XML 写进 `$MDF_REPORT_DIR`）、
+成员选择规则、预算、环境，以及点名执行 test case / test 的命令模板。named suite
+按同样格式追加。
 
 ### quick
 

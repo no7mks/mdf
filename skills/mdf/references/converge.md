@@ -88,7 +88,7 @@ worktree 和分支（含 `best-of-n` 未入选者）。
 ### 验证与阻塞记录
 
 运行 `delivery verify`；脚本依次执行 lint、build、quick、smoke，suite 超预算即失败。
-再按 `docs/system/testing/` 执行 design policy `suites` 所列每个 named suite。
+再以 `suite-run` 执行 design policy `suites` 所列每个 named suite 的文档化入口命令。
 修复循环可按该页的命令模板点名执行 test case 或 test 定位失败，但最终必须 Core
 与 named suite 全部通过；未跑 named suite 不得记录全绿。
 所列 named suite 在 `docs/system/testing/` 无文档：停止并报告，提示

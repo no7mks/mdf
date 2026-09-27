@@ -164,6 +164,9 @@ def replace(path: Path, old: str, new: str) -> None:
     path.write_text(text.replace(old, new), encoding="utf-8")
 
 
+SUITE_OK = "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+
+
 def verification_args(command: str = "true") -> list[str]:
     result: list[str] = []
     for name in ("lint", "build", "quick", "smoke", "release"):

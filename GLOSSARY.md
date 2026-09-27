@@ -48,6 +48,11 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
 hermetic UT 或 PT；原慢用例保留。
 
+## 测试报告
+
+每次 suite 运行写入 `.mdf/reports/<时间戳>-<suite>/` 的 JUnit XML 与 Core 生成的
+`summary.json`，含 test case 级与 test 级的结果和用时。
+
 ## Hermetic
 
 测试进程能自行拉起全部依赖，不需要预先存在的环境、凭据或网络。依赖第三方资源

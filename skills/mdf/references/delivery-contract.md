@@ -139,10 +139,24 @@ xfail 或 xpass，以及 suite 未选中任何 test。test case 是否属于本�
 suite，不用 xfail 保留。test case 内有 test 依赖当前 suite 不具备的条件时，按依赖
 拆成多个 test case 分别归入合适的 suite；不得整体移出，也不得保留 skip。
 
-Core 只看退出码。项目须让入口命令或测试运行器在上述情况下非零退出，并把配置写进
-`docs/system/testing/`；code-review 核对该配置。第三方依赖产生、本项目无法修复的
+Core 判定退出码与测试报告（见下节）；报告无法体现的 warning、notice、deprecated，
+项目须让入口命令或测试运行器非零退出，并把配置写进 `docs/system/testing/`；
+code-review 核对该配置。第三方依赖产生、本项目无法修复的
 warning 或 deprecated 只可精确豁免：写明类别、来源模块与理由，记在
 `docs/system/testing/`，新增或放宽须用户确认。
+
+### 测试报告
+
+每次运行 suite（含 named suite）都必须产出 JUnit XML 报告。Core 为每次运行新建
+`.mdf/reports/<时间戳>-<suite>/`，以环境变量 `MDF_REPORT_DIR` 传给入口命令，命令把
+XML 写进该目录；`.mdf/reports/` 由 Core 自带 `.gitignore` 忽略，全部保留，由用户
+自行清理。test case 取 `<testcase>` 的 `classname`，缺失时取所在 `<testsuite>` 的
+`name`；项目须配置运行器使其对应 test case。
+- Core 解析后在同目录写 `summary.json`：test case 级的结果与用时，及其下 test 级的
+  结果与用时。gate 与 code-review 证据记录报告路径与 test case 级汇总。
+- 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
+  该 suite 失败，即使命令退出码为 0。
+- 点名执行 test case 或 test 只用于定位，不强制报告。
 
 ### 验证 suite
 
@@ -169,9 +183,9 @@ warning 或 deprecated 只可精确豁免：写明类别、来源模块与理由
 | release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、release | — |
 | 任意 | 只改事实文档 | 不机械重跑业务验证；实现、测试或验证配置变更仍使对应验证过期 | — |
 
-named suite 不在 manifest，Core 不执行也不核对其名称是否已文档化；Agent 按
-`docs/system/testing/` 中该 suite 的入口命令执行，并把命令与结果写进对应 gate
-或 code-review 记录的 summary。feature 必须在 design 声明本交付 named suite；
+named suite 不在 manifest，Core 不在门禁中执行也不核对其名称是否已文档化；Agent 以
+`suite-run --name <suite> --command <入口命令>` 执行 `docs/system/testing/` 中该 suite
+的入口命令，并把命令、结果与报告路径写进对应 gate 或 code-review 记录的 summary。feature 必须在 design 声明本交付 named suite；
 write-tests 把用例归入 quick、smoke 或所列 named suite，implement 不得擅自改测试。
 
 bugfix 不创建 design/write-tests/converge。由 code-review 步骤 1 在

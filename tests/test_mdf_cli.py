@@ -185,7 +185,7 @@ def test_verification_commands_are_required_while_initializing(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(repo / ".mdf" / "manifest.yaml", '  quick: "true"\n', "")
+    replace(repo / ".mdf" / "manifest.yaml", f'  quick: "{SUITE_OK}"\n', "")
     replace(
         repo / ".mdf" / "manifest.yaml", "state: ready", "state: initializing"
     )

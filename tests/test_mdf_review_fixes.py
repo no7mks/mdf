@@ -78,7 +78,7 @@ def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, t
     (work / "src/service.py").write_text("changed = True\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
     manifest = work / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace('quick: "true"', 'quick: "false"'))
+    manifest.write_text(manifest.read_text().replace('quick: "', 'quick: "false && '))
     assert "verify_command_failed" in mdf(python_exe, "project-verify", "run", *args).stderr
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
 
@@ -287,7 +287,7 @@ def test_bugfix_requires_named_suite_and_runs_smoke(python_exe, tmp_path):
     payload(mdf(python_exe, "project-verify", "check", *args))
     manifest = work / ".mdf/manifest.yaml"
     original = manifest.read_text()
-    manifest.write_text(original.replace('  smoke: "true"', '  smoke: "true "', 1))
+    manifest.write_text(original.replace('  smoke: "', '  smoke: " ', 1))
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
     manifest.write_text(original)
     suites.write_text(json.dumps({"suites": ["billing", "checkout"]}) + "\n")

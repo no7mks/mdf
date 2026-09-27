@@ -170,7 +170,7 @@ def test_failed_verification_does_not_satisfy_gate(python_exe, tmp_path):
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     manifest = repo / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace('smoke: "true"', 'smoke: "false"'))
+    manifest.write_text(manifest.read_text().replace('smoke: "', 'smoke: "false && '))
     failed = mdf(python_exe, "delivery", "verify", "--repo", str(repo))
     assert "verify_command_failed" in failed.stderr
     assert json.loads((root / "gates/verification.json").read_text())["all_passed"] is False

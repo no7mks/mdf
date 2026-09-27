@@ -487,6 +487,18 @@ group 并失败，details 含 partial tail；lint、build 与未设预算的 rel
 为该分支稳定 SemVer。
 `project-verify check` 只读核验输入指纹、分支、suite 及全绿状态；事实/收口文档不改变代码指纹。
 
+`delivery verify`、`project-verify run` 与 `release-closeout` 执行 quick、smoke、release
+时，为每次运行新建 `.mdf/reports/<时间戳>-<suite>/`，以 `MDF_REPORT_DIR` 传给命令，
+命令结束后解析其中的 JUnit XML，写入 `summary.json`，并把路径与 test case 级汇总记入
+结果的 `report`。缺报告返回 `missing_test_report`，无法解析返回 `invalid_test_report`，
+不含 test 返回 `empty_test_report`，含 failure、error 或 skipped 返回
+`test_report_failed`；这些情况即使退出码为 0 也判失败。`.mdf/reports/` 由其中的
+`.gitignore` 忽略，报告全部保留。
+
+`suite-run --repo <仓库> --name <named suite> --command <命令>` 以同样方式为 named suite
+新建报告目录、运行命令并校验报告，输出命令结果与 `report`；不写 gate。名称不得为
+lint/build/quick/smoke/release/full。
+
 `codewiki-runtime [--directory <路径>]` 只在安装目录缺失时 clone，核对源码和 Git 状态，
 只补缺失 venv 并检查导入，返回宿主所需 MCP 字段；不修改宿主配置或目标仓库。
 

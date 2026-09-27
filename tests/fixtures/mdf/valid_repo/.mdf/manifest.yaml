@@ -6,9 +6,9 @@ versioning:
 verification:
   lint: "true"
   build: "true"
-  quick: "true"
-  smoke: "true"
-  release: "true"
+  quick: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+  smoke: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+  release: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
 implementation_roots: [src]
 baselines:
   glossary:

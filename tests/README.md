@@ -28,6 +28,7 @@ python -m pytest
   上写测试。
 - `test_mdf_delivery.py`：设计基线、并行交接、收敛与审查权限、内容指纹失效、
   原地补齐 Change 及 Gitflow 冲突。
+- `test_mdf_test_reports.py`：JUnit XML 报告的解析、失败判定、证据与 `suite-run`。
 - `test_mdf_verification_layers.py`：lint / build / quick / smoke / release 的门禁、预算与证据。
 - `test_mdf_doc_loading.py`：`docs/user-guide/` doc_type、`docs/context/adr/`、
   `layout.migrate` / `layout.testing` / `manifest.schema` 指向 migrate、按角色行数硬限制，以及

@@ -176,11 +176,11 @@ named suite。仅非本交付 `docs/` 的集成
 不强制重验。仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
 脚本按当前分支执行所需 suite：依次执行 lint、build、quick 与 smoke（bugfix）或 release
-（release/hotfix），逐项记录命令、预算、退出状态与 `suites`，
+（release/hotfix），逐项记录命令、预算、退出状态、报告汇总与 `suites`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON
 与落盘证据。suite 超出预算即终止 process group 并判为失败。
-bugfix 另按 `docs/system/testing/` 执行 `suites.json` 所列 named suite。
+bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
 bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联。
 证据未覆盖所需 suite 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
 核对输入 fingerprint、suite 与全绿结果。
