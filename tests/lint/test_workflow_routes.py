@@ -112,8 +112,9 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
-    assert "仅允许 initializing finding、" in entry
-    assert "`manifest.schema` 与 `layout.migrate` finding，或 ready 无 finding" in entry
+    assert "已初始化时只允许以下状态" in entry
+    assert "`manifest.schema`、`layout.migrate` 与 `manifest.verification` finding；" in entry
+    assert "- 或 ready 无 finding。" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 
@@ -189,7 +190,7 @@ def test_planning_intents_use_shared_planning_workspace():
 
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
-    assert rows(shared)[6][6] == "事实变化 5；其他保留现场停止"
+    assert rows(shared)[6][6] == "事实变化返回调用方；其他保留现场停止"
     assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认则结束；否则停"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared

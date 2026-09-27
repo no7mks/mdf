@@ -84,7 +84,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert "$mdf <intent>" in entry
     assert "mdf.py\" <command>" in entry
     assert "版本化文档与交付流程" in entry
-    assert "已确认决策与`当前事实文档`分开" in entry
+    assert "调研、已确认决策与当前事实文档分开" in (skill / "references/common.md").read_text()
     assert "可验证的演进记录" in entry
 
 
@@ -143,7 +143,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "$mdf bug create" in migrate and "$mdf prp create" in migrate
     assert "| 1 | Check entry | 约束 |" in migrate
     assert "| 2 | Inventory | 约束 |" in migrate
-    assert "| 7 | Enable workflows | 脚本 |" in migrate
+    assert "| 7 | Enable workflows | 约束 |" in migrate
     assert "没有未说明的遗留文件" in migrate
     assert "消除重复" in migrate
     for root_document in (

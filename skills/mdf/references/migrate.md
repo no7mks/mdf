@@ -21,7 +21,7 @@
 │ 2 Inventory                      │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止并澄清]
+                 ├──── 无法分类 ────→ [澄清后返回 2]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -79,12 +79,12 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 约束 | 只读判定分流 | 边界、事实、MDF 状态 | 2 | 不明回 1；新项目提示 bootstrap；其他停止 |
-| 2 | Inventory | 约束 | 盘点全部顶层项和文档，按职责分类 | 完整分类清单 | 3 | 停止并澄清 |
+| 2 | Inventory | 约束 | 盘点全部顶层项和文档，按职责分类 | 完整分类清单 | 3 | 无法分类则澄清后回 2 |
 | 3 | Clarify layout | 约束 | 调用 initialization #3 确认配置 | 逐项决定、完整配置 | 4 | 留在 3 澄清 |
 | 4 | Confirm plan | 约束 | 展示源、目标、保留内容与初始化方案并确认 | 用户明确确认 | 5 | 未确认留在 4；分类 2；其他 3 |
-| 5 | Initialize | 脚本 | 调用 initialization #2+#4：init、归位并提交 | 归位表、根文档、提交 | 6 | 保留现场，停止 |
+| 5 | Initialize | 约束 | 调用 initialization #2+#4：init、归位并提交 | 归位表、根文档、提交 | 6 | 保留现场，停止 |
 | 6 | Audit facts | 约束 | 比较事实；提交后委托全量审阅并校验 | 事实复核、仅允许项 | 7 | 可修复则重验；无法继续则停止 |
-| 7 | Enable workflows | 脚本 | 按序 initialization #6-8 | 确认、校验、提交 | 结束 | 事实变化 6；未确认则结束；否则停 |
+| 7 | Enable workflows | 约束 | 按序 initialization #6-8 | 确认、校验、提交 | 结束 | 事实变化 6；未确认则结束；否则停 |
 
 ## 术语与数据结构
 
@@ -102,12 +102,15 @@
 - 已有 Git 的非新项目必须运行 doctor。
 - 尚未 Git 化的目录等到方案确认后由 initialization 段 2 准备 Git。
 - 不因普通目录、无提交或 dirty 一概拒绝。
-- doctor 报 `manifest.schema` 或 `layout.migrate` 是本 intent 的合法入口态，不是损坏。
-  - 这两项表示 manifest 或 `docs/` 布局不符合当前契约。
+- doctor 报 `manifest.schema`、`layout.migrate` 或 `manifest.verification` 是本 intent 的合法入口态，
+  不是损坏。
+  - 这三项表示 manifest、`verification` 形状或 `docs/` 布局不符合当前契约。
   - 进入盘点，由步骤 3 决定 `docs/product/`、`docs/adr/` 等目录的去处并重写 manifest。
 
-验收：明确项目根、判定依据；已初始化仅允许 initializing finding、
-`manifest.schema` 与 `layout.migrate` finding，或 ready 无 finding。
+验收：明确项目根与判定依据。已初始化时只允许以下状态：
+
+- initializing finding，以及 `manifest.schema`、`layout.migrate` 与 `manifest.verification` finding；
+- 或 ready 无 finding。
 
 异常与交接：
 
@@ -125,7 +128,7 @@
 
 异常与交接：
 
-- 停止并澄清。
+- 无法分类时澄清后回到 2。
 - 不得仅凭目录名或 README 保留。
 - 符合 CodeWiki 契约的 `docs/repowiki/` 留在原处且不纳入当前事实、ADR 或调研分类。
 - 此步骤不做`事实复核`。
@@ -164,13 +167,14 @@
     - JUnit 输出（如 pytest `--junitxml`、PHPUnit `--log-junit`、Vitest `--reporter=junit`、
       Jest `jest-junit`）
     - test case 分组配置（`classname` 对应 test case）。
-- 初始化 CLI 用 `--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选 `--budget` 传入。
+- 初始化 CLI 用 `--latest-release`、`--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选
+  `--budget` 传入。
 
 验收：逐项决定与验证命令。
 
 异常与交接：
 
-- 无法分类时留在 3。
+- 无法分类时回到 2。
 - 仅含 `.gitkeep` 的占位目录按其未来职责迁移。
   - 迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`，否则保留。
 - 单 module 的业务实现与测试建议迁入 `src/` 与 `tests/`。
@@ -196,7 +200,7 @@
 - 移动/删除必须列出源、目标和无信息损失理由，且不得覆盖既有内容。
 - 不处理待实现意图；完成后用户可按输入形态显式
   `$mdf intake` 或 `$mdf bug create` 或 `$mdf prp create`。
-- 配置调整必须再次显式调用 `$mdf init migrate`、`$mdf migrate` 或 `$mdf init`。
+- 本次完成后的配置调整须再次显式调用 `$mdf init migrate`、`$mdf migrate` 或 `$mdf init`。
 
 ### 落地与启用
 

@@ -42,9 +42,11 @@
 │ 4 Save baseline                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [保留现场并报告]
-                 │
-                 ▼ 阶段成果已提交
+                 ├──── 失败/缺失 ─────────→ [保留现场并报告]
+                 └──── 阶段成果已提交 ────→ [返回调用方]
+
+步骤 5 由调用方按步骤号进入，不是步骤 4 的后续。
+
 ┌──────────────────────────────────┐
 │ 5 Validate                       │
 └────────────────┬─────────────────┘
@@ -66,7 +68,7 @@
 │ 7 Enable                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 事实变化 ────→ 5 Validate
+                 ├──── 事实变化 ────→ [返回调用方重审]
                  ├──── 其他失败 ────→ [保留现场并报告]
                  │
                  ▼ ready 校验及提交通过
@@ -85,11 +87,11 @@
 | 1 | Check boundary | 约束 | 写入前核对边界、事实与状态 | 项目根与分流依据 | 返回调用方 | 不明回 1；否则按分流表返回 |
 | 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
 | 3 | Configure | 约束 | 核对八项基线、版本、验证与实现根 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
-| 4 | Save baseline | 脚本 | 完成材料，保持 initializing 并复核提交 | 阶段提交、diff | 5 | 保留现场并报告 |
-| 5 | Validate | 约束 | 按调用方审阅并全量校验 | 仅 initializing finding | 返回调用方 | 可修则 5；两轮后停 |
+| 4 | Save baseline | 约束 | 完成材料，保持 initializing 并复核提交 | 阶段提交、diff | 返回调用方 | 保留现场并报告 |
+| 5 | Validate | 约束 | 按调用方审阅并全量校验 | 按 state 允许的 finding（s5） | 返回调用方 | 可修则 5；两轮后停 |
 | 6 | Confirm activation | 约束 | 展示结果与方案并确认启用 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
-| 7 | Enable | 脚本 | 写 ready，全量校验、提交后再次核验 | 零 finding、就绪提交 | 8 | 事实变化 5；其他保留现场停止 |
-| 8 | Prepare branches | 脚本 | 按确认方案核对并补齐 master/develop | 本地分支及关系 | 返回调用方完成 | 保留现场并报告 |
+| 7 | Enable | 约束 | 写 ready，全量校验、提交后核验 | 零 finding、就绪提交 | 8 | 事实变化返回调用方；其他保留现场停止 |
+| 8 | Prepare branches | 约束 | 按确认方案核对并补齐 master/develop | 本地分支及关系 | 返回调用方完成 | 保留现场并报告 |
 
 ## 术语与数据结构
 
@@ -103,13 +105,14 @@
 部署配置可能只是模板，不能仅凭文件名判定；无法确定时先澄清。
 
 先只读检查已有 `.mdf/manifest.yaml`：ready 表示已经接入 MDF，即使尚无业务也由
-migrate 维护；initializing 不代表老仓库，应继续检查实际内容。不符合当前契约的既有
-MDF 内容报告后停止，不推断历史语义。既有内容的校验在 Git 基础准备后执行。
+migrate 维护；initializing 不代表老仓库，应继续检查实际内容。不符合当前契约的既有 MDF 内容由
+migrate 收敛：init 转入 migrate，bootstrap 报告后停止并提示 `$mdf migrate`；不推断历史语义。
+既有内容的校验在 Git 基础准备后执行。
 
 | 调用 | 项目状态 | 行为 |
 | --- | --- | --- |
 | init | 未就绪且没有实际实现或运行事实 | 说明依据，内部转入 bootstrap，返回其结果 |
-| init | 已有事实或已 ready | 内部转入 migrate，返回其结果 |
+| init | 已有事实、已 ready，或 MDF 内容不符合当前契约 | 内部转入 migrate，返回其结果 |
 | bootstrap | 已有实际实现或运行事实 | 写入前报错、列证据并提示 `$mdf migrate` |
 | bootstrap | 已 ready | 停止，配置调整提示 `$mdf migrate` |
 | bootstrap | 未初始化或 initializing，且符合新仓库条件 | 建立起点或核对已有产物续办 |
@@ -145,7 +148,8 @@ migrate 必须先通过已有事实或 ready 判定，再执行本节，不能�
   无法完成时明确交接。开分支、切换和合并前按操作要求检查工作区。
 
 Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 manifest 允许 ready，或仅
-`manifest.initializing` finding；其他 finding 报告后停止。CLI init 仍要求 Git 根目录，
+`manifest.initializing` finding。调用方为 migrate 时另允许 `manifest.schema`、`layout.migrate`
+与 `manifest.verification`；其他 finding 报告后停止。CLI init 仍要求 Git 根目录，
 不负责语义判定、Git 化、提交或启用；init、bootstrap 与 migrate 共用该 CLI，
 不新增 bootstrap 或 migrate CLI。
 
@@ -175,6 +179,7 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 
 调用 `init` CLI 时传入完整配置：
 
+- `--latest-release <稳定 SemVer|none>`。
 - 重复 `--baseline`、`--implementation-root`。
 - `--lint`、`--build`、`--quick`、`--smoke`、`--release`。
 - 可重复的 `--budget <suite>=<秒数>`。
@@ -198,7 +203,8 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 
 <a id="s5"></a>
 
-按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
+按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation，
+即 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT" --scope full`。
 
 - bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
 - `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；

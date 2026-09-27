@@ -4,7 +4,8 @@
 
 - 替换当前仓库中已安装的 `mdf` 副本。
 - 更新已有 `AGENTS.md` 的 MDF 托管区块。
-- 不修改 `.mdf/`、`docs/` 或业务文件，不覆盖源仓库的 `skills/mdf`。
+- 不修改 `.mdf/` 的受跟踪内容、`docs/` 或业务文件，不覆盖源仓库的 `skills/mdf`。
+  - 被忽略的 CLI 运行日志 `.mdf/logs/` 与报告 `.mdf/reports/` 除外。
 
 ## 决策树
 
@@ -173,7 +174,7 @@ upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
   - `manifest.schema` 或 `layout.migrate` finding。
   - `history` 摘要显示文档契约（模板、布局、根文档职责或事实页契约）有变化。
 - 已在当前布局上的仓库可改用 `$mdf fact update --scope full` 整理结构。
-- upgrade 本身不改 `.mdf/` 与 `docs/`。
+- upgrade 本身不改 `.mdf/` 的受跟踪内容与 `docs/`。
 
 重读新 Skill：
 

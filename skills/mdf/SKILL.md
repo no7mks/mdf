@@ -17,8 +17,8 @@ disable-model-invocation: true
 │ 1 Accept call                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 裸调用、未知调用 ────→ [帮助并结束]
-                 ├──── 未知 -- token ───────→ [停止询问]
+                 ├──── 裸调用、未知 intent ────────────→ [帮助并结束]
+                 ├──── 已知 intent 带未知 -- token ────→ [停止询问]
                  │
                  ▼ 有效显式调用
 ┌──────────────────────────────────┐
@@ -76,7 +76,7 @@ disable-model-invocation: true
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Accept call | 约束 | 只接受选择树所列显式 intent | 有效显式调用 | 2 | 裸/未知则帮助；未知 -- 则停止询问 |
+| 1 | Accept call | 约束 | 只接受选择树所列显式 intent | 有效显式调用 | 2 | 裸或未知则帮助；带未知 -- 则停止询问 |
 | 2 | Check CLI | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 3 | 3 | 停止 |
 | 3 | Dispatch | 约束 | 先核目标根再按选择树执行 | 目标根或豁免、流程结果 | 按选择树返回 | 不明回 3；缺材料停止并报告 |
 
@@ -84,7 +84,8 @@ disable-model-invocation: true
 
 ### 调用与工具
 
-只接受选择树所列的显式调用。裸调用或未知调用按 help 执行。
+只接受选择树所列的显式调用。先判 intent：裸调用或未知 intent 按 help 执行；
+已知 intent 带未知 `--` token 才停止询问。
 
 - `next [--depth N]` 与 `tree [--depth N]` 的深度可省略。
   - `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，
@@ -130,7 +131,6 @@ intent 只由显式调用选择：
 1. 先核对目标根（或该 intent 的豁免）；边界不明澄清后回到 3。
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
-- 将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理。
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
 - 除 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
