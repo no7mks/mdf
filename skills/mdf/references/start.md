@@ -34,7 +34,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 创建前检查失败 ────→ [报告 finding，不创建分支]
-                 ├──── 创建中失败 ────────→ [拆除已建 worktree 与分支]
+                 ├──── 创建中失败 ────────→ [CLI 已回滚，报告并停止]
                  │
                  ▼ 创建成功
 ┌──────────────────────────────────┐
@@ -50,8 +50,8 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。
-feature 的步骤 2 读取并内部执行 `references/clarify.md`，
-对照 `assets/templates/objectives.md`。
+feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
+分别对照 `assets/templates/objectives.md` 与 `assets/templates/release-objectives.md`。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -59,7 +59,7 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 | 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | feature/release 2；其他 3 | 留在 1 询问 |
 | 2 | Clarify objectives | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
-| 4 | Start branch | 脚本 | 运行 start，核对本地分支与 worktree | 分支、worktree | 5 | 检查失败不创建；创建中失败拆除 |
+| 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
 | 5 | Switch worktree | 约束 | 按当前 agent 把会话切到 owner worktree | cwd、分支 | 结束 | 留在 5 等待 |
 
 ## 术语与数据结构
@@ -74,7 +74,9 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 
 - feature 要 PRP ID，bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
 - feature 与 release 还要确认的 objectives；start 不为 bugfix/hotfix 写 objectives。
-  - roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 补写。
+  - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 补写。
+  - hotfix 始终记录已确认的热修复范围：roster `0,0` 由 deliver 在开发前确认并写入，
+    roster ≥1 由 design 的 Baseline 写入。
 - feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 - bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，不得另选 slug。
@@ -194,13 +196,13 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，
   第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`；`0,0` 只建 owner。
 - 成功 JSON 含 `worktree`（owner）、冻结后的 `roster` 与 `roles.qa` / `roles.dev` 列表。
-- 创建失败时拆除本次已建的全部 worktree 与分支。
+- 创建中失败时 CLI 自动回滚本次已建的全部 worktree 与分支，Agent 不再手工拆除。
 
 验收：检查、本地分支与实际工作目录。
 
 异常与交接：
 
-- 创建前检查失败时不创建分支并报告 finding；创建中失败则拆除已建 worktree 与分支。
+- 创建前检查失败时不创建分支并报告 finding；创建中失败时 CLI 已回滚，报告并停止。
 - 不推送，不设置 upstream。
 - CLI 在本地 Git config 中：
   - 以 `branch.<完整分支名>.mdf-start-commit` 固定起点完整 hash，供 bugfix/hotfix code-review 使用。
@@ -210,7 +212,7 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
   - feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.json`
     （含 roster）及 `objectives.md` 并提交。
   - roster ≥1 的 bugfix/hotfix 写入 `delivery.json`（含 roster），不写 objectives（由 design 补写）。
-  - roster `0,0` 的 bugfix/hotfix 不创建阶段材料。
+  - roster `0,0` 的 bugfix/hotfix 不创建阶段材料；hotfix 的 objectives.md 由 deliver 在开发前写入。
   - bugfix 的 named suite 关联由 deliver 的 Verify 阶段写入，本步不写。
 - roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
 - 创建成功进入 5，本步不结束。

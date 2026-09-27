@@ -79,11 +79,11 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 约束 | 只读判定分流 | 边界、事实、MDF 状态 | 2 | 不明回 1；新项目提示 bootstrap；其他停止 |
-| 2 | Inventory | 约束 | 盘点全部顶层项和文档，按职责分类 | 完整分类清单 | 3 | 无法分类则澄清后回 2 |
-| 3 | Clarify layout | 约束 | 调用 initialization #3 确认配置 | 逐项决定、完整配置 | 4 | 留在 3 澄清 |
+| 2 | Inventory | 约束 | 盘点全部顶层项、文档与 finding，按职责分类 | 分类与 finding 清单 | 3 | 无法分类则澄清后回 2 |
+| 3 | Clarify layout | 约束 | 调用 initialization #3 确认配置并处置 finding | 逐项决定、完整配置 | 4 | 留在 3 澄清 |
 | 4 | Confirm plan | 约束 | 展示源、目标、保留内容与初始化方案并确认 | 用户明确确认 | 5 | 未确认留在 4；分类 2；其他 3 |
 | 5 | Initialize | 约束 | 调用 initialization #2+#4：init、归位并提交 | 归位表、根文档、提交 | 6 | 保留现场，停止 |
-| 6 | Audit facts | 约束 | 比较事实；提交后委托全量审阅并校验 | 事实复核、仅允许项 | 7 | 可修复则重验；无法继续则停止 |
+| 6 | Audit facts | 约束 | 比较事实；审阅后 initialization #5 校验 | 事实复核、仅允许项 | 7 | 可修复则重验；否则停 |
 | 7 | Enable workflows | 约束 | 按序 initialization #6-8 | 确认、校验、提交 | 结束 | 事实变化 6；未确认则结束；否则停 |
 
 ## 术语与数据结构
@@ -99,22 +99,20 @@
 - 未就绪且符合新仓库条件时停止，列依据并提示 `$mdf bootstrap`（或 `$mdf init`）。
   - 提示前不写入 `.git/`。
 - 已 ready 的空仓库仍在 migrate 调整配置。
+- MDF 内容不符合当前契约时，即使尚无业务事实也继续 migrate。
 - 已有 Git 的非新项目必须运行 doctor。
 - 尚未 Git 化的目录等到方案确认后由 initialization 段 2 准备 Git。
 - 不因普通目录、无提交或 dirty 一概拒绝。
-- doctor 报 `manifest.schema`、`layout.migrate` 或 `manifest.verification` 是本 intent 的合法入口态，
-  不是损坏。
-  - 这三项表示 manifest、`verification` 形状或 `docs/` 布局不符合当前契约。
-  - 进入盘点，由步骤 3 决定 `docs/product/`、`docs/adr/` 等目录的去处并重写 manifest。
+- doctor finding 不是拒绝理由：本 intent 正是收敛这些 finding。
+  - 全部 finding 记入盘点清单，由步骤 3 逐项处置。
+  - 如 `manifest.schema`、`layout.migrate`、`manifest.verification` 由步骤 3 决定目录去处并重写 manifest。
 
-验收：明确项目根与判定依据。已初始化时只允许以下状态：
-
-- initializing finding，以及 `manifest.schema`、`layout.migrate` 与 `manifest.verification` finding；
-- 或 ready 无 finding。
+验收：明确项目根与判定依据；doctor finding 已全部记入盘点，无 migrate 无法安全处理的状态。
 
 异常与交接：
 
-- 边界或改动归属不明时澄清，其他 finding 报告后停止。
+- 边界或改动归属不明时澄清。
+- migrate 无法读取或安全处理的状态（如纳管路径 `path.symlink`）报告后停止。
 - 中间反馈继续本次流程，不重查入口。
 
 <a id="s2"></a>
@@ -122,9 +120,9 @@
 **盘点**
 
 盘点全部顶层项目项并检查项目原有的全部文档，区分 MDF 固定项、治理/生态入口、实现、测试、
-生成物与文档。
+生成物与文档；登记入口 doctor 的全部 finding。
 
-验收：分类清单。
+验收：分类清单与 finding 清单。
 
 异常与交接：
 
@@ -141,6 +139,7 @@
 
 使用内部 clarify intent，议题为材料去处、顶层例外、基线与验证。
 
+- 盘点中的每项 doctor finding 在方案中写明处置。
 - 确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外。
 - 调研与决策材料：
   - 本地或外部调研材料归入 `docs/context/research/`。
@@ -167,10 +166,8 @@
     - JUnit 输出（如 pytest `--junitxml`、PHPUnit `--log-junit`、Vitest `--reporter=junit`、
       Jest `jest-junit`）
     - test case 分组配置（`classname` 对应 test case）。
-- 初始化 CLI 用 `--latest-release`、`--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选
-  `--budget` 传入。
 
-验收：逐项决定与验证命令。
+验收：逐项决定、finding 处置与验证命令。
 
 异常与交接：
 
@@ -210,7 +207,8 @@
 
 - 执行 `init` 建立或更新完整 scaffold 前，按 `initialization.md` 段 2
   依已确认方案准备 Git 基础并运行 doctor。
-- 保持 manifest `initializing`，传入核对后的完整配置与验证命令。
+- 按 `initialization.md` 段 4 调用 `init` CLI，保持 manifest `initializing`，
+  传入核对后的完整配置与验证命令。
 - 只按方案归位/保留/排除原材料与顶层项。
 - 配置更新保留未要求修改的字段，续办核对已有产物，不覆盖重建。
 - 完成材料后创建本地阶段提交，再审阅事实。
@@ -238,6 +236,7 @@
 
 - 比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`。
 - 内部委托 `fact audit` 执行`全量审阅`（`--scope full`）。
+- 按 `initialization.md` 段 5 执行 full validation。
 - 先提交本次事实与证据作为可审阅基线。
 - 审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 

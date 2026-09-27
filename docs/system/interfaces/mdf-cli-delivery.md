@@ -87,7 +87,7 @@ smoke（bugfix）或 release（release/hotfix）。证据 `suites` 为 `quick` �
 
 - bugfix 须有 `changes/unreleased/<slug>/suites.json` 关联 named suite。
   - 缺失返回 `missing_delivery_suite`；Core 不执行 named suite。
-- 证据未覆盖所需 suite 时 `check` 返回 `stale_verification`。
+- 证据文件缺失或未覆盖所需 suite 时 `check` 返回 `stale_verification`；文件损坏返回 `invalid_delivery`。
 - 运行期间 stderr 输出：
   - `[i/N] start <id>`、子进程原文。
   - 可选 30 秒心跳 `[i/N] running <id> (Ns)`。
@@ -100,9 +100,20 @@ smoke（bugfix）或 release（release/hotfix）。证据 `suites` 为 `quick` �
 - `project-verify check` 只读核验输入指纹、分支、suite 及全绿状态。
   - 事实/收口文档不改变代码指纹。
 
+### `quick-run`
+
+`quick-run --repo <仓库>` 在任意分支（含 master 与 detached HEAD）依次执行 manifest 的 lint、build、quick。
+
+- 要求 manifest `ready`，否则返回 `manifest_not_ready`。
+- 预算、运行目录、stderr 进度与 quick 报告校验同 `project-verify run`。
+- 全部入口都运行，单项失败不中断；不写任何证据文件或 gate。
+- 结果含 `head`、逐项 `results`（命令、预算、`log`、quick 的 `report`、`passed`）与 `all_passed`。
+  - 全部通过时 stdout 输出结果 JSON，退出 0。
+  - 任一失败返回 `verify_command_failed`，details 为同一结果，失败项带 `error` 与 `details`。
+
 ### 测试报告与 `suite-run`
 
-`delivery verify`、`project-verify run` 与 `release-closeout` 执行 quick、smoke、release 时：
+`delivery verify`、`project-verify run`、`quick-run` 与 `release-closeout` 执行 quick、smoke、release 时：
 
 1. 为每次运行新建 `.mdf/reports/<时间戳>-<suite>/`，以 `MDF_REPORT_DIR` 传给命令。
 2. 命令结束后解析其中的 JUnit XML，写入 `summary.json`。

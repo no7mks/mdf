@@ -72,11 +72,12 @@
 
 **工具**
 
-解析 `REPO_ROOT`。运行
+用 `git -C <目标> rev-parse --show-toplevel` 解析 `REPO_ROOT`，并核对它就是用户要升级的目标仓库；
+不符或不是 Git 仓库时停止。运行
 `python3 "$MDF_ROOT/scripts/mdf.py" info`，协议、工具与 schema 版本均须为
 数字 `3`。不要求 manifest、ready 或 clean worktree。
 
-验收：Git 根、三个版本为 3。
+验收：Git 根为用户目标、三个版本为 3。
 
 通过条件：进入预览。异常与交接：停止，不得模拟 CLI。
 
@@ -150,7 +151,8 @@ upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
 - CLI 用上游 `skills/mdf` 替换每个已安装副本，并写入完整 commit 到 `references/.version`。
 - 已有唯一 `AGENTS.md` 托管区块时，用上游 `agents-managed-block.md` 替换该区块。
   - 无文件或无区块则跳过，不新建或追加。
-- 失败时保留现场，报告已替换与未替换路径。
+- 失败时保留现场；逐个读取各目标的 `references/.version`，等于 `new_commit` 的为已替换，
+  其余为未替换，分别报告路径。
 - ❌ 不得删除目标仓库的 `.mdf/` 或 `docs/`。
 - 写入后仅暂存并 `commit --only` 本次路径，不夹带其他暂存或工作区改动，不 push。
   - 无变更则不创建提交。
@@ -171,14 +173,17 @@ upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
 替换后运行 `doctor --repo "$REPO_ROOT"`：
 
 - 出现以下任一情况时，建议用户运行 `$mdf migrate` 收敛布局与 manifest：
-  - `manifest.schema` 或 `layout.migrate` finding。
+  - 任一指向 `$mdf migrate` 的 finding，至少含 `manifest.schema`、`layout.migrate`、`manifest.verification`。
   - `history` 摘要显示文档契约（模板、布局、根文档职责或事实页契约）有变化。
 - 已在当前布局上的仓库可改用 `$mdf fact update --scope full` 整理结构。
 - upgrade 本身不改 `.mdf/` 的受跟踪内容与 `docs/`。
 
 重读新 Skill：
 
-- 从本次 `MDF_ROOT` 完整重读 `SKILL.md`；若更新了托管区块，同时重读 `AGENTS.md`。
+- 重读前核对本次 `MDF_ROOT` 是否为已替换的某个 `targets[].path`：
+  - 是则从 `MDF_ROOT` 完整重读 `SKILL.md`。
+  - 否则从已替换目标完整重读；无法重读时报告本会话仍在使用旧副本。
+- 若更新了托管区块，同时重读 `AGENTS.md`。
 - 丢弃本次已读入的旧副本。
 - 同会话内后续 `$mdf` 调用按新 Skill 执行，不得要求新会话，也不得继续按旧流程操作。
 - 本 intent 仍在报告后结束，不自动串联其他入口。

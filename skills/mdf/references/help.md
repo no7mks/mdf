@@ -280,7 +280,8 @@ $mdf clarify 要不要把缓存放到 Redis
     - roster 默认：feature 为 min-tdd；release 为 solo 加 3 名 partition reviewer；其他为 solo。
     - `--*-model` 为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
     - release 开分支前确认发布目标（预发布工作，含跨仓联调；不实施新 PRP）。
-    - hotfix 不写 objectives。
+    - hotfix 始终在 objectives 记录已确认范围：roster `0,0` 由 deliver 在开发前写，≥1 由 design 写。
+    - bugfix roster `0,0` 不写 objectives；≥1 由 design 写。
 
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
@@ -379,7 +380,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：
     - 先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换。
     - 更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`；替换后在当前分支提交本次路径，不 push。
-    - 随后重读新 Skill，同会话后续调用按新副本执行；doctor 报布局或 schema 不符时建议 `$mdf migrate`。
+    - 随后重读新 Skill，同会话后续调用按新副本执行；doctor finding 指向 `$mdf migrate` 时建议运行。
 
 - `$mdf integrate`
   - 用法：`$mdf integrate`

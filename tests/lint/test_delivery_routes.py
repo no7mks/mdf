@@ -124,7 +124,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
     assert table[1][2] == "约束"
     assert table[2][1] == "Reproduce"
     assert table[2][3] == "确认或编写该 Bug 的有效红灯测试"
-    assert table[3][6] == "未满三轮且下一步明确则 4；否则停止"
+    assert table[3][6] == "未满三轮且下一步明确则 4；否则停"
     assert table[4][5] == "结束"
     for rule in (
         "不切分支", "不 start", "不走交付主线", "不 code-review", "不 finish",
@@ -158,7 +158,7 @@ def test_verify_fix_is_second_verification_before_closeout():
     text = workflow("verify-fix")
     table = rows(text)
     assert [row[1] for row in table] == ["Check", "Verify", "Review", "Record"]
-    assert table[1][6] == "可修或获批回 2；缺命令、被拒或三轮无进展则停"
+    assert table[1][6] == "可修或获批回 2；否则停"
     assert table[2][6] == "有可修回 2；需决定则停"
     for rule in (
         "不标 `closed`", "不写 `fixed_in`", "不跑全局",

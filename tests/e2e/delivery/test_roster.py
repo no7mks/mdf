@@ -295,6 +295,44 @@ def test_integrate_partition_merges_all_dev_branches(python_exe, tmp_path):
     assert not first.exists() and not second.exists() and not qa.exists()
 
 
+def test_converge_partition_qa_uses_merged_tests_baseline(python_exe, tmp_path):
+    started, owner, root, policy = _design_feature(
+        python_exe, tmp_path, "--roster", "coop-pair",
+    )
+    payload(mdf(
+        python_exe, "delivery", "record", "--repo", str(owner), "--stage",
+        "design", "--policy-file", str(policy), "--summary", "确认设计",
+    ))
+    commit(owner)
+    message = "chore(delivery): 合入 feature/service-health"
+    lanes = [
+        (Path(item["worktree"]), stage, path)
+        for role, stage, paths in (
+            ("qa", "write-tests", ("tests/test_one.py", "tests/test_two.py")),
+            ("dev", "implement", ("src/one.py", "src/two.py")),
+        )
+        for item, path in zip(started["roles"][role], paths)
+    ]
+    for work, stage, path in lanes:
+        git(work, "merge", "--no-ff", "--no-edit", "-m", message,
+            "feature/service-health")
+        (work / path).parent.mkdir(exist_ok=True)
+        (work / path).write_text("def test_value():\n    assert True\n")
+        payload(record(python_exe, work, stage))
+        commit(work)
+    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    assert (owner / "tests/test_one.py").is_file()
+    assert (owner / "tests/test_two.py").is_file()
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(owner)))
+    payload(record(python_exe, owner, "converge"))
+    edited = owner / "tests/test_two.py"
+    edited.write_text(edited.read_text() + "\n\ndef test_more():\n    assert True\n")
+    payload(mdf(python_exe, "delivery", "verify", "--repo", str(owner)))
+    assert "test_approval_required" in record(
+        python_exe, owner, "converge",
+    ).stderr
+
+
 def test_bugfix_roster_update_without_delivery_json(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     started = payload(mdf(

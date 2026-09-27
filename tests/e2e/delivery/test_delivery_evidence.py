@@ -29,6 +29,7 @@ def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, t
     suites = work / "changes/unreleased/bug-cd34/suites.json"
     suites.parent.mkdir(parents=True, exist_ok=True)
     suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
     payload(mdf(python_exe, "project-verify", "run", *args))
     payload(mdf(python_exe, "project-verify", "check", *args))
     evidence = work / "changes/unreleased/bug-cd34/code-review.verification.json"

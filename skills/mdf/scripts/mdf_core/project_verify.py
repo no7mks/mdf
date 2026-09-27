@@ -1,4 +1,4 @@
-"""非 feature 审查的验证及内容绑定证据。"""
+"""非 feature 审查的验证及内容绑定证据；quick-run 为任意分支的无证据快速验证。"""
 from .verify_run import run_verify_command
 from .delivery_state import inventory, digest, git, safe, write_json, read_json
 from .errors import MDFError, emit
@@ -70,6 +70,48 @@ def valid_evidence(repo):
     return result
 
 
+def run_targets(repo, targets):
+    """全部运行，不因单项失败中断；每项带 passed 与失败 error/details。"""
+    results = []
+    total = len(targets)
+    for index, item in enumerate(targets, 1):
+        try:
+            detail = run_verify_command(
+                repo,
+                item["command"],
+                label=item["id"],
+                index=index,
+                total=total,
+                timeout=item["budget"],
+                entry=item["id"],
+                junit=item["id"] in SUITES,
+            )
+            results.append({**item, **detail, "passed": True})
+        except MDFError as exc:
+            results.append({
+                **item, "passed": False, "error": exc.code,
+                "details": exc.details,
+            })
+    return results
+
+
+def command_quick_run(args):
+    repo = repo_path(args.repo)
+    require_git_root(repo)
+    manifest = load_manifest(repo)
+    if manifest.get("state") != "ready":
+        raise MDFError("quick-run 需要 ready", code="manifest_not_ready")
+    results = run_targets(repo, manifest_verification(manifest).plan("quick"))
+    result = {
+        "head": git(repo, "rev-parse", "HEAD").stdout.strip(),
+        "results": results,
+        "all_passed": all(item["passed"] for item in results),
+    }
+    if not result["all_passed"]:
+        raise MDFError("lint、build 或 quick 失败", code="verify_command_failed", details=result)
+    emit({"ok": True, "operation": "quick-run", "result": result})
+
+
 def command_project_verify(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -79,31 +121,11 @@ def command_project_verify(args):
         context["required"], context["targets"], context["inputs"], context["path"],
     )
     if args.action == "check":
-        read_json(path)
         result = valid_evidence(repo)
         if result is None:
-            raise MDFError("所需 suite 失败或证据过期", code="stale_verification")
+            raise MDFError("证据缺失、所需 suite 失败或证据过期", code="stale_verification")
     else:
-        results = []
-        total = len(targets)
-        for index, item in enumerate(targets, 1):
-            try:
-                detail = run_verify_command(
-                    repo,
-                    item["command"],
-                    label=item["id"],
-                    index=index,
-                    total=total,
-                    timeout=item["budget"],
-                    entry=item["id"],
-                    junit=item["id"] in SUITES,
-                )
-                results.append({**item, **detail, "passed": True})
-            except MDFError as exc:
-                results.append({
-                    **item, "passed": False, "error": exc.code,
-                    "details": exc.details,
-                })
+        results = run_targets(repo, targets)
         after_suites = associated_suites(repo, slug) if kind == "bugfix" else None
         after = inputs(repo, manifest_verification(load_manifest(repo)), required, after_suites)
         passed = {item["id"] for item in results if item["passed"]}

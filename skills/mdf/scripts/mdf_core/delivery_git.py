@@ -1,7 +1,9 @@
 """角色分支集成。"""
 import json
 
-from .delivery_state import gate, git, matches, require_design, read_json, safe, write_json
+from .delivery_state import (
+    fingerprints, gate, git, matches, require_design, read_json, safe, write_json,
+)
 from .errors import MDFError
 from .gitutil import current_branch, ensure_clean, worktree_map
 from .roster import merge_branches, role_branches
@@ -70,27 +72,15 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
             raise MDFError("实现分支修改了测试或验证规则",
                            code="test_approval_required",
                            details={"paths": protected})
-    for branch in merged:
-        if not git(repo, "merge-base", "--is-ancestor", branch, "HEAD",
-                    check=False).returncode:
-            continue
-        result = git(repo, "merge", "--no-ff", "--no-commit", branch, check=False)
-        if result.returncode:
-            unmerged = git(repo, "diff", "--name-only", "--diff-filter=U"
-                           ).stdout.splitlines()
-            allowed = {
-                str((root / "gates" / name).relative_to(repo))
-                for name in ("write-tests.json", "implement.json")
-            }
-            if not unmerged or set(unmerged) - allowed:
-                raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认",
-                               code="merge_conflict")
-            for path in unmerged:
-                git(repo, "checkout", "--ours", "--", path)
-                git(repo, "add", "--", path)
-        git(repo, "commit", "-m", f"chore(delivery): 集成 {branch}")
+    for branch in qa_merged:
+        merge_role(repo, root, branch)
+    # 多路 qa 的 write-tests 记录冲突时只保留第一路；converge 以合并后的测试为基线。
+    tests = fingerprints(repo, root, data)["tests"]
+    for branch in dev_merged:
+        merge_role(repo, root, branch)
     receipt = {
         "design": current["design"],
+        "tests": tests,
         "merged": merged,
         "branches": {
             branch: git(repo, "rev-parse", f"refs/heads/{branch}").stdout.strip()
@@ -101,6 +91,27 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
     git(repo, "add", "--", str(receipt_path.relative_to(repo)))
     git(repo, "commit", "-m", "chore(delivery): 固定角色集成证据")
     return cleanup(repo, expected_names)
+
+
+def merge_role(repo, root, branch):
+    if not git(repo, "merge-base", "--is-ancestor", branch, "HEAD",
+                check=False).returncode:
+        return
+    result = git(repo, "merge", "--no-ff", "--no-commit", branch, check=False)
+    if result.returncode:
+        unmerged = git(repo, "diff", "--name-only", "--diff-filter=U"
+                       ).stdout.splitlines()
+        allowed = {
+            str((root / "gates" / name).relative_to(repo))
+            for name in ("write-tests.json", "implement.json")
+        }
+        if not unmerged or set(unmerged) - allowed:
+            raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认",
+                           code="merge_conflict")
+        for path in unmerged:
+            git(repo, "checkout", "--ours", "--", path)
+            git(repo, "add", "--", path)
+    git(repo, "commit", "-m", f"chore(delivery): 集成 {branch}")
 
 
 def cleanup(repo, branches):

@@ -87,7 +87,7 @@
 | 1 | Check boundary | 约束 | 写入前核对边界、事实与状态 | 项目根与分流依据 | 返回调用方 | 不明回 1；否则按分流表返回 |
 | 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
 | 3 | Configure | 约束 | 核对八项基线、版本、验证与实现根 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
-| 4 | Save baseline | 约束 | 完成材料，保持 initializing 并复核提交 | 阶段提交、diff | 返回调用方 | 保留现场并报告 |
+| 4 | Save baseline | 约束 | init 后完成材料并提交，保持 initializing | 阶段提交、diff | 返回调用方 | 保留现场并报告 |
 | 5 | Validate | 约束 | 按调用方审阅并全量校验 | 按 state 允许的 finding（s5） | 返回调用方 | 可修则 5；两轮后停 |
 | 6 | Confirm activation | 约束 | 展示结果与方案并确认启用 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
 | 7 | Enable | 约束 | 写 ready，全量校验、提交后核验 | 零 finding、就绪提交 | 8 | 事实变化返回调用方；其他保留现场停止 |
@@ -105,19 +105,24 @@
 部署配置可能只是模板，不能仅凭文件名判定；无法确定时先澄清。
 
 先只读检查已有 `.mdf/manifest.yaml`：ready 表示已经接入 MDF，即使尚无业务也由
-migrate 维护；initializing 不代表老仓库，应继续检查实际内容。不符合当前契约的既有 MDF 内容由
-migrate 收敛：init 转入 migrate，bootstrap 报告后停止并提示 `$mdf migrate`；不推断历史语义。
-既有内容的校验在 Git 基础准备后执行。
+migrate 维护；initializing 不代表老仓库，应继续检查实际内容。
+
+不符合当前契约的既有 MDF 内容由 migrate 收敛，即使尚无业务事实；不推断历史语义：
+
+- 只读检查 manifest 与布局（已有 Git 时运行 `doctor`），出现指向 `$mdf migrate` 的 finding 即为不符合。
+- init 转入 migrate，bootstrap 写入前停止并提示 `$mdf migrate`。
+- 其余校验在 Git 基础准备后执行。
 
 | 调用 | 项目状态 | 行为 |
 | --- | --- | --- |
-| init | 未就绪且没有实际实现或运行事实 | 说明依据，内部转入 bootstrap，返回其结果 |
+| init | 未就绪、没有实际实现或运行事实，且 MDF 内容符合当前契约 | 说明依据，内部转入 bootstrap，返回其结果 |
 | init | 已有事实、已 ready，或 MDF 内容不符合当前契约 | 内部转入 migrate，返回其结果 |
 | bootstrap | 已有实际实现或运行事实 | 写入前报错、列证据并提示 `$mdf migrate` |
 | bootstrap | 已 ready | 停止，配置调整提示 `$mdf migrate` |
+| bootstrap | MDF 内容不符合当前契约 | 写入前停止，列 finding 并提示 `$mdf migrate` |
 | bootstrap | 未初始化或 initializing，且符合新仓库条件 | 建立起点或核对已有产物续办 |
-| migrate | 未就绪且没有实际实现或运行事实 | 写入前报错、列证据并提示 `$mdf bootstrap` |
-| migrate | 已有事实或已 ready | 继续 migrate |
+| migrate | 未就绪、没有实际实现或运行事实，且 MDF 内容符合当前契约 | 写入前报错、列证据并提示 `$mdf bootstrap` |
+| migrate | 已有事实、已 ready，或 MDF 内容不符合当前契约 | 继续 migrate |
 
 ### Git 基础
 
@@ -144,12 +149,17 @@ migrate 必须先通过已有事实或 ready 判定，再执行本节，不能�
 - 新仓库在 master 上落地。既有 main、缺少 master、当前工作分支或远端默认分支
   不符合约定时，展示具体本地调整方案；不得重置已有分支、改写历史或强制对齐。
   涉及已有 master 冲突、远端默认分支或保护规则时确认方案后处理，不只提示用户自行改名。
+- init CLI 要求 `refs/remotes/origin/HEAD` 未设置或指向 master：
+  - 指向 main 报 `main_default_branch`，指向其他分支报 `invalid_default_branch`。
+  - 本节即核对；远端已有 master 时，确认方案后运行 `git remote set-head origin master`。
+  - 远端默认分支须改名时按已确认方案处理；无法完成时保留现场、报告并交接，不调用 init CLI。
 - 不要求远端；保留已有远端，不自动创建托管仓库或推送。远端设置变更按已确认方案授权，
   无法完成时明确交接。开分支、切换和合并前按操作要求检查工作区。
 
 Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 manifest 允许 ready，或仅
-`manifest.initializing` finding。调用方为 migrate 时另允许 `manifest.schema`、`layout.migrate`
-与 `manifest.verification`；其他 finding 报告后停止。CLI init 仍要求 Git 根目录，
+`manifest.initializing` finding，其他 finding 报告后停止。调用方为 migrate 时不因 finding 拒绝：
+全部 finding 记入盘点清单，由其步骤 3 逐项处置；仅 migrate 无法安全处理的状态
+（如纳管路径 `path.symlink`）报告后停止。CLI init 仍要求 Git 根目录，
 不负责语义判定、Git 化、提交或启用；init、bootstrap 与 migrate 共用该 CLI，
 不新增 bootstrap 或 migrate CLI。
 
@@ -172,18 +182,6 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
   - 单 module 默认使用 `src`，多 module 使用各 `<module>/src`。
   - 已有模板使用实际目录并在 PROJECT 说明，不为 bootstrap 重排模板。
 
-`docs/system/testing/` 由 init CLI 写入起步页：
-
-- 按确认的验证配置填写当前规则与 quick、smoke、release 各一节。
-- 不把尚未采用的 kind 写成事实。
-
-调用 `init` CLI 时传入完整配置：
-
-- `--latest-release <稳定 SemVer|none>`。
-- 重复 `--baseline`、`--implementation-root`。
-- `--lint`、`--build`、`--quick`、`--smoke`、`--release`。
-- 可重复的 `--budget <suite>=<秒数>`。
-
 更新与保留规则：
 
 - 更新时核对并保留未要求改变的配置，不依赖 CLI 默认值覆盖现有设置。
@@ -197,6 +195,18 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
   不添加空目录状态或建目录提示。
 
 <a id="s4"></a>
+
+步骤 2 通过后调用 `init` CLI，传入步骤 3 确认的完整配置：
+
+- `--latest-release <稳定 SemVer|none>`。
+- 重复 `--baseline`、`--implementation-root`。
+- `--lint`、`--build`、`--quick`、`--smoke`、`--release`。
+- 可重复的 `--budget <suite>=<秒数>`。
+
+init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent 按确认的验证配置填写并清除模板说明：
+
+- 当前规则与 quick、smoke、release 各一节。
+- 不把尚未采用的 kind 写成事实。
 
 完成材料与配置，保持 initializing；清除本次模板占位说明，提交可验证的阶段成果。
 核对提交范围及 diff；失败保留现场并报告。
@@ -221,7 +231,7 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 <a id="s7"></a>
 
 - 将 manifest 改为 ready，执行 full validation，零 finding 后提交就绪结果；提交后再次核验。
-- 事实发生变化时返回 5 补审补验，且步骤 5 按当前 `manifest.state` 验收。
+- 事实发生变化时返回调用方（由其重入 5 补审补验），且步骤 5 按当前 `manifest.state` 验收。
 - 其他失败保留现场并报告，不宣称已完成。
 
 <a id="s8"></a>

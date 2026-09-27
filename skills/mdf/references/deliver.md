@@ -104,7 +104,7 @@
 步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
 1. 先由当前 feature/qa/dev、bugfix、hotfix 或 release 分支推导在途交付；结果即下文「当前已锁定」的交付。
-   - feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `worktrees.owner.path`。
+   - 任一 kind 的 qa/dev 角色分支归属其 owner；使用 `delivery status` 返回的 `worktrees.owner.path`。
    - 其他分支使用 `git worktree list --porcelain` 中完整分支名对应的已有路径。
 2. 再解析本次调用的 target（见下）；有唯一对象时按下文 target 规则锁定或停止。
 3. 无 target 时优先锁定用户在对话中指定的交付，否则沿用当前已锁定的交付。
@@ -233,6 +233,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
+| hotfix `0,0` 且范围未写入 objectives | 确认后写入 `objectives.md` 并提交；auto-pilot 自裁定 |
+| release/hotfix ≥1，design 后记入新 Bug | 在 owner 重入 design 修订后再续各路；dev ≥1 不在 owner 实现 |
 | feature 或 roster ≥1，且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
 | roster ≥1、未完成路数 ≥2（不论哪侧）且前置满足 | 并行委托 `references/write-tests.md` / `references/implement.md` |
 | roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成的路 |
@@ -248,10 +250,10 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 - bugfix 在 roster `0,0` 时使用对应 Bug。
 - release 对照 `objectives.md` 完成计划内预发布工作（含跨仓联调证据）。
-  - 并可在 owner 上直接修已确认的 open Bug
-    （完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change）。
+  - 并可修已确认的 open Bug（roster `0,0` 在 owner 上修，≥1 按上表经 design 交给各路）；
+    完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change。
   - ❌ 不得实施新 PRP；缺能力则推迟或作废本次 release，回 develop 开 feature。
-- hotfix 使用热修复范围，同样可直接修 Bug。
+- hotfix 使用 `objectives.md` 记录的热修复范围，同样可修 Bug。
 - 不套用 feature 阶段 gate；roster ≥1 时走 design / write-tests / implement / converge。
 
 剩余工作与失败处理：
@@ -276,7 +278,8 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
     - `--auto-pilot` 由主 Agent 自裁定，并在 verify.md 记录依据。
   - ❌ 不得关联 lint/build/quick/smoke/release/full。
 - 运行 `project-verify run --repo "$REPO_ROOT"`（bugfix 到 smoke，release/hotfix 到 release）。
-  - bugfix 另以 `suite-run` 执行所列 named suite。
+  - bugfix 另以 `suite-run` 执行所列 named suite；roster ≥1 的 release/hotfix 另以 `suite-run`
+    执行 design policy `suites` 所列每个 named suite。
   - 失败时读报告与日志定位，在已确认范围内修复实现后重跑，直到全绿。
   - 测试、预期或验证门槛的修改：默认模式须用户确认；`--auto-pilot` 自裁定并在 verify.md 记录依据。
   - 第一次跑所需 suite 出现非 quick 失败时，按 `delivery-contract.md`「quick 复现」尝试补用例。
@@ -350,6 +353,8 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
 - 主 Agent 对各路再次调用同一 worktree-check，传入固定设计提交并追加 `--handoff`。
   - 脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）fingerprint。
 - 失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
+- implement 以未决交回测试争议时由主 Agent 裁定（默认询问用户，auto-pilot 自裁定），
+  按裁定续办对应路；改测试按 `delivery-contract.md`「修改与提交权限」取得批准。
 - 合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。
 
 收口：单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。

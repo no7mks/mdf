@@ -11,8 +11,12 @@
 - feature 的 objectives 引用 PRP，避免复制另一个需求来源。
 - release 的 objectives 写本版收口范围、预发布工作、非目标与可验证验收，不引用单个 PRP。
   - 该分支承担上线前预发布（含跨仓联调），不得实施新 PRP。
-- start 不为 bugfix/hotfix 写 objectives：roster `0,0` 时不需要；
-  roster ≥1 时由 design 的 Baseline 补写（bugfix 依据 Bug，hotfix 依据已确认的热修复范围）。
+- start 不为 bugfix/hotfix 写 objectives。
+  - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 依据 Bug 补写。
+  - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。
+    - roster `0,0`：deliver 或开发前的主 Agent 与用户确认后写入并提交。
+      `--auto-pilot` 按 Bug 与对话证据自裁定。
+    - roster ≥1：由 design 的 Baseline 写入。
 
 身份字段：
 
@@ -45,8 +49,10 @@
   不记录 gate。它不是用户主线箭头上的一站。
 - bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
   implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
-- release 与 hotfix 可在 owner 上直接修复已确认的 open Bug，标为 `fixed`；
-  不另开 bugfix 分支，也不写 bugfix child Change。
+- release 与 hotfix 可修复已确认的 open Bug，标为 `fixed`；不另开 bugfix 分支，也不写 bugfix child Change。
+  - roster `0,0` 在 owner 上修。
+  - roster ≥1 先重入 design 修订 objectives 与 design，再由各路完成。
+    roster.dev ≥1 时不在 owner 实现。
 - 独立 `$mdf fix` 在当前 checkout 澄清、先记录有效红灯再修复并验证单个 open Bug，标为 `fixed`。
   - 不 start、不切分支、不走交付主线、不记录 gate、不 code-review、不 finish，
     也不由 deliver 内部委托。
@@ -109,6 +115,8 @@
 
 - 各路 stage gate 已在合入前按分支核验。
   - 同路径 `write-tests.json` / `implement.json` 冲突时保留先合入的版本。
+  - qa 为 `partition` 且 ≥2 时，integrate 合完全部 qa 后写入测试 fingerprint。
+    位置是 `gates/integration.json`。converge 以它判断测试是否变化。
 - review 时 owner 仍汇总裁定，不按票数。
 
 ### intent 参数与 models

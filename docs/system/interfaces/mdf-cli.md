@@ -74,6 +74,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `delivery` | 阶段 gate 与验证 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `project-verify` | 非 feature 全量验证与证据检查 | [交付阶段与验证](mdf-cli-delivery.md) |
+| `quick-run` | 任意分支 lint、build、quick，不写证据 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |

@@ -63,10 +63,13 @@
   - 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
 - 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
 - 步骤 1 按 kind 核对依据：feature 为 PRP；bugfix 为 Bug；release 为版本与 objectives；
-  hotfix 为版本与已确认的热修复范围。
+  hotfix 只核对版本，热修复范围在步骤 2 确认。
 - feature 与 release 的 objectives 由 start 写入，步骤 1 缺失即失败。
 - roster ≥1 的 bugfix/hotfix 缺 objectives.md 时步骤 1 不失败，由步骤 3 Baseline 先写入：
-  - bugfix 依据 Bug；hotfix 依据已确认的热修复范围（步骤 2 一并确认）。
+  - bugfix 依据 Bug；hotfix 写入步骤 2 确认的热修复范围。
+- design gate 已存在时（如 release/hotfix 经 target 记入新 Bug），步骤 2 确认修订。
+  - 步骤 3 原地修订 objectives 与 design 并重新记录 gate。
+  - `--auto-pilot` 自裁定。
 
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库，
 使两路从同一提交继续：

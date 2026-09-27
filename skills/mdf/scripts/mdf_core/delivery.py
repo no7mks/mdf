@@ -89,6 +89,11 @@ def record_stage(repo, root, data, args):
             if record.get("fingerprints", {}).get("design") != current["design"]:
                 raise MDFError("两路产出必须来自同一设计", code="stale_gate")
         original = gate(repo, root, "write-tests")["fingerprints"]["tests"]
+        roster = data["roster"]
+        if roster["qa"] >= 2 and roster["qa_strategy"] == "partition":
+            original = gate(repo, root, "integration").get("tests")
+            if not original:
+                raise MDFError("缺少多路测试合并基线", code="stale_integration")
         if original != current["tests"] and not args.test_approval:
             raise MDFError("测试或验证规则变化，需要用户批准记录", code="test_approval_required")
         current = require_green(repo, root, data)

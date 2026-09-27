@@ -42,7 +42,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-先运行 `delivery status`，读取 `roster`，按下表确定编写位置。
+先运行 `delivery status --repo <owner 绝对路径>`。
+角色分支合入 owner 前没有 delivery.json。
+读取 `roster`，按下表确定编写位置。
 
 | `roster.qa` | 编写位置 |
 | --- | --- |

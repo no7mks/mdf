@@ -64,7 +64,10 @@ owner 另开第二个。subagent 将会话根切到 owner。
   `worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
 - 任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，以及适用的
   `--auto-pilot` / `--yolo`。
-- 结束后当前 Agent 再运行 `delivery check --stage converge`；不以完成摘要替代。
+- 结束后当前 Agent 再运行 `delivery check --stage code-review`。
+  - 它要求 converge gate 与全绿。
+  - 确认 `gates/converge.json` 已被 Git 跟踪。
+  - 不以完成摘要替代。
 
 需测试修改批准时 subagent 停止并交出未决；当前 Agent 在主会话确认后 resume
 同一 subagent，传入 `--test-approval <用户确认与修改理由>`。
@@ -87,8 +90,11 @@ owner 另开第二个。subagent 将会话根切到 owner。
   - 吸收优点在集成后于 owner 上按记录改写；涉及测试的改写属测试修改，按「修改授权」取得批准。
 - `partition`：不选 winner、不传 `--qa-branch` / `--dev-branch`；
   脚本按 index 把该侧全部分支 no-ff 合入 owner。
+  - qa ≥2 时脚本在合完全部 qa 后把测试 fingerprint 写入 `gates/integration.json`；
+    步骤 4 以它而非第一路 write-tests gate 判断测试是否变化。
 - 同路径 stage gate 冲突保留先合入版本；其余冲突视为分工重叠，保留现场并停止。
-- 完成后提交 `gates/integration.json`，再删除全部角色 worktree 和分支（含 `best-of-n` 未入选者）。
+- 合并完成后由脚本提交 `gates/integration.json`，再删除全部角色 worktree 和分支
+  （含 `best-of-n` 未入选者）；Agent 不手工提交该记录或清理角色。
 
 续办与清理：
 
@@ -111,6 +117,9 @@ owner 另开第二个。subagent 将会话根切到 owner。
 
 1. 运行 `delivery verify`；脚本依次执行 lint、build、quick、smoke，suite 超预算即失败。
 2. 再以 `suite-run` 执行 design policy `suites` 所列每个 named suite 的文档化入口命令。
+
+- roster ≥1 的非 feature 同样经 `delivery verify` 只跑到 smoke；release suite 有意留给其后
+  deliver 的 Verify 阶段执行。
 
 - 修复循环可按该页的命令模板点名执行 test case 或 test 定位失败。
 - 📌 最终必须 Core 与 named suite 全部通过；未跑 named suite 不得记录全绿。

@@ -112,9 +112,9 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
-    assert "已初始化时只允许以下状态" in entry
-    assert "`manifest.schema`、`layout.migrate` 与 `manifest.verification` finding；" in entry
-    assert "- 或 ready 无 finding。" in entry
+    assert "doctor finding 不是拒绝理由" in entry
+    assert "全部 finding 记入盘点清单，由步骤 3 逐项处置" in entry
+    assert "`path.symlink`）报告后停止" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
 
 

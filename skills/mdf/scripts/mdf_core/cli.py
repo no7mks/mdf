@@ -201,11 +201,15 @@ def build_parser() -> argparse.ArgumentParser:
     worktree.add_argument("--handoff", action="store_true")
     worktree.set_defaults(func=command_worktree_check)
 
-    from .project_verify import command_project_verify, command_suite_run
+    from .project_verify import command_project_verify, command_quick_run, command_suite_run
     verification = subparsers.add_parser("project-verify")
     verification.add_argument("action", choices=("run", "check"))
     verification.add_argument("--repo", required=True)
     verification.set_defaults(func=command_project_verify)
+
+    quick_run = subparsers.add_parser("quick-run")
+    quick_run.add_argument("--repo", required=True)
+    quick_run.set_defaults(func=command_quick_run)
 
     suite_run = subparsers.add_parser("suite-run")
     suite_run.add_argument("--repo", required=True)
