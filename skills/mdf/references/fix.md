@@ -11,7 +11,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 失败/缺失 ─────────────→ [停止并报告]
-                 ├──── fixed 且回归仍通过 ────→ 5 Record
+                 ├──── fixed 且回归仍通过 ────→ [只读核对后结束]
                  │
                  ▼ open，或 fixed 但验证失败
 ┌──────────────────────────────────┐
@@ -53,7 +53,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 脚本 | 核对 ready、Bug 与 `--yolo` | doctor、list、参数 | open 或未过则 2；fixed 仍通过则 5 | 停止并报告 |
+| 1 | Check | 脚本 | 核对入口、分支、Bug 与回归 | doctor、list | open 或未过则 2；fixed 仍过则只读结束 | 停止并报告 |
 | 2 | Clarify | 约束 | 内部 clarify 修复范围与方案 | 共同理解 | 3 | 不修复，停止 |
 | 3 | Reproduce | 约束 | 确认或编写该 Bug 的有效红灯测试 | 命令、退出状态、失败断言 | 4 | 停止并报告 |
 | 4 | Repair | 约束 | 修复实现直到红灯转绿并验证 | 命令、退出状态、结果 | 5 | 未满三轮且下一步明确则 4；否则停止 |
@@ -66,6 +66,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 本节确定入口前置、Bug 定位与写入边界。
 
 - 解析 `REPO_ROOT` 并运行 `doctor`。验收：`normal_workflows_allowed: true`。
+- 运行 `git branch --show-current`：为 `master` 或为空（detached HEAD）时在任何写入前停止并报告。
 - 参数：
   - 位置参数恰好一个 Bug ID；`--yolo` 可在其前或后。
   - 其他 `--` token 按入口未知参数停止。
@@ -74,13 +75,15 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   按完整 ID 命中唯一对象。
   - 也可用去掉 `bug-` 前缀的本体或 `path` 文件名 slug 各匹配一次。
   - 不匹配 title。不逐篇翻阅 `docs/bugs/`。
+- 回归检查（仅 `fixed`）：按「红灯」第 1 条重跑该 Bug 所需回归证据记录的命令或 test。
+  - 全部通过为仍通过，任一失败为验证失败；缺可执行命令时停止并报告。
 - 按对象状态分流：
 
 | 状态 | 去向 |
 | --- | --- |
 | `closed` 或 `rejected` | 停止 |
 | `open` | 进入步骤 2 |
-| `fixed` 且回归验证仍通过 | 到步骤 5 核对后结束，不重写 |
+| `fixed` 且回归验证仍通过 | 只读核对对象与回归结果后结束，不写对象、不提交 |
 | `fixed` 但验证失败 | 进入步骤 2 续修 |
 
 - ❌ 边界：
@@ -144,6 +147,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 2. 运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并核对 `fixed` 与完整 diff。
    - 校验退出 0 且零 finding。
 3. 按 `common.md` 提交本次红灯测试、修复、回归验证与对象状态；不夹带无关改动。
+   - 提交说明须含完整 Bug ID；release/hotfix 上的直接修复同样适用，供 verify-fix 定位审查范围。
    - 摘要须区分已验证结论与未验证项，并写明红灯命令与转绿证据。
 
 验收：有效红灯曾失败、现已通过、`fixed` Bug、校验零 finding、提交或明确无新改动。

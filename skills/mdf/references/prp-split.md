@@ -32,8 +32,9 @@
 │ 4 Apply                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ──────────────→ [结束]
-                 └──── 写入失败已恢复 ────→ [停止并报告]
+                 ├──── 通过 ─────────────────────────→ [结束]
+                 ├──── 写入失败已恢复 ───────────────→ [停止并报告]
+                 └──── 提交或 planning land 失败 ────→ [保留现场并报告]
 ```
 
 ## 工作流（唯一执行契约）
@@ -45,9 +46,9 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Inspect | 脚本 | 运行 doctor 与 planning ensure，切到 planning | 工作区、clean | 2 | 未切换留 1；其他停止 |
-| 2 | Design | 约束 | 确认拆分单元与全量 downstream | 确认、覆盖、downstream | 需拆分 3；无需则结束 | 停止并报告 |
+| 2 | Design | 约束 | 确认拆分单元，dry-run 取全量下游 | 确认、覆盖、downstream | 需拆分 3；无需结束 | 停止并报告 |
 | 3 | Preview | 脚本 | 确认 clean，预检并展示候选 | diff、非预览写入确认 | 确认写入 4；仅预览结束 | 失败或未确认则停止 |
-| 4 | Apply | 脚本 | 改写下游依赖；提交后 planning land | 校验、提交、land 或恢复 | 结束 | 恢复原文件后停止并报告 |
+| 4 | Apply | 脚本 | 改写下游依赖；提交后 land | 校验、提交、land | 结束 | 写入失败已恢复则停；提交或 land 失败留现场 |
 
 ## 术语与数据结构
 
@@ -72,17 +73,27 @@
 
 子项须能独立实现与验收，共同覆盖原范围，不拆成文件/操作任务，也不额外扩张范围。
 
-### 拆分输入与状态结果
-
-<a id="s3"></a>
-
-本节规定子项 ID 的取得方式与拆分输入文件的字段。
-
 - 在 planning 上一次调用
   `make-id --type proposal --repo "$REPO_ROOT" --slug <子一> --slug <子二>`。
   - 用重复 --slug 提供全部子项；从返回的 items 取得连续、唯一的 ID 与 filename。
   - 该调用只读、不预占编号。
   - ❌ 不得逐个调用后拼装，也不得先写占位对象。
+- 输入 JSON（字段见下节）写到仓库外，如 `mktemp -d` 建的系统临时目录；
+  ❌ 不得写入工作区，以免破坏 `prp-split` 的 clean 前置。
+- 全量 downstream（含 archive 历史对象）按以下方式取得：
+  1. 先以 `list --repo "$REPO_ROOT" --type proposal` 中 `depends_on` 含原 PRP 的 active 对象填初始映射。
+  2. 运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run`。
+  3. 失败且返回 `details.required` 时，该列表即全量下游 ID；逐项确认替代映射，更新文件后重跑。
+  4. 不再返回 `details.required` 即 downstream 已与全量一致；其他失败停止并报告。
+
+验收：用户确认的拆分单元与范围覆盖，以及 downstream 核对结果。
+
+### 拆分输入与状态结果
+
+<a id="s3"></a>
+
+本节规定拆分输入文件的字段与预检。
+
 - 输入 JSON 文件包含 source、children、downstream、rationale：
 
 | 字段 | 要求 |
@@ -101,9 +112,10 @@
 本节规定写入结果、`milestone` 继承与收尾。
 
 - 原对象置 replaced、记录 replaced_by；子对象为 draft。
-- 预检通过才整体写入，写入失败恢复原文件。
+- 预检通过才整体写入；写入失败时 CLI 恢复原文件，停止并报告。
 - 子对象继承原 PRP 的可选 `milestone`。
   - 原对象无该字段时子对象也省略，不生成 `null`。
   - 需要调整阶段归属时，在用户确认依据后修订子 PRP；milestone 不参与依赖分配。
 - 已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
 - 非预览写入成功后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+  - 提交或 `planning land` 失败时已写入的拆分保留在工作区，不回滚；保留现场并报告实际状态。

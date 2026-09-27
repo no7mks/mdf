@@ -21,8 +21,8 @@
 │ 3 Classify                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 命中既有对象 ────→ [停止并交接]
-                 ├──── 无法判定 ────────→ 2 Resolve source
+                 ├──── 全部命中既有对象 ────→ [停止并交接]
+                 ├──── 无法判定 ────────────→ 2 Resolve source
                  │
                  ▼ 分类明确
 ┌──────────────────────────────────┐
@@ -68,10 +68,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 解析 REPO_ROOT 并运行 doctor | doctor 结构化结果 | 2 | 停止 |
 | 2 | Resolve source | 约束 | 确认一次性来源及采用范围 | 来源、已确认范围 | 3 | 等待澄清，2 |
-| 3 | Classify | 脚本 | 用 `list` 查重并区分偏差与意图 | list 结果、对象清单 | 4 | 命中则停止；无法判定回 2 |
+| 3 | Classify | 脚本 | `list` 查重、剔除命中项，区分偏差与意图 | list 结果、对象清单 | 4 | 全部命中停；无法判定回 2 |
 | 4 | Clarify | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
 | 5 | Confirm list | 约束 | 展示对象、边界、排除项与依赖并确认 | 用户明确确认的清单 | 6 | 取消停；来源变 2；否则事实 4 |
-| 6 | Create objects | 脚本 | Proposal 进 planning；Bug 按归属写入 | 对象、零 finding、diff | 7 | 保留现场，停止 |
+| 6 | Create objects | 脚本 | Bug 按归属写；Proposal 进 planning 一次取 ID | 对象、零 finding、diff | 7 | 保留现场停止 |
 | 7 | Report | 约束 | 报告对象、范围、依赖和后续显式入口 | 结果摘要 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -107,7 +107,8 @@
 先运行 `list --repo "$REPO_ROOT"` 取得 active Proposal 与 Bug 的 `id`、`title`、`status`，
 对照来源查重：
 
-- 命中既有对象时不新建，改为提示 `$mdf prp review` 或在既有 Bug 中补充。
+- 只剔除命中既有对象的候选项，不新建；对每项提示 `$mdf prp review` 或在既有 Bug 中补充。
+- 其余候选项继续分类；全部候选项都命中时停止并交接。
 - 不逐篇翻阅 `docs/proposals/` 与 `docs/bugs/`。
 
 从来源和仓库证据判定对象类型、数量与独立交付边界：
@@ -117,9 +118,9 @@
   - 能分开验收的结果优先拆开；不按文件或开发步骤机械拆分，不扩张来源范围。
   - 已足够小的交付单元无需继续拆分。
 
-验收：对象清单。
+验收：对象清单与剔除项。
 
-异常与交接：命中既有对象时停止并交接，不回到 2。无法判定类型或边界时回到 2。
+异常与交接：全部候选项命中既有对象时停止并交接，不回到 2。无法判定类型或边界时回到 2。
 
 <a id="s4"></a>
 
@@ -140,11 +141,12 @@
 
 **确认**
 
-展示对象清单、边界、排除范围、Proposal 依赖。
+展示对象清单、边界、排除范围、步骤 3 剔除项与 Proposal 依赖。
 
-- `depends_on` 仅列以下两类值：
+- `depends_on` 仅列以下三类值：
   - 直接依赖的 draft、ready 或 implemented/released Proposal ID。
   - 需要等待整阶段完成时的已有 milestone 值。
+  - 本次清单中另一新 Proposal 的临时引用 `new:<slug>`（尚无 ID，步骤 6 替换）。
 - 候选 ID 与 milestone 取自步骤 3 的 `list` 输出。
 - 逐条说明需要上游提供的结果；优先顺序不能作为依赖依据。
 - 同属一个阶段不能写成对其中单个 PRP 的依赖。
@@ -178,9 +180,11 @@
   1. 运行 `planning ensure --repo "$REPO_ROOT"`。
   2. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`
      （分支 `planning`），重新解析目标根。
-  3. 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
-     按已有最大序号加一生成 ID。
-  4. 以模板写入 `docs/proposals/`。
+  3. 一次调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <a> --slug <b> …`。
+     它为全部新 Proposal 按已有最大序号加一生成 ID。
+     - 多项时从返回的 `items` 取 ID 与 filename；仅一项时取顶层 `id` 与 `filename`。
+     - ❌ 不得逐项取 ID 后再写入，也不得先写占位对象。
+  4. 把确认清单中的 `new:<slug>` 替换为对应 ID，以模板写入 `docs/proposals/`。
   5. 提交后运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 - 清单同时含两类时，先按归属完成 Bug 并提交，再切换 planning 完成 Proposal。
 
@@ -191,7 +195,7 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 1. 运行 `validate --repo "$REPO_ROOT" --scope targeted`。
 2. 回读对象并对照模板、确认清单与完整 diff。
-3. 核对 schema、必填章节、初始状态和依赖。
+3. 核对 schema、必填章节、初始状态和依赖；`depends_on` 不得残留 `new:` 临时引用。
 
 验收：所有新建对象、校验退出 0 且零 finding、回读结果与 diff。
 
@@ -204,7 +208,7 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 **报告**
 
-展示新建对象、确认事实、排除范围和依赖。
+展示新建对象、确认事实、排除范围、依赖，以及步骤 3 剔除的命中项与其交接入口。
 
 验收：会话摘要。
 

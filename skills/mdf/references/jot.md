@@ -56,16 +56,17 @@
 │ 7 Create object                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [保留两者，停止]
+                 ├──── Jot 不在写入 checkout ────→ [保留 Jot，停止并报告]
+                 ├──── 失败/缺失 ────────────────→ [保留两者，停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
 │ 8 Promote                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ────────────→ [交接并结束]
-                 ├──── 首次校验失败 ────→ [保留现场，停止]
-                 └──── 二次校验失败 ────→ [回滚到步骤 7 完成状态，停止]
+                 ├──── 通过 ─────────────────→ [交接并结束]
+                 ├──── 复验失败 ─────────────→ [保留两者，停止]
+                 └──── 删 Jot 后校验失败 ────→ [恢复 Jot 到步骤 7 完成状态，停止]
 ```
 
 ## 工作流（唯一执行契约）
@@ -84,8 +85,8 @@
 | 4 | Select jot | 约束 | 按 jot-ID 读取唯一条目的完整 marker | 唯一 ID 与原文 | 5 | 留在 4 消歧 |
 | 5 | Clarify | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | Confirm | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
-| 7 | Create object | 脚本 | 确认 slug，生成 ID、写初始对象并首次校验 | 对象、首次校验 | 8 | 保留两者，停止 |
-| 8 | Promote | 脚本 | 复验、提交；Proposal 再 land | 校验、diff、提交、land | 交接并结束 | 首次保留；二次回滚停止 |
+| 7 | Create object | 脚本 | 切到写入根、核对 Jot，生成 ID 写对象 | 写入根、Jot、校验 | 8 | Jot 缺失停；否则保留两者 |
+| 8 | Promote | 脚本 | 复验、删 Jot 后校验、提交，再 land | 两次校验、提交 | 交接并结束 | 复验失败保留；否则恢复 Jot |
 
 ## 术语与数据结构
 
@@ -170,7 +171,7 @@
 
 异常与交接：停止，保留 Jot。
 
-### 状态与同批提交
+### 创建对象
 
 <a id="s7"></a>
 
@@ -179,37 +180,55 @@
 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug 中唯一，
 且不得与对象 ID 同形。
 
+先确定写入 checkout 并重新解析目标根：
+
 - 提升为 Proposal 时：
-  1. 先运行 `planning ensure`。
-  2. 按 `references/common.md` 的「切换工作区」规则切换到 planning 工作区。
-  3. 再调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`。
-- 提升为 Bug 时按 `common.md` 归属处理，调用 `make-id --type bug --slug <slug>`。
+  1. 运行 `planning ensure --repo "$REPO_ROOT"`。
+  2. 按 `references/common.md` 的「切换工作区」规则切换到 JSON `worktree`（分支 `planning`）。
+  3. 以该 worktree 重新解析 `REPO_ROOT`；其后 `make-id`、validation 与 `planning land` 均用新根。
+- 提升为 Bug 时按 `common.md` 归属确定写入分支。
+  - 需切换时按同一规则切换，并重新解析 `REPO_ROOT`。
 
-Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。
+再核对 Jot：
 
-验收：新对象与首次 validation。
+- 新 `REPO_ROOT` 的 `docs/JOTS.md` 须含与步骤 4 相同的完整 marker。
+- 该条须已在此 checkout 的 `HEAD` 提交，且工作区未改动。
+- 不满足（Jot 只在其他分支或尚未提交）时不写对象，保留 Jot 并停止。
+- 报告缺失位置，并提示先提交或合入该 Jot 再重新执行 `$mdf jot promote`：
+  - Proposal 须先让 Jot 合入 develop，由 `planning ensure` 带入 planning；
+  - Bug 须先在写入分支提交该 Jot。
 
-异常与交接：保留新对象、原 Jot 与现场，并报告 findings。
+核对通过后生成 ID：
+
+- Proposal：`make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`。
+- Bug：`make-id --type bug --slug <slug>`。
+- Proposal 写为 `draft`，Bug 写为 `open`，运行写入校验（`targeted validation`）。
+
+验收：写入根、Jot 核对结果、新对象与写入校验。
+
+异常与交接：Jot 核对失败时按上文停止；其他失败保留新对象、原 Jot 与现场，并报告 findings。
+
+### 同批提交
 
 <a id="s8"></a>
 
 **提升**
 
-不重写对象。
+不重写对象，不改状态：Proposal 保持 `draft`，Bug 保持 `open`。
 
-1. 在步骤 7 已写入的 draft/open 上先运行 `targeted validation`。
-2. 通过后 Proposal 转为 `ready`；Bug 保持 `open`。
-3. 然后删除选中 Jot marker，再运行第二次 `targeted validation`。
+1. 在步骤 7 已写入的 draft/open 上运行复验（`targeted validation`）。
+2. 复验通过后删除选中 Jot marker，再运行删 Jot 后校验（`targeted validation`）。
 
-第一次校验失败时尚未改动状态与 Jot，保留 draft/open 对象与原 Jot 并停止。
+复验失败时尚未改动 Jot，保留对象与原 Jot 并停止。
 
-第二次校验失败时转状态与删 Jot 已落盘。此时按本 intent 恢复规则回滚到
-步骤 7 完成状态（恢复 draft/open 状态与原 Jot marker），不提交。
+删 Jot 后校验失败时恢复原 Jot marker，回滚到
+步骤 7 完成状态，不提交。
 
-验收：两个文件完整 diff 与两次验证。
+验收：两个文件完整 diff、复验与删 Jot 后校验结果。
 
 异常与交接：
 
-- 第一次失败保留两者，第二次失败先回滚再保留两者，均报告 findings。
+- 两种失败均保留对象与原 Jot，并报告 findings。
 - 成功时将本次创建与移除作为同一个独立 commit 提交。
 - 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+  - 然后提示用户显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`。

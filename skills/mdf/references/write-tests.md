@@ -29,7 +29,7 @@
 ## 工作流（唯一执行契约）
 
 读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
-CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
+CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`；角色模式下为角色 worktree 路径。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -49,9 +49,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 | `roster.qa == 0` | 在 owner 编写测试，不切角色树 |
 | `roster.qa ≥ 1` | 读取 `worktrees.qa` 列表；缺对应树则停止 |
 
-- 独立调用或只续办一路时用该项的 `path` 与 `branch`。
-- deliver 对列表每一项分派独立 subagent，不把兄弟路径传入任务。
-- 用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作。
+- 独立调用时列表仅一项则用该项的 `path` 与 `branch`；≥2 项时用会话当前所在的 qa worktree，
+  不在任一 qa worktree 中则询问 index。
+- deliver 只续办一路时用该路；对列表每一项分派独立 subagent，不把兄弟路径传入任务。
+- 用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作；delivery CLI 的 `--repo` 也传该绝对路径。
 - 角色树先运行下列命令合入 owner；已在该 worktree 时仍先合并。冲突保留现场。
   - `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo <该绝对路径> --commit <owner 完整分支名>`
 - ❌ `roster.qa ≥ 1` 时不得在 feature 上编写或补写测试（指 owner，不是 kind）。

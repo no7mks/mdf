@@ -41,7 +41,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 确认 start 记录与 objectives | PRP 或 Bug、start 记录、objectives | 2 | 停止并报告 |
+| 1 | Check | 约束 | 确认 start 记录与 kind 依据 | start 记录、kind 依据、适用的 objectives | 2 | 停止并报告 |
 | 2 | Clarify | 约束 | 委托 clarify，确认设计、测试策略及双方共用代码底座 | 用户确认的设计与底座方案 | 3 | 停止并报告 |
 | 3 | Baseline | Subagent | 写设计、底座并提交基线 | gate、底座、基线提交 | 结束 | 缺确认回 2；可修正则 3；否则停 |
 
@@ -62,8 +62,11 @@
   - 没有对应事实页时写明本次将新增哪些页面。
   - 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
 - 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
-- feature 与 release 的 objectives 由 start 写入；
-  bugfix/hotfix 在 roster ≥1 时若缺则本步先写。
+- 步骤 1 按 kind 核对依据：feature 为 PRP；bugfix 为 Bug；release 为版本与 objectives；
+  hotfix 为版本与已确认的热修复范围。
+- feature 与 release 的 objectives 由 start 写入，步骤 1 缺失即失败。
+- roster ≥1 的 bugfix/hotfix 缺 objectives.md 时步骤 1 不失败，由步骤 3 Baseline 先写入：
+  - bugfix 依据 Bug；hotfix 依据已确认的热修复范围（步骤 2 一并确认）。
 
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库，
 使两路从同一提交继续：
@@ -88,6 +91,7 @@ owner 另开第二个。
   `worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
 - 任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，
   以及步骤 2 已确认的设计与底座方案原文。
+  - hotfix 另写入已确认的热修复范围。
 - 将会话根切到 owner。
 
 执行约束：
@@ -96,7 +100,8 @@ owner 另开第二个。
 - 缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
 - policy/suite 可修正时由该 subagent 内部留在步骤 3。
 - `--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
-- subagent 只写 design.md、policy、共用代码底座、design gate 与本阶段提交。
+- subagent 只写 design.md、policy、共用代码底座、design gate 与本阶段提交；
+  roster ≥1 的 bugfix/hotfix 缺 objectives.md 时另先写入它。
 
 结束后当前 Agent 再运行 `delivery check --stage design`；不以完成摘要替代。
 gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留现场并停止。

@@ -79,26 +79,28 @@
 
 #### 范围
 
-它只读：不写入、移动、提交、生成持久报告或执行 manifest `verification`。
+除委托确认记录外只读：本流程不写入、移动、提交、生成持久报告或执行 manifest `verification`；
+步骤 7 的确认记录由调用方写入并提交。
 
-`--scope` 三选一，与 fact update 共用：
+`--scope` 三选一，与 fact update 共用；列出 `<path>...` 即 `paths`，
+与 `--scope full` 或 `--scope branch` 同用时停止询问：
 
 - `branch`：独立调用默认。交付分支以 `delivery.json` 的 `start_commit` 为 `--base`；
   否则 CLI 取 `merge-base develop HEAD`。finish release 传入上一正式发布为
   `--base`。范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
   引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
-- `paths`：调用方给出精确实现/文档路径；finish 与 fact update 委托用此形式。
+- `paths`：调用方或独立调用给出精确实现/文档路径；未给路径时停止询问。
 
 确定类型和状态：
 
 | 调用方 | 范围与状态 |
 | --- | --- |
-| fact update 委托 | 使用其明确范围，允许审阅调用方的同次写入 |
+| fact update 委托 | 与 fact update 相同的 `--scope`、`--base` 与路径，允许审阅调用方的同次写入 |
 | direct 调用 | manifest 必须 `ready` |
 | migrate | `full`，允许 `initializing` |
 | finish 的 release | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
-| finish 的其他分支 | `paths` 范围审阅，不得改用 `full` |
+| finish 的其他分支 | 经 fact update 委托，与其 `--scope` 相同（`paths` 或等价 `branch`），不得改用 `full` |
 
 首次发布无上一版本时停止确认初始基线。
 审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
@@ -109,10 +111,19 @@
 
 #### 映射
 
-调用 `fact-audit --scope <scope>`，必须显式传 `--scope`，不得省略。
+按 scope 运行下列命令之一，必须显式传 `--scope`，不得省略：
+
+```bash
+python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope full
+python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope branch [--base <base>]
+python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths \
+  [--implementation-path <实现路径>]... [--document-path <文档路径>]...
+```
 
 - 独立调用省略时传 `--scope branch`。裸 CLI 省略时仍为 `full`，本流程不使用该默认。
-- `branch` 可带 `--base`，`paths` 带精确路径，`full` 不带路径。
+- `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 `merge-base develop HEAD`。
+- `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，实现根下已跟踪文件传
+  `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
 - CLI 按 `repository-contract.md` 的体积表检查 `size.hard`。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，
   不合则 `overview.core_modules` finding：
@@ -123,7 +134,7 @@
 
 验收：范围、文档—`evidence` 映射、ignore 匹配、体积、核心模块表、入口指向、warnings、findings。
 
-通过条件：得到可解析 payload。
+通过条件：得到可解析 payload；findings 非空时 CLI 退出码为 2，仍按 payload 处理。
 
 - `size.hard`、`overview.core_modules`、`project.entry_links` 不在本步停止。
 - migrate 仅 `manifest.initializing` 也继续。
@@ -225,6 +236,9 @@
 
 验收：validation findings。
 
+通过条件：输出可解析且无 finding（migrate 仅余 `manifest.initializing`）；有 finding 时 CLI
+退出码为 2，按未通过处理；无输出或不可解析同样未通过。
+
 异常与交接：独立调用报告并停止；内部委托返回未通过，调用方走失败分支。
 
 <a id="s7"></a>
@@ -237,17 +251,17 @@
 
 - 确认单独提问，只问本次审阅结论是否确认，不与 Bug 分诊、收口、补验等其他决定放在同一问。
 - 用户答复其他议题不视为确认。
-- 由调用方委托时，把确认原话与时间写入调用方材料目录的 `fact-audit.md`，
-  并随调用方材料提交。
-  - 如 `changes/unreleased/<slug>/fact-audit.md`。
-- 独立调用只在会话中确认。
+- 本流程只向调用方返回确认原话与时间，不落盘。
+  - 有材料目录的调用方写入并提交确认记录；finish（含经 fact update 委托）写
+    `changes/unreleased/<slug>/fact-audit.md`。
+  - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。
+validation 已由步骤 6 判定通过，本步不再复核。
 
 - 无语义 finding（含结构 finding）。
 - 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
 - 无未确认 warning。
-- validation 无阻断 finding。
 
 该确认不跨调用复用。
 

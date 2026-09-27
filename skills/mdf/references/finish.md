@@ -89,11 +89,13 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-读取 `references/common.md`、`references/repository-contract.md` 与
-`references/object-contract.md`。步骤 2 需要审查时读取并内部执行
-`references/code-review.md`。步骤 3 读取并内部执行 `references/fact-update.md`。
-步骤 4 已收口路径需要审阅时读取并内部执行 `references/fact-audit.md`。
-步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
+- 读取 `references/common.md`、`references/repository-contract.md`：
+  - 另读 `references/object-contract.md` 与 `references/delivery-contract.md`。
+- 步骤 2、4 需要非 feature 补验时读取并执行 `references/deliver.md`「先测后审」（Verify 阶段）。
+- 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
+- 步骤 3 读取并内部执行 `references/fact-update.md`。
+- 步骤 4 已收口路径需要审阅时读取并内部执行 `references/fact-audit.md`。
+- 步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -105,7 +107,7 @@
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 约束 | 待收入 fixed 先委托 verify-fix，再准备 closures | 完整覆盖、接受记录 | 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | Hand off | 约束 | 提交并核对交付条件 | clean、证据 | 无关口 10；须确认回 deliver 6 | feature/bugfix 回 2；其余停 |
+| 9 | Hand off | 约束 | 提交并复核 | clean | 无关口 10；须确认回 deliver 6 | 主线前进时 feature/bugfix 回 2；其余停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构
@@ -139,7 +141,7 @@
   - 版本根不存在，且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。
   - 版本根已跟踪、已提交，且 version、change_kind、source_branch 与当前分支完全一致、
     latest_release 等于目标版本时：
-    - 运行 full validation 并核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
+    - 运行 full validation 并按步骤 4 已收口规则核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
   - 版本根提交后有未纳入收口的交付改动、记录缺损或状态不一致时停止，不覆盖版本目录。
 
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
@@ -165,6 +167,9 @@
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
 - 不可跳过时：
+  - bugfix/release/hotfix 委托前先运行 `project-verify check`；
+    集成或其他改动使证据过期时，先按 Verify 阶段修到全绿并提交，再委托 code-review。
+    feature 沿用 code-review 的 converge 与 `stale_verification` 规则。
   - 上轮多人结论必须已由 owner 汇总进已采纳/未解决清单并固定 final_head，
     不得把上轮多份原文交给本轮唯一 reviewer 去合并。
   - 然后以集成后的 HEAD 执行增量新一轮 code-review：左端点为集成前 final_head，重新固定 review_head。
@@ -172,7 +177,7 @@
   - 不复用集成前报告，也不将集成当作旧审查的修复续办。
   - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
 - 主线已包含且审查证据有效时无需重复合并或审查。
-  - 证据缺失或过期时内部执行 code-review，通过后继续本次 finish。
+  - 证据缺失或过期时内部执行 code-review（非 feature 先经 Verify 阶段），通过后继续本次 finish。
   - feature 仍须满足 code-review 的 design/converge 前置条件。
 - 📌 四种分支均须有完整且有效的各轮应派份数独立审查、主 Agent 裁定、修复复核与验证记录。
 - 已收口 release/hotfix 只核对已有集成与审查证据。
@@ -214,9 +219,13 @@
 **审阅**
 
 - feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
-- 其他分支运行 `project-verify check --repo "$REPO_ROOT"`。
+- bugfix 与待收口 release/hotfix 运行 `project-verify check --repo "$REPO_ROOT"`。
+- 已收口 release/hotfix 不运行 `project-verify check`（证据已随收口移出 `changes/unreleased/`），改为核对：
+  - `changes/<semver>/code-review.md` 的 final_head 与同目录 `code-review.verification.json` 全绿。
+  - final_head 到 HEAD 的提交只改 `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`；
+    否则按收口状态不一致停止。
 - 两者返回 `stale_gate`、`stale_verification` 或证据过期时，在本步骤补验，先测后审：
-  - bugfix/hotfix/release 按 `deliver.md`「先测后审」修到全绿，feature 按 converge 规则重验。
+  - bugfix/hotfix/release 先按 `deliver.md`「先测后审」（Verify 阶段）修到全绿，feature 按 converge 规则重验。
   - 再内部从 `code-review.md` 步骤 1 执行审查后复核。
     - 有完整上轮记录则增量新一轮，否则首轮；不把集成当修复续办。
   - 不回退本流程步骤编号；语义或实现变化必须补审补验。
@@ -268,7 +277,8 @@
 - 委托 verify-fix：
   - 清单非空时内部执行 `references/verify-fix.md`，传入这些 ID。
   - 未通过则走本步骤失败，不准备 closures，不关闭对象。
-  - 已有记录且当前 HEAD 上复现用例与审查范围仍有效则视为通过。
+  - 已有记录按 verify-fix「记录」的有效性规则仍有效则视为通过。
+    - 有效指记录 HEAD 到当前 HEAD 只改记录文件、`docs/` 或 `changes/` 材料。
   - 无待收入 `fixed` Bug 则跳过委托。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
   - 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
@@ -315,6 +325,7 @@
   - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
 - 按 code-review 的证据规则再次核对最终 HEAD，防止收口期间的实现改动遗漏审查。
+  - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`，不运行 `project-verify check`。
   - 证据缺失或过期时停止，不进入步骤 10。
 - 再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。

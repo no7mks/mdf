@@ -31,8 +31,8 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check repo | 约束 | 解析目标根与 depth，要求 ready | 目标根、depth、manifest ready | 2 | 停止并报告 |
-| 2 | Run CLI | 脚本 | 运行 tree CLI | 退出状态、依赖视图 | 3 | 停止并报告 |
+| 1 | Check repo | 约束 | 解析目标根与 depth | 目标根、depth | 2 | 停止并报告 |
+| 2 | Run CLI | 脚本 | 运行 tree CLI（校验 depth 与 ready） | 退出状态、依赖视图 | 3 | 报告原因与所需操作，停止 |
 | 3 | Render tree | 约束 | diagram 入 text 围栏，table 原样成表格 | 树、索引、hidden | 结束 | 缺字段或格式不符则停止 |
 
 `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行本流程；
@@ -48,8 +48,8 @@
 - 运行 `python3 "$MDF_ROOT/scripts/mdf.py" tree --repo "$REPO_ROOT" --depth <N>`。
   - 默认 3，N 为正整数。
   - depth 只截断展示，不改变依赖判定。
-- 要求 `manifest` ready。
-  - 参数非法或仓库未就绪时报告原因和所需操作，不自动初始化。
+- CLI 要求 `manifest` ready 且 depth 为正整数。
+  - 步骤 2 CLI 因参数非法或仓库未就绪失败时，报告原因和所需操作，不自动初始化。
 - 依赖满足条件：
   - implemented/released 依赖视为满足。
   - milestone 依赖在该阶段不存在 draft 或 ready PRP 时满足。

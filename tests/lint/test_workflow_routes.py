@@ -282,7 +282,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert "next 不代替方案确认、初始化启用确认或原流程要求的 Git 操作授权" in text
     assert "一次 next 只续办一个所选 intent" in text
     assert "用户仅要求查看时保持只读" in text
-    assert "feature 交付步骤" in text
+    assert "Gitflow 交付分支（含角色分支）" in text
     assert "问号蓝图" not in text
     assert "$mdf next?" in text
     assert "由选择树路由到 tree" in text
@@ -389,11 +389,11 @@ def test_jot_promote_revalidates_without_rewriting():
     jot = workflow("jot")
     assert "不重写对象" in jot
     assert "在步骤 7 已写入的 draft/open 上" in jot
-    assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
+    assert "Proposal 保持 `draft`，Bug 保持 `open`" in jot
     assert "回滚到\n步骤 7 完成状态" in jot
     table = rows(jot)
     assert (table[4][1], table[4][2]) == ("Clarify", "约束")
-    assert "首次保留；二次回滚停止" in table[7][6]
+    assert "复验失败保留；否则恢复 Jot" in table[7][6]
 
 
 def test_clarify_unavailable_facts_stop_like_cancel():

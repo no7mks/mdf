@@ -90,7 +90,8 @@ planning 工作区时留在本步。
 **对象**
 
 - 接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象。
-- 运行 `list --repo "$REPO_ROOT" --type proposal` 对照 `title` 与正文查重。
+- 运行 `list --repo "$REPO_ROOT" --type proposal`，以用户输入的标题与正文对照输出中的 `title` 查重；
+  不读取既有对象正文。
   - 命中既有 PRP 时不新建，提示 `$mdf prp review`。
   - 该输出同时作为步骤 3、4 依赖候选与 milestone 值的来源，不逐篇翻阅 `docs/proposals/`。
 - 外部想法、当前聊天上下文或外部文档必须显式调用 `$mdf intake`。

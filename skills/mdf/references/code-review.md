@@ -38,7 +38,7 @@
 
 ## 工作流（唯一执行契约）
 
-读取 `references/common.md`；feature 另读 `references/delivery-contract.md`；
+读取 `references/common.md` 与 `references/delivery-contract.md`；
 涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
@@ -126,8 +126,10 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
     并在步骤 4 按所需 suite 重验。
   - 其他错误停止，不跳过 converge。
 - bugfix/hotfix/release 不要求 feature 的 design/converge gate，但同样先测后审：
-  - 运行 `project-verify check --repo "$REPO_ROOT"`，证据缺失、过期或失败时停止并报告。
-  - 由 deliver 的 Verify 阶段（`deliver.md`「先测后审」）修到全绿后再审查。
+  - 进入 2（新审查、增量新一轮或首轮补齐）前运行 `project-verify check --repo "$REPO_ROOT"`。
+    - 证据缺失、过期或失败时停止并报告。
+    - 由 `deliver.md`「先测后审」（Verify 阶段）修到全绿后再审查。
+  - 修复续办进入 3 不要求全绿证据，由步骤 4 重验。
   - ❌ 不在未全绿的 HEAD 上派审查。
 - release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
   - 审查基线仍为上一正式发布。
@@ -223,8 +225,10 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
   - 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON 与落盘证据。
   - suite 超出预算即终止 process group 并判为失败。
   - 重跑时 bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
+  - 未重跑时，named suite 结果与 quick 复现结论引用同目录 `verify.md` 中 Verify 阶段的记录。
   - 证据未覆盖所需 suite 视为过期。
-  - finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入 fingerprint、suite 与全绿结果。
+  - finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入 fingerprint、suite 与全绿结果；
+    已收口 release/hotfix 改按 finish 步骤 4 核对 `changes/<semver>/` 的版本记录。
 - ❌ 不能用仅检查文档结构的 full validation 代替业务验证。
 - 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
 - 非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价 gate 之后）失败时：
@@ -239,6 +243,7 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 - 逐项裁定、修复与复核、本轮结束后的最终 final_head。
 - 验证命令与结果（含 `suites` 与 named suite）。
 - quick 复现（已补 <用例位置> / 未补 <原因> / 无非 quick 失败）、未解决项。
+- 非 feature 本轮未重跑时，named suite 结果与 quick 复现注明引自 `verify.md` 的 HEAD 与报告路径。
 
 记录与完成条件：
 

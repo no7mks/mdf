@@ -19,9 +19,11 @@ full，不替代 `$mdf code-review`。
 │ 2 Verify                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 可修复实现问题 ────→ 2 Verify
-                 ├──── 需测试修改批准 ────→ [主会话确认后 resume 回 2]
-                 ├──── 三轮无进展 ────────→ [停止并报告]
+                 ├──── 可修复实现问题 ──────→ 2 Verify
+                 ├──── 需测试修改批准 ──────→ [取得用户确认后回 2]
+                 ├──── 测试修改批准被拒 ────→ [停止并报告]
+                 ├──── 缺可执行复现命令 ────→ [停止并报告]
+                 ├──── 三轮无进展 ──────────→ [停止并报告]
                  │
                  ▼ 复现用例通过
 ┌──────────────────────────────────┐
@@ -36,8 +38,9 @@ full，不替代 `$mdf code-review`。
 │ 4 Record                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ─────────→ [结束]
-                 └──── 失败/缺失 ────→ [停止并报告]
+                 ├──── 通过 ──────────→ [结束]
+                 ├──── 无落盘分支 ────→ [仅会话报告后结束]
+                 └──── 失败/缺失 ─────→ [停止并报告]
 ```
 
 ## 工作流（唯一执行契约）
@@ -51,9 +54,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 脚本 | 核对 ready、待收入的 `fixed` Bug | doctor、list、参数 | 有清单则 2；空清单则结束 | 停止并报告 |
-| 2 | Verify | 约束 | 跑复现用例；失败则修实现并重验 | 命令、退出状态、结果 | 3 | 可修或待批准回 2；三轮无进展则停 |
+| 2 | Verify | 约束 | 跑复现用例；失败则修实现并重验 | 命令、结果 | 3 | 可修或获批回 2；缺命令、被拒或三轮无进展则停 |
 | 3 | Review | 约束 | 只审这次修复的代码并裁定 | 范围 diff、结论 | 4 | 有可修回 2；需决定则停 |
-| 4 | Record | 脚本 | 写下二次验证记录并提交 | 记录、提交 | 结束 | 停止并报告 |
+| 4 | Record | 脚本 | 写下二次验证记录并提交；无落盘分支仅会话报告 | 记录、提交或会话报告 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 
@@ -73,22 +76,25 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   - finish 委托时使用调用方传入的待收入 ID 列表，不再自行扩大。
 - ❌ 边界：
   - 不把对象标为 `closed`，不填 `fixed_in`。
-  - 不跑 `project-verify` 或 `delivery verify`，不按分支 kind 选择 suite，不因此跑 release suite。
+  - 不跑 `project-verify run` 或 `delivery verify`，不按分支 kind 选择 suite，不因此跑 release suite。
+  - 仅允许只读 `project-verify check` 用于引用已有报告。
 
 ### 复现验证
 
 对清单中每个 Bug，对照其「所需回归证据」确认复现用例通过。
 
 - 取证：
-  - `project-verify check` 有效，且其报告（`summary.json`）中该 test 结果为 passed 时，
-    直接引用报告路径与 test 名，不重跑。
+  - 当前分支为 bugfix/hotfix/release 且 `project-verify check` 退出 0 时读取其报告（`summary.json`）。
+    - 该 test 结果为 passed 时直接引用报告路径与 test 名，不重跑。
   - 否则按 `docs/system/testing/` 的命令模板点名执行对应 test case 或 test；
     证据另给可执行命令时运行该命令。
+  - ⚠️ `common.md` 非零退出规则的明确例外：check 非零退出不走失败去向，只改用上一条点名执行。
 - 只要求这些复现用例通过；本步修改了实现时另跑 manifest 的 lint、build、quick。
 - 缺可执行复现命令时停止并报告，提示先 `$mdf fix` 补红灯，不在本步新造用例。
 - 失败且可修实现时原地修复并重验。
   - 可修复指同一失败未满三轮且下一步明确；否则视为无法完成。
-  - 修改已有测试的断言、预期、fixture、跳过规则或验证门槛须用户明确批准；取得后原地重验。
+  - 修改已有测试的断言、预期、fixture、跳过规则或验证门槛须用户明确批准；
+    取得用户确认后回到本步重验，被拒则停止并报告。
   - 不设总轮数上限；同一失败连续三轮无进展则停止。
 - 逐个处理；任一 Bug 未通过则停止，不宣称清单已验证。
 
@@ -97,7 +103,10 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 验证通过后，仅审查该 Bug 这次修复的代码。
 
 - ❌ 不调用 `$mdf code-review`，不按上一正式发布或 start_commit 做整分支审查，不派 roster.reviewers。
-- 范围取当前分支中提交说明含该 Bug ID 的提交，以及复现用例文件；`git diff` 只含这些路径。
+- 范围取当前分支中提交说明含完整 Bug ID 的提交（`$mdf fix` 与 release/hotfix 上的直接修复均须如此），
+  以及复现用例文件。
+  - 端点：左为首个此类提交的父提交，右为最后一个此类提交；本 intent 已有未提交修复时右端点取工作区。
+  - `git diff` 只含这些提交改过的路径与复现用例文件。
   - 范围为空或不唯一时停止询问，不改用整分支 diff。
 - 读取必要上下文，不能只看提交标题。
 - 主 Agent 裁定、修复实现；修复后回到步骤 2 重跑该 Bug 的复现用例，再审新 diff。
@@ -106,12 +115,19 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 
 ### 记录
 
-在 `changes/unreleased/<semver>/verify-fix.md` 按 Bug 追加记录。
+按 Bug 追加记录，落点按当前分支：
+
+| 分支 | 落点 |
+| --- | --- |
+| `release/<semver>`、`hotfix/<semver>` | `changes/unreleased/<semver>/verify-fix.md`（目录可新建） |
+| `feature/*`、`bugfix/*`（带 Bug ID） | `changes/unreleased/<当前交付 slug>/verify-fix.md`，slug 同 code-review 记录 |
+| develop 或其他非交付分支 | 不落盘，仅在会话中报告；finish 只依赖 release/hotfix 的记录 |
 
 - 字段：ID、复现命令与退出状态（或引用的报告路径与 test 名）、结果、审查路径范围、HEAD、结论。
-- release/hotfix 的 `<semver>` 取当前分支版本；目录可与 `objectives.md` 同级新建。
 - 记录须使 finish 能判断「该 ID 在当前 HEAD 上复现用例已通过且审查完成」。
-- HEAD 前进或复现命令变化则记录过期，须重跑步骤 2–3。
+- 有效性：记录 HEAD 到当前 HEAD 只改记录文件自身、`docs/` 或 `changes/` 材料（无代码变化）时仍有效；
+  其他改动或复现命令变化则过期，须重跑步骤 2–3。
 - 按 `common.md` 提交记录与本次修复；不夹带无关改动，不改 Bug `status`。
+  - 不落盘分支上本次修复仍按 `common.md` 提交。
 
 验收：清单内每个 Bug 复现用例通过、修复代码已审、记录已提交或明确无新改动。

@@ -85,8 +85,8 @@
 **对象**
 
 - 接收用户手动提供的单个 Bug 事实；一次不得创建多个对象。
-- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected`，
-  对照 `title` 与正文查重。
+- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected`。
+  以用户输入的标题与正文对照输出中的 `title` 查重；不读取既有对象正文。
   - 命中既有 Bug 时不新建，提示在既有对象中补充。
   - 不逐篇翻阅 `docs/bugs/`。
 - 外部想法、 当前聊天上下文或外部文档必须显式调用 `$mdf intake`。

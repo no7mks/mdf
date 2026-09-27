@@ -102,14 +102,14 @@
 - `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
 - `$mdf code-review`：审查并修复实现、测试和 code smell
-- `$mdf fact update [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
+- `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   finish 前段自动调用
 - `$mdf finish`：按 Gitflow 分支完成审计与收口
 
 #### 维护
 
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
-- `$mdf fact audit [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构
+- `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
@@ -333,7 +333,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - 默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
 
 - `$mdf fact update`
-  - 用法：`$mdf fact update [--scope branch|full|paths]`
+  - 用法：`$mdf fact update [<path>...] [--scope branch|full|paths]`
   - 用途：按实现对齐当前事实，再只修范围内的结构 finding，并委托事实审阅。
   - 说明：
     - `branch` 为独立调用默认，取起点以来实现改动该碰的事实页。
@@ -352,7 +352,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：仅用户要求预览时 dry-run；未要求则实际归档。
 
 - `$mdf fact audit`
-  - 用法：`$mdf fact audit [--scope branch|full|paths]`
+  - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
   - 用途：只读审阅文档与实现的覆盖、证据、语义与加载质量
     （入口过载、唯一归属、路由页、体积、ADR 复述）。
   - 说明：只读；不执行 manifest `verification`。`size.hard` 阻断。

@@ -157,8 +157,11 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   - 尚无 `.mdf/` 的目录写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
 - Core 代跑的验证入口在 `.mdf/reports/<时间戳>-<入口>/` 保存完整输出。
   - suite 另有 JUnit XML 与 `summary.json`，见 `delivery-contract.md`「测试报告」。
-- Agent 直接运行的命令须把完整 stdout 与 stderr 写入 `.mdf/logs/<时间戳>-<名称>.log`，
+- Agent 直接运行的命令须把完整 stdout 与 stderr 写入主仓库的 `.mdf/logs/<时间戳>-<名称>.log`，
   并在汇报中给出路径。
+  - 主仓库为 `git rev-parse --path-format=absolute --git-common-dir` 结果的父目录。
+  - ❌ 不写入 owner/qa/dev 等交付 worktree 内的 `.mdf/logs/`。
+  - 该目录不存在时先创建，并先在其中写入内容为 `*` 的 `.gitignore`。
   - 此类命令包括点名执行、项目脚本、调试命令等。
   - 写法如 `<命令> 2>&1 | tee <文件>`。
 - 用 grep、head、tail 等过滤或截断输出时，完整输出须先落盘再截取。

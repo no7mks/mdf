@@ -110,7 +110,7 @@ def test_tree_renders_mixed_dependency_graph() -> None:
 
 def test_next_resumes_or_delegates_tree() -> None:
     text = intent("next")
-    assert "feature 交付步骤" in text
+    assert "Gitflow 交付分支（含角色分支）" in text
     assert "qa/feature/" in text
     assert "问号蓝图" not in text
     assert "references/tree.md" in text
@@ -211,7 +211,7 @@ def test_jot_intent_preserves_raw_input_until_promotion() -> None:
     assert "完整 marker 条目" in jot
     assert "保留新对象、原 Jot" in jot
     assert "Proposal 写为 `draft`，Bug 写为 `open`" in jot
-    assert "Proposal 转为 `ready`；Bug 保持 `open`" in jot
+    assert "Proposal 保持 `draft`，Bug 保持 `open`" in jot
     assert "同一个独立 commit" in jot
 
 

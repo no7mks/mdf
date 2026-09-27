@@ -22,8 +22,9 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 其他未通过 ────→ [停止并报告]
+                 ├──── 验证失败 ──────→ [停止并报告]
                  │
-                 ▼ 通过或仅结构 finding
+                 ▼ 验证通过且审阅通过或仅结构 finding
 ┌──────────────────────────────────┐
 │ 4 Refine structure               │
 └────────────────┬─────────────────┘
@@ -43,7 +44,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
-| 3 | Audit | 约束 | 委托 fact audit；按变更验证 | 审阅、验证 | 4 | 停止并报告 |
+| 3 | Audit | 约束 | 委托同 scope 的 fact audit；按变更验证 | 审阅、验证 | 4 | 停止并报告 |
 | 4 | Refine structure | 约束 | 改结构 | gate | 未超次改写回 3；无改写且无超次 finding 结束 | 超次 finding 或失败则停 |
 
 ## 术语与数据结构
@@ -76,7 +77,8 @@
     首次发布无上一版本时停止确认初始基线。
 - `full`：知识面全树——`docs/user-guide/**`、`docs/system/**`、入口根文档、
   `docs/context/adr/` 的复述检查与全部体积。结构 finding 可全改。
-- `paths`：调用方给出精确实现/文档路径。
+- `paths`：调用方给出精确实现/文档路径；独立调用列出 `<path>...` 即此形式。
+  - 路径分派与缺路径、与 `--scope full|branch` 同用时的处理同 `fact-audit.md`。
 
 finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整理走显式
 `$mdf fact update --scope full`。
@@ -133,22 +135,24 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 
 **审阅**
 
-内部委托 fact audit（同一 `--scope`）做双向只读审阅与 full validation；通过前不得
-声称事实同步完成。
+内部委托 fact audit（同一 `--scope`、`--base` 与路径）做双向只读审阅与 full validation；
+通过前不得声称事实同步完成。
 
 - feature finish 调用时执行受影响验证。
 - 只改事实文档不机械重跑全部业务验证；
   实现、测试或 verification 改变必须重跑当前交付所需 suite。
 
-审阅结果分三类：
+结果分四类：
 
 - 通过。
 - 仅剩结构 finding：加载质量清单、`size.hard`、`overview.core_modules`、`project.entry_links`。
 - 其他未通过：事实错误、覆盖遗漏、validation 阻断。
+- 验证失败：所需验证命令失败或缺少结果。
 
 验收：fact audit 结论、验证结果。
 
-异常与交接：其他未通过时停止并报告，不声称事实同步完成；仅结构 finding 进入 4。
+异常与交接：其他未通过或验证失败时停止并报告，不声称事实同步完成；
+验证通过且审阅仅结构 finding 时进入 4。
 
 <a id="s4"></a>
 

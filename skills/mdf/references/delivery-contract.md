@@ -11,7 +11,8 @@
 - feature 的 objectives 引用 PRP，避免复制另一个需求来源。
 - release 的 objectives 写本版收口范围、预发布工作、非目标与可验证验收，不引用单个 PRP。
   - 该分支承担上线前预发布（含跨仓联调），不得实施新 PRP。
-- hotfix 不写 objectives。
+- start 不为 bugfix/hotfix 写 objectives：roster `0,0` 时不需要；
+  roster ≥1 时由 design 的 Baseline 补写（bugfix 依据 Bug，hotfix 依据已确认的热修复范围）。
 
 身份字段：
 
@@ -101,7 +102,7 @@
 
 | 侧 | 策略 | 规则 |
 | --- | --- | --- |
-| qa/dev | `best-of-n`（默认） | owner 选 base 吸收优点，converge 只合 winner |
+| qa/dev | `best-of-n`（默认） | converge 选 base 并只合 winner，集成后在 owner 吸收其余优点 |
 | qa/dev | `partition` | design 写明各 index 切片，converge 按 index 全部合入，冲突视为分工重叠并停止 |
 | review | `replicate`（默认） | 每人覆盖同一份本轮范围 |
 | review | `partition` | 按切片审查 |
@@ -229,7 +230,8 @@ Core 判定退出码与测试报告（见下节）。
   结果与用时。gate 与 code-review 证据记录报告路径与 test case 级汇总。
 - 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
-- 点名执行 test case 或 test 只用于定位，不强制 JUnit 报告，但完整输出须 tee 进 `.mdf/logs/`。
+- 点名执行 test case 或 test 只用于定位，不强制 JUnit 报告。
+  完整输出仍须 tee 进主仓库的 `.mdf/logs/`（见 `common.md`「日志与报告」）。
 
 ### 验证 suite
 
@@ -254,15 +256,18 @@ Core 判定退出码与测试报告（见下节）。
 | feature | write-tests | 只要求可执行测试已写；不要求全绿 | — |
 | feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 所列 named suite |
 | bugfix | Verify、code-review、finish | lint、build、quick、smoke | `suites.json` 所列 named suite（≥1） |
-| release / hotfix | Verify、code-review、finish（及 `project-verify`） | lint、build、quick、release | — |
+| release / hotfix | Verify、code-review、finish | lint、build、quick、release | roster ≥1 时 design 所列 named suite |
 | 任意 | 只改事实文档 | 不机械重跑业务验证；实现、测试或验证配置变更仍使对应验证过期 | — |
+
+- release / hotfix 的 `project-verify` 同样要求 Core 通过 lint、build、quick、release。
 
 named suite 的执行：
 
 - named suite 不在 manifest，Core 不在门禁中执行也不核对其名称是否已文档化。
 - Agent 以 `suite-run --name <suite> --command <入口命令>` 执行 `docs/system/testing/` 中该 suite
   的入口命令。
-  - 把命令、结果与报告路径写进对应 gate 或 code-review 记录的 summary。
+  - 把命令、结果与报告路径写进对应 gate 或 code-review 记录的 summary；
+    非 feature 的 Verify 阶段写进 `changes/unreleased/<slug>/verify.md`。
 
 named suite 的划分：
 
@@ -279,16 +284,20 @@ named suite 的划分：
 
 - bugfix、release、hotfix 都先测后审：审查前由 deliver 的 Verify 阶段修到全绿。
   - 之后只在指纹变化时重验，收口复用有效证据，不重跑 release suite。
-- bugfix 不创建 design/write-tests/converge。
+  - Verify 阶段定义见 `references/deliver.md`「先测后审」；每次运行向
+    `changes/unreleased/<slug>/verify.md` 追加一条记录并随该阶段提交。
+- roster `0,0` 的 bugfix 不创建 design/write-tests/converge。
 - bugfix 的关联文件为 `changes/unreleased/<slug>/suites.json`。
   由 Verify 阶段在其中关联修复涉及的全部功能块中**已文档化**的 named suite（≥1）。
-  - 默认不得新建，用户明确确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
+  - 默认不得新建；经确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
+    默认模式由用户明确确认，`--auto-pilot` / `--yolo` 由主 Agent 自裁定并记录依据。
 
 quick 复现：
 
 - 触发：非 quick 用例一旦在 converge 之后失败；bugfix / release / hotfix 则为第一次跑所需 suite 之后。
   - 必须尝试补一条 quick 复现用例（hermetic 的 UT 或 PT）；原慢用例保留。
   - 结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，未补则写原因。
+  - 非 feature 由 Verify 阶段先把结论写入 verify.md，code-review 引用该记录。
 - code-review 可按既定目标自主补该用例；削弱门槛、改预期或新增豁免仍须用户批准。
 
 ## 修改与提交权限
@@ -306,8 +315,10 @@ quick 复现：
   - 含在 `docs/system/testing/` 补齐所列 named suite 的文档。
 - implement 不自主修改测试。
 - converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
+  - `--auto-pilot` / `--yolo` 由 converge 执行者自裁定并记录。
 - code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
-- 非 feature 分支变更 manifest `verification` 或新增 named suite，一律需用户确认。
+- 非 feature 分支变更 manifest `verification` 或新增 named suite：默认模式需用户确认；
+  `--auto-pilot` / `--yolo` 由主 Agent 自裁定并记录依据。
 - 架构优化可以建议；超出当前目标不直接实施。
 - 修复后在当前 intent 原地重验。
 

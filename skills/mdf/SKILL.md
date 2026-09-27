@@ -101,8 +101,8 @@ disable-model-invocation: true
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
   - `--*-model` 值为口语描述，可点名一个或多个模型。
-- fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）；
-  prettify 另可列出 `<path>...`。
+- fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
+  - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
 - upgrade 可带 `--source`。
 - ❌ 未知 `--` token 停止询问。
 - `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。

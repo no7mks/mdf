@@ -7,11 +7,11 @@
 │ 1 Resolve workflow               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── feature 交付分支 ────→ 2 Resume
-                 ├──── 无在途流程 ──────────→ 3 Delegate
-                 ├──── 状态不明 ────────────→ [多候选则澄清；证据不足则报告阻塞]
+                 ├──── Gitflow 交付分支（含角色分支） ────→ 2 Resume
+                 ├──── 无在途流程 ────────────────────────→ 3 Delegate
+                 ├──── 状态不明 ──────────────────────────→ [多候选则澄清；证据不足则报告阻塞]
                  │
-                 ▼ 非 feature 的唯一在途
+                 ▼ 其余唯一在途
 ┌──────────────────────────────────┐
 │ 2 Resume                         │
 └────────────────┬─────────────────┘
@@ -38,7 +38,8 @@
 
 读取 `references/common.md`。
 续办尚未 Git 化的 init/bootstrap/migrate 时读取 `references/initialization.md`；
-续办 feature 时读取 `references/delivery-contract.md`。
+续办任一交付时读取 `references/delivery-contract.md`；
+续办 bugfix/hotfix/release 的 Verify 阶段时读取 `references/deliver.md`「先测后审」。
 无在途时读取并执行 `references/tree.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -53,12 +54,12 @@
 
 先按以下顺序判定，命中即停止：
 
-- feature 交付步骤：当前分支为 Gitflow 交付分支，或 `qa/` / `dev/` 角色分支（如 `qa/feature/`）。
+- Gitflow 交付分支（含角色分支）：当前分支为 Gitflow 交付分支，或 `qa/` / `dev/` 角色分支（如 `qa/feature/`）。
   - 此时本次肯定是该交付的步骤，进入续办。
-  - 若该 feature 正由已显式启动的 deliver 协调，续办其未完成内部步骤后返回 deliver。
+  - 若该交付正由已显式启动的 deliver 协调，续办其未完成内部步骤后返回 deliver。
 - 在途推理：其余情况按下方规则识别在途流程。
 
-表步骤 1「在途 2」同时覆盖上述 feature 交付与非 feature 的唯一在途。
+表步骤 1「在途 2」同时覆盖上述 Gitflow 交付分支（含角色分支）与其余唯一在途。
 
 在途范围包括全部 MDF workflow 及其内部委托：
 
@@ -71,7 +72,7 @@
 目标与边界：
 
 - 先核对本次目标；Git 仓库解析绝对 `REPO_ROOT` 并识别已有改动。
-- 判定 feature 交付分支时以当前 checkout 分支名为准。
+- 判定 Gitflow 交付分支（含角色分支）时以当前 checkout 分支名为准。
 - 续办尚未 Git 化的 init/bootstrap/migrate 时按 `references/initialization.md`
   核对普通目录和父仓库边界。
 - clarify 可仅依赖已确认议题，不要求 Git 仓库。
@@ -100,7 +101,9 @@
 
 - 先复核已完成步骤的证据，从尚未完成的步骤续办，不重做已验收且仍有效的操作。
 - 交付主线的当前 intent 已完成而交付未结束时，可委托下一个阶段。
-  - 阶段顺序：start → design → [write-tests ∥ implement] → converge → code-review → finish。
+  - feature 阶段顺序：start → design → [write-tests ∥ implement] → converge → code-review → finish。
+  - bugfix/hotfix/release 阶段顺序：开发 → Verify 阶段（`deliver.md`「先测后审」）→ code-review → finish。
+    - Verify 阶段不是独立 intent；next 读取 `deliver.md`「先测后审」自行执行，算作一次续办。
   - 测试与实现都未完成时，沿用已有分工；无分工则先 write-tests，再由后续 next 推进 implement。
 - 存在仍在运行的执行者时报告其进度或待交接项，不重复执行其工作。
 - 缺失或过期证据按原阶段规则原地补验，不跳过 gate。

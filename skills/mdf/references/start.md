@@ -73,7 +73,8 @@ feature 的步骤 2 读取并内部执行 `references/clarify.md`，
 一次只要求一个分支的类型和必要标识：
 
 - feature 要 PRP ID，bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
-- feature 与 release 还要确认的 objectives；hotfix 不写 objectives。
+- feature 与 release 还要确认的 objectives；start 不为 bugfix/hotfix 写 objectives。
+  - roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 补写。
 - feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 - bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，不得另选 slug。
@@ -208,9 +209,9 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - 阶段材料：
   - feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.json`
     （含 roster）及 `objectives.md` 并提交。
-  - roster ≥1 的 bugfix/hotfix 写入 `delivery.json`（含 roster），不写 objectives。
+  - roster ≥1 的 bugfix/hotfix 写入 `delivery.json`（含 roster），不写 objectives（由 design 补写）。
   - roster `0,0` 的 bugfix/hotfix 不创建阶段材料。
-  - bugfix 的 named suite 关联由 code-review 步骤 1 写入，本步不写。
+  - bugfix 的 named suite 关联由 deliver 的 Verify 阶段写入，本步不写。
 - roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
 - 创建成功进入 5，本步不结束。
 

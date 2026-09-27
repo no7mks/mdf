@@ -158,7 +158,7 @@ def test_verify_fix_is_second_verification_before_closeout():
     text = workflow("verify-fix")
     table = rows(text)
     assert [row[1] for row in table] == ["Check", "Verify", "Review", "Record"]
-    assert table[1][6] == "可修或待批准回 2；三轮无进展则停"
+    assert table[1][6] == "可修或获批回 2；缺命令、被拒或三轮无进展则停"
     assert table[2][6] == "有可修回 2；需决定则停"
     for rule in (
         "不标 `closed`", "不写 `fixed_in`", "不跑全局",
@@ -220,7 +220,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
     assert "| feature | converge、code-review、finish | lint、build、quick、smoke |" in contract
-    assert "| release / hotfix | Verify、code-review、finish（及 `project-verify`） | lint、build、quick、release |" in contract
+    assert "| release / hotfix | Verify、code-review、finish | lint、build、quick、release |" in contract
+    assert "release / hotfix 的 `project-verify` 同样要求 Core 通过 lint、build、quick、release" in contract
     assert "关联修复涉及的全部功能块中**已文档化**的" in contract
     assert "Core 不在门禁中执行也不核对其名称是否已文档化" in contract
     assert "每次运行 suite（含 named suite）都必须产出 JUnit XML 报告" in contract
@@ -232,7 +233,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "新增或放宽须用户确认" in contract
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
     assert "full 指全部 test case，是 release 与各 named suite 的上界；它没有入口" in contract
-    assert "非 feature 分支变更 manifest `verification` 或新增 named suite，一律需用户确认" in contract
+    assert "非 feature 分支变更 manifest `verification` 或新增 named suite：默认模式需用户确认" in contract
     repo_contract = workflow("repository-contract")
     assert "只接受 `quick`、`smoke`、\n  `release`" in repo_contract
     assert "named suite 与 full（全部 test case）不写入 manifest" in repo_contract
@@ -242,9 +243,9 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "把用例归入 quick、smoke 或\ndesign policy `suites` 所列 named suite" in tests
     converge = workflow("converge")
     assert "未跑 named suite 不得记录全绿" in converge
-    assert "缺 suite 停并提示 `$mdf write-tests`" in converge
+    assert "仅缺 suite 文档则补齐回 3" in converge
     assert "阻塞停止" in converge
-    assert "缺 named suite 文档 ─────→ [停止，提示 $mdf write-tests]" in converge
+    assert "仅缺 named suite 文档 ────→ 3 Verify" in converge
     assert "named suite 已文档化" in tests
     assert "记录 gate 前核对每个声明的 named suite 都已文档化且有成员" in tests
     assert "COLLECTIONS" not in (skill_dir("mdf") / "assets/templates/design.md").read_text()
@@ -257,7 +258,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     deliver = workflow("deliver")
     assert "### 先测后审" in deliver
     assert "| bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 |" in deliver
-    assert deliver.index("验证证据缺失、过期或失败") < deliver.index("已全绿（feature 已收敛）且审查缺失或过期")
+    assert deliver.index("验证证据缺失、过期或失败") < deliver.index("feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期")
     finish = workflow("finish")
     assert "正常收口不再运行 release suite" in finish
     assert "单独提问并记录" in finish

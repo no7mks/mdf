@@ -7,10 +7,10 @@
 │ 1 Resolve                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 尚未 start 且委托成功 ────→ 1 Resolve
-                 ├──── start 失败 ───────────────→ [按 start 交接]
-                 ├──── 须询问 ───────────────────→ [询问]
-                 ├──── auto-pilot 死硬阻塞 ──────→ [停止]
+                 ├──── 尚未 start 且委托成功 ─────→ 1 Resolve
+                 ├──── start 失败 ────────────────→ [按 start 交接]
+                 ├──── 须询问 ────────────────────→ [询问]
+                 ├──── 不可恢复错误或死硬阻塞 ────→ [停止并报告]
                  │
                  ▼ 唯一交付目标
 ┌──────────────────────────────────┐
@@ -54,26 +54,27 @@
 │ 6 Confirm closeout               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 未决 ────→ 6 Confirm closeout
-                 ├──── 拒绝 ────→ [保留现场并停止]
-                 └──── 确认 ────→ [委托 finish 步骤 10，完成后回 2]
+                 ├──── 未决 ────────────────────────→ 6 Confirm closeout
+                 ├──── 拒绝 ────────────────────────→ [保留现场并停止]
+                 ├──── 确认 ────────────────────────→ [委托 finish 步骤 10，完成后回 2]
+                 └──── finish 10 停止或部分失败 ────→ [按其恢复规则交接并报告]
 ```
 
 ## 工作流（唯一执行契约）
 
-读取 `references/common.md`；feature 另读 `references/delivery-contract.md`。
+读取 `references/common.md` 与 `references/delivery-contract.md`。
 步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。步骤 6 由步骤 3 的 Gitflow 关口进入。框序受编号约束仍按 1–6 绘制。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 2 | 委托成功回 1；start 失败则交接；须问则问；死硬则停 |
+| 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 2 | 委托成功回 1；start 失败交接；须问则问；错误或死硬停 |
 | 2 | Select | 约束 | 按选择表选剩余步骤 | 产物、执行者、待办 | 完成 5；并行 4；其他 3 | 冲突或阻塞则保留现场并报告 |
 | 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 阶段完成则 2；关口待确认则 6 | 其他失败或待确认则交接 |
 | 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路分支、提交、gate | 2 | 保留各路现场并报告 |
 | 5 | Report | 约束 | 核对 finish 实际结果，完成 Goal 并报告 | 合并、清理、适用 tag 与推送 | 结束 | 报告实际状态 |
-| 6 | Confirm closeout | 约束 | 展示收口计划并确认 | 确认或拒绝 | 确认后从 finish 10 续办再回 2 | 拒绝则停；未决留 6 |
+| 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 finish 10 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
 
 ## 术语与数据结构
 
@@ -102,11 +103,11 @@
 
 步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
-1. 先解析本次调用的 target（见下）；有唯一对象则锁定该交付。
-2. 否则优先锁定用户在对话中指定的交付。
-3. 再否则由当前 feature/qa/dev、bugfix、hotfix 或 release 分支确定。
+1. 先由当前 feature/qa/dev、bugfix、hotfix 或 release 分支推导在途交付；结果即下文「当前已锁定」的交付。
    - feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `worktrees.owner.path`。
    - 其他分支使用 `git worktree list --porcelain` 中完整分支名对应的已有路径。
+2. 再解析本次调用的 target（见下）；有唯一对象时按下文 target 规则锁定或停止。
+3. 无 target 时优先锁定用户在对话中指定的交付，否则沿用当前已锁定的交付。
 
 - 从其他目录进入时，只有上下文明确唯一交付目标才可切到它。
   - 多个候选必须询问，不按最近目录猜测。
@@ -207,6 +208,9 @@ target 分不清就询问，不列入自裁定。除此之外不因“想听用�
 
 ### Goal
 
+Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoal）。
+宿主没有该设施时跳过本节全部 Goal 操作，改在步骤 5 的最终报告中说明进度与完成判据。
+
 步骤 1 锁定一次交付及 owner worktree，创建 Goal；
 objective 写明交付标识与完成判据（finish 实际完成）。
 每次 deliver 会话只创建一次；阻塞或暂停时保持 active，不代用户暂停，续办时不重建。
@@ -230,13 +234,13 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
 | feature 或 roster ≥1，且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
-| roster ≥1 且 qa/dev 均有未完成路且前置条件满足 | 并行委托 `references/write-tests.md` 与 `references/implement.md` |
-| roster ≥1 仅一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成一路 |
+| roster ≥1、未完成路数 ≥2（不论哪侧）且前置满足 | 并行委托 `references/write-tests.md` / `references/implement.md` |
+| roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成的路 |
 | roster `0,0` 的 feature 测试或实现未完成 | 主 Agent 在 owner 串行 write-tests 再 implement |
 | feature 或 roster ≥1，测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
 | bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 | 在 owner 按下文「先测后审」验证并修到全绿 |
-| 已全绿（feature 已收敛）且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
+| feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
@@ -263,18 +267,25 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 ### 先测后审
 
-bugfix/hotfix/release 在审查前先验证（feature 由 converge 完成同样的事）：
+bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 由 converge 完成同样的事）。
+独立 `$mdf next` 选中该阶段时同样按本节执行。
 
 - bugfix 先关联 `changes/unreleased/<slug>/suites.json`（`{"suites":["<named suite 名>"]}`）：
   - 按修复改动涉及的全部功能块，从 `docs/system/testing/` 已文档化的 named suite 中逐个选定并提交。
   - 没有合适的 suite 时询问用户是否新建，确认后先补该 suite 的文档再关联。
+    - `--auto-pilot` 由主 Agent 自裁定，并在 verify.md 记录依据。
   - ❌ 不得关联 lint/build/quick/smoke/release/full。
 - 运行 `project-verify run --repo "$REPO_ROOT"`（bugfix 到 smoke，release/hotfix 到 release）。
   - bugfix 另以 `suite-run` 执行所列 named suite。
   - 失败时读报告与日志定位，在已确认范围内修复实现后重跑，直到全绿。
-  - 测试、预期或验证门槛的修改须用户确认。
+  - 测试、预期或验证门槛的修改：默认模式须用户确认；`--auto-pilot` 自裁定并在 verify.md 记录依据。
+  - 第一次跑所需 suite 出现非 quick 失败时，按 `delivery-contract.md`「quick 复现」尝试补用例。
   - 需要目标决定、外部条件或同一失败连续三轮无进展时阻塞停止。
 - 已有证据经 `project-verify check` 仍有效时不重跑。
+- 每次运行后向 `changes/unreleased/<slug>/verify.md` 追加一条记录，随本阶段提交：
+  - HEAD；`project-verify` 证据路径与实际跑过的 suites。
+  - 每个 named suite 的命令、结果与报告路径（经 `suite-run`）。
+  - quick 复现结论：已补 <位置> / 未补 <原因> / 无非 quick 失败。
 - 全绿后提交，再进入审查；审查修复使证据过期时由 code-review 步骤 4 重验。
 
 ### 并行委托与 worktree 身份
