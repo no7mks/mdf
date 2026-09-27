@@ -40,6 +40,7 @@ test case / test 的命令模板。named suite 按同样格式追加。
 
 包含 quick；feature、bugfix 收口时跑。
 
-### full
+### release
 
-全部 test case；release、hotfix 时跑。
+包含 smoke，发版所需的 test case；release、hotfix 时跑。全部 test case 即 full，
+通常没有入口。

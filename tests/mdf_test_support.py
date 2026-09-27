@@ -166,7 +166,7 @@ def replace(path: Path, old: str, new: str) -> None:
 
 def verification_args(command: str = "true") -> list[str]:
     result: list[str] = []
-    for name in ("lint", "build", "quick", "smoke", "full"):
+    for name in ("lint", "build", "quick", "smoke", "release"):
         result.extend([f"--{name}", command])
     return result
 

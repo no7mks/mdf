@@ -8,7 +8,7 @@ verification:
   build: "true"
   quick: "true"
   smoke: "true"
-  full: "true"
+  release: "true"
 implementation_roots: [src]
 baselines:
   glossary:

@@ -298,7 +298,7 @@ partition 时在 design.md 写明各 index 切片。
 用途：集成并持续修复到所需 suite 通过。
 说明：本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录；
 测试修改批准回主会话。不计入 roster。
-修复实现直到 lint、build、quick、smoke 与本交付 named suite 通过；不要求跑 full。
+修复实现直到 lint、build、quick、smoke 与本交付 named suite 通过；不要求跑 release。
 
 `$mdf fix <bug-id>`
 用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
@@ -314,7 +314,7 @@ partition 时在 design.md 写明各 index 切片。
 用途：二次验证已 `fixed` 的 Bug：只跑复现用例，失败则修到通过，并仅审这次
 修复的代码。
 说明：release/hotfix 的 `$mdf finish` 在准备关闭这些 Bug 前内部委托。
-不标 `closed`、不写 `fixed_in`、不跑全局 full。无 ID 时只处理当前
+不标 `closed`、不写 `fixed_in`、不跑 release suite。无 ID 时只处理当前
 release/hotfix 上待收入的 `fixed` Bug。
 
 `$mdf code-review`

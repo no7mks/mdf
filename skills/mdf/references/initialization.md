@@ -150,17 +150,17 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 <a id="s3"></a>
 
 从确认方案提供八项基线、最近稳定版本、`verification` 的五个入口（lint、build、
-quick、smoke、full）、可选预算覆盖和 `implementation_roots`。从未发布时版本为
+quick、smoke、release）、可选预算覆盖和 `implementation_roots`。从未发布时版本为
 `none`；没有对应检查的入口可用 `git diff --check` 或 `true`。suite 语义与预算见
 `delivery-contract.md`「验证 suite」。
 不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
 单 module 默认使用 `src`，多 module 使用各 `<module>/src`；已有模板使用实际目录并在
 PROJECT 说明，不为 bootstrap 重排模板。
 `docs/system/testing/` 由 init CLI 写入起步页，按确认的验证配置填写当前规则与
-quick、smoke、full 各一节，不把尚未采用的 kind 写成事实。
+quick、smoke、release 各一节，不把尚未采用的 kind 写成事实。
 
 调用 `init` CLI 时传入完整配置：重复 `--baseline`、`--implementation-root`，
-`--lint`、`--build`、`--quick`、`--smoke`、`--full`，以及可重复的
+`--lint`、`--build`、`--quick`、`--smoke`、`--release`，以及可重复的
 `--budget <suite>=<秒数>`。
 更新时核对并保留未要求改变的配置，不依赖 CLI 默认值覆盖现有设置。已有根文档和
 AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范围，不覆盖重建。

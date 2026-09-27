@@ -71,7 +71,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 `fixed` 的 ID。空清单则结束，不报失败。
 finish 委托时使用调用方传入的待收入 ID 列表，不再自行扩大。
 不把对象标为 `closed`，不填 `fixed_in`。不跑 `project-verify` 或
-`delivery verify`，不按分支 kind 选择 suite，不因此跑全局 full。
+`delivery verify`，不按分支 kind 选择 suite，不因此跑 release suite。
 
 ### 复现验证
 

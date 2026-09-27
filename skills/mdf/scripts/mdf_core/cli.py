@@ -48,7 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--repo", required=True)
     init.add_argument("--latest-release", required=True)
     init.add_argument("--baseline", action="append", default=[], required=True)
-    for name in ("lint", "build", "quick", "smoke", "full"):
+    for name in ("lint", "build", "quick", "smoke", "release"):
         init.add_argument(f"--{name}", required=True)
     init.add_argument("--budget", action="append", default=[])
     init.add_argument(

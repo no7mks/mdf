@@ -108,7 +108,7 @@ passed 代替 CLI 检查。
 设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置，包括 named
 suite 的路径；manifest 的 `verification` 始终属于测试门槛。路径可以是
 仓库相对文件、目录或 glob。design policy 必须另含 `suites`：本交付 named suite
-名的非空列表，不得使用 lint/build/quick/smoke/full。
+名的非空列表，不得使用 lint/build/quick/smoke/release/full。
 点名执行 test case 或 test 仅用于定位，不替代所需 suite 通过。`delivery verify` /
 `project-verify` / gate 记录必须写出 Core 实际跑过的 `suites`。
 代码和验证配置（含预算）改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
@@ -136,9 +136,11 @@ ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿�
 | --- | --- | --- | --- |
 | quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 |
 | smoke | 任意种类，包含 quick 的全部成员 | 300s | feature、bugfix 收口 |
-| full | 全部 test case | 无 | release、hotfix |
+| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | release、hotfix |
 | named | 服务于某一功能区的 test case，均属于 full | 无 | 改动相关代码后 |
 
+- full 指全部 test case，是 release 与各 named suite 的上界；它没有入口，不由任何
+  gate 执行，名字保留、不得用作 named suite。
 - 预算包含启动依赖与预热，不含 build；项目可在 manifest `budgets` 覆盖。
   test case 放进 quick 或 smoke 会超预算时，拆成多个 test case，只把合预算的部分放入。
 - lint 与 build 同 quick 一样，任何改动都要跑。
@@ -150,7 +152,7 @@ ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿�
 | feature | write-tests | 只要求可执行测试已写；不要求全绿 | — |
 | feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 所列 named suite |
 | bugfix | code-review、finish | lint、build、quick、smoke | `suites.json` 所列 named suite（≥1） |
-| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、full | — |
+| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、release | — |
 | 任意 | 只改事实文档 | 不机械重跑业务验证；实现、测试或验证配置变更仍使对应验证过期 | — |
 
 named suite 不在 manifest，Core 不执行也不核对其名称是否已文档化；Agent 按

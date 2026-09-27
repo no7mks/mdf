@@ -101,7 +101,7 @@ test case 或 test；证据另给可执行命令时运行该命令。
 只改该 Bug 范围内的实现、必要配置，以及步骤 3 已确认的回归测试。先让该
 红灯测试转绿，再按所需回归证据重跑对应命令直到通过。记录命令、退出状态、
 结果及对应证据项。随后在仓库根依次运行 manifest `verification` 的 lint、build、
-quick，均须通过。不按分支 kind 选择 smoke 或 full，不调用 `project-verify` 或
+quick，均须通过。不按分支 kind 选择 smoke 或 release，不调用 `project-verify` 或
 `delivery verify` 冒充本 intent 完成。
 不要求 feature 的 design/converge gate。
 自检发现本阶段可修复的实现问题时原地修复并重验。可修复指同一失败未满三轮

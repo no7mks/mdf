@@ -1,4 +1,4 @@
-"""验证入口：lint、build 与 quick/smoke/full 的 gate、预算与证据。"""
+"""验证入口：lint、build 与 quick/smoke/release 的 gate、预算与证据。"""
 from mdf_test_support import *  # noqa: F403
 from test_mdf_delivery import commit, record, setup_delivery, sync_roles
 from test_mdf_gitflow_delivery import start_repo
@@ -26,6 +26,8 @@ def rewrite_evidence(root, evidence):
     {"protected_paths": ["tests/"], "suites": []},
     {"protected_paths": ["tests/"], "suites": ["smoke"]},
     {"protected_paths": ["tests/"], "suites": ["lint"]},
+    {"protected_paths": ["tests/"], "suites": ["release"]},
+    {"protected_paths": ["tests/"], "suites": ["full"]},
 ])
 def test_design_requires_named_suites(python_exe, tmp_path, policy):
     repo, _ = start_repo(tmp_path)
@@ -63,7 +65,7 @@ def test_feature_verify_runs_lint_build_quick_smoke(python_exe, tmp_path):
     # 只改预算（不改命令）也必须使全绿证据过期。
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text().replace(
-        '  full: "true"', '  full: "true"\n  budgets:\n    quick: 45', 1
+        '  release: "true"', '  release: "true"\n  budgets:\n    quick: 45', 1
     ))
     assert "stale_verification" in record(python_exe, repo, "code-review").stderr
 
@@ -73,7 +75,7 @@ def test_suite_over_budget_fails(python_exe, tmp_path):
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text().replace(
         '  quick: "true"', '  quick: "sleep 3"', 1,
-    ).replace('  full: "true"', '  full: "true"\n  budgets:\n    quick: 1', 1))
+    ).replace('  release: "true"', '  release: "true"\n  budgets:\n    quick: 1', 1))
     result = mdf(python_exe, "delivery", "verify", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
     evidence = json.loads((root / "gates/verification.json").read_text())
@@ -86,9 +88,11 @@ def test_suite_over_budget_fails(python_exe, tmp_path):
 @pytest.mark.parametrize(("old", "new"), [
     ('  smoke: "true"\n', ""),
     ('  smoke: "true"', '  smoke: "  "'),
-    ('  full: "true"', '  full: "true"\n  commands: []'),
-    ('  full: "true"', '  full: "true"\n  budgets:\n    lint: 10'),
-    ('  full: "true"', '  full: "true"\n  budgets:\n    quick: 0'),
+    ('  release: "true"', '  release: "true"\n  commands: []'),
+    ('  release: "true"', '  release: "true"\n  full: "true"'),
+    ('  release: "true"', '  release: "true"\n  budgets:\n    full: 10'),
+    ('  release: "true"', '  release: "true"\n  budgets:\n    lint: 10'),
+    ('  release: "true"', '  release: "true"\n  budgets:\n    quick: 0'),
 ])
 def test_manifest_verification_shape(python_exe, tmp_path, old, new):
     repo = copy_fixture(tmp_path)
@@ -123,6 +127,6 @@ def test_manifest_accepts_budget_overrides(python_exe, tmp_path):
     init_git(repo)
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text().replace(
-        '  full: "true"', '  full: "true"\n  budgets:\n    quick: 45\n    full: 3600', 1
+        '  release: "true"', '  release: "true"\n  budgets:\n    quick: 45\n    release: 3600', 1
     ))
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))

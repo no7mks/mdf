@@ -14,7 +14,7 @@
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
 - `验证命令`：`manifest.verification` 中由仓库执行的五个入口：`lint`、`build`
-  与 `quick`、`smoke`、`full` 三个全局 suite。
+  与 `quick`、`smoke`、`release` 三个全局 suite。
 - `验证 suite`：test case 的具名集合。全局 suite 由 manifest 声明并由 Core 执行；
   其余为 named suite，只记在 `docs/system/testing/`，由 Agent 执行。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
@@ -239,22 +239,22 @@ verification:
   build: "python3 -m compileall -q src"
   quick: "python3 -m pytest -m quick"
   smoke: "python3 -m pytest -m smoke"
-  full: "python3 -m pytest"
+  release: "python3 -m pytest -m release"
   budgets:
     quick: 45
 ```
 
-- `lint`、`build`、`quick`、`smoke`、`full` 五项都必须声明为非空命令，不得有其他
+- `lint`、`build`、`quick`、`smoke`、`release` 五项都必须声明为非空命令，不得有其他
   键；没有对应检查时写 `"true"`。每项是一条入口命令，不列单个 test 或 test case。
 - 可选 `budgets` 覆盖 suite 的时间预算（正整数秒），只接受 `quick`、`smoke`、
-  `full`。默认 quick 30、smoke 300，full 与 lint、build 无上限。
-- Core 按 `lint → build → quick → smoke|full` 顺序执行，suite 超出预算视为失败。
+  `release`。默认 quick 30、smoke 300，release 与 lint、build 无上限。
+- Core 按 `lint → build → quick → smoke|release` 顺序执行，suite 超出预算视为失败。
   build 不计入预算；依赖下载与镜像拉取放进 build。
 - suite 的语义与各 gate 所需 suite 见 `delivery-contract.md`「验证 suite」。
-  named suite 不写入 manifest。
+  named suite 与 full（全部 test case）不写入 manifest。
 - 不符合本形状的 `verification` 是 finding，由 `$mdf migrate` 收敛。
 
-初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--full`，可重复
+初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--release`，可重复
 `--budget <suite>=<秒数>`。没有业务检查的空仓库可全部使用 `git diff --check`。
 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 

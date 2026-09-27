@@ -297,7 +297,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
         "不由 deliver 内部委托", "不读取当前 Gitflow kind",
         "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
         "`--yolo` 时主 Agent 依据仓库证据与 Bug",
-        "不代替该项批准", "不按分支 kind 选择 smoke 或 full",
+        "不代替该项批准", "不按分支 kind 选择 smoke 或 release",
         "不调用 `project-verify` 或\n`delivery verify`",
         "master 不直接修改或提交",
         "标为 `fixed`",
@@ -386,14 +386,15 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
     assert "| feature | converge、code-review、finish | lint、build、quick、smoke |" in contract
-    assert "| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、full |" in contract
+    assert "| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、release |" in contract
     assert "关联 ≥1 个**已文档化**的 named suite" in contract
     assert "Core 不执行也不核对其名称是否已文档化" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
+    assert "full 指全部 test case，是 release 与各 named suite 的上界；它没有入口" in contract
     assert "非 feature 分支变更 manifest `verification` 或新增 named suite，一律需用户确认" in contract
     repo_contract = workflow("repository-contract")
-    assert "只接受 `quick`、`smoke`、\n  `full`" in repo_contract
-    assert "named suite 不写入 manifest" in repo_contract
+    assert "只接受 `quick`、`smoke`、\n  `release`" in repo_contract
+    assert "named suite 与 full（全部 test case）不写入 manifest" in repo_contract
     design_text = workflow("design")
     assert "验收到 quick、smoke 与本交付 named suite 的映射" in design_text
     assert "必须同时给出 `protected_paths` 与 `suites`" in design_text

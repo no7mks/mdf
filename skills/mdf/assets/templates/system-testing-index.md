@@ -16,4 +16,4 @@ evidence:
 | 想做什么 | 打开 |
 | --- | --- |
 | 核对 kind 选用、失败语义与 skip | [测试约定](conventions.md) |
-| 查 quick、smoke、full 或 named suite 的命令与预算 | [测试约定](conventions.md#suite) |
+| 查 quick、smoke、release 或 named suite 的命令与预算 | [测试约定](conventions.md#suite) |

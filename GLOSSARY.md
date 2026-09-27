@@ -25,7 +25,7 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 ## 验证命令
 
-`manifest.verification` 的五个入口：`lint`、`build` 与 `quick`、`smoke`、`full`
+`manifest.verification` 的五个入口：`lint`、`build` 与 `quick`、`smoke`、`release`
 三个全局 suite 的入口命令，均必须声明；可选 `budgets` 覆盖 suite 预算。
 
 ## Test、test case 与 suite
@@ -38,7 +38,8 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 - **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
 - **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix 收口时跑。
-- **full**：全部 test case，无预算上限；release、hotfix 时跑。
+- **release**：包含 smoke，发版所需的 test case，无预算上限；release、hotfix 时跑。
+- **full**：全部 test case 的概念，通常没有入口，不由 gate 执行。
 - **named suite**：服务于某一功能区的 test case 集合，只记在
   `docs/system/testing/`，由 Agent 执行；改动相关代码后跑，由 design policy 或
   bugfix `suites.json` 声明。

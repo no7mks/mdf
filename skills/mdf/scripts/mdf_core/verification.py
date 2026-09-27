@@ -1,11 +1,13 @@
-"""项目验证入口：lint、build 与 quick/smoke/full 三个全局 suite；失败标准由项目命令负责。"""
+"""项目验证入口：lint、build 与 quick/smoke/release 三个全局 suite；失败标准由项目命令负责。"""
 import re
 
 from .errors import MDFError
 
 STEPS = ("lint", "build")
-SUITES = ("quick", "smoke", "full")
+SUITES = ("quick", "smoke", "release")
 ENTRIES = (*STEPS, *SUITES)
+# full 是全部 test case 的概念，没有入口；保留其名不给 named suite。
+RESERVED = (*ENTRIES, "full")
 DEFAULT_BUDGETS = {"quick": 30, "smoke": 300}
 NAME_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 MIGRATE_HINT = "；用 $mdf migrate 收敛到当前契约"
@@ -32,7 +34,7 @@ class Verification:
 
 def required_suite(kind):
     if kind in {"release", "hotfix"}:
-        return "full"
+        return "release"
     if kind in {"feature", "bugfix"}:
         return "smoke"
     raise MDFError("验证 suite 需要 Gitflow 交付分支", code="unsupported_branch")
@@ -59,9 +61,9 @@ def parse_suite_names(raw):
     seen = []
     for name in raw:
         if (not isinstance(name, str) or not NAME_RE.fullmatch(name)
-                or name in ENTRIES or name in seen):
+                or name in RESERVED or name in seen):
             raise MDFError(
-                "named suite 名称无效、重复或占用 lint/build/quick/smoke/full",
+                "named suite 名称无效、重复或占用 lint/build/quick/smoke/release/full",
                 code="invalid_delivery_suite",
             )
         seen.append(name)
@@ -71,7 +73,7 @@ def parse_suite_names(raw):
 def validate_verification(raw):
     if not isinstance(raw, dict) or set(raw) - {*ENTRIES, "budgets"} or set(ENTRIES) - set(raw):
         raise MDFError(
-            "verification 必须且只能声明 lint、build、quick、smoke、full 与可选 budgets"
+            "verification 必须且只能声明 lint、build、quick、smoke、release 与可选 budgets"
             + MIGRATE_HINT,
             code="invalid_verification",
         )
@@ -86,7 +88,7 @@ def validate_verification(raw):
             or any(isinstance(value, bool) or not isinstance(value, int) or value <= 0
                    for value in budgets.values())):
         raise MDFError(
-            "verification.budgets 只接受 quick、smoke、full 的正整数秒数",
+            "verification.budgets 只接受 quick、smoke、release 的正整数秒数",
             code="invalid_verification",
         )
     return Verification(commands, dict(budgets))

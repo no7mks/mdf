@@ -86,7 +86,7 @@ gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留�
 
 准备 policy JSON，必须同时给出 `protected_paths` 与 `suites`，例如
 `{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}`。
-字段不符返回 `invalid_policy`，suite 名无效或占用 lint/build/quick/smoke/full 返回
+字段不符返回 `invalid_policy`，suite 名无效或占用 lint/build/quick/smoke/release/full 返回
 `invalid_delivery_suite`，均停止并修正 policy 后重试。
 `protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置
 路径，包括 named suite；manifest `verification` 由 Core 保护。多 module 列出各

@@ -14,7 +14,7 @@ Agent 执行维护改动时只读本节。列出环境要求与 `.mdf/manifest.y
 | build | 待填 | 任何改动 |
 | quick | 待填 | 任何改动 |
 | smoke | 待填 | feature、bugfix 收口 |
-| full | 待填 | release、hotfix |
+| release | 待填 | release、hotfix |
 
 ## 技术栈
 

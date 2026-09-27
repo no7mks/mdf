@@ -298,7 +298,7 @@ def test_bugfix_requires_named_suite_and_runs_smoke(python_exe, tmp_path):
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
 
 
-def test_release_runs_full_and_rejects_smoke_evidence(python_exe, tmp_path):
+def test_release_runs_release_suite_and_rejects_smoke_evidence(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
                           "--version", "1.3.0", "--objectives-file",
@@ -308,8 +308,8 @@ def test_release_runs_full_and_rejects_smoke_evidence(python_exe, tmp_path):
     payload(mdf(python_exe, "project-verify", "run", *args))
     path = work / "changes/unreleased/1.3.0/code-review.verification.json"
     evidence = json.loads(path.read_text())
-    assert evidence["suites"] == ["quick", "full"]
-    assert [item["id"] for item in evidence["results"]] == ["lint", "build", "quick", "full"]
+    assert evidence["suites"] == ["quick", "release"]
+    assert [item["id"] for item in evidence["results"]] == ["lint", "build", "quick", "release"]
     evidence["suites"] = ["quick", "smoke"]
     path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr

@@ -32,7 +32,7 @@ def test_audit_reports_evidence_mapping_without_running_commands(
 ):
     repo = copy_fixture(tmp_path)
     replace(
-        repo / ".mdf" / "manifest.yaml", 'full: "true"', 'full: "touch audit-ran"'
+        repo / ".mdf" / "manifest.yaml", 'release: "true"', 'release: "touch audit-ran"'
     )
     init_git(repo)
 

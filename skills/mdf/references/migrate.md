@@ -136,9 +136,9 @@
 `docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，落地后
 不得残留。`baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version`
 写为当前值。不符合当前形状的 `verification`（如 `commands` 列表、`suites` 映射）按
-`delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、full；
+`delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、release；
 原 named 分组只写进 `docs/system/testing/`，不写回 manifest。初始化 CLI 用
-`--lint`、`--build`、`--quick`、`--smoke`、`--full` 与可选 `--budget` 传入。
+`--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选 `--budget` 传入。
 
 验收：逐项决定与验证命令。
 

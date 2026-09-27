@@ -19,7 +19,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   stderr 最后一行 JSON，失败细节也可读落盘证据中的 `stdout_tail` /
   `stderr_tail`。
 - suite 命令受预算限时（默认 quick 30、smoke 300 秒，可由 `verification.budgets`
-  覆盖）；lint、build 与未设预算的 full 不限时。超出预算按 process group 终止并
+  覆盖）；lint、build 与未设预算的 release 不限时。超出预算按 process group 终止并
   失败，错误 details 含已捕获的 `stdout_tail` / `stderr_tail`。
 - `--repo` 接受目标仓库路径。除 `info`、`make-id --type bug`、`make-jot-id`、
   `branch --name`、`semver-check` 和 `prepare-git` 外，命令会按自身需要检查 Git
@@ -245,7 +245,7 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   --latest-release 1.2.3 \
   --lint 'ruff check .' --build 'true' \
   --quick 'python3 -m pytest -m quick' --smoke 'python3 -m pytest -m smoke' \
-  --full 'python3 -m pytest' --budget quick=45 \
+  --release 'python3 -m pytest -m release' --budget quick=45 \
   --implementation-root src \
   --baseline 'glossary=documented' \
   --baseline 'user_guide=documented' \
@@ -264,8 +264,8 @@ architecture、interfaces、data、operations、deviations 这八项 baseline。
 初始化时建立为空目录。
 每项格式为 `NAME=documented[:仓库相对路径]` 或
 `NAME=not_applicable:原因`。
-`--lint`、`--build`、`--quick`、`--smoke`、`--full` 都必须提供非空命令；
-`--budget <suite>=<秒数>` 可重复，只接受 quick、smoke、full 的正整数，写入
+`--lint`、`--build`、`--quick`、`--smoke`、`--release` 都必须提供非空命令；
+`--budget <suite>=<秒数>` 可重复，只接受 quick、smoke、release 的正整数，写入
 `verification.budgets`。没有业务检查的空仓库可使用 `git diff --check`。
 
 它创建或更新 MDF 固定 scaffold，包括 `.mdf/manifest.yaml`、托管的
@@ -303,7 +303,7 @@ clean worktree、`manifest.state: ready` 与 full validation 零 finding。
 release 会从所有 `changes/unreleased/*/CHANGE.md` 汇总对象结果；hotfix 必须额外
 提供 `--hotfix-change-json`。可用 `--closures-json` 覆盖或补充收口结果，
 `--deferred-acceptance-json` 记录 deferred 的接受信息。正常运行会依次执行 manifest
-的 lint、build、quick、full，保持 worktree clean 后写入版本 Change、归档对象和链接重写，并在
+的 lint、build、quick、release，保持 worktree clean 后写入版本 Change、归档对象和链接重写，并在
 最后再次 full validate；`--dry-run` 不执行验证命令或写入。
 
 ### `start`
@@ -444,7 +444,7 @@ release start 要求 `--version <semver> --objectives-file <文件>`；确认的
 
 design record 需要 `--policy-file <JSON>`，必须同时给出 `protected_paths` 与 named
 suite 列表 `suites`，例如 `{"protected_paths":["tests/"],"suites":["billing"]}`；
-suite 名不得为 lint/build/quick/smoke/full。
+suite 名不得为 lint/build/quick/smoke/release/full。
 converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`；该文本是授权证据，不是自动授权。
 阶段值为 design、write-tests、implement、converge、code-review、fact-update。
 
@@ -474,14 +474,14 @@ Git 根、分支绑定、common dir；`--design-commit <hash>` 另核验共同�
 `--handoff` 要求 clean 与有效阶段指纹；审查者用 `--expected-head <hash>` 固定只读对象。
 
 `project-verify run --repo <仓库>` 按分支依次执行 lint、build、quick 与
-smoke（bugfix）或 full（release/hotfix），证据 `suites` 为 `quick` 加后者。
+smoke（bugfix）或 release（release/hotfix），证据 `suites` 为 `quick` 加后者。
 bugfix 须有 `changes/unreleased/<slug>/suites.json` 关联 named suite，缺失返回
 `missing_delivery_suite`；Core 不执行 named suite。证据未覆盖所需 suite 时
 `check` 返回 `stale_verification`。
 运行期间 stderr 输出 `[i/N] start <id>`、子进程原文、可选 30 秒心跳
 `[i/N] running <id> (Ns)`，以及 `[i/N] done exit=<code> (Ns)`。suite 超出预算
 （默认 quick 30、smoke 300，可由 `verification.budgets` 覆盖）即终止 process
-group 并失败，details 含 partial tail；lint、build 与未设预算的 full 不限时。
+group 并失败，details 含 partial tail；lint、build 与未设预算的 release 不限时。
 结果写入 `changes/unreleased/<slug>/code-review.verification.json`，含
 `suites`。feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix
 为该分支稳定 SemVer。

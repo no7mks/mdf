@@ -116,7 +116,7 @@ bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
 （`{"suites":["<named suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从
 `docs/system/testing/` 已文档化的 named suite 中选定 ≥1 个写入并提交；没有合适的
 suite 时停止，询问用户是否新建，确认后先补该 suite 的文档再关联。不得关联
-lint/build/quick/smoke/full，不得未经确认新建。
+lint/build/quick/smoke/release/full，不得未经确认新建。
 
 ### 独立审查
 
@@ -172,7 +172,7 @@ finish 本次集成产生新提交且增量不可跳过、返回 `stale_verifica
 named suite。仅非本交付 `docs/` 的集成
 不强制重验。仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
-脚本按当前分支执行所需 suite：依次执行 lint、build、quick 与 smoke（bugfix）或 full
+脚本按当前分支执行所需 suite：依次执行 lint、build、quick 与 smoke（bugfix）或 release
 （release/hotfix），逐项记录命令、预算、退出状态与 `suites`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON
