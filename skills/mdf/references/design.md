@@ -50,7 +50,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 在 design.md 中明确目标、非目标、接口、错误语义、
 验收到 quick、smoke 与本交付 named suite 的映射。测试仅对
 objectives 负责。项目级 kind、失败语义与各 suite 以 `docs/system/testing/` 为准；
-本页只写本次交付到 suite 的映射，并必须声明本交付 named suite 名称，供
+本页只写本次交付到 suite 的映射，并必须声明涉及功能块的 named suite 名称，供
 write-tests 把用例归入对应 suite。
 设计前从 `docs/README.md` 定位并读取相关当前事实页，在 design.md 列出
 当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
@@ -91,8 +91,9 @@ gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留�
 `protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置
 路径，包括 named suite；manifest `verification` 由 Core 保护。多 module 列出各
 `<module>/tests/` 及各 module 的测试配置，不要只抄仓库根 `tests/`。
-`suites` 为本交付 named suite 名：已在 `docs/system/testing/` 文档化，或写明
-由 write-tests 新增其文档。
+`suites` 列出本交付改动涉及的每个功能块的 named suite，按功能块而非本次 feature
+命名；已在 `docs/system/testing/` 文档化，或仅在出现新功能块时写明由 write-tests
+新增其文档。
 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。

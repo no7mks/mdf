@@ -113,8 +113,8 @@ release 读取 `objectives.md` 对照本版目标与验收；超出计划的新�
 不为形式创建 feature 材料。
 
 bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
-（`{"suites":["<named suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从
-`docs/system/testing/` 已文档化的 named suite 中选定 ≥1 个写入并提交；没有合适的
+（`{"suites":["<named suite 名>"]}`）：文件缺失时，按修复改动涉及的全部功能块从
+`docs/system/testing/` 已文档化的 named suite 中逐个选定写入并提交；没有合适的
 suite 时停止，询问用户是否新建，确认后先补该 suite 的文档再关联。不得关联
 lint/build/quick/smoke/release/full，不得未经确认新建。
 
@@ -159,7 +159,8 @@ reviewer 自行合并。
 
 步骤 3 由主 Agent 汇总去重，逐项核实，记录采纳或不采纳的依据；以证据裁定，不按票数决定。
 允许自主修复实现，或依据已确认目标/设计纠正、补充、删除错误或重复测试，记录依据。
-不得削弱验收或验证门槛；目标/契约变更须用户确认。审查测试时核对
+不得削弱验收或验证门槛；目标/契约变更须用户确认。核对 design policy `suites` 或
+`suites.json` 覆盖本轮改动涉及的全部功能块，缺漏按问题提出。审查测试时核对
 `delivery-contract.md`「失败语义」：无运行时 skip、提前返回或 xfail，入口配置能让
 warning、skip 与空选择非零退出，豁免已记录且经用户确认。混合依赖的 test case
 按问题提出，可依既定目标自主拆分，不得改成 skip。更好的架构可以建议，超出目标不直接实施。

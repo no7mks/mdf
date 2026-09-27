@@ -387,10 +387,12 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "两路不得各自再写底座" in contract
     assert "| feature | converge、code-review、finish | lint、build、quick、smoke |" in contract
     assert "| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、release |" in contract
-    assert "关联 ≥1 个**已文档化**的 named suite" in contract
+    assert "关联修复涉及的全部功能块中**已文档化**的" in contract
     assert "Core 不在门禁中执行也不核对其名称是否已文档化" in contract
     assert "每次运行 suite（含 named suite）都必须产出 JUnit XML 报告" in contract
     assert "即使命令退出码为 0" in contract
+    assert "不按 feature、迭代或交付轮次建立" in contract
+    assert "不跑 release，更不跑 full" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
     assert "新增或放宽须用户确认" in contract

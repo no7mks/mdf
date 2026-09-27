@@ -40,9 +40,9 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 - **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix 收口时跑。
 - **release**：包含 smoke，发版所需的 test case，无预算上限；release、hotfix 时跑。
 - **full**：全部 test case 的概念，通常没有入口，不由 gate 执行。
-- **named suite**：服务于某一功能区的 test case 集合，只记在
-  `docs/system/testing/`，由 Agent 执行；改动相关代码后跑，由 design policy 或
-  bugfix `suites.json` 声明。
+- **named suite**：某一功能块（如 module）的 test case 集合，跨交付长期复用，不按
+  feature 建立；只记在 `docs/system/testing/`，由 Agent 执行。改动该功能块后跑，
+  由 design policy 或 bugfix `suites.json` 列出全部涉及的功能块。
 
 预算包含启动依赖与预热，不含 build；超出预算视为失败。
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的

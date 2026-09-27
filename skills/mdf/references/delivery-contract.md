@@ -107,8 +107,8 @@ passed 代替 CLI 检查。
 
 设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置，包括 named
 suite 的路径；manifest 的 `verification` 始终属于测试门槛。路径可以是
-仓库相对文件、目录或 glob。design policy 必须另含 `suites`：本交付 named suite
-名的非空列表，不得使用 lint/build/quick/smoke/release/full。
+仓库相对文件、目录或 glob。design policy 必须另含 `suites`：本交付改动涉及的全部
+功能块的 named suite 名，非空列表，不得使用 lint/build/quick/smoke/release/full。
 点名执行 test case 或 test 仅用于定位，不替代所需 suite 通过。`delivery verify` /
 `project-verify` / gate 记录必须写出 Core 实际跑过的 `suites`。
 代码和验证配置（含预算）改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
@@ -165,7 +165,7 @@ XML 写进该目录；`.mdf/reports/` 由 Core 自带 `.gitignore` 忽略，全�
 | quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 |
 | smoke | 任意种类，包含 quick 的全部成员 | 300s | feature、bugfix 收口 |
 | release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | release、hotfix |
-| named | 服务于某一功能区的 test case，均属于 full | 无 | 改动相关代码后 |
+| named | 某一功能块（如 module）的 test case，均属于 full | 无 | 改动该功能块后 |
 
 - full 指全部 test case，是 release 与各 named suite 的上界；它没有入口，不由任何
   gate 执行，名字保留、不得用作 named suite。
@@ -185,12 +185,19 @@ XML 写进该目录；`.mdf/reports/` 由 Core 自带 `.gitignore` 忽略，全�
 
 named suite 不在 manifest，Core 不在门禁中执行也不核对其名称是否已文档化；Agent 以
 `suite-run --name <suite> --command <入口命令>` 执行 `docs/system/testing/` 中该 suite
-的入口命令，并把命令、结果与报告路径写进对应 gate 或 code-review 记录的 summary。feature 必须在 design 声明本交付 named suite；
-write-tests 把用例归入 quick、smoke 或所列 named suite，implement 不得擅自改测试。
+的入口命令，并把命令、结果与报告路径写进对应 gate 或 code-review 记录的 summary。
+
+named suite 按功能块划分并跨交付长期复用，不按 feature、迭代或交付轮次建立，名称
+不得取自 PRP、Bug 或交付 slug。一次改动涉及几个功能块，就要修改并通过这几个功能块
+的 named suite：feature 在 design 列出全部涉及的功能块 suite，write-tests 把新用例
+归入所属功能块的 suite（或 quick、smoke），implement 不得擅自改测试。只有出现新的
+功能块时才新建 named suite。feature、bugfix 收口只跑 smoke 与涉及的 named suite，
+不跑 release，更不跑 full。
 
 bugfix 不创建 design/write-tests/converge。由 code-review 步骤 1 在
-`changes/unreleased/<slug>/suites.json` 关联 ≥1 个**已文档化**的 named suite；
-默认不得新建，用户明确确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
+`changes/unreleased/<slug>/suites.json` 关联修复涉及的全部功能块中**已文档化**的
+named suite（≥1）；默认不得新建，用户明确确认后先在 `docs/system/testing/` 补该
+suite 的文档，再关联。
 
 非 quick 用例一旦在 converge 之后失败（bugfix / release / hotfix 则为第一次跑
 所需 suite 之后），必须尝试补一条 quick 复现用例（hermetic 的 UT 或 PT）；原慢
