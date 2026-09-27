@@ -160,6 +160,20 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --document-path docs/system/interfaces/api.md
 ```
 
+### `prose-check`
+
+```bash
+python3 skills/mdf/scripts/mdf.py prose-check --repo /path/to/repository [--path docs/a.md ...]
+```
+
+按 `skills/mdf/references/doc-structure.md` 列出结构硬限制违例，供 `$mdf prettify` 使用。
+
+- 省略 `--path` 时检查全部带角色文档（`docs/JOTS.md` 除外）；`--path` 可重复，
+  接受任意仓库内 Markdown。
+- `AGENTS.md` 只查托管区块；不要求 manifest ready。
+- 输出 `checked`、`issue_count` 与逐条 `issues`（`path`、`line`、`code`、`message`）；
+  有违例时以状态码 `2` 退出。
+
 ### `list`
 
 ```bash

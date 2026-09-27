@@ -56,6 +56,7 @@ disable-model-invocation: true
                  ├──── prp split ─────────────────────────────────────→ references/prp-split.md
                  ├──── finish ────────────────────────────────────────→ references/finish.md
                  ├──── fact audit ────────────────────────────────────→ references/fact-audit.md
+                 ├──── prettify ──────────────────────────────────────→ references/prettify.md
                  ├──── clarify <议题> ────────────────────────────────→ references/clarify.md
                  ├──── bug create ────────────────────────────────────→ references/bug-create.md
                  ├──── prp create ────────────────────────────────────→ references/prp-create.md
@@ -98,7 +99,8 @@ start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`
 `--review-strategy`、`--write-tests-model`、`--implement-model`、
 `--code-review-model`；由对应 intent 解析并写入 roster。`--*-model` 值为口语
 描述，可点名一个或多个模型。
-fact update、fact audit 可带 `--scope branch|full|paths`（省略为 branch）。
+fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）；
+prettify 另可列出 `<path>...`。
 upgrade 可带 `--source`。未知 `--` token 停止询问。
 `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，

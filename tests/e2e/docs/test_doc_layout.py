@@ -372,3 +372,21 @@ def test_audit_reports_prose_structure_in_fact_pages_only_managed_agents(python_
     assert [(item["code"], item["path"]) for item in prose] == [
         ("prose.block", "docs/system/testing/conventions.md"),
     ]
+
+
+def test_prose_check_lists_issues_for_given_paths(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    note = repo / "docs/context/research/note.md"
+    note.parent.mkdir(parents=True, exist_ok=True)
+    note.write_text("# 笔记\n\n" + "".join(f"第{i}行。\n" for i in range(7)))
+    init_git(repo)
+    assert_ok(mdf(python_exe, "prose-check", "--repo", str(repo)))
+    result = mdf(python_exe, "prose-check", "--repo", str(repo),
+                 "--path", "docs/context/research/note.md")
+    assert result.returncode == 2
+    data = json.loads(result.stdout)
+    assert [(item["path"], item["line"], item["code"]) for item in data["issues"]] == [
+        ("docs/context/research/note.md", 3, "prose.block"),
+    ]
+    outside = mdf(python_exe, "prose-check", "--repo", str(repo), "--path", "../x.md")
+    assert "invalid_path" in outside.stderr

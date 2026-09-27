@@ -110,6 +110,7 @@
 
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
 - `$mdf fact audit [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构
+- `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
@@ -157,6 +158,7 @@ $mdf fact update
 $mdf fact update --scope full
 $mdf finish
 $mdf fact audit
+$mdf prettify --scope full
 $mdf archive
 $mdf prp split
 $mdf codewiki generate
@@ -172,7 +174,7 @@ $mdf clarify 要不要把缓存放到 Redis
 `bug create`、`prp create`、`prp review`、`prp split`、`tree`、`prp tree`、`clarify`、
 `next`、`deliver`、`start`、
 `design`、`write-tests`、`implement`、`converge`、`fix`、`verify-fix`、`code-review`、`fact update`、
-`finish`、`archive`、`fact audit`、`codewiki generate`、`codewiki update`、
+`finish`、`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、
 `upgrade`、`integrate`、`help`。
 
 `$mdf bootstrap`
@@ -350,6 +352,11 @@ branch/paths，release 的 `--base` 为上一正式发布。独立调用须 mani
 路由页、体积、ADR 复述）。
 说明：只读；不执行 manifest `verification`。`size.hard` 阻断。finish release 的
 `--base` 为上一正式发布。
+
+`$mdf prettify`
+用法：`$mdf prettify [<path>...] [--scope branch|full|paths]`（省略为 branch）
+用途：按 `doc-structure.md` 把大段文字改写为列表、多级列表、表格与图。
+说明：只改结构不改语义；`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
 
 `$mdf codewiki generate`
 用法：`$mdf codewiki generate`

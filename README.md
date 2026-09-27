@@ -38,6 +38,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf fact update [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；finish 前段自动调用 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf fact audit [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
+| `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 | `$mdf integrate` | 在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP |

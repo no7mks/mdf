@@ -117,3 +117,32 @@ def structure_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
         for number, code, message in structure_issues(role_text(path, rel)):
             findings.append(Finding(code, f"第 {number} 行：{message}", rel))
     return findings
+
+
+def command_prose_check(args) -> None:
+    """列出结构硬限制违例：默认检查全部带角色文档，--path 指定任意仓库内 Markdown。"""
+    from .errors import MDFError, emit
+    from .gitutil import repo_path, require_git_root
+
+    repo = repo_path(args.repo)
+    require_git_root(repo)
+    if args.path:
+        paths = []
+        for raw in args.path:
+            path = (repo / raw).resolve()
+            if (Path(raw).is_absolute() or not path_stays_in_repo(repo, path)
+                    or not path.is_file() or path.suffix != ".md"):
+                raise MDFError(f"--path 必须是仓库内的 Markdown 文件: {raw}", code="invalid_path")
+            paths.append(path)
+    else:
+        paths = [path for path in sizable_documents(repo)
+                 if relative(repo, path) != "docs/JOTS.md"]
+    issues = [
+        {"path": relative(repo, path), "line": number, "code": code, "message": message}
+        for path in sorted(set(paths))
+        for number, code, message in structure_issues(role_text(path, relative(repo, path)))
+    ]
+    emit({"ok": not issues, "operation": "prose-check", "checked": len(set(paths)),
+          "issue_count": len(issues), "issues": issues})
+    if issues:
+        raise SystemExit(2)

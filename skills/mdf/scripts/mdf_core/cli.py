@@ -15,6 +15,7 @@ from .commands_misc import (
     command_validate,
 )
 from .audit import command_audit
+from .doc_size import command_prose_check
 from .commands_release import command_release_closeout
 from .errors import MDFError
 from .run_logs import RunLog
@@ -74,6 +75,11 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)
+
+    prose = subparsers.add_parser("prose-check")
+    prose.add_argument("--repo", required=True)
+    prose.add_argument("--path", action="append", default=[])
+    prose.set_defaults(func=command_prose_check)
 
     make_id = subparsers.add_parser("make-id")
     make_id.add_argument(
