@@ -358,13 +358,13 @@ def test_init_dispatches_to_bootstrap_or_migrate():
     assert table[1][3] == "内部执行 bootstrap 或 migrate"
     assert table[1][5] == "按选择树结束"
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert re.search(r"未就绪且符合契约 ─+→ \[内部执行 bootstrap 并返回\]", diagram)
+    assert re.search(r"未就绪、无事实且符合契约 ─+→ \[内部执行 bootstrap 并返回\]", diagram)
     assert re.search(r"已有事实或已 ready ─+→ \[内部执行 migrate 并返回\]", diagram)
     assert "references/bootstrap.md" in text
     assert "references/migrate.md" in text
     assert "`$mdf init migrate`" in text
     migrate = workflow("migrate")
-    assert re.search(r"未就绪且符合契约 ─+→ \[停止并提示 bootstrap\]", migrate.split(
+    assert re.search(r"未就绪、无事实且符合契约 ─+→ \[停止并提示 bootstrap\]", migrate.split(
         "```text\n", 1
     )[1].split("```", 1)[0])
     assert "或 init 依据公共分流规则的内部委托" in migrate
@@ -394,7 +394,7 @@ def test_jot_promote_revalidates_without_rewriting():
     assert "回滚到\n步骤 7 完成状态" in jot
     table = rows(jot)
     assert (table[4][1], table[4][2]) == ("Clarify", "约束")
-    assert "复验失败保留；否则恢复 Jot" in table[7][6]
+    assert "复验保留；校验恢复；land 失败留现场" == table[7][6]
 
 
 def test_clarify_unavailable_facts_stop_like_cancel():

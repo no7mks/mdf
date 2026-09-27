@@ -138,8 +138,15 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 
 **审阅**
 
-内部委托 fact audit（同一 `--scope`、`--base` 与路径）做双向只读审阅与 full validation；
-通过前不得声称事实同步完成。
+内部委托 fact audit 之前，先提交本次事实页，含新建或拆出的专用叶。
+
+- full validation 按已提交内容判 `fact.untracked` 与 `evidence.stale`。
+- 未提交的同次写入会变成其他未通过，到不了步骤 4。
+- finish 委托时，这次事实提交由本 intent 完成。
+  调用方随后提交 Change 等其余材料。
+- 委托使用同一 `--scope` 与 `--base`。
+  - `paths` 要把本次新建或拆出的页写入 `--document-path`。
+  - `branch` 依赖已提交的 diff，未提交的新文件不在范围内。
 
 - feature finish 调用时执行受影响验证。
 - 只改事实文档不机械重跑全部业务验证；
@@ -176,10 +183,12 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
 
 - 有改写则回到 3 重审；`4→3` 最多两次。
+  - 重审前再次提交结构改写，并把新建或拆出的页并入 `--document-path`。
+  - 只改 audit 返回范围内的页面。
 - 第三次仍有结构 finding（表中的超次 finding）则停止并报告，即使本步已经改写也不回 3。
 - 无结构 finding 时无改写结束，含第三次审阅已通过。失败与无改写互斥。
-- 无改写或重审通过后按公共规则提交。
-  - finish 委托时（各分支）由调用方统一提交。
+- 无改写或重审通过后，事实页应已在审阅前提交。
+  - finish 委托时不把事实页留到调用方。
   - feature finish 委托时另运行 `delivery record --repo "$REPO_ROOT" --stage fact-update`。
     - `--summary` 写本次事实审阅确认与验证证据。
 

@@ -67,7 +67,8 @@
                  │
                  ├──── 通过 ─────────────────→ [交接并结束]
                  ├──── 复验失败 ─────────────→ [保留两者，停止]
-                 └──── 删 Jot 后校验失败 ────→ [恢复 Jot 到步骤 7 完成状态，停止]
+                 ├──── 删 Jot 后校验失败 ────→ [恢复 Jot 到步骤 7 完成状态，停止]
+                 └──── 提交或 land 失败 ─────→ [保留现场并报告]
 ```
 
 ## 工作流（唯一执行契约）
@@ -87,7 +88,7 @@
 | 5 | Clarify | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | Confirm | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
 | 7 | Create object | 脚本 | 切写入根、核对 Jot 并写对象 | 根、Jot、校验 | 8 | 未切换留 7；Jot 缺失停；写入后保留两者 |
-| 8 | Promote | 脚本 | 复验、删 Jot 后校验、提交，再 land | 两次校验、提交 | 交接并结束 | 复验失败保留；否则恢复 Jot |
+| 8 | Promote | 脚本 | 复验、删 Jot、提交并 land | 两次校验、提交 | 结束 | 复验保留；校验恢复；land 失败留现场 |
 
 ## 术语与数据结构
 
@@ -237,5 +238,6 @@
 
 - 两种失败均保留对象与原 Jot，并报告 findings。
 - 成功时将本次创建与移除作为同一个独立 commit 提交。
+- 提交或 `planning land` 失败时不恢复 Jot，保留现场并报告是否已提交、是否已合入 develop。
 - 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
   - 然后提示用户显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`。

@@ -14,8 +14,8 @@
 │ 2 Resolve bug                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 命中既有对象 ────→ [停止并交接]
-                 ├──── 需澄清或消歧 ────→ 2 Resolve bug
+                 ├──── open/fixed/rejected ────→ [停止并交接]
+                 ├──── 需澄清或消歧 ───────────→ 2 Resolve bug
                  │
                  ▼ 输入唯一且完整
 ┌──────────────────────────────────┐
@@ -60,7 +60,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
-| 2 | Resolve bug | 脚本 | 用 `list` 查重并确认单个 Bug | list 结果、唯一对象 | 3 | 命中则停止；否则留 2 |
+| 2 | Resolve bug | 脚本 | 用 `list` 查重并确认单个 Bug | list 结果、唯一对象 | 3 | 非 closed 命中则停；否则留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐行为、复现、影响及必填字段 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | Confirm | 约束 | 展示边界和排除范围，取得明确 open 确认 | 用户确认 | 5 | 取消停止；来源变回 2；否则事实 3 |
 | 5 | Create bug | 脚本 | 确认 slug，生成 ID、写 open、校验并回读 | 零 finding、对象与 diff | 6 | 保留现场，停止 |
@@ -85,15 +85,16 @@
 **对象**
 
 - 接收用户手动提供的单个 Bug 事实；一次不得创建多个对象。
-- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected`。
+- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected --status closed`。
   以用户输入的标题与正文对照输出中的 `title` 查重；不读取既有对象正文。
-  - 命中既有 Bug 时不新建，提示在既有对象中补充。
+  - `open` / `fixed` / `rejected`：不新建，提示在既有对象中补充。
+  - `closed`：继续新建，正文写明回归自该旧 Bug 的完整 ID。
   - 不逐篇翻阅 `docs/bugs/`。
 - 外部想法、 当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
 
 验收：确认的 Bug 与采用范围。
 
-异常与交接：命中既有 Bug 时停止并交接；范围不明时留在 2。
+异常与交接：`open` / `fixed` / `rejected` 停止并交接；`closed` 继续；范围不明时留在 2。
 
 ### 事实与确认
 

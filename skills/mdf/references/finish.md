@@ -198,7 +198,7 @@
 - ❌ finish 不得改用 `full` 做全库结构整理。
 - 仅 feature 在委托前运行 `delivery check --stage fact-update`：
   - 确认 code-review 有效，并由 fact update 记录 fact-update gate。
-- 调用方统一提交本次事实与证据。
+- 事实页由 fact-update 在审阅前提交。调用方提交其余材料与证据。
 - 按分支准备材料：
   - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 canonical CHANGE.md，
     与 objectives、design、gates 同级；材料不搬迁。
@@ -283,7 +283,7 @@
     - 不准备 closures，不调用 `release-closeout`。
     - 步骤 4 补验与增量 code-review 通过后，再重跑本步骤。
   - 已有记录按 verify-fix「记录」的有效性规则仍有效则视为通过。
-    - 有效指记录 HEAD 到当前 HEAD 只改记录文件、`docs/` 或 `changes/` 材料。
+    - 不在这里另下定义。复现命令变化则过期，须重跑其步骤 2–3。
   - 无待收入 `fixed` Bug 则跳过委托。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
   - 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
