@@ -8,5 +8,6 @@ evidence:
 
 # 测试约定
 
-本夹具仅有 `check` 自定义验证项，未按 UT、PT、IT、E2E 分层。命令非零退出为
-失败；未配置将 warning、deprecated 或 notice 当失败。禁止用 skip 降低门槛。
+本夹具的 lint、build、quick、smoke、full 入口均为 `true`，尚无 UT、PT、IT、E2E
+测试，也没有 named suite。命令非零退出为失败；未配置将 warning、deprecated 或
+notice 当失败。禁止用 skip 降低门槛。

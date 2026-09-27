@@ -42,7 +42,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert summary["moves"]
     assert summary["affected_files"]
     assert summary["verification"] == {
-        "suites": ["full"], "commands": ["true"], "executed": False,
+        "suites": ["quick", "full"], "commands": ["true"] * 4, "executed": False,
     }
     assert "confirmation_required" not in preview
     assert "digest" not in json.dumps(preview)
@@ -54,7 +54,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert applied["dry_run"] is False
     assert applied["verification"]["results"] == [
         {"command": "true", "exit_code": 0}
-    ]
+    ] * 4
     release_dir = repo / "changes" / "1.3.0"
     assert (release_dir / "CHANGE.md").is_file()
     assert (release_dir / "service-health" / "CHANGE.md").is_file()
@@ -94,8 +94,8 @@ def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
     repo = copy_fixture(tmp_path)
     replace(
         repo / ".mdf" / "manifest.yaml",
-        'command: "true"',
-        'command: "touch verification-marker"',
+        'full: "true"',
+        'full: "touch verification-marker"',
     )
     prepare_release(repo)
     arguments = release_arguments(repo)

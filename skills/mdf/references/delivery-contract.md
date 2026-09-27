@@ -105,59 +105,79 @@ code-review 需收敛全绿，finish 需当前 code-review、事实审阅和验�
 passed 代替 CLI 检查。
 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 
-设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置，包括交付
-suite 的路径；manifest 的 verification.commands 始终属于测试门槛。路径可以是
-仓库相对文件、目录或 glob。分层后 design policy 必须另含 `suites`（非空交付
-suite 名列表，不得使用 quick/full）。
-单项重跑仅用于定位，不替代所需 suite 通过。`delivery verify` /
-`project-verify` / gate 记录必须写出实际跑过的 `suites`；feature 不得用
-「只跑了 quick」冒充已跑本交付 suite。未分层证据若无 `suites` 字段，视为
-已跑 quick 与 full（与全部项相同）。
-代码和验证配置改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
+设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置，包括 named
+suite 的路径；manifest 的 `verification` 始终属于测试门槛。路径可以是
+仓库相对文件、目录或 glob。design policy 必须另含 `suites`：本交付 named suite
+名的非空列表，不得使用 lint/build/quick/smoke/full。
+点名执行 test case 或 test 仅用于定位，不替代所需 suite 通过。`delivery verify` /
+`project-verify` / gate 记录必须写出 Core 实际跑过的 `suites`。
+代码和验证配置（含预算）改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
 `fact-update` gate 绑定 `facts`、`implementation` 与 `design`：只改测试或验证配置不使
 事实审阅过期，但仍使全绿与 code-review 过期。
 `code` fingerprint 覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件；
 ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
 记录文件不参与其自身校验对象的 fingerprint。缺失或过期时原地补验，不回退 intent。
 
-### Suite 与执行矩阵
+### 测试层级与分类
 
-协议只规定必须跑哪些 suite；suite 在仓库里如何实现由消费方决定。
+- 层级：test 是含若干断言的最小测试项，通常为函数；test case 是服务于同一目标的
+  一组 test，通常为类或文件；suite 是 test case 的集合。suite 成员粒度是
+  test case，归属写在代码里（marker、目录等），文档只写选择规则，不逐条列举。
+- kind 按测试对象划分：UT 测内部单元；IT 测产品真实开放的接口（lib 的函数、
+  服务的 API 等），一般不用 mock；E2E 走用户最终入口（浏览器、模拟器、命令行
+  调用、使用 lib 的 demo-app）。PT 是生成输入并断言不变式的手法，可用于任一层级。
+- 依赖按是否 hermetic 划分：测试进程能自行拉起全部依赖、不需要预先存在的环境、
+  凭据或网络即为 hermetic；依赖第三方资源或真实兄弟产品（如联调对端）即为
+  external。第三方资源不含待测产品与兄弟产品；mock 掉兄弟产品后才算 hermetic。
 
-| 交付 | 阶段 | 必须通过的 suite |
-| --- | --- | --- |
-| feature | write-tests | 仍只要求可执行测试已写；不要求全绿 |
-| feature | converge、code-review、finish | 全局 quick ∪ design policy `suites` 声明的交付 suite |
-| bugfix | code-review、finish | 全局 quick ∪ `suites.json` 关联的交付 suite（≥1） |
-| release / hotfix | code-review、finish（及 `project-verify`） | 全局 full |
-| 任意 | 只改事实文档 | 不机械重跑全部业务验证；实现 / 测试 / 验证配置变更仍使对应验证过期 |
+### 验证 suite
 
-feature 必须在 design 声明本交付 suite：把验收映射到 quick（全局 always-run）或
-本交付 suite（含慢路径）。无慢用例时，本交付全量可以等于已写入 quick 的那些测试，
-但仍须作为 suite 声明并在验收时重跑。write-tests 把用例写进 `suites` 所列 suite；
-implement 不得擅自改测试。
+| suite | 成员 | 预算 | 何时必跑 |
+| --- | --- | --- | --- |
+| quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 |
+| smoke | 任意种类，包含 quick 的全部成员 | 300s | feature、bugfix 收口 |
+| full | 全部 test case | 无 | release、hotfix |
+| named | 服务于某一功能区的 test case，均属于 full | 无 | 改动相关代码后 |
 
-bugfix 不创建 design/write-tests/converge。分层后由 code-review 步骤 1 在
-`changes/unreleased/<slug>/suites.json` 关联 ≥1 个**已有**交付 suite；默认不得
-新建 suite，除非用户明确确认后先在 manifest `verification.suites` 新增该 key，再关联。
-不能只关联 quick 或 full。未分层时不要求该文件，行为与今天一致（跑全部项）。
-分层后 `delivery verify` / `project-verify` 证据必须含 `suites`，缺失视为过期。
+- 预算包含启动依赖与预热，不含 build；项目可在 manifest `budgets` 覆盖。
+  test case 放进 quick 或 smoke 会超预算时，拆成多个 test case，只把合预算的部分放入。
+- lint 与 build 同 quick 一样，任何改动都要跑。
+- 每个 suite 在 `docs/system/testing/` 有一节或一页：目的、入口命令、成员选择
+  规则、预算、环境，以及点名执行 test case / test 的命令模板。
+
+| 交付 | 阶段 | Core 必须通过 | Agent 另须通过 |
+| --- | --- | --- | --- |
+| feature | write-tests | 只要求可执行测试已写；不要求全绿 | — |
+| feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 所列 named suite |
+| bugfix | code-review、finish | lint、build、quick、smoke | `suites.json` 所列 named suite（≥1） |
+| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、full | — |
+| 任意 | 只改事实文档 | 不机械重跑业务验证；实现、测试或验证配置变更仍使对应验证过期 | — |
+
+named suite 不在 manifest，Core 不执行也不核对其名称是否已文档化；Agent 按
+`docs/system/testing/` 中该 suite 的入口命令执行，并把命令与结果写进对应 gate
+或 code-review 记录的 summary。feature 必须在 design 声明本交付 named suite；
+write-tests 把用例归入 quick、smoke 或所列 named suite，implement 不得擅自改测试。
+
+bugfix 不创建 design/write-tests/converge。由 code-review 步骤 1 在
+`changes/unreleased/<slug>/suites.json` 关联 ≥1 个**已文档化**的 named suite；
+默认不得新建，用户明确确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
 
 非 quick 用例一旦在 converge 之后失败（bugfix / release / hotfix 则为第一次跑
-所需 suite 之后），必须尝试补一条 quick 复现用例并纳入 always-run；原慢用例保留。
-结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，未补则写
-原因。code-review 可按既定目标自主补该用例；削弱门槛或改 skip/预期仍须用户批准。
+所需 suite 之后），必须尝试补一条 quick 复现用例（hermetic 的 UT 或 PT）；原慢
+用例保留。结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，
+未补则写原因。code-review 可按既定目标自主补该用例；削弱门槛或改 skip/预期仍须
+用户批准。
 
 ## 修改与提交权限
 
 调用交付 intent 授权其必要的设计基线、阶段提交和工作分支集成，提交使用中文 Conventional Commit。
 只暂存当前阶段的必要路径；不得顺带提交无关用户改动。可以主动提交尚未完成的阶段产出，
 但须准确记录未完成状态；阶段提交不代表 gate 通过，不能绕过既有验收与审阅。
-首次 write-tests 按既定设计编写测试属于授权，含把用例写入 design 声明的 suite 并
-在 manifest `verification.suites` 新增或更新对应 key 及成员。implement 不自主修改测试。
+首次 write-tests 按既定设计编写测试属于授权，含把用例归入 quick、smoke 或 design 声明的
+named suite，并在 `docs/system/testing/` 补齐所列 named suite 的文档。implement 不自主修改测试。
 converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
 code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
-非 feature 分支变更 `verification.suites` 或新增交付 suite 名，一律需用户确认。
+非 feature 分支变更 manifest `verification` 或新增 named suite，一律需用户确认。
 架构优化可以建议；超出当前目标不直接实施。修复后在当前 intent 原地重验。
 
 fact update 可独立运行，也由 finish 前段内部调用，其事实审阅由 fact audit 完成。

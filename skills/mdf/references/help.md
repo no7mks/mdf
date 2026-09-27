@@ -298,7 +298,7 @@ partition 时在 design.md 写明各 index 切片。
 用途：集成并持续修复到所需 suite 通过。
 说明：本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录；
 测试修改批准回主会话。不计入 roster。
-修复实现直到当前交付的 quick 与本交付 suite 通过；不要求跑全局 full。
+修复实现直到 lint、build、quick、smoke 与本交付 named suite 通过；不要求跑 full。
 
 `$mdf fix <bug-id>`
 用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
@@ -348,7 +348,7 @@ branch/paths，release 的 `--base` 为上一正式发布。独立调用须 mani
 用法：`$mdf fact audit [--scope branch|full|paths]`
 用途：只读审阅文档与实现的覆盖、证据、语义与加载质量（入口过载、唯一归属、
 路由页、体积、ADR 复述）。
-说明：只读；不执行 verification.commands。`size.hard` 阻断。finish release 的
+说明：只读；不执行 manifest `verification`。`size.hard` 阻断。finish release 的
 `--base` 为上一正式发布。
 
 `$mdf codewiki generate`

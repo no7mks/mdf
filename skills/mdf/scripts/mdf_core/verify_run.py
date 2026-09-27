@@ -13,7 +13,6 @@ from typing import Any
 
 from .errors import MDFError
 
-VERIFY_COMMAND_TIMEOUT = 600
 TAIL_CHARS = 2000
 HEARTBEAT_SECONDS = 30
 LABEL_MAX = 80
@@ -141,25 +140,27 @@ def _wait_with_heartbeat(
     proc: subprocess.Popen[bytes],
     last_output: list[float],
     started: float,
-    timeout: float,
+    timeout: float | None,
     index: int,
     total: int,
     display: str,
 ) -> bool:
-    deadline = started + timeout
+    deadline = None if timeout is None else started + timeout
     next_heartbeat = started + HEARTBEAT_SECONDS
     while True:
         now = time.monotonic()
-        remaining = deadline - now
-        if remaining <= 0:
-            return True
-        wait_for = min(remaining, max(next_heartbeat - now, 0.0))
+        wait_for = max(next_heartbeat - now, 0.0)
+        if deadline is not None:
+            remaining = deadline - now
+            if remaining <= 0:
+                return True
+            wait_for = min(remaining, wait_for)
         try:
             proc.wait(timeout=wait_for if wait_for > 0 else 0.05)
             return False
         except subprocess.TimeoutExpired:
             now = time.monotonic()
-            if now >= deadline:
+            if deadline is not None and now >= deadline:
                 return True
             next_heartbeat = last_output[0] + HEARTBEAT_SECONDS
             if now >= next_heartbeat:
@@ -177,7 +178,7 @@ def run_verify_command(
     label: str | None = None,
     index: int = 1,
     total: int = 1,
-    timeout: float = VERIFY_COMMAND_TIMEOUT,
+    timeout: float | None = None,
 ) -> dict[str, Any]:
     display = _progress_label(label if label is not None else command)
     _write_progress(index, total, f"start {display}")
@@ -222,10 +223,10 @@ def run_verify_command(
         index, total, f"done exit={exit_code} ({elapsed:.0f}s)"
     )
     entry = {"command": command, "exit_code": exit_code}
-    limit = _timeout_value(timeout)
     if timed_out:
+        limit = _timeout_value(timeout)
         raise MDFError(
-            f"verification command 超时（{limit} 秒）: {command}",
+            f"verification command 超出预算（{limit} 秒）: {command}",
             code="verify_command_failed",
             details={
                 "command": command,
@@ -253,10 +254,15 @@ def run_verify_commands(
     commands: list[str],
     *,
     labels: list[str] | None = None,
-    timeout: float = VERIFY_COMMAND_TIMEOUT,
+    timeouts: list[float | None] | None = None,
 ) -> list[dict[str, Any]]:
     names = (
         labels if labels is not None and len(labels) == len(commands) else None
+    )
+    limits = (
+        timeouts
+        if timeouts is not None and len(timeouts) == len(commands)
+        else None
     )
     results: list[dict[str, Any]] = []
     total = len(commands)
@@ -269,7 +275,7 @@ def run_verify_commands(
                 label=label,
                 index=offset + 1,
                 total=total,
-                timeout=timeout,
+                timeout=limits[offset] if limits is not None else None,
             )
         except MDFError as exc:
             details = dict(exc.details) if isinstance(exc.details, dict) else {}

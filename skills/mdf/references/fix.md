@@ -86,8 +86,8 @@ title。不逐篇翻阅 `docs/bugs/`。
 ### 红灯
 
 修复生产实现之前必须先有针对该 Bug 的有效红灯。本步不得改生产实现。
-先按所需回归证据运行已有测试：能对应到 `manifest.verification.commands`
-的 id 时，在仓库根运行该项 `command`；否则运行证据中的可执行命令。
+先按所需回归证据运行已有测试：按 `docs/system/testing/` 的命令模板点名执行对应
+test case 或 test；证据另给可执行命令时运行该命令。
 已有测试以该缺陷的断言或期望失败时，记录命令、退出状态与失败断言，进入
 步骤 4，不另造重复用例。
 没有失败用例时，先编写能复现该缺陷的回归测试并运行；须得到针对该缺陷的
@@ -100,8 +100,8 @@ title。不逐篇翻阅 `docs/bugs/`。
 
 只改该 Bug 范围内的实现、必要配置，以及步骤 3 已确认的回归测试。先让该
 红灯测试转绿，再按所需回归证据重跑对应命令直到通过。记录命令、退出状态、
-结果及对应证据项。
-不按分支 kind 选择 suite，不因此跑全局 full，不调用 `project-verify` 或
+结果及对应证据项。随后在仓库根依次运行 manifest `verification` 的 lint、build、
+quick，均须通过。不按分支 kind 选择 smoke 或 full，不调用 `project-verify` 或
 `delivery verify` 冒充本 intent 完成。
 不要求 feature 的 design/converge gate。
 自检发现本阶段可修复的实现问题时原地修复并重验。可修复指同一失败未满三轮

@@ -6,7 +6,10 @@ from .gitutil import (
     current_branch, branch_details, repo_path, require_git_root, unreleased_slug,
 )
 from .paths import load_manifest
-from .verification import manifest_verification, parse_suite_names, suites_cover
+from .verification import (
+    manifest_verification, parse_suite_names, recorded_suites, required_suite,
+    required_suites, suites_cover,
+)
 
 
 def associated_suites(repo, slug):
@@ -23,7 +26,7 @@ def inputs(repo, verification, required, suites):
     files = {name: value for name, value in inventory(repo).items()
              if not name.startswith(("docs/", "changes/"))
              and not ("/" not in name and name.endswith(".md")) and name != ".mdf/manifest.yaml"}
-    return digest([files, verification.items, verification.suites, required, suites])
+    return digest([files, verification.config(), required, suites])
 
 
 def command_project_verify(args):
@@ -40,10 +43,10 @@ def command_project_verify(args):
     verification = manifest_verification(manifest)
     slug = unreleased_slug(details)
     suites = associated_suites(repo, slug) if kind == "bugfix" else None
-    if kind == "bugfix" and verification.layered and not suites:
-        raise MDFError("分层后 bugfix 必须关联已有交付 suite", code="missing_delivery_suite")
-    required = verification.required(kind, suites)
-    targets = verification.select(required)
+    if kind == "bugfix" and not suites:
+        raise MDFError("bugfix 必须在 suites.json 关联 named suite", code="missing_delivery_suite")
+    required = required_suites(kind)
+    targets = verification.plan(required_suite(kind))
     before = inputs(repo, verification, required, suites)
     path = safe(
         repo,
@@ -51,16 +54,14 @@ def command_project_verify(args):
     )
     if args.action == "check":
         result = read_json(path)
-        recorded = verification.recorded(result)
         if (result.get("inputs") != before or result.get("branch") != branch
-                or not suites_cover(recorded, required)
+                or not suites_cover(recorded_suites(result), required)
                 or not result.get("all_passed")):
             raise MDFError("所需 suite 失败或证据过期", code="stale_verification")
     else:
         results = []
-        planned = list(targets)
-        total = len(planned)
-        for index, item in enumerate(planned, 1):
+        total = len(targets)
+        for index, item in enumerate(targets, 1):
             try:
                 detail = run_verify_command(
                     repo,
@@ -68,6 +69,7 @@ def command_project_verify(args):
                     label=item["id"],
                     index=index,
                     total=total,
+                    timeout=item["budget"],
                 )
                 results.append({**item, **detail, "passed": True})
             except MDFError as exc:

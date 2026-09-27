@@ -185,11 +185,7 @@ def test_verification_commands_are_required_while_initializing(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(
-        repo / ".mdf" / "manifest.yaml",
-        '  commands:\n    - id: check\n      kind: custom\n      command: "true"',
-        "  commands: []",
-    )
+    replace(repo / ".mdf" / "manifest.yaml", '  quick: "true"\n', "")
     replace(
         repo / ".mdf" / "manifest.yaml", "state: ready", "state: initializing"
     )
@@ -230,7 +226,7 @@ def test_init_requires_a_non_empty_verification_command(
     )
 
     assert result.returncode != 0
-    assert "--verification-item" in result.stderr
+    assert "--lint" in result.stderr
 
     empty = mdf(
         python_exe,
@@ -240,11 +236,27 @@ def test_init_requires_a_non_empty_verification_command(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-item",
-        '{"id": "check", "kind": "custom", "command": "  "}',
+        *verification_args(),
+        "--smoke",
+        "  ",
     )
     assert empty.returncode != 0
     assert "invalid_verification" in empty.stderr
+
+    budget = mdf(
+        python_exe,
+        "init",
+        "--repo",
+        str(repo),
+        "--latest-release",
+        "none",
+        *all_not_applicable_baselines(),
+        *verification_args(),
+        "--budget",
+        "lint=10",
+    )
+    assert budget.returncode != 0
+    assert "invalid_verification" in budget.stderr
 
 
 def test_removed_verify_command_argument_is_a_hard_failure(

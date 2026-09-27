@@ -164,6 +164,13 @@ def replace(path: Path, old: str, new: str) -> None:
     path.write_text(text.replace(old, new), encoding="utf-8")
 
 
+def verification_args(command: str = "true") -> list[str]:
+    result: list[str] = []
+    for name in ("lint", "build", "quick", "smoke", "full"):
+        result.extend([f"--{name}", command])
+    return result
+
+
 def all_not_applicable_baselines() -> list[str]:
     names = (
         "glossary",

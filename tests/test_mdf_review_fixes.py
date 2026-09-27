@@ -5,7 +5,6 @@ from mdf_test_support import *  # noqa: F403
 from test_mdf_delivery import setup_delivery, sync_roles, record, commit
 from test_mdf_upgrade import init_target, init_upstream, source_head
 from test_mdf_gitflow_delivery import start_repo
-from test_mdf_verification_layers import SLOW_ITEM, layer_commands
 
 
 def test_batch_prp_ids_do_not_write_or_repeat(python_exe, tmp_path):
@@ -68,6 +67,9 @@ def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, t
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "bugfix", "--bug", "bug-CD34"))
     work = Path(created["worktree"])
     args = ["--repo", str(work)]
+    suites = work / "changes/unreleased/bug-cd34/suites.json"
+    suites.parent.mkdir(parents=True, exist_ok=True)
+    suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     payload(mdf(python_exe, "project-verify", "run", *args))
     payload(mdf(python_exe, "project-verify", "check", *args))
     evidence = work / "changes/unreleased/bug-cd34/code-review.verification.json"
@@ -76,7 +78,7 @@ def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, t
     (work / "src/service.py").write_text("changed = True\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
     manifest = work / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace('command: "true"', 'command: "false"'))
+    manifest.write_text(manifest.read_text().replace('quick: "true"', 'quick: "false"'))
     assert "verify_command_failed" in mdf(python_exe, "project-verify", "run", *args).stderr
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
 
@@ -263,52 +265,51 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "changes/unreleased/<slug>/code-review.md" in text
 
 
-def test_layered_bugfix_requires_existing_suite(python_exe, tmp_path):
+def test_bugfix_requires_named_suite_and_runs_smoke(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
                           "--bug", "bug-CD34"))
     work = Path(created["worktree"])
-    layer_commands(work, ["    quick: [check]", "    billing: [slow]"], [SLOW_ITEM])
     args = ["--repo", str(work)]
     missing = mdf(python_exe, "project-verify", "run", *args)
     assert "missing_delivery_suite" in missing.stderr
     suites = work / "changes/unreleased/bug-cd34/suites.json"
     suites.parent.mkdir(parents=True, exist_ok=True)
-    suites.write_text(json.dumps({"suites": ["unknown"]}) + "\n")
-    unknown = mdf(python_exe, "project-verify", "run", *args)
-    assert "unknown_suite" in unknown.stderr
+    suites.write_text(json.dumps({"suites": ["smoke"]}) + "\n")
+    reserved = mdf(python_exe, "project-verify", "run", *args)
+    assert "invalid_delivery_suite" in reserved.stderr
     suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     payload(mdf(python_exe, "project-verify", "run", *args))
-    evidence = json.loads(
-        (work / "changes/unreleased/bug-cd34/code-review.verification.json").read_text()
-    )
-    assert evidence["suites"] == ["quick", "billing"]
+    path = work / "changes/unreleased/bug-cd34/code-review.verification.json"
+    evidence = json.loads(path.read_text())
+    assert evidence["suites"] == ["quick", "smoke"]
+    assert [item["id"] for item in evidence["results"]] == ["lint", "build", "quick", "smoke"]
     payload(mdf(python_exe, "project-verify", "check", *args))
     manifest = work / ".mdf/manifest.yaml"
     original = manifest.read_text()
-    manifest.write_text(original.replace("    billing: [slow]", "    billing: [check]", 1))
+    manifest.write_text(original.replace('  smoke: "true"', '  smoke: "true "', 1))
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
     manifest.write_text(original)
+    suites.write_text(json.dumps({"suites": ["billing", "checkout"]}) + "\n")
+    assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
+    suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     evidence["suites"] = ["quick"]
-    (work / "changes/unreleased/bug-cd34/code-review.verification.json").write_text(
-        json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
 
 
-def test_layered_release_rejects_quick_only_evidence(python_exe, tmp_path):
+def test_release_runs_full_and_rejects_smoke_evidence(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
                           "--version", "1.3.0", "--objectives-file",
                           str(write_release_objectives(tmp_path))))
     work = Path(created["worktree"])
-    layer_commands(work, ["    quick: [check]"], [SLOW_ITEM])
     args = ["--repo", str(work)]
     payload(mdf(python_exe, "project-verify", "run", *args))
     path = work / "changes/unreleased/1.3.0/code-review.verification.json"
     evidence = json.loads(path.read_text())
-    assert evidence["suites"] == ["full"]
-    assert {item["id"] for item in evidence["results"]} == {"check", "slow"}
-    evidence["suites"] = ["quick"]
+    assert evidence["suites"] == ["quick", "full"]
+    assert [item["id"] for item in evidence["results"]] == ["lint", "build", "quick", "full"]
+    evidence["suites"] = ["quick", "smoke"]
     path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr

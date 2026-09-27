@@ -182,7 +182,7 @@ def test_write_tests_on_owner_when_roster_zero(python_exe, tmp_path):
         "# 设计\n\n[objectives.md](./objectives.md)\n"
     )
     policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"]}))
     payload(mdf(
         python_exe, "delivery", "record", "--repo", str(work), "--stage",
         "design", "--policy-file", str(policy), "--summary", "确认设计",
@@ -213,7 +213,7 @@ def test_integrate_two_devs_merges_winner_and_deletes_loser(
         "# 设计\n\n[objectives.md](./objectives.md)\n"
     )
     policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"]}))
     payload(mdf(
         python_exe, "delivery", "record", "--repo", str(owner), "--stage",
         "design", "--policy-file", str(policy), "--summary", "确认设计",
@@ -261,7 +261,7 @@ def _design_feature(python_exe, tmp_path, *start_args):
         "# 设计\n\n[objectives.md](./objectives.md)\n"
     )
     policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"]}))
     return started, owner, root, policy
 
 

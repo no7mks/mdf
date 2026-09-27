@@ -13,10 +13,10 @@
 - `evidence`：`当前事实文档` 中指向仓库内已跟踪证据及其验证方式的元数据。
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
-- `验证命令`：`manifest.verification.commands` 中由仓库执行的非空具名验证项列表。
-  由同级 `suites` 映射归入 `quick` 或交付 suite。
-- `验证 suite`：验证项的具名分组；quick（always-run）与 full（全部项）为必备全局
-  suite，其余为交付 suite。
+- `验证命令`：`manifest.verification` 中由仓库执行的五个入口：`lint`、`build`
+  与 `quick`、`smoke`、`full` 三个全局 suite。
+- `验证 suite`：test case 的具名集合。全局 suite 由 manifest 声明并由 Core 执行；
+  其余为 named suite，只记在 `docs/system/testing/`，由 Agent 执行。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
 - `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。
 
@@ -99,9 +99,10 @@
 限制与恢复分别住 `system/operations/configuration.md`、
 `system/operations/observability.md`、`system/interfaces/errors.md`、
 `system/interfaces/auth.md`、`system/operations/limits-and-recovery.md`
-（超 450 再拆）。测试分类、失败语义与 skip 住 `system/testing/<topic>`：
+（超 450 再拆）。测试分类、失败语义、skip 与各 suite 住 `system/testing/<topic>`：
 `index.md` 只路由；起步叶为 `conventions.md`，主题混杂或超 450 再拆
-`kinds.md`、`failure.md`、`suites.md`、`environment.md`。`overview.md`
+`kinds.md`、`failure.md`、`suites.md`、`environment.md`。每个 suite（含 named
+suite）必须有一节或一页。`overview.md`
 用核心模块表：五行是配置、可观测性、错误、
 鉴权、限制与恢复；每行链到对应五类专用叶或写「不适用：」加理由。切面路由另链
 `testing/index.md`。不预建空页（`testing/` 的 init 起步叶除外）。对外可见行为
@@ -184,8 +185,9 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 - `PROJECT.md` 仅面向项目维护者（含 Agent），是读完 `AGENTS.md` 后的第一份
   项目文档。记录技术栈、环境、lint、test、build、CI 等价检查、生成物与目录约定。
   命令的可执行事实来源始终是仓库配置与脚本；运行时配置属于
-  `docs/system/operations/configuration.md`。测试分类、失败语义与 skip 属于
-  `docs/system/testing/`。验证命令集中在开头一张验证卡片；
+  `docs/system/operations/configuration.md`。测试分类、失败语义、skip 与各 suite
+  属于 `docs/system/testing/`。开头一张验证卡片只列环境要求与 manifest 的五个
+  验证入口，不列 named suite 或单个测试的命令；
   须含 `docs/system/overview.md`、`docs/README.md` 与
   `docs/system/testing/index.md`，不展开核心模块表。
   接口、数据与运行时行为不复述 `docs/system/` 事实页。超过体积限制时下沉到
@@ -233,44 +235,27 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 
 ```yaml
 verification:
-  commands:
-    - id: unit
-      kind: unit
-      command: "python3 -m pytest -q"
+  lint: "ruff check ."
+  build: "python3 -m compileall -q src"
+  quick: "python3 -m pytest -m quick"
+  smoke: "python3 -m pytest -m smoke"
+  full: "python3 -m pytest"
+  budgets:
+    quick: 45
 ```
 
-`initializing` 与 `ready` 都要求非空具名条目列表，每项含唯一 id、kind、非空
-command。kind 为 unit/property/integration/e2e/lint/typecheck/build/custom；
-不强制各类齐全。kind 只是标签，不参与筛选，不能单靠 kind 冒充分层。
+- `lint`、`build`、`quick`、`smoke`、`full` 五项都必须声明为非空命令，不得有其他
+  键；没有对应检查时写 `"true"`。每项是一条入口命令，不列单个 test 或 test case。
+- 可选 `budgets` 覆盖 suite 的时间预算（正整数秒），只接受 `quick`、`smoke`、
+  `full`。默认 quick 30、smoke 300，full 与 lint、build 无上限。
+- Core 按 `lint → build → quick → smoke|full` 顺序执行，suite 超出预算视为失败。
+  build 不计入预算；依赖下载与镜像拉取放进 build。
+- suite 的语义与各 gate 所需 suite 见 `delivery-contract.md`「验证 suite」。
+  named suite 不写入 manifest。
+- 不符合本形状的 `verification` 是 finding，由 `$mdf migrate` 收敛。
 
-与 `commands` 同级的可选 `suites` 把验证项 id 归入具名 suite：
-
-```yaml
-verification:
-  commands:
-    - id: unit
-      kind: unit
-      command: "python3 -m pytest tests/unit -q"
-    - id: billing-e2e
-      kind: e2e
-      command: "python3 -m pytest tests/e2e/billing -q"
-  suites:
-    quick: [unit]
-    billing: [unit, billing-e2e]
-```
-
-- 无 `suites`：未分层。全部项同时属于 quick 与 full，gate 跑全部项，与今日一致。
-- 有 `suites`：已分层。key 为 kebab-case suite 名，value 为非空、不重复且都存在于
-  `commands[].id` 的列表。`quick` 必须存在；`full` 隐含为全部项，不得声明。
-- 除 `quick` 外的 key 是交付 suite。同一 id 可属多个 suite；不属任何 suite 的项
-  只由 full 跑。suite 名须稳定，供 design policy 与 bugfix `suites.json` 引用。
-- lint / typecheck / build / `git diff --check` 等非测试项建议列入 quick，
-  避免日常 gate 漏掉静态检查。
-- 由未分层改为分层是一次手工修改 manifest：补 `suites` 映射。不涉及
-  `$mdf init migrate`。
-
-初始化时通过 CLI 重复传入 `--verification-item` JSON 对象提供 `commands`；
-init 不产出 `suites`。没有业务检查的空仓库可使用 `git diff --check`。
+初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--full`，可重复
+`--budget <suite>=<秒数>`。没有业务检查的空仓库可全部使用 `git diff --check`。
 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
 
 `implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、

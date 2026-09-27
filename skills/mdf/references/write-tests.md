@@ -35,7 +35,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 按 roster 进入 qa/owner 并检查 gate | worktree、底座 | 2 | 缺底座提示 `$mdf design`；其他停止 |
-| 2 | Cases | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、suite key 已建 | 3 | 停止并报告 |
+| 2 | Cases | 约束 | 按设计编写测试，确认可执行并审查覆盖 | 可执行性、覆盖、named suite 已文档化 | 3 | 停止并报告 |
 | 3 | Record | 脚本 | 记录 write-tests gate 并提交本阶段产出 | gate、覆盖摘要、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
@@ -71,10 +71,11 @@ roster.models 含 `write-tests` 时把该值写入本路任务，按口语描述
 编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
 不从源码重新推断契约。项目级 kind、失败语义与 skip 以
 `docs/system/testing/` 为准，不在 design 复述。
-按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite。design
-只声明 suite 名，manifest 此时可能尚无该 key：在 `verification.suites` 新增
-design 所列 key 并填入验证项 id 属于本阶段授权；记录 gate 前核对每个声明的
-key 都已存在且非空。不得降低项目门槛或把慢项放进 quick 来逃避分层。
+按 design 与 `delivery-contract.md`「测试层级与分类」把用例归入 quick、smoke 或
+design policy `suites` 所列 named suite；归属写在代码里（marker、目录等）。
+design 所列 named suite 尚无文档时，在 `docs/system/testing/` 补该 suite 的一节或
+一页属于本阶段授权；记录 gate 前核对每个声明的 named suite 都已文档化且有成员。
+不得降低项目门槛；非 hermetic 的 test case 不进 quick，超预算的 test case 不进 quick 或 smoke。
 implement 不得擅自改测试。
 测试须能编译或加载执行；环境或导入故障不是有效完成证据。因尚未实现而产生的
 断言失败可以接受。本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。

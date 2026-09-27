@@ -10,11 +10,16 @@ import time
 
 from mdf_test_support import *  # noqa: F403
 from test_mdf_gitflow_delivery import start_repo
-from test_mdf_verification_layers import SLOW_ITEM, UNLAYERED_ITEM
 
 
 def py_c(code: str) -> str:
     return f"{shlex.quote(sys.executable)} -c {shlex.quote(code)}"
+
+
+def link_bugfix_suite(work: Path) -> None:
+    path = work / "changes/unreleased/bug-cd34/suites.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"suites": ["billing"]}) + "\n")
 
 
 def last_json(stderr: str) -> dict:
@@ -164,10 +169,11 @@ def test_project_verify_stdout_stays_json_and_labels_item_id(
         "--bug", "bug-CD34",
     ))
     work = Path(created["worktree"])
+    link_bugfix_suite(work)
     manifest = work / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text().replace(
-        'command: "true"',
-        'command: "echo OUT; echo ERR >&2"',
+        'lint: "true"',
+        'lint: "echo OUT; echo ERR >&2"',
     ))
     result = mdf(python_exe, "project-verify", "run", "--repo", str(work))
     payload(result)
@@ -175,7 +181,7 @@ def test_project_verify_stdout_stays_json_and_labels_item_id(
     assert len(stdout_lines) == 1
     assert "\nOUT\n" in f"\n{result.stderr}"
     assert "ERR" in result.stderr
-    assert "[1/1] start check" in result.stderr
+    assert "[1/4] start lint" in result.stderr
     assert "done exit=0" in result.stderr
 
 
@@ -186,10 +192,11 @@ def test_project_verify_error_json_is_last_stderr_line(python_exe, tmp_path):
         "--bug", "bug-CD34",
     ))
     work = Path(created["worktree"])
+    link_bugfix_suite(work)
     manifest = work / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text().replace(
-        'command: "true"',
-        'command: "printf no-newline; exit 1"',
+        'lint: "true"',
+        'lint: "printf no-newline; exit 1"',
     ))
     result = mdf(python_exe, "project-verify", "run", "--repo", str(work))
     assert result.returncode != 0
@@ -206,56 +213,10 @@ def test_project_verify_progress_uses_global_total(python_exe, tmp_path):
         str(write_release_objectives(tmp_path)),
     ))
     work = Path(created["worktree"])
-    path = work / ".mdf/manifest.yaml"
-    path.write_text(path.read_text().replace(
-        UNLAYERED_ITEM, "\n".join([UNLAYERED_ITEM, SLOW_ITEM]), 1,
-    ))
     result = mdf(python_exe, "project-verify", "run", "--repo", str(work))
     payload(result)
-    assert "[1/2] start check" in result.stderr
-    assert "[2/2] start slow" in result.stderr
-    assert result.stderr.index("[1/2] start check") < result.stderr.index(
-        "[2/2] start slow"
+    lines = [f"[{index}/4] start {name}"
+             for index, name in enumerate(("lint", "build", "quick", "full"), 1)]
+    assert [result.stderr.index(line) for line in lines] == sorted(
+        result.stderr.index(line) for line in lines
     )
-
-
-def test_delivery_item_progress_total_is_selected_count(python_exe, tmp_path):
-    repo, _ = start_repo(tmp_path)
-    path = repo / ".mdf/manifest.yaml"
-    path.write_text(path.read_text().replace(
-        UNLAYERED_ITEM, "\n".join([UNLAYERED_ITEM, SLOW_ITEM]), 1,
-    ))
-    git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 增加 slow 验证项")
-    obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n实现健康状态接口。\n")
-    data = payload(mdf(
-        python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
-    ))
-    work = Path(data["worktree"])
-    root = work / "changes/unreleased/service-health"
-    (root / "objectives.md").write_text(
-        (root / "objectives.md").read_text() + "\n[design.md](./design.md)\n"
-    )
-    (root / "design.md").write_text(
-        "# 设计\n\n[实现](../../../src/service.py)\n\n"
-        "[objectives.md](./objectives.md)\n"
-        "[see design.md](./design.md)\n"
-    )
-    policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
-    payload(mdf(
-        python_exe, "delivery", "record", "--repo", str(work), "--stage", "design",
-        "--policy-file", str(policy),
-        "--summary", "用户确认接口及验收；测试配置已识别",
-    ))
-    git(work, "add", "--all")
-    git(work, "commit", "-m", "test: 提交设计")
-    result = mdf(
-        python_exe, "delivery", "verify", "--repo", str(work), "--item", "check",
-    )
-    payload(result)
-    assert "[1/1] start check" in result.stderr
-    assert "[1/2]" not in result.stderr
-    assert "start slow" not in result.stderr

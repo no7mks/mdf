@@ -76,16 +76,19 @@ def parse_baselines(values: list[str]) -> dict[str, dict[str, str]]:
 def render_manifest(
     baselines: dict[str, dict[str, str]],
     latest_release: str | None,
-    verification_commands: list[dict[str, Any]],
+    verification: dict[str, Any],
     implementation_roots: list[str],
 ) -> str:
-    command_lines = []
-    for item in verification_commands:
-        command_lines.extend([
-            f"    - id: {yaml_quote(item['id'])}",
-            f"      kind: {yaml_quote(item['kind'])}",
-            f"      command: {yaml_quote(item['command'])}",
-        ])
+    command_lines = [
+        f"  {name}: {yaml_quote(command)}"
+        for name, command in verification["commands"].items()
+    ]
+    if verification["budgets"]:
+        command_lines.append("  budgets:")
+        command_lines.extend(
+            f"    {name}: {seconds}"
+            for name, seconds in verification["budgets"].items()
+        )
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",
@@ -97,7 +100,6 @@ def render_manifest(
             else "  latest_release: null"
         ),
         "verification:",
-        "  commands:",
         *command_lines,
         "implementation_roots:",
         *[f"  - {yaml_quote(root)}" for root in implementation_roots],
@@ -150,14 +152,14 @@ def init_files(
     baselines: dict[str, dict[str, str]],
     *,
     latest_release: str | None,
-    verification_commands: list[dict[str, Any]],
+    verification: dict[str, Any],
     implementation_roots: list[str],
 ) -> dict[Path, str]:
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
             latest_release,
-            verification_commands,
+            verification,
             implementation_roots,
         )
     }

@@ -48,12 +48,9 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--repo", required=True)
     init.add_argument("--latest-release", required=True)
     init.add_argument("--baseline", action="append", default=[], required=True)
-    init.add_argument(
-        "--verification-item",
-        action="append",
-        default=[],
-        required=True,
-    )
+    for name in ("lint", "build", "quick", "smoke", "full"):
+        init.add_argument(f"--{name}", required=True)
+    init.add_argument("--budget", action="append", default=[])
     init.add_argument(
         "--implementation-root", action="append", default=[]
     )
@@ -169,7 +166,6 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--summary")
     delivery.add_argument("--policy-file")
     delivery.add_argument("--test-approval")
-    delivery.add_argument("--item", action="append", default=[])
     delivery.add_argument("--qa-branch")
     delivery.add_argument("--dev-branch")
     add_strategy_arguments(delivery)

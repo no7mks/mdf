@@ -7,10 +7,11 @@ versioning:
   strategy: semver
   latest_release: {{MDF_QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
 verification:
-  commands:
-    - id: "{{MDF_VERIFICATION_ID}}"
-      kind: "{{MDF_VERIFICATION_KIND}}"
-      command: "{{MDF_NON_EMPTY_VERIFICATION_COMMAND}}"
+  lint: "{{MDF_NON_EMPTY_LINT_COMMAND}}"
+  build: "{{MDF_NON_EMPTY_BUILD_COMMAND}}"
+  quick: "{{MDF_NON_EMPTY_QUICK_SUITE_COMMAND}}"
+  smoke: "{{MDF_NON_EMPTY_SMOKE_SUITE_COMMAND}}"
+  full: "{{MDF_NON_EMPTY_FULL_SUITE_COMMAND}}"
 implementation_roots:
   - "{{MDF_REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
 baselines:

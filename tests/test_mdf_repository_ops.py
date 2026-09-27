@@ -116,8 +116,9 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-item",
-        '{"id": "check", "kind": "custom", "command": "true"}',
+        *verification_args(),
+        "--budget",
+        "quick=45",
     ]
     sentinel_arguments = [
         "0.0.0-unreleased" if value == "none" else value for value in arguments
@@ -137,7 +138,8 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
     assert "state: initializing" in manifest
     assert "latest_release: null" in manifest
-    assert '      command: "true"' in manifest
+    assert '  smoke: "true"\n' in manifest
+    assert "  budgets:\n    quick: 45\n" in manifest
     full = mdf(
         python_exe,
         "validate",
@@ -171,8 +173,7 @@ def test_init_writes_files_from_assets_templates(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-item",
-        '{"id": "check", "kind": "custom", "command": "true"}',
+        *verification_args(),
     ]
     payload(mdf(python_exe, *arguments))
 
@@ -247,8 +248,7 @@ def test_init_updates_existing_manifest_and_managed_block(
         "--latest-release",
         "1.2.0",
         *fixture_documented_baselines(),
-        "--verification-item",
-        '{"id": "check", "kind": "custom", "command": "true"}',
+        *verification_args(),
     ]
 
     payload(mdf(python_exe, *arguments))
@@ -276,8 +276,7 @@ def test_init_executes_directly_without_plan_digest(
         "--latest-release",
         "none",
         *all_not_applicable_baselines(),
-        "--verification-item",
-        '{"id": "check", "kind": "custom", "command": "true"}',
+        *verification_args(),
     ]
     applied = payload(mdf(python_exe, *arguments))
     assert "dry_run" not in applied

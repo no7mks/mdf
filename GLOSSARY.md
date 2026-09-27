@@ -25,22 +25,32 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 ## 验证命令
 
-`manifest.verification.commands` 中的具名可执行验证项；`kind` 只是标签，
-不参与筛选。
+`manifest.verification` 的五个入口：`lint`、`build` 与 `quick`、`smoke`、`full`
+三个全局 suite 的入口命令，均必须声明；可选 `budgets` 覆盖 suite 预算。
+
+## Test、test case 与 suite
+
+- **test**：含若干断言的最小测试项，通常为函数。
+- **test case**：服务于同一目标的一组 test，通常为类或文件；suite 成员的粒度。
+- **suite**：test case 的集合。
 
 ## 验证 suite
 
-`manifest.verification.suites` 是 suite 名到验证项 id 列表的映射。`quick` 与
-`full` 是两个全局 suite，其余 key 是交付 suite：
+- **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
+- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix 收口时跑。
+- **full**：全部 test case，无预算上限；release、hotfix 时跑。
+- **named suite**：服务于某一功能区的 test case 集合，只记在
+  `docs/system/testing/`，由 Agent 执行；改动相关代码后跑，由 design policy 或
+  bugfix `suites.json` 声明。
 
-- **quick**：always-run，必须声明。日常门禁；通常挂全部 UT 与声明为快速的 IT/e2e。
-- **full**：隐含为全部验证项，不得声明。release / hotfix 使用。
-- **交付 suite**：覆盖某 feature 的本交付全量（含慢路径）。不是 full，也不是
-  「碰巧改到的 quick 文件」。
-
-未分层（manifest 无 `suites`）时，全部项同时属于 quick 与 full。
+预算包含启动依赖与预热，不含 build；超出预算视为失败。
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
-用例；原慢用例保留。
+hermetic UT 或 PT；原慢用例保留。
+
+## Hermetic
+
+测试进程能自行拉起全部依赖，不需要预先存在的环境、凭据或网络。依赖第三方资源
+或真实兄弟产品（如联调对端）的测试不是 hermetic；第三方资源不含待测产品与兄弟产品。
 
 ## CodeWiki
 
@@ -136,5 +146,7 @@ worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。本机对端直�
 
 ## 测试类别与 Code Smell
 
-UT 为单元测试，PT 为属性测试，IT 为集成测试，E2E 为端到端测试；是否需要及失败标准由 `docs/system/testing/` 与设计约定。
+UT 为单元测试，测内部单元；IT 为集成测试，测产品真实开放的接口，一般不用 mock；
+E2E 为端到端测试，走用户最终入口；PT 为属性测试，是可用于任一层级的手法。
+项目内的选用与失败标准由 `docs/system/testing/` 与设计约定。
 Code smell 指提示维护性或设计问题的代码特征，由 code-review 判断是否需要在当前范围修复。

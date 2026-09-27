@@ -8,7 +8,9 @@ from .errors import MDFError
 from .gitutil import branch_details, current_branch, run, unreleased_slug
 from .paths import load_manifest, path_stays_in_repo
 from .roster import fingerprint_data, owner_branch, require_roster
-from .verification import manifest_verification, suites_cover
+from .verification import (
+    manifest_verification, recorded_suites, required_suites, suites_cover,
+)
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
 
@@ -85,9 +87,8 @@ def fingerprints(repo, root, data, config=None):
     config = config or read_json(safe(repo, root / "gates/design.json")).get("policy", {})
     files = inventory(repo)
     protected = config.get("protected_paths", [])
-    verification = manifest_verification(load_manifest(repo))
-    # suites 映射决定门禁跑什么，与 commands 一样属于验证配置。
-    commands = [verification.items, verification.suites]
+    # 预算与命令一样决定门禁结果，同属验证配置。
+    commands = manifest_verification(load_manifest(repo)).config()
     facts = {name: value for name, value in files.items()
              if name == "GLOSSARY.md" or (name.endswith(".md")
                  and name.startswith(("docs/user-guide/", "docs/system/")))}
@@ -148,12 +149,8 @@ def require_design(repo, root, data):
 def require_green(repo, root, data):
     record = gate(repo, root, "verification")
     current = fingerprints(repo, root, data)
-    verification = manifest_verification(load_manifest(repo))
-    policy = gate(repo, root, "design")["policy"]
-    required = verification.required("feature", policy.get("suites") or [])
-    recorded = verification.recorded(record)
     if (any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design"))
-            or not suites_cover(recorded, required)
+            or not suites_cover(recorded_suites(record), required_suites("feature"))
             or not record.get("all_passed")):
         raise MDFError("所需 suite 缺失或过期", code="stale_verification")
     return current

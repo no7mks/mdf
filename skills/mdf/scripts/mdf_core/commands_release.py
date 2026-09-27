@@ -35,7 +35,7 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
-    return [item["command"] for item in manifest_verification(manifest).select(["full"])]
+    return [item["command"] for item in manifest_verification(manifest).plan("full")]
 
 
 def derive_closeout_spec(
@@ -197,11 +197,12 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         )
         return
 
-    verify_items = manifest_verification(manifest).select(["full"])
+    verify_items = manifest_verification(manifest).plan("full")
     command_results = run_verify_commands(
         repo,
         context["validation_commands"],
         labels=[item["id"] for item in verify_items],
+        timeouts=[item["budget"] for item in verify_items],
     )
     ensure_clean(repo)
     spec["verify_command_results"] = command_results
@@ -227,7 +228,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             "semver": result["semver"],
             "rewrites": result["rewrites"],
             "verification": {
-                "suites": ["full"],
+                "suites": ["quick", "full"],
                 "commands": context["validation_commands"],
                 "results": command_results,
             },

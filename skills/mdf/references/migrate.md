@@ -125,8 +125,8 @@
 
 使用内部 clarify intent，议题为材料去处、顶层例外、基线与验证。
 确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外；本地或外部调研材料归入
-`docs/context/research/`，已确认决策归入 `docs/context/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与非空
-`verification.commands`。`docs/` 内材料按 `repository-contract.md`「文档分类与
+`docs/context/research/`，已确认决策归入 `docs/context/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与
+`verification` 的五个入口。`docs/` 内材料按 `repository-contract.md`「文档分类与
 按需加载」归位：面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，
 主题各一页）；边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶；
 测试约定进 `docs/system/testing/`（已有根 `docs/testing.md` 则迁入该切面）；
@@ -135,10 +135,10 @@
 仍生效的架构约束从 ADR 抽到 `docs/system/architecture/`，ADR 只留理由；
 `docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，落地后
 不得残留。`baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version`
-写为当前值。每项为 id、kind、command；初始化 CLI 用重复的
-`--verification-item '{"id":"check","kind":"custom","command":"git diff --check"}'` 传入。
-已有未分层 commands 保持原样即可，行为与今天一致；若要分层，手工在同级补
-`suites` 映射（含 `quick`），本 intent 不生成。
+写为当前值。不符合当前形状的 `verification`（如 `commands` 列表、`suites` 映射）按
+`delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、full；
+原 named 分组只写进 `docs/system/testing/`，不写回 manifest。初始化 CLI 用
+`--lint`、`--build`、`--quick`、`--smoke`、`--full` 与可选 `--budget` 传入。
 
 验收：逐项决定与验证命令。
 

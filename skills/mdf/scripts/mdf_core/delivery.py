@@ -17,17 +17,18 @@ from .roster import (
     role_branch,
     write_roster_config,
 )
-from .verification import manifest_verification, parse_suite_names
+from .verification import (
+    manifest_verification, parse_suite_names, required_suite, required_suites,
+)
 from .verify_run import run_verify_command
 from .validate_links import require_existing_local_links
 
 
-def policy_input(raw, verification):
+def policy_input(raw):
     policy = read_json(Path(raw)) if raw else None
-    expected = {"protected_paths", "suites"} if verification.layered else {"protected_paths"}
-    if not policy or set(policy) != expected:
+    if not policy or set(policy) != {"protected_paths", "suites"}:
         raise MDFError(
-            "design 需要 protected_paths；分层后还必须声明 suites",
+            "design 需要 protected_paths 与本交付 named suite 列表 suites",
             code="invalid_policy",
         )
     paths = policy["protected_paths"]
@@ -35,8 +36,7 @@ def policy_input(raw, verification):
             or any(not isinstance(p, str) or not p.strip() or p.startswith("/")
                    or ".." in p.split("/") for p in paths)):
         raise MDFError("protected_paths 必须列出测试、fixture 和验证配置路径", code="invalid_policy")
-    if "suites" in policy:
-        policy["suites"] = parse_suite_names(policy["suites"])
+    policy["suites"] = parse_suite_names(policy["suites"])
     return policy
 
 
@@ -69,7 +69,7 @@ def record_stage(repo, root, data, args):
     if not args.summary or not args.summary.strip():
         raise MDFError("gate 需要非空语义审查摘要", code="missing_review")
     if stage == "design":
-        policy = policy_input(args.policy_file, manifest_verification(load_manifest(repo)))
+        policy = policy_input(args.policy_file)
         require_existing_local_links(
             repo, [root / "objectives.md", root / "design.md"]
         )
@@ -113,23 +113,12 @@ def record_stage(repo, root, data, args):
     return record
 
 
-def verify(repo, root, data, selected):
+def verify(repo, root, data):
     before = require_design(repo, root, data)
     verification = manifest_verification(load_manifest(repo))
-    items = verification.items
-    policy = gate(repo, root, "design")["policy"]
-    required = verification.required("feature", policy.get("suites") or [])
-    targets = verification.select(required)
-    ids = {item["id"] for item in targets}
-    if set(selected) - {item["id"] for item in items}:
-        raise MDFError("未知验证项 ID", code="invalid_verification")
+    planned = verification.plan(required_suite("feature"))
     results = []
     failed = False
-    source = items if selected else targets
-    planned = [
-        item for item in source
-        if not selected or item["id"] in selected
-    ]
     total = len(planned)
     for index, item in enumerate(planned, 1):
         try:
@@ -139,25 +128,21 @@ def verify(repo, root, data, selected):
                 label=item["id"],
                 index=index,
                 total=total,
+                timeout=item["budget"],
             )
             result["passed"] = True
         except MDFError as exc:
             failed = True
             result = {"command": item["command"], "passed": False,
                       "error": exc.code, "details": exc.details}
-        results.append({"id": item["id"], "kind": item["kind"], **result})
+        results.append({"id": item["id"], "budget": item["budget"], **result})
     after = fingerprints(repo, root, data)
     if before["code"] != after["code"] or before["design"] != after["design"]:
         failed = True
-    ran = {item["id"] for item in results}
-    complete = not selected and ran == ids
-    record = {"fingerprints": before, "results": results, "suites": required,
-              "all_passed": not failed and complete}
-    target = "verification" if not selected else "verification-partial"
-    write_json(safe(repo, root / "gates" / f"{target}.json"), record)
+    record = {"fingerprints": before, "results": results,
+              "suites": required_suites("feature"), "all_passed": not failed}
+    write_json(safe(repo, root / "gates/verification.json"), record)
     if failed:
-        if selected:
-            write_json(safe(repo, root / "gates/verification.json"), record)
         raise MDFError("项目验证失败或验证期间输入发生变化", code="verify_command_failed", details=record)
     return record
 
@@ -241,7 +226,7 @@ def command_delivery(args):
     if args.action == "record":
         result = record_stage(repo, root, data, args)
     elif args.action == "verify":
-        result = verify(repo, root, data, args.item)
+        result = verify(repo, root, data)
     elif args.action == "check":
         result = check(repo, root, data, args.stage)
     elif args.action == "integrate":

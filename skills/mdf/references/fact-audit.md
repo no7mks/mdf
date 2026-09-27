@@ -79,7 +79,7 @@
 
 **范围**
 
-它只读：不写入、移动、提交、生成持久报告或执行 `verification.commands`。
+它只读：不写入、移动、提交、生成持久报告或执行 manifest `verification`。
 
 `--scope` 三选一，与 fact update 共用：
 

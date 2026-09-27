@@ -178,7 +178,7 @@ feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.j
 `delivery.json`（含 roster），不写 objectives。
 roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
 创建成功进入 5，本步不结束。roster `0,0` 的 bugfix/hotfix 不创建阶段材料；bugfix
-的交付 suite 关联由 code-review 步骤 1 写入，本步不写。
+的 named suite 关联由 code-review 步骤 1 写入，本步不写。
 
 <a id="s5"></a>
 

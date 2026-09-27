@@ -116,9 +116,9 @@ def validate_manifest(
             "state must be initializing or ready",
             ".mdf/manifest.yaml",
         )
-    from .verification import manifest_items
+    from .verification import manifest_verification
     try:
-        manifest_items(manifest)
+        manifest_verification(manifest)
     except MDFError as exc:
         add_finding(findings, "manifest.verification", str(exc), ".mdf/manifest.yaml")
     versioning = manifest.get("versioning")

@@ -4,13 +4,17 @@
 
 ## 验证卡片
 
-Agent 执行维护改动时只读本节。以表格列出环境要求与 lint、test、build、
-CI 等价检查命令；命令以仓库配置和脚本为准。kind、失败语义与 skip 见
+Agent 执行维护改动时只读本节。列出环境要求与 `.mdf/manifest.yaml` 的五个验证
+入口；命令以仓库配置和脚本为准。named suite、点名执行与 kind、失败语义、skip 见
 `docs/system/testing/index.md`，不在此复述。
 
-| 命令 | 预期结果 |
-| --- | --- |
-| 待填 | 待填 |
+| 入口 | 命令 | 何时跑 |
+| --- | --- | --- |
+| lint | 待填 | 任何改动 |
+| build | 待填 | 任何改动 |
+| quick | 待填 | 任何改动 |
+| smoke | 待填 | feature、bugfix 收口 |
+| full | 待填 | release、hotfix |
 
 ## 技术栈
 

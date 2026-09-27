@@ -59,7 +59,7 @@ def setup_delivery(python_exe, tmp_path):
         "[see design.md](./design.md)\n"
     )
     policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"]}))
     payload(mdf(python_exe, "delivery", "record", "--repo", str(work), "--stage", "design",
                 "--policy-file", str(policy), "--summary", "用户确认接口及验收；测试配置已识别"))
     commit(work)
@@ -161,7 +161,7 @@ def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tm
     assert (root / "gates/code-review.json").is_file()
 
 
-def test_partial_verification_does_not_satisfy_full_gate(python_exe, tmp_path):
+def test_failed_verification_does_not_satisfy_gate(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     qa, dev = sync_roles(python_exe, repo)
     payload(record(python_exe, qa, "write-tests"))
@@ -169,13 +169,12 @@ def test_partial_verification_does_not_satisfy_full_gate(python_exe, tmp_path):
     payload(record(python_exe, dev, "implement"))
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo), "--item", "check"))
-    assert record(python_exe, repo, "converge").returncode != 0
     manifest = repo / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace('command: "true"', 'command: "false"'))
+    manifest.write_text(manifest.read_text().replace('smoke: "true"', 'smoke: "false"'))
     failed = mdf(python_exe, "delivery", "verify", "--repo", str(repo))
     assert "verify_command_failed" in failed.stderr
     assert json.loads((root / "gates/verification.json").read_text())["all_passed"] is False
+    assert record(python_exe, repo, "converge").returncode != 0
 
 
 def test_uncommitted_design_and_changed_design_block(python_exe, tmp_path):
@@ -387,7 +386,7 @@ def test_record_design_rejects_repo_root_style_links(
         "# 设计\n\n[能力](docs/user-guide/README.md)\n"
     )
     policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"]}))
+    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"]}))
     result = mdf(
         python_exe, "delivery", "record", "--repo", str(work),
         "--stage", "design", "--policy-file", str(policy),

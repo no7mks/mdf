@@ -13,6 +13,7 @@ from mdf_test_support import (
     mdf,
     payload,
     replace,
+    verification_args,
 )
 
 
@@ -35,8 +36,7 @@ def test_new_project_can_reach_ready_without_fact_pages_or_remote(
     data = payload(mdf(
         python_exe, "init", "--repo", str(repo), "--latest-release", "none",
         *all_not_applicable_baselines(), "--implementation-root", root,
-        "--verification-item",
-        '{"id":"check","kind":"custom","command":"git diff --check"}',
+        *verification_args("git diff --check"),
     ))
     assert data["plan"]["state"] == "initializing"
     assert not list((repo / "docs" / "user-guide").rglob("*.md"))

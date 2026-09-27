@@ -104,8 +104,12 @@ def command_init(args: argparse.Namespace) -> None:
     require_master_default(repo)
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)
-    from .verification import parse_items
-    verification_commands = parse_items(args.verification_item)
+    from .verification import ENTRIES, parse_budgets, validate_verification
+    raw_verification = {name: getattr(args, name) for name in ENTRIES}
+    budgets = parse_budgets(args.budget)
+    if budgets:
+        raw_verification["budgets"] = budgets
+    verification = validate_verification(raw_verification).config()
     implementation_roots = list(args.implementation_root) or ["src"]
     root_paths: list[Path] = []
     for raw in implementation_roots:
@@ -143,7 +147,7 @@ def command_init(args: argparse.Namespace) -> None:
         repo,
         baselines,
         latest_release=latest_release,
-        verification_commands=verification_commands,
+        verification=verification,
         implementation_roots=implementation_roots,
     )
     create = [
@@ -157,7 +161,7 @@ def command_init(args: argparse.Namespace) -> None:
         "state": "initializing",
         "latest_release": latest_release,
         "baselines": baselines,
-        "verification_commands": verification_commands,
+        "verification": verification,
         "implementation_roots": implementation_roots,
         "files": [
             {

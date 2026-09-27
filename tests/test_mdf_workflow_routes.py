@@ -297,7 +297,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
         "不由 deliver 内部委托", "不读取当前 Gitflow kind",
         "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
         "`--yolo` 时主 Agent 依据仓库证据与 Bug",
-        "不代替该项批准", "不按分支 kind 选择 suite",
+        "不代替该项批准", "不按分支 kind 选择 smoke 或 full",
         "不调用 `project-verify` 或\n`delivery verify`",
         "master 不直接修改或提交",
         "标为 `fixed`",
@@ -385,33 +385,33 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "delivery worktree" not in implement
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
-    assert "全局 quick ∪ design policy `suites` 声明的交付 suite" in contract
-    assert "关联 ≥1 个**已有**交付 suite" in contract
-    assert "只跑了 quick" in contract
-    assert "非 feature 分支变更 `verification.suites` 或新增交付 suite 名，一律需用户确认" in contract
+    assert "| feature | converge、code-review、finish | lint、build、quick、smoke |" in contract
+    assert "| release / hotfix | code-review、finish（及 `project-verify`） | lint、build、quick、full |" in contract
+    assert "关联 ≥1 个**已文档化**的 named suite" in contract
+    assert "Core 不执行也不核对其名称是否已文档化" in contract
+    assert "mock 掉兄弟产品后才算 hermetic" in contract
+    assert "非 feature 分支变更 manifest `verification` 或新增 named suite，一律需用户确认" in contract
     repo_contract = workflow("repository-contract")
-    assert "`quick` 必须存在；`full` 隐含为全部项，不得声明" in repo_contract
+    assert "只接受 `quick`、`smoke`、\n  `full`" in repo_contract
+    assert "named suite 不写入 manifest" in repo_contract
     design_text = workflow("design")
-    assert "验收到 quick 与本交付 suite 的映射" in design_text
-    assert "suites" in design_text
-    assert "按 design 把用例写入全局 quick 或 design policy `suites` 所列交付 suite" in tests
+    assert "验收到 quick、smoke 与本交付 named suite 的映射" in design_text
+    assert "必须同时给出 `protected_paths` 与 `suites`" in design_text
+    assert "把用例归入 quick、smoke 或\ndesign policy `suites` 所列 named suite" in tests
     converge = workflow("converge")
-    assert "只跑 quick 或未声明/未跑本交付 suite 不得记录全绿" in converge
+    assert "未跑 named suite 不得记录全绿" in converge
     assert "缺 suite 停并提示 `$mdf write-tests`" in converge
     assert "阻塞停止" in converge
-    assert "missing_delivery_suite ────→ [停止，提示 $mdf write-tests]" in converge
-    assert "返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入" in converge
-    assert "suite key 已建" in tests
-    assert "记录 gate 前核对每个声明的\nkey 都已存在且非空" in tests
-    assert "分层后 `delivery verify` / `project-verify` 证据必须含 `suites`，缺失视为过期" in contract
-    assert "不得带 `suites`" in design_text
+    assert "缺 named suite 文档 ─────→ [停止，提示 $mdf write-tests]" in converge
+    assert "named suite 已文档化" in tests
+    assert "记录 gate 前核对每个声明的 named suite 都已文档化且有成员" in tests
     assert "COLLECTIONS" not in (skill_dir("mdf") / "assets/templates/design.md").read_text()
     review = workflow("code-review")
     assert "必须尝试补一条 quick 复现用例" in review
     assert "quick 复现（已补 <用例位置>" in review
     assert "changes/unreleased/<slug>/suites.json" in review
     assert "`missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联" in review
-    assert "`unknown_suite`" in review and "询问用户是否新建" in review
+    assert "`unknown_suite`" not in review and "询问用户是否新建" in review
     assert "suites.json" not in workflow("start")
     assert "交付级 suite" not in contract and "下沉" not in contract
 

@@ -235,42 +235,6 @@ def test_split_requires_planning(python_exe, tmp_path):
     assert not git(repo, "status", "--porcelain").stdout
 
 
-def test_verification_items_validate_identity_and_kind(python_exe, tmp_path):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
-    manifest = repo / ".mdf/manifest.yaml"
-    original = manifest.read_text()
-    for value in ('      kind: unknown', '      kind: ""'):
-        manifest.write_text(original.replace("      kind: custom", value))
-        result = mdf(python_exe, "validate", "--repo", str(repo))
-        assert "manifest.verification" in result.stdout
-
-
-def test_verification_suites_require_quick_and_known_ids(python_exe, tmp_path):
-    repo = copy_fixture(tmp_path)
-    init_git(repo)
-    manifest = repo / ".mdf/manifest.yaml"
-    original = manifest.read_text()
-    item = '    - id: check\n      kind: custom\n      command: "true"'
-    assert item in original
-    invalid = (
-        "    billing: [check]",                      # 缺 quick
-        "    quick: [check]\n    full: [check]",     # 声明 full
-        "    quick: [missing]",                      # 引用不存在的 id
-        "    quick: [check, check]",                 # 重复
-        "    quick: []",                             # 空
-    )
-    for suites in invalid:
-        manifest.write_text(original.replace(item, item + "\n  suites:\n" + suites))
-        result = mdf(python_exe, "validate", "--repo", str(repo))
-        assert "manifest.verification" in result.stdout, suites
-    slow = '    - id: slow\n      kind: e2e\n      command: "true"'
-    manifest.write_text(original.replace(
-        item, f"{item}\n{slow}\n  suites:\n    quick: [check]\n    billing: [slow]"
-    ))
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
-
-
 def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")

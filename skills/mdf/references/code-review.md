@@ -112,11 +112,11 @@ release 读取 `objectives.md` 对照本版目标与验收；超出计划的新�
 审查基线仍为上一正式发布。hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
 不为形式创建 feature 材料。
 
-分层仓库的 bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
-（`{"suites":["<已有 suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从 manifest
-已有交付 suite 中选定 ≥1 个写入并提交；没有合适的已有 suite 时停止，询问用户
-是否新建，确认后先在 manifest `verification.suites` 新增该 key 再关联。不得只关联 quick/full，
-不得未经确认新建。未分层不要求该文件。
+bugfix 在本步骤另核对 `changes/unreleased/<slug>/suites.json`
+（`{"suites":["<named suite 名>"]}`）：文件缺失时，按 Bug 与适用设计从
+`docs/system/testing/` 已文档化的 named suite 中选定 ≥1 个写入并提交；没有合适的
+suite 时停止，询问用户是否新建，确认后先补该 suite 的文档再关联。不得关联
+lint/build/quick/smoke/full，不得未经确认新建。
 
 ### 独立审查
 
@@ -168,17 +168,18 @@ reviewer 自行合并。
 
 步骤 4：feature 先运行 `delivery check --stage code-review`；除 `stale_verification` 外的错误均停止。
 finish 本次集成产生新提交且增量不可跳过、返回 `stale_verification` 或本轮改动实现、
-测试、验证配置时，运行 `delivery verify` 按所需 suite 重验。仅非本交付 `docs/` 的集成
+测试、验证配置时，运行 `delivery verify` 按所需 suite 重验，并重跑 design 所列
+named suite。仅非本交付 `docs/` 的集成
 不强制重验。仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 bugfix/hotfix/release 运行 `project-verify run --repo "$REPO_ROOT"`，
-脚本按当前分支执行所需 suite（release/hotfix 为全局 full；bugfix 为全局
-quick 加已关联交付 suite），逐项记录命令、退出状态与 `suites`，
+脚本按当前分支执行所需 suite：依次执行 lint、build、quick 与 smoke（bugfix）或 full
+（release/hotfix），逐项记录命令、预算、退出状态与 `suites`，
 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON
-与落盘证据。每条命令限时 600 秒，超时终止 process group。
-分层后 bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联；
-返回 `unknown_suite`（引用尚未写入 manifest 的名称）时停止，询问用户是否新建。
-证据只覆盖 quick 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
+与落盘证据。suite 超出预算即终止 process group 并判为失败。
+bugfix 另按 `docs/system/testing/` 执行 `suites.json` 所列 named suite。
+bugfix 返回 `missing_delivery_suite`（缺 `suites.json`）时回步骤 1 补关联。
+证据未覆盖所需 suite 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
 核对输入 fingerprint、suite 与全绿结果。
 不能用仅检查文档结构的 full validation 代替业务验证。
 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
@@ -189,7 +190,7 @@ quick 加已关联交付 suite），逐项记录命令、退出状态与 `suites
 每轮包含 round、审查种类（首轮 | 增量）、固定的交付 base_commit、本轮左端点
 （首轮 = base_commit，增量 = 上轮 final_head）、本轮 review_head、本轮应派人数份独立审查
 及其身份、本轮新发现、上轮问题复核表、逐项裁定、修复与复核、本轮结束后的
-最终 final_head、验证命令与结果（含 `suites`）、quick 复现（已补 <用例位置>
+最终 final_head、验证命令与结果（含 `suites` 与 named suite）、quick 复现（已补 <用例位置>
 / 未补 <原因> / 无非 quick 失败）、未解决项。先提交修复，再固定 final_head 并
 提交本轮记录。
 无有效未解决问题且验证全绿才可记录完成。feature 另运行

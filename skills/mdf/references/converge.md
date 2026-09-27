@@ -21,10 +21,10 @@
 │ 3 Verify                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 可修复实现问题 ────────────→ 3 Verify
-                 ├──── 需测试修改批准 ────────────→ [主会话确认后 resume 回 3]
-                 ├──── missing_delivery_suite ────→ [停止，提示 $mdf write-tests]
-                 ├──── 外部阻塞或三轮无进展 ──────→ [记录阻塞并停止]
+                 ├──── 可修复实现问题 ──────────→ 3 Verify
+                 ├──── 需测试修改批准 ──────────→ [主会话确认后 resume 回 3]
+                 ├──── 缺 named suite 文档 ─────→ [停止，提示 $mdf write-tests]
+                 ├──── 外部阻塞或三轮无进展 ────→ [记录阻塞并停止]
                  │
                  ▼ 所需 suite 通过
 ┌──────────────────────────────────┐
@@ -87,12 +87,12 @@ worktree 和分支（含 `best-of-n` 未入选者）。
 
 ### 验证与阻塞记录
 
-运行 `delivery verify`；脚本执行全局 quick 与本交付 suite（design policy 的
-`suites`）。修复循环可用 `--item <id>` 定位失败项，但最终必须所需 suite 通过；
-只跑 quick 或未声明/未跑本交付 suite 不得记录全绿。
-返回 `missing_delivery_suite` 表示 design 声明的 suite 尚未写入 manifest
-`verification.suites`：停止并报告，提示 `$mdf write-tests` 补齐后重新 integrate；
-角色树若已删除则在 owner 上补测。不在 converge 现场改 manifest。
+运行 `delivery verify`；脚本依次执行 lint、build、quick、smoke，suite 超预算即失败。
+再按 `docs/system/testing/` 执行 design policy `suites` 所列每个 named suite。
+修复循环可按该页的命令模板点名执行 test case 或 test 定位失败，但最终必须 Core
+与 named suite 全部通过；未跑 named suite 不得记录全绿。
+所列 named suite 在 `docs/system/testing/` 无文档：停止并报告，提示
+`$mdf write-tests` 补齐后重新 integrate；角色树若已删除则在 owner 上补测。
 可以自动修复实现。测试、fixture、快照、预期值、发现/跳过规则和验证配置增删改必须用户确认。
 同时出现可修实现与待批准测试时，先取得测试修改批准，再修实现。
 取得确认后原地审查与重验，记录 `--test-approval <用户确认与修改理由>`；不回退 intent。
@@ -105,4 +105,5 @@ worktree 和分支（含 `best-of-n` 未入选者）。
 `delivery record --stage converge`，也不手工创建或修改 gate JSON。
 所需 suite 通过后，如有阻塞记录，补记解除证据并标为已解决，回读核对后进入步骤 4；
 记录更新失败则保留现场并停止，不宣称本阶段完成。
-运行 `delivery record --stage converge --summary <收敛结果>`；如需测试批准，一并传入批准记录。
+运行 `delivery record --stage converge --summary <收敛结果与 named suite 的命令、结果>`；
+如需测试批准，一并传入批准记录。

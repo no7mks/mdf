@@ -4,10 +4,11 @@ versioning:
   strategy: semver
   latest_release: "1.2.0"
 verification:
-  commands:
-    - id: check
-      kind: custom
-      command: "true"
+  lint: "true"
+  build: "true"
+  quick: "true"
+  smoke: "true"
+  full: "true"
 implementation_roots: [src]
 baselines:
   glossary:
