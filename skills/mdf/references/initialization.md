@@ -127,7 +127,11 @@ migrate 必须先通过已有事实或 ready 判定，再执行本节，不能�
 
 确认纳管范围、忽略规则和分支调整方案后，先运行
 `python3 "$MDF_ROOT/scripts/mdf.py" prepare-git --repo "$REPO_ROOT"`：
-非 Git 目录初始化为 `master`，已是 Git 根则跳过，位于其他仓库内部则失败。
+
+- 非 Git 目录初始化为 `master`。
+- 已是 Git 根则跳过。
+- 位于其他仓库内部则失败。
+
 再由 Agent 完成身份与基线提交：
 
 - 先提交应纳管的既有项目内容作为原始基线，再整理 MDF；空目录没有可提交内容时，
@@ -149,29 +153,43 @@ Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 man
 
 <a id="s3"></a>
 
-从确认方案提供八项基线、最近稳定版本、`verification` 的五个入口（lint、build、
-quick、smoke、release）、可选预算覆盖和 `implementation_roots`。从未发布时版本为
-`none`；lint、build 没有对应检查时可用 `git diff --check` 或 `true`，quick、smoke、release
-必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令
-（如 `pytest --junitxml="$MDF_REPORT_DIR/junit.xml"`）。suite 语义与预算见
-`delivery-contract.md`「验证 suite」。
-不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。实现根可以为空目录；
-单 module 默认使用 `src`，多 module 使用各 `<module>/src`；已有模板使用实际目录并在
-PROJECT 说明，不为 bootstrap 重排模板。
-`docs/system/testing/` 由 init CLI 写入起步页，按确认的验证配置填写当前规则与
-quick、smoke、release 各一节，不把尚未采用的 kind 写成事实。
+从确认方案提供以下配置：
 
-调用 `init` CLI 时传入完整配置：重复 `--baseline`、`--implementation-root`，
-`--lint`、`--build`、`--quick`、`--smoke`、`--release`，以及可重复的
-`--budget <suite>=<秒数>`。
-更新时核对并保留未要求改变的配置，不依赖 CLI 默认值覆盖现有设置。已有根文档和
-AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范围，不覆盖重建。
-创建项目 `AGENTS.md` 时仅写标题与 MDF 托管区块；已有非托管内容仅以目标仓库实际文件为准。
-不得将用户级、父目录或会话中继承的指令复制为项目规则，除非用户明确要求。
-验收时对照写入前的项目文件，确认未新增未经要求的非托管规则。
-已有项目文档保持原位；写入 `docs/` 下同名目录前核对内容和归属，不覆盖或自动接管。
-`docs/README.md` 已存在时保留原文，仅按确认范围补充入口。
-工作目录由 CLI 预建 `.gitkeep` 占位，文档入口直接列出各目录链接，不添加空目录状态或建目录提示。
+- 八项基线：不适用基线逐项给出真实理由，不用计划或占位事实页满足 documented。
+- 最近稳定版本：从未发布时版本为 `none`。
+- `verification` 的五个入口（lint、build、quick、smoke、release）：
+  - lint、build 没有对应检查时可用 `git diff --check` 或 `true`。
+  - quick、smoke、release 必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令。
+    - 如 `pytest --junitxml="$MDF_REPORT_DIR/junit.xml"`。
+  - suite 语义与预算见 `delivery-contract.md`「验证 suite」。
+- 可选预算覆盖。
+- `implementation_roots`：
+  - 实现根可以为空目录。
+  - 单 module 默认使用 `src`，多 module 使用各 `<module>/src`。
+  - 已有模板使用实际目录并在 PROJECT 说明，不为 bootstrap 重排模板。
+
+`docs/system/testing/` 由 init CLI 写入起步页：
+
+- 按确认的验证配置填写当前规则与 quick、smoke、release 各一节。
+- 不把尚未采用的 kind 写成事实。
+
+调用 `init` CLI 时传入完整配置：
+
+- 重复 `--baseline`、`--implementation-root`。
+- `--lint`、`--build`、`--quick`、`--smoke`、`--release`。
+- 可重复的 `--budget <suite>=<秒数>`。
+
+更新与保留规则：
+
+- 更新时核对并保留未要求改变的配置，不依赖 CLI 默认值覆盖现有设置。
+- 已有根文档和 AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范围，不覆盖重建。
+- 创建项目 `AGENTS.md` 时仅写标题与 MDF 托管区块；已有非托管内容仅以目标仓库实际文件为准。
+- ❌ 不得将用户级、父目录或会话中继承的指令复制为项目规则，除非用户明确要求。
+  - 验收时对照写入前的项目文件，确认未新增未经要求的非托管规则。
+- 已有项目文档保持原位；写入 `docs/` 下同名目录前核对内容和归属，不覆盖或自动接管。
+- `docs/README.md` 已存在时保留原文，仅按确认范围补充入口。
+- 工作目录由 CLI 预建 `.gitkeep` 占位，文档入口直接列出各目录链接，
+  不添加空目录状态或建目录提示。
 
 <a id="s4"></a>
 
@@ -181,10 +199,13 @@ AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范
 <a id="s5"></a>
 
 按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation。
-bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
-`manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；已是 ready
-时须零 finding。其他 finding 修正、提交后重验；同一项两轮后无法继续。
-通过后返回调用方验收步骤；调用方进入启用阶段时从 6 继续。无法继续则保留现场并报告。
+
+- bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
+- `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；
+  已是 ready 时须零 finding。
+- 其他 finding 修正、提交后重验；同一项两轮后无法继续。
+- 通过后返回调用方验收步骤；调用方进入启用阶段时从 6 继续。
+- 无法继续则保留现场并报告。
 
 <a id="s6"></a>
 
@@ -193,14 +214,17 @@ bootstrap 不调用 fact audit，full validation 是确定性契约校验，不�
 
 <a id="s7"></a>
 
-将 manifest 改为 ready，执行 full validation，零 finding 后提交就绪结果；提交后再次核验。
-事实发生变化时返回 5 补审补验，且步骤 5 按当前 `manifest.state` 验收；其他失败保留现场并报告，不宣称已完成。
+- 将 manifest 改为 ready，执行 full validation，零 finding 后提交就绪结果；提交后再次核验。
+- 事实发生变化时返回 5 补审补验，且步骤 5 按当前 `manifest.state` 验收。
+- 其他失败保留现场并报告，不宣称已完成。
 
 <a id="s8"></a>
 
-确保本地 master、develop 可用。新仓库从包含已提交就绪结果的 master 创建 develop；
-已有分支保留，缺少 develop 时按确认方案从 master 创建，不重置、不强制对齐。
-既有分支关系影响使用时报告具体问题并按确认方案处理，通过后才宣布完成。
+确保本地 master、develop 可用：
+
+- 新仓库从包含已提交就绪结果的 master 创建 develop。
+- 已有分支保留，缺少 develop 时按确认方案从 master 创建，不重置、不强制对齐。
+- 既有分支关系影响使用时报告具体问题并按确认方案处理，通过后才宣布完成。
 
 语义确认不因提交而省略。失败保留现场和阶段提交，不宣称已完成；同次可修复继续，
 同一项两轮为限。

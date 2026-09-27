@@ -69,6 +69,6 @@ MDF 自身的 Markdown 与目标仓库文档共用一套结构规则，定义见
 - [README.md](README.md)：面向使用者的项目入口。
 - [GLOSSARY.md](GLOSSARY.md)：MDF 领域术语。
 - [docs/system/interfaces/mdf-cli.md](docs/system/interfaces/mdf-cli.md)：本仓库
-  `mdf.py` 的完整命令表、参数与实际副作用；不随 Skill 安装。
+  `mdf.py` 的调用约定与命令总表，分页记录参数与实际副作用；不随 Skill 安装。
 - [docs/system/testing/conventions.md](docs/system/testing/conventions.md)：测试层级、
   失败语义、报告与各 suite。

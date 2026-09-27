@@ -99,9 +99,13 @@
 
 验收：`normal_workflows_allowed: true`。
 
-通过条件：按调用进入 2 或 4。异常与交接：未知子动作停止；manifest 未就绪时提示
-`$mdf init`，其他 findings 报告后停止。
-同次仅处理一个 Jot，且保留其原文。
+通过条件：按调用进入 2 或 4。
+
+异常与交接：
+
+- 未知子动作停止。
+- manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
+- 同次仅处理一个 Jot，且保留其原文。
 
 <a id="s2"></a>
 
@@ -117,9 +121,10 @@
 
 **追加**
 
-调用 `make-jot-id`、从原文压缩一句短标题（不另写生成器），
-在 `docs/JOTS.md` 末尾追加完整 marker 条目，保留原始含义和细节，再运行
-`targeted validation`。
+1. 调用 `make-jot-id`。
+2. 从原文压缩一句短标题（不另写生成器）。
+3. 在 `docs/JOTS.md` 末尾追加完整 marker 条目，保留原始含义和细节。
+4. 再运行 `targeted validation`。
 
 验收：新增条目和 diff。
 
@@ -141,12 +146,15 @@
 
 **澄清**
 
-先运行 `list --repo "$REPO_ROOT"` 对照 active Proposal 与 Bug 的 `id`、`title`、`status` 查重，
-命中既有对象时停止提升并提示 `$mdf prp review` 或补充既有 Bug；不逐篇翻阅对象目录。
-再查仓库证据，使用内部 clarify intent 将正文收敛为 Proposal 或 Bug；
-Proposal 收敛 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria；
-Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、 Regression Evidence Required、 `found_in`
-与 active severity。
+1. 先运行 `list --repo "$REPO_ROOT"` 对照 active Proposal 与 Bug 的 `id`、`title`、`status` 查重。
+   - 命中既有对象时停止提升并提示 `$mdf prp review` 或补充既有 Bug。
+   - 不逐篇翻阅对象目录。
+2. 再查仓库证据，使用内部 clarify intent 将正文收敛为 Proposal 或 Bug：
+
+| 对象 | 收敛内容 |
+| --- | --- |
+| Proposal | Problem、Desired Outcome、Scope、可验证 Acceptance Criteria |
+| Bug | Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、`found_in` 与 active severity |
 
 验收：完整 draft。
 
@@ -169,10 +177,14 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、 Regression Evid
 **创建**
 
 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug 中唯一，
-且不得与对象 ID 同形。提升为 Proposal 时先运行 `planning ensure` 并按
-`references/common.md` 的「切换工作区」规则切换到 planning 工作区，再调用
-`make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`；提升为 Bug 时按
-`common.md` 归属处理，调用 `make-id --type bug --slug <slug>`。
+且不得与对象 ID 同形。
+
+- 提升为 Proposal 时：
+  1. 先运行 `planning ensure`。
+  2. 按 `references/common.md` 的「切换工作区」规则切换到 planning 工作区。
+  3. 再调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`。
+- 提升为 Bug 时按 `common.md` 归属处理，调用 `make-id --type bug --slug <slug>`。
+
 Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。
 
 验收：新对象与首次 validation。
@@ -183,14 +195,21 @@ Proposal 写为 `draft`，Bug 写为 `open`，运行 `targeted validation`。
 
 **提升**
 
-不重写对象。在步骤 7 已写入的 draft/open 上先运行 `targeted validation`。
-通过后 Proposal 转为 `ready`；Bug 保持 `open`。然后删除选中 Jot marker，再运行第二次
-`targeted validation`。第一次校验失败时尚未改动状态与 Jot，保留 draft/open 对象与
-原 Jot 并停止；第二次校验失败时转状态与删 Jot 已落盘，按本 intent 恢复规则回滚到
+不重写对象。
+
+1. 在步骤 7 已写入的 draft/open 上先运行 `targeted validation`。
+2. 通过后 Proposal 转为 `ready`；Bug 保持 `open`。
+3. 然后删除选中 Jot marker，再运行第二次 `targeted validation`。
+
+第一次校验失败时尚未改动状态与 Jot，保留 draft/open 对象与原 Jot 并停止。
+
+第二次校验失败时转状态与删 Jot 已落盘。此时按本 intent 恢复规则回滚到
 步骤 7 完成状态（恢复 draft/open 状态与原 Jot marker），不提交。
 
 验收：两个文件完整 diff 与两次验证。
 
-异常与交接：第一次失败保留两者，第二次失败先回滚再保留两者，均报告 findings。
-成功时将本次创建与移除作为同一个独立 commit 提交。
-提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+异常与交接：
+
+- 第一次失败保留两者，第二次失败先回滚再保留两者，均报告 findings。
+- 成功时将本次创建与移除作为同一个独立 commit 提交。
+- 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。

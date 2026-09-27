@@ -25,8 +25,11 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 ## 验证命令
 
-`manifest.verification` 的五个入口：`lint`、`build` 与 `quick`、`smoke`、`release`
-三个全局 suite 的入口命令，均必须声明；可选 `budgets` 覆盖 suite 预算。
+`manifest.verification` 的五个入口，均必须声明：
+
+- `lint`、`build`。
+- `quick`、`smoke`、`release` 三个全局 suite 的入口命令。
+- 可选 `budgets` 覆盖 suite 预算。
 
 ## Test、test case 与 suite
 
@@ -50,9 +53,13 @@ hermetic UT 或 PT；原慢用例保留。
 
 ## 测试报告与运行日志
 
-测试报告是每次 suite 运行写入 `.mdf/reports/<时间戳>-<suite>/` 的 JUnit XML 与 Core
-生成的 `summary.json`，含 test case 级与 test 级的结果和用时。运行日志是命令完整的
-stdout 与 stderr：Core CLI 写 `.mdf/logs/`，验证入口写各自的运行目录。两者保留 7 天。
+测试报告与运行日志两者都保留 7 天。
+
+- **测试报告**：每次 suite 运行写入 `.mdf/reports/<时间戳>-<suite>/` 的产物。
+  - 含 JUnit XML 与 Core 生成的 `summary.json`。
+  - 含 test case 级与 test 级的结果和用时。
+- **运行日志**：命令完整的 stdout 与 stderr。
+  - Core CLI 写 `.mdf/logs/`，验证入口写各自的运行目录。
 
 ## Hermetic
 
@@ -65,36 +72,52 @@ stdout 与 stderr：Core CLI 写 `.mdf/logs/`，验证入口写各自的运行�
 
 ## Planning 工作区
 
-唯一的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree，用于
-Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。主 worktree
-保持 develop；合入 develop 后 `$mdf start` 才看到新对象。
+唯一的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree。
+
+- 用于 Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。
+- 主 worktree 保持 develop；合入 develop 后 `$mdf start` 才看到新对象。
 
 ## Roster
 
-一次交付在 start 时冻结的参与人数与并行策略：`qa`、`dev`、`reviewers`，
-以及 `qa_strategy`、`dev_strategy`、`review_strategy`；可选 `models`。
-owner 恒为 1，不计入可选人数。可用 `--roster` 展开命名组合（不写入材料）：
-`solo` 为 `0,0,1`；`min-tdd` 为 `1,1,2` + best-of-n；`competing-pair` 为
-`2,2,3` + best-of-n；`coop-pair` 为 `2,2,3` + partition。feature 默认
-`min-tdd`，release 默认 `solo` 且 reviewers 为 3、review 为 `partition`，其他 kind 默认
-`solo`。细项可覆盖展开结果。qa 与 dev 只能同时
-为 0 或都 ≥1；一侧为 0 则抬成 1。`0,0` 时测试与实现都在 owner 上做；`≥1`
-时各有角色 worktree。
-qa/dev 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base 由该路吸收
-其余优点，converge 只合 winner。`partition`：design 派发切片，converge 按
-index 全部合入。review 默认 `replicate`（每人覆盖同一份本轮范围），可选
-`partition`（切片审查）；owner 汇总裁定，不按票数。`models` 按 intent 可选
-配置，键只允许 `write-tests`、`implement`、`code-review`。值为一句口语描述，
-可点名一个或多个模型，不要求官方 id。Agent 分派该 intent 时现场解析并选用；
-该路有多名执行者时可把多个模型分给他们。省略该键则该路不讨论模型。reviewers
-是 code-review 并发人数。design 的 Baseline 与 converge 各由对应 intent 启动
-恰好 1 个 owner subagent，不计入 roster，不可配人数。
+一次交付在 start 时冻结的参与人数与并行策略。
+
+- 字段：`qa`、`dev`、`reviewers`，以及 `qa_strategy`、`dev_strategy`、
+  `review_strategy`；可选 `models`。
+  - owner 恒为 1，不计入可选人数。
+  - reviewers 是 code-review 并发人数。
+- 可用 `--roster` 展开命名组合（不写入材料）；细项可覆盖展开结果：
+
+| 组合 | 展开 |
+| --- | --- |
+| `solo` | `0,0,1` |
+| `min-tdd` | `1,1,2` + best-of-n |
+| `competing-pair` | `2,2,3` + best-of-n |
+| `coop-pair` | `2,2,3` + partition |
+
+- 默认组合：feature 默认 `min-tdd`；其他 kind 默认 `solo`。
+  - release 默认 `solo` 且 reviewers 为 3、review 为 `partition`。
+- qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 则抬成 1。
+  - `0,0` 时测试与实现都在 owner 上做；`≥1` 时各有角色 worktree。
+- qa/dev 策略：
+  - 默认 `best-of-n`：同侧 ≥2 时并行互不知情，owner 选 base 由该路吸收其余优点，
+    converge 只合 winner。
+  - `partition`：design 派发切片，converge 按 index 全部合入。
+- review 策略：默认 `replicate`（每人覆盖同一份本轮范围），可选 `partition`（切片审查）。
+  - owner 汇总裁定，不按票数。
+- `models` 按 intent 可选配置，键只允许 `write-tests`、`implement`、`code-review`。
+  - 值为一句口语描述，可点名一个或多个模型，不要求官方 id。
+  - Agent 分派该 intent 时现场解析并选用；该路有多名执行者时可把多个模型分给他们。
+  - 省略该键则该路不讨论模型。
+- design 的 Baseline 与 converge 各由对应 intent 启动恰好 1 个 owner subagent。
+  - 不计入 roster，不可配人数。
 
 ## Auto-pilot
 
-`$mdf deliver --auto-pilot` 的持续交付模式：主 Agent 自行裁定原需用户确认的步骤，
-仅在 finish 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认；
-不可恢复的死硬阻塞仍停止。
+`$mdf deliver --auto-pilot` 的持续交付模式：
+
+- 主 Agent 自行裁定原需用户确认的步骤。
+- 仅在 finish 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认。
+- 不可恢复的死硬阻塞仍停止。
 
 ## Yolo
 
@@ -120,9 +143,12 @@ Architecture Decision Record；记录重要且已决定的长期架构取舍及�
 
 ## 加载质量
 
-fact audit 对文档结构的语义审阅：入口不过载、路由页只路由、唯一归属、主题拆页、
-读者分离、ADR 不复述当前结构、overview 核心模块表。行数硬限制由 CLI 检查
-（`size.hard`）；整份 `AGENTS.md` 超过 200 行为 warning `agents.size`。
+fact audit 对文档结构的语义审阅：
+
+- 审阅项：入口不过载、路由页只路由、唯一归属、主题拆页、读者分离、
+  ADR 不复述当前结构、overview 核心模块表。
+- 行数硬限制由 CLI 检查（`size.hard`）。
+- 整份 `AGENTS.md` 超过 200 行为 warning `agents.size`。
 
 ## Proposal 状态
 
@@ -138,23 +164,34 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 
 ## Objectives、Gate 与收敛
 
-objectives 是本次交付的目标与验收，如：feature 引用单个 PRP 的目标、非目标、
-约束与可验证验收；release 写本版收口范围、预发布工作、非目标与可验证验收。
-Gate 是基于产物、内容指纹、验证与语义审查的阶段门禁。
-write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿。
-converge（收敛）集成测试和实现，持续修复实现直到**当前交付所需 suite**通过。
-「全绿」相对该 suite，不等于 manifest 里每一条命令。
+- **objectives**：本次交付的目标与验收，如：
+  - feature 引用单个 PRP 的目标、非目标、约束与可验证验收。
+  - release 写本版收口范围、预发布工作、非目标与可验证验收。
+- **Gate**：基于产物、内容指纹、验证与语义审查的阶段门禁。
+- write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿。
+- **converge**（收敛）：集成测试和实现，持续修复实现直到**当前交付所需 suite**通过。
+  - 「全绿」相对该 suite，不等于 manifest 里每一条命令。
 
 ## 联调通道
 
-worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。本机对端直接写入其
-`inbox/`；另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
-消息种类为 `ping`、`send`、`bug-request`、`end`。通道打开后 poll 常驻直到
-收口或用户停止。双方用通道沟通，不要只 poll 干等。联调测试默认由客户端主导。
+worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。
+
+- 本机对端直接写入其 `inbox/`。
+- 另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
+- 消息种类为 `ping`、`send`、`bug-request`、`end`。
+- 通道打开后 poll 常驻直到收口或用户停止。
+  - 双方用通道沟通，不要只 poll 干等。
+- 联调测试默认由客户端主导。
 
 ## 测试类别与 Code Smell
 
-UT 为单元测试，测内部单元；IT 为集成测试，测产品真实开放的接口，一般不用 mock；
-E2E 为端到端测试，走用户最终入口；PT 为属性测试，是可用于任一层级的手法。
-项目内的选用与失败标准由 `docs/system/testing/` 与设计约定。
-Code smell 指提示维护性或设计问题的代码特征，由 code-review 判断是否需要在当前范围修复。
+| 类别 | 含义 |
+| --- | --- |
+| UT | 单元测试，测内部单元 |
+| IT | 集成测试，测产品真实开放的接口，一般不用 mock |
+| E2E | 端到端测试，走用户最终入口 |
+| PT | 属性测试，是可用于任一层级的手法 |
+
+- 项目内的选用与失败标准由 `docs/system/testing/` 与设计约定。
+- Code smell 指提示维护性或设计问题的代码特征。
+  - 由 code-review 判断是否需要在当前范围修复。

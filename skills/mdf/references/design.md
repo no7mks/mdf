@@ -29,13 +29,15 @@
 
 ## 工作流（唯一执行契约）
 
-读取 `references/delivery-contract.md`、`references/common.md`；涉及 PRP 时读取 `references/object-contract.md`。
-CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
-独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
-步骤 2 读取并内部执行 `references/clarify.md`；确认的是方案稿，底座文件由步骤 3 写入。
-确认后，本 intent 启动恰好 1 个 owner subagent 执行步骤 3：按
-`assets/templates/design.md` 写入设计、共用代码底座并记录 gate。
-独立调用与 deliver 委托都如此；不计入 roster，不可配人数。
+读取 `references/delivery-contract.md`、`references/common.md`；
+涉及 PRP 时读取 `references/object-contract.md`。
+
+- CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
+- 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
+- 步骤 2 读取并内部执行 `references/clarify.md`；确认的是方案稿，底座文件由步骤 3 写入。
+- 确认后，本 intent 启动恰好 1 个 owner subagent 执行步骤 3。
+  - 该 subagent 按 `assets/templates/design.md` 写入设计、共用代码底座并记录 gate。
+  - 独立调用与 deliver 委托都如此；不计入 roster，不可配人数。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -47,56 +49,87 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-在 design.md 中明确目标、非目标、接口、错误语义、
-验收到 quick、smoke 与本交付 named suite 的映射。测试仅对
-objectives 负责。项目级 kind、失败语义与各 suite 以 `docs/system/testing/` 为准；
-本页只写本次交付到 suite 的映射，并必须声明涉及功能块的 named suite 名称，供
-write-tests 把用例归入对应 suite。
-设计前从 `docs/README.md` 定位并读取相关当前事实页，在 design.md 列出
-当前事实锚点（页面路径）；没有对应事实页时写明本次将新增哪些页面，
-不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
-记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
-feature 与 release 的 objectives 由 start 写入；bugfix/hotfix 在 roster ≥1 时
-若缺则本步先写。
-结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库：
-类型、接口、错误语义、明确未实现的 stub 和最小测试设施，使两路从同一提交继续，
-不得各自再写一份底座。纯文档改动不制造代码；底座未就绪不得记录 design gate。
+本节规定 design.md 的内容与结束前必须落地的共享代码底座。
+
+- 在 design.md 中明确目标、非目标、接口、错误语义、
+  验收到 quick、smoke 与本交付 named suite 的映射。
+- 测试仅对 objectives 负责。
+- 项目级 kind、失败语义与各 suite 以 `docs/system/testing/` 为准；
+  本页只写本次交付到 suite 的映射。
+  - 必须声明涉及功能块的 named suite 名称，供 write-tests 把用例归入对应 suite。
+- 设计前从 `docs/README.md` 定位并读取相关当前事实页，
+  在 design.md 列出当前事实锚点（页面路径）。
+  - 没有对应事实页时写明本次将新增哪些页面。
+  - 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
+- 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
+- feature 与 release 的 objectives 由 start 写入；
+  bugfix/hotfix 在 roster ≥1 时若缺则本步先写。
+
+结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库，
+使两路从同一提交继续：
+
+- 底座包括类型、接口、错误语义、明确未实现的 stub 和最小测试设施。
+- ❌ 不得各自再写一份底座。
+- 纯文档改动不制造代码；底座未就绪不得记录 design gate。
 
 ### Baseline 分派
 
 当前 Agent 执行步骤 1–2 与交接核验，不得代写 design.md、底座或 design gate。
 无法提供 subagent 时停止，不降级代做。已有 Baseline 执行者先等待，不对同一
 owner 另开第二个。
-调用可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--write-tests-model`、`--implement-model`、`--code-review-model`。
-若与已冻结值不同，启动步骤 3 前运行 `delivery roster` 写入；design gate
-已存在时不能改 qa/dev strategy。
-分派前与结束后运行
-`worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
-任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，以及步骤 2 已确认
-的设计与底座方案原文。将会话根切到 owner。不得要求重新 clarify，不得把未确认
-内容当作已确认。缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
-policy/suite 可修正时由该 subagent 内部留在步骤 3。
-`--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
-subagent 只写 design.md、policy、共用代码底座、design gate 与本阶段提交。
+
+分派前：
+
+- 调用可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
+  以及 `--write-tests-model`、`--implement-model`、`--code-review-model`。
+  - 若与已冻结值不同，启动步骤 3 前运行 `delivery roster` 写入。
+  - design gate 已存在时不能改 qa/dev strategy。
+- 分派前与结束后运行
+  `worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
+- 任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，
+  以及步骤 2 已确认的设计与底座方案原文。
+- 将会话根切到 owner。
+
+执行约束：
+
+- 不得要求重新 clarify，不得把未确认内容当作已确认。
+- 缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
+- policy/suite 可修正时由该 subagent 内部留在步骤 3。
+- `--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
+- subagent 只写 design.md、policy、共用代码底座、design gate 与本阶段提交。
+
 结束后当前 Agent 再运行 `delivery check --stage design`；不以完成摘要替代。
 gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留现场并停止。
 
 ### 设计 policy 与基线
 
-准备 policy JSON，必须同时给出 `protected_paths` 与 `suites`，例如
-`{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}`。
-字段不符返回 `invalid_policy`，suite 名无效或占用 lint/build/quick/smoke/release/full 返回
-`invalid_delivery_suite`，均停止并修正 policy 后重试。
-`protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置
-路径，包括 named suite；manifest `verification` 由 Core 保护。多 module 列出各
-`<module>/tests/` 及各 module 的测试配置，不要只抄仓库根 `tests/`。
-`suites` 列出本交付改动涉及的每个功能块的 named suite，按功能块而非本次 feature
-命名；已在 `docs/system/testing/` 文档化，或仅在出现新功能块时写明由 write-tests
-新增其文档。
-运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
-提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
+准备 policy JSON，必须同时给出 `protected_paths` 与 `suites`，例如：
+
+```json
+{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}
+```
+
+| 返回 | 条件 |
+| --- | --- |
+| `invalid_policy` | 字段不符 |
+| `invalid_delivery_suite` | suite 名无效或占用 lint/build/quick/smoke/release/full |
+
+两者均停止并修正 policy 后重试。
+
+- `protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置路径，
+  包括 named suite。
+  - manifest `verification` 由 Core 保护。
+  - 多 module 列出各 `<module>/tests/` 及各 module 的测试配置，不要只抄仓库根 `tests/`。
+- `suites` 列出本交付改动涉及的每个功能块的 named suite，按功能块而非本次 feature 命名。
+  - 已在 `docs/system/testing/` 文档化，或仅在出现新功能块时写明由 write-tests 新增其文档。
+
+形成基线：
+
+1. 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
+2. 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
+
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。
-qa 或 dev 为 `partition` 时，design.md
-必须写明各 index 的切片（做什么、不做什么）；各路仍互不看代码。
-review 的 `partition` 可在本步预写切片计划，code-review 仍可覆盖。
+
+- qa 或 dev 为 `partition` 时，design.md 必须写明各 index 的切片（做什么、不做什么）；
+  各路仍互不看代码。
+- review 的 `partition` 可在本步预写切片计划，code-review 仍可覆盖。

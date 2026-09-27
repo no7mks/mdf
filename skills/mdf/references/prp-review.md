@@ -73,9 +73,10 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。运行
-`planning ensure --repo "$REPO_ROOT"`，按 `references/common.md` 的
-「切换工作区」规则进入 JSON `worktree`（分支 `planning`），再重新解析目标根。
+1. 解析 `REPO_ROOT` 并运行 `doctor`。
+2. 运行 `planning ensure --repo "$REPO_ROOT"`。
+3. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`（分支 `planning`）。
+4. 再重新解析目标根。
 
 验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
 
@@ -86,10 +87,10 @@ planning 工作区时留在本步。
 
 **选择**
 
-一次只接受一个 Proposal 的 canonical `prp-` ID 或仓库相对路径。
-用户未指定时运行 `list --repo "$REPO_ROOT" --type proposal --status draft --status ready`，
-按输出的 `id`、`title`、`status`、`blocked_by` 与 `in_progress` 列出候选供用户选择；
-不逐篇翻阅 `docs/proposals/`。
+- 一次只接受一个 Proposal 的 canonical `prp-` ID 或仓库相对路径。
+- 用户未指定时运行 `list --repo "$REPO_ROOT" --type proposal --status draft --status ready`。
+  - 按输出的 `id`、`title`、`status`、`blocked_by` 与 `in_progress` 列出候选供用户选择。
+  - 不逐篇翻阅 `docs/proposals/`。
 
 验收：唯一对象。
 
@@ -99,15 +100,22 @@ planning 工作区时留在本步。
 
 **状态**
 
-released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
-在修改状态或正文前，以 `list --repo "$REPO_ROOT" --type proposal` 输出中目标 PRP 的 `status`
-与 `in_progress` 为准：`in_progress` 已覆盖当前 checkout 的 `changes/` 下全部
-`delivery.json`，以及本地 `feature/*` 和 `origin/feature/*` 引用中的同类记录，
-任一记录的 `proposal` 命中目标 ID 即为 `true`。
-不能仅凭当前 checkout 没有开发材料或 `tree` 未显示进行中，就判定未开工。
-已开工时报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP。
-`list` 因记录损坏失败或目标不在输出中时同样在写入前停止，报告缺失证据。
-仅 active draft/ready 且已确认未开工时继续；此时若为 `ready` 才写成 `draft`。
+❌ released/rejected/replaced/implemented 或 archive Proposal 拒绝修改。
+
+在修改状态或正文前，以 `list --repo "$REPO_ROOT" --type proposal` 输出中
+目标 PRP 的 `status` 与 `in_progress` 为准：
+
+- `in_progress` 已覆盖以下记录，任一记录的 `proposal` 命中目标 ID 即为 `true`：
+  - 当前 checkout 的 `changes/` 下全部 `delivery.json`；
+  - 本地 `feature/*` 和 `origin/feature/*` 引用中的同类记录。
+- ⚠️ 不能仅凭当前 checkout 没有开发材料或 `tree` 未显示进行中，就判定未开工。
+
+| 情形 | 处理 |
+| --- | --- |
+| 已开工 | 报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP |
+| `list` 因记录损坏失败或目标不在输出中 | 同样在写入前停止，报告缺失证据 |
+| 仅 active draft/ready 且已确认未开工 | 继续；此时若为 `ready` 才写成 `draft` |
+
 取消、暂停、未确认或后续失败均保持 `draft`，不恢复 ready。
 
 验收：原状态、检查过的引用与材料范围、未开工结论，以及写回后的 draft 状态。

@@ -84,10 +84,12 @@
 
 **对象**
 
-接收用户手动提供的单个 Bug 事实；一次不得创建多个对象。
-运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected` 对照 `title` 与正文查重，
-命中既有 Bug 时不新建，提示在既有对象中补充；不逐篇翻阅 `docs/bugs/`。
-外部想法、 当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
+- 接收用户手动提供的单个 Bug 事实；一次不得创建多个对象。
+- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected`，
+  对照 `title` 与正文查重。
+  - 命中既有 Bug 时不新建，提示在既有对象中补充。
+  - 不逐篇翻阅 `docs/bugs/`。
+- 外部想法、 当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
 
 验收：确认的 Bug 与采用范围。
 
@@ -122,17 +124,20 @@
 
 **创建**
 
-为 Bug 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。使用 `make-id --type bug --slug` 生成 ID 与规范化文件名，
-并以模板写入 `docs/bugs/`，状态为 `open`。
-
-写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、
-确认事实与完整 diff，核对 schema、必填章节及 `open` 状态。
+- 为 Bug 提议并确认英文 ASCII kebab-case slug。
+  - 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
+- 使用 `make-id --type bug --slug` 生成 ID 与规范化文件名，
+  并以模板写入 `docs/bugs/`，状态为 `open`。
+- 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`。
+  - 回读对象并对照模板、确认事实与完整 diff。
+  - 核对 schema、必填章节及 `open` 状态。
 
 验收：open Bug、校验退出 0 且零 finding、回读结果与 diff。
 
-异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象，
-不得宣称创建验收通过，不进入步骤 6 的成功报告。
+异常与交接：校验、回读或核对失败时：
+
+- 停止并保留现场，报告 findings 与实际已写对象。
+- ❌ 不得宣称创建验收通过，不进入步骤 6 的成功报告。
 
 <a id="s6"></a>
 

@@ -43,59 +43,89 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 | `$mdf integrate` | 在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP |
 
-裸 `$mdf` 与 `$mdf help` 显示帮助目录。主线 intent 由用户手动触发，也可显式调用
-`next` 单步续办，或调用 `deliver` 从 start 起持续推进当前一次交付直到 finish：
+裸 `$mdf` 与 `$mdf help` 显示帮助目录。
+
+### 主线流程
+
+主线 intent 由用户手动触发，也可显式调用 `next` 单步续办，
+或调用 `deliver` 从 start 起持续推进当前一次交付直到 finish：
 
 `start → design → [write-tests ∥ implement] → converge → code-review → finish`
 
-bugfix、release、hotfix 同样先测后审：`start → 开发 → verify → code-review → finish`；收口复用
-有效的验证证据，不重跑 release suite。
+- bugfix、release、hotfix 同样先测后审：`start → 开发 → verify → code-review → finish`。
+  - 收口复用有效的验证证据，不重跑 release suite。
+- 一个 feature 对应一个 PRP。
+  - 设计须提交测试与实现共用的代码底座，之后两路可并行。
+  - gate 检查共同基线与有效证据。
+- start 始终独立 worktree。
+  - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
 
-code-review 支持 feature、bugfix、hotfix 和 release；首轮按冻结的
-roster.reviewers 个 subagent 覆盖起点到 review_head；同一分支后续轮次只审上轮
-final_head 以来的增量，并复核上轮问题。默认每人全范围（replicate），
-也可切片审查（partition）。qa/dev 默认 best-of-n，也可在 design 按 partition
-分工；`$mdf start` / `deliver` 可带 `--roster`（solo / min-tdd /
-competing-pair / coop-pair）。`$mdf start` / `design` / `deliver` /
-`code-review` 可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`、
-`--write-tests-model`、`--implement-model`、`--code-review-model`；
-值为口语描述，可点名一个或多个模型。
-主 Agent 汇总裁定、修复并复核。前三种分支从固定起点审查，release 从上一正式发布版本审查。
-finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
-冲突自动尝试解决；集成产生新提交后，仅非本交付 `docs/` 增量则跳过 code-review
-与所需 suite，否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
-deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent，
-验证其已有 qa/dev worktree 身份，
-等待交接后再收敛。design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个
-owner subagent，不计入 roster。尚未 start 时先委托 start。可传位置参数 target（PRP 或 Bug ID，自动分辨）。
-需要用户决定时暂停。
-`--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认；
-`--yolo` 同等自裁定且跳过该确认；死硬阻塞仍停止。release/hotfix 的 finish 包含 tag 与发版推送。
-release 从 develop 开分支前确认发布目标；该分支承担上线前预发布（含跨仓联调），
-不实施新 PRP。code-review 基线仍为上一正式发布。
+### code-review 与 roster
 
-一个 feature 对应一个 PRP；设计须提交测试与实现共用的代码底座，之后两路可并行，
-gate 检查共同基线与有效证据。start 始终独立 worktree；write-tests 与 implement
-在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
+code-review 支持 feature、bugfix、hotfix 和 release。
+
+- 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到 review_head。
+- 同一分支后续轮次只审上轮 final_head 以来的增量，并复核上轮问题。
+- 默认每人全范围（replicate），也可切片审查（partition）。
+- 主 Agent 汇总裁定、修复并复核。
+- 前三种分支从固定起点审查，release 从上一正式发布版本审查。
+- qa/dev 默认 best-of-n，也可在 design 按 partition 分工。
+- `$mdf start` / `deliver` 可带 `--roster`（solo / min-tdd / competing-pair / coop-pair）。
+- `$mdf start` / `design` / `deliver` / `code-review` 可带以下参数：
+  - `--qa-strategy`、`--dev-strategy`、`--review-strategy`。
+  - `--write-tests-model`、`--implement-model`、`--code-review-model`；
+    值为口语描述，可点名一个或多个模型。
+
+### finish 与 deliver
+
+finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
+
+- 集成产生新提交后：
+  - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
+  - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
+- release/hotfix 的 finish 包含 tag 与发版推送。
+- deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
+  - 验证其已有 qa/dev worktree 身份，等待交接后再收敛。
+- design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不计入 roster。
+- deliver 尚未 start 时先委托 start。
+- 可传位置参数 target（PRP 或 Bug ID，自动分辨）。
+- 需要用户决定时暂停。
+- 自裁定模式：
+  - `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认。
+  - `--yolo` 同等自裁定且跳过该确认。
+  - 死硬阻塞仍停止。
+- release 从 develop 开分支前确认发布目标。
+  - 该分支承担上线前预发布（含跨仓联调），不实施新 PRP。
+  - code-review 基线仍为上一正式发布。
+
+### 写入分支与提交
+
 规划写入共用一个 `planning` 分支与 worktree。
-写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；提交不代表验收通过，
-也不替代用户确认。不夹带无关改动，远端与集成操作按各自流程授权。
-正常工作不在 master 直接修改或提交。规划写入在唯一的 `planning` 工作区进行，
-合入 develop；与当前交付分支工作相关的文档在该分支更新。
-新建 Proposal 只能在 planning 上分配 ID、写入并提交，再合入 develop。
-初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
-材料自 start 起位于 `changes/unreleased/<slug>/`；CHANGE.md 在同级目录于交付完成时补齐，
-再随版本归档。
 
-MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。协议、工具与
-schema 版本均为数字 `3`；manifest 或 `docs/` 布局不符合当前契约时 doctor 只给出
-指向 `$mdf migrate` 的 finding，由 migrate 一次性收敛，不提供旧版运行分支。
+- 写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果。
+  - 提交不代表验收通过，也不替代用户确认。
+  - 不夹带无关改动，远端与集成操作按各自流程授权。
+- ❌ 正常工作不在 master 直接修改或提交。
+- 规划写入在唯一的 `planning` 工作区进行，合入 develop。
+  - 与当前交付分支工作相关的文档在该分支更新。
+- 新建 Proposal 只能在 planning 上分配 ID、写入并提交，再合入 develop。
+- 初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
+- 材料自 start 起位于 `changes/unreleased/<slug>/`。
+  - CHANGE.md 在同级目录于交付完成时补齐，再随版本归档。
 
-init、bootstrap 与 migrate 都负责项目 Git 化，准备本地 master/develop，不强制远端。
-bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已有实际实现或运行事实时，
-在写入前停止并提示 migrate。init 按状态转入 bootstrap 或 migrate。校验通过并经用户
-确认启用后进入 ready。
-入口先识别已有改动，仅在具体操作需要时要求 clean。
+### 契约与初始化
+
+MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。
+
+- 协议、工具与 schema 版本均为数字 `3`。
+- manifest 或 `docs/` 布局不符合当前契约时，doctor 只给出指向 `$mdf migrate` 的 finding。
+  - 由 migrate 一次性收敛，不提供旧版运行分支。
+- init、bootstrap 与 migrate 都负责项目 Git 化，准备本地 master/develop，不强制远端。
+- bootstrap 不搭建业务工程或测试，也不调用 fact audit。
+  - 发现已有实际实现或运行事实时，在写入前停止并提示 migrate。
+- init 按状态转入 bootstrap 或 migrate。
+- 校验通过并经用户确认启用后进入 ready。
+- 入口先识别已有改动，仅在具体操作需要时要求 clean。
 
 ## 信息分层
 
@@ -103,7 +133,7 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 | --- | --- |
 | 用户入口 | 根 `README.md`：项目是干什么，并链到 user-guide |
 | 文档入口 | `docs/README.md`；维护者按主题只开一份页面 |
-| 维护者事实 | `docs/system/`：`overview.md` 路由 + 切面目录主题叶 + `deviations.md` + `testing/`；架构以 `architecture/` 为准 |
+| 维护者事实 | `docs/system/`：`overview.md` 路由、切面主题叶、`deviations.md` 与 `testing/` |
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；维护者默认不打开 |
 | 决策 | `docs/context/adr/`；只记录理由，按 `adr-<slug>` 打开单份 |
 | 工作上下文 | `docs/context/research/` |
@@ -115,15 +145,20 @@ bootstrap 不搭建业务工程或测试，也不调用 fact audit；发现已�
 | Agent 指令 | `AGENTS.md`、`.mdf/manifest.yaml` |
 | 领域术语 | `GLOSSARY.md` |
 
-Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。当前事实必须可由证据
-验证，且不得混写未来计划。一条可观察契约只住一页，其他页只链接；文档按角色有
-行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
-fact update / fact audit 的 `--scope`
-默认 `branch`（起点以来实现改动该碰的事实页），`full` 整理知识面全树，finish 只用
-`branch`/`paths`；release 的 `branch` 基线为上一正式发布。
+- 维护者事实中的架构问题以 `docs/system/architecture/` 为准。
 
-`docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。当一条
-Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
+Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
+
+- 当前事实必须可由证据验证，且不得混写未来计划。
+- 一条可观察契约只住一页，其他页只链接。
+- 文档按角色有行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
+- fact update / fact audit 的 `--scope`：
+  - 默认 `branch`（起点以来实现改动该碰的事实页）；release 的 `branch` 基线为上一正式发布。
+  - `full` 整理知识面全树。
+  - finish 只用 `branch`/`paths`。
+
+`docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。
+当一条 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
 具体 intent、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的
 `references/`、`assets/` 与 `scripts/`。
@@ -138,11 +173,12 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 ./mdf-deploy.sh install --target /absolute/path/to/target-repository
 ```
 
-`install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
-目标已有 `mdf` 时终止；维护者升级须先运行 `unistall`，再运行 `install`。
-已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill，并更新已有
-`AGENTS.md` 的 MDF 托管区块。`diff` 分别显示本地与目标相对该基线的改动。脚本与
-upgrade 都不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
+- `install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
+  - 目标已有 `mdf` 时终止；维护者升级须先运行 `unistall`，再运行 `install`。
+- `diff` 分别显示本地与目标相对该基线的改动。
+- 已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill。
+  - 同时更新已有 `AGENTS.md` 的 MDF 托管区块。
+- 脚本与 upgrade 都不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
 
 ## 维护
 

@@ -82,36 +82,38 @@
 
 **预览**
 
-`archive` CLI（包括 dry-run）要求操作前 clean；预览不得为满足 clean 而提交改动。
-仅在用户要求预览时运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH" --dry-run`。
-预览成功即展示结果并结束，不进入实际归档；
-未要求预览时跳过本步操作。
-
-验收：稳定移动与 canonical 引用重写预览。
-
-通过条件：预览结束。异常与交接：非预览进入 4；停止。预览不构成确认或参数绑定。
+- `archive` CLI（包括 dry-run）要求操作前 clean。
+  - ❌ 预览不得为满足 clean 而提交改动。
+- 仅在用户要求预览时运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH" --dry-run`。
+  - 预览成功即展示结果并结束，不进入实际归档。
+  - 未要求预览时跳过本步操作。
+- 验收：稳定移动与 canonical 引用重写预览。
+- 通过条件：预览结束。
+- 异常与交接：非预览进入 4；停止。预览不构成确认或参数绑定。
 
 <a id="s4"></a>
 
 **分组**
 
-运行 `list --repo "$REPO_ROOT" --type proposal --status released --status rejected --status replaced`
-与 `list --repo "$REPO_ROOT" --type bug --status closed --status rejected` 取得候选；
-按输出的 `reject-reason` 与 `duplicate_of` 核对分组，不逐篇翻阅对象目录。
-released/rejected/replaced Proposal 可归档；Bug 的 duplicate 必须随 canonical 组成 archive group。
-
-验收：候选清单与 archive group 关系。
-
-异常与交接：停止，不得单独移动。
+- 运行以下命令取得候选：
+  - `list --repo "$REPO_ROOT" --type proposal --status released --status rejected --status replaced`
+  - `list --repo "$REPO_ROOT" --type bug --status closed --status rejected`
+- 按输出的 `reject-reason` 与 `duplicate_of` 核对分组，不逐篇翻阅对象目录。
+- released/rejected/replaced Proposal 可归档。
+- 📌 Bug 的 duplicate 必须随 canonical 组成 archive group。
+- 验收：候选清单与 archive group 关系。
+- 异常与交接：停止，不得单独移动。
 
 <a id="s5"></a>
 
 **归档**
 
-非预览操作前按公共规则整理本次改动并确认 clean，范围不明或存在无关改动时澄清，不夹带提交。
-仅非预览调用授权运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH"`，
-后运行 `validate --repo "$REPO_ROOT" --scope full`。
-
-验收：对象、`moves`、`rewrites` 数量与 validation。
-
-异常与交接：`duplicate_group_open` 时停止且不得单独移动，其他失败保留现场并报告 findings。成功后复核并提交本次归档改动。
+- 非预览操作前按公共规则整理本次改动并确认 clean。
+  - 范围不明或存在无关改动时澄清，不夹带提交。
+- 仅非预览调用授权运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH"`。
+  - 之后运行 `validate --repo "$REPO_ROOT" --scope full`。
+- 验收：对象、`moves`、`rewrites` 数量与 validation。
+- 异常与交接：
+  - `duplicate_group_open` 时停止且不得单独移动。
+  - 其他失败保留现场并报告 findings。
+  - 成功后复核并提交本次归档改动。

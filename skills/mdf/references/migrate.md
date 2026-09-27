@@ -69,11 +69,12 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-完整读取 `references/initialization.md`、`references/common.md`、`references/clarify.md`
-与 `references/repository-contract.md`。
-接受用户显式调用 `$mdf init migrate` 或 `$mdf migrate`，或 init 依据公共分流规则的
-内部委托；复用已确认信息，不重复提问。
-步骤 6 读取并内部委托 `references/fact-audit.md`。
+- 完整读取以下文档：
+  - `references/initialization.md`、`references/common.md`
+  - `references/clarify.md` 与 `references/repository-contract.md`
+- 接受用户显式调用 `$mdf init migrate` 或 `$mdf migrate`，或 init 依据公共分流规则的
+  内部委托；复用已确认信息，不重复提问。
+- 步骤 6 读取并内部委托 `references/fact-audit.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -93,29 +94,41 @@
 
 **入口**
 
-先按 `initialization.md` 只读确认项目边界、新旧与 MDF 状态。未就绪且符合新仓库
-条件时停止，列依据并提示 `$mdf bootstrap`（或 `$mdf init`），提示前不写入 `.git/`。
-已 ready 的空仓库仍在 migrate 调整配置。已有 Git 的非新项目必须运行 doctor；
-尚未 Git 化的目录等到方案确认后由 initialization 段 2 准备 Git。不因普通目录、
-无提交或 dirty 一概拒绝。doctor 报 `manifest.schema` 或 `layout.migrate`（manifest
-或 `docs/` 布局不符合当前契约）是本 intent 的合法入口态，不是损坏：进入盘点，
-由步骤 3 决定 `docs/product/`、`docs/adr/` 等目录的去处并重写 manifest。
+先按 `initialization.md` 只读确认项目边界、新旧与 MDF 状态。
+
+- 未就绪且符合新仓库条件时停止，列依据并提示 `$mdf bootstrap`（或 `$mdf init`）。
+  - 提示前不写入 `.git/`。
+- 已 ready 的空仓库仍在 migrate 调整配置。
+- 已有 Git 的非新项目必须运行 doctor。
+- 尚未 Git 化的目录等到方案确认后由 initialization 段 2 准备 Git。
+- 不因普通目录、无提交或 dirty 一概拒绝。
+- doctor 报 `manifest.schema` 或 `layout.migrate` 是本 intent 的合法入口态，不是损坏。
+  - 这两项表示 manifest 或 `docs/` 布局不符合当前契约。
+  - 进入盘点，由步骤 3 决定 `docs/product/`、`docs/adr/` 等目录的去处并重写 manifest。
 
 验收：明确项目根、判定依据；已初始化仅允许 initializing finding、
 `manifest.schema` 与 `layout.migrate` finding，或 ready 无 finding。
 
-异常与交接：边界或改动归属不明时澄清，其他 finding 报告后停止。中间反馈继续本次流程，不重查入口。
+异常与交接：
+
+- 边界或改动归属不明时澄清，其他 finding 报告后停止。
+- 中间反馈继续本次流程，不重查入口。
 
 <a id="s2"></a>
 
 **盘点**
 
-盘点全部顶层项目项并检查项目原有的全部文档，区分 MDF 固定项、治理/生态入口、实现、测试、 生成物与文档。
+盘点全部顶层项目项并检查项目原有的全部文档，区分 MDF 固定项、治理/生态入口、实现、测试、
+生成物与文档。
 
 验收：分类清单。
 
-异常与交接：停止并澄清。不得仅凭目录名或 README 保留；符合 CodeWiki 契约的 `docs/repowiki/`
-留在原处且不纳入当前事实、ADR 或调研分类； 此步骤不做`事实复核`。
+异常与交接：
+
+- 停止并澄清。
+- 不得仅凭目录名或 README 保留。
+- 符合 CodeWiki 契约的 `docs/repowiki/` 留在原处且不纳入当前事实、ADR 或调研分类。
+- 此步骤不做`事实复核`。
 
 ### 配置与确认方案
 
@@ -124,49 +137,66 @@
 **布局**
 
 使用内部 clarify intent，议题为材料去处、顶层例外、基线与验证。
-确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外；本地或外部调研材料归入
-`docs/context/research/`，已确认决策归入 `docs/context/adr/`，并从仓库证据收敛八项 `基线`、最近稳定版本与
-`verification` 的五个入口。`docs/` 内材料按 `repository-contract.md`「文档分类与
-按需加载」归位：面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，
-主题各一页）；边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶；
-测试约定进 `docs/system/testing/`（已有根 `docs/testing.md` 则迁入该切面）；
-缺 `index.md` 或主题叶时按模板补齐并按仓库证据填写；
-`overview.md` 核心模块表按已有材料填链接或「不适用」，不批量创建空主题叶；
-仍生效的架构约束从 ADR 抽到 `docs/system/architecture/`，ADR 只留理由；
-`docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，落地后
-不得残留。`baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version`
-写为当前值。不符合当前形状的 `verification`（如 `commands` 列表、`suites` 映射）按
-`delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、release；
-原 named 分组只写进 `docs/system/testing/`，不写回 manifest。既有运行时 skip、
-提前返回或 xfail 在方案中逐个列出处置（按依赖拆分 test case、移出 suite 或登记 Bug），
-经用户确认后落地。quick、smoke、release 必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令：
-既有 suite 命令未产出报告时，在方案中写明为其运行器增加 JUnit 输出（如 pytest
-`--junitxml`、PHPUnit `--log-junit`、Vitest `--reporter=junit`、Jest `jest-junit`）与
-test case 分组配置（`classname` 对应 test case）。初始化 CLI 用
-`--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选 `--budget` 传入。
+
+- 确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外。
+- 调研与决策材料：
+  - 本地或外部调研材料归入 `docs/context/research/`。
+  - 已确认决策归入 `docs/context/adr/`。
+- 从仓库证据收敛八项 `基线`、最近稳定版本与 `verification` 的五个入口。
+- `docs/` 内材料按 `repository-contract.md`「文档分类与按需加载」归位：
+  - 面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，主题各一页）。
+  - 边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶。
+  - 测试约定进 `docs/system/testing/`（已有根 `docs/testing.md` 则迁入该切面）。
+  - 缺 `index.md` 或主题叶时按模板补齐并按仓库证据填写。
+  - `overview.md` 核心模块表按已有材料填链接或「不适用」，不批量创建空主题叶。
+  - 仍生效的架构约束从 ADR 抽到 `docs/system/architecture/`，ADR 只留理由。
+  - `docs/product/`、`docs/adr/` 等不属于当前布局的目录在方案中列出逐文件去处，
+    落地后不得残留。
+- manifest 字段：
+  - `baselines` 键与路径按当前契约重写（含 `user_guide`），`schema_version` 写为当前值。
+  - 不符合当前形状的 `verification`（如 `commands` 列表、`suites` 映射）：
+    - 按 `delivery-contract.md`「验证 suite」重新归入 lint、build、quick、smoke、release。
+  - 原 named 分组只写进 `docs/system/testing/`，不写回 manifest。
+- 既有运行时 skip、提前返回或 xfail 在方案中逐个列出处置，经用户确认后落地。
+  - 处置为按依赖拆分 test case、移出 suite 或登记 Bug。
+- 📌 quick、smoke、release 必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令：
+  - 既有 suite 命令未产出报告时，在方案中写明为其运行器增加以下两项：
+    - JUnit 输出（如 pytest `--junitxml`、PHPUnit `--log-junit`、Vitest `--reporter=junit`、
+      Jest `jest-junit`）
+    - test case 分组配置（`classname` 对应 test case）。
+- 初始化 CLI 用 `--lint`、`--build`、`--quick`、`--smoke`、`--release` 与可选 `--budget` 传入。
 
 验收：逐项决定与验证命令。
 
-异常与交接：无法分类时留在 3。仅含 `.gitkeep` 的占位目录按其未来职责迁移； 迁移目标已有实际内容时，
-在同一方案中移除 `.gitkeep`，否则保留。单 module 的业务实现与测试建议迁入 `src/` 与
-`tests/`；多 module 建议迁入或保留 `<module>/src/` 与 `<module>/tests/`，
-不得摊平为仓库根 `src/<module>/` 与 `tests/<module>/`。但不得在未经确认时迁移或删除。
-已接入 MDF 但暂无业务检查时 lint、build 可用 `git diff --check`；从未发布时最近稳定版本为
-`none`。
+异常与交接：
+
+- 无法分类时留在 3。
+- 仅含 `.gitkeep` 的占位目录按其未来职责迁移。
+  - 迁移目标已有实际内容时，在同一方案中移除 `.gitkeep`，否则保留。
+- 单 module 的业务实现与测试建议迁入 `src/` 与 `tests/`。
+- 多 module 建议迁入或保留 `<module>/src/` 与 `<module>/tests/`，
+  不得摊平为仓库根 `src/<module>/` 与 `tests/<module>/`。
+- ❌ 不得在未经确认时迁移或删除。
+- 已接入 MDF 但暂无业务检查时 lint、build 可用 `git diff --check`。
+- 从未发布时最近稳定版本为 `none`。
 
 <a id="s4"></a>
 
 **方案**
 
-形成`初始化方案`：路径、材料去处、保留内容、顶层允许清单、实现/测试目录、 拟补字段、基线、验证命令与预期
-`validation`。
+形成`初始化方案`：路径、材料去处、保留内容、顶层允许清单、实现/测试目录、
+拟补字段、基线、验证命令与预期 `validation`。
 
 验收：用户明确确认。
 
-异常与交接：用户尚未确认且方案未改时留在 4。材料分类有误时回到 2；去处、基线或验证命令需调整时回到 3。
-移动/删除必须列出源、 目标和无信息损失理由，且不得覆盖既有内容。 不处理待实现意图；完成后用户可按输入形态显式
-`$mdf intake` 或 `$mdf bug create` 或 `$mdf prp create`。配置调整必须再次显式调用
-`$mdf init migrate`、`$mdf migrate` 或 `$mdf init`。
+异常与交接：
+
+- 用户尚未确认且方案未改时留在 4。
+- 材料分类有误时回到 2；去处、基线或验证命令需调整时回到 3。
+- 移动/删除必须列出源、目标和无信息损失理由，且不得覆盖既有内容。
+- 不处理待实现意图；完成后用户可按输入形态显式
+  `$mdf intake` 或 `$mdf bug create` 或 `$mdf prp create`。
+- 配置调整必须再次显式调用 `$mdf init migrate`、`$mdf migrate` 或 `$mdf init`。
 
 ### 落地与启用
 
@@ -174,43 +204,61 @@ test case 分组配置（`classname` 对应 test case）。初始化 CLI 用
 
 **落地**
 
-执行 `init` 建立或更新完整 scaffold 前，按 `initialization.md` 段 2 依已确认方案准备 Git
-基础并运行 doctor。保持 manifest `initializing`，传入核对后的完整配置与验证命令，
-并只按方案归位/保留/排除原材料与顶层项。配置更新保留未要求修改的字段，续办核对已有产物，
-不覆盖重建；完成材料后创建本地阶段提交，再审阅事实。
+- 执行 `init` 建立或更新完整 scaffold 前，按 `initialization.md` 段 2
+  依已确认方案准备 Git 基础并运行 doctor。
+- 保持 manifest `initializing`，传入核对后的完整配置与验证命令。
+- 只按方案归位/保留/排除原材料与顶层项。
+- 配置更新保留未要求修改的字段，续办核对已有产物，不覆盖重建。
+- 完成材料后创建本地阶段提交，再审阅事实。
 
-验收：固定布局、完整归位核对表、 `README.md`、`PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md` 各自符合`根文档职责`
-且入口可达、没有未说明的遗留文件。
+验收：
 
-异常与交接：保留现场与 findings，不自动回退；停止并报告。
-项目原有文档 与经确认迁移的顶层项目项只可按方案归位、保留或排除；保留 `AGENTS.md` 非 MDF 托管块；
-完成当前事实文档、ADR、 `README.md`、`PROJECT.md` 与验证命令；在 `PROJECT.md`
-记录仅含例外的顶层允许清单与目录约定。 方案调整仓库结构时，审视 `README.md` 的用户/维护入口、`PROJECT.md`
-的维护手册与当前事实文档，消除重复；此后新增或更新文档时保持该分工，
-根文档不复述当前事实页的契约。
+- 固定布局、完整归位核对表。
+- `README.md`、`PROJECT.md`、`AGENTS.md` 与 `GLOSSARY.md` 各自符合`根文档职责`且入口可达。
+- 没有未说明的遗留文件。
+
+异常与交接：
+
+- 保留现场与 findings，不自动回退；停止并报告。
+- 项目原有文档与经确认迁移的顶层项目项只可按方案归位、保留或排除。
+- 保留 `AGENTS.md` 非 MDF 托管块。
+- 完成当前事实文档、ADR、`README.md`、`PROJECT.md` 与验证命令。
+- 在 `PROJECT.md` 记录仅含例外的顶层允许清单与目录约定。
+- 方案调整仓库结构时，审视 `README.md` 的用户/维护入口、`PROJECT.md` 的维护手册
+  与当前事实文档，消除重复。
+  - 此后新增或更新文档时保持该分工，根文档不复述当前事实页的契约。
 
 <a id="s6"></a>
 
 **审阅**
 
-比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`，
-内部委托 `fact audit` 执行`全量审阅`（`--scope full`）。
-先提交本次事实与证据作为可审阅基线；审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
+- 比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`。
+- 内部委托 `fact audit` 执行`全量审阅`（`--scope full`）。
+- 先提交本次事实与证据作为可审阅基线。
+- 审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 
 验收：事实复核、diff 与 full validation；仅允许 `manifest.initializing` finding。
 
-通过条件：审阅与校验通过后进入 7。异常与交接：未确认的语义问题继续澄清；其他
-finding 修正后重验，同一项两轮后仍在则无法继续；无法继续时保留现场并报告。
-提交不替代事实复核或用户确认。
+通过条件：审阅与校验通过后进入 7。
+
+异常与交接：
+
+- 未确认的语义问题继续澄清。
+- 其他 finding 修正后重验，同一项两轮后仍在则无法继续。
+- 无法继续时保留现场并报告。
+- 提交不替代事实复核或用户确认。
 
 <a id="s7"></a>
 
 **就绪**
 
-按 `initialization.md` 的公共完成规则展示当前事实复核、八项基线、验证命令和分支方案；
-取得用户明确“结束初始化并启用正常工作流”确认后改 ready，校验、提交并核对本地 master/develop。
+1. 按 `initialization.md` 的公共完成规则展示当前事实复核、八项基线、验证命令和分支方案。
+2. 取得用户明确“结束初始化并启用正常工作流”确认后改 ready，校验、提交并核对本地 master/develop。
 
 验收：事实审阅有效、full validation 零 finding、就绪结果已提交、本地分支可用。
 
-异常与交接：事实发生变化则返回 6 补审，不复用过期结论；用户未确认启用则保持
-initializing 并结束，不写 ready。其他失败保留现场并报告，未通过不得宣称完成。
+异常与交接：
+
+- 事实发生变化则返回 6 补审，不复用过期结论。
+- 用户未确认启用则保持 initializing 并结束，不写 ready。
+- 其他失败保留现场并报告，未通过不得宣称完成。

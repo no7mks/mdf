@@ -104,11 +104,13 @@
 
 **分析**
 
-调用 `analyze_repo` 创建 session，固定 repo/output 路径，遵守 `.gitignore` 并按实际排除第三方和纯生成目录；
-读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`
-与分析返回的 JSON、`get_prompt(cluster)` 与所需 `read_code_components`；按内聚、调用与目录边界聚类，
-使用原始 component ID 调用 `save_module_tree` 并读取其写出的 `processing_order.json`；小仓库不强造层级，
-大仓库 避免只按目录机械切分。
+1. 调用 `analyze_repo` 创建 session，固定 repo/output 路径。
+   - 遵守 `.gitignore` 并按实际排除第三方和纯生成目录。
+2. 读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`。
+   - 同时读取分析返回的 JSON、`get_prompt(cluster)` 与所需 `read_code_components`。
+3. 按内聚、调用与目录边界聚类。
+   - 小仓库不强造层级，大仓库 避免只按目录机械切分。
+4. 使用原始 component ID 调用 `save_module_tree` 并读取其写出的 `processing_order.json`。
 
 验收：模块树和处理顺序。
 
@@ -118,15 +120,24 @@
 
 **模块**
 
-按 processing order 先 leaf 后父模块；每页先 `get_prompt`，读取相关组件和必要文件，再用 `write_doc_file`
-写入受管 marker、可证当前事实、职责、关系、边界与链接。
+按 processing order 先 leaf 后父模块。每页：
+
+1. 先 `get_prompt`，读取相关组件和必要文件。
+2. 再用 `write_doc_file` 写入受管 marker、可证当前事实、职责、关系、边界与链接。
 
 验收：模块页与 Mermaid 校验。
 
-异常与交接：页面或图的局部校验错误且该项未满两轮则留在 4；同一项两轮后仍失败、
-MCP 失败或无法局部修复则走 recovery。 对可读疑点追踪至事实；仓外事项省略或标为“不覆盖”；
-不得遗留 TODO、待确认或猜测。 主动查找符合定义的 hack；存在才写 `hacks.md`，
-不得将项目特定版本、迁移或路由 分层抽象成通用 hack 规则。
+异常与交接：
+
+| 情形 | 处理 |
+| --- | --- |
+| 页面或图的局部校验错误且该项未满两轮 | 留在 4 |
+| 同一项两轮后仍失败、MCP 失败或无法局部修复 | 走 recovery |
+
+- 对可读疑点追踪至事实；仓外事项省略或标为“不覆盖”。
+- ❌ 不得遗留 TODO、待确认或猜测。
+- 主动查找符合定义的 hack；存在才写 `hacks.md`。
+  - ❌ 不得将项目特定版本、迁移或路由 分层抽象成通用 hack 规则。
 
 ### 基线与输出验收
 
@@ -134,9 +145,10 @@ MCP 失败或无法局部修复则走 recovery。 对可读疑点追踪至事实
 
 **基线**
 
-写入带受管 marker 的 `overview.md`，包含入口、地图、主要关系、阅读顺序及全部模块/hacks 链接。
-关闭前先验收全部页面、链接、模块树、事实与 Mermaid；未通过则进入 recovery，
-不得推进基线。通过后调用 `close_session`，随后进入步骤 6 检查实际基线和 workspace。
+1. 写入带受管 marker 的 `overview.md`，包含入口、地图、主要关系、阅读顺序及全部模块/hacks 链接。
+2. 关闭前先验收全部页面、链接、模块树、事实与 Mermaid。
+   - 未通过则进入 recovery，不得推进基线。
+3. 通过后调用 `close_session`，随后进入步骤 6 检查实际基线和 workspace。
 
 验收：至少一页 Markdown 写入后的 `metadata.json` 基线。
 
@@ -146,15 +158,22 @@ MCP 失败或无法局部修复则走 recovery。 对可读疑点追踪至事实
 
 **验收**
 
-验收本次改动仅在 `docs/repowiki/`，overview、模块页、三个 JSON、链接、 模块树和 metadata 均有效，
-`.codewiki/` 无仓库改动，且当前 session workspace 已清空、不得用忽略规则隐藏残余。
-抽样回读并对照代码确认简体中文、事实闭合、无占位，且所有 hack 符合定义。
+验收以下各项：
+
+- 本次改动仅在 `docs/repowiki/`。
+- overview、模块页、三个 JSON、链接、 模块树和 metadata 均有效。
+- `.codewiki/` 无仓库改动。
+- 当前 session workspace 已清空、不得用忽略规则隐藏残余。
+- 抽样回读并对照代码确认简体中文、事实闭合、无占位，且所有 hack 符合定义。
 
 验收：验证与 diff。
 
 通过条件：复查并提交本次 Wiki 改动，报告模块数、页面、hack 数、变更基线、验证结果和 diff。
-输出验收通过后仅 Git 暂存或提交失败时，保留已验收的 Wiki、metadata 与实际 Git 状态，
-报告提交错误及待提交范围后停止；不得因此进入 recovery、搬移 Wiki 或重新生成。
-同次续办先核对输出与 diff 未变且验收仍有效，再按公共规则处理提交；不重新调用 MCP。
+
+⚠️ 输出验收通过后仅 Git 暂存或提交失败时：
+
+- 保留已验收的 Wiki、metadata 与实际 Git 状态，报告提交错误及待提交范围后停止。
+- 不得因此进入 recovery、搬移 Wiki 或重新生成。
+- 同次续办先核对输出与 diff 未变且验收仍有效，再按公共规则处理提交；不重新调用 MCP。
 
 分析开始后的 MCP 失败或输出验收失败进入 recovery。

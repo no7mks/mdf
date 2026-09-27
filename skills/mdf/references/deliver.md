@@ -80,91 +80,130 @@
 ### 目标与持续授权
 
 调用 `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 授权从当前状态连续执行本次交付
-剩余工作直到 finish 完成，含尚未完成的 start，以及原流程要求的本地提交、并行委托、
-集成与 finish 的 Gitflow 操作。target 是唯一位置参数，不是 `--` option；
-`--auto-pilot` 与 `--yolo` 可在其前或后。target 与这些 option 都省略时仍是 deliver。
-feature/bugfix 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
-只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
-用户明确限制提交、推送或只读时遵守限制；与 finish 完成条件冲突时说明并询问，不能声称完成。
-已有有效确认继续适用。默认模式：设计确认、测试修改批准、目标变更和外部条件仍按原流程处理；
-需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
-`--auto-pilot` 与 `--yolo` 按下方策略把这些决定改为主 Agent 自裁定。
+剩余工作直到 finish 完成。
 
-步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。
-先解析本次调用的 target（见下）；有唯一对象则锁定该交付。
-否则优先锁定用户在对话中指定的交付；再否则由当前 feature/qa/dev、bugfix、hotfix
-或 release 分支确定。
-feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `worktrees.owner.path`。
-其他分支使用 `git worktree list --porcelain` 中完整分支名对应的已有路径。
-从其他目录进入时，只有上下文明确唯一交付目标才可切到它；多个候选必须询问，
-不按最近目录猜测。`--auto-pilot` 下多个在途交付仍无法唯一锁定时属死硬阻塞。
-尚未存在本次交付时委托 `references/start.md`：已由 target 或用户指定 kind 与
-PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。默认模式询问用户选择；
-`--auto-pilot` 由主 Agent 按仓库证据与对话上下文选定唯一目标。不调用初始化或规划流程，
-不发明 release/hotfix 版本。start 成功后回到 1；start 失败或停止则按其交接结束，不回 1。
-已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout
-或临时创建另一套分支绕过。start 返回后使用其 owner 与 roles，再创建 Goal。
-记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 finish 删除的主 worktree 路径。
+- 授权含尚未完成的 start，以及原流程要求的本地提交、并行委托、集成与 finish 的 Gitflow 操作。
+- target 是唯一位置参数，不是 `--` option；`--auto-pilot` 与 `--yolo` 可在其前或后。
+- target 与这些 option 都省略时仍是 deliver。
+
+完成范围：
+
+- feature/bugfix 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
+- 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
+- 用户明确限制提交、推送或只读时遵守限制。
+  - 与 finish 完成条件冲突时说明并询问，不能声称完成。
+
+确认与暂停：
+
+- 已有有效确认继续适用。
+- 默认模式：设计确认、测试修改批准、目标变更和外部条件仍按原流程处理。
+  - 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
+- `--auto-pilot` 与 `--yolo` 按下方策略把这些决定改为主 Agent 自裁定。
+
+步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
+
+1. 先解析本次调用的 target（见下）；有唯一对象则锁定该交付。
+2. 否则优先锁定用户在对话中指定的交付。
+3. 再否则由当前 feature/qa/dev、bugfix、hotfix 或 release 分支确定。
+   - feature 的 qa/dev 归属 owner feature；使用 `delivery status` 返回的 `worktrees.owner.path`。
+   - 其他分支使用 `git worktree list --porcelain` 中完整分支名对应的已有路径。
+
+- 从其他目录进入时，只有上下文明确唯一交付目标才可切到它。
+  - 多个候选必须询问，不按最近目录猜测。
+  - `--auto-pilot` 下多个在途交付仍无法唯一锁定时属死硬阻塞。
+
+尚未存在本次交付时委托 `references/start.md`：
+
+- 已由 target 或用户指定 kind 与 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。
+- 默认模式询问用户选择；`--auto-pilot` 由主 Agent 按仓库证据与对话上下文选定唯一目标。
+- 不调用初始化或规划流程，不发明 release/hotfix 版本。
+- start 成功后回到 1；start 失败或停止则按其交接结束，不回 1。
+
+已有交付与 start 返回后：
+
+- ❌ 已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout 或临时创建另一套分支绕过。
+- start 返回后使用其 owner 与 roles，再创建 Goal。
+- 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 finish 删除的主 worktree 路径。
 
 ### target
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
-除 `--auto-pilot`、`--yolo`、`--roster`、`--qa-strategy`、`--dev-strategy`、
-`--review-strategy`、`--write-tests-model`、`--implement-model`、
-`--code-review-model` 外，以 `--` 开头的 token 不是 target，
-视为未知调用参数并停止。
-`--roster` 后跟 `solo` / `min-tdd` / `competing-pair` / `coop-pair`。
-尚未 start 时把 `--roster` 转交给 start；已有交付再带 `--roster` 则停止。
-`--qa-strategy` / `--dev-strategy` / `--review-strategy` 后跟一个取值；
-每个 `--*-model` 后跟一个 token。委托 start、design、code-review 时原样转交细项。
-省略 target 时不在此步选型，继续上方既有锁定规则。
+
+已知 option 为 `--auto-pilot`、`--yolo` 与下表各项。
+除这些外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
+
+| option | 取值 |
+| --- | --- |
+| `--roster` | `solo` / `min-tdd` / `competing-pair` / `coop-pair` |
+| `--qa-strategy` / `--dev-strategy` / `--review-strategy` | 后跟一个取值 |
+| `--write-tests-model` / `--implement-model` / `--code-review-model` | 每个 `--*-model` 后跟一个 token |
+
+- 尚未 start 时把 `--roster` 转交给 start；已有交付再带 `--roster` 则停止。
+- 委托 start、design、code-review 时原样转交细项。
+- 省略 target 时不在此步选型，继续上方既有锁定规则。
 
 按下列顺序自动分辨 Proposal 与 Bug，命中唯一对象即停止：
 
 1. 完整 ID：符合 `prp-<序号>` 则为 Proposal；符合 `bug-<4 位字符>` 则为 Bug。
-2. 否则运行 `list --repo "$REPO_ROOT"`（proposal 与 bug，不限 status），
-   在返回的 `id` 中精确匹配；仍无则用去掉 `prp-`/`bug-` 前缀的本体、以及 `path`
-   文件名中的 slug 各匹配一次。不匹配 title，不把 jot ID、SemVer 或路径当成功值。
-3. 唯一命中 Proposal → feature，将该 PRP ID 交给 start。Proposal 对象
-   已有在途交付则报告错误并停止，不续办、不重新 start；以 `list` 的
-   `in_progress` 为准。
-   唯一命中 Bug：本地已存在 `bugfix/<Bug ID>` 或其 worktree 时，该 bugfix 为
-   在途交付；若当前已锁定另一交付则报告错误并停止，不续办、不重新 start。
-   当前已锁定 release 或 hotfix、Bug 为 active `open` 且无上述 bugfix 分支时，
-   不 start、不改绑，将该 Bug 记入本次剩余开发工作。
-   否则 → bugfix，将该 Bug ID 交给 start。
+2. 否则运行 `list --repo "$REPO_ROOT"`（proposal 与 bug，不限 status），在返回的 `id` 中精确匹配。
+   - 仍无则用去掉 `prp-`/`bug-` 前缀的本体、以及 `path` 文件名中的 slug 各匹配一次。
+   - 不匹配 title，不把 jot ID、SemVer 或路径当成功值。
+3. 按唯一命中的对象处理：
+   - 唯一命中 Proposal → feature，将该 PRP ID 交给 start。Proposal 对象
+     已有在途交付则报告错误并停止，不续办、不重新 start；以 `list` 的 `in_progress` 为准。
+   - 唯一命中 Bug：本地已存在 `bugfix/<Bug ID>` 或其 worktree 时，该 bugfix 为在途交付；
+     若当前已锁定另一交付则报告错误并停止，不续办、不重新 start。
+   - 唯一命中 Bug，当前已锁定 release 或 hotfix、Bug 为 active `open` 且无上述 bugfix 分支；
+     此时不 start、不改绑，将该 Bug 记入本次剩余开发工作。
+   - 唯一命中 Bug 的其他情况 → bugfix，将该 Bug ID 交给 start。
 
-零命中、跨类型或多对象命中时询问，不猜测。`--auto-pilot` 对 target 分不清就询问，
-不自裁定。完整 ID 形态合法但 `list` 无此对象时报告缺失并停止。
-target 与当前已锁定的另一交付冲突时报告错误并停止，不改绑。
+- 零命中、跨类型或多对象命中时询问，不猜测。
+- `--auto-pilot` 对 target 分不清就询问，不自裁定。
+- 完整 ID 形态合法但 `list` 无此对象时报告缺失并停止。
+- target 与当前已锁定的另一交付冲突时报告错误并停止，不改绑。
 
 ### auto-pilot
 
-仅 `$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo` 启用；默认 `$mdf deliver`
-不启用。`--yolo` 隐含本策略；下文写 `--auto-pilot` 处对 `--yolo` 同样适用，
-除非写明例外。
-委托子 intent 时把本策略作为外层约束：原文中的询问、确认、批准与选择改由主 Agent
-依据仓库证据、已确认目标和本次范围自行裁定，并在摘要或 gate 中写明依据，
-不向用户提问、不等待确认。内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
-converge 的 `--test-approval` 记录该裁定与理由。不得削弱验收或把未实现目标判为完成。
+启用条件：
 
-死硬阻塞才停止：CLI/Git/工具不可恢复失败；无可启动目标（无合格 ready PRP、无合格
-open Bug，且未指定合法 release/hotfix 版本）；已有交付缺少 worktree；用户明确只读
-或禁止提交/推送且与完成条件冲突；必须切换 worktree 但宿主无法由 Agent 完成；
-凭据、origin 一致性等仓库外条件缺失；同一失败连续三轮无进展；不改写用户明确禁止
-的范围就无法继续。target 分不清就询问，不列入自裁定。
-除此之外不因“想听用户意见”而暂停。
+- 仅 `$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo` 启用；默认 `$mdf deliver` 不启用。
+- `--yolo` 隐含本策略；下文写 `--auto-pilot` 处对 `--yolo` 同样适用，除非写明例外。
 
-须询问：默认模式出现多个候选，或任何模式下 target 分不清。auto-pilot 能凭仓库证据
-与对话上下文定出唯一目标时不询问，裁定后走通过。多个在途交付无法唯一锁定，以及其他
-死硬条件，走死硬阻塞。
-唯一预定确认：finish 步骤 9 通过、即将调用 `finish-gitflow` 之前。展示将合入的目标
-主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
-该确认只在步骤 6 进行。取得明确确认后才委托 finish 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
-未决留在步骤 6。
-此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
-`--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
-独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
+委托子 intent 时把本策略作为外层约束：
+
+- 原文中的询问、确认、批准与选择改由主 Agent 依据仓库证据、已确认目标和本次范围自行裁定。
+  - 在摘要或 gate 中写明依据，不向用户提问、不等待确认。
+- 内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
+- converge 的 `--test-approval` 记录该裁定与理由。
+- ❌ 不得削弱验收或把未实现目标判为完成。
+
+死硬阻塞才停止：
+
+- CLI/Git/工具不可恢复失败。
+- 无可启动目标（无合格 ready PRP、无合格 open Bug，且未指定合法 release/hotfix 版本）。
+- 已有交付缺少 worktree。
+- 用户明确只读或禁止提交/推送且与完成条件冲突。
+- 必须切换 worktree 但宿主无法由 Agent 完成。
+- 凭据、origin 一致性等仓库外条件缺失。
+- 同一失败连续三轮无进展。
+- 不改写用户明确禁止的范围就无法继续。
+
+target 分不清就询问，不列入自裁定。除此之外不因“想听用户意见”而暂停。
+
+| 情形 | 处理 |
+| --- | --- |
+| 默认模式出现多个候选，或任何模式下 target 分不清 | 须询问 |
+| auto-pilot 能凭仓库证据与对话上下文定出唯一目标 | 不询问，裁定后走通过 |
+| 多个在途交付无法唯一锁定，以及其他死硬条件 | 走死硬阻塞 |
+
+唯一预定确认：finish 步骤 9 通过、即将调用 `finish-gitflow` 之前。
+
+- 展示将合入的目标主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
+- 该确认只在步骤 6 进行；未决留在步骤 6。
+- 取得明确确认后才委托 finish 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
+- 此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
+- `--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
+- 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 
 ### Goal
 
@@ -178,11 +217,14 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 步骤 2 结合原步骤、对话确认、未完成子步骤、产物、Git 历史及执行者状态判断。
 按下表自上而下命中即停止，不并行套用多行。
-已完成且证据有效的阶段不重做；不能仅凭 gate 文件存在或一次 check 成功判断整个阶段完成，
-还须核对该阶段要求的提交、语义结论和相关内容 fingerprint。过期证据按原阶段规则补审补验。
-角色尚在时从对应 qa/dev worktree 读取各路 gate 与提交，不因 owner 尚未合入就重复分派。
-角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
-已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
+
+- 已完成且证据有效的阶段不重做。
+  - 不能仅凭 gate 文件存在或一次 check 成功判断整个阶段完成，
+    还须核对该阶段要求的提交、语义结论和相关内容 fingerprint。
+  - 过期证据按原阶段规则补审补验。
+- 角色尚在时从对应 qa/dev worktree 读取各路 gate 与提交，不因 owner 尚未合入就重复分派。
+- 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
+- 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
 
 | 当前状态 | 后续处理 |
 | --- | --- |
@@ -198,56 +240,70 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
-bugfix 在 roster `0,0` 时使用对应 Bug。release 对照 `objectives.md` 完成计划内
-预发布工作（含跨仓联调证据），并可在 owner 上直接修已确认的 open Bug
-（完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change）。不得实施新 PRP；
-缺能力则推迟或作废本次 release，回 develop 开 feature。hotfix 使用热修复范围，
-同样可直接修 Bug。不套用 feature 阶段 gate；roster ≥1 时走 design /
-write-tests / implement / converge。
-没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
-发现缺少设计决定或验收依据时：默认模式询问；`--auto-pilot` 能由仓库证据裁定则自裁定，
-否则属死硬阻塞。不虚构开发任务，也不把未实现的目标判定为完成。
-finish 已开始而代码发生变化时按 code-review 的复核规则处理后再续办 finish，不能跳过过期检查。
-步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，
-不结束 deliver。步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。
+非 feature 交付的开发范围：
+
+- bugfix 在 roster `0,0` 时使用对应 Bug。
+- release 对照 `objectives.md` 完成计划内预发布工作（含跨仓联调证据）。
+  - 并可在 owner 上直接修已确认的 open Bug
+    （完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change）。
+  - ❌ 不得实施新 PRP；缺能力则推迟或作废本次 release，回 develop 开 feature。
+- hotfix 使用热修复范围，同样可直接修 Bug。
+- 不套用 feature 阶段 gate；roster ≥1 时走 design / write-tests / implement / converge。
+
+剩余工作与失败处理：
+
+- 没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
+- 发现缺少设计决定或验收依据时：
+  - 默认模式询问。
+  - `--auto-pilot` 能由仓库证据裁定则自裁定，否则属死硬阻塞。
+- 不虚构开发任务，也不把未实现的目标判定为完成。
+- finish 已开始而代码发生变化时按 code-review 的复核规则处理后再续办 finish，不能跳过过期检查。
+- 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
+- 步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。
 
 ### 先测后审
 
 bugfix/hotfix/release 在审查前先验证（feature 由 converge 完成同样的事）：
+
 - bugfix 先关联 `changes/unreleased/<slug>/suites.json`（`{"suites":["<named suite 名>"]}`）：
-  按修复改动涉及的全部功能块，从 `docs/system/testing/` 已文档化的 named suite 中逐个选定
-  并提交；没有合适的 suite 时询问用户是否新建，确认后先补该 suite 的文档再关联。不得关联
-  lint/build/quick/smoke/release/full。
-- 运行 `project-verify run --repo "$REPO_ROOT"`（bugfix 到 smoke，release/hotfix 到 release），
-  bugfix 另以 `suite-run` 执行所列 named suite。失败时读报告与日志定位，在已确认范围内修复
-  实现后重跑，直到全绿；测试、预期或验证门槛的修改须用户确认。需要目标决定、外部条件或
-  同一失败连续三轮无进展时阻塞停止。
-- 已有证据经 `project-verify check` 仍有效时不重跑。全绿后提交，再进入审查；审查修复使证据
-  过期时由 code-review 步骤 4 重验。
+  - 按修复改动涉及的全部功能块，从 `docs/system/testing/` 已文档化的 named suite 中逐个选定并提交。
+  - 没有合适的 suite 时询问用户是否新建，确认后先补该 suite 的文档再关联。
+  - ❌ 不得关联 lint/build/quick/smoke/release/full。
+- 运行 `project-verify run --repo "$REPO_ROOT"`（bugfix 到 smoke，release/hotfix 到 release）。
+  - bugfix 另以 `suite-run` 执行所列 named suite。
+  - 失败时读报告与日志定位，在已确认范围内修复实现后重跑，直到全绿。
+  - 测试、预期或验证门槛的修改须用户确认。
+  - 需要目标决定、外部条件或同一失败连续三轮无进展时阻塞停止。
+- 已有证据经 `project-verify check` 仍有效时不重跑。
+- 全绿后提交，再进入审查；审查修复使证据过期时由 code-review 步骤 4 重验。
 
 ### 并行委托与 worktree 身份
 
 步骤 4：所有当前可并行且互不依赖的 intent 必须分别交给 subagent，不由主 Agent 串行代做。
-roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implement，须已确认并提交
-同一 design 与共享底座。qa 与 dev 互不传入路径；同侧多路亦互不传入兄弟路径。
-两路已有一条运行时，等待其结果并启动另一条可执行的空闲路；不得重复创建执行者。
-仅一路未完成走步骤 3，由主 Agent 用该角色绝对路径与 `git -C` 续办，不走步骤 4；
-禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。步骤 4 的 subagent
-按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
-不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
-design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner
-subagent。主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
-code-review 内部按 roster.reviewers 启动独立 subagent 只读审查，按其契约执行，
-主 Agent 汇总修复。分派时只把该 intent 在 roster.models 中的值写入对应任务，
-按口语描述现场解析（可多个模型）；
-没有该键则该路不提模型或 effort。不得把其他 intent 的模型写入本路任务。
-资源不足时等待已有执行者释放；无法提供所需 subagent 能力时报告阻塞，不悄悄降级串行。
 
-分派前主 Agent 从 owner 的 `delivery status` 取得现有绝对路径与分支名，
-规范化后的 owner、qa、dev 路径必须两两不同，且与 Git worktree 清单中的分支绑定一致。
-固定本轮 owner 的 design 基线提交；并行期间不推进 owner，不修改目标、设计或共享底座。
-每个任务明确传入 MDF_ROOT、owner 路径及分支、角色绝对 worktree、预期完整分支名、
-Git common dir、设计提交、对应 intent、读写边界与完成证据，不能只给相对目录或角色名称。
+- roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implement。
+  - 须已确认并提交同一 design 与共享底座。
+- qa 与 dev 互不传入路径；同侧多路亦互不传入兄弟路径。
+- 两路已有一条运行时，等待其结果并启动另一条可执行的空闲路；不得重复创建执行者。
+- 仅一路未完成走步骤 3，由主 Agent 用该角色绝对路径与 `git -C` 续办，不走步骤 4。
+  - 禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。
+- 步骤 4 的 subagent 按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
+- 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
+- design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner subagent。
+  - 主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
+- code-review 内部按 roster.reviewers 启动独立 subagent 只读审查，按其契约执行，主 Agent 汇总修复。
+- 分派时只把该 intent 在 roster.models 中的值写入对应任务，按口语描述现场解析（可多个模型）。
+  - 没有该键则该路不提模型或 effort。
+  - 不得把其他 intent 的模型写入本路任务。
+- 资源不足时等待已有执行者释放；无法提供所需 subagent 能力时报告阻塞，不悄悄降级串行。
+
+分派前主 Agent 从 owner 的 `delivery status` 取得现有绝对路径与分支名：
+
+- 规范化后的 owner、qa、dev 路径必须两两不同，且与 Git worktree 清单中的分支绑定一致。
+- 固定本轮 owner 的 design 基线提交；并行期间不推进 owner，不修改目标、设计或共享底座。
+- 每个任务明确传入下列内容，不能只给相对目录或角色名称：
+  - MDF_ROOT、owner 路径及分支、角色绝对 worktree、预期完整分支名。
+  - Git common dir、设计提交、对应 intent、读写边界与完成证据。
 
 | subagent | 必须使用的路径与分支 | 写入职责 |
 | --- | --- | --- |
@@ -256,28 +312,40 @@ Git common dir、设计提交、对应 intent、读写边界与完成证据，�
 | code-review 的审查者 | owner 的同一绝对路径与固定 review_head | 只读，不建立角色 worktree |
 
 主 Agent 分派前和 subagent 首次操作时都运行内部 CLI：
-`worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev> [--index N]`。
-脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
-角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>` 再检查共同基线与 fingerprint。
-审查者使用 `--role owner --expected-head <review_head>`，只读验证，不合并或写入。
 
-所有命令显式指定该 worktree 的工作目录或 `git -C`，文件写入使用该 worktree 下的绝对路径。
-不得假设 subagent 继承主 Agent cwd；工具自动分配的其他 worktree 不替代 MDF 角色树。
-不能绑定并验证指定路径时停止，不在默认目录开工。审查者验证 owner 与 review_head，不合并或写入。
+- `worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev> [--index N]`。
+- 脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
+- 角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>`
+  再检查共同基线与 fingerprint。
+- 审查者使用 `--role owner --expected-head <review_head>`，只读验证，不合并或写入。
+
+路径约束：
+
+- 所有命令显式指定该 worktree 的工作目录或 `git -C`，文件写入使用该 worktree 下的绝对路径。
+- 不得假设 subagent 继承主 Agent cwd；工具自动分配的其他 worktree 不替代 MDF 角色树。
+- 不能绑定并验证指定路径时停止，不在默认目录开工。
+- 审查者验证 owner 与 review_head，不合并或写入。
 
 ### 等待、交接与收口
 
-主 Agent 等待所有已派阶段完成或明确阻塞，不在任一路仍运行时执行 converge 或删除角色 worktree。
-一条失败时保留另一条已完成产物；如需修改共同设计，先暂停所有仍在写入的执行者。
-各路交接报告实际绝对路径、分支、最终提交 hash、gate 路径、验证/自检结果及未解决项。
-主 Agent 对各路再次调用同一 worktree-check，传入固定设计提交并追加 `--handoff`；
-脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）fingerprint。
-失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
-合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。
+等待：
 
-单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。
-步骤 5 必须取得 finish 的实际成功结果，按分支核对合并、源分支/worktree 清理、
-以及 release/hotfix 的 tag 和推送；finish 删除 owner 后改用步骤 1 固定的主 worktree 核对。
-若 finish 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
-报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。
-上下文恢复时用上述现有产物与实际 Git 状态重新核验，不依赖未落地的内存完成标志。
+- 主 Agent 等待所有已派阶段完成或明确阻塞，不在任一路仍运行时执行 converge 或删除角色 worktree。
+- 一条失败时保留另一条已完成产物；如需修改共同设计，先暂停所有仍在写入的执行者。
+
+交接：
+
+- 各路交接报告实际绝对路径、分支、最终提交 hash、gate 路径、验证/自检结果及未解决项。
+- 主 Agent 对各路再次调用同一 worktree-check，传入固定设计提交并追加 `--handoff`。
+  - 脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）fingerprint。
+- 失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
+- 合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。
+
+收口：单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。
+
+- 步骤 5 必须取得 finish 的实际成功结果，按分支核对合并、源分支/worktree 清理，
+  以及 release/hotfix 的 tag 和推送。
+  - finish 删除 owner 后改用步骤 1 固定的主 worktree 核对。
+- 若 finish 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
+- 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。
+- 上下文恢复时用上述现有产物与实际 Git 状态重新核验，不依赖未落地的内存完成标志。

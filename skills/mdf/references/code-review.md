@@ -55,31 +55,41 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 
 ### 范围与前置条件
 
-步骤 1 支持 feature、bugfix、hotfix、release；cwd 为 qa/dev 时切回 owner。
-先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
-审查人数取冻结 roster.reviewers：有 `delivery.json` 时用 `delivery status`，
-否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
-本轮应派人数默认同 roster.reviewers；finish 集成产生的不可跳过增量新一轮为 1，
-不改冻结 roster。无有效上轮记录而走首轮时仍用 roster.reviewers。
-审查记录写在 `changes/unreleased/<slug>/code-review.md`：feature 用 delivery.json
-的 slug，bugfix 用 Bug ID 的 kebab-case，release/hotfix 用该分支的稳定 SemVer，
-不用 slugify。验证 JSON 为同目录 `code-review.verification.json`。无该 Markdown
-视为无记录。不在 `docs/context/research/` 保存审查报告。
+本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
-无记录时走首轮：首次审查才固定当前 HEAD 为 review_head。
-已有同范围修复续办保留原 review_head，不覆盖原报告。
-本轮应派人数份报告齐全、基线一致且本次仅为已记录问题的修复续办时，核对前置条件后
-直接进入 3。
-报告齐全、基线一致、无待修问题，且 final_head 到 HEAD 没有新的交付改动时，核对后结束，
-不进入 2。记录文件、纯事实、收口文档、以及非本交付 `docs/` 不是新的交付改动。
-首轮未齐时进入 2 补齐；若首轮尚未完成但出现新交付改动，重新固定 review_head，
-仍按首轮从交付起点审查到新 review_head。
-同一分支已有完整上轮记录（该轮应派份数的报告、final_head、已采纳与未解决问题清单）且
-出现新的交付改动时，进入增量新一轮：左端点为上轮 final_head，重新固定
-review_head 为当前 HEAD，进入 2。不得从 start_commit 重扫已审区间。
-上轮记录残缺（缺份数、缺 final_head、缺问题清单、或 final_head 不是当前 HEAD
-的祖先）时不得假装增量，停止并要求补记录。无记录走首轮。范围无法判定时停止询问。
-不得把未提交改动遗漏在审查范围外；存在无关改动且无法隔离时停止。
+- 步骤 1 支持 feature、bugfix、hotfix、release；cwd 为 qa/dev 时切回 owner。
+- 先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
+- 审查人数取冻结 roster.reviewers：
+  - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
+  - 本轮应派人数默认同 roster.reviewers。
+  - finish 集成产生的不可跳过增量新一轮为 1，不改冻结 roster。
+  - 无有效上轮记录而走首轮时仍用 roster.reviewers。
+- 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
+  - feature 用 delivery.json 的 slug，bugfix 用 Bug ID 的 kebab-case，
+    release/hotfix 用该分支的稳定 SemVer，不用 slugify。
+  - 验证 JSON 为同目录 `code-review.verification.json`。无该 Markdown 视为无记录。
+  - ❌ 不在 `docs/context/research/` 保存审查报告。
+
+步骤 1 按已有记录判定本轮走向：
+
+- 首轮：无记录时走首轮；首次审查才固定当前 HEAD 为 review_head。
+  - 首轮未齐时进入 2 补齐。
+  - 若首轮尚未完成但出现新交付改动，重新固定 review_head，
+    仍按首轮从交付起点审查到新 review_head。
+- 修复续办：已有同范围修复续办保留原 review_head，不覆盖原报告。
+  - 本轮应派人数份报告齐全、基线一致且本次仅为已记录问题的修复续办时，
+    核对前置条件后直接进入 3。
+- 无新改动：报告齐全、基线一致、无待修问题，且 final_head 到 HEAD 没有新的交付改动时，
+  核对后结束，不进入 2。
+  - 记录文件、纯事实、收口文档、以及非本交付 `docs/` 不是新的交付改动。
+- 增量新一轮：同一分支已有完整上轮记录且出现新的交付改动时进入。
+  - 完整上轮记录指该轮应派份数的报告、final_head、已采纳与未解决问题清单。
+  - 左端点为上轮 final_head，重新固定 review_head 为当前 HEAD，进入 2。
+  - ❌ 不得从 start_commit 重扫已审区间。
+  - 上轮记录残缺（缺份数、缺 final_head、缺问题清单、或 final_head 不是当前 HEAD 的祖先）时
+    不得假装增量，停止并要求补记录。无记录走首轮。
+- 范围无法判定时停止询问。
+- 不得把未提交改动遗漏在审查范围外；存在无关改动且无法隔离时停止。
 
 | 分支 | 固定基线 |
 | --- | --- |
@@ -87,35 +97,44 @@ review_head 为当前 HEAD，进入 2。不得从 start_commit 重扫已审区�
 | bugfix、hotfix | start 保存的 `branch.<完整分支名>.mdf-start-commit` |
 | release | 上一正式发布版本的 master commit/tag，解析为完整 commit hash |
 
-bugfix/hotfix 用 `git config --local --get "branch.<完整分支名>.mdf-start-commit"` 读取起点。
-release 首轮依据正式发布记录确认上一版本，核对其 `v<version>` tag 指向的 commit 位于 master 历史。
-不取 master 合回 develop 的合并提交，也不使用移动的 master/develop HEAD 代替发布基线。
-首次发布没有上一版本时，须用户明确确认初始基线；基线缺失、歧义或对象不可解析时停止询问。
-基线必须是当前 HEAD 的祖先。首轮审查两个端点的内容差异
-`git diff <base_commit> <review_head>`；增量新一轮审查
-`git diff <previous_final_head> <review_head>`。
-并读取必要上下文，不能仅按提交标题或文件名审查。release 首轮覆盖上一版本以来
-的完整变化，不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过
-其代码。后续轮次只覆盖上轮 final_head 以来的增量，仍须复核上轮问题。
-步骤 1 仅在新审查或增量新一轮时将本轮左端点与 review_head 写入草稿，明确尚未
-通过，再启动审查。
-交付起点 base_commit 写入本次审查记录后固定，续办沿用，不重新追随分支或 tag。
+基线读取与审查区间：
 
-feature 保留前置要求：运行 `delivery status` 定位材料，读取 design 与 converge gate，
-核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止。
-运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
-仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
-并在步骤 4 按所需 suite 重验。
-其他错误停止，不跳过 converge。bugfix/hotfix/release 不要求 feature 的 design/converge gate，
-但同样先测后审：运行 `project-verify check --repo "$REPO_ROOT"`，证据缺失、过期或失败时
-停止并报告，由 deliver 的 Verify 阶段（`deliver.md`「先测后审」）修到全绿后再审查，
-不在未全绿的 HEAD 上派审查。
-release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
-审查基线仍为上一正式发布。hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
-不为形式创建 feature 材料。
+- bugfix/hotfix 用 `git config --local --get "branch.<完整分支名>.mdf-start-commit"` 读取起点。
+- release 首轮依据正式发布记录确认上一版本，核对其 `v<version>` tag 指向的 commit 位于 master 历史。
+  - 不取 master 合回 develop 的合并提交，也不使用移动的 master/develop HEAD 代替发布基线。
+  - 首次发布没有上一版本时，须用户明确确认初始基线。
+  - 基线缺失、歧义或对象不可解析时停止询问。
+- 📌 基线必须是当前 HEAD 的祖先。
+- 审查内容：
+  - 首轮审查两个端点的内容差异 `git diff <base_commit> <review_head>`。
+  - 增量新一轮审查 `git diff <previous_final_head> <review_head>`。
+  - 并读取必要上下文，不能仅按提交标题或文件名审查。
+- release 首轮覆盖上一版本以来的完整变化：
+  - 不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过其代码。
+- 后续轮次只覆盖上轮 final_head 以来的增量，仍须复核上轮问题。
+- 步骤 1 仅在新审查或增量新一轮时将本轮左端点与 review_head 写入草稿，
+  明确尚未通过，再启动审查。
+- 交付起点 base_commit 写入本次审查记录后固定，续办沿用，不重新追随分支或 tag。
 
-bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；本步骤只核对其
-覆盖本次改动涉及的全部功能块。
+各分支前置条件：
+
+- feature 保留前置要求：
+  - 运行 `delivery status` 定位材料，读取 design 与 converge gate，
+    核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止。
+  - 运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
+  - 仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
+    并在步骤 4 按所需 suite 重验。
+  - 其他错误停止，不跳过 converge。
+- bugfix/hotfix/release 不要求 feature 的 design/converge gate，但同样先测后审：
+  - 运行 `project-verify check --repo "$REPO_ROOT"`，证据缺失、过期或失败时停止并报告。
+  - 由 deliver 的 Verify 阶段（`deliver.md`「先测后审」）修到全绿后再审查。
+  - ❌ 不在未全绿的 HEAD 上派审查。
+- release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
+  - 审查基线仍为上一正式发布。
+- hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
+- 不为形式创建 feature 材料。
+- bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；
+  本步骤只核对其覆盖本次改动涉及的全部功能块。
 
 ### 独立审查
 
@@ -125,90 +144,127 @@ bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；本
 > 以最严苛的白盒测试专家视角审查实现代码和测试用例，主动挑战实现逻辑与测试的充分性，
 > 寻找隐藏缺陷和覆盖盲区。以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
 
-步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；
-finish 集成增量轮为 1。
-`review_strategy` 默认 `replicate`：各审查者收到相同的交付
-base_commit、本轮左端点、
-review_head、工作目录、目标、验收、适用设计材料与相关当前事实页，均覆盖本轮
-范围检查正确性、验收覆盖、测试质量、code smell、架构合理性及非必要复杂度。
-不安排分工，不按文件、模块或领域拆分，不共享其他审查者结论。
-`partition` 时 owner 按 design 已有切片或本步切开的范围派工，每人只审自己那片；
-仍不共享其他审查者结论。调用可带 `--review-strategy` / `--code-review-model` 覆盖冻结值，
-派工前运行 `delivery roster` 写入。roster.models 含 `code-review` 时写入该值，
-按口语描述现场解析（可多个模型，可分给本轮多名审查者）；
-没有则不提。不得写入其他 intent 的模型。
-增量新一轮还必须带上轮已采纳项与未解决项；不能只看新 diff 假装旧问题消失。
-finish 集成增量轮（1 人）只使用该已汇总清单，不得把上轮多份独立报告交给本轮
-reviewer 自行合并。
-已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
-主 Agent 在全部审查结果返回前不修改审查对象；subagent 只读审查，不修改文件或提交。
-每份报告均声明审查种类（首轮 | 增量）、交付 base_commit、本轮左端点、review_head、
-已完成的审查范围及未完成项；无未完成项时明确写无。
-增量轮次须有上轮问题复核表，逐项写明仍解决 / 复开 / 不适用。
-发现问题时列出问题位置、触发条件、影响与证据；无问题时明确说明未发现问题。
-主 Agent 核对每份报告与派发的左端点、review_head 和本轮范围一致，且无未完成项，
-才验收为完整报告。
-范围声明缺失、端点不一致或存在未完成项时，要求补齐或重新独立审查；无法补齐则停止。
-不足本轮应派人数、启动失败、结果缺失或未覆盖本轮范围时，补齐独立审查；无法补齐则停止，
-不记录通过。
-续办只复用同一左端点与 review_head 的完整报告；本轮未凑齐应派份数时不得进入修复或
-记录完成。增量新一轮不复用上轮报告去覆盖新 diff。
+派发：
+
+- 步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；finish 集成增量轮为 1。
+- `review_strategy` 默认 `replicate`：
+  - 各审查者收到相同的交付 base_commit、本轮左端点、review_head、工作目录、目标、验收、
+    适用设计材料与相关当前事实页。
+  - 均覆盖本轮范围检查正确性、验收覆盖、测试质量、code smell、架构合理性及非必要复杂度。
+  - 不安排分工，不按文件、模块或领域拆分，不共享其他审查者结论。
+- `partition` 时 owner 按 design 已有切片或本步切开的范围派工，每人只审自己那片；
+  仍不共享其他审查者结论。
+- 覆盖冻结值与模型：
+  - 调用可带 `--review-strategy` / `--code-review-model` 覆盖冻结值，派工前运行 `delivery roster` 写入。
+  - roster.models 含 `code-review` 时写入该值，按口语描述现场解析；
+    可多个模型，可分给本轮多名审查者。没有则不提。
+  - ❌ 不得写入其他 intent 的模型。
+- 增量新一轮还必须带上轮已采纳项与未解决项；不能只看新 diff 假装旧问题消失。
+  - finish 集成增量轮（1 人）只使用该已汇总清单，
+    不得把上轮多份独立报告交给本轮 reviewer 自行合并。
+- 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
+- 📌 主 Agent 在全部审查结果返回前不修改审查对象；subagent 只读审查，不修改文件或提交。
+
+报告内容：
+
+- 每份报告均声明审查种类（首轮 | 增量）、交付 base_commit、本轮左端点、review_head、
+  已完成的审查范围及未完成项；无未完成项时明确写无。
+- 增量轮次须有上轮问题复核表，逐项写明仍解决 / 复开 / 不适用。
+- 发现问题时列出问题位置、触发条件、影响与证据；无问题时明确说明未发现问题。
+
+报告验收：
+
+- 主 Agent 核对每份报告与派发的左端点、review_head 和本轮范围一致，且无未完成项，
+  才验收为完整报告。
+- 范围声明缺失、端点不一致或存在未完成项时，要求补齐或重新独立审查；无法补齐则停止。
+- 不足本轮应派人数、启动失败、结果缺失或未覆盖本轮范围时，补齐独立审查；
+  无法补齐则停止，不记录通过。
+- 续办只复用同一左端点与 review_head 的完整报告；本轮未凑齐应派份数时不得进入修复或记录完成。
+  - 增量新一轮不复用上轮报告去覆盖新 diff。
 
 ### 汇总、修复与复核
 
 步骤 3 由主 Agent 汇总去重，逐项核实，记录采纳或不采纳的依据；以证据裁定，不按票数决定。
-允许自主修复实现，或依据已确认目标/设计纠正、补充、删除错误或重复测试，记录依据。
-不得削弱验收或验证门槛；目标/契约变更须用户确认。核对 design policy `suites` 或
-`suites.json` 覆盖本轮改动涉及的全部功能块，缺漏按问题提出。审查测试时核对
-`delivery-contract.md`「失败语义」：无运行时 skip、提前返回或 xfail，入口配置能让
-warning、skip 与空选择非零退出，豁免已记录且经用户确认。混合依赖的 test case
-按问题提出，可依既定目标自主拆分，不得改成 skip。更好的架构可以建议，超出目标不直接实施。
-修复后由主 Agent 复核问题是否解决及是否引入回归，不强制再次启动审查 subagent。
-同一范围内的修复、复核及重验循环留在步骤 3–4，不重新执行本轮多人审查。
-需要用户决定、外部条件或无法继续时报告阻塞，不记录通过的结果。
+
+- 修复权限：
+  - 允许自主修复实现，或依据已确认目标/设计纠正、补充、删除错误或重复测试，记录依据。
+  - ❌ 不得削弱验收或验证门槛；目标/契约变更须用户确认。
+- 核对 design policy `suites` 或 `suites.json` 覆盖本轮改动涉及的全部功能块，缺漏按问题提出。
+- 审查测试时核对 `delivery-contract.md`「失败语义」：
+  - 无运行时 skip、提前返回或 xfail。
+  - 入口配置能让 warning、skip 与空选择非零退出。
+  - 豁免已记录且经用户确认。
+  - 混合依赖的 test case 按问题提出，可依既定目标自主拆分，不得改成 skip。
+- 更好的架构可以建议，超出目标不直接实施。
+- 修复后由主 Agent 复核问题是否解决及是否引入回归，不强制再次启动审查 subagent。
+- 同一范围内的修复、复核及重验循环留在步骤 3–4，不重新执行本轮多人审查。
+- 需要用户决定、外部条件或无法继续时报告阻塞，不记录通过的结果。
 
 ### 验证与持久证据
 
-步骤 4：feature 先运行 `delivery check --stage code-review`；除 `stale_verification` 外的错误均停止。
-finish 本次集成产生新提交且增量不可跳过、返回 `stale_verification` 或本轮改动实现、
-测试、验证配置时，运行 `delivery verify` 按所需 suite 重验，并重跑 design 所列
-named suite。仅非本交付 `docs/` 的集成
-不强制重验。仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
-bugfix/hotfix/release 先运行 `project-verify check`；只有本轮修复或集成改动了实现、
-测试或验证配置使证据过期时，才运行 `project-verify run --repo "$REPO_ROOT"`，
-脚本按当前分支执行所需 suite：依次执行 lint、build、quick 与 smoke（bugfix）或 release
-（release/hotfix），逐项记录命令、预算、退出状态、报告汇总与 `suites`，
-输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
-验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON
-与落盘证据。suite 超出预算即终止 process group 并判为失败。
-重跑时 bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
-证据未覆盖所需 suite 视为过期。finish 使用 `project-verify check --repo "$REPO_ROOT"`
-核对输入 fingerprint、suite 与全绿结果。
-不能用仅检查文档结构的 full validation 代替业务验证。
-重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
-非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价 gate 之后）失败时，
-必须尝试补一条 quick 复现用例，并在本轮记录的「quick 复现」字段写明结果。
+步骤 4 先按分支判定是否重验，再保存证据。
 
-四种分支均在 `changes/unreleased/<slug>/code-review.md` 按轮追加审查记录，
-每轮包含 round、审查种类（首轮 | 增量）、固定的交付 base_commit、本轮左端点
-（首轮 = base_commit，增量 = 上轮 final_head）、本轮 review_head、本轮应派人数份独立审查
-及其身份、本轮新发现、上轮问题复核表、逐项裁定、修复与复核、本轮结束后的
-最终 final_head、验证命令与结果（含 `suites` 与 named suite）、quick 复现（已补 <用例位置>
-/ 未补 <原因> / 无非 quick 失败）、未解决项。先提交修复，再固定 final_head 并
-提交本轮记录。
-无有效未解决问题且验证全绿才可记录完成。feature 另运行
-`delivery record --stage code-review --summary <审查、裁定、修复与验证依据>` 并提交 gate。
-非 feature 以该审查记录为证据，不伪造 feature gate；语义审查由 Agent 负责，CLI 不推理各份结论。
-首轮未写清已采纳/未解决问题清单时，第二轮不得增量，停止并要求补记录。
+- feature：
+  - 先运行 `delivery check --stage code-review`；除 `stale_verification` 外的错误均停止。
+  - 以下任一成立时，运行 `delivery verify` 按所需 suite 重验，并重跑 design 所列 named suite：
+    - finish 本次集成产生新提交且增量不可跳过；
+    - 返回 `stale_verification`；
+    - 本轮改动实现、测试、验证配置。
+  - 仅非本交付 `docs/` 的集成不强制重验。
+  - 仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
+- bugfix/hotfix/release：
+  - 先运行 `project-verify check`。
+  - 只有本轮修复或集成改动了实现、测试或验证配置使证据过期时，
+    才运行 `project-verify run --repo "$REPO_ROOT"`。
+  - 脚本按当前分支执行所需 suite：
+    依次执行 lint、build、quick 与 smoke（bugfix）或 release（release/hotfix）。
+    - 逐项记录命令、预算、退出状态、报告汇总与 `suites`。
+  - 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
+  - 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON 与落盘证据。
+  - suite 超出预算即终止 process group 并判为失败。
+  - 重跑时 bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
+  - 证据未覆盖所需 suite 视为过期。
+  - finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入 fingerprint、suite 与全绿结果。
+- ❌ 不能用仅检查文档结构的 full validation 代替业务验证。
+- 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
+- 非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价 gate 之后）失败时：
+  - 必须尝试补一条 quick 复现用例。
+  - 在本轮记录的「quick 复现」字段写明结果。
 
-finish 核对记录中的基线、各轮应派份数的审查结果、最终复核及验证均完整，并检查 final_head 到当前 HEAD
-是否有实现、测试、验证配置或本交付目标变化；final_head 必须存在且为当前 HEAD 的祖先。
-记录文件自身、纯事实、收口文档、以及 finish 集成引入的非本交付 `docs/` 改动不使实现审查过期，
-也不强制重验；事实仍须另审。实现或本交付目标变化后不得沿用通过结论：同次修复续办回到 3；
-新交付改动作为增量新一轮从 1 开始。finish 集成 develop/master 产生新提交后，仅非本交付
-`docs/` 增量不新开审查、不重验；按 finish 契约追加跳过说明，不把集成当修复续办。其他增量
-一律作为增量新一轮从 1 开始，左端点为集成前 final_head，以集成后的 HEAD 重做
-1 份本轮范围审查与当前交付所需 suite。不复用集成前报告。无有效上轮记录时
-按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
-feature 还须通过 CLI fingerprint 检查。
-记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。
+四种分支均在 `changes/unreleased/<slug>/code-review.md` 按轮追加审查记录，每轮包含：
+
+- round、审查种类（首轮 | 增量）、固定的交付 base_commit。
+- 本轮左端点（首轮 = base_commit，增量 = 上轮 final_head）、本轮 review_head。
+- 本轮应派人数份独立审查及其身份、本轮新发现、上轮问题复核表。
+- 逐项裁定、修复与复核、本轮结束后的最终 final_head。
+- 验证命令与结果（含 `suites` 与 named suite）。
+- quick 复现（已补 <用例位置> / 未补 <原因> / 无非 quick 失败）、未解决项。
+
+记录与完成条件：
+
+- 先提交修复，再固定 final_head 并提交本轮记录。
+- 无有效未解决问题且验证全绿才可记录完成。
+- feature 另运行 `delivery record --stage code-review --summary <审查、裁定、修复与验证依据>`
+  并提交 gate。
+- 非 feature 以该审查记录为证据，不伪造 feature gate；语义审查由 Agent 负责，CLI 不推理各份结论。
+- 首轮未写清已采纳/未解决问题清单时，第二轮不得增量，停止并要求补记录。
+
+finish 核对：
+
+- 记录中的基线、各轮应派份数的审查结果、最终复核及验证均完整。
+- 检查 final_head 到当前 HEAD 是否有实现、测试、验证配置或本交付目标变化；
+  final_head 必须存在且为当前 HEAD 的祖先。
+- 不使实现审查过期、也不强制重验的改动（事实仍须另审）：
+  - 记录文件自身、纯事实、收口文档。
+  - finish 集成引入的非本交付 `docs/` 改动。
+- 实现或本交付目标变化后不得沿用通过结论：
+  - 同次修复续办回到 3。
+  - 新交付改动作为增量新一轮从 1 开始。
+- finish 集成 develop/master 产生新提交后：
+  - 仅非本交付 `docs/` 增量不新开审查、不重验；按 finish 契约追加跳过说明，不把集成当修复续办。
+  - 其他增量一律作为增量新一轮从 1 开始，左端点为集成前 final_head。
+    - 以集成后的 HEAD 重做 1 份本轮范围审查与当前交付所需 suite。
+    - 不复用集成前报告。
+  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
+- feature 还须通过 CLI fingerprint 检查。
+- 记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。

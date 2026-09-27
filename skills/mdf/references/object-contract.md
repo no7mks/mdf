@@ -6,39 +6,63 @@
 ## Proposal
 
 Proposal 使用 Markdown + YAML frontmatter：id、type: proposal、status、depends_on。
-可选属性 `milestone` 为单个非空字符串，表示用户确定的阶段归属；无归属时省略整个字段，
-不得写 `milestone: null`、空字符串或列表。同一 milestone 使用相同值。
-milestone 值不得与对象 ID 同形。不要求独立 milestone 对象；阶段目标及其是否为 MVP
-由用户实践决定。不根据组内 PRP 状态自动宣告阶段达成。
+
+### milestone
+
+- 可选属性 `milestone` 为单个非空字符串，表示用户确定的阶段归属。
+  - 无归属时省略整个字段，不得写 `milestone: null`、空字符串或列表。
+  - 同一 milestone 使用相同值；milestone 值不得与对象 ID 同形。
+- 不要求独立 milestone 对象；阶段目标及其是否为 MVP 由用户实践决定。
+- 不根据组内 PRP 状态自动宣告阶段达成。
+
+### Proposal 状态
+
 状态为 draft、ready、implemented、released、rejected、replaced。
-正常路径 draft → ready → implemented → released；implemented 表示验收后合入 develop，
-released 必须记录稳定 SemVer released_in。其他状态不得使用 released_in。
-rejected 必须有 reject-reason: wont-do/obsolete/duplicate；duplicate 还须有 duplicate_of，
-直接指向同类型的 canonical 非 duplicate PRP，不允许自指或重复链。
-replaced 必须有至少两个唯一 replaced_by ID；替代关系不得缺失、自指或成环。
-不使用持久化 resolution。released、rejected、replaced 可以归档，implemented 不归档。
+
+- 正常路径 draft → ready → implemented → released。
+  - implemented 表示验收后合入 develop。
+  - released 必须记录稳定 SemVer released_in；其他状态不得使用 released_in。
+- rejected 必须有 reject-reason: wont-do/obsolete/duplicate。
+  - duplicate 还须有 duplicate_of，直接指向同类型的 canonical 非 duplicate PRP，
+    不允许自指或重复链。
+- replaced 必须有至少两个唯一 replaced_by ID；替代关系不得缺失、自指或成环。
+- 不使用持久化 resolution。
+- released、rejected、replaced 可以归档，implemented 不归档。
+
+### 依赖
 
 依赖 depends_on 为唯一的直接条目列表，每项为 PRP ID 或已有 milestone 值。
-PRP 依赖允许 draft、ready、implemented、released，其中 implemented/released 已满足。
-milestone 依赖在该值下不存在 draft 或 ready PRP 时满足。禁止重复、自指、循环、缺失、
-跨类型及其他终态。PRP 不得依赖自身所属 milestone。
-拆分必须同时改写所有原下游 PRP 引用；replaced 不表示依赖已满足。
 
-Proposal ID 为 `prp-` 加自增序号：1–999 固定三位并保留前导零（`prp-001`），
-1000 起不再补零（`prp-1000`）。序号取当前 checkout 的 `docs/proposals/`（含
-archive）已有文件名中的最大序号加一。新建 Proposal 只能在 planning 工作区分配
-ID、写入并提交，再合入 develop。
-Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
-沟通、引用与展示时必须写完整 ID，如 `prp-001`、`bug-C4D5`、`jot-E6F7`、
-`adr-use-sqlite`，不得省略类型前缀或只写序号/短码/slug。
-文件名 `prp-<序号>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug
-为英文 ASCII kebab-case。active（非 archive）Proposal 与 Bug 的 slug 必须
-全局唯一。slug 不得与对象 ID 同形（如 `prp-001`、`bug-c4d5`、
-`adr-use-sqlite`）。
-feature 的分支与 `changes/unreleased/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
-bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
-一般关联只写正文；上述重复与替代字段是明确的结构关系。
-正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节；“范围”含“包含”“不包含”非空三级子节。
+| 依赖项 | 允许 | 已满足 |
+| --- | --- | --- |
+| PRP | draft、ready、implemented、released | implemented/released |
+| milestone | 已有 milestone 值 | 该值下不存在 draft 或 ready PRP |
+
+- ❌ 禁止重复、自指、循环、缺失、跨类型及其他终态。
+- ❌ PRP 不得依赖自身所属 milestone。
+- 拆分必须同时改写所有原下游 PRP 引用；replaced 不表示依赖已满足。
+
+### ID 与 slug
+
+- Proposal ID 为 `prp-` 加自增序号：
+  - 1–999 固定三位并保留前导零（`prp-001`）；1000 起不再补零（`prp-1000`）。
+  - 序号取当前 checkout 的 `docs/proposals/`（含 archive）已有文件名中的最大序号加一。
+  - 新建 Proposal 只能在 planning 工作区分配 ID、写入并提交，再合入 develop。
+- Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
+- 📌 沟通、引用与展示时必须写完整 ID，如 `prp-001`、`bug-C4D5`、`jot-E6F7`、`adr-use-sqlite`。
+  - ❌ 不得省略类型前缀或只写序号/短码/slug。
+- 文件名 `prp-<序号>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug 为英文 ASCII kebab-case。
+  - active（非 archive）Proposal 与 Bug 的 slug 必须全局唯一。
+  - slug 不得与对象 ID 同形（如 `prp-001`、`bug-c4d5`、`adr-use-sqlite`）。
+- 分支命名：
+  - feature 的分支与 `changes/unreleased/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
+  - bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
+
+### 关联与正文
+
+- 一般关联只写正文；上述重复与替代字段是明确的结构关系。
+- 正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节。
+  - “范围”含“包含”“不包含”非空三级子节。
 
 ## Bug
 
@@ -52,23 +76,30 @@ severity: critical | major | trivial
 found_in: unreleased | <stable-semver>
 ```
 
-Bug 不使用 `depends_on`。一般关联只在正文中说明。正文必须包含“观察到的行为”
-“期望行为”“复现步骤”“影响”和“所需回归证据”。
+- Bug 不使用 `depends_on`。一般关联只在正文中说明。
+- 正文必须包含“观察到的行为”“期望行为”“复现步骤”“影响”和“所需回归证据”。
+- `found_in: unreleased` 表示当前未发布线中的稳定关联；它不是 SemVer。
+- `fixed_in` 只接受稳定 SemVer。
 
-`found_in: unreleased` 表示当前未发布线中的稳定关联；它不是 SemVer。`fixed_in`
-只接受稳定 SemVer。
+### Bug 状态
 
-Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。`open` 表示待修复；
-`fixed` 表示已修复、等待独立二次验证；二次验证通过后才在发版收口转为
-`closed`。可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、
-release 或 hotfix 交付。
-release 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change；该 Bug
-进入版本根 Change 或 hotfix 结果的 `fixed` outcome。独立修复不写 child Change。
-`rejected` 是终态，且必须有 `reject-reason`：
-`wont-fix`、`not-a-bug`、`cannot-reproduce`、`obsolete` 或 `duplicate`。非
-duplicate 的 `open`、`fixed`、`closed` Bug 必须有 `critical`、`major` 或
-`trivial` 三值 severity。`fixed_in` 只允许在 `closed` Bug 中，且必须是稳定
-SemVer。
+Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。
+
+| 状态 | 含义与约束 |
+| --- | --- |
+| `open` | 待修复 |
+| `fixed` | 已修复、等待独立二次验证 |
+| `closed` | 二次验证通过后才在发版收口转入 |
+| `rejected` | 终态，必须有 `reject-reason` |
+
+- 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release 或 hotfix 交付。
+- release 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change。
+  - 该 Bug 进入版本根 Change 或 hotfix 结果的 `fixed` outcome。
+  - 独立修复不写 child Change。
+- `reject-reason` 取值：`wont-fix`、`not-a-bug`、`cannot-reproduce`、`obsolete` 或 `duplicate`。
+- 非 duplicate 的 `open`、`fixed`、`closed` Bug
+  必须有 `critical`、`major` 或 `trivial` 三值 severity。
+- `fixed_in` 只允许在 `closed` Bug 中，且必须是稳定 SemVer。
 
 duplicate 是被拒绝的 Bug：
 
@@ -78,15 +109,17 @@ reject-reason: duplicate
 duplicate_of: bug-<canonical>
 ```
 
-`duplicate_of` 只能直接指向 canonical、非 duplicate Bug；禁止自指和链式
-duplicate。duplicate 不需要 `found_in`/`fixed_in`，也不得出现在 Change 的
-`fixed`、`closed` 或 `deferred` 中。canonical 与其 duplicate 子项构成一个 group。
+- `duplicate_of` 只能直接指向 canonical、非 duplicate Bug；禁止自指和链式 duplicate。
+- duplicate 不需要 `found_in`/`fixed_in`。
+  - ❌ 也不得出现在 Change 的 `fixed`、`closed` 或 `deferred` 中。
+- canonical 与其 duplicate 子项构成一个 group。
 
 ## Change
 
-未版本化的子 Change 位于 `changes/unreleased/<slug>/CHANGE.md`。该目录在
-CHANGE.md 出现前即可保存交付身份与材料，包括 `code-review.md`；CHANGE.md 是
-完成后的 Change 记录：
+未版本化的子 Change 位于 `changes/unreleased/<slug>/CHANGE.md`。
+
+- 该目录在 CHANGE.md 出现前即可保存交付身份与材料，包括 `code-review.md`。
+- CHANGE.md 是完成后的 Change 记录：
 
 ```yaml
 change_kind: feature | bugfix
@@ -104,17 +137,20 @@ evidence:
   artifacts: []
 ```
 
-一个 Bug 只能出现在三个 outcome 列表之一。`closed` 只存 `rejected` Bug 的 ID；
-拒绝原因由该 Bug 的 `reject-reason` 声明。duplicate ID 不得出现在任何 outcome 列表。
-
-`evidence.tests`、`evidence.commands` 与 `evidence.artifacts` 都是列表；每个元素
-必须是非空字符串。
-
-正文必须包含“结果”“已更新的当前文档”和“已知偏差”章节。
+- 一个 Bug 只能出现在三个 outcome 列表之一。
+  - `closed` 只存 `rejected` Bug 的 ID；拒绝原因由该 Bug 的 `reject-reason` 声明。
+  - ❌ duplicate ID 不得出现在任何 outcome 列表。
+- `evidence.tests`、`evidence.commands` 与 `evidence.artifacts` 都是列表；
+  每个元素必须是非空字符串。
+- 正文必须包含“结果”“已更新的当前文档”和“已知偏差”章节。
 
 ## 版本根 Change
 
-`changes/<version>/CHANGE.md` 包含 `change_kind: release|hotfix`、`source_branch`、
-`version`、`previous_version`、`included_changes`、Proposal/Bug outcomes、release
-notes、`evidence`、审阅记录，以及“结果”“包含的 Change”“收口结果”“found-in 转换”、
-“SemVer 决策”“审计”“验证命令”等章节。每个稳定版本只有一个版本根 Change。
+`changes/<version>/CHANGE.md` 包含：
+
+- 字段：
+  - `change_kind: release|hotfix`、`source_branch`、`version`、`previous_version`；
+  - `included_changes`、Proposal/Bug outcomes、release notes、`evidence`、审阅记录。
+- 章节：“结果”“包含的 Change”“收口结果”“found-in 转换”、
+  “SemVer 决策”“审计”“验证命令”等。
+- 📌 每个稳定版本只有一个版本根 Change。

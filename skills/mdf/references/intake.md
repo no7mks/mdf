@@ -105,12 +105,17 @@
 **分类**
 
 先运行 `list --repo "$REPO_ROOT"` 取得 active Proposal 与 Bug 的 `id`、`title`、`status`，
-对照来源查重；命中既有对象时不新建，改为提示 `$mdf prp review` 或在既有 Bug 中补充，
-不逐篇翻阅 `docs/proposals/` 与 `docs/bugs/`。
-从来源和仓库证据判定对象类型、数量与独立交付边界；偏差建 Bug， 待实现意图建一个或多个 Proposal。
-优先拆成尽可能小的 Proposal，以依赖满足后能独立实现、验收和合入为下限。
-能分开验收的结果优先拆开；不按文件或开发步骤机械拆分，不扩张来源范围。
-已足够小的交付单元无需继续拆分。
+对照来源查重：
+
+- 命中既有对象时不新建，改为提示 `$mdf prp review` 或在既有 Bug 中补充。
+- 不逐篇翻阅 `docs/proposals/` 与 `docs/bugs/`。
+
+从来源和仓库证据判定对象类型、数量与独立交付边界：
+
+- 偏差建 Bug，待实现意图建一个或多个 Proposal。
+- 优先拆成尽可能小的 Proposal，以依赖满足后能独立实现、验收和合入为下限。
+  - 能分开验收的结果优先拆开；不按文件或开发步骤机械拆分，不扩张来源范围。
+  - 已足够小的交付单元无需继续拆分。
 
 验收：对象清单。
 
@@ -120,10 +125,12 @@
 
 **澄清**
 
-使用内部 clarify intent 澄清成稿必要事实；
-Proposal 收敛 Problem、 Desired Outcome、Scope、可验证 Acceptance Criteria；
-Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、`found_in`
-与 active severity。
+使用内部 clarify intent 澄清成稿必要事实：
+
+- Proposal 收敛 Problem、Desired Outcome、Scope、可验证 Acceptance Criteria。
+- Bug 收敛：
+  - Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required。
+  - `found_in` 与 active severity。
 
 验收：完整必填事实。
 
@@ -133,18 +140,25 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 
 **确认**
 
-展示对象清单、边界、排除范围、Proposal 依赖；`depends_on`
-仅列直接依赖的 draft、ready 或 implemented/released Proposal ID，
-以及需要等待整阶段完成时的已有 milestone 值；候选 ID 与 milestone 取自步骤 3 的 `list` 输出。
-逐条说明需要上游提供的结果；优先顺序不能作为依赖依据。
-同属一个阶段不能写成对其中单个 PRP 的依赖。
-可建议 milestone 分组，由用户决定是否采用；不默认一次 intake 对应一个 milestone，
-不自动把最先实施的一两个 PRP 标为 MVP。有归属时展示并确认 `milestone`，无归属不强求补齐。
+展示对象清单、边界、排除范围、Proposal 依赖。
+
+- `depends_on` 仅列以下两类值：
+  - 直接依赖的 draft、ready 或 implemented/released Proposal ID。
+  - 需要等待整阶段完成时的已有 milestone 值。
+- 候选 ID 与 milestone 取自步骤 3 的 `list` 输出。
+- 逐条说明需要上游提供的结果；优先顺序不能作为依赖依据。
+- 同属一个阶段不能写成对其中单个 PRP 的依赖。
+- 可建议 milestone 分组，由用户决定是否采用。
+  - 不默认一次 intake 对应一个 milestone，不自动把最先实施的一两个 PRP 标为 MVP。
+- 有归属时展示并确认 `milestone`，无归属不强求补齐。
 
 验收：只有用户明确确认清单才继续。
 
-异常与交接：取消或拒绝则停止；来源采用范围变化时回到 2；对象必填事实或边界需澄清时回到 4。
-来源变化与事实澄清同时成立时，以来源变化为准回到 2。
+异常与交接：
+
+- 取消或拒绝则停止。
+- 来源采用范围变化时回到 2；对象必填事实或边界需澄清时回到 4。
+- 来源变化与事实澄清同时成立时，以来源变化为准回到 2。
 
 ### 对象写入与交接
 
@@ -153,30 +167,38 @@ Bug 收敛 Observed/Expected Behavior、Reproduction、Impact、Regression Evide
 **创建**
 
 为每项提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。写入落点按对象类型确定：
+中唯一，且不得与对象 ID 同形。
 
-- Bug：按 `references/common.md` 的归属规则确定写入分支（与当前交付分支
-  工作相关在当前分支，无关在 develop）；使用 `make-id --type bug --slug <slug>`
-  生成 ID，以模板写入 `docs/bugs/`。
-- Proposal：在 planning 工作区写入。运行 `planning ensure --repo "$REPO_ROOT"`，
-  按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`
-  （分支 `planning`），重新解析目标根；使用
-  `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
-  按已有最大序号加一生成 ID，以模板写入 `docs/proposals/`；提交后运行
-  `planning land --repo "$REPO_ROOT"` 合入 develop。
+写入落点按对象类型确定：
+
+- Bug：按 `references/common.md` 的归属规则确定写入分支。
+  - 与当前交付分支工作相关在当前分支，无关在 develop。
+  - 使用 `make-id --type bug --slug <slug>` 生成 ID，以模板写入 `docs/bugs/`。
+- Proposal：在 planning 工作区写入。
+  1. 运行 `planning ensure --repo "$REPO_ROOT"`。
+  2. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`
+     （分支 `planning`），重新解析目标根。
+  3. 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`
+     按已有最大序号加一生成 ID。
+  4. 以模板写入 `docs/proposals/`。
+  5. 提交后运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 - 清单同时含两类时，先按归属完成 Bug 并提交，再切换 planning 完成 Proposal。
 
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
 Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否则省略字段，不写 `null`。
 
-每处写入后在该工作区运行 `validate --repo "$REPO_ROOT" --scope targeted`，
-回读对象并对照模板、确认清单与完整 diff，核对 schema、必填章节、初始状态和依赖。
+每处写入后在该工作区完成以下核对：
+
+1. 运行 `validate --repo "$REPO_ROOT" --scope targeted`。
+2. 回读对象并对照模板、确认清单与完整 diff。
+3. 核对 schema、必填章节、初始状态和依赖。
 
 验收：所有新建对象、校验退出 0 且零 finding、回读结果与 diff。
 
-异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象，
-不得宣称创建验收通过，不进入步骤 7 的成功报告；尚未切到 planning 工作区时
-留在本步。
+异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象。
+
+- 不得宣称创建验收通过，不进入步骤 7 的成功报告。
+- 尚未切到 planning 工作区时留在本步。
 
 <a id="s7"></a>
 
@@ -187,5 +209,6 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 验收：会话摘要。
 
 异常与交接：本步展示步骤 6 已验收对象；无法展示时停止。
-Proposal 后续显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`；
-Bug 创建后即为 `open`，不得关闭普通对象或填写 `released_in`/`fixed_in`。
+
+- Proposal 后续显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`。
+- Bug 创建后即为 `open`，不得关闭普通对象或填写 `released_in`/`fixed_in`。

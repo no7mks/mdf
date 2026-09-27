@@ -75,9 +75,10 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。运行
-`planning ensure --repo "$REPO_ROOT"`，按 `references/common.md` 的
-「切换工作区」规则进入 JSON `worktree`（分支 `planning`），再重新解析目标根。
+1. 解析 `REPO_ROOT` 并运行 `doctor`。
+2. 运行 `planning ensure --repo "$REPO_ROOT"`。
+3. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`（分支 `planning`）。
+4. 再重新解析目标根。
 
 验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
 
@@ -88,10 +89,11 @@ planning 工作区时留在本步。
 
 **对象**
 
-接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象。
-运行 `list --repo "$REPO_ROOT" --type proposal` 对照 `title` 与正文查重，命中既有 PRP 时不新建，
-提示 `$mdf prp review`；该输出同时作为步骤 3、4 依赖候选与 milestone 值的来源，不逐篇翻阅 `docs/proposals/`。
-外部想法、当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
+- 接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象。
+- 运行 `list --repo "$REPO_ROOT" --type proposal` 对照 `title` 与正文查重。
+  - 命中既有 PRP 时不新建，提示 `$mdf prp review`。
+  - 该输出同时作为步骤 3、4 依赖候选与 milestone 值的来源，不逐篇翻阅 `docs/proposals/`。
+- 外部想法、当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
 
 验收：确认的 Proposal 与采用范围。
 
@@ -113,14 +115,20 @@ planning 工作区时留在本步。
 
 **确认**
 
-展示 Proposal、边界、排除范围和依赖；`depends_on`
-仅列直接依赖的 draft、 ready 或 implemented/released Proposal ID，
-以及需要等待整阶段完成时的已有 milestone 值。
-如有阶段归属，同时确认可选 `milestone`；无归属不要求补齐。
+展示 Proposal、边界、排除范围和依赖。
+
+- `depends_on` 仅列：
+  - 直接依赖的 draft、 ready 或 implemented/released Proposal ID；
+  - 需要等待整阶段完成时的已有 milestone 值。
+- 如有阶段归属，同时确认可选 `milestone`；无归属不要求补齐。
 
 验收：只有用户明确确认 draft 才继续。
 
-异常与交接：取消或拒绝则停止；输入对象或来源变化时回到 2；既定对象的事实、范围或验收需澄清时回到 3。
+异常与交接：
+
+- 取消或拒绝则停止。
+- 输入对象或来源变化时回到 2。
+- 既定对象的事实、范围或验收需澄清时回到 3。
 
 ### 对象写入与交接
 
@@ -128,20 +136,23 @@ planning 工作区时留在本步。
 
 **创建**
 
-为 Proposal 提议并确认英文 ASCII kebab-case slug；须在 active Proposal 与 Bug
-中唯一，且不得与对象 ID 同形。使用
-`make-id --type proposal --repo "$REPO_ROOT" --slug` 按已有最大序号加一
-生成 ID 与规范化文件名，并以模板写入 `docs/proposals/`，初始状态为 `draft`。
-仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
-
-写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并对照模板、
-确认事实与完整 diff，核对 schema、必填章节、`draft` 状态和依赖。
-通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+- 为 Proposal 提议并确认英文 ASCII kebab-case slug。
+  - 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
+- 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug` 按已有最大序号加一
+  生成 ID 与规范化文件名。
+  - 以模板写入 `docs/proposals/`，初始状态为 `draft`。
+- 仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
+- 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`。
+  - 回读对象并对照模板、确认事实与完整 diff。
+  - 核对 schema、必填章节、`draft` 状态和依赖。
+- 通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 
 验收：draft Proposal、校验退出 0 且零 finding、回读结果与 diff。
 
-异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象，
-不得宣称创建验收通过，不进入步骤 6 的成功报告。
+异常与交接：校验、回读或核对失败时：
+
+- 停止并保留现场，报告 findings 与实际已写对象。
+- ❌ 不得宣称创建验收通过，不进入步骤 6 的成功报告。
 
 <a id="s6"></a>
 

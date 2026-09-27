@@ -1,8 +1,10 @@
 # Upgrade
 
-`$mdf upgrade` 从上游 Git 默认分支拉取最新 MDF Skill，替换当前仓库中已安装的
-`mdf` 副本，并更新已有 `AGENTS.md` 的 MDF 托管区块。不修改 `.mdf/`、`docs/`
-或业务文件，不覆盖源仓库的 `skills/mdf`。
+`$mdf upgrade` 从上游 Git 默认分支拉取最新 MDF Skill：
+
+- 替换当前仓库中已安装的 `mdf` 副本。
+- 更新已有 `AGENTS.md` 的 MDF 托管区块。
+- 不修改 `.mdf/`、`docs/` 或业务文件，不覆盖源仓库的 `skills/mdf`。
 
 ## 决策树
 
@@ -88,15 +90,19 @@
 upgrade --repo "$REPO_ROOT" --dry-run
 ```
 
-有 `--source` 时追加 `--source <url>`。CLI 只扫描已存在的 Agent Skills 目录中的
-`mdf`，不创建未安装位置，不触碰 `skills/mdf`。输出须含 `source`、`new_commit`、
-`targets`、`agents`、`history`、`commit` 与每项目标的当前基线。无安装目标或
-拉取失败时停止。
-`history` 按当前基线分组：基线可对照时列出 `old..new` 中触及 `skills/mdf`
-的提交（新→旧）及文件 `name-status`；无 `.version`、基线不是完整 commit
-hash、或不在上游历史时写入对应 `status`，不因此失败。
-有唯一托管区块时报告将更新或已相同；无 `AGENTS.md` 或无区块则 `skip`。
-标记错误或重复时停止。
+有 `--source` 时追加 `--source <url>`。
+
+- CLI 只扫描已存在的 Agent Skills 目录中的 `mdf`，不创建未安装位置，不触碰 `skills/mdf`。
+- 输出须含 `source`、`new_commit`、`targets`、`agents`、`history`、`commit`
+  与每项目标的当前基线。
+- 无安装目标或拉取失败时停止。
+- `history` 按当前基线分组：
+  - 基线可对照时列出 `old..new` 中触及 `skills/mdf` 的提交（新→旧）及文件 `name-status`。
+  - 无 `.version`、基线不是完整 commit hash、或不在上游历史时写入对应 `status`，
+    不因此失败。
+- `AGENTS.md` 托管区块：
+  - 有唯一托管区块时报告将更新或已相同；无 `AGENTS.md` 或无区块则 `skip`。
+  - 标记错误或重复时停止。
 
 验收：结构化预览、至少一个目标。
 
@@ -108,13 +114,19 @@ hash、或不在上游历史时写入对应 `status`，不因此失败。
 
 **确认**
 
-向用户展示源、新 commit、将替换的路径、当前 `.version`、`history` 中的提交
-摘要与将改动的 Skill 文件，以及 `AGENTS.md` 区块计划。有提交时用说明陈述会
-得到什么；`status` 不是 `ok` 时说明无法列出历史的原因，不得编造。说明已安装
-Skill 的本地改动会丢失；已有托管区块会被上游模板替换，非托管内容保留；不改
-`.mdf/` 与 `docs/`。确认替换即同意在当前分支提交这些路径，不夹带其他改动，
-不 push。必须取得明确替换确认；拒绝则结束且不写入。
-不得把沉默当作同意。
+向用户展示以下内容：
+
+- 源、新 commit、将替换的路径、当前 `.version`。
+- `history` 中的提交摘要与将改动的 Skill 文件。
+- `AGENTS.md` 区块计划。
+
+说明与确认：
+
+- 有提交时用说明陈述会得到什么；`status` 不是 `ok` 时说明无法列出历史的原因，不得编造。
+- ⚠️ 说明已安装 Skill 的本地改动会丢失。
+- 已有托管区块会被上游模板替换，非托管内容保留；不改 `.mdf/` 与 `docs/`。
+- 确认替换即同意在当前分支提交这些路径，不夹带其他改动，不 push。
+- 📌 必须取得明确替换确认；拒绝则结束且不写入。不得把沉默当作同意。
 
 验收：用户明确确认或明确拒绝。
 
@@ -129,34 +141,46 @@ Skill 的本地改动会丢失；已有托管区块会被上游模板替换，�
 upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
 ```
 
-预览用过 `--source` 时这里使用同一源。必须传入预览确认的完整 commit；
-CLI 在任何替换前比对上游 HEAD，变化返回 `upgrade_source_changed`，回到 2 重新预览并确认。
-CLI 用上游 `skills/mdf` 替换每个已安装
-副本，并写入完整 commit 到 `references/.version`。已有唯一 `AGENTS.md` 托管
-区块时，用上游 `agents-managed-block.md` 替换该区块；无文件或无区块则跳过，
-不新建或追加。失败时保留现场，报告已替换与未替换路径。不得删除目标仓库的
-`.mdf/` 或 `docs/`。写入后仅暂存并 `commit --only` 本次路径，不夹带其他暂存
-或工作区改动，不 push。无变更则不创建提交。
+预览用过 `--source` 时这里使用同一源。
+
+- 必须传入预览确认的完整 commit。
+  - CLI 在任何替换前比对上游 HEAD，变化返回 `upgrade_source_changed`，
+    回到 2 重新预览并确认。
+- CLI 用上游 `skills/mdf` 替换每个已安装副本，并写入完整 commit 到 `references/.version`。
+- 已有唯一 `AGENTS.md` 托管区块时，用上游 `agents-managed-block.md` 替换该区块。
+  - 无文件或无区块则跳过，不新建或追加。
+- 失败时保留现场，报告已替换与未替换路径。
+- ❌ 不得删除目标仓库的 `.mdf/` 或 `docs/`。
+- 写入后仅暂存并 `commit --only` 本次路径，不夹带其他暂存或工作区改动，不 push。
+  - 无变更则不创建提交。
 
 验收：各目标目录存在、`.version` 等于 `new_commit`，`agents` 与 `commit`
 结果已落实。
 
 通过条件：进入报告。异常与交接：保留现场并停止。
 
+### 报告与重读
+
 <a id="s5"></a>
 
 **报告**
 
 报告旧基线、新基线、替换路径、`AGENTS.md` 区块结果和本地提交。不 push。
-替换后运行 `doctor --repo "$REPO_ROOT"`：出现 `manifest.schema` 或 `layout.migrate`
-finding，或 `history` 摘要显示文档契约（模板、布局、根文档职责或事实页契约）有
-变化时，建议用户运行 `$mdf migrate` 收敛布局与 manifest；已在当前布局上的仓库
-可改用 `$mdf fact update --scope full` 整理结构。upgrade 本身不改 `.mdf/` 与
-`docs/`。
-从本次 `MDF_ROOT` 完整重读 `SKILL.md`；若更新了托管区块，同时重读 `AGENTS.md`。
-丢弃本次已读入的旧副本。同会话内后续 `$mdf` 调用按新 Skill 执行，
-不得要求新会话，也不得继续按旧流程操作。本 intent 仍在报告后结束，
-不自动串联其他入口。
+
+替换后运行 `doctor --repo "$REPO_ROOT"`：
+
+- 出现以下任一情况时，建议用户运行 `$mdf migrate` 收敛布局与 manifest：
+  - `manifest.schema` 或 `layout.migrate` finding。
+  - `history` 摘要显示文档契约（模板、布局、根文档职责或事实页契约）有变化。
+- 已在当前布局上的仓库可改用 `$mdf fact update --scope full` 整理结构。
+- upgrade 本身不改 `.mdf/` 与 `docs/`。
+
+重读新 Skill：
+
+- 从本次 `MDF_ROOT` 完整重读 `SKILL.md`；若更新了托管区块，同时重读 `AGENTS.md`。
+- 丢弃本次已读入的旧副本。
+- 同会话内后续 `$mdf` 调用按新 Skill 执行，不得要求新会话，也不得继续按旧流程操作。
+- 本 intent 仍在报告后结束，不自动串联其他入口。
 
 验收：结果摘要与 CLI 产物一致，新 Skill 已重读。
 

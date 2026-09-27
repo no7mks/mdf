@@ -19,54 +19,64 @@ upgrade 不读取本文件。
 
 <a id="s-root"></a>
 
-next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
-除 init/bootstrap/migrate/next 外，执行仓库操作的 intent 在本次调用中先将用户指定目标或当前目录
-用 `git -C <目标目录> rev-parse --show-toplevel` 解析为绝对 `REPO_ROOT`，再读取并执行对应流程。
-核对解析出的仓库确为用户目标；边界不明先澄清，澄清后重做本条；命令失败则报告并停止，
-不使用空值或上次调用的变量。
-clarify 与 help 不要求 Git 仓库；init/bootstrap/migrate 由 initialization 公共流程处理普通目录
-与父仓库边界。upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
-integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
+本节规定各 intent 如何确定目标仓库根。
+
+- next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
+- 除 init/bootstrap/migrate/next 外，执行仓库操作的 intent 在本次调用中：
+  1. 用 `git -C <目标目录> rev-parse --show-toplevel` 将用户指定目标或当前目录
+     解析为绝对 `REPO_ROOT`。
+  2. 再读取并执行对应流程。
+  3. 核对解析出的仓库确为用户目标；边界不明先澄清，澄清后重做本条。
+  4. 命令失败则报告并停止，不使用空值或上次调用的变量。
+- 以下 intent 另有规则：
+  - clarify 与 help 不要求 Git 仓库。
+  - init/bootstrap/migrate 由 initialization 公共流程处理普通目录与父仓库边界。
+  - upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
+  - integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
 
 ## 切换工作区
 
 <a id="s-switch"></a>
 
-切换到已有 worktree 时，目标为绝对路径与完整分支名。已在该路径且当前分支
-正确即通过；不得再 `git worktree add`，不得只在原根 `cd` 冒充已切换。
+切换到已有 worktree 时，目标为绝对路径与完整分支名。
+已在该路径且当前分支正确即通过；不得再 `git worktree add`，不得只在原根 `cd` 冒充已切换。
 
-判定当前 agent：先看本会话可用工具，再看 `$MDF_ROOT` 是否位于
-`.cursor/skills`、`.codex/skills`、`.kiro/skills`、`.claude/skills` 或
-`.openclaw/skills`。工具与路径冲突时以工具为准。
+判定当前 agent：先看本会话可用工具，再看 `$MDF_ROOT` 是否位于下列目录之一。
+工具与路径冲突时以工具为准。
 
-Cursor：立即对目标路径调用 `move_agent_to_root`（参数 `rootPath`）。
-禁止 `move_agent_to_cloned_root`（会 fetch origin，本地未推送分支会失败）。
-调用后必须新开 shell 再核对，不得沿用切换前的终端 cwd。无该工具时报告缺失
-并留在当前步骤，要求用户把工作区根打开为该路径。
+- `.cursor/skills`、`.codex/skills`、`.kiro/skills`、`.claude/skills` 或 `.openclaw/skills`。
 
-Codex：要求用户把当前对话接到已有目标 worktree，不要再创建：
-1. 点右上角 Environment 当前项（一般显示 Local）
-2. Continue in 选 New local worktree，不要选 Cloud
-3. 在 Hand off chat to worktree 中打开 Worktree 下拉，选名称等于
-   目标分支的已有项（如 `feature/<slug>`）
-4. 不要选 Create a new worktree
-对话框会保持该 worktree 的既有分支。给出应选项后等待用户完成，再核对。
+按 agent 切换：
 
-Kiro IDE：没有会话内切根工具。要求用户用 File > Open Folder 或
-`kiro <路径>` 打开目标绝对路径作为工作区根；禁止 Add Folder to Workspace。
-打开后在该根继续并核对。
-Kiro CLI：会话绑定启动目录。要求用户在目标路径下重新启动 `kiro-cli`；
-禁止只在原会话 `cd`。
+- Cursor：立即对目标路径调用 `move_agent_to_root`（参数 `rootPath`）。
+  - ❌ 禁止 `move_agent_to_cloned_root`（会 fetch origin，本地未推送分支会失败）。
+  - 调用后必须新开 shell 再核对，不得沿用切换前的终端 cwd。
+  - 无该工具时报告缺失并留在当前步骤，要求用户把工作区根打开为该路径。
+- Codex：要求用户把当前对话接到已有目标 worktree，不要再创建。
+  对话框会保持该 worktree 的既有分支。给出应选项后等待用户完成，再核对。
+  1. 点右上角 Environment 当前项（一般显示 Local）
+  2. Continue in 选 New local worktree，不要选 Cloud
+  3. 在 Hand off chat to worktree 中打开 Worktree 下拉，选名称等于
+     目标分支的已有项（如 `feature/<slug>`）
+  4. 不要选 Create a new worktree
+- Kiro IDE：没有会话内切根工具。
+  - 要求用户用 File > Open Folder 或 `kiro <路径>` 打开目标绝对路径作为工作区根。
+  - ❌ 禁止 Add Folder to Workspace。
+  - 打开后在该根继续并核对。
+- Kiro CLI：会话绑定启动目录。要求用户在目标路径下重新启动 `kiro-cli`。
+  - ❌ 禁止只在原会话 `cd`。
+- Claude Code：对目标路径调用 `EnterWorktree`。
+  - 路径不在 `.claude/worktrees/` 时需用户批准。
+  - ❌ 禁止 `claude --worktree` 或在 `.claude/worktrees/` 另建副本。
+- 其他（含 OpenClaw）：把目标绝对路径交给用户，要求把工作区或进程 cwd 打开到该路径后继续。
+  - ❌ 禁止再创建 worktree。
+  - OpenClaw 不得用 `worktree: true` 另建 checkout，可用 `--cwd` 指向已有路径后重启。
 
-Claude Code：对目标路径调用 `EnterWorktree`。路径不在 `.claude/worktrees/`
-时需用户批准。禁止 `claude --worktree` 或在 `.claude/worktrees/` 另建副本。
+核对必须在切换后的环境、新 shell 执行，并向用户展示这两项：
 
-其他（含 OpenClaw）：把目标绝对路径交给用户，要求把工作区或进程 cwd
-打开到该路径后继续；禁止再创建 worktree。OpenClaw 不得用 `worktree: true`
-另建 checkout，可用 `--cwd` 指向已有路径后重启。
+- `git rev-parse --show-toplevel` 等于目标路径。
+- `git branch --show-current` 等于目标分支。
 
-核对必须在切换后的环境、新 shell 执行：`git rev-parse --show-toplevel`
-等于目标路径，`git branch --show-current` 等于目标分支。向用户展示这两项。
 未满足则留在当前步骤，重复对应指引，不拆除已建 worktree 与分支。
 
 ## 入口
@@ -89,14 +99,16 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   和 CodeWiki。当前事实文档和 CodeWiki 必须反映该 checkout 的实际状态，不把未实现
   的计划写成事实。调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，
   不替代任务管理。
-- 规划写入使用唯一的 `planning` 分支与仓库同级 `<repo-name>-worktrees/planning`
-  worktree：覆盖 `prp create`、`prp review`、`prp split`、intake 中的 Proposal、
-  以及 `jot promote` 为 Proposal。不在当前目录开分支，不占用 develop checkout。
-  调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
-  按「切换工作区」规则切过去，重新解析目标根。提交后运行
-  `planning land --repo "$REPO_ROOT"`，在占用 develop 的 worktree（须 clean）上
-  no-ff 合入。新建 Proposal 的 ID 在该工作区按当前 checkout 的 `docs/proposals/`
-  最大序号加一分配；合入 develop 后才对 `$mdf start` 可见。
+- 规划写入使用唯一的 `planning` 分支与仓库同级 `<repo-name>-worktrees/planning` worktree。
+  - 覆盖 `prp create`、`prp review`、`prp split`、intake 中的 Proposal、
+    以及 `jot promote` 为 Proposal。
+  - 不在当前目录开分支，不占用 develop checkout。
+  - 调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
+    按「切换工作区」规则切过去，重新解析目标根。
+  - 提交后运行 `planning land --repo "$REPO_ROOT"`，
+    在占用 develop 的 worktree（须 clean）上 no-ff 合入。
+  - 新建 Proposal 的 ID 在该工作区按当前 checkout 的 `docs/proposals/` 最大序号加一分配；
+    合入 develop 后才对 `$mdf start` 可见。
 - 与当前交付分支工作无关、且不属于规划工作区的文档在 develop 更新；独立记录和公共
   文档维护也按此规则处理。develop 不存在时先明确创建基线，不擅自从未交付分支创建。
 - 已有 Proposal 的修改若属于当前交付分支工作，仍在该交付分支更新；否则在 planning
@@ -135,18 +147,24 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 
 <a id="logs"></a>
 
-凡在 MDF 引导下执行的命令（Core CLI、测试、lint、build、doctor、fact audit 等）都必须
-留下足以诊断失败的完整日志或报告，失败时先读日志与报告，不为查看输出而重跑。
-- Core CLI 每次调用自动写 `.mdf/logs/<时间戳>-<命令>/`（`stdout.log`、`stderr.log`、
-  `meta.json`）；位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
-  尚无 `.mdf/` 的目录写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
-- Core 代跑的验证入口在 `.mdf/reports/<时间戳>-<入口>/` 保存完整输出，suite 另有
-  JUnit XML 与 `summary.json`，见 `delivery-contract.md`「测试报告」。
-- Agent 直接运行的命令（点名执行、项目脚本、调试命令等）须把完整 stdout 与 stderr
-  写入 `.mdf/logs/<时间戳>-<名称>.log`（如 `<命令> 2>&1 | tee <文件>`），并在汇报中给出路径。
-- 用 grep、head、tail 等过滤或截断输出时，完整输出须先落盘再截取（如
-  `set -o pipefail; <命令> 2>&1 | tee <文件> | tail -n 50`），不得直接把命令输出管道给
-  截断命令；判定成败以原命令的退出码为准，不以截断命令的退出码为准。
+凡在 MDF 引导下执行的命令都必须留下足以诊断失败的完整日志或报告。
+这些命令包括 Core CLI、测试、lint、build、doctor、fact audit 等。
+
+- ⚠️ 失败时先读日志与报告，不为查看输出而重跑。
+- Core CLI 每次调用自动写 `.mdf/logs/<时间戳>-<命令>/`
+  （`stdout.log`、`stderr.log`、`meta.json`）。
+  - 位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
+  - 尚无 `.mdf/` 的目录写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
+- Core 代跑的验证入口在 `.mdf/reports/<时间戳>-<入口>/` 保存完整输出。
+  - suite 另有 JUnit XML 与 `summary.json`，见 `delivery-contract.md`「测试报告」。
+- Agent 直接运行的命令须把完整 stdout 与 stderr 写入 `.mdf/logs/<时间戳>-<名称>.log`，
+  并在汇报中给出路径。
+  - 此类命令包括点名执行、项目脚本、调试命令等。
+  - 写法如 `<命令> 2>&1 | tee <文件>`。
+- 用 grep、head、tail 等过滤或截断输出时，完整输出须先落盘再截取。
+  - 写法如 `set -o pipefail; <命令> 2>&1 | tee <文件> | tail -n 50`。
+  - ❌ 不得直接把命令输出管道给截断命令。
+  - 判定成败以原命令的退出码为准，不以截断命令的退出码为准。
 - `.mdf/logs/` 与 `.mdf/reports/` 由其中的 `.gitignore` 忽略；Core 每次运行删除其中
   7 天前的条目。
 
@@ -154,29 +172,46 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 
 <a id="s5"></a>
 
-Agent 可以主动创建本地提交，并应在形成有意义、可解释的阶段成果时及时提交。
-允许如实标注未完成状态的阶段提交；提交不代表验收通过，也不替代用户对方案、状态或启用的确认。
-用户明确要求暂不提交时遵从；无改动不创建空提交。中文 Conventional Commit 应准确描述内容和必要的未完成状态。
+本节规定提交时机、提交范围、Git 操作授权与提交后的返回。
 
-只暂存当前任务的明确路径或改动块，不夹带无关用户改动；同一文件混有无关改动也不能整文件顺带提交。
-提交前核对完整 staged diff，已有无关暂存项也必须隔离，不能直接 commit 一并带入。
-内部委托由外层 intent 统筹提交；各阶段要求的已提交基线和必须同批提交的产物仍有效。
-只读、预览不产生提交；失败保留现场，可保存有价值且状态明确的阶段成果，不以 commit 冒充完成。
+**提交时机**
 
-push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限推导。禁止 rebase，不擅自改写已有历史；
-异名分支使用 no-ff。阶段基线和集成要求见 `references/delivery-contract.md`。
+- Agent 可以主动创建本地提交，并应在形成有意义、可解释的阶段成果时及时提交。
+- 允许如实标注未完成状态的阶段提交。
+  - 提交不代表验收通过，也不替代用户对方案、状态或启用的确认。
+- 用户明确要求暂不提交时遵从；无改动不创建空提交。
+- 中文 Conventional Commit 应准确描述内容和必要的未完成状态。
 
-规划 intent 在本次规划提交后运行 `planning land --repo "$REPO_ROOT"`，把
-`planning` no-ff 合入占用 develop 的 worktree；无新提交则该命令为 no-op。
-develop 占用者 dirty 时停止并报告，不改 checkout。
+**提交范围**
 
-阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束，
-不仅为手动 commit 要求重调，也不自动触发下一个用户入口。
+- 只暂存当前任务的明确路径或改动块，不夹带无关用户改动。
+  - 同一文件混有无关改动也不能整文件顺带提交。
+- 提交前核对完整 staged diff，已有无关暂存项也必须隔离，不能直接 commit 一并带入。
+- 内部委托由外层 intent 统筹提交；各阶段要求的已提交基线和必须同批提交的产物仍有效。
+- 只读、预览不产生提交。
+- 失败保留现场，可保存有价值且状态明确的阶段成果，不以 commit 冒充完成。
+
+**Git 操作授权**
+
+- push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限推导。
+- ❌ 禁止 rebase，不擅自改写已有历史；异名分支使用 no-ff。
+- 阶段基线和集成要求见 `references/delivery-contract.md`。
+- 规划 intent 在本次规划提交后运行 `planning land --repo "$REPO_ROOT"`，
+  把 `planning` no-ff 合入占用 develop 的 worktree。
+  - 无新提交则该命令为 no-op。
+  - develop 占用者 dirty 时停止并报告，不改 checkout。
+
+**返回与委托**
+
+- 阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束。
+  - 不仅为手动 commit 要求重调，也不自动触发下一个用户入口。
+- deliver 依据 `references/deliver.md` 内部串联从 start 起的剩余交付阶段，
+  子 intent 完成后返回 deliver 继续。
+- init 依据 `references/initialization.md` 自动转入 bootstrap 或 migrate 是明确的内部委托，
+  不自动串联交付主线。
 
 验收：提交范围、staged diff 与 Conventional Commit 可追溯，或明确无改动。
 异常与交接：提交失败保留现场；只读、预览不产生提交。
-deliver 依据 `references/deliver.md` 内部串联从 start 起的剩余交付阶段，子 intent 完成后返回 deliver 继续。
-init 依据 `references/initialization.md` 自动转入 bootstrap 或 migrate 是明确的内部委托，不自动串联交付主线。
 
 ## 语言
 

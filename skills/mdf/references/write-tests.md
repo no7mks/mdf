@@ -42,45 +42,67 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 范围与前置条件
 
-先运行 `delivery status`，读取 `roster`。
-`roster.qa == 0` 时在 owner 编写测试，不切角色树。
-`roster.qa ≥ 1` 时读取 `worktrees.qa` 列表；缺对应树则停止。
-独立调用或只续办一路时用该项的 `path` 与 `branch`。deliver 对列表每一项分派
-独立 subagent，不把兄弟路径传入任务。
-用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作。角色树先运行
-`python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo <该绝对路径> --commit <owner 完整分支名>`
-合入 owner；已在该 worktree 时仍先合并。冲突保留现场。
-`roster.qa ≥ 1` 时不得在 feature 上编写或补写测试（指 owner，不是 kind）。
-独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与分支（index 1
-形如 `qa/feature/<slug>`），不是 owner：Cursor 对该 qa 路径调用 `move_agent_to_root`
-（禁止 `move_agent_to_cloned_root`），新 shell 核对 toplevel 与当前分支；其他宿主
-打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。未切到则停止，
-不按 common 留步等待：角色树已由 start 建好。
-deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
-再运行 `delivery check --stage write-tests`。
-`qa_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
-roster.models 含 `write-tests` 时把该值写入本路任务，按口语描述现场解析
-（可多个模型）；没有则不提模型或 effort。不得写入其他 intent 的模型。
-与 implement 互不前置，可并行。独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。
-只使用 design 基线已提交的共享代码底座；发现类型、接口、stub 或测试设施缺失时停止，
-并提示 `$mdf design` 补底座，不得本路自行创建。错误输入与可预见的错误行为表达为输入—期望输出测试用例；
-不要求针对具体实现进行错误注入，也不强制先产生红灯。
+先运行 `delivery status`，读取 `roster`，按下表确定编写位置。
+
+| `roster.qa` | 编写位置 |
+| --- | --- |
+| `roster.qa == 0` | 在 owner 编写测试，不切角色树 |
+| `roster.qa ≥ 1` | 读取 `worktrees.qa` 列表；缺对应树则停止 |
+
+- 独立调用或只续办一路时用该项的 `path` 与 `branch`。
+- deliver 对列表每一项分派独立 subagent，不把兄弟路径传入任务。
+- 用 `git -C <该绝对路径>` 与该路径下的绝对文件路径操作。
+- 角色树先运行下列命令合入 owner；已在该 worktree 时仍先合并。冲突保留现场。
+  - `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo <该绝对路径> --commit <owner 完整分支名>`
+- ❌ `roster.qa ≥ 1` 时不得在 feature 上编写或补写测试（指 owner，不是 kind）。
+
+会话根按调用方式处理：
+
+- 独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 qa 路径与分支（index 1
+  形如 `qa/feature/<slug>`），不是 owner：
+  - Cursor 对该 qa 路径调用 `move_agent_to_root`（禁止 `move_agent_to_cloned_root`），
+    新 shell 核对 toplevel 与当前分支。
+  - 其他宿主打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。
+  - 未切到则停止，不按 common 留步等待：角色树已由 start 建好。
+- deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
+
+再运行 `delivery check --stage write-tests`，并遵守：
+
+- `qa_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
+- roster.models 含 `write-tests` 时把该值写入本路任务，按口语描述现场解析（可多个模型）。
+  - 没有则不提模型或 effort。
+  - 不得写入其他 intent 的模型。
+- 与 implement 互不前置，可并行。
+- 独立调用不自动分派 Agent；deliver 可按其契约分派本阶段。
+- 只使用 design 基线已提交的共享代码底座。
+  - 发现类型、接口、stub 或测试设施缺失时停止，并提示 `$mdf design` 补底座，不得本路自行创建。
+- 错误输入与可预见的错误行为表达为输入—期望输出测试用例。
+  - 不要求针对具体实现进行错误注入，也不强制先产生红灯。
 
 ### 测试与交接证据
 
-编写前按 design 的当前事实锚点读取对应事实页；已记载的当前行为以事实页为准，
-不从源码重新推断契约。项目级 kind、失败语义与 skip 以
-`docs/system/testing/` 为准，不在 design 复述。
-按 design 与 `delivery-contract.md`「测试层级与分类」把用例归入 quick、smoke 或
-design policy `suites` 所列 named suite；归属写在代码里（marker、目录等）。
-design 所列 named suite 尚无文档时，在 `docs/system/testing/` 补该 suite 的一节或
-一页属于本阶段授权；记录 gate 前核对每个声明的 named suite 都已文档化且有成员。
-不得降低项目门槛；非 hermetic 的 test case 不进 quick，超预算的 test case 不进 quick 或 smoke。
-新写的 test case 按依赖切分，同一 test case 内的 test 依赖一致，不写运行时 skip。
-implement 不得擅自改测试。
-测试须能编译或加载执行；环境或导入故障不是有效完成证据。因尚未实现而产生的
-断言失败可以接受。本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。
-全绿由 converge 负责，且相对所需 suite。逐项审查 objectives 覆盖与断言。
-首次按确认设计编写测试与配置属于本 intent 的授权；不得改变目标或降低项目门槛。
-运行 `delivery record --stage write-tests --summary <覆盖与可执行性证据>` 并提交。
+编写前读取事实页，按 suite 归类用例，确认可执行后记录 gate。
 
+- 编写前按 design 的当前事实锚点读取对应事实页。
+  - 已记载的当前行为以事实页为准，不从源码重新推断契约。
+  - 项目级 kind、失败语义与 skip 以 `docs/system/testing/` 为准，不在 design 复述。
+
+用例归类依据 design 与 `delivery-contract.md`「测试层级与分类」。据此把用例归入 quick、smoke 或
+design policy `suites` 所列 named suite；归属写在代码里（marker、目录等）。
+
+- design 所列 named suite 尚无文档时，在 `docs/system/testing/` 补该 suite 的一节或一页。
+  - 这属于本阶段授权。
+- 记录 gate 前核对每个声明的 named suite 都已文档化且有成员。
+- ❌ 不得降低项目门槛；非 hermetic 的 test case 不进 quick，超预算的 test case 不进 quick 或 smoke。
+- 新写的 test case 按依赖切分，同一 test case 内的 test 依赖一致，不写运行时 skip。
+- implement 不得擅自改测试。
+
+可执行性与全绿的边界：
+
+- 测试须能编译或加载执行；环境或导入故障不是有效完成证据。
+- 因尚未实现而产生的断言失败可以接受。
+- 本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。
+- 全绿由 converge 负责，且相对所需 suite。
+- 逐项审查 objectives 覆盖与断言。
+- 首次按确认设计编写测试与配置属于本 intent 的授权；不得改变目标或降低项目门槛。
+- 运行 `delivery record --stage write-tests --summary <覆盖与可执行性证据>` 并提交。

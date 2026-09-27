@@ -13,8 +13,8 @@
 - `evidence`：`当前事实文档` 中指向仓库内已跟踪证据及其验证方式的元数据。
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
-- `验证命令`：`manifest.verification` 中由仓库执行的五个入口：`lint`、`build`
-  与 `quick`、`smoke`、`release` 三个全局 suite。
+- `验证命令`：`manifest.verification` 中由仓库执行的五个入口：`lint`、`build`；
+  以及 `quick`、`smoke`、`release` 三个全局 suite。
 - `验证 suite`：test case 的具名集合。全局 suite 由 manifest 声明并由 Core 执行；
   其余为 named suite，只记在 `docs/system/testing/`，由 Agent 执行。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
@@ -52,15 +52,16 @@
         └── archive/<major.minor>/
 ```
 
-`docs/README.md` 是文档入口：按要找的主题指向**一份**页面，当前事实排在决策与
-工作记录之前；只链接已有内容的页面，空目录不链接。不是 Proposal、Bug 的工作清单。初始化预建工作目录，以
-`.gitkeep` 保留空目录。占位仅建立目录结构，不表示已有工作记录或业务事实。
-`docs/system/testing/` 是必要的测试约定切面：init 写入 `index.md` 与起步叶
-`conventions.md`，陈述当前验证规则，不承载运行时行为事实。已有项目文档保持原位；
-同名目录须核对内容和归属，不得覆盖或自动接管。`docs/product/`、`docs/adr/` 与根
-`docs/testing.md` 不属于当前布局，存在即为 `layout.migrate` finding，由
-`$mdf migrate` 收敛。缺少 `docs/system/testing/index.md` 或其主题叶时为
-`layout.testing` finding。
+- `docs/README.md` 是文档入口：按要找的主题指向**一份**页面，当前事实排在决策与工作记录之前。
+  - 只链接已有内容的页面，空目录不链接；不是 Proposal、Bug 的工作清单。
+- 初始化预建工作目录，以 `.gitkeep` 保留空目录。
+  - 占位仅建立目录结构，不表示已有工作记录或业务事实。
+- `docs/system/testing/` 是必要的测试约定切面：init 写入 `index.md` 与起步叶 `conventions.md`。
+  - 它陈述当前验证规则，不承载运行时行为事实。
+- 已有项目文档保持原位；同名目录须核对内容和归属，不得覆盖或自动接管。
+- ⚠️ `docs/product/`、`docs/adr/` 与根 `docs/testing.md` 不属于当前布局；
+  存在即为 `layout.migrate` finding，由 `$mdf migrate` 收敛。
+- ⚠️ 缺少 `docs/system/testing/index.md` 或其主题叶时为 `layout.testing` finding。
 
 ## 文档分类与按需加载
 
@@ -71,15 +72,15 @@
 | --- | --- | --- |
 | 用户入口 | 根 `README.md` | 非维护者从这里进；链到 `docs/user-guide/README.md` |
 | 文档入口 | `docs/README.md` | 维护者路由页；不是用户入口，也不是工作对象清单 |
-| 维护者事实 | `docs/system/`：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引；`testing/` 测试约定 | 地图 → 一份主题叶 |
+| 维护者事实 | `docs/system/`（组成见下） | 地图 → 一份主题叶 |
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；不强制分类目录 | 维护者默认不开；改对外行为时必开 |
 | 决策 | `docs/context/adr/` | 只经 `adr-<slug>` 或事实页链接 |
 | 工作对象 | `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` | 只经 ID 或直达链接 |
 | 调研与 Wiki | `docs/context/research/`、`docs/repowiki/` | research 按需；Wiki 搜符号 |
 
-切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`、
-`testing/`。`testing/` 不是产品运行时切面，也不进入核心模块表或
-`manifest.baselines`。
+- `docs/system/` 组成：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引；`testing/` 测试约定。
+- 切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`、`testing/`。
+  - `testing/` 不是产品运行时切面，也不进入核心模块表或 `manifest.baselines`。
 
 两条加载路径（读者不同，入口不同）：
 
@@ -88,26 +89,34 @@
 | 用户（非维护者） | 根 `README.md` → `user-guide/README.md` → 一份主题叶 |
 | 维护者 / Agent | `AGENTS.md` → `PROJECT.md` → `docs/system/overview.md` |
 
-维护者需要按主题找文档或打开工作对象时，再打开 `docs/README.md`，然后只打开
-一份主题叶或对应 ID 的文件。`user_guide` 为 `not_applicable` 时，根 `README.md` 仍是用户入口，
-改为链到 `PROJECT.md` 或 `docs/system/`。grep 与 CodeWiki 只用于定位路径，
-定位后只读命中的那一份。
+- 维护者需要按主题找文档或打开工作对象时，再打开 `docs/README.md`，然后只打开一份主题叶或对应 ID 的文件。
+- `user_guide` 为 `not_applicable` 时，根 `README.md` 仍是用户入口，改为链到 `PROJECT.md` 或 `docs/system/`。
+- grep 与 CodeWiki 只用于定位路径，定位后只读命中的那一份。
 
-**唯一归属**：一条可观察契约只住一页——对外能力在 `user-guide/<topic>`，内部结构与
-仍生效约束在 `system/architecture/<topic>`，内部契约与兼容性在 `system/interfaces/<topic>`，
-部署与观测在 `system/operations/<topic>`。运行时配置、可观测性、错误模型、鉴权、
-限制与恢复分别住 `system/operations/configuration.md`、
-`system/operations/observability.md`、`system/interfaces/errors.md`、
-`system/interfaces/auth.md`、`system/operations/limits-and-recovery.md`
-（超 450 再拆）。测试分类、失败语义、skip 与各 suite 住 `system/testing/<topic>`：
-`index.md` 只路由；起步叶为 `conventions.md`，主题混杂或超 450 再拆
-`kinds.md`、`failure.md`、`suites.md`、`environment.md`。每个 suite（含 named
-suite）必须有一节或一页。`overview.md`
-用核心模块表：五行是配置、可观测性、错误、
-鉴权、限制与恢复；每行链到对应五类专用叶或写「不适用：」加理由。切面路由另链
-`testing/index.md`。不预建空页（`testing/` 的 init 起步叶除外）。对外可见行为
-仍只住 user-guide，只链接。其他页面只链接，不复述；
-架构问题以 `system/architecture/` 为准，ADR 不作为当前结构来源。
+**唯一归属**：一条可观察契约只住一页。
+
+| 契约 | 所住页面 |
+| --- | --- |
+| 对外能力 | `user-guide/<topic>` |
+| 内部结构与仍生效约束 | `system/architecture/<topic>` |
+| 内部契约与兼容性 | `system/interfaces/<topic>` |
+| 部署与观测 | `system/operations/<topic>` |
+| 运行时配置 | `system/operations/configuration.md`（超 450 再拆，下四行同） |
+| 可观测性 | `system/operations/observability.md` |
+| 错误模型 | `system/interfaces/errors.md` |
+| 鉴权 | `system/interfaces/auth.md` |
+| 限制与恢复 | `system/operations/limits-and-recovery.md` |
+| 测试分类、失败语义、skip 与各 suite | `system/testing/<topic>` |
+
+- `system/testing/`：`index.md` 只路由；起步叶为 `conventions.md`，
+  主题混杂或超 450 再拆 `kinds.md`、`failure.md`、`suites.md`、`environment.md`。
+  - 每个 suite（含 named suite）必须有一节或一页。
+- `overview.md` 用核心模块表：五行是配置、可观测性、错误、鉴权、限制与恢复。
+  - 每行链到对应五类专用叶或写「不适用：」加理由。
+  - 切面路由另链 `testing/index.md`。
+- 不预建空页（`testing/` 的 init 起步叶除外）。
+- 对外可见行为仍只住 user-guide，只链接。其他页面只链接，不复述。
+- 架构问题以 `system/architecture/` 为准，ADR 不作为当前结构来源。
 
 **体积**（物理行；超出为 `size.hard` finding，由 fact-audit CLI 检查）：
 
@@ -120,23 +129,24 @@ suite）必须有一节或一页。`overview.md`
 | Proposal、Bug、`JOTS.md` | 500 |
 | `GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
-路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面
-`index.md`。超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。
-整份 `AGENTS.md`（含非托管正文）超过 200 行是 CLI warning `agents.size`，不是
-`size.hard`；写入 `.mdf/audit-ignore.yaml` 的 `path: AGENTS.md` 后不再提示。
+- 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
+- 超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。
+- 整份 `AGENTS.md`（含非托管正文）超过 200 行是 CLI warning `agents.size`，不是 `size.hard`。
+  - 写入 `.mdf/audit-ignore.yaml` 的 `path: AGENTS.md` 后不再提示。
 
+`changes/unreleased/` 保存未版本化的子 Change 及其交付材料。
 
-`changes/unreleased/` 保存未版本化的子 Change 及其交付材料。进行中的 feature
-目录有交付身份即可存在，不必先有 CHANGE.md。release 的
-`changes/unreleased/<semver>/` 自 start 起即可存在（objectives.md 与
-delivery.json）；hotfix 仅 roster ≥1 时写入 delivery.json。code-review 记录写在对应
-`changes/unreleased/<slug>/code-review.md`：feature/bugfix 用交付 kebab-case slug，
-release/hotfix 用该分支稳定 SemVer。每个稳定版本目录始终只有一个根
-`CHANGE.md`。
+- 进行中的 feature 目录有交付身份即可存在，不必先有 CHANGE.md。
+- release 的 `changes/unreleased/<semver>/` 自 start 起即可存在（objectives.md 与 delivery.json）。
+  - hotfix 仅 roster ≥1 时写入 delivery.json。
+- code-review 记录写在对应 `changes/unreleased/<slug>/code-review.md`：
+  - feature/bugfix 用交付 kebab-case slug；release/hotfix 用该分支稳定 SemVer。
+- 📌 每个稳定版本目录始终只有一个根 `CHANGE.md`。
 
-`docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量
-metadata。它不是`当前事实文档`、工作上下文或 ADR，不填入`基线`，也不要求 fact
-frontmatter。该目录由 CodeWiki intent 受管，项目其他文档仍可按各自契约人工维护。
+`docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量 metadata。
+
+- 它不是`当前事实文档`、工作上下文或 ADR，不填入`基线`，也不要求 fact frontmatter。
+- 该目录由 CodeWiki intent 受管，项目其他文档仍可按各自契约人工维护。
 
 ## Jots
 
@@ -181,31 +191,30 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 
 ## 根文档职责
 
-- `README.md` 面向项目用户，说明项目是干什么，并链到用户文档入口
-  （`docs/user-guide/README.md`）。不写最短可运行路径（住 user-guide 主题叶），
-  不写维护者入口（`AGENTS.md` 已指向 `PROJECT.md`）。可保留定位性概览，但不重复
-  `当前事实文档`中的用户或系统行为；环境变量表、接口形状、错误文案等可观察
-  契约只写在对应事实页。仅维护者需要的环境、验证、lint、CI、目录例外、发布
-  与仓库治理不得写入，改放 `PROJECT.md`；内部结构、接口与运维等当前事实按
-  渐进式披露下沉到 `docs/system/` 主题叶。
-- `PROJECT.md` 仅面向项目维护者（含 Agent），是读完 `AGENTS.md` 后的第一份
-  项目文档。记录技术栈、环境、lint、test、build、CI 等价检查、生成物与目录约定。
-  命令的可执行事实来源始终是仓库配置与脚本；运行时配置属于
-  `docs/system/operations/configuration.md`。测试分类、失败语义、skip 与各 suite
-  属于 `docs/system/testing/`。开头一张验证卡片只列环境要求与 manifest 的五个
-  验证入口，不列 named suite 或单个测试的命令；
-  须含 `docs/system/overview.md`、`docs/README.md` 与
-  `docs/system/testing/index.md`，不展开核心模块表。
-  接口、数据与运行时行为不复述 `docs/system/` 事实页。超过体积限制时下沉到
-  `docs/system/`，不扩写进 `README.md`。
-- `AGENTS.md` 仅面向在仓库中工作的 Agent。MDF 托管区块必须项目无关：Agent 默认
-  按维护者角色工作，第一跳是 `PROJECT.md`；再打开 `docs/system/overview.md`，
-  或从 `docs/README.md` 只打开一份主题叶。用 grep/CodeWiki 定位后只读
-  命中的那一份。根 `README.md` 与 `docs/user-guide/` 是用户入口，不是 Agent 默认
-  起点。`README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不通读文档目录，
-  不把根文档当作行为事实来源。不要求写项目例外；托管块外若写入栈、配置或行为
-  契约，fact audit 记 `agents.project_content`。MDF 只维护其中带 marker 的区块，
-  其余内容由仓库维护者负责。
+- `README.md` 面向项目用户，说明项目是干什么，并链到用户文档入口（`docs/user-guide/README.md`）。
+  - 不写最短可运行路径（住 user-guide 主题叶），不写维护者入口（`AGENTS.md` 已指向 `PROJECT.md`）。
+  - 可保留定位性概览，但不重复`当前事实文档`中的用户或系统行为。
+  - 环境变量表、接口形状、错误文案等可观察契约只写在对应事实页。
+  - ❌ 仅维护者需要的环境、验证、lint、CI、目录例外、发布与仓库治理不得写入，改放 `PROJECT.md`。
+  - 内部结构、接口与运维等当前事实按渐进式披露下沉到 `docs/system/` 主题叶。
+- `PROJECT.md` 仅面向项目维护者（含 Agent），是读完 `AGENTS.md` 后的第一份项目文档。
+  - 记录技术栈、环境、lint、test、build、CI 等价检查、生成物与目录约定。
+  - 命令的可执行事实来源始终是仓库配置与脚本。
+  - 运行时配置属于 `docs/system/operations/configuration.md`；
+    测试分类、失败语义、skip 与各 suite 属于 `docs/system/testing/`。
+  - 开头一张验证卡片只列环境要求与 manifest 的五个验证入口，不列 named suite 或单个测试的命令；
+    须含 `docs/system/overview.md`、`docs/README.md` 与
+    `docs/system/testing/index.md`，不展开核心模块表。
+  - 接口、数据与运行时行为不复述 `docs/system/` 事实页。
+  - 超过体积限制时下沉到 `docs/system/`，不扩写进 `README.md`。
+- `AGENTS.md` 仅面向在仓库中工作的 Agent。
+  - MDF 托管区块必须项目无关：Agent 默认按维护者角色工作，第一跳是 `PROJECT.md`；
+    再打开 `docs/system/overview.md`，或从 `docs/README.md` 只打开一份主题叶。
+  - 用 grep/CodeWiki 定位后只读命中的那一份。
+  - 根 `README.md` 与 `docs/user-guide/` 是用户入口，不是 Agent 默认起点。
+  - `README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不通读文档目录，不把根文档当作行为事实来源。
+  - 不要求写项目例外；托管块外若写入栈、配置或行为契约，fact audit 记 `agents.project_content`。
+  - MDF 只维护其中带 marker 的区块，其余内容由仓库维护者负责。
 - `GLOSSARY.md` 面向所有读者维护稳定的领域词典，包括术语、同义词和易混淆概念；
   不记录实现细节、计划或工作状态。
 
@@ -232,12 +241,13 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 
 ## Manifest
 
-`.mdf/manifest.yaml` 是控制面。`schema_version` 必须为
-`3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased`
-不是版本线值。八项`基线`键为 `glossary`、`user_guide`、`system_boundary`、
-`architecture`、`interfaces`、`data`、`operations`、`deviations`；`user_guide`
-默认路径 `docs/user-guide/README.md`，其余 system 基线默认指向对应切面的路由页。
-它还包含共享`验证命令`：
+`.mdf/manifest.yaml` 是控制面。
+
+- `schema_version` 必须为 `3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased` 不是版本线值。
+- 八项`基线`键为 `glossary`、`user_guide`、`system_boundary`、`architecture`；
+  以及 `interfaces`、`data`、`operations`、`deviations`。
+  - `user_guide` 默认路径 `docs/user-guide/README.md`，其余 system 基线默认指向对应切面的路由页。
+- 它还包含共享`验证命令`：
 
 ```yaml
 verification:
@@ -250,10 +260,11 @@ verification:
     quick: 45
 ```
 
-- `lint`、`build`、`quick`、`smoke`、`release` 五项都必须声明为非空命令，不得有其他
-  键；lint、build 没有对应检查时写 `"true"`，quick、smoke、release 必须是把 JUnit XML
-  写进 `$MDF_REPORT_DIR` 的真实运行器命令，占位命令必然失败。
-  每项是一条入口命令，不列单个 test 或 test case。
+- `lint`、`build`、`quick`、`smoke`、`release` 五项都必须声明为非空命令，不得有其他键。
+  - lint、build 没有对应检查时写 `"true"`。
+  - quick、smoke、release 必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令；
+    ⚠️ 占位命令必然失败。
+  - 每项是一条入口命令，不列单个 test 或 test case。
 - 可选 `budgets` 覆盖 suite 的时间预算（正整数秒），只接受 `quick`、`smoke`、
   `release`。默认 quick 30、smoke 300，release 与 lint、build 无上限。
 - Core 按 `lint → build → quick → smoke|release` 顺序执行，suite 超出预算视为失败。
@@ -264,14 +275,15 @@ verification:
   named suite 与 full（全部 test case）不写入 manifest。
 - 不符合本形状的 `verification` 是 finding，由 `$mdf migrate` 收敛。
 
-初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--release`，可重复
-`--budget <suite>=<秒数>`。没有业务检查的空仓库 lint、build 可用 `git diff --check`；
-suite 在出现第一个 test 前无法通过，由首个交付的 write-tests 补齐。
-命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
-
-`implementation_roots` 是非空、互不重叠的仓库相对目录列表。每个目录必须存在、
-不为符号链接且位于仓库内。`fact audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
-单 module 通常为 `[src]`；多 module 列出各 `<module>/src`。
+- 初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--release`，
+  可重复 `--budget <suite>=<秒数>`。
+  - 没有业务检查的空仓库 lint、build 可用 `git diff --check`。
+  - suite 在出现第一个 test 前无法通过，由首个交付的 write-tests 补齐。
+- 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
+- `implementation_roots` 是非空、互不重叠的仓库相对目录列表。
+  - 每个目录必须存在、不为符号链接且位于仓库内。
+  - `fact audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
+  - 单 module 通常为 `[src]`；多 module 列出各 `<module>/src`。
 
 `.mdf/audit-ignore.yaml` 是受 Git 跟踪的 audit 例外清单：
 
@@ -281,11 +293,11 @@ ignored:
     reason: "由上游工具受管"
 ```
 
-每项只能包含仓库相对的 `path` 与非空 `reason`。路径须位于实现根目录且匹配
-至少一个被跟踪实现文件（目录递归匹配），或恰好为 `AGENTS.md`（用于记住
-`agents.size` 与 `agents.project_content`，不再每次提醒）。未被 `evidence`
-引用的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
-锁文件、`.gitignore` 与版本钉等不承载行为的文件不产生该 warning。
+- 每项只能包含仓库相对的 `path` 与非空 `reason`。路径须满足其一：
+  - 位于实现根目录且匹配至少一个被跟踪实现文件（目录递归匹配）；
+  - 恰好为 `AGENTS.md`（用于记住 `agents.size` 与 `agents.project_content`，不再每次提醒）。
+- 未被 `evidence` 引用的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
+  - 锁文件、`.gitignore` 与版本钉等不承载行为的文件不产生该 warning。
 
 ## YAML 子集
 
@@ -295,33 +307,32 @@ Core 用内置解析器（`scripts/mdf_core/yamlutil.py`）解析 `manifest` 与
 - 空格缩进的映射与 `- ` 列表；缩进含 tab 报 `invalid_yaml`。
 - `key:` 后无值表示嵌套映射或列表（由下一行是否为 `- `
   决定），不是 null；要写 null 必须显式写 `null` 或 `~`。
-- 标量：`null`/`~` 解析为 null；`true/yes/on` 与
-  `false/no/off`（大小写不敏感）解析为布尔；纯整数解析为数字； `{}`
-  为空映射；`[a, b]` 为 flow
-  list，元素递归按标量解析；单双引号字符串去引号（双引号支持 `\\` 与 `\"`
-  转义）；其余内容原样保留为字符串。
+- 标量：
+  - `null`/`~` 解析为 null；`true/yes/on` 与 `false/no/off`（大小写不敏感）解析为布尔。
+  - 纯整数解析为数字；`{}` 为空映射；`[a, b]` 为 flow list，元素递归按标量解析。
+  - 单双引号字符串去引号（双引号支持 `\\` 与 `\"` 转义）；其余内容原样保留为字符串。
 - 井号前有空格或 tab 的 `#` 起为行内注释；引号内的 `#` 不算注释。
-- 不支持 block
-  scalar（`|`、`>`）、多行字符串、锚点与别名；多行内容用列表或多个字段表达。
+- ❌ 不支持 block scalar（`|`、`>`）、多行字符串、锚点与别名；多行内容用列表或多个字段表达。
 
 Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # note` 和
 `found_in: 'unreleased' # note` 与裸值语义相同；Core 写回这些字段时使用规范裸值。
 
 ## 当前事实文档
 
-一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。`docs/user-guide/` 与
-`docs/system/` 页面表达当前 checkout 的实际行为，并用代码、配置、schema、测试或
-生成物作为 `evidence`。计划、Proposal、Bug 和 Change 不得冒充`当前事实文档`。
-`docs/user-guide/**` 的 `doc_type` 为 `user-guide`；`docs/system/` 按切面目录取
-`system-*` 类型。
+一个 Git 仓库只对应一个 MDF 当前上下文和一条版本线。
 
-每份主题叶独立可加载：正文自洽描述该主题的输入、输出、错误与不变量，
-不要求先读其他页面；但不复述其他页已归属的契约（见「唯一归属」）。
-`overview.md`、`user-guide/README.md` 与切面 `index.md` 等路由页只做路由与边界，
-不复述叶子页的契约，也不为整个子系统集中承担 evidence。正文面向工作中的读者描述
-可观察行为；「代码在哪里」由 `docs/repowiki/` 或短路径列表承担，不写逐文件 walkthrough。
-`user_guide` 基线为 `not_applicable` 时（如无终端用户面的后端），`docs/README.md`
-不展示 user-guide，并写明行为参考面是 `docs/system/` 对应页面。
+- `docs/user-guide/` 与 `docs/system/` 页面表达当前 checkout 的实际行为；
+  用代码、配置、schema、测试或生成物作为 `evidence`。
+- ❌ 计划、Proposal、Bug 和 Change 不得冒充`当前事实文档`。
+- `docs/user-guide/**` 的 `doc_type` 为 `user-guide`；`docs/system/` 按切面目录取 `system-*` 类型。
+- 每份主题叶独立可加载：正文自洽描述该主题的输入、输出、错误与不变量，不要求先读其他页面。
+  - 但不复述其他页已归属的契约（见「唯一归属」）。
+- `overview.md`、`user-guide/README.md` 与切面 `index.md` 等路由页只做路由与边界。
+  - 不复述叶子页的契约，也不为整个子系统集中承担 evidence。
+- 正文面向工作中的读者描述可观察行为。
+  - 「代码在哪里」由 `docs/repowiki/` 或短路径列表承担，不写逐文件 walkthrough。
+- `user_guide` 基线为 `not_applicable` 时（如无终端用户面的后端），`docs/README.md` 不展示 user-guide；
+  并写明行为参考面是 `docs/system/` 对应页面。
 
 ## 工作上下文
 
@@ -358,17 +369,16 @@ evidence:
   verification: "<如何验证>"
 ```
 
-`evidence` 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式（裸字符串
-列表形态缺 verification 会报 finding）；`full validation` 下 `evidence` 在文档之后变更
-会报 `evidence.stale`。
-
-`.mdf/manifest.yaml`、`CHANGELOG.md`、`docs/JOTS.md`、`changes/**`、`docs/proposals/**`、
-`docs/bugs/**` 是发版流程会改写的记录，不能作为 evidence（`evidence.record`）。evidence
-为另一份当前事实文档时只核对存在与已跟踪，不比较提交先后；过期只相对实现、测试、配置等
-非事实文件判定，同一次提交中的文件互不算「晚于」。
-`verification` 优先写可执行的测试或命令；只写「阅读源码」时不得把实现步骤
-复述进 verification——正文已描述的行为不在 evidence 元数据里重复。
-无需为消除 warning 把不承载行为的文件写入 evidence 或 ignorelist。
+- `evidence` 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式。
+  - 裸字符串列表形态缺 verification 会报 finding。
+- `full validation` 下 `evidence` 在文档之后变更会报 `evidence.stale`。
+- ❌ 发版流程会改写的记录不能作为 evidence（`evidence.record`）：
+  `.mdf/manifest.yaml`、`CHANGELOG.md`、`docs/JOTS.md`；`changes/**`、`docs/proposals/**`、`docs/bugs/**`。
+- evidence 为另一份当前事实文档时只核对存在与已跟踪，不比较提交先后。
+- 过期只相对实现、测试、配置等非事实文件判定，同一次提交中的文件互不算「晚于」。
+- `verification` 优先写可执行的测试或命令。
+  - 只写「阅读源码」时不得把实现步骤复述进 verification——正文已描述的行为不在 evidence 元数据里重复。
+- 无需为消除 warning 把不承载行为的文件写入 evidence 或 ignorelist。
 
 由脚本生成的文档额外声明 `generated`：
 
@@ -378,10 +388,10 @@ generated:
   generator: "<repo-relative-executable>"
 ```
 
-`source` 必须是仓库内存在且被跟踪的文件；`generator`
-必须是仓库内可执行文件。`full validation` 校验这些元数据及 Git 陈旧性，但不复制
-仓库、不运行 generator，也不自动比较生成内容；内容一致性属于`事实复核`。模板见
-`assets/templates/generated-fact.md`。
+- `source` 必须是仓库内存在且被跟踪的文件；`generator` 必须是仓库内可执行文件。
+- `full validation` 校验这些元数据及 Git 陈旧性。
+  - 但不复制仓库、不运行 generator，也不自动比较生成内容；内容一致性属于`事实复核`。
+- 模板见 `assets/templates/generated-fact.md`。
 
 ## CHANGELOG
 

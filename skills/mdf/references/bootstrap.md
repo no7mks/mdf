@@ -58,9 +58,10 @@
 
 ## 工作流（唯一执行契约）
 
-完整读取 `references/initialization.md`、`references/common.md`、
-`references/clarify.md` 与 `references/repository-contract.md`。
-接受用户显式调用，或 init 依据公共分流规则的内部委托；复用已确认信息，不重复提问。
+- 完整读取以下文档：
+  - `references/initialization.md`、`references/common.md`
+  - `references/clarify.md` 与 `references/repository-contract.md`
+- 接受用户显式调用，或 init 依据公共分流规则的内部委托；复用已确认信息，不重复提问。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -85,15 +86,19 @@
 - GLOSSARY 只保留稳定术语，AGENTS 只管理 MDF 区块，根文档各自遵守职责。
 - 文档移动、改写列出源、目标和处理方式，确认后执行且不覆盖既有内容。
   保留默认工程模板及其目录结构，不重排业务实现或测试目录。
-- 不创建占位事实页，不把目标、需求或选型设想填入当前事实；没有对应事实的基线写明
-  not_applicable 理由。MDF 固定目录和必要空实现根仍按契约建立。
-  `docs/system/testing/` 由 init 写入 `index.md` 与 `conventions.md`：只陈述当前
-  验证规则，不是产品行为占位页。
+- 不创建占位事实页，不把目标、需求或选型设想填入当前事实。
+  - 没有对应事实的基线写明 not_applicable 理由。
+  - MDF 固定目录和必要空实现根仍按契约建立。
+  - `docs/system/testing/` 由 init 写入 `index.md` 与 `conventions.md`：
+    只陈述当前验证规则，不是产品行为占位页。
 
 步骤 5 核对方案与 diff、起步材料分类、模板占位清理、入口和链接、八项基线与配置；
 提交后执行 full validation。
-这里不证明业务行为、不做事实审阅；若核对时发现实际实现或运行事实，停止并提示 migrate，
-保留已完成现场，不追加 fact audit 分支。
-其他核对或校验问题可修复时修正、提交后重验；同一项两轮后无法继续。
-无法继续时保留现场并报告阻塞。
+
+- 这里不证明业务行为、不做事实审阅。
+- 若核对时发现实际实现或运行事实，停止并提示 migrate，保留已完成现场，
+  不追加 fact audit 分支。
+- 其他核对或校验问题可修复时修正、提交后重验；同一项两轮后无法继续。
+- 无法继续时保留现场并报告阻塞。
+
 步骤 6 未确认启用时保持 initializing 并结束，不写 ready。

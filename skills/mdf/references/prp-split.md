@@ -55,14 +55,18 @@
 
 <a id="s1"></a>
 
-`prp-split` CLI（包括 dry-run）操作前要求当前分支为 planning，且 clean worktree；
-预览不提交。入口先运行 `doctor --repo "$REPO_ROOT"` 与
-`planning ensure --repo "$REPO_ROOT"`，须 `normal_workflows_allowed`，并按
-`references/common.md` 的「切换工作区」规则进入 planning 工作区。
-未开工以 `list --repo "$REPO_ROOT" --type proposal` 的 `in_progress` 为准，判定与
-`prp-review` 相同。
-非预览按公共规则整理本次改动；无关改动阻塞操作或相关范围不明时先澄清。
-仅 active draft/ready 且没有关联分支或开发材料的 PRP 可拆分；已有实现或终态拒绝。
+本节规定拆分前必须满足的分支、工作区与对象条件。
+
+- `prp-split` CLI（包括 dry-run）操作前要求当前分支为 planning，且 clean worktree；
+  预览不提交。
+- 入口先运行 `doctor --repo "$REPO_ROOT"` 与 `planning ensure --repo "$REPO_ROOT"`。
+  - 须 `normal_workflows_allowed`。
+  - 按 `references/common.md` 的「切换工作区」规则进入 planning 工作区。
+- 未开工以 `list --repo "$REPO_ROOT" --type proposal` 的 `in_progress` 为准，
+  判定与 `prp-review` 相同。
+- 非预览按公共规则整理本次改动；无关改动阻塞操作或相关范围不明时先澄清。
+- ✅ 仅 active draft/ready 且没有关联分支或开发材料的 PRP 可拆分。
+  - ❌ 已有实现或终态拒绝。
 
 <a id="s2"></a>
 
@@ -72,20 +76,34 @@
 
 <a id="s3"></a>
 
-在 planning 上一次调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <子一> --slug <子二>`，
-用重复 --slug 提供全部子项；从返回的 items 取得连续、唯一的 ID 与 filename。
-该调用只读、不预占编号；不得逐个调用后拼装，也不得先写占位对象。
-输入 JSON 文件包含 source、children、downstream、rationale。
-children 至少两个，每项为 filename、id、depends_on、body；body 为完整 Proposal 正文。
-子项 filename slug 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
-downstream 为全部原下游 PRP ID 到其所需子 PRP ID 列表的映射，包含历史对象。
-逐项确认原上游如何分配、下游如何替换，避免机械地全部继承；rationale 记录范围覆盖与用户确认。
-运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选；用户确认后去掉 dry-run。
+本节规定子项 ID 的取得方式与拆分输入文件的字段。
+
+- 在 planning 上一次调用
+  `make-id --type proposal --repo "$REPO_ROOT" --slug <子一> --slug <子二>`。
+  - 用重复 --slug 提供全部子项；从返回的 items 取得连续、唯一的 ID 与 filename。
+  - 该调用只读、不预占编号。
+  - ❌ 不得逐个调用后拼装，也不得先写占位对象。
+- 输入 JSON 文件包含 source、children、downstream、rationale：
+
+| 字段 | 要求 |
+| --- | --- |
+| children | 至少两个，每项为 filename、id、depends_on、body；body 为完整 Proposal 正文 |
+| downstream | 全部原下游 PRP ID 到其所需子 PRP ID 列表的映射，包含历史对象 |
+| rationale | 记录范围覆盖与用户确认 |
+
+- 子项 filename slug 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
+- 逐项确认原上游如何分配、下游如何替换，避免机械地全部继承。
+- 运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选；
+  用户确认后去掉 dry-run。
 
 <a id="s4"></a>
 
-原对象置 replaced、记录 replaced_by；子对象为 draft。预检通过才整体写入，写入失败恢复原文件。
-子对象继承原 PRP 的可选 `milestone`；原对象无该字段时子对象也省略，不生成 `null`。
-需要调整阶段归属时，在用户确认依据后修订子 PRP；milestone 不参与依赖分配。
-已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
-非预览写入成功后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+本节规定写入结果、`milestone` 继承与收尾。
+
+- 原对象置 replaced、记录 replaced_by；子对象为 draft。
+- 预检通过才整体写入，写入失败恢复原文件。
+- 子对象继承原 PRP 的可选 `milestone`。
+  - 原对象无该字段时子对象也省略，不生成 `null`。
+  - 需要调整阶段归属时，在用户确认依据后修订子 PRP；milestone 不参与依赖分配。
+- 已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
+- 非预览写入成功后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。

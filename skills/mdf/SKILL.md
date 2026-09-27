@@ -84,48 +84,64 @@ disable-model-invocation: true
 
 ### 调用与工具
 
-只接受选择树所列的显式调用。裸调用或未知调用按 help 执行。`next [--depth N]`
-与 `tree [--depth N]` 的深度可省略；`$mdf tree`、`$mdf prp tree`、
-`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，不得当未知调用送
-help。`$mdf next` 无问号时执行 `references/next.md`。
-`$mdf deliver [<target>] [--auto-pilot] [--yolo]` 仍是 deliver，不是独立 intent。
-`--auto-pilot` 与 `--yolo` 可在 target 前或后；target 由 deliver 解析。
-`$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后，仅自动确认
-内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
-`$mdf verify-fix [<bug-id>]` 仍是 verify-fix；无 ID 时只在 release/hotfix 上
-处理待收入的 `fixed` Bug。
-start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
-start、design、deliver、code-review 可带 `--qa-strategy`、`--dev-strategy`、
-`--review-strategy`、`--write-tests-model`、`--implement-model`、
-`--code-review-model`；由对应 intent 解析并写入 roster。`--*-model` 值为口语
-描述，可点名一个或多个模型。
-fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）；
-prettify 另可列出 `<path>...`。
-upgrade 可带 `--source`。未知 `--` token 停止询问。
-`clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
-除显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付外，
-不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
-显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与
-`$mdf migrate` 执行同一流程。next 可委托识别出的在途流程，无在途时委托
-tree；deliver 可内部委托从 start 起的剩余交付阶段直到 finish；其他入口仍按
-显式调用路由。
+只接受选择树所列的显式调用。裸调用或未知调用按 help 执行。
 
-**帮助**：裸调用、未知调用读取并执行 `references/help.md`。`$mdf help` 为显式调用，
-经 CLI 检查后同样执行该流程。不读取其他 intent、不检查仓库、不写入。
-**MDF_ROOT**：本文件所在目录的绝对路径。确认 `scripts/mdf.py` 后运行
-`python3 "$MDF_ROOT/scripts/mdf.py" info`；协议、工具与 schema 版本均须为数字 `3`。
-工具缺失或检查失败时停止，不得模拟 CLI。
+- `next [--depth N]` 与 `tree [--depth N]` 的深度可省略。
+  - `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，
+    不得当未知调用送 help。
+  - `$mdf next` 无问号时执行 `references/next.md`。
+- `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 仍是 deliver，不是独立 intent。
+  - `--auto-pilot` 与 `--yolo` 可在 target 前或后；target 由 deliver 解析。
+- `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
+  - `--yolo` 仅自动确认内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
+- `$mdf verify-fix [<bug-id>]` 仍是 verify-fix；无 ID 时只在 release/hotfix 上处理待收入的 `fixed` Bug。
+- start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
+- start、design、deliver、code-review 可带下列参数，由对应 intent 解析并写入 roster：
+  - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
+  - `--write-tests-model`、`--implement-model`、`--code-review-model`。
+  - `--*-model` 值为口语描述，可点名一个或多个模型。
+- fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）；
+  prettify 另可列出 `<path>...`。
+- upgrade 可带 `--source`。
+- ❌ 未知 `--` token 停止询问。
+- `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 
-步骤 3 先核对目标根（或该 intent 的豁免）；边界不明澄清后回到 3。
-再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
-将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理；
-按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-除 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
-help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
-`codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
+intent 只由显式调用选择：
 
-`$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`、
-`$mdf init migrate`、`$mdf help <intent>` 与 `$mdf integrate` 均由选择树路由；
-integrate 的 init、peer、send、poll、listen、status 不是独立 intent。
-这些内部材料不是独立 Skill。 CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`；
-command 与用户 intent 不要求一一对应。CLI 统一解析目标 Git 根，不假设当前目录就是目标仓库。
+- ❌ 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
+  - 例外：显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付。
+- 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
+- next 可委托识别出的在途流程，无在途时委托 tree。
+- deliver 可内部委托从 start 起的剩余交付阶段直到 finish。
+- 其他入口仍按显式调用路由。
+
+帮助与 CLI：
+
+- **帮助**：裸调用、未知调用读取并执行 `references/help.md`。
+  - `$mdf help` 为显式调用，经 CLI 检查后同样执行该流程。
+  - 不读取其他 intent、不检查仓库、不写入。
+- **MDF_ROOT**：本文件所在目录的绝对路径。
+  - 确认 `scripts/mdf.py` 后运行 `python3 "$MDF_ROOT/scripts/mdf.py" info`；
+    协议、工具与 schema 版本均须为数字 `3`。
+  - ❌ 工具缺失或检查失败时停止，不得模拟 CLI。
+
+步骤 3 的执行顺序：
+
+1. 先核对目标根（或该 intent 的豁免）；边界不明澄清后回到 3。
+2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
+
+- 将调研、已确认决策与`当前事实文档`分开，不把候选方案当作已实现行为，不替代任务管理。
+- 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
+- 除 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
+  - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
+  - `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
+
+内部路由与 CLI 形式：
+
+- 以下调用均由选择树路由：
+  - `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`；
+  - `$mdf init migrate`、`$mdf help <intent>` 与 `$mdf integrate`。
+  - integrate 的 init、peer、send、poll、listen、status 不是独立 intent。
+- 这些内部材料不是独立 Skill。
+- CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`；command 与用户 intent 不要求一一对应。
+- CLI 统一解析目标 Git 根，不假设当前目录就是目标仓库。

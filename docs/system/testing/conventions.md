@@ -57,17 +57,20 @@ full（全部 test case）即 `python -m pytest`，等于 lint 与 release 之�
 
 按功能块划分；改动某功能块时运行其 named suite，改动涉及几个就跑几个。
 
-| suite | 命令 | 覆盖 |
+- 命令：`python -m pytest tests/unit/<suite> tests/e2e/<suite>`。
+- 没有 `tests/unit/<suite>` 的 suite 只跑 `tests/e2e/<suite>`。
+
+| suite | 含 `tests/unit/<suite>` | 覆盖 |
 | --- | --- | --- |
-| delivery | `python -m pytest tests/unit/delivery tests/e2e/delivery` | delivery、roster、verification、verify_run、test_reports、project_verify、worktree_check |
-| gitflow | `python -m pytest tests/unit/gitflow tests/e2e/gitflow` | gitflow、publish、git_ops、gitutil、merge-no-ff |
-| closeout | `python -m pytest tests/unit/closeout tests/e2e/closeout` | closeout_*、commands_release、semver、validate_release |
-| planning | `python -m pytest tests/e2e/planning` | planning、prp_split、tree_view、list_objects、proposals |
-| objects | `python -m pytest tests/unit/objects tests/e2e/objects` | bugs、archive、moves、jot、make-id、对象校验、yamlutil |
-| docs | `python -m pytest tests/unit/docs tests/e2e/docs` | audit、doctor、validate_*、doc_size、codewiki_runtime |
-| init | `python -m pytest tests/unit/init tests/e2e/init` | init_repo、commands_misc、prepare-git、bootstrap |
-| integrate | `python -m pytest tests/e2e/integrate` | integrate、integrate_http、integrate_store |
-| deploy | `python -m pytest tests/e2e/deploy` | `mdf-deploy.sh`、upgrade |
+| delivery | 是 | delivery、roster、verification、verify_run、test_reports、project_verify、worktree_check |
+| gitflow | 是 | gitflow、publish、git_ops、gitutil、merge-no-ff |
+| closeout | 是 | closeout_*、commands_release、semver、validate_release |
+| planning | 否 | planning、prp_split、tree_view、list_objects、proposals |
+| objects | 是 | bugs、archive、moves、jot、make-id、对象校验、yamlutil |
+| docs | 是 | audit、doctor、validate_*、doc_size、codewiki_runtime |
+| init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
+| integrate | 否 | integrate、integrate_http、integrate_store |
+| deploy | 否 | `mdf-deploy.sh`、upgrade |
 
 ## 点名执行
 
