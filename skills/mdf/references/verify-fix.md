@@ -94,7 +94,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
     - 用 `results[].report.cases` 判断该 test 是否 passed。
     - 报告目录是 `results[].log`，其中才有 `summary.json`。
     - passed 时引用该目录与 test 名，不重跑。
-  - 否则按 `docs/system/testing/` 的命令模板点名执行对应 test case 或 test；
+    - `results[].report.cases` 未命中该 test 时，改走下面的点名执行。
+      check 全绿不表示该复现用例已跑过。
+  - 非上述分支、check 非零，或 cases 未命中时，按 `docs/system/testing/` 的命令模板点名执行。
     证据另给可执行命令时运行该命令。
   - ⚠️ `common.md` 非零退出规则的明确例外：check 非零退出不走失败去向，只改用上一条点名执行。
 - 只要求这些复现用例通过；本步修改了实现时另运行 `quick-run --repo "$REPO_ROOT"`，须退出 0。

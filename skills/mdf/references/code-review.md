@@ -121,10 +121,11 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 - feature 保留前置要求：
   - 运行 `delivery status` 定位材料，读取 design 与 converge gate，
     核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止。
-  - 运行 `delivery check --stage code-review`；通过则按步骤 1 的报告有效性与续办条件进入 2 或 3。
-  - 仅返回 `stale_verification` 且同设计已收敛时，记录过期或失败状态，按相同条件进入 2 或 3，
-    并在步骤 4 按所需 suite 重验。
-  - 其他错误停止，不跳过 converge。
+  - 运行 `delivery check --stage code-review`。
+    - 退出 0：读 stdout，按报告有效性与续办条件进入 2 或 3。
+    - 非零：读 stderr 最后一行的 `error`，不从 stdout 或落盘证据猜 check 结果。
+    - 仅 `stale_verification` 且同设计已收敛时，记录过期状态，按相同条件进入 2 或 3，步骤 4 再重验。
+    - 其他 `error`（含 `stale_gate`）停止，不跳过 converge。
 - bugfix/hotfix/release 不要求 feature 的 design/converge gate，但同样先测后审：
   - 进入 2（新审查、增量新一轮或首轮补齐）前运行 `project-verify check --repo "$REPO_ROOT"`。
     - 证据缺失、过期或失败时停止并报告。
@@ -207,11 +208,16 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 步骤 4 先按分支判定是否重验，再保存证据。
 
 - feature：
-  - 先运行 `delivery check --stage code-review`；除 `stale_verification` 外的错误均停止。
-  - 以下任一成立时，运行 `delivery verify` 按所需 suite 重验，并重跑 design 所列 named suite：
+  - 先运行 `delivery check --stage code-review`。
+    - 非零读 stderr 最后一行的 `error`。除 `stale_verification` 外均停止。
+  - 以下任一成立时运行 `delivery verify`：
     - finish 本次集成产生新提交且增量不可跳过；
-    - 返回 `stale_verification`；
+    - `error` 为 `stale_verification`；
     - 本轮改动实现、测试、验证配置。
+  - `delivery verify` 只跑 lint、build、quick、smoke，不含 named suite。
+  - design 所列 named suite 另以 `suite-run` 执行。
+    - 成功读 stdout 的 `result`：`log` 是目录，`report` 是汇总。
+    - 失败读 stderr 最后一行。不要把 `report` 当目录。
   - 仅非本交付 `docs/` 的集成不强制重验。
   - 仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 - bugfix/hotfix/release：

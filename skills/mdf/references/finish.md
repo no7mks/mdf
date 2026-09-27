@@ -324,10 +324,12 @@
   - `project-verify` 证据在当前输入下仍有效且命令一致时，CLI 复用其结果写入版本 Change，不重跑验证。
   - 否则在目标仓库执行验证命令，保持 clean 后写入。
   - 步骤 4 已确认证据有效，正常收口不再运行 release suite。
-- 验收：CLI 退出 0、命令结果（含 `reused`）、收口产物和完整 diff。
+- 验收：CLI 退出 0、收口产物和完整 diff。
+  - 退出 0：读 stdout。`verification.reused` 为复用路径或 null。
+  - 非零：读 stderr 最后一行 JSON，不为查看原因重跑 closeout。
 - 通过条件：成功到 9。
 - 异常与交接：失败保留现场并停止，报告命令结果与实际写入。
-  - post-validation 失败时 details 的 `findings` 与 `written` 即原因与已落地写入，
+  - post-validation 失败时，该 JSON 的 `details.findings` 与 `details.written` 即原因与已落地写入。
     不为查看原因再运行 doctor。
 
 ### 提交与 Gitflow
