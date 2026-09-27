@@ -131,7 +131,8 @@ migrate 维护；initializing 不代表老仓库，应继续检查实际内容�
 入口允许普通目录和无提交的 Git 仓库。先用 `git rev-parse --show-toplevel` 检查边界；
 位于其他仓库内部时先澄清，不直接嵌套 `git init`，不把父仓库默认为目标。
 bootstrap 必须先通过新仓库判定，再执行本节，不能在拒绝老仓库前写入 `.git/`。
-migrate 必须先通过已有事实或 ready 判定，再执行本节，不能在拒绝新仓库前写入 `.git/`。
+migrate 必须先通过已有事实、已 ready，或不符合当前契约的判定，再执行本节。
+不能在拒绝符合契约的新仓库前写入 `.git/`。
 
 确认纳管范围、忽略规则和分支调整方案后，先运行
 `python3 "$MDF_ROOT/scripts/mdf.py" prepare-git --repo "$REPO_ROOT"`：
@@ -156,12 +157,18 @@ migrate 必须先通过已有事实或 ready 判定，再执行本节，不能�
 - 不要求远端；保留已有远端，不自动创建托管仓库或推送。远端设置变更按已确认方案授权，
   无法完成时明确交接。开分支、切换和合并前按操作要求检查工作区。
 
-Git 基础准备后运行 `doctor`。未初始化允许继续；已有有效 manifest 允许 ready，或仅
-`manifest.initializing` finding，其他 finding 报告后停止。调用方为 migrate 时不因 finding 拒绝：
-全部 finding 记入盘点清单，由其步骤 3 逐项处置；仅 migrate 无法安全处理的状态
-（如纳管路径 `path.symlink`）报告后停止。CLI init 仍要求 Git 根目录，
-不负责语义判定、Git 化、提交或启用；init、bootstrap 与 migrate 共用该 CLI，
-不新增 bootstrap 或 migrate CLI。
+Git 基础准备后运行 `doctor`：
+
+- bootstrap 且尚未初始化：允许继续。
+- bootstrap 且已有 manifest：允许 `ready`，或仅 `manifest.initializing` 与 `layout.testing`。
+  这两项由随后的 init CLI 消除。其他 finding 报告后停止。
+- migrate 不因 finding 拒绝：
+  - 盘点清单里已有的 finding 继续。
+  - 新 finding 回到 migrate 步骤 2，不在已经过完的步骤 3 补记。
+  - 仅无法安全处理的状态（如 `path.symlink`）报告后停止。
+
+CLI init 仍要求 Git 根目录，不负责语义判定、Git 化、提交或启用。
+init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI。
 
 ### 配置与完成
 

@@ -58,7 +58,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 | 1 | Check | 脚本 | 核对 ready、待收入的 `fixed` Bug | doctor、list、参数 | 有清单则 2；空清单则结束 | 停止并报告 |
 | 2 | Verify | 约束 | 跑复现用例；失败则修并 `quick-run` | 命令、结果、quick-run | 3 | 可修或获批回 2；否则停 |
 | 3 | Review | 约束 | 只审这次修复的代码并裁定 | 范围 diff、结论 | 4 | 有可修回 2；需决定则停 |
-| 4 | Record | 脚本 | 写下二次验证记录并提交 | 记录、提交或会话报告 | 结束；改了实现则回 finish 步骤 4 | 停止并报告 |
+| 4 | Record | 脚本 | 写下二次验证记录并提交 | 记录、提交或会话报告 | 结束；finish 委托且改了实现则回 finish 4 | 停止 |
 
 ## 术语与数据结构
 

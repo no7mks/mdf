@@ -211,7 +211,8 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert "不自行修复或自动重试" in result
     # 返回未通过仍允许 migrate 在当前审阅步骤修复；交付调用方继续使用失败出口。
     assert "可修复则重验" in rows(workflow("migrate"))[5][6]
-    assert rows(workflow("fact-update"))[2][6] == "停止并报告"
+    assert rows(workflow("fact-update"))[2][5] == "通过或仅结构则 4"
+    assert rows(workflow("fact-update"))[2][6] == "其他未通过或验证失败则停"
     assert rows(workflow("finish"))[3][6] == "未过则停止并交接"
 
 
@@ -357,13 +358,13 @@ def test_init_dispatches_to_bootstrap_or_migrate():
     assert table[1][3] == "内部执行 bootstrap 或 migrate"
     assert table[1][5] == "按选择树结束"
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert re.search(r"未就绪的新项目 ─+→ \[内部执行 bootstrap 并返回\]", diagram)
+    assert re.search(r"未就绪且符合契约 ─+→ \[内部执行 bootstrap 并返回\]", diagram)
     assert re.search(r"已有事实或已 ready ─+→ \[内部执行 migrate 并返回\]", diagram)
     assert "references/bootstrap.md" in text
     assert "references/migrate.md" in text
     assert "`$mdf init migrate`" in text
     migrate = workflow("migrate")
-    assert re.search(r"未就绪的新项目 ─+→ \[停止并提示 bootstrap\]", migrate.split(
+    assert re.search(r"未就绪且符合契约 ─+→ \[停止并提示 bootstrap\]", migrate.split(
         "```text\n", 1
     )[1].split("```", 1)[0])
     assert "或 init 依据公共分流规则的内部委托" in migrate
@@ -378,7 +379,7 @@ def test_init_entry_is_read_only_and_existing_git_runs_doctor():
     assert "转入前不写入 `.git/`" in text
     assert "内部执行 bootstrap 或 migrate" in text
     migrate = workflow("migrate")
-    assert "必须运行 doctor" in migrate
+    assert "入口就运行 doctor" in migrate
     assert "可运行 doctor" not in migrate
     table = rows(migrate)
     assert table[0][2] == "约束"

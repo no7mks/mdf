@@ -15,7 +15,8 @@
 │ 2 Resolve proposal               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 命中既有对象 ────→ [停止并交接]
+                 ├──── draft/ready ─────→ [停止并交接]
+                 ├──── 其他终态 ────────→ [只报告并停止]
                  ├──── 需澄清或消歧 ────→ 2 Resolve proposal
                  │
                  ▼ 输入唯一且完整
@@ -61,7 +62,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
-| 2 | Resolve proposal | 脚本 | 用 `list` 查重并确认单个 Proposal | list 结果、唯一对象 | 3 | 命中则停止；否则留 2 |
+| 2 | Resolve proposal | 脚本 | 用 `list` 查重单个 Proposal | list、唯一对象 | 3 | draft/ready 交接；终态停；否则留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | Confirm | 约束 | 展示边界、排除项与依赖，取得 draft 确认 | 用户明确确认 | 5 | 取消停止；来源变回 2；否则事实 3 |
 | 5 | Create draft | 脚本 | 写 draft、校验、提交并 planning land | 零 finding、diff、land | 6 | 保留现场，停止 |
@@ -92,13 +93,15 @@ planning 工作区时留在本步。
 - 接收用户手动提供的单个 Proposal 事实；一次不得创建多个对象。
 - 运行 `list --repo "$REPO_ROOT" --type proposal`，以用户输入的标题与正文对照输出中的 `title` 查重；
   不读取既有对象正文。
-  - 命中既有 PRP 时不新建，提示 `$mdf prp review`。
+  - 命中既有 PRP 时不新建：
+    - `draft` 或 `ready`：停止并交接 `$mdf prp review`。
+    - 其他状态：只报告命中对象与状态，不交接 `prp review`。
   - 该输出同时作为步骤 3、4 依赖候选与 milestone 值的来源，不逐篇翻阅 `docs/proposals/`。
 - 外部想法、当前聊天上下文或外部文档必须显式调用 `$mdf intake`。
 
 验收：确认的 Proposal 与采用范围。
 
-异常与交接：命中既有 PRP 时停止并交接；范围不明时留在 2。
+异常与交接：`draft` / `ready` 停止并交接；其他终态只报告后停止；范围不明时留在 2。
 
 ### 事实与确认
 

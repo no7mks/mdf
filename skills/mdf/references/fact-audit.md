@@ -99,8 +99,8 @@
 | fact update 委托 | 与 fact update 相同的 `--scope`、`--base` 与路径，允许审阅调用方的同次写入 |
 | direct 调用 | 步骤 1 运行 `doctor --repo "$REPO_ROOT"` 读取 state，非 `ready` 即停止 |
 | migrate | `full`，允许 `initializing` |
-| finish 的 release 与已收口 hotfix（直接委托） | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
-| finish 的其他分支 | 经 fact update 委托，与其 `--scope` 相同（`paths` 或等价 `branch`），不得改用 `full` |
+| 已收口 release/hotfix（直接委托） | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
+| finish 其他（含待收口 release） | 经 fact update 委托，`--scope` 同调用方，不得改用 `full` |
 
 首次发布无上一版本时停止确认初始基线。
 审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
@@ -270,7 +270,11 @@ validation 已由步骤 6 判定通过，本步不再复核。
 
 - 报告审阅未通过、阻断原因与待确认项，不得称审阅通过。
 - 独立调用报告后结束。
-- 内部委托返回未通过结果，由调用方进入既有失败分支，不得推进依赖审阅通过的步骤。
+- 其他未通过时，内部委托返回未通过，调用方走失败分支。
+  不得推进依赖审阅通过的步骤。
+- 调用方是 fact-update，且未通过项只有结构 finding 时，返回「仅结构 finding」。
+  fact-update 进入其步骤 4，不走失败停止。
+  - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
 - 修复、补充确认或重审由调用方按其契约处理；fact audit 保持只读，不自行修复或自动重试。
 
 Audit 不检查以下内容；这些属于 `$mdf finish` 的交付前检查：

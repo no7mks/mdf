@@ -113,7 +113,7 @@
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
-- `$mdf upgrade`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
+- `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
 - `$mdf integrate`：在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
@@ -373,11 +373,11 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf codewiki update`
   - 用途：增量更新符合 MDF 契约的结构 Wiki。
   - 说明：无结构变化时可报告无更新。
-
 - `$mdf upgrade`
-  - 用法：`$mdf upgrade`
+  - 用法：`$mdf upgrade [--source <url>]`
   - 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
   - 说明：
+    - 默认源 `http://10.1.5.65:8929/mars/mdf`；`--source` 覆盖。
     - 先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换。
     - 更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`；替换后在当前分支提交本次路径，不 push。
     - 随后重读新 Skill，同会话后续调用按新副本执行；doctor finding 指向 `$mdf migrate` 时建议运行。

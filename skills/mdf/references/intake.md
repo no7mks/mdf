@@ -45,6 +45,7 @@
 │ 6 Create objects                 │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 未切换 ───────→ 6 Create objects
                  ├──── 失败/缺失 ────→ [保留现场，停止]
                  │
                  ▼ 通过
@@ -71,7 +72,7 @@
 | 3 | Classify | 脚本 | `list` 查重，按状态剔除或转回归 | list 结果、对象清单 | 4 | 全部剔除停；无法判定回 2 |
 | 4 | Clarify | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
 | 5 | Confirm list | 约束 | 展示对象、边界、排除项与依赖并确认 | 用户明确确认的清单 | 6 | 取消停；来源变 2；否则事实 4 |
-| 6 | Create objects | 脚本 | Bug 按归属写；Proposal 进 planning 一次取 ID | 对象、零 finding、diff | 7 | 保留现场停止 |
+| 6 | Create objects | 脚本 | Bug 按归属写；Proposal 取 ID | 对象、零 finding、diff | 7 | 未切换留 6；校验失败则停 |
 | 7 | Report | 约束 | 报告对象、范围、依赖和后续显式入口 | 结果摘要 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -209,7 +210,7 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象。
 
 - 不得宣称创建验收通过，不进入步骤 7 的成功报告。
-- 尚未切到 planning 工作区时留在本步。
+- 尚未切到 planning 工作区时留在本步，按 `common.md` 重做切换指引。
 
 <a id="s7"></a>
 

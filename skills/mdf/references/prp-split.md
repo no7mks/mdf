@@ -104,13 +104,14 @@
 
 - 子项 filename slug 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
 - 逐项确认原上游如何分配、下游如何替换，避免机械地全部继承。
-- 运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选；
-  用户确认后去掉 dry-run。
+- 本步只运行 `prp-split --repo "$REPO_ROOT" --spec-file <文件> --dry-run` 展示候选。
+- 用户确认写入后进入步骤 4。去掉 `--dry-run` 只在步骤 4 执行一次。
 
 <a id="s4"></a>
 
 本节规定写入结果、`milestone` 继承与收尾。
 
+- 去掉 `--dry-run` 运行一次 `prp-split`。不在步骤 3 写入。
 - 原对象置 replaced、记录 replaced_by；子对象为 draft。
 - 预检通过才整体写入；写入失败时 CLI 恢复原文件，停止并报告。
 - 子对象继承原 PRP 的可选 `milestone`。

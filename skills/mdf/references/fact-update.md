@@ -44,7 +44,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
-| 3 | Audit | 约束 | 委托同 scope 的 fact audit；按变更验证 | 审阅、验证 | 4 | 停止并报告 |
+| 3 | Audit | 约束 | 委托同 scope 的 fact audit；按变更验证 | 审阅、验证 | 通过或仅结构则 4 | 其他未通过或验证失败则停 |
 | 4 | Refine structure | 约束 | 改结构 | gate | 未超次改写回 3；无改写且无超次 finding 结束 | 超次 finding 或失败则停 |
 
 ## 术语与数据结构
@@ -70,7 +70,10 @@
 `--scope` 与 fact audit 同义，三选一：
 
 - `branch`：独立调用默认。
-  - 交付分支以 `start_commit` 为起点，否则以 `develop` 的 merge-base 为起点。
+  - 起点与 `fact-audit.md` 相同，三级回退：
+    - `delivery.json` 的 `start_commit`。
+    - 否则 git config `branch.<owner 分支>.mdf-start-commit`。
+    - 否则 `git merge-base develop HEAD`。
   - 范围是该起点以来实现改动该碰的事实页与被改到的路由链接，不是「分支上改过的 Markdown」。
   - 未改实现只想整理文档时显式用 `full`。
   - finish release 的 `--base` 为上一正式发布的 master commit/tag（与 code-review 同一左端点）；

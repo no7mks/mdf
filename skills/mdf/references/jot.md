@@ -56,8 +56,9 @@
 │ 7 Create object                  │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 未切换 ───────────────────→ 7 Create object
                  ├──── Jot 不在写入 checkout ────→ [保留 Jot，停止并报告]
-                 ├──── 失败/缺失 ────────────────→ [保留两者，停止]
+                 ├──── 写入后失败 ───────────────→ [保留两者，停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -85,7 +86,7 @@
 | 4 | Select jot | 约束 | 按 jot-ID 读取唯一条目的完整 marker | 唯一 ID 与原文 | 5 | 留在 4 消歧 |
 | 5 | Clarify | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | Confirm | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
-| 7 | Create object | 脚本 | 切到写入根、核对 Jot，生成 ID 写对象 | 写入根、Jot、校验 | 8 | Jot 缺失停；否则保留两者 |
+| 7 | Create object | 脚本 | 切写入根、核对 Jot 并写对象 | 根、Jot、校验 | 8 | 未切换留 7；Jot 缺失停；写入后保留两者 |
 | 8 | Promote | 脚本 | 复验、删 Jot 后校验、提交，再 land | 两次校验、提交 | 交接并结束 | 复验失败保留；否则恢复 Jot |
 
 ## 术语与数据结构
@@ -147,9 +148,13 @@
 
 **澄清**
 
-1. 先运行 `list --repo "$REPO_ROOT"` 对照 active Proposal 与 Bug 的 `id`、`title`、`status` 查重。
-   - 命中既有对象时停止提升并提示 `$mdf prp review` 或补充既有 Bug。
-   - 不逐篇翻阅对象目录。
+1. 先运行 `list --repo "$REPO_ROOT"`。
+   对照 active Proposal 与 Bug 的 `id`、`title`、`status` 查重。
+   不逐篇翻阅对象目录。
+   - `draft` / `ready` Proposal：停止提升，提示 `$mdf prp review`。
+   - 其他状态 Proposal：停止提升，只报告命中对象与状态。
+   - `open` / `fixed` / `rejected` Bug：停止提升，提示补充既有 Bug。
+   - `closed` Bug：继续提升为新 Bug，正文写明回归自该旧 Bug 的完整 ID。
 2. 再查仓库证据，使用内部 clarify intent 将正文收敛为 Proposal 或 Bug：
 
 | 对象 | 收敛内容 |
@@ -188,6 +193,8 @@
   3. 以该 worktree 重新解析 `REPO_ROOT`；其后 `make-id`、validation 与 `planning land` 均用新根。
 - 提升为 Bug 时按 `common.md` 归属确定写入分支。
   - 需切换时按同一规则切换，并重新解析 `REPO_ROOT`。
+- 切换未完成时留在本步，按 `common.md` 重做切换指引。
+  此时还没有新对象，不按「保留两者」处理。
 
 再核对 Jot：
 
@@ -206,7 +213,7 @@
 
 验收：写入根、Jot 核对结果、新对象与写入校验。
 
-异常与交接：Jot 核对失败时按上文停止；其他失败保留新对象、原 Jot 与现场，并报告 findings。
+异常与交接：未切换留在本步；Jot 核对失败时按上文停止；写入后的其他失败保留新对象、原 Jot 与现场，并报告 findings。
 
 ### 同批提交
 

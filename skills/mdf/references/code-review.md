@@ -224,7 +224,9 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
   - 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
   - 验证期间 stderr 为进度与子进程原文；判定读退出码、stderr 最后一行 JSON 与落盘证据。
   - suite 超出预算即终止 process group 并判为失败。
-  - 重跑时 bugfix 另以 `suite-run` 执行 `suites.json` 所列 named suite。
+  - 重跑时另以 `suite-run` 执行 named suite：
+    - bugfix：`suites.json` 所列。
+    - release/hotfix 且 roster ≥1：design policy `suites` 所列。
   - 未重跑时，named suite 结果与 quick 复现结论引用同目录 `verify.md` 中 Verify 阶段的记录。
   - 证据未覆盖所需 suite 视为过期。
   - finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入 fingerprint、suite 与全绿结果；

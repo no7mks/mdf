@@ -106,7 +106,7 @@
 | 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | Prepare closures | 约束 | 待收入 fixed 先委托 verify-fix，再准备 closures | 完整覆盖、接受记录 | 8 | 停止 |
+| 7 | Prepare closures | 约束 | fixed 先 verify-fix，再准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | Hand off | 约束 | 提交并复核 | clean | 无关口 10；须确认回 deliver 6 | 主线前进时 feature/bugfix 回 2；其余停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
@@ -275,16 +275,27 @@
 - 先识别将作为本版 `fixed` outcome 收入的 Bug：
   - `status: fixed` 且 `found_in: unreleased`。
   - 以及 child Change `fixed:` 中仍为 `fixed` 的 ID。
+- 待收入 fixed 先委托 verify-fix，再准备 closures。
 - 委托 verify-fix：
   - 清单非空时内部执行 `references/verify-fix.md`，传入这些 ID。
   - 未通过则走本步骤失败，不准备 closures，不关闭对象。
+  - 报告「实现已变更」时，提交后回到步骤 4。
+    - 不准备 closures，不调用 `release-closeout`。
+    - 步骤 4 补验与增量 code-review 通过后，再重跑本步骤。
   - 已有记录按 verify-fix「记录」的有效性规则仍有效则视为通过。
     - 有效指记录 HEAD 到当前 HEAD 只改记录文件、`docs/` 或 `changes/` 材料。
   - 无待收入 `fixed` Bug 则跳过委托。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
   - 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
-- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed`：
+- 准备 `--deferred-acceptance-json`：对象，键为 Bug ID。
+  - major 且 resolution 为 `deferred` 或 `wont-fix` 时，该项必须含：
+    - `accepted: true`
+    - 非空 `reason`
+    - 非空 `follow_up`
+  - 没有这类 Bug 时传 `{}`。
+- 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected`：
   - 取 `found_in` 为 `unreleased` 的条目作为待分类清单，不逐篇翻阅 `docs/bugs/`。
+  - 排除 `reject-reason: duplicate`。duplicate 不进 outcome。
 - 对每个 active 且 `found_in: unreleased` 的 Bug 分类：
 
 | 分类 | 处理 |
@@ -302,6 +313,8 @@
 **收口**
 
 - 调用 `release-closeout`：
+  - 传入步骤 7 的 `--closures-json` 与 `--deferred-acceptance-json`。
+  - hotfix 另传 `--hotfix-change-json`；两者均传 `--release-date`。
   - 版本根 Change 聚合 child outcomes/evidence，evidence 按首次出现顺序去重并追加 manifest 验证命令。
   - CLI 操作前要求 clean；主动提交本次必要材料，不夹带无关改动。
 - 运行实际收口：
