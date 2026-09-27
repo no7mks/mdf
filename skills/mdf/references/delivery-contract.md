@@ -130,6 +130,19 @@ ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿�
   凭据或网络即为 hermetic；依赖第三方资源或真实兄弟产品（如联调对端）即为
   external。第三方资源不含待测产品与兄弟产品；mock 掉兄弟产品后才算 hermetic。
 
+### 失败语义
+
+五个入口出现以下任一情况都是失败：非零退出，warning、notice、deprecated，skip，
+xfail 或 xpass，以及 suite 未选中任何 test。test case 是否属于本次 target 由 suite
+的成员选择规则在收集阶段决定；不得在运行时按环境变量、配置或资源是否可用去 skip
+或提前返回。external 资源未就绪即失败。已知缺陷登记为 Bug 并把对应 test 移出
+suite，不用 xfail 保留。
+
+Core 只看退出码。项目须让入口命令或测试运行器在上述情况下非零退出，并把配置写进
+`docs/system/testing/`；code-review 核对该配置。第三方依赖产生、本项目无法修复的
+warning 或 deprecated 只可精确豁免：写明类别、来源模块与理由，记在
+`docs/system/testing/`，新增或放宽须用户确认。
+
 ### 验证 suite
 
 | suite | 成员 | 预算 | 何时必跑 |
@@ -167,8 +180,8 @@ bugfix 不创建 design/write-tests/converge。由 code-review 步骤 1 在
 非 quick 用例一旦在 converge 之后失败（bugfix / release / hotfix 则为第一次跑
 所需 suite 之后），必须尝试补一条 quick 复现用例（hermetic 的 UT 或 PT）；原慢
 用例保留。结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，
-未补则写原因。code-review 可按既定目标自主补该用例；削弱门槛或改 skip/预期仍须
-用户批准。
+未补则写原因。code-review 可按既定目标自主补该用例；削弱门槛、改预期或新增豁免
+仍须用户批准。
 
 ## 修改与提交权限
 

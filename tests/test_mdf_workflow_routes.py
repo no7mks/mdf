@@ -390,6 +390,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "关联 ≥1 个**已文档化**的 named suite" in contract
     assert "Core 不执行也不核对其名称是否已文档化" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
+    assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
+    assert "新增或放宽须用户确认" in contract
     assert "full 指全部 test case，是 release 与各 named suite 的上界；它没有入口" in contract
     assert "非 feature 分支变更 manifest `verification` 或新增 named suite，一律需用户确认" in contract
     repo_contract = workflow("repository-contract")

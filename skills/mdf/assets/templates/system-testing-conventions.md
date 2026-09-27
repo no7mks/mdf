@@ -19,13 +19,17 @@ evidence:
 
 ## 失败语义
 
-命令非零退出为失败。warning、deprecated、notice 是否当失败，以各入口命令的
-配置为准，并在本页写明；未写明不得假定。
+非零退出、warning、notice、deprecated、skip、xfail、xpass 与空选择都是失败。
+写明各入口如何保证这些情况非零退出（如运行器参数或配置文件）。
 
-## skip
+## 豁免
 
-禁止用 skip 降低已声明门槛或逃避分层。允许的 skip 须写明原因。xfail 与预期
-失败同样记录。
+逐条列出第三方依赖 warning 的精确豁免：类别、来源模块、理由与用户确认记录。
+没有豁免时写「无」。
+
+## 不在 target 内的 test
+
+test case 不属于某 suite 时由成员选择规则排除，不在运行时 skip。
 
 ## Suite
 
