@@ -393,7 +393,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf integrate`
   - 用途：在两个 worktree 之间收发联调消息。
   - 说明：从 init 起强制 Goal；一个 agent 只准 poll 本侧，用户停止前不得停。
-    等待对端按 1、2、4 分钟输出正在等什么。本机写 inbox；跨机器可选 HTTP。
+    等待对端按 15、30、45、60 秒输出正在等什么。本机写 inbox；跨机器可选 HTTP。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

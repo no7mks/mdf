@@ -262,7 +262,7 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 
 - 完整读取并执行 `references/integrate.md`。
 - 从其步骤 2 起强制 Goal，poll 在用户停止前不得停。
-- 等待对端按 1、2、4 分钟输出正在等什么，不得只盯 `waiting`。
+- 等待对端按 15、30、45、60 秒输出正在等什么，不得只盯 `waiting`。
 - 本侧只 poll 本侧 `--repo`；对端 inbox 由对端自己的 agent 消费。
 - 独立调用：integrate 结束后本 intent 结束。
 - deliver 内部委托：integrate 结束后返回调用方。
