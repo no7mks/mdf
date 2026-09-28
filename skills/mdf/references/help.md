@@ -115,7 +115,7 @@
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
 - `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立
-- `$mdf integrate`：在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP
+- `$mdf integrate`：在 worktree 之间收发联调消息；一侧只 poll 本侧；跨机器时可选 HTTP
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
 
@@ -392,8 +392,8 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：在两个 worktree 之间收发联调消息。
-  - 说明：从 init 起强制 Goal；poll 在用户停止前不得停。等待对端按 1、2、4
-    分钟输出正在等什么。本机写 inbox；跨机器可选 HTTP。种类含 `send`。
+  - 说明：从 init 起强制 Goal；一个 agent 只准 poll 本侧，用户停止前不得停。
+    等待对端按 1、2、4 分钟输出正在等什么。本机写 inbox；跨机器可选 HTTP。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

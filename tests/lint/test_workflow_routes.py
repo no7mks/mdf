@@ -353,6 +353,8 @@ def test_integrate_forces_goal_and_never_stops_poll():
     assert "强制 Goal" in text
     assert "integrate init" in text
     assert "不得主动停止 poll" in text
+    assert "一个 agent 只准 poll 本侧" in text
+    assert "不得再启动对端" in text
     assert "1、2、4 分钟" in text
     assert "正在等待：" in text
     assert "收口完成不是停止理由" in text or "都不是停止理由" in text

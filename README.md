@@ -42,7 +42,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 | `$mdf to <target>` | 进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立 |
-| `$mdf integrate` | 在 worktree 之间收发联调消息；从 init 起强制 Goal；poll 常驻；跨机器时可选 HTTP |
+| `$mdf integrate` | 在 worktree 之间收发联调消息；从 init 起强制 Goal；一侧只 poll 本侧；跨机器时可选 HTTP |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
