@@ -10,6 +10,18 @@ disable-model-invocation: true
 
 仅接受显式 `$mdf <intent>` 调用。裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
+每次回复只在第一行打印一行工作区横幅；刚切换 worktree 时再打印一次。格式固定：
+
+`` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``
+
+- `<main-repo-name>`：主仓库目录名（`git-common-dir` 的父目录名）。
+- `<branch>`：`git -C <工作根> branch --show-current`；detached 时 `HEAD`；
+  非 Git 时 `-`。
+- `<worktree full path>`：本会话绑定的目标 worktree 绝对路径；未绑定则
+  `git rev-parse --show-toplevel`。
+- ❌ 不得在回复末尾再打印。
+- 对任何 agent、任何 intent（含 help、clarify、upgrade）都生效。
+
 ## 选择树
 
 ```text
@@ -67,6 +79,7 @@ disable-model-invocation: true
                  ├──── jot / jot promote ─────────────────────────────→ references/jot.md
                  ├──── help / help <intent> ──────────────────────────→ references/help.md
                  ├──── upgrade ───────────────────────────────────────→ references/upgrade.md
+                 ├──── to <target> ───────────────────────────────────→ references/to.md
                  └──── integrate ─────────────────────────────────────→ references/integrate.md
 ```
 
@@ -106,6 +119,7 @@ disable-model-invocation: true
 - upgrade 可带 `--source`。
 - ❌ 未知 `--` token 停止询问。
 - `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
+- `$mdf to <target>` 仍是 to；空目标由该 intent 列出已知目标后停止。
 
 intent 只由显式调用选择：
 
@@ -140,7 +154,7 @@ intent 只由显式调用选择：
 
 - 以下调用均由选择树路由：
   - `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`；
-  - `$mdf init migrate`、`$mdf help <intent>` 与 `$mdf integrate`。
+  - `$mdf init migrate`、`$mdf help <intent>`、`$mdf to <target>` 与 `$mdf integrate`。
   - integrate 的 init、peer、send、poll、listen、status 不是独立 intent。
 - 这些内部材料不是独立 Skill。
 - CLI 形式为 `python3 "$MDF_ROOT/scripts/mdf.py" <command>`；command 与用户 intent 不要求一一对应。

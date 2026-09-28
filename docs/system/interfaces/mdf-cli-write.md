@@ -180,6 +180,20 @@ python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
 - 冲突 abort。不 fetch、不 push。
 - `planning` 不是 Gitflow 交付分支。
 
+## `to`
+
+```bash
+python3 skills/mdf/scripts/mdf.py to --repo /path/to/repository --target plan
+```
+
+- 要求 Git 根，不要求 manifest 或 clean worktree。
+- `plan` / `planning` / `plan-mode` 内部 `planning ensure`。
+- `develop` 复用占用 develop 的 worktree，不新建。
+- 已有 worktree 按分支名或目录名复用；已有本地分支缺树则
+  `worktree add` 到 `<repo-name>-worktrees/`。
+- ❌ 不创建新分支。
+- JSON 含 `target`、`alias`、`branch`、`worktree`、`created`。
+
 ## `finish-gitflow`
 
 ```bash

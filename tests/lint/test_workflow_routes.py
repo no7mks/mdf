@@ -61,7 +61,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "delivery-contract.md", "common.md", "doc-structure.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 35
+    assert len(workflows) == 36
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -309,7 +309,65 @@ def test_help_catalog_is_grouped_and_read_only():
     assert "不得改写" in text
     assert "$mdf help <intent>" in text
     assert "$mdf upgrade" in text
+    assert "$mdf to <target>" in text
     assert "未知 intent：" in text
+
+
+def test_to_resolves_planning_aliases_and_enters_worktree():
+    text = workflow("to")
+    table = rows(text)
+    assert [row[1] for row in table] == [
+        "Resolve target", "Ensure worktree", "Enter workspace",
+    ]
+    assert "planning ensure" in text
+    assert "plan-mode" in text
+    assert "to --repo" in text
+    assert "develop" in text
+    assert "切换工作区" in text
+    assert "不创建新的交付分支" in text
+    assert "空目标" in text
+
+
+def test_common_banner_and_non_cursor_use_absolute_paths():
+    common = workflow("common")
+    entry = workflow("entry")
+    banner = "📍**<main-repo-name>@<branch>** 📂 `<worktree full path>`"
+    assert banner in common
+    assert banner in entry
+    assert "每次回复只在第一行打印" in common
+    assert "每次回复只在第一行打印" in entry
+    assert "刚切换 worktree 时再打印一次" in common
+    assert "刚切换 worktree 时再打印一次" in entry
+    assert "不得在回复末尾再打印" in common
+    assert "不得在回复末尾再打印" in entry
+    assert "不得要求用户手动切换 worktree" in common
+    assert "git -C <路径>" in common
+    block = (
+        skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md"
+    ).read_text(encoding="utf-8")
+    assert banner in block
+
+
+def test_integrate_forces_goal_and_never_stops_poll():
+    text = workflow("integrate")
+    assert "强制 Goal" in text
+    assert "integrate init" in text
+    assert "不得主动停止 poll" in text
+    assert "1、2、4 分钟" in text
+    assert "正在等待：" in text
+    assert "收口完成不是停止理由" in text or "都不是停止理由" in text
+    assert "语义结束或用户停止时才停掉" not in text
+
+
+def test_prettify_requires_structure_instead_of_suggestions():
+    pretty = workflow("prettify")
+    structure = workflow("doc-structure")
+    assert "不得当作可选审阅" in pretty
+    assert "必须按原文形态改写" in pretty
+    assert "必须改写为" in pretty
+    assert "必须按表组织" in structure
+    assert "必须写成" in structure
+    assert "不得当作可忽略建议" in structure
 
 
 def test_upgrade_previews_then_confirms_before_replace():

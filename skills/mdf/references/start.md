@@ -224,8 +224,9 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 目标固定为步骤 4 JSON 的 owner：`worktree` 绝对路径与 `branch` 完整分支名。
 
 - qa/dev 不在本步切换。
-- 按 `references/common.md` 的「切换工作区」规则判定当前 agent 并切到该路径与分支。
-- 向用户给出应切到的绝对路径与分支名。
-- 未切到则留在 5，重复对应指引，不拆除已建 worktree 与分支。
+- 按 `references/common.md` 的「切换工作区」规则进入该路径与分支。
+- 向用户给出目标绝对路径与分支名。
+- Cursor 未进入则留在 5，重复切换；其他宿主绑定绝对路径后即通过。
+- 不拆除已建 worktree 与分支。
 - 独立调用通过后结束，由用户手动触发 design 或通过 next 委托。
 - deliver 内部委托时返回调用方。

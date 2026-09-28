@@ -114,6 +114,7 @@
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
+- `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立
 - `$mdf integrate`：在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
@@ -164,6 +165,8 @@ $mdf prp split
 $mdf codewiki generate
 $mdf codewiki update
 $mdf upgrade
+$mdf to plan
+$mdf to develop
 $mdf integrate
 $mdf clarify 要不要把缓存放到 Redis
 ```
@@ -178,7 +181,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 交付：`next`、`deliver`、`start`、`design`、`write-tests`、`implement`、`converge`；
   `fix`、`verify-fix`、`code-review`、`fact update`、`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
-  `integrate`、`help`
+  `to`、`integrate`、`help`
 
 - `$mdf bootstrap`
   - 用法：`$mdf bootstrap`
@@ -381,19 +384,16 @@ $mdf clarify 要不要把缓存放到 Redis
     - 先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换。
     - 更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`；替换后在当前分支提交本次路径，不 push。
     - 随后重读新 Skill。仅不符合契约的 code 才建议 `$mdf migrate`。
-
+- `$mdf to <target>`
+  - 用法：`$mdf to plan`、`$mdf to develop` 或 `$mdf to <分支>`
+  - 用途：进入目标 worktree；planning / 已有分支在缺树时建立。
+  - 说明：`plan` / `planning` / `plan-mode` 进 planning；`develop` 回主树。
+    已有分支可建 sibling worktree。不创建新交付分支。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：在两个 worktree 之间收发联调消息。
-  - 说明：
-    - 本机写入对方 `.integration/inbox/`。
-    - 跨机器时对方显式启动 HTTP，默认只绑 `127.0.0.1`，收到 `end` 也不退出。
-    - 通道打开后 poll 常驻，stdout 打 `waiting` / `message`；语义结束或用户停止时才停掉。
-    - 联调测试默认由客户端主导：先确认计划，能热修复的当场修并补 reproduce 用例后提交；
-      不能当场修的记录 bug 后继续。双方用通道 `send` 沟通，不要只 poll 干等。
-    - 种类为 `ping`、`send`、`bug-request`、`end`；省略 `--kind` 时是 `send`。
-      `bug-request` 不直接创建 Bug。
-
+  - 说明：从 init 起强制 Goal；poll 在用户停止前不得停。等待对端按 1、2、4
+    分钟输出正在等什么。本机写 inbox；跨机器可选 HTTP。种类含 `send`。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

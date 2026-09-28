@@ -51,7 +51,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "clarify <议题>",
         "help",
         "help <intent>",
-        "upgrade",
+        "upgrade", "to <target>",
         "integrate",
     )
     for command in expected_commands:

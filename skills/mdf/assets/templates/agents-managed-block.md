@@ -30,5 +30,7 @@
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（`bug-` / `prp-` / `jot-` /
   `adr-` 前缀），不得省略前缀或只写序号/短码/slug。
 - 仅在用户显式调用 `$mdf …` 时执行对应 MDF 流程，不自动触发其他用户入口。
+- 每次回复只在第一行打印横幅；刚切换 worktree 时再打印一次：
+  `` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``。
 
 <!-- MDF:END -->

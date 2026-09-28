@@ -86,7 +86,7 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 | `prose.sentence` | 单句显示宽度超过 120 |
 | `prose.list_item` | 单个列表项超过 4 行 |
 | `prose.section` | 一个标题下散文合计超过 15 行 |
-| `prose.emoji` | 出现 ⚠️ ✅ ❌ 💡 📌 以外的 emoji |
+| `prose.emoji` | 出现 ⚠️ ✅ ❌ 💡 📌 📂 📍 以外的 emoji |
 
 分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`）。
 

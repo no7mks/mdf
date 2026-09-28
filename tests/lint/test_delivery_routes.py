@@ -105,14 +105,15 @@ def test_start_switches_agent_to_owner_worktree():
     common = workflow("common")
     assert "move_agent_to_root" in common
     assert "move_agent_to_cloned_root" in common
-    assert "New local worktree" in common
-    assert "Create a new worktree" in common
-    assert "File > Open Folder" in common
-    assert "EnterWorktree" in common
+    assert "不得要求用户手动切换 worktree" in common
+    assert "git -C <路径>" in common
+    assert "EnterWorktree" not in common
+    assert "New local worktree" not in common
+    assert "File > Open Folder" not in common
     assert "git rev-parse --show-toplevel" in common
     assert "git branch --show-current" in common
     assert "不得再 `git worktree add`" in common
-    assert "不得只在原根 `cd` 冒充已切换" in common
+    assert "不得只在原根 `cd` 冒充已进入" in common
 
 
 def test_fix_is_branch_agnostic_and_stops_at_fixed():
@@ -375,6 +376,7 @@ def test_role_intents_do_not_reuse_owner_session_switch():
         assert "禁止 `move_agent_to_cloned_root`" in text
         assert "deliver 步骤 3 主 Agent 续办时禁止切会话" in text
         assert "禁止切到 owner" in text
+        assert "禁止要求用户切换工作区" in text
     assert "qa/feature/<slug>" in tests
     assert "dev/feature/<slug>" in implement
     assert "禁止把主 Agent 会话切离 owner" in deliver

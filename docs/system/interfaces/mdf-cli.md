@@ -38,7 +38,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
     `info`、`make-id --type bug`、`make-jot-id`、`branch --name`、`semver-check` 和 `prepare-git`。
   - `prepare-git` 接受普通目录；已是其他仓库内部路径时失败，不嵌套 `git init`。
   - `make-id --type proposal` 需要 Git 根且当前分支为 `planning`。
-  - `upgrade` 与 `integrate` 要求 Git 根，不要求 manifest 或 clean worktree。
+  - `upgrade`、`integrate` 与 `to` 要求 Git 根，不要求 manifest 或 clean worktree。
 - 提交：
   - 对象写入类 CLI 本身不创建提交。
   - 外层写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；
@@ -77,6 +77,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `quick-run` | 任意分支 lint、build、quick，不写证据 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
+| `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | 替换已安装 Skill | [仓库写入命令](mdf-cli-write.md) |
 | `integrate` | 联调 inbox 与可选 HTTP | [交付阶段与验证](mdf-cli-delivery.md) |
@@ -101,6 +102,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `archive` | `list` 与 `archive` | [仓库写入命令](mdf-cli-write.md) |
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
+| `to` | `to --target`：规划 ensure、develop 复用、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `finish` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。
