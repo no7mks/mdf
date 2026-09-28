@@ -105,6 +105,7 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 
 只更新范围内受影响的当前事实及 evidence：
 
+- `verification` 整段是命令，或以 `# ` 开头写文字；二者不得混排。
 - 不修改 PRP、Bug、Change、objectives 或 design 的意图，不改 `docs/context/`、`docs/repowiki/`。
 - `user-guide` 只在对外可观察行为有变时改；
   `system/architecture` 只在内部结构或仍生效约束有变时改。

@@ -307,6 +307,25 @@ def test_audit_does_not_let_dirty_fact_docs_hide_stale_evidence(
     assert "evidence" in result.stdout
 
 
+def test_validate_rejects_mixed_command_and_text_verification(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    replace(
+        repo / "docs" / "system" / "data" / "model.md",
+        '    verification: "python -m pytest"',
+        (
+            '    verification: "npm run test:shared；'
+            '启动保留可恢复 pending 的细节在 client-persistence.md"'
+        ),
+    )
+    init_git(repo)
+
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    assert result.returncode != 0
+    assert "evidence.verification_form" in result.stdout
+
+
 def test_generated_fact_requires_evidence_and_repository_relative_paths(
     python_exe: str, tmp_path: Path
 ):
@@ -322,7 +341,7 @@ def test_generated_fact_requires_evidence_and_repository_relative_paths(
         (
             "evidence:\n"
             "  - path: src/service.py\n"
-            '    verification: "读取函数签名并运行 python -m pytest"'
+            '    verification: "python -m pytest"'
         ),
         (
             "generated:\n"
@@ -362,9 +381,9 @@ def test_audit_does_not_rerun_generated_document_generator(
     fact = repo / "docs" / "system" / "interfaces" / "api.md"
     replace(
         fact,
-        '    verification: "读取函数签名并运行 python -m pytest"\n',
+        '    verification: "python -m pytest"\n',
         (
-            '    verification: "读取函数签名并运行 python -m pytest"\n'
+            '    verification: "python -m pytest"\n'
             "generated:\n"
             "  source: src/service.py\n"
             "  generator: scripts/generate-interface.py\n"

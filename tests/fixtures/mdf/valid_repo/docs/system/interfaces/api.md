@@ -3,7 +3,7 @@ title: "Current interfaces"
 doc_type: system-interfaces
 evidence:
   - path: src/service.py
-    verification: "读取函数签名并运行 python -m pytest"
+    verification: "python -m pytest"
 ---
 
 # Current interfaces

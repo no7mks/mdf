@@ -3,7 +3,7 @@ title: "System boundary"
 doc_type: system-boundary
 evidence:
   - path: src/service.py
-    verification: "读取服务入口并运行 python -m pytest"
+    verification: "python -m pytest"
 ---
 
 # System boundary
