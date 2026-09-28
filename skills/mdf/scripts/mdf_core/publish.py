@@ -77,7 +77,32 @@ def publish(repo, source, version):
                 if kind != "tag" or tagged != current:
                     raise MDFError("发布 tag 与已合并提交不符", code="publish_state_changed")
             else:
-                _git(repo, "tag", "-a", tag, current, "-m", f"chore(release): 发布 {tag}")
+                shown = _git(
+                    repo, "show", f"{current}:CHANGELOG.md", check=False
+                )
+                if shown.returncode:
+                    raise MDFError(
+                        "发布提交缺少 CHANGELOG.md，不能创建发布 tag",
+                        code="missing_changelog",
+                    )
+                from .closeout_render import (
+                    changelog_excerpt,
+                    release_tag_message,
+                )
+                message = release_tag_message(
+                    tag, changelog_excerpt(shown.stdout, version)
+                )
+                # verbatim：默认 strip 会丢掉 CHANGELOG 里以 # 开头的标题行。
+                _git(
+                    repo,
+                    "tag",
+                    "-a",
+                    tag,
+                    current,
+                    "--cleanup=verbatim",
+                    "-m",
+                    message,
+                )
 
     remote_refs = dict(line.split()[::-1] for line in _git(
         repo, "ls-remote", "origin", "refs/heads/master", "refs/heads/develop",

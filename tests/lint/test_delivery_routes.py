@@ -55,6 +55,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     assert "preview" not in diagram and "预览" not in diagram
     assert "不提供预览模式" in text
     assert "仅预览或只读时" in text and "说明此入口不支持并停止" in text
+    assert "正文为本版 CHANGELOG" in text
+    assert "精简条目" in text
     assert "--dry-run" not in text
 
 
@@ -174,6 +176,10 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
     contract = workflow("delivery-contract")
     assert "独立 `$mdf fix`" in contract
     assert "也不由 deliver 内部委托" in contract
+    assert "修复某个 Bug 的提交说明必须含该 Bug 的完整 ID" in contract
+    common = workflow("common")
+    assert "修复某个 Bug 的提交说明必须含该 Bug 的完整 ID" in common
+    assert "git log --fixed-strings --grep=<Bug ID>" in common
 
 
 def test_verify_fix_is_second_verification_before_closeout():

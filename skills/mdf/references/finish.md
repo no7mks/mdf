@@ -366,7 +366,8 @@
   - feature/bugfix 不 fetch、不 push；no-ff 合并到本地 develop，删除本地源分支。
     - 角色分支仍在则失败。
   - release/hotfix 要求 origin；首次调用 fetch 后要求本地 master/develop 与远端一致。
-    - no-ff 合并到 master，创建注释 `v<semver>` tag，再 no-ff 合并 master 到 develop。
+    - no-ff 合并到 master，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
+      精简条目），再 no-ff 合并 master 到 develop。
     - 原子 push `master`、`develop` 与 tag。不推送、不删除远端 `release/*`/`hotfix/*`。
   - 若当前位于 `<repo-name>-worktrees/` 下的交付 worktree，合并后移除该 worktree。
 - 验收：合并、tag 与（release/hotfix 的）推送结果。
