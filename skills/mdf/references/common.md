@@ -152,28 +152,37 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 <a id="logs"></a>
 
 凡在 MDF 引导下执行的命令都必须留下足以诊断失败的完整日志或报告。
-这些命令包括 Core CLI、测试、lint、build、doctor、fact audit 等。
+优先用命令或系统自己写出的日志与报告，不要再用 tee 复制一份。
 
-- ⚠️ 失败时先读日志与报告，不为查看输出而重跑。
-- Core CLI 每次调用自动写 `.mdf/logs/<时间戳>-<命令>/`
-  （`stdout.log`、`stderr.log`、`meta.json`）。
-  - 位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
+- ⚠️ 失败时先读已有日志与报告，不为查看输出而重跑。
+- 已有下列产物时，不 tee：
+  - Core CLI 自动写的 `.mdf/logs/<时间戳>-<命令>/`
+    （`stdout.log`、`stderr.log`、`meta.json`）。
+  - Core 代跑验证的 `.mdf/reports/<时间戳>-<入口>/`
+    （含 stdout/stderr、JUnit、`summary.json`）。
+  - 工具按本次调用参数自己写的日志或报告（如 `--junitxml`、`--log`）。
+- Core CLI 日志位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
   - 尚无 `.mdf/` 的目录写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
-- Core 代跑的验证入口在 `.mdf/reports/<时间戳>-<入口>/` 保存完整输出。
-  - suite 另有 JUnit XML 与 `summary.json`，见 `delivery-contract.md`「测试报告」。
-- Agent 直接运行的命令须把完整 stdout 与 stderr 写入主仓库的 `.mdf/logs/<时间戳>-<名称>.log`，
-  并在汇报中给出路径。
+- 调用有日志能力的工具时打开其落盘参数，读那份产物。
+  - pytest / JUnit 写 `$MDF_REPORT_DIR` 或 `--junitxml`，不 tee。
+- Agent 直接运行、且没有任何落盘产物时，用 Core `run` 代跑，不要 tee。
+  - 写法：`python3 "$MDF_ROOT/scripts/mdf.py" run --repo "$REPO_ROOT"`
+    `[--name <名称>] -- <命令>`
+  - 日志在 `.mdf/logs/<时间戳>-<名称>/`；失败 JSON 的 `log` 给出路径。
+  - `run` 设置 `MDF_REPORT_DIR` 与 `NO_COLOR=1`。
+- Core 不可用、且没有任何落盘产物时，才写入主仓库
+  `.mdf/logs/<时间戳>-<名称>.log`，并在汇报中给出路径。
   - 主仓库为 `git rev-parse --path-format=absolute --git-common-dir` 结果的父目录。
   - ❌ 不写入 owner/qa/dev 等交付 worktree 内的 `.mdf/logs/`。
-  - 该目录不存在时先创建，并先在其中写入内容为 `*` 的 `.gitignore`。
-  - 此类命令包括点名执行、项目脚本、调试命令等。
+  - 该目录不存在时先创建。忽略规则在仓库根 `.gitignore`（`.mdf/logs/`、`.mdf/reports/`）。
   - 写法如 `<命令> 2>&1 | tee <文件>`。
+  - 能关颜色就关（`NO_COLOR=1`、`--no-color`）。
+  - 落盘文本去掉 CSI/OSC 等终端控制符；进度条回车覆盖不得当正文。
 - 用 grep、head、tail 等过滤或截断输出时，完整输出须先落盘再截取。
   - 写法如 `set -o pipefail; <命令> 2>&1 | tee <文件> | tail -n 50`。
   - ❌ 不得直接把命令输出管道给截断命令。
   - 判定成败以原命令的退出码为准，不以截断命令的退出码为准。
-- `.mdf/logs/` 与 `.mdf/reports/` 由其中的 `.gitignore` 忽略；Core 每次运行删除其中
-  7 天前的条目。
+- Core 每次运行删除 `.mdf/logs/` 与 `.mdf/reports/` 中 7 天前的条目。
 
 ## 交接
 

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import MDFError
+from .run_logs import strip_control
 from .test_reports import ENV_NAME, new_report_dir, summarize
 
 TAIL_CHARS = 2000
@@ -61,7 +62,7 @@ class _StreamTee:
         self._ends_newline = text.endswith("\n")
         self._last_output[0] = time.monotonic()
         if self.sink is not None:
-            self.sink.write(text)
+            self.sink.write(strip_control(text))
         _write_stderr(text)
 
     def finish(self) -> None:
@@ -70,7 +71,7 @@ class _StreamTee:
             self.tail = (self.tail + text)[-TAIL_CHARS:]
             self._ends_newline = text.endswith("\n")
             if self.sink is not None:
-                self.sink.write(text)
+                self.sink.write(strip_control(text))
             _write_stderr(text)
         if not self._ends_newline:
             _write_stderr("\n")

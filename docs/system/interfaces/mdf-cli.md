@@ -35,7 +35,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
     `stdout_tail` / `stderr_tail`。
 - `--repo` 接受目标仓库路径。
   - 命令会按自身需要检查 Git 根、MDF manifest 或 clean worktree；以下除外：
-    `info`、`make-id --type bug`、`make-jot-id`、`branch --name`、`semver-check` 和 `prepare-git`。
+    `info`、`run`、`make-id --type bug`、`make-jot-id`、`branch --name`、
+    `semver-check` 和 `prepare-git`。
+  - `run` 只要求 `--repo` 是目录；不要求 Git 根、manifest 或 clean worktree。
   - `prepare-git` 接受普通目录；已是其他仓库内部路径时失败，不嵌套 `git init`。
   - `make-id --type proposal` 需要 Git 根且当前分支为 `planning`。
   - `upgrade`、`integrate` 与 `to` 要求 Git 根，不要求 manifest 或 clean worktree。
@@ -53,6 +55,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | 命令 | 类别 | 页面 |
 | --- | --- | --- |
 | `info` | 版本信息 | [只读命令](mdf-cli-inspect.md) |
+| `run` | 代跑任意命令并落盘 | [只读命令](mdf-cli-inspect.md) |
 | `doctor` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
 | `prepare-git` | 非 Git 目录初始化为 master | [仓库写入命令](mdf-cli-write.md) |
 | `merge-no-ff` | 在当前分支 no-ff 合并指定提交 | [仓库写入命令](mdf-cli-write.md) |

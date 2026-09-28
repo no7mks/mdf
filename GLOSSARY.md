@@ -60,6 +60,8 @@ hermetic UT 或 PT；原慢用例保留。
   - 含 test case 级与 test 级的结果和用时。
 - **运行日志**：命令完整的 stdout 与 stderr。
   - Core CLI 写 `.mdf/logs/`，验证入口写各自的运行目录。
+  - 有系统或工具自带日志/报告时读那份，不另 tee。
+  - 其他命令用 Core `run` 代跑。
 
 ## Hermetic
 

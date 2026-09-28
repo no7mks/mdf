@@ -243,7 +243,7 @@ Core 判定退出码与测试报告（见下节）。
 - 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
 - 点名执行 test case 或 test 只用于定位，不强制 JUnit 报告。
-  完整输出仍须 tee 进主仓库的 `.mdf/logs/`（见 `common.md`「日志与报告」）。
+  有运行器报告则读报告；否则用 `mdf.py run` 落盘。
 
 ### 验证 suite
 

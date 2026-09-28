@@ -5,8 +5,11 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
+
+from .errors import MDFError, emit
 
 RETENTION_DAYS = 7
 LOGS = ".mdf/logs"
@@ -14,8 +17,25 @@ REPORTS = ".mdf/reports"
 FALLBACK_ENV = "MDF_LOG_DIR"
 
 
+# CSI / OSC / 单字节 ESC 序列；落盘时去掉，终端原文保留。
+_ANSI_RE = re.compile(
+    r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\x07\x1B]*(?:\x07|\x1B\\))"
+)
+
+
 def stamp():
     return time.strftime("%Y%m%dT%H%M%S", time.gmtime()) + f"{time.time_ns() % 10**9:09d}Z"
+
+
+def strip_control(text: str) -> str:
+    """去掉终端控制符，并把回车覆盖拆成多行，避免进度条污染日志。"""
+    cleaned = _ANSI_RE.sub("", text)
+    return cleaned.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def safe_name(value: str) -> str:
+    name = re.sub(r"[^a-z0-9-]+", "-", value.lower()).strip("-")
+    return name or "run"
 
 
 def unique_dir(root, name):
@@ -95,13 +115,95 @@ def _log_root(argv):
     return ignored_dir(fallback)
 
 
+def _argv_name(argv):
+    if argv and argv[0] == "run":
+        for index, value in enumerate(argv):
+            if value == "--name" and index + 1 < len(argv):
+                return safe_name(argv[index + 1])
+            if value.startswith("--name="):
+                return safe_name(value.split("=", 1)[1])
+        return "run"
+    return safe_name(argv[0] if argv else "none")
+
+
+def _rel_log(path, repo):
+    try:
+        return str(Path(path).resolve().relative_to(repo))
+    except ValueError:
+        return str(Path(path).resolve())
+
+
+def _pump(pipe, dest) -> None:
+    if pipe is None:
+        return
+    try:
+        fd = pipe.fileno()
+        while True:
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                break
+            dest.write(chunk.decode("utf-8", errors="replace"))
+            dest.flush()
+    except OSError:
+        return
+
+
+def stream_child(argv, *, cwd, env=None) -> int:
+    """子进程原文写到 stderr（供终端与 RunLog）；不占用 stdout。"""
+    proc = subprocess.Popen(
+        argv,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=0,
+    )
+    threads = [
+        threading.Thread(target=_pump, args=(proc.stdout, sys.stderr), daemon=True),
+        threading.Thread(target=_pump, args=(proc.stderr, sys.stderr), daemon=True),
+    ]
+    try:
+        for thread in threads:
+            thread.start()
+        proc.wait()
+        for thread in threads:
+            thread.join()
+    finally:
+        for pipe in (proc.stdout, proc.stderr):
+            if pipe is not None:
+                pipe.close()
+    return proc.returncode if proc.returncode is not None else 1
+
+
+def command_run(args):
+    """代跑任意命令：设 MDF_REPORT_DIR / NO_COLOR，由 RunLog 落盘，代替 Agent tee。"""
+    repo = Path(args.repo).expanduser().resolve()
+    if not repo.is_dir():
+        raise MDFError(f"run 的 --repo 不是目录: {repo}", code="invalid_arguments")
+    cmd = list(args.command)
+    if cmd[:1] == ["--"]:
+        cmd = cmd[1:]
+    if not cmd:
+        raise MDFError("run 需要 `--` 后的命令", code="invalid_arguments")
+    env = {**os.environ, "MDF_REPORT_DIR": str(args.log_path), "NO_COLOR": "1"}
+    code = stream_child(cmd, cwd=repo, env=env)
+    payload = {
+        "exit_code": code,
+        "log": _rel_log(args.log_path, repo),
+        "command": cmd,
+    }
+    if code != 0:
+        raise MDFError(f"run 命令失败: {cmd[0]}", code="run_failed", details=payload)
+    emit({"ok": True, **payload})
+
+
 class _Tee:
     def __init__(self, stream, sink):
         self._stream = stream
         self._sink = sink
 
     def write(self, text):
-        self._sink.write(text)
+        self._sink.write(strip_control(text))
         return self._stream.write(text)
 
     def flush(self):
@@ -116,8 +218,7 @@ class RunLog:
     """把一次 CLI 调用的完整 stdout、stderr 与退出信息写入 <日志根>/<时间戳>-<命令>/。"""
 
     def __init__(self, argv):
-        command = re.sub(r"[^a-z0-9-]+", "-", (argv[0] if argv else "none").lower())
-        self.path = unique_dir(_log_root(argv), command or "none")
+        self.path = unique_dir(_log_root(argv), _argv_name(argv))
         self.argv = list(argv)
         self.started = time.time()
 
