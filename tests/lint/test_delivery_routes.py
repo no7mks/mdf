@@ -79,6 +79,8 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[5][1] == "Open integrate"
     assert table[5][5] == "结束"
     assert "必须写明需要或不需要" in text
+    assert "本侧可碰范围" in text
+    assert "不得改、操作、启动或终止对端" in text
     assert "不得先做其他预发布工作" in text
     assert "references/integrate.md" in text
     assert "references/clarify.md" in text

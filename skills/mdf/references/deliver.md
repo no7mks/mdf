@@ -257,6 +257,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
   - 需要联调且通道未打开时，先执行 `$mdf integrate`，不得先做其他预发布工作。
     从其步骤 2 起强制 Goal，poll 不得停；等待对端按 15、30、45、60 秒输出正在等什么。
   - 联调按模板工作线。对端验收未过或尚未确认冻结时，不进入 code-review。
+  - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
+    对端缺陷发 `bug-request`。
   - 并可修已确认的 open Bug（roster `0,0` 在 owner 上修，≥1 按上表经 design 交给各路）；
     完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change。
   - ❌ 不得实施新 PRP；缺能力则推迟或作废本次 release，回 develop 开 feature。
