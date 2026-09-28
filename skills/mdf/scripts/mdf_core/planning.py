@@ -67,7 +67,10 @@ def command_planning(args) -> None:
 
 
 def command_planning_ensure(args) -> None:
-    repo = repo_path(args.repo)
+    emit(ensure_planning(repo_path(args.repo)))
+
+
+def ensure_planning(repo: Path) -> dict:
     require_git_root(repo)
     if not _exists(repo, "refs/heads/develop"):
         raise MDFError("Branch develop must exist", code="missing_branch")
@@ -97,14 +100,14 @@ def command_planning_ensure(args) -> None:
     if git_is_clean(work):
         merge_no_ff(work, "develop")
         synced = True
-    emit({
+    return {
         "ok": True,
         "operation": "planning-ensure",
         "branch": BRANCH,
         "worktree": str(work),
         "created": created,
         "synced": synced,
-    })
+    }
 
 
 def command_planning_land(args) -> None:

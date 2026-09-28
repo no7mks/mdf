@@ -194,7 +194,7 @@
   3. 以该 worktree 重新解析 `REPO_ROOT`；其后 `make-id`、validation 与 `planning land` 均用新根。
 - 提升为 Bug 时按 `common.md` 归属确定写入分支。
   - 需切换时按同一规则切换，并重新解析 `REPO_ROOT`。
-- 切换未完成时留在本步，按 `common.md` 重做切换指引。
+- 尚未进入目标工作区时留在本步，按 `common.md` 进入。
   此时还没有新对象，不按「保留两者」处理。
 
 再核对 Jot：

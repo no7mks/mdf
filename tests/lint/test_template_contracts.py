@@ -25,8 +25,10 @@ def test_release_objectives_keep_only_the_selected_work_line():
 
     assert "## 工作线" in text
     assert "{{MDF_RELEASE_WORK_LINE}}" in text
-    assert "不联调" not in text
-    assert "联调" not in text
+    assert "## 联调" in text
+    assert "{{MDF_RELEASE_INTEGRATE}}" in text
+    assert "不联调：" not in text
+    assert "工作线按是否联调二选一" not in text
     assert "本版选定" not in text
 
 

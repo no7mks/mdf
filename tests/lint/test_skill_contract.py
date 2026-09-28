@@ -51,7 +51,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "clarify <议题>",
         "help",
         "help <intent>",
-        "upgrade",
+        "upgrade", "to <target>",
         "integrate",
     )
     for command in expected_commands:
@@ -450,8 +450,8 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "内部 clarify intent" in start
     assert "不写目标" in start
     assert "feature/release 2；其他 3" in start
-    assert "release-objectives.md" in start
-    assert "Confirm roster" in start
+    assert "release-objectives.md" in start and "Open integrate" in start
+    assert "必须写明需要或不需要" in start and "Confirm roster" in start
     assert "member、strategy 与 models" in start
     assert "no-ff 合并到本地 develop" in finish
     assert "no-ff 合并到" in finish and "master" in finish
@@ -491,10 +491,9 @@ def test_codewiki_intents_use_a_managed_mcp_wiki_contract() -> None:
 
 
 def test_common_rules_require_logs_before_truncation() -> None:
-    common = (skill_dir("mdf") / "references" / "common.md").read_text(encoding="utf-8")
-    assert "完整输出须先落盘再截取" in common
-    assert "不以截断命令的退出码为准" in common
-    block = (skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md").read_text(
-        encoding="utf-8"
-    )
-    assert "先完整落盘再截取" in block
+    text = (skill_dir("mdf") / "references" / "common.md").read_text(encoding="utf-8")
+    text += (skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md").read_text(
+        encoding="utf-8")
+    assert all(s in text for s in ("完整输出须先落盘再截取", "不以截断命令的退出码为准",
+        "不要再用 tee 复制一份", "已有下列产物时，不 tee", "mdf.py run",
+        "没有任何落盘产物时", "去掉 CSI/OSC", "先完整落盘再截取"))

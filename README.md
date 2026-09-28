@@ -41,7 +41,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
-| `$mdf integrate` | 在 worktree 之间收发联调消息；通道打开后 poll 常驻；跨机器时可选 HTTP |
+| `$mdf to <target>` | 进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立 |
+| `$mdf integrate` | 在 worktree 之间收发联调消息；从 init 起强制 Goal；一侧只 poll 本侧；跨机器时可选 HTTP |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
@@ -97,6 +98,10 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 - release 从 develop 开分支前确认发布目标。
   - 工作线按是否联调二选一；目标里只写选中的那条。
   - 该分支承担上线前预发布（含跨仓联调），不实施新 PRP。
+  - objectives 必须写明是否 `$mdf integrate`；需要时切到 worktree 后先开通道。
+  - 不联调：`start → 开发 → verify → code-review → fact update → finish`。
+  - 联调：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
+  - fact update 由 finish 前段执行。联调过程强制 Goal，poll 不得停。
   - code-review 基线仍为上一正式发布。
 
 ### 写入分支与提交

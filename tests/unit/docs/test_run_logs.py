@@ -1,5 +1,7 @@
-"""运行日志目录的过期清理。"""
+"""运行日志目录的过期清理，以及 run 代跑。"""
+import json
 import os
+import sys
 import time
 
 from mdf_test_support import *  # noqa: F403
@@ -20,3 +22,47 @@ def test_prune_removes_entries_older_than_seven_days(tmp_path):
     prune(root)
     assert sorted(path.name for path in root.iterdir()) == [".gitignore", "new"]
     assert (root / ".gitignore").read_text() == "*\n"
+
+
+def test_strip_control_removes_csi_and_splits_cr():
+    load_core_module()
+    from mdf_core.run_logs import strip_control
+
+    assert strip_control("\x1b[31mred\x1b[0m") == "red"
+    assert strip_control("ab\rcd") == "ab\ncd"
+
+
+def test_run_logs_command_and_sets_report_dir(tmp_path, python_exe):
+    (tmp_path / ".mdf").mkdir()
+    probe = (
+        "import os, sys;"
+        " sys.stderr.write(os.environ['MDF_REPORT_DIR'] + chr(10));"
+        " sys.stderr.write(chr(27) + '[31mred' + chr(27) + '[0m' + chr(10));"
+        " sys.stderr.write('color=' + os.environ.get('NO_COLOR', '') + chr(10))"
+    )
+    result = mdf(
+        python_exe, "run", "--repo", str(tmp_path), "--name", "probe",
+        "--", sys.executable, "-c", probe,
+    )
+    data = payload(result)
+    assert data["exit_code"] == 0
+    assert data["command"][-1] == probe
+    log_dir = tmp_path / data["log"]
+    assert log_dir.name.endswith("-probe")
+    stderr = (log_dir / "stderr.log").read_text(encoding="utf-8")
+    assert str(log_dir) in stderr
+    assert "color=1" in stderr
+    assert "red" in stderr
+    assert "\x1b" not in stderr
+
+
+def test_run_nonzero_returns_run_failed(tmp_path, python_exe):
+    (tmp_path / ".mdf").mkdir()
+    result = mdf(
+        python_exe, "run", "--repo", str(tmp_path), "--name", "fail",
+        "--", sys.executable, "-c", "raise SystemExit(3)",
+    )
+    assert result.returncode != 0
+    error = json.loads(result.stderr.strip().splitlines()[-1])
+    assert error["error"] == "run_failed"
+    assert error["details"]["exit_code"] == 3

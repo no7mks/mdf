@@ -38,6 +38,7 @@
 
 - `.test-reports/` 已被 `.gitignore` 忽略，每次运行清理 7 天前的条目。
 - ⚠️ 失败时先读报告中的 `<failure>` 与捕获输出，不为看输出而重跑。
+- pytest 入口读 JUnit，不另 tee。`compileall` 等无报告命令才 tee 到 `.test-reports/`。
 
 ## 入口
 

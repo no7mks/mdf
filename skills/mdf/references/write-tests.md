@@ -65,8 +65,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
   形如 `qa/feature/<slug>`），不是 owner：
   - Cursor 对该 qa 路径调用 `move_agent_to_root`（禁止 `move_agent_to_cloned_root`），
     新 shell 核对 toplevel 与当前分支。
-  - 其他宿主打开或接到已有 qa worktree，禁止新建 worktree，禁止切到 owner。
-  - 未切到则停止，不按 common 留步等待：角色树已由 start 建好。
+  - 其他宿主必须用该 qa 绝对路径继续全部操作，禁止新建 worktree，禁止切到 owner，
+    禁止要求用户切换工作区。
+  - Cursor 未进入则停止，不按 common 留步等待：角色树已由 start 建好。
 - deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
 
 再运行 `delivery check --stage write-tests`，并遵守：

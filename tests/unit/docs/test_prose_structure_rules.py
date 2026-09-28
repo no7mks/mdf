@@ -14,7 +14,7 @@ def test_structured_text_passes():
         "- 项目一\n  续行\n  - 子项\n- 项目二\n\n"
         "| a | b |\n| --- | --- |\n| 1 | 2 |\n\n"
         "```text\n" + "代码行\n" * 20 + "```\n\n"
-        "- ⚠️ 易错点\n- ✅ 允许 ❌ 禁止 💡 提示 📌 约束\n"
+        "- ⚠️ 易错点\n- ✅ 允许 ❌ 禁止 💡 提示 📌 约束 📂 目录 📍 分支\n"
     )
     assert codes(text) == []
 

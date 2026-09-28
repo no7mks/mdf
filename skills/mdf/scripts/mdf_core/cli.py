@@ -18,7 +18,7 @@ from .audit import command_audit
 from .doc_size import command_prose_check
 from .commands_release import command_release_closeout
 from .errors import MDFError
-from .run_logs import RunLog
+from .run_logs import RunLog, command_run
 from .gitflow import command_finish_gitflow, command_start
 from .upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
 
@@ -185,6 +185,12 @@ def build_parser() -> argparse.ArgumentParser:
     planning.add_argument("--repo", required=True)
     planning.set_defaults(func=command_planning)
 
+    from .to_target import command_to
+    to_cmd = subparsers.add_parser("to")
+    to_cmd.add_argument("--repo", required=True)
+    to_cmd.add_argument("--target", required=True)
+    to_cmd.set_defaults(func=command_to)
+
     from .codewiki_runtime import command_codewiki_runtime
     runtime = subparsers.add_parser("codewiki-runtime")
     runtime.add_argument("--directory", default="~/.local/share/codewiki")
@@ -228,6 +234,12 @@ def build_parser() -> argparse.ArgumentParser:
     upgrade.add_argument("--dry-run", action="store_true")
     upgrade.add_argument("--expected-commit")
     upgrade.set_defaults(func=command_upgrade)
+
+    run = subparsers.add_parser("run")
+    run.add_argument("--repo", required=True)
+    run.add_argument("--name", default="run")
+    run.add_argument("command", nargs=argparse.REMAINDER)
+    run.set_defaults(func=command_run)
 
     from .integrate import command_integrate
 
@@ -276,6 +288,7 @@ def _failure(code: str, message: str, details, log: RunLog) -> int:
 
 def _run(argv: list[str], log: RunLog) -> int:
     args = build_parser().parse_args(argv)
+    args.log_path = log.path
     try:
         args.func(args)
         return 0

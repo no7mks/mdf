@@ -74,14 +74,28 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[3][5] == "5"
     assert table[4][1] == "Switch worktree"
     assert table[4][2] == "约束"
-    assert table[4][5] == "结束"
+    assert table[4][5] == "需联调则 6；其他结束"
     assert table[4][6] == "留在 5 等待"
+    assert table[5][1] == "Open integrate"
+    assert table[5][5] == "结束"
+    assert "必须写明需要或不需要" in text
+    assert "不得先做其他预发布工作" in text
+    assert "references/integrate.md" in text
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "assets/templates/release-objectives.md" in text
     assert "只写入已选定的那一条" in text
     assert "不罗列未选路径" in text
     assert "不写「本版选定" in text
+    template = (
+        skill_dir("mdf") / "assets" / "templates" / "release-objectives.md"
+    ).read_text(encoding="utf-8")
+    assert "## 工作线" in template
+    assert "{{MDF_RELEASE_WORK_LINE}}" in template
+    assert "## 联调" in template
+    assert "{{MDF_RELEASE_INTEGRATE}}" in template
+    assert "不联调：" not in template
+    assert "本版选定" not in template
     assert "$mdf prp review" in text
     assert "qa_strategy" in text and "dev_strategy" in text
     assert "review_strategy" in text
@@ -98,6 +112,8 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert re.search(r"创建成功", diagram)
     assert re.search(r"4 Start branch", diagram)
     assert re.search(r"5 Switch worktree", diagram)
+    assert re.search(r"6 Open integrate", diagram)
+    assert re.search(r"已切到且 release 需联调", diagram)
 
 
 def test_start_switches_agent_to_owner_worktree():
@@ -108,14 +124,15 @@ def test_start_switches_agent_to_owner_worktree():
     common = workflow("common")
     assert "move_agent_to_root" in common
     assert "move_agent_to_cloned_root" in common
-    assert "New local worktree" in common
-    assert "Create a new worktree" in common
-    assert "File > Open Folder" in common
-    assert "EnterWorktree" in common
+    assert "不得要求用户手动切换 worktree" in common
+    assert "git -C <路径>" in common
+    assert "EnterWorktree" not in common
+    assert "New local worktree" not in common
+    assert "File > Open Folder" not in common
     assert "git rev-parse --show-toplevel" in common
     assert "git branch --show-current" in common
     assert "不得再 `git worktree add`" in common
-    assert "不得只在原根 `cd` 冒充已切换" in common
+    assert "不得只在原根 `cd` 冒充已进入" in common
 
 
 def test_fix_is_branch_agnostic_and_stops_at_fixed():
@@ -234,6 +251,12 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
     assert "新增或放宽须用户确认" in contract
+    assert "原来是否缺少覆盖" in contract
+    assert "优先放入 quick，其次 smoke" in contract
+    assert "两者都不能放则先问用户" in contract
+    assert "这是现场自检" in contract
+    assert "按「补覆盖」把 reproduce 用例放入 quick 或 smoke 属于授权" in contract
+    assert "补覆盖按" in workflow("integrate")
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
     assert "full 指全部 test case，是 release 与各 named suite 的上界；它没有入口" in contract
     assert "非 feature 分支变更 manifest `verification` 或新增 named suite：默认模式需用户确认" in contract
@@ -260,8 +283,20 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "只有本轮修复或集成改动了实现" in review
     deliver = workflow("deliver")
     assert "### 先测后审" in deliver
+    assert "| release 需要联调且通道未打开 |" in deliver
+    assert "必须已写明需要或不需要" in deliver
+    assert "| release 联调且对端验收未通过 |" in deliver
+    assert "| release 联调且尚未确认无更多代码修改 |" in deliver
     assert "| bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 |" in deliver
-    assert deliver.index("验证证据缺失、过期或失败") < deliver.index("feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期")
+    assert deliver.index("验证证据缺失、过期或失败") < deliver.index(
+        "release 联调且对端验收未通过"
+    )
+    assert deliver.index("release 联调且对端验收未通过") < deliver.index(
+        "release 联调且尚未确认无更多代码修改"
+    )
+    assert deliver.index("release 联调且尚未确认无更多代码修改") < deliver.index(
+        "feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期"
+    )
     finish = workflow("finish")
     assert "正常收口不再运行 release suite" in finish
     assert "单独提问并记录" in finish
@@ -348,6 +383,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "bugfix/hotfix/release 不要求 feature 的 design/converge gate",
         "审查基线仍为上一正式发布", "objectives.md",
+        "双端验收通过", "不再改代码", "不派审查",
         "按当前分支执行所需 suite", "最终 final_head",
     ):
         assert rule in text
@@ -378,6 +414,7 @@ def test_role_intents_do_not_reuse_owner_session_switch():
         assert "禁止 `move_agent_to_cloned_root`" in text
         assert "deliver 步骤 3 主 Agent 续办时禁止切会话" in text
         assert "禁止切到 owner" in text
+        assert "禁止要求用户切换工作区" in text
     assert "qa/feature/<slug>" in tests
     assert "dev/feature/<slug>" in implement
     assert "禁止把主 Agent 会话切离 owner" in deliver

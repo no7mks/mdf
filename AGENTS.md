@@ -9,8 +9,10 @@
   `GLOSSARY.md`。
 - 按 `PROJECT.md` 中的验证要求执行检查。
 - 执行的每条命令都要留下完整日志或报告：
+  - 优先读工具或系统自己写的日志与报告，不另 tee。
   - 测试读 `.test-reports/` 的 JUnit 报告。
-  - 其他命令把 stdout 与 stderr tee 进 `.test-reports/<时间戳>-<名称>.log`。
+  - 没有任何落盘产物时，才把 stdout 与 stderr tee 进
+    `.test-reports/<时间戳>-<名称>.log`；落盘去掉终端控制符。
   - 用 grep、head、tail 等截断时先完整落盘再截取，并以 `pipefail` 保留原命令退出码。
   - ⚠️ 失败时先读日志与报告，不为查看输出而重跑。
 - 遵守当前 MDF 契约，不得引入旧版兼容、迁移、识别或运行时分支。

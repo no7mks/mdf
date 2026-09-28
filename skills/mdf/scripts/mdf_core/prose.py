@@ -6,7 +6,7 @@ PROSE_BLOCK_LINES = 6
 SENTENCE_WIDTH = 120
 LIST_ITEM_LINES = 4
 SECTION_PROSE_LINES = 15
-ALLOWED_EMOJI = ("⚠️", "✅", "❌", "💡", "📌")
+ALLOWED_EMOJI = ("⚠️", "✅", "❌", "💡", "📌", "📂", "📍")
 _ALLOWED_BASES = {emoji.rstrip("\uFE0F") for emoji in ALLOWED_EMOJI}
 
 _HEADING = re.compile(r"#{1,6}\s")

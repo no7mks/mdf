@@ -12,6 +12,10 @@
 
 {{MDF_RELEASE_EXCLUSIONS}}
 
+## 联调
+
+{{MDF_RELEASE_INTEGRATE}}
+
 ## 预发布工作
 
 {{MDF_PRERELEASE_WORK}}
