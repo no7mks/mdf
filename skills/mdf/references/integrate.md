@@ -90,7 +90,8 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-完整读取 `references/common.md`。不要求 manifest ready，不要求 clean worktree。
+完整读取 `references/common.md`。修复时读取 `references/delivery-contract.md`「补覆盖」。
+不要求 manifest ready，不要求 clean worktree。
 从步骤 2 起强制 Goal；poll 在用户停止前不得停。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -327,12 +328,14 @@
 - 主导方收到无 `--reply-to` 的 `end`，无法处理，停止。
 
 修复规则对双方都适用。本步结束时只走表上的去向。
+补覆盖按 `references/delivery-contract.md`「补覆盖」。
 
 - 能当场修好：
-  - 现场修，不建 bug，不发 `bug-request`。补能 reproduce 的用例。
-  - 修复后该用例未 pass，就改走「不能当场修好」，不继续热修复。
+  - 先按「补覆盖」处理。现场修，不建 bug，不发 `bug-request`。
+  - 修复后 reproduce 用例（新补或已有）未 pass，就改走「不能当场修好」，
+    不继续热修复。
   - 该用例 pass 后，提交这一轮用例和修复。无改动不造空提交。
-- 不能当场修好：补 reproduce 用例，记录 bug，再提交。
+- 不能当场修好：先按「补覆盖」处理，记录 bug，再提交。
   - 本侧缺陷走 `$mdf bug create`，用户确认 open 才创建。
     先 `send` 告知对端本侧在等用户，等待确认期间不 poll。确认后把结论 `send` 给对端。
   - 缺陷在对端则发 `bug-request`，对端按同一规则处理。

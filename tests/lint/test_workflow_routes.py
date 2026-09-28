@@ -359,6 +359,8 @@ def test_integrate_forces_goal_and_never_stops_poll():
     assert "不得再启动对端" in text
     assert "15、30、45、60 秒" in text
     assert "60 秒为上限" in text
+    assert "补覆盖" in text
+    assert "delivery-contract.md" in text
     assert "正在等待：" in text
     assert "收口完成不是停止理由" in text or "都不是停止理由" in text
     assert "语义结束或用户停止时才停掉" not in text

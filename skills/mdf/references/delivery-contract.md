@@ -1,7 +1,7 @@
 # Feature 交付契约
 
-由 deliver、start、design、write-tests、implement、converge、code-review 与 finish 读取。
-规则持续适用，不是依次执行的阶段。
+由 deliver、start、design、write-tests、implement、converge、code-review 与 finish
+读取。`$mdf integrate` 只读「补覆盖」。规则持续适用，不是依次执行的阶段。
 
 ## 身份与材料
 
@@ -304,10 +304,20 @@ named suite 的划分：
   - 默认不得新建；经确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
     默认模式由用户明确确认，`--auto-pilot` / `--yolo` 由主 Agent 自裁定并记录依据。
 
+补覆盖：
+
+- 对 feature、非 feature 与联调均适用。
+- 测试或联调中，凡需改代码才能解决的问题，先判定：原来是否缺少覆盖该问题的测试。
+  - 这是现场自检，不是先把控制权交回用户。
+  - 缺覆盖且能补：先补能 reproduce 的用例，再改实现。
+  - 优先放入 quick，其次 smoke；两者都不能放则先问用户，不得自行放入其他 suite。
+    默认模式须用户确认；`--auto-pilot` / `--yolo` 自裁定并记录依据。
+
 quick 复现：
 
 - 触发：非 quick 用例一旦在 converge 之后失败；bugfix / release / hotfix 则为第一次跑所需 suite 之后。
   - 必须尝试补一条 quick 复现用例（hermetic 的 UT 或 PT）；原慢用例保留。
+  - 这是「补覆盖」在门禁后非 quick 失败时的专项，仍须先问是否原来缺少覆盖。
   - 结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，未补则写原因。
   - 非 feature 由 Verify 阶段先把结论写入 verify.md，code-review 引用该记录。
 - code-review 可按既定目标自主补该用例；削弱门槛、改预期或新增豁免仍须用户批准。
@@ -325,7 +335,8 @@ quick 复现：
 - 首次 write-tests 按既定设计编写测试属于授权：
   - 含把用例归入 quick、smoke 或 design 声明的 named suite。
   - 含在 `docs/system/testing/` 补齐所列 named suite 的文档。
-- implement 不自主修改测试。
+- implement 不自主修改测试；按「补覆盖」补 reproduce 用例除外。
+- 按「补覆盖」把 reproduce 用例放入 quick 或 smoke 属于授权，不另走测试修改批准。
 - converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
   - `--auto-pilot` / `--yolo` 由 converge 执行者自裁定并记录。
 - code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。

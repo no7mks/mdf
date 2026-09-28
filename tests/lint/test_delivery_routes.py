@@ -248,6 +248,12 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
     assert "新增或放宽须用户确认" in contract
+    assert "原来是否缺少覆盖" in contract
+    assert "优先放入 quick，其次 smoke" in contract
+    assert "两者都不能放则先问用户" in contract
+    assert "这是现场自检" in contract
+    assert "按「补覆盖」把 reproduce 用例放入 quick 或 smoke 属于授权" in contract
+    assert "补覆盖按" in workflow("integrate")
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
     assert "full 指全部 test case，是 release 与各 named suite 的上界；它没有入口" in contract
     assert "非 feature 分支变更 manifest `verification` 或新增 named suite：默认模式需用户确认" in contract
