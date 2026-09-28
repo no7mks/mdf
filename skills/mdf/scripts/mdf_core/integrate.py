@@ -20,9 +20,11 @@ from .integrate_store import (
     BUG_FIELDS,
     DIR_NAME,
     KINDS,
+    format_channel_entry,
     mark_seen,
     new_id,
     next_pending,
+    now_stamp,
     pending_count,
     read_peers,
     read_yaml,
@@ -52,10 +54,11 @@ def command_integrate(args: Any) -> None:
     elif action == "peer":
         emit(_peer(repo, args))
     elif action == "send":
-        emit(_send(repo, args))
+        print(format_channel_entry("out", _send(repo, args)), end="", flush=True)
     elif action == "poll":
         try:
-            _poll(repo, args.timeout)
+            wait = _WAIT_LOG if args.wait is None else args.wait
+            _poll(repo, args.timeout, wait)
         except KeyboardInterrupt:
             return
     elif action == "listen":
@@ -167,6 +170,33 @@ def _send(repo: Path, args: Any) -> dict[str, Any]:
     if not isinstance(peer, dict):
         raise MDFError("未知 peer", code="peer_unknown")
     message = _message(repo, kind, args)
+    _deliver(peer, message)
+    return message
+
+
+def _compose(
+    repo: Path, kind: str, dest: str, reply_to: str = "", body: Any = ""
+) -> dict[str, Any]:
+    session = read_yaml(repo / DIR_NAME / "session.yaml")
+    return {
+        "id": new_id(),
+        "kind": kind,
+        "to": dest,
+        "at": now_stamp(),
+        "reply_to": reply_to,
+        "token": str(session.get("token") or ""),
+        "from": _identity(repo, str(session.get("listen") or "")),
+        "body": body,
+    }
+
+
+def _message(repo: Path, kind: str, args: Any) -> dict[str, Any]:
+    return _compose(
+        repo, kind, args.to or "", args.reply_to or "", _body(kind, args)
+    )
+
+
+def _deliver(peer: dict[str, Any], message: dict[str, Any]) -> None:
     transport = str(peer.get("transport") or "")
     if transport == "path":
         _deliver_path(peer, message)
@@ -174,25 +204,6 @@ def _send(repo: Path, args: Any) -> dict[str, Any]:
         _deliver_http(peer, message)
     else:
         raise MDFError("peer 传输方式不合法", code="bad_peer")
-    return {
-        "ok": True,
-        "id": message["id"],
-        "kind": kind,
-        "transport": transport,
-    }
-
-
-def _message(repo: Path, kind: str, args: Any) -> dict[str, Any]:
-    session = read_yaml(repo / DIR_NAME / "session.yaml")
-    body = _body(kind, args)
-    return {
-        "id": new_id(),
-        "kind": kind,
-        "reply_to": args.reply_to or "",
-        "token": str(session.get("token") or ""),
-        "from": _identity(repo, str(session.get("listen") or "")),
-        "body": body,
-    }
 
 
 def _body(kind: str, args: Any) -> Any:
@@ -217,6 +228,8 @@ def _body(kind: str, args: Any) -> Any:
     text = args.body or ""
     if kind == "send" and not text.strip():
         raise MDFError("send 需要正文", code="bad_message")
+    if kind == "ack" and not str(args.reply_to or "").strip():
+        raise MDFError("ack 需要 --reply-to", code="bad_message")
     return text
 
 
@@ -277,22 +290,38 @@ _POLL_SLEEP = 0.05
 _WAIT_LOG = 60.0
 
 
-def _poll(repo: Path, timeout: float | None) -> None:
+def _heartbeat_peers(repo: Path) -> None:
+    peers = read_peers(_root(repo))
+    for name, peer in peers.items():
+        if not isinstance(peer, dict):
+            continue
+        message = _compose(repo, "heartbeat", name)
+        try:
+            _deliver(peer, message)
+        except MDFError:
+            continue
+        print(format_channel_entry("out", message), end="", flush=True)
+
+
+def _poll(repo: Path, timeout: float | None, wait: float = _WAIT_LOG) -> None:
     root = _root(repo)
     deadline = None if timeout is None else time.monotonic() + timeout
     last_wait = 0.0
+    interval = _WAIT_LOG if wait <= 0 else wait
     while True:
         now = time.monotonic()
         if deadline is not None and now >= deadline:
-            emit({"event": "timeout", "message": None, "ok": True})
+            print(f"{now_stamp()}  超时\n", end="", flush=True)
             return
         message = next_pending(root)
         if message is not None:
             mark_seen(root, str(message["id"]))
-            emit({"event": "message", "message": message, "ok": True})
+            print(format_channel_entry("in", message), end="", flush=True)
             continue
-        if last_wait == 0.0 or now - last_wait >= _WAIT_LOG:
-            emit({"event": "waiting", "ok": True})
+        if last_wait == 0.0 or now - last_wait >= interval:
+            print(format_channel_entry("wait"), end="", flush=True)
+            if last_wait != 0.0:
+                _heartbeat_peers(repo)
             last_wait = now
         time.sleep(_POLL_SLEEP)
 

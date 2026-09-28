@@ -180,13 +180,15 @@ worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。
 
 - 本机对端直接写入其 `inbox/`。
 - 另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
-- 消息种类为 `ping`、`send`、`bug-request`、`end`。
+- 消息种类为 `ping`、`courtesy`、`ack`、`heartbeat`、`send`、`bug-request`、`end`。
+  - 对端就绪后先发 `courtesy`，必须收到指向它的 `ack`；未 ack 不得继续。
+  - poll 每等待 1 分钟向对端发 `heartbeat`，双方互发，让对方知道本侧在等。
 - 通道打开后 poll 常驻直到收口或用户停止。
   - 一个 agent 只 poll 本侧 inbox，不得再启动对端的 poll。
   - 双方用通道沟通，不要只 poll 干等。
 - release 的 objectives 必须写明是否走联调通道；工作线只写选中的一条。
   - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-  - 需要时切到 worktree 后先打开通道；过程强制 Goal，不得停。
+  - 需要时切到 worktree 后先打开通道。Goal 完成前，用户没让你停，永远不许停下来。
   - 双端验收且确认不再改代码后才允许 code-review。
   - fact update 由 finish 前段执行。
 - 联调测试默认由客户端主导。

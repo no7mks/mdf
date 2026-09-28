@@ -7,9 +7,10 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 不得改、操作、启动或终止对端。
 
 从步骤 2（`integrate init` / 打开通道）起强制 Goal 模式，不得跳过、不得把控制权
-交回用户。测试路径持续 poll，直到用户明确停止整个 integrate 会话。走「只传」时
-没有步骤 8；收到 `end` 后向用户报告，仍保持 poll。`waiting` 事件、取出一条消息、
-处理完一条非收口消息、收口完成，都不是结束，也不是停止 poll 的理由。
+交回用户。Goal 完成前，用户没让你停，永远不许停下来。测试路径持续 poll，直到
+用户明确停止整个 integrate 会话。走「只传」时没有步骤 8；收到 `end` 后向用户
+报告，仍保持 poll。`waiting` 事件、取出一条消息、处理完一条非收口消息、收口完成，
+都不是结束，也不是停止 poll 的理由。
 
 ## 决策树
 
@@ -33,7 +34,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 │ 3 Address peer                   │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 地址或 token 未就绪 ────→ 3 Address peer
+                 ├──── token 或 ack 未就绪 ────→ 3 Address peer
                  ├──── 前台占住 ───────────────→ [停止]
                  ├──── 用户停止 ───────────────→ [停止]
                  │
@@ -65,7 +66,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
                  │
                  ├──── 用户停止 ────→ [停止]
                  │
-                 ▼ 取到 message 事件
+                 ▼ 取到「收到」
 ┌──────────────────────────────────┐
 │ 7 Dispatch                       │
 └────────────────┬─────────────────┘
@@ -94,16 +95,16 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 
 完整读取 `references/common.md`。修复时读取 `references/delivery-contract.md`「补覆盖」。
 不要求 manifest ready，不要求 clean worktree。
-从步骤 2 起强制 Goal；poll 在用户停止前不得停。
+从步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check root | 脚本 | 用 `--repo` 解析绝对 Git 根 | Git 根 | 2 | 不是 Git 根则停止 |
 | 2 | Open channel | 脚本 | 保证 gitignore、session，后台起 poll | gitignore、session、poll | 3 | 写入失败或占住前台停 |
-| 3 | Address peer | 约束 | 确认对端；HTTP 先 ping 取 token | peers、listen、token | 4 | 未就绪留 3；否则停 |
+| 3 | Address peer | 约束 | 对端、ping、courtesy 等到 ack | peers、ack | 4 | 未就绪或未 ack 留 3；否则停 |
 | 4 | Assign roles | 约束 | 定角色 | 角色或只传 | 已确认则 5；只传则 6 | 不明或告知失败留 4；无法处理或用户停止则停 |
 | 5 | Agree plan | 约束 | 确认计划并准备数据 | 计划与就绪回复 | 6 | 发送失败或尚未沟通清楚留 5；无法处理或用户停止则停 |
-| 6 | Transfer | 约束 | 从后台 poll 读取下一条 message 事件 | message 事件 | 7 | 用户停止则停 |
+| 6 | Transfer | 约束 | 从后台 poll 读取下一条「收到」 | 「收到」行 | 7 | 用户停止则停 |
 | 7 | Dispatch | 约束 | 按种类处理 | 处理结果 | 非收口则 6；收口完成则 8；只传 end 则结束 | 无法处理则停；提交失败留 7 |
 | 8 | Close | 约束 | 提交并送达测试报告 | 发送结果或报告 | 结束 | 提交失败、发送失败或未取到报告留 8；用户停止则停 |
 
@@ -133,9 +134,10 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 - init 完成后立即创建 Goal；本次 integrate 只创建一次，续办不重建。
   - objective 写明联调标识与完成判据（步骤 8 完成，或用户停止）。
   - 等待对端、阻塞或暂停时保持 active，不代用户暂停。
+  - Goal 完成前，用户没让你停，永远不许停下来。
   - 宿主没有 Goal 设施时仍按同一 goal 持续做，不把控制权交回用户，不结束。
 - session 就绪后在后台启动一次 `integrate poll --repo "$REPO_ROOT"`（命令见「传输」）。
-  - 各步从同一 stdout 读取 `message` 事件；步骤 4、5 的 poll 即读取它。
+  - 各步从同一 stdout 读取「收到」行；步骤 4、5 的 poll 即读取它。
   - release 且 objectives 写明需要联调时，切到 owner 后立即打开本通道，
     不得先做其他预发布工作。
   - 打开通道后先对齐计划，再本端验收、双端验收，双方确认不再改代码后才审查。
@@ -162,7 +164,8 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 - 等待对端信息时，必须向用户输出「正在等待：<具体内容>」。
   - 间隔为 15、30、45、60 秒，之后每 60 秒一次；60 秒为上限。
     不得只盯 poll 的 `waiting`。
-- ⚠️ `waiting` 只表示本侧 inbox 空，对端看不见，不能代替 `send`。
+- poll 每等待 1 分钟向已登记对端发 `heartbeat`，让对方知道本侧在等。
+  发送失败不停止 poll。`waiting` 仍只表示本侧 inbox 空，不能代替业务 `send`。
 - ❌ 不要只 poll 干等，也不用通道外聊天代替。
 
 验收：`.gitignore` 含 `.integration/`，session 含 token，且 poll 在后台运行。
@@ -184,13 +187,18 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
   - 先 `integrate send --repo "$REPO_ROOT" --to <name> --kind ping`，把本侧 token 与 listen 交给对方；
   - 再从 poll 取到对方的 ping，按「传输」的 ping 规则记下其 token；
     或由用户提供对方 token，用 `peer --token` 写入。
-- 本步 poll 到的非 ping 消息保留，进入 4 后按步骤 4 的表处理。
-
 「地址或 token 未就绪」指地址不明、ping 发送非零，或 HTTP 对端尚未持有对方 token。
 
-验收：peers 中有本次要用的名字、传输方式和地址；HTTP 对端已持有对方 token；本侧需要 listen 时它已在后台服务。
+地址与 token 就绪后、定角色前必须先 courtesy。
 
-异常与交接：地址或 token 未就绪时留在 3。前台占住或用户明确停止则停止。
+- 本侧 `--kind courtesy`；对端 `--kind ack --reply-to <该 courtesy 的 id>`。
+- 未收到这条 ack 不得进入 4，也不得用其它消息代替。
+- 留在 3，输出「正在等待：对端 ack」。用户没让你停，永远不许停下来。
+- 收到 courtesy 立刻 ack，再等自己的 ack。「只传」同样先 courtesy。
+
+验收：peers 已登记；HTTP 已持有对方 token；需要时 listen 在后台；本侧 courtesy 已被 ack。
+
+异常与交接：地址、token 未就绪或未收到 ack 时留在 3。前台占住或用户明确停止则停止。
 
 <a id="s4"></a>
 
@@ -216,7 +224,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 
 | 消息 | 处理 |
 | --- | --- |
-| `ping` | 按分派的 ping 动作处理，然后留在 4 |
+| `ping` / `courtesy` / `ack` / `heartbeat` | courtesy 立刻 ack；heartbeat 留下；然后留在 4 |
 | 正文为 `relay-only` 的 `send` | 当即走「只传」进 6，不再转发 |
 | 未确认前的每条其它 `send` | 是对方的角色回复或告知，按下方规则判定；仍未确认则留在 4 |
 | `bug-request`、`end`，或缺种类、正文无法读取 | 是「无法处理」，停止 |
@@ -245,7 +253,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 | 消息 | 处理 |
 | --- | --- |
 | 计划疑问、计划正文、就绪回复 | 在本步处理 |
-| `ping` | 按分派的 ping 动作处理，然后留在 5 |
+| `ping` / `courtesy` / `ack` / `heartbeat` | courtesy 立刻 ack；heartbeat 留下；然后留在 5 |
 | 其它种类 | 不修复、不提交、不视为收口完成，用 `send` 说明计划未就绪，然后留在 5 |
 | 缺种类，或正文无法读取 | 是「无法处理」，停止 |
 
@@ -269,14 +277,16 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 
 - `integrate send --repo "$REPO_ROOT" --to <name>`：
   - 省略 `--kind` 时种类是 `send`，且需要 `--body`。
-  - `ping`、`bug-request`、`end` 必须写 `--kind`。
-- `integrate poll --repo "$REPO_ROOT"`：常驻。stdout 一行一个 JSON。
-  - 一启动就打印 `event=waiting`，之后约每 1 分钟再打一次。
-  - 取出一条未交出的 inbox 消息时打印 `event=message` 并继续等。不因消息退出。
-  - Agent 不得主动停止 poll。`waiting`、取出消息、处理完毕、步骤结束、收口完成、
-    「只传」收到 `end`，都不是停止理由。
+  - `ping`、`courtesy`、`ack`、`heartbeat`、`bug-request`、`end` 必须写 `--kind`。
+  - `ack` 必须带 `--reply-to`。
+- `integrate poll --repo "$REPO_ROOT"`：常驻。stdout 只打可读行。
+  - 一启动就打印「等待」，之后约每 1 分钟再打一次，并向已登记对端发 `heartbeat`。
+  - 取出一条未交出的 inbox 消息时打印「收到」：时间、谁发给谁、kind，正文单独成行。
+  - 不因消息退出。Agent 不得主动停止 poll。「等待」、取出消息、处理完毕、步骤结束、
+    收口完成、「只传」收到 `end`，都不是停止理由。
   - 仅用户明确停止整个 integrate 会话时才停掉 poll。不传 `--timeout`。
-- `--timeout` 仅测试用：到期打印 `event=timeout` 后退出 0。
+- `integrate send` 的 stdout 同样打印「发出」行，正文单独成行。
+- `--timeout` 与 `--wait` 仅测试用：到期打印「超时」；`--wait` 改等待/心跳间隔。
 - `integrate listen`：只把 POST 原子写入本机 inbox 并返回已写入。
   - `ping` 不校验 token；其余种类的 `auth` 必须等于本侧 session token。
   - 进程保持服务，`end` 不使它退出。
@@ -300,7 +310,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 - 📌 只有步骤 6 取到的消息必须进入 7，不得跳过 7 去处理下一条。
 - 用户明确停止整个会话时，才停止 poll 并停掉本侧 listen。
 
-验收：已从 poll 读到一条 `message`。
+验收：已从 poll 读到一条「收到」。
 
 异常与交接：用户明确停止则停止。
 
@@ -315,7 +325,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 
 | kind | 处理 |
 | --- | --- |
-| `ping` | 记下对方 token 与 listen，必要时回一条 ping。非收口 |
+| `ping` / `courtesy` / `ack` / `heartbeat` | ping 记 token；courtesy 立刻 ack；heartbeat 留下。非收口 |
 | `send` | 按正文处理。测试问题按下方修复规则，去向由该规则决定。其它 send 是非收口 |
 | `bug-request` | 不写 `docs/bugs/`。展示四个字段后走 `$mdf bug create`，再按修复规则提交 |
 | `end` | 「只传」时关闭通道并结束；否则按下方收口判定，listen 继续运行 |
@@ -377,7 +387,7 @@ release 联调必须先分清本侧能碰的范围：只改本仓，可启动本
 被动方：
 
 - 提交完成后继续 poll，不回到 7。
-- 开始等报告时 `send` 一次在等报告，之后读 poll，不要只盯 `waiting`。
+- 开始等报告时 `send` 一次在等报告，之后读 poll，不要只盯「等待」。
 - 正文同时写明计划条目、热修复、未当场修好的缺陷和结论的 `send` 才是测试报告。
 - 未取到这份报告时留在 8。取到后把 Goal 置 complete，不停止 poll。
 - 本步 poll 到的其它消息不进入 7，留在 8 继续 poll。

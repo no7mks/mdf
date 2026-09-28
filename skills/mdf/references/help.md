@@ -221,7 +221,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf bug create`
   - 用法：`$mdf bug create`
   - 用途：按已确认内容手动创建一个 open Bug。
-  - 说明：一次只创建一个对象；外部来源应走 intake。
+  - 说明：一次只创建一个对象；外部来源应走 intake。不要求 doctor 零 finding。
 
 - `$mdf prp create`
   - 用法：`$mdf prp create`
@@ -392,8 +392,8 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：在两个 worktree 之间收发联调消息。
-  - 说明：从 init 起强制 Goal；只改本仓、不得改或启停对端；只 poll 本侧，用户停止前不得停。
-    等待对端按 15、30、45、60 秒输出正在等什么。本机写 inbox；跨机器可选 HTTP。
+  - 说明：从 init 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
+    先 courtesy，必须收到 ack。每等待 1 分钟互发 heartbeat。只改本仓；只 poll 本侧。15、30、45、60 秒。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

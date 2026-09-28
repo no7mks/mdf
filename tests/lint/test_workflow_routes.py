@@ -216,6 +216,15 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert rows(workflow("finish"))[3][6] == "未过则停止并交接"
 
 
+def test_bug_create_checks_ready_without_blocking_stale_docs():
+    text = workflow("bug-create")
+    assert rows(text)[0][3] == "运行 `doctor`，核对已初始化"
+    assert rows(text)[0][6] == "未就绪则停"
+    assert "不将 `normal_workflows_allowed: true` 作为前置条件" in text
+    assert "evidence.stale" in text
+    assert "其他 findings 报告后停止" not in text
+
+
 def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     text = workflow("fact-update")
     entry = text.split("### 范围与写入边界", 1)[1].split("支持用户独立调用", 1)[0]
@@ -353,9 +362,15 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
 def test_integrate_forces_goal_and_never_stops_poll():
     text = workflow("integrate")
     assert "强制 Goal" in text
+    assert "Goal 完成前，用户没让你停，永远不许停下来" in text
+    assert "正在等待：对端 ack" in text
+    assert "--kind courtesy" in text
+    assert "--kind ack" in text
     assert "integrate init" in text
     assert "不得主动停止 poll" in text
     assert "一个 agent 只准 poll 本侧" in text
+    assert "stdout 只打可读行" in text
+    assert "正文单独成行" in text
     assert "不得再启动对端" in text
     assert "不得写入或修改对端仓库" in text
     assert "不得操作、启动或终止对端的进程或服务" in text
@@ -366,6 +381,8 @@ def test_integrate_forces_goal_and_never_stops_poll():
     assert "补覆盖" in text
     assert "delivery-contract.md" in text
     assert "正在等待：" in text
+    assert "heartbeat" in text
+    assert "每等待 1 分钟" in text
     assert "收口完成不是停止理由" in text or "都不是停止理由" in text
     assert "语义结束或用户停止时才停掉" not in text
 
