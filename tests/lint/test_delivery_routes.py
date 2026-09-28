@@ -79,6 +79,9 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "assets/templates/release-objectives.md" in text
+    assert "只写入已选定的那一条" in text
+    assert "不罗列未选路径" in text
+    assert "不写「本版选定" in text
     assert "$mdf prp review" in text
     assert "qa_strategy" in text and "dev_strategy" in text
     assert "review_strategy" in text

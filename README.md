@@ -95,6 +95,7 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - `--yolo` 同等自裁定且跳过该确认。
   - 死硬阻塞仍停止。
 - release 从 develop 开分支前确认发布目标。
+  - 工作线按是否联调二选一；目标里只写选中的那条。
   - 该分支承担上线前预发布（含跨仓联调），不实施新 PRP。
   - code-review 基线仍为上一正式发布。
 

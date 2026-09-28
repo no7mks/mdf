@@ -9,7 +9,9 @@
 
 - start 经内部 clarify 确认目标、非目标、约束与可验证验收。
 - feature 的 objectives 引用 PRP，避免复制另一个需求来源。
-- release 的 objectives 写本版收口范围、预发布工作、非目标与可验证验收，不引用单个 PRP。
+- release 的 objectives 写已选定工作线、本版收口范围、预发布工作、非目标与可验证验收，
+  不引用单个 PRP。
+  - 工作线只保留开分支前选定的一条，不罗列未选路径。
   - 该分支承担上线前预发布（含跨仓联调），不得实施新 PRP。
 - start 不为 bugfix/hotfix 写 objectives。
   - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 依据 Bug 补写。

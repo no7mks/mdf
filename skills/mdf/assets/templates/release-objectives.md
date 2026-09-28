@@ -1,5 +1,9 @@
 # 发布目标
 
+## 工作线
+
+{{MDF_RELEASE_WORK_LINE}}
+
 ## 本版范围
 
 {{MDF_RELEASE_SCOPE}}

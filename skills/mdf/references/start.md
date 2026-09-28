@@ -110,7 +110,12 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - release：
   - 对照 `changes/unreleased/` 中非 SemVer 子目录的 child Change，
     以及 `assets/templates/release-objectives.md`。
-  - 使用内部 clarify intent，议题固定为「本版收口范围、预发布工作、非目标与可验证验收」。
+  - 使用内部 clarify intent，议题固定为「本版工作线、收口范围、预发布工作、非目标与可验证验收」。
+  - 工作线按是否联调二选一，开分支前必须选定：
+    - 不联调：`start → 开发 → verify → code-review → finish`
+    - 联调：`start → 开通道 → 对齐计划 → 本端验收 → 双端验收 → 确认无更多代码修改后 → code-review → finish`
+  - 目标只写入已选定的那一条；不罗列未选路径，不写「本版选定…」。
+  - fact update 由 finish 前段执行，不画进工作线箭头。
   - 本版范围写入 start 时的 child Change 清单。
   - 跨仓 pin 写 repo 与 branch/commit/version；仓外联调证据的记录方式写入验收。
   - ✅ 允许在本分支改 Bug、配置、文档与联调证据。
