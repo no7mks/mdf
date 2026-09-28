@@ -133,6 +133,11 @@
   - 宿主没有 Goal 设施时仍按同一 goal 持续做，不把控制权交回用户，不结束。
 - session 就绪后在后台启动一次 `integrate poll --repo "$REPO_ROOT"`（命令见「传输」）。
   - 各步从同一 stdout 读取 `message` 事件；步骤 4、5 的 poll 即读取它。
+  - release 且 objectives 写明需要联调时，切到 owner 后立即打开本通道，
+    不得先做其他预发布工作。
+  - 打开通道后先对齐计划，再本端验收、双端验收，双方确认不再改代码后才审查。
+  - 本端验收全绿后 `send` 结果；对端同样。双方都到齐才是双端验收。
+  - ❌ 双端验收未齐或未确认冻结时不得进入 `$mdf code-review`。
   - 📌 一个 agent 只准 poll 本侧这一条。
     - 只启动、只读取本侧 `--repo` 的 poll；对端 inbox 由对端自己的 agent 消费。
     - ❌ 不得再启动对端 worktree 的 poll。

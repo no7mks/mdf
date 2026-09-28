@@ -282,7 +282,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - 开分支前展示 member、strategy 与 models 并确认后冻结 roster。
     - roster 默认：feature 为 min-tdd；release 为 solo 加 3 名 partition reviewer；其他为 solo。
     - `--*-model` 为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
-    - release 开分支前确认发布目标（预发布工作，含跨仓联调；不实施新 PRP）。
+    - release 须写明是否联调；联调按模板工作线，冻结后才审查。
     - hotfix 始终在 objectives 记录已确认范围：roster `0,0` 由 deliver 在开发前写，≥1 由 design 写。
     - bugfix roster `0,0` 不写 objectives；≥1 由 design 写。
 

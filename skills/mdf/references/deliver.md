@@ -233,6 +233,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
+| release 需要联调且通道未打开 | 立即执行 `$mdf integrate` |
 | hotfix `0,0` 且范围未写入 objectives | 确认后写入 `objectives.md` 并提交；auto-pilot 自裁定 |
 | release/hotfix ≥1，design 后记入新 Bug | 在 owner 重入 design 修订后再续各路；dev ≥1 不在 owner 实现 |
 | feature 或 roster ≥1，且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
@@ -242,6 +243,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | feature 或 roster ≥1，测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
 | bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 | 在 owner 按下文「先测后审」验证并修到全绿 |
+| release 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
+| release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
 | feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
 | finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
@@ -250,6 +253,10 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 - bugfix 在 roster `0,0` 时使用对应 Bug。
 - release 对照 `objectives.md` 完成计划内预发布工作（含跨仓联调证据）。
+  - 📌 必须已写明需要或不需要 `$mdf integrate`；未写明则停止，回 start 澄清。
+  - 需要联调且通道未打开时，先执行 `$mdf integrate`，不得先做其他预发布工作。
+    从其步骤 2 起强制 Goal，poll 不得停；等待对端按 1、2、4 分钟输出正在等什么。
+  - 联调按模板工作线。对端验收未过或尚未确认冻结时，不进入 code-review。
   - 并可修已确认的 open Bug（roster `0,0` 在 owner 上修，≥1 按上表经 design 交给各路）；
     完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change。
   - ❌ 不得实施新 PRP；缺能力则推迟或作废本次 release，回 develop 开 feature。
@@ -290,6 +297,10 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
   - 每个 named suite 的命令、结果与报告路径（经 `suite-run`）。
   - quick 复现结论：已补 <位置> / 未补 <原因> / 无非 quick 失败。
 - 全绿后提交，再进入审查；审查修复使证据过期时由 code-review 步骤 4 重验。
+- 📌 release 联调：本端验收即本侧 Verify 全绿，先 `send` 结果（suite、HEAD、结论）。
+  - 再读 poll 等对端同样格式的全绿，这是双端验收。
+  - 双端通过后双方 `send` 确认此后不再改代码，才进入审查。
+  - 对端未到、未过或确认后又改代码：回到本端验收，不派 code-review。
 
 ### 并行委托与 worktree 身份
 

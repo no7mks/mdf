@@ -9,8 +9,12 @@
 
 - start 经内部 clarify 确认目标、非目标、约束与可验证验收。
 - feature 的 objectives 引用 PRP，避免复制另一个需求来源。
-- release 的 objectives 写本版收口范围、预发布工作、非目标与可验证验收，不引用单个 PRP。
+- release 的 objectives 写本版收口范围、预发布工作、是否联调、非目标与可验证验收，不引用单个 PRP。
   - 该分支承担上线前预发布（含跨仓联调），不得实施新 PRP。
+  - 必须写明需要或不需要 `$mdf integrate`；需要时切到 worktree 后先开通道。
+  - 联调过程强制 Goal，poll 不得停；等待对端按 1、2、4 分钟输出正在等什么。
+  - 联调按模板工作线；双端验收且确认不再改代码后才允许 code-review。
+  - fact update 由 finish 前段执行；已有有效结果则不重做。
 - start 不为 bugfix/hotfix 写 objectives。
   - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 依据 Bug 补写。
   - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。

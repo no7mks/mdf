@@ -182,6 +182,10 @@ worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。
 - 通道打开后 poll 常驻直到收口或用户停止。
   - 一个 agent 只 poll 本侧 inbox，不得再启动对端的 poll。
   - 双方用通道沟通，不要只 poll 干等。
+- release 的 objectives 必须写明是否走联调通道。
+  - 需要时切到 worktree 后先打开通道；过程强制 Goal，不得停。
+  - 双端验收且确认不再改代码后才允许 code-review。
+  - fact update 由 finish 前段执行。
 - 联调测试默认由客户端主导。
 
 ## 测试类别与 Code Smell
