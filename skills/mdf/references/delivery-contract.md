@@ -186,12 +186,14 @@ Git 约束：
 
 失效与补验：
 
-- 代码和验证配置（含预算）改变使全绿失效；事实文档改变只要求事实重审和受影响验证。
+- 代码和验证配置（含预算）改变使全绿失效。只改事实文档不重跑业务验证，只重审事实。
 - `fact-update` gate 绑定 `facts`、`implementation` 与 `design`。
   - 只改测试或验证配置不使事实审阅过期，但仍使全绿与 code-review 过期。
 - `code` fingerprint 覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件。
   - ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
 - 记录文件不参与其自身校验对象的 fingerprint。
+- 审查报告已齐且 final_head 尚未与当前代码指纹对齐时，补验留在 code-review 步骤 3–4。
+  - 不回到 Verify 阶段，不重派审查。
 - 缺失或过期时原地补验，不回退 intent。
 
 ### 测试层级与分类
@@ -300,6 +302,7 @@ named suite 的划分：
 
 - bugfix、release、hotfix 都先测后审：审查前由 deliver 的 Verify 阶段修到全绿。
   - 之后只在指纹变化时重验，收口复用有效证据，不重跑 release suite。
+  - 审查报告已齐后的指纹变化在 code-review 步骤 4 重验，不重新进入 Verify 阶段。
   - Verify 阶段定义见 `references/deliver.md`「先测后审」；每次运行向
     `changes/unreleased/<slug>/verify.md` 追加一条记录并随该阶段提交。
 - roster `0,0` 的 bugfix 不创建 design/write-tests/converge。

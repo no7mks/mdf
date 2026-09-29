@@ -149,9 +149,8 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
   - `paths` 要把本次新建或拆出的页写入 `--document-path`。
   - `branch` 依赖已提交的 diff，未提交的新文件不在范围内。
 
-- feature finish 调用时执行受影响验证。
-- 只改事实文档不机械重跑全部业务验证；
-  实现、测试或 verification 改变必须重跑当前交付所需 suite。
+- 只改事实文档不重跑业务验证。
+- 实现、测试或 verification 配置变了，才重跑当前交付所需 suite。
 
 结果分四类：
 
@@ -183,7 +182,7 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 
 不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
 
-- 有改写则回到 3 重审；`4→3` 最多两次。
+- 有改写则回到 3 重审；`4→3` 最多两次。这次重审不重跑 suite。
   - 重审前再次提交结构改写。
   - 仅 `--scope paths` 把新建或拆出的页并入 `--document-path`。
   - `branch` 与 `full` 保持原 scope，不附加路径。
