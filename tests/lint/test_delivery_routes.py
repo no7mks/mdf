@@ -55,6 +55,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     assert "preview" not in diagram and "预览" not in diagram
     assert "不提供预览模式" in text
     assert "仅预览或只读时" in text and "说明此入口不支持并停止" in text
+    assert "正文为本版 CHANGELOG" in text
+    assert "精简条目" in text
     assert "--dry-run" not in text
 
 
@@ -79,20 +81,25 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[5][1] == "Open integrate"
     assert table[5][5] == "结束"
     assert "必须写明需要或不需要" in text
+    assert "本侧可碰范围" in text
+    assert "不得改、操作、启动或终止对端" in text
     assert "不得先做其他预发布工作" in text
     assert "references/integrate.md" in text
     assert "references/clarify.md" in text
     assert "assets/templates/objectives.md" in text
     assert "assets/templates/release-objectives.md" in text
+    assert "只写入已选定的那一条" in text
+    assert "不罗列未选路径" in text
+    assert "不写「本版选定" in text
     template = (
         skill_dir("mdf") / "assets" / "templates" / "release-objectives.md"
     ).read_text(encoding="utf-8")
+    assert "## 工作线" in template
+    assert "{{MDF_RELEASE_WORK_LINE}}" in template
     assert "## 联调" in template
     assert "{{MDF_RELEASE_INTEGRATE}}" in template
-    assert "start → 开通道 → 对齐计划 → 本端验收 → 双端验收" in template
-    assert "确认无更多代码修改后 → code-review → fact update → finish" in template
-    assert "start → 开发 → verify → code-review → fact update → finish" in template
-    assert "fact update 由 finish 前段执行" in template
+    assert "不联调：" not in template
+    assert "本版选定" not in template
     assert "$mdf prp review" in text
     assert "qa_strategy" in text and "dev_strategy" in text
     assert "review_strategy" in text
@@ -169,6 +176,10 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
     contract = workflow("delivery-contract")
     assert "独立 `$mdf fix`" in contract
     assert "也不由 deliver 内部委托" in contract
+    assert "修复某个 Bug 的提交说明必须含该 Bug 的完整 ID" in contract
+    common = workflow("common")
+    assert "修复某个 Bug 的提交说明必须含该 Bug 的完整 ID" in common
+    assert "git log --fixed-strings --grep=<Bug ID>" in common
 
 
 def test_verify_fix_is_second_verification_before_closeout():

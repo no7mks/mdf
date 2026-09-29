@@ -143,6 +143,12 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
 
     assert finished["tag"] == f"v{version}"
     assert finished["pushed"] is True
+    assert git(repo, "cat-file", "-t", f"v{version}").stdout.strip() == "tag"
+    contents = git(
+        repo, "tag", "-l", "--format=%(contents)", f"v{version}"
+    ).stdout
+    assert contents.startswith(f"chore(release): 发布 v{version}")
+    assert f"## [{version}]" in contents
     assert root_change.read_bytes() == root_before
     git(repo, "merge-base", "--is-ancestor", "master", "develop")
     assert git(remote, "rev-parse", f"v{version}^{{}}").stdout == git(

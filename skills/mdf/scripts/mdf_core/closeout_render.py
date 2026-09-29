@@ -249,6 +249,29 @@ def render_version_change(
     )
 
 
+def changelog_excerpt(text: str, version: str) -> str:
+    """取出 CHANGELOG 中该版本一节，作发布 tag 正文。"""
+    match = re.search(
+        rf"^##\s+\[?{re.escape(version)}]?(?:\s|$)",
+        text,
+        re.MULTILINE,
+    )
+    if not match:
+        raise MDFError(
+            f"CHANGELOG 缺少 {version} 条目，不能创建发布 tag",
+            code="missing_changelog",
+        )
+    start = match.start()
+    rest = text[match.end() :]
+    nxt = re.search(r"^##\s+", rest, re.MULTILINE)
+    end = match.end() + nxt.start() if nxt else len(text)
+    return text[start:end].strip()
+
+
+def release_tag_message(tag: str, excerpt: str) -> str:
+    return f"chore(release): 发布 {tag}\n\n{excerpt}"
+
+
 def update_changelog_text(
     text: str,
     *,

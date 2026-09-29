@@ -59,7 +59,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 运行 `doctor`，核对允许正常流程 | doctor 结构化结果 | 2 | 停止 |
+| 1 | Check entry | 脚本 | 运行 `doctor`，核对已初始化 | doctor 结构化结果 | 2 | 未就绪则停 |
 | 2 | Resolve bug | 脚本 | 用 `list` 查重并确认单个 Bug | list 结果、唯一对象 | 3 | 非 closed 命中则停；否则留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐行为、复现、影响及必填字段 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | Confirm | 约束 | 展示边界和排除范围，取得明确 open 确认 | 用户确认 | 5 | 取消停止；来源变回 2；否则事实 3 |
@@ -75,10 +75,14 @@
 **入口**
 
 解析 `REPO_ROOT` 并运行 `doctor`。
+核对 `is_git_root: true`、`initialized: true`、`state: ready`。
 
-验收：`normal_workflows_allowed: true`。
+- 不将 `normal_workflows_allowed: true` 作为前置条件。
+- 活干到一半时文档 stale 是正常的；`evidence.stale` 等 findings 报告后继续。
 
-异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
+验收：仓库已初始化且 manifest ready。
+
+异常与交接：未初始化或 manifest 未就绪时提示 `$mdf init` 并停止。
 
 <a id="s2"></a>
 

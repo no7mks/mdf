@@ -362,11 +362,11 @@ accepted、superseded 或 deprecated。沟通时写完整 ID，如 `adr-use-sqli
 # 形态一：逐条 evidence，各自带验证方式
 evidence:
   - path: "<repo-relative-path>"
-    verification: "<如何验证>"
+    verification: "python -m pytest"
 # 形态二：一组路径共享验证方式
 evidence:
   paths: ["<repo-relative-path>"]
-  verification: "<如何验证>"
+  verification: "# 对照路由表是否指向已有主题叶"
 ```
 
 - `evidence` 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式。
@@ -376,8 +376,9 @@ evidence:
   `.mdf/manifest.yaml`、`CHANGELOG.md`、`docs/JOTS.md`；`changes/**`、`docs/proposals/**`、`docs/bugs/**`。
 - evidence 为另一份当前事实文档时只核对存在与已跟踪，不比较提交先后。
 - 过期只相对实现、测试、配置等非事实文件判定，同一次提交中的文件互不算「晚于」。
-- `verification` 优先写可执行的测试或命令。
-  - 只写「阅读源码」时不得把实现步骤复述进 verification——正文已描述的行为不在 evidence 元数据里重复。
+- `verification` 整段二选一，不得混排（`evidence.verification_form`）：
+  不以 `#` 开头则整段是命令；以 `# `（井号加空格）开头则其后是文字，且须加引号。
+  命令里出现汉字、全角标点或行内 `# ` 视为混排；文字不复述正文已写的行为。
 - 无需为消除 warning 把不承载行为的文件写入 evidence 或 ignorelist。
 
 由脚本生成的文档额外声明 `generated`：

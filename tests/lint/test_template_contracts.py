@@ -19,6 +19,19 @@ def test_change_contract_uses_the_supported_evidence_mapping_example():
     assert "evidence:\n  tests: []\n  commands: []\n  artifacts: []" in text
 
 
+def test_release_objectives_keep_only_the_selected_work_line():
+    template = skill_dir("mdf") / "assets" / "templates" / "release-objectives.md"
+    text = template.read_text(encoding="utf-8")
+
+    assert "## 工作线" in text
+    assert "{{MDF_RELEASE_WORK_LINE}}" in text
+    assert "## 联调" in text
+    assert "{{MDF_RELEASE_INTEGRATE}}" in text
+    assert "不联调：" not in text
+    assert "工作线按是否联调二选一" not in text
+    assert "本版选定" not in text
+
+
 def test_template_slots_use_mdf_prefix():
     load_core_module()
     from mdf_core.constants import MARKER_RE

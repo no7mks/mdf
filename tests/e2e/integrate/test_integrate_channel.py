@@ -14,7 +14,7 @@ def _poll_proc(
     python_exe: str, repo: Path, *extra: str
 ) -> subprocess.Popen:
     cli = skill_dir("mdf") / "scripts" / "mdf.py"
-    return subprocess.Popen(
+    proc = subprocess.Popen(
         [
             python_exe, str(cli), "integrate", "poll",
             "--repo", str(repo), *extra,
@@ -22,7 +22,10 @@ def _poll_proc(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env={**__import__("os").environ, "PYTHONUNBUFFERED": "1"},
     )
+    _lines(proc)
+    return proc
 
 
 def _lines(proc: subprocess.Popen) -> queue.Queue:
@@ -55,23 +58,43 @@ def _stop(proc: subprocess.Popen) -> None:
         proc.stderr.close()
 
 
-def _next_event(proc: subprocess.Popen, timeout: float = 5) -> dict:
+def _next_line(proc: subprocess.Popen, timeout: float = 5) -> str:
     assert proc.stdout is not None
     try:
         line = _lines(proc).get(timeout=timeout)
     except queue.Empty:
         raise AssertionError("poll 没有输出") from None
     assert line, "poll stdout 关闭"
-    return json.loads(line)
+    return line.rstrip("\n")
 
 
-def _next_message(proc: subprocess.Popen, timeout: float = 5) -> dict:
+def _next_json(proc: subprocess.Popen, timeout: float = 5) -> dict:
+    return json.loads(_next_line(proc, timeout=timeout))
+
+
+def _next_wait(proc: subprocess.Popen, timeout: float = 5) -> str:
+    line = _next_line(proc, timeout=timeout)
+    assert "等待" in line, line
+    return line
+
+
+def _next_received(proc: subprocess.Popen, timeout: float = 5) -> str:
     deadline = time.monotonic() + timeout
+    header = ""
+    body: list[str] = []
     while time.monotonic() < deadline:
-        event = _next_event(proc, timeout=max(0.05, deadline - time.monotonic()))
-        if event.get("event") == "message":
-            return event["message"]
-    raise AssertionError("poll 没有交出消息")
+        line = _next_line(proc, timeout=max(0.05, deadline - time.monotonic()))
+        if not header:
+            if not line or ("等待" in line and "收到" not in line):
+                continue
+            assert "收到" in line, line
+            header = line
+            continue
+        if line == "":
+            break
+        body.append(line)
+    assert header, "poll 没有交出消息"
+    return header + ("\n" + "\n".join(body) if body else "")
 
 
 def _repo(path: Path, name: str) -> Path:
@@ -99,23 +122,22 @@ def test_local_send_keeps_poll_running(tmp_path: Path, python_exe: str) -> None:
     )
     proc = _poll_proc(python_exe, right)
     try:
-        waiting = _next_event(proc)
-        assert waiting["event"] == "waiting"
-        assert waiting["ok"] is True
-        sent = payload(
-            mdf(
-                python_exe, "integrate", "send", "--repo", str(left),
-                "--to", "right", "--body", "看到超时",
-            )
+        _next_wait(proc)
+        sent = mdf(
+            python_exe, "integrate", "send", "--repo", str(left),
+            "--to", "right", "--body", "看到超时",
         )
-        assert sent["kind"] == "send"
-        assert sent["transport"] == "path"
-        message = _next_message(proc)
-        assert message["body"] == "看到超时"
-        assert message["kind"] == "send"
-        assert message["from"]["repo"] == "left"
-        assert message["token"] == again["token"]
+        assert_ok(sent)
+        assert "发出  left/main -> right  send" in sent.stdout
+        assert "看到超时" in sent.stdout
+        assert "{" not in sent.stdout
+        got = _next_received(proc)
+        assert "收到  left/main -> right  send" in got
+        assert "看到超时" in got
+        assert "{" not in got
         assert proc.poll() is None
+        inbox = next((right / ".integration" / "inbox").glob("*.yaml"))
+        assert again["token"] in inbox.read_text(encoding="utf-8")
     finally:
         _stop(proc)
 
@@ -125,13 +147,42 @@ def test_poll_timeout_exits_after_waiting(tmp_path: Path, python_exe: str) -> No
     payload(mdf(python_exe, "integrate", "init", "--repo", str(repo)))
     proc = _poll_proc(python_exe, repo, "--timeout", "0.3")
     try:
-        waiting = _next_event(proc)
-        assert waiting["event"] == "waiting"
-        timed_out = _next_event(proc)
-        assert timed_out["event"] == "timeout"
-        assert timed_out["message"] is None
+        _next_wait(proc)
+        timed_out = _next_line(proc)
+        assert "超时" in timed_out
         proc.wait(timeout=2)
         assert proc.returncode == 0
+    finally:
+        _stop(proc)
+
+
+def test_poll_heartbeats_peer_after_each_wait(tmp_path: Path, python_exe: str) -> None:
+    left = _repo(tmp_path, "left")
+    right = _repo(tmp_path, "right")
+    for repo in (left, right):
+        payload(mdf(python_exe, "integrate", "init", "--repo", str(repo)))
+    payload(
+        mdf(
+            python_exe, "integrate", "peer", "--repo", str(left),
+            "--name", "right", "--target", str(right),
+        )
+    )
+    proc = _poll_proc(
+        python_exe, left, "--wait", "0.2", "--timeout", "0.7",
+    )
+    try:
+        _next_wait(proc)
+        found = ""
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            line = _next_line(proc, timeout=1)
+            if "发出" in line and "heartbeat" in line:
+                found = line
+                break
+        assert found
+        inbox = list((right / ".integration" / "inbox").glob("*.yaml"))
+        assert inbox
+        assert "heartbeat" in inbox[0].read_text(encoding="utf-8")
     finally:
         _stop(proc)
 
@@ -153,20 +204,68 @@ def test_bug_request_requires_fields_and_round_trips(tmp_path: Path, python_exe:
     )
     assert missing.returncode == 1
     assert json.loads(missing.stderr)["error"] == "bad_message"
-    payload(
-        mdf(
-            python_exe, "integrate", "send", "--repo", str(left),
-            "--to", "right", "--kind", "bug-request", "--reply-to", "earlier",
-            "--observed", "超时", "--expected", "成功",
-            "--repro", "调用一次", "--impact", "联调阻断",
-        )
+    sent = mdf(
+        python_exe, "integrate", "send", "--repo", str(left),
+        "--to", "right", "--kind", "bug-request", "--reply-to", "earlier",
+        "--observed", "超时", "--expected", "成功",
+        "--repro", "调用一次", "--impact", "联调阻断",
     )
+    assert_ok(sent)
+    assert "发出" in sent.stdout and "bug-request" in sent.stdout
     proc = _poll_proc(python_exe, right)
     try:
-        got = _next_message(proc)
-        assert got["reply_to"] == "earlier"
-        assert got["body"]["observed"] == "超时"
-        assert got["body"]["impact"] == "联调阻断"
+        got = _next_received(proc)
+        assert "收到" in got and "bug-request" in got
+        assert "observed: 超时" in got
+        assert "impact: 联调阻断" in got
+        inbox = next((right / ".integration" / "inbox").glob("*.yaml"))
+        assert "earlier" in inbox.read_text(encoding="utf-8")
+    finally:
+        _stop(proc)
+
+
+def test_courtesy_requires_ack_with_reply_to(tmp_path: Path, python_exe: str) -> None:
+    left = _repo(tmp_path, "left")
+    right = _repo(tmp_path, "right")
+    for repo in (left, right):
+        payload(mdf(python_exe, "integrate", "init", "--repo", str(repo)))
+    payload(
+        mdf(
+            python_exe, "integrate", "peer", "--repo", str(left),
+            "--name", "right", "--target", str(right),
+        )
+    )
+    payload(
+        mdf(
+            python_exe, "integrate", "peer", "--repo", str(right),
+            "--name", "left", "--target", str(left),
+        )
+    )
+    missing = mdf(
+        python_exe, "integrate", "send", "--repo", str(right),
+        "--to", "left", "--kind", "ack",
+    )
+    assert missing.returncode == 1
+    assert json.loads(missing.stderr)["error"] == "bad_message"
+    sent = mdf(
+        python_exe, "integrate", "send", "--repo", str(left),
+        "--to", "right", "--kind", "courtesy",
+    )
+    assert_ok(sent)
+    assert "发出" in sent.stdout and "courtesy" in sent.stdout
+    inbox = next((right / ".integration" / "inbox").glob("*.yaml"))
+    courtesy_id = inbox.read_text(encoding="utf-8").split("id:", 1)[1].splitlines()[0]
+    courtesy_id = courtesy_id.strip().strip('"')
+    proc = _poll_proc(python_exe, right)
+    try:
+        got = _next_received(proc)
+        assert "收到" in got and "courtesy" in got
+        acked = mdf(
+            python_exe, "integrate", "send", "--repo", str(right),
+            "--to", "left", "--kind", "ack", "--reply-to", courtesy_id,
+        )
+        assert_ok(acked)
+        assert "发出" in acked.stdout and "ack" in acked.stdout
     finally:
         _stop(proc)
 
@@ -184,15 +283,15 @@ def test_branch_name_resolves_to_worktree(tmp_path: Path, python_exe: str) -> No
         )
     )
     assert added["peer"]["path"] == str(other.resolve())
-    payload(
-        mdf(
-            python_exe, "integrate", "send", "--repo", str(repo),
-            "--to", "demo", "--body", "在分支上",
-        )
+    sent = mdf(
+        python_exe, "integrate", "send", "--repo", str(repo),
+        "--to", "demo", "--body", "在分支上",
     )
+    assert_ok(sent)
+    assert "在分支上" in sent.stdout
     proc = _poll_proc(python_exe, other)
     try:
-        assert _next_message(proc)["body"] == "在分支上"
+        assert "在分支上" in _next_received(proc)
     finally:
         _stop(proc)
 
@@ -217,7 +316,7 @@ def test_http_requires_token_after_ping_and_end_keeps_listen(
         text=True,
     )
     try:
-        started = _next_event(proc)
+        started = _next_json(proc)
         payload(
             mdf(
                 python_exe, "integrate", "peer", "--repo", str(sender),
@@ -230,13 +329,12 @@ def test_http_requires_token_after_ping_and_end_keeps_listen(
         )
         assert rejected.returncode == 1
         assert json.loads(rejected.stderr)["error"] == "auth_rejected"
-        ping = payload(
-            mdf(
-                python_exe, "integrate", "send", "--repo", str(sender),
-                "--to", "remote", "--kind", "ping",
-            )
+        ping = mdf(
+            python_exe, "integrate", "send", "--repo", str(sender),
+            "--to", "remote", "--kind", "ping",
         )
-        assert ping["transport"] == "http"
+        assert_ok(ping)
+        assert "发出" in ping.stdout and "ping" in ping.stdout
         payload(
             mdf(
                 python_exe, "integrate", "peer", "--repo", str(sender),
@@ -244,31 +342,29 @@ def test_http_requires_token_after_ping_and_end_keeps_listen(
                 "--token", receiver_init["token"],
             )
         )
-        payload(
-            mdf(
-                python_exe, "integrate", "send", "--repo", str(sender),
-                "--to", "remote", "--body", "跨机器",
-            )
+        sent = mdf(
+            python_exe, "integrate", "send", "--repo", str(sender),
+            "--to", "remote", "--body", "跨机器",
         )
+        assert_ok(sent)
         poller = _poll_proc(python_exe, receiver)
         try:
-            assert _next_message(poller)["kind"] == "ping"
-            assert _next_message(poller)["body"] == "跨机器"
-            payload(
-                mdf(
-                    python_exe, "integrate", "send", "--repo", str(sender),
-                    "--to", "remote", "--kind", "end",
-                )
+            first = _next_received(poller)
+            assert "ping" in first
+            assert "跨机器" in _next_received(poller)
+            ended = mdf(
+                python_exe, "integrate", "send", "--repo", str(sender),
+                "--to", "remote", "--kind", "end",
             )
+            assert_ok(ended)
             assert proc.poll() is None
-            payload(
-                mdf(
-                    python_exe, "integrate", "send", "--repo", str(sender),
-                    "--to", "remote", "--body", "仍在监听",
-                )
+            again = mdf(
+                python_exe, "integrate", "send", "--repo", str(sender),
+                "--to", "remote", "--body", "仍在监听",
             )
-            assert _next_message(poller)["kind"] == "end"
-            assert _next_message(poller)["body"] == "仍在监听"
+            assert_ok(again)
+            assert "end" in _next_received(poller)
+            assert "仍在监听" in _next_received(poller)
             assert poller.poll() is None
             status = payload(
                 mdf(python_exe, "integrate", "status", "--repo", str(receiver))

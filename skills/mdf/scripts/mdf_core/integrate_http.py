@@ -9,7 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from .errors import MDFError
-from .integrate_store import BUG_FIELDS, KINDS, read_yaml, write_message
+from .integrate_store import (
+    BUG_FIELDS,
+    KINDS,
+    now_stamp,
+    read_yaml,
+    write_message,
+)
 
 MAX_BODY = 262144
 _ID_RE = re.compile(r"^[0-9]{13}-[0-9a-f]{8}$")
@@ -83,15 +89,23 @@ def incoming_message(payload: Any) -> dict[str, Any]:
     elif kind == "send" and not body.strip():
         raise MDFError("send 需要正文", code="bad_message")
     reply_to = payload.get("reply_to") or ""
+    if kind == "ack" and not str(reply_to).strip():
+        raise MDFError("ack 需要 reply_to", code="bad_message")
     token = payload.get("token") or ""
+    dest = payload.get("to") or ""
+    at = payload.get("at") or ""
     if not isinstance(reply_to, str) or not isinstance(token, str):
         raise MDFError("reply_to 或 token 不合法", code="bad_message")
+    if not isinstance(dest, str) or not isinstance(at, str):
+        raise MDFError("to 或 at 不合法", code="bad_message")
     listen = identity.get("listen") or ""
     if not isinstance(listen, str):
         raise MDFError("listen 不合法", code="bad_message")
     return {
         "id": message_id,
         "kind": kind,
+        "to": dest,
+        "at": at or now_stamp(),
         "reply_to": reply_to,
         "token": token,
         "from": {

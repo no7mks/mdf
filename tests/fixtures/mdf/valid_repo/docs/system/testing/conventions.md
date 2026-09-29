@@ -3,7 +3,7 @@ title: "测试约定"
 doc_type: system-testing
 evidence:
   - path: GLOSSARY.md
-    verification: "对照夹具术语页确认本页不复述产品行为"
+    verification: "# 对照夹具术语页确认本页不复述产品行为"
 ---
 
 # 测试约定

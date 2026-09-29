@@ -96,11 +96,13 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - `--yolo` 同等自裁定且跳过该确认。
   - 死硬阻塞仍停止。
 - release 从 develop 开分支前确认发布目标。
+  - 工作线按是否联调二选一；目标里只写选中的那条。
   - 该分支承担上线前预发布（含跨仓联调），不实施新 PRP。
   - objectives 必须写明是否 `$mdf integrate`；需要时切到 worktree 后先开通道。
   - 不联调：`start → 开发 → verify → code-review → fact update → finish`。
   - 联调：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
-  - fact update 由 finish 前段执行。联调过程强制 Goal，poll 不得停。
+  - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
+  - fact update 由 finish 前段执行。Goal 完成前，用户没让你停，永远不许停下来。
   - code-review 基线仍为上一正式发布。
 
 ### 写入分支与提交

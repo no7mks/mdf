@@ -3,7 +3,7 @@ title: "Current architecture"
 doc_type: system-architecture
 evidence:
   - path: src/service.py
-    verification: "读取模块结构并运行 python -m pytest"
+    verification: "python -m pytest"
 ---
 
 # Current architecture

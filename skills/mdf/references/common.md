@@ -197,6 +197,9 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   - 提交不代表验收通过，也不替代用户对方案、状态或启用的确认。
 - 用户明确要求暂不提交时遵从；无改动不创建空提交。
 - 中文 Conventional Commit 应准确描述内容和必要的未完成状态。
+- 修复某个 Bug 的提交说明必须含该 Bug 的完整 ID（如 `bug-AB12`）。
+  - 供 verify-fix 用 `git log --fixed-strings --grep=<Bug ID>` 定位。
+  - 只改 `docs/` 与 `changes/` 的提交不要求。
 
 **提交范围**
 

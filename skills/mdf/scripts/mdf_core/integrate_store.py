@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,7 @@ from .yamlutil import parse_yaml, yaml_quote
 
 DIR_NAME = ".integration"
 BUG_FIELDS = ("observed", "expected", "repro", "impact")
-KINDS = ("ping", "send", "bug-request", "end")
+KINDS = ("ping", "courtesy", "ack", "heartbeat", "send", "bug-request", "end")
 
 
 def new_id() -> str:
@@ -29,11 +30,50 @@ def write_message(inbox: Path, message: dict[str, Any]) -> None:
     temporary.replace(target)
 
 
+def now_stamp() -> str:
+    return datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %z")
+
+
+def party(identity: Any) -> str:
+    if not isinstance(identity, dict):
+        return "?"
+    repo = str(identity.get("repo") or "")
+    branch = str(identity.get("branch") or "")
+    if repo and branch:
+        return f"{repo}/{branch}"
+    return repo or branch or "?"
+
+
+def format_channel_entry(
+    direction: str, message: dict[str, Any] | None = None
+) -> str:
+    at = str((message or {}).get("at") or now_stamp())
+    if direction == "wait":
+        return f"{at}  等待\n"
+    label = "发出" if direction == "out" else "收到"
+    source = party((message or {}).get("from"))
+    dest = str((message or {}).get("to") or "本侧")
+    kind = str((message or {}).get("kind") or "")
+    header = f"{at}  {label}  {source} -> {dest}  {kind}\n"
+    body = (message or {}).get("body")
+    if isinstance(body, dict):
+        text = "\n".join(
+            f"{key}: {body[key]}" for key in BUG_FIELDS if key in body
+        )
+    else:
+        text = str(body or "")
+    if text:
+        return f"{header}{text}\n\n"
+    return f"{header}\n\n"
+
+
 def render_message(message: dict[str, Any]) -> str:
     identity = message["from"]
     lines = [
         f"id: {yaml_quote(message['id'])}",
         f"kind: {yaml_quote(message['kind'])}",
+        f"to: {yaml_quote(str(message.get('to') or ''))}",
+        f"at: {yaml_quote(str(message.get('at') or ''))}",
         f"reply_to: {yaml_quote(message['reply_to'])}",
         f"token: {yaml_quote(message['token'])}",
         "from:",

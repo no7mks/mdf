@@ -122,10 +122,17 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - release：
   - 对照 `changes/unreleased/` 中非 SemVer 子目录的 child Change，
     以及 `assets/templates/release-objectives.md`。
-  - 使用内部 clarify intent，议题固定为「本版收口范围、预发布工作、是否联调、非目标与可验证验收」。
+  - 使用内部 clarify intent，议题固定为「本版工作线、收口范围、预发布工作、是否联调、非目标与可验证验收」。
+  - 工作线按是否联调二选一，开分支前必须选定：
+    - 不联调：`start → 开发 → verify → code-review → fact update → finish`
+    - 联调：`start → 开通道 → 对齐计划 → 本端验收 → 双端验收 →`
+      `确认无更多代码修改后 → code-review → fact update → finish`
+  - 目标只写入已选定的那一条；不罗列未选路径，不写「本版选定…」。
+  - fact update 由 finish 前段执行；已有有效结果则不重做。
   - 本版范围写入 start 时的 child Change 清单。
   - 📌 必须写明需要或不需要 `$mdf integrate` 联通；不得省略，不得写待定。
-    - 需要：写对端（仓、分支或 HTTP）与通道验收。
+    - 需要：写对端（仓、分支或 HTTP）、通道验收，以及本侧可碰范围。
+      只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
     - 不需要：写「不联调」及原因。
     - 联调按模板工作线：对齐计划、本端验收、双端验收、确认不再改代码后才审查。
   - 跨仓 pin 写 repo 与 branch/commit/version；仓外联调证据的记录方式写入验收。
@@ -133,7 +140,7 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
   - ❌ 不得实施新 PRP，缺能力则推迟或作废本次 release，回 develop 开 feature。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
 
-验收：确认目标含是否联调，以及共同理解。
+验收：确认目标含是否联调、本侧可碰范围，以及共同理解。
 
 异常与交接：不写目标、不创建分支。
 
@@ -261,7 +268,7 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 不得先做其他预发布工作。
 
 - 完整读取并执行 `references/integrate.md`。
-- 从其步骤 2 起强制 Goal，poll 在用户停止前不得停。
+- 从其步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
 - 等待对端按 15、30、45、60 秒输出正在等什么，不得只盯 `waiting`。
 - 本侧只 poll 本侧 `--repo`；对端 inbox 由对端自己的 agent 消费。
 - 独立调用：integrate 结束后本 intent 结束。

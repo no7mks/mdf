@@ -1,9 +1,8 @@
 # 发布目标
 
-工作线按是否联调二选一，开分支前必须选定。fact update 由 finish 前段执行；已有有效结果则不重做。
+## 工作线
 
-- 不联调：`start → 开发 → verify → code-review → fact update → finish`
-- 联调：`start → 开通道 → 对齐计划 → 本端验收 → 双端验收 → 确认无更多代码修改后 → code-review → fact update → finish`
+{{MDF_RELEASE_WORK_LINE}}
 
 ## 本版范围
 

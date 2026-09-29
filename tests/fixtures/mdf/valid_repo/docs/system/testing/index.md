@@ -3,7 +3,7 @@ title: "测试"
 doc_type: system-testing
 evidence:
   - path: docs/system/testing/conventions.md
-    verification: "确认本页路由表指向已有主题叶"
+    verification: "# 确认本页路由表指向已有主题叶"
 ---
 
 # 测试

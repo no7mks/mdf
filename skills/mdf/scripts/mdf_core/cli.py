@@ -254,7 +254,8 @@ def build_parser() -> argparse.ArgumentParser:
     integrate.add_argument("--token")
     integrate.add_argument("--to")
     integrate.add_argument(
-        "--kind", choices=("ping", "send", "bug-request", "end")
+        "--kind",
+        choices=("ping", "courtesy", "ack", "heartbeat", "send", "bug-request", "end"),
     )
     integrate.add_argument("--reply-to")
     integrate.add_argument("--body")
@@ -263,6 +264,7 @@ def build_parser() -> argparse.ArgumentParser:
     integrate.add_argument("--repro")
     integrate.add_argument("--impact")
     integrate.add_argument("--timeout", type=float)
+    integrate.add_argument("--wait", type=float)
     integrate.add_argument("--bind", default="127.0.0.1:8765")
     integrate.set_defaults(func=command_integrate)
     return parser

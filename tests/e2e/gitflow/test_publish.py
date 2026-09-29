@@ -10,6 +10,7 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
     repo, remote = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix", "--version", "1.2.1"))
     work = Path(created["worktree"])
+    write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()
@@ -35,6 +36,12 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
     for ref, head in before.items():
         assert git(repo, "rev-parse", ref).stdout == head
     assert git(remote, "rev-parse", "master").stdout == before["master"]
+    assert git(repo, "cat-file", "-t", "v1.2.1").stdout.strip() == "tag"
+    contents = git(
+        repo, "tag", "-l", "--format=%(contents)", "v1.2.1"
+    ).stdout
+    assert contents.startswith("chore(release): 发布 v1.2.1")
+    assert "测试发布条目" in contents
     # 清理后仍可从主 worktree 核验同一次成功操作，不重复创建提交/tag。
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/1.2.1"))
     assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
@@ -45,6 +52,7 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     repo, remote = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix", "--version", "1.2.1"))
     work = Path(created["worktree"])
+    write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()
@@ -82,6 +90,7 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_
                               str(write_release_objectives(tmp_path)),
                           ] if kind == "release" else [])))
     work = Path(created["worktree"])
+    write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()

@@ -36,6 +36,27 @@ def commit(repo, message="test: 提交当前阶段"):
     git(repo, "commit", "-m", message)
 
 
+def write_changelog_release(
+    repo: Path, version: str, *, date: str = "2026-07-30"
+) -> None:
+    load_core_module()
+    from mdf_core.closeout_render import update_changelog_text
+    from mdf_core.constants import CHANGELOG_CATEGORIES
+
+    notes = {name: [] for name in CHANGELOG_CATEGORIES}
+    notes["Fixed"] = ["测试发布条目"]
+    path = repo / "CHANGELOG.md"
+    path.write_text(
+        update_changelog_text(
+            path.read_text(encoding="utf-8"),
+            version=version,
+            release_date=date,
+            notes=notes,
+        ),
+        encoding="utf-8",
+    )
+
+
 def git_primary(repo):
     raw = git(repo, "rev-parse", "--git-common-dir").stdout.strip()
     path = Path(raw)

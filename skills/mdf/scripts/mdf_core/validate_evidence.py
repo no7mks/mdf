@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -15,6 +16,28 @@ from .errors import Finding, MDFError, add_finding
 from .gitutil import GitPathIndex, commit_is_after
 from .paths import path_stays_in_repo, relative
 from .yamlutil import read_frontmatter
+
+# 命令形态里出现这些字符，视为夹了文字（汉字、CJK 标点、全角）。
+_PROSE_IN_COMMAND_RE = re.compile(
+    r"[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\uffef]"
+)
+
+
+def verification_form_error(method: str) -> str | None:
+    """命令与「# 」文字二选一；混排或空文字返回错误说明。"""
+    text = method.strip()
+    if not text:
+        return None
+    if text.startswith("#"):
+        if not text.startswith("# ") or not text[2:].strip():
+            return "文字形态的 verification 必须以「# 」开头且其后非空"
+        return None
+    if "# " in text or _PROSE_IN_COMMAND_RE.search(text):
+        return (
+            "verification 不能命令与文字混排：以「# 」开头写文字，"
+            "否则整段必须是命令"
+        )
+    return None
 
 
 def frontmatter_evidence(
@@ -179,13 +202,22 @@ def validate_evidence(
                     rel,
                 )
                 continue
-            if not method:
+            if not method or not method.strip():
                 add_finding(
                     findings,
                     "evidence.verification",
                     f"Evidence lacks a verification method: {evidence_path}",
                     rel,
                 )
+            else:
+                form_error = verification_form_error(method)
+                if form_error:
+                    add_finding(
+                        findings,
+                        "evidence.verification_form",
+                        f"{form_error}: {evidence_path}",
+                        rel,
+                    )
             # 事实页之间的引用只是链接；比较先后会让路由页随叶子页或收口的链接改写连锁过期。
             if not check_staleness or candidate in fact_paths:
                 continue
