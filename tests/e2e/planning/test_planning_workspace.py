@@ -44,6 +44,10 @@ def test_planning_land_updates_develop_without_stealing_checkout(
     git(work, "commit", "-m", "docs: 规划草稿")
     result = payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
     assert result["landed"] is True
+    assert parent_count(repo) == 1
+    assert git(repo, "rev-parse", "HEAD").stdout == git(
+        work, "rev-parse", "HEAD"
+    ).stdout
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(repo, "show", "develop:planning-note.txt").stdout == "草稿\n"
     assert git(work, "branch", "--show-current").stdout.strip() == "planning"
@@ -89,6 +93,10 @@ def test_empty_land_does_not_leave_merge_head_on_develop(python_exe, tmp_path):
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs: develop 新提交")
     payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
+    assert parent_count(work) == 1
+    assert git(work, "rev-parse", "HEAD").stdout == git(
+        repo, "rev-parse", "HEAD"
+    ).stdout
     result = payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
     assert result["landed"] is False
     assert not has_merge_head(repo)
@@ -102,11 +110,16 @@ def test_git_is_clean_treats_sequencer_heads_as_dirty(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     checkout_develop(repo)
-    planning_worktree(python_exe, repo)
+    work = planning_worktree(python_exe, repo)
     (repo / "develop-only.txt").write_text("b\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs: develop 新提交")
     payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
+    (work / "temp.txt").write_text("t\n")
+    git(work, "add", "--all")
+    git(work, "commit", "-m", "docs: 临时")
+    git(work, "rm", "temp.txt")
+    git(work, "commit", "-m", "docs: 撤回临时")
     git(repo, "merge", "--no-ff", "--no-commit", "planning")
     assert not git(repo, "status", "--porcelain").stdout.strip()
     assert has_merge_head(repo)
@@ -129,9 +142,7 @@ def test_git_is_clean_treats_sequencer_heads_as_dirty(python_exe, tmp_path):
     assert git_is_clean(repo) is True
 
 
-def test_merge_no_ff_reports_unfinished_merge_not_conflict(
-    python_exe, tmp_path
-):
+def test_diverged_planning_land_and_ensure_stay_no_ff(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     checkout_develop(repo)
@@ -139,15 +150,52 @@ def test_merge_no_ff_reports_unfinished_merge_not_conflict(
     (work / "planning-note.txt").write_text("草稿\n")
     git(work, "add", "--all")
     git(work, "commit", "-m", "docs: 规划草稿")
-    payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
+    (repo / "develop-only.txt").write_text("b\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "docs: develop 新提交")
+    result = payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
+    assert result["landed"] is True
+    assert parent_count(repo) == 2
+    assert git(repo, "log", "-1", "--format=%s").stdout.strip() == (
+        "chore(planning): 合并 planning 到 develop"
+    )
+    assert git(repo, "show", "HEAD:planning-note.txt").stdout == "草稿\n"
+    assert git(repo, "show", "HEAD:develop-only.txt").stdout == "b\n"
+    (work / "again.txt").write_text("p\n")
+    git(work, "add", "--all")
+    git(work, "commit", "-m", "docs: 再次规划")
+    (repo / "again-dev.txt").write_text("d\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "docs: 再次 develop")
+    ensured = payload(
+        mdf(python_exe, "planning", "ensure", "--repo", str(repo))
+    )
+    assert ensured["synced"] is True
+    assert parent_count(work) == 2
+    assert git(work, "log", "-1", "--format=%s").stdout.strip() == (
+        "chore(planning): 合并 develop 到 planning"
+    )
+
+
+def test_merge_reports_unfinished_merge_not_conflict(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    checkout_develop(repo)
+    work = planning_worktree(python_exe, repo)
+    (work / "planning-note.txt").write_text("草稿\n")
+    git(work, "add", "--all")
+    git(work, "commit", "-m", "docs: 规划草稿")
+    (repo / "develop-only.txt").write_text("b\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "docs: develop 新提交")
     git(work, "merge", "--no-ff", "--no-commit", "develop")
     assert has_merge_head(work)
     load_core_module()
     from mdf_core.errors import MDFError
-    from mdf_core.planning import merge_no_ff
+    from mdf_core.planning import merge_branch
 
     with pytest.raises(MDFError) as caught:
-        merge_no_ff(work, "develop")
+        merge_branch(work, "develop")
     assert caught.value.code == "unfinished_merge"
     assert has_merge_head(work)
 

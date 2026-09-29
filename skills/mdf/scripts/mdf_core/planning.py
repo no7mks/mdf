@@ -31,7 +31,25 @@ def _exists(repo: Path, ref: str) -> bool:
                     check=False).returncode
 
 
-def merge_no_ff(repo: Path, source: str) -> bool:
+def _is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
+    return _git(
+        repo, "merge-base", "--is-ancestor", ancestor, descendant, check=False,
+    ).returncode == 0
+
+
+def merge_branch(repo: Path, source: str) -> bool:
+    """develop 与 planning：能 fast-forward 则 ff，已分叉则 no-ff。"""
+    if git_in_progress_head(repo) == "MERGE_HEAD":
+        raise MDFError(
+            "未结束的合并（MERGE_HEAD 仍在）；"
+            "先完成提交或执行 git merge --abort",
+            code="unfinished_merge",
+        )
+    if _is_ancestor(repo, source, "HEAD"):
+        return False
+    if _is_ancestor(repo, "HEAD", source):
+        _git(repo, "merge", "--ff-only", source)
+        return True
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
         if (
@@ -98,7 +116,7 @@ def ensure_planning(repo: Path) -> dict:
         work = path
     synced = False
     if git_is_clean(work):
-        merge_no_ff(work, "develop")
+        merge_branch(work, "develop")
         synced = True
     return {
         "ok": True,
@@ -130,10 +148,10 @@ def command_planning_land(args) -> None:
             code="planning_occupied",
         )
     ensure_clean(occupant)
-    landed = merge_no_ff(occupant, BRANCH)
+    landed = merge_branch(occupant, BRANCH)
     synced = False
     if planning_wt is not None and git_is_clean(planning_wt):
-        merge_no_ff(planning_wt, "develop")
+        merge_branch(planning_wt, "develop")
         synced = True
     emit({
         "ok": True,

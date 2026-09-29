@@ -173,10 +173,12 @@ python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
 
 - `ensure` 从本地 `develop` 创建或复用唯一的 `planning` 分支，以及仓库同级
   `<repo-name>-worktrees/planning` worktree；不在当前目录开分支。
-  - 若该 worktree clean，则把 `develop` no-ff 合入 `planning`。
+  - 若该 worktree clean，则把 `develop` 合入 `planning`。
+    可 fast-forward 时用 ff；已分叉时 no-ff。
   - JSON 含 `worktree`、`created`、`synced`。
-- `land` 要求占用 `develop` 的 worktree clean，把 `planning` no-ff 合入 `develop`。
-  - 规划 worktree clean 时再把 `develop` 合回 `planning`。
+- `land` 要求占用 `develop` 的 worktree clean，把 `planning` 合入 `develop`。
+  - 可 fast-forward 时用 ff；已分叉时 no-ff。
+  - 规划 worktree clean 时再把 `develop` 合回 `planning`，规则相同。
 - 冲突 abort。不 fetch、不 push。
 - `planning` 不是 Gitflow 交付分支。
 
