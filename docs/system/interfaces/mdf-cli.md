@@ -105,7 +105,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `archive` | `list` 与 `archive` | [仓库写入命令](mdf-cli-write.md) |
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
-| `to` | `to --target`：规划 ensure、develop 复用、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
+| `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `finish` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。

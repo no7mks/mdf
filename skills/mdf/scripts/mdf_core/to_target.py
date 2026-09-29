@@ -7,6 +7,7 @@ from typing import Any
 
 from .errors import MDFError, emit
 from .gitutil import (
+    git_in_progress_head,
     primary_worktree,
     repo_path,
     require_git_root,
@@ -19,6 +20,8 @@ from .planning import ensure_planning
 
 PLANNING_ALIASES = frozenset({"plan", "planning", "plan-mode"})
 DEVELOP_ALIASES = frozenset({"develop"})
+DEPLOY_ALIASES = frozenset({"deploy"})
+DEPLOY_BRANCH = "master"
 
 
 def _normalize(target: str) -> str:
@@ -61,6 +64,9 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
                 details=_available(repo),
             )
         return _payload(raw, "develop", "develop", path, False)
+    if key in DEPLOY_ALIASES:
+        path, created = _ensure_deploy(primary, trees)
+        return _payload(raw, "deploy", DEPLOY_BRANCH, path, created)
     matches = _match_worktrees(trees, raw, key)
     paths = {path.resolve() for _, path in matches}
     if len(paths) == 1:
@@ -88,6 +94,71 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     run(["git", "worktree", "add", str(path), branch], cwd=primary)
     return _payload(raw, None, branch, path, True)
+
+
+def _ensure_deploy(
+    primary: Path, trees: dict[str, Path],
+) -> tuple[Path, bool]:
+    if not _exists(primary, f"refs/heads/{DEPLOY_BRANCH}"):
+        raise MDFError("需要已有 master 分支", code="missing_branch")
+    path = sibling_worktree(primary, "deploy")
+    work = _worktree_at(primary, path)
+    if work is None:
+        occupant = trees.get(DEPLOY_BRANCH)
+        if occupant is not None:
+            raise MDFError(
+                "master 已被其他 worktree 占用",
+                code="master_occupied",
+                details={"worktree": str(occupant)},
+            )
+        if path.exists():
+            raise MDFError("并行分支或 worktree 已存在", code="collision")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        run(["git", "worktree", "add", str(path), DEPLOY_BRANCH], cwd=primary)
+        return path, True
+    if _show_branch(work) == DEPLOY_BRANCH:
+        return work, False
+    occupant = trees.get(DEPLOY_BRANCH)
+    if occupant is not None and occupant.resolve() != work.resolve():
+        raise MDFError(
+            "master 已被其他 worktree 占用",
+            code="master_occupied",
+            details={"worktree": str(occupant)},
+        )
+    if _tracked_dirty(work):
+        raise MDFError(
+            "deploy worktree 有已跟踪改动，不能切回 master",
+            code="dirty_worktree",
+            details={"worktree": str(work), "branch": _show_branch(work)},
+        )
+    run(["git", "checkout", DEPLOY_BRANCH], cwd=work)
+    return work, False
+
+
+def _show_branch(repo: Path) -> str:
+    return run(["git", "branch", "--show-current"], cwd=repo).stdout.strip()
+
+
+def _tracked_dirty(repo: Path) -> bool:
+    if git_in_progress_head(repo) is not None:
+        return True
+    result = run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=repo,
+    )
+    return bool(result.stdout.strip())
+
+
+def _worktree_at(repo: Path, path: Path) -> Path | None:
+    raw = run(["git", "worktree", "list", "--porcelain"], cwd=repo).stdout
+    target = path.resolve()
+    for block in raw.strip().split("\n\n"):
+        for line in block.splitlines():
+            if line.startswith("worktree "):
+                found = Path(line.split(" ", 1)[1]).resolve()
+                if found == target:
+                    return found
+    return None
 
 
 def _payload(
@@ -128,6 +199,7 @@ def _available(repo: Path) -> dict[str, Any]:
         "aliases": {
             "planning": sorted(PLANNING_ALIASES),
             "develop": sorted(DEVELOP_ALIASES),
+            "deploy": sorted(DEPLOY_ALIASES),
         },
         "worktrees": {branch: str(path) for branch, path in trees.items()},
     }

@@ -101,6 +101,9 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 写入或提交前读取当前分支，按本次工作与文档的归属确定落点，不按 intent 名称分配
 交付分支：
 
+- deploy 工作区是仓库同级 `<repo-name>-worktrees/deploy`，`$mdf to deploy` 检出 master。
+  - 只放 gitignore 的 deploy config，不在此修改或提交已跟踪文件。
+  - 已跟踪改动干净才切回 master。finish 不拆除这棵树。
 - master 不直接修改或提交内容，包括文档；hotfix 的修改也在 hotfix 分支完成。
   init/bootstrap/migrate 的初始化落地及 finish 的 Gitflow 合并按各自专门契约执行。
   upgrade 替换已安装 Skill 并提交本次路径时，可在当前分支（含 master）提交这些路径，

@@ -192,6 +192,9 @@ python3 skills/mdf/scripts/mdf.py to --repo /path/to/repository --target plan
 - 要求 Git 根，不要求 manifest 或 clean worktree。
 - `plan` / `planning` / `plan-mode` 内部 `planning ensure`。
 - `develop` 复用占用 develop 的 worktree，不新建。
+- `deploy` 创建或复用 `<repo-name>-worktrees/deploy`，检出已有 `master`。
+  - 已跟踪改动干净才切回 master；gitignore 的文件保留。
+  - master 不存在或已被占用则失败。不新建分支，finish 不拆除。
 - 已有 worktree 按分支名或目录名复用；已有本地分支缺树则
   `worktree add` 到 `<repo-name>-worktrees/`。
 - ❌ 不创建新分支。

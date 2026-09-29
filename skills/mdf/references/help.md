@@ -114,7 +114,7 @@
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
-- `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立
+- `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，`deploy` 检出 master
 - `$mdf integrate`：同仓走角色与验收，不开消息通道；跨仓才收发消息；一侧只 poll 本侧
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
@@ -385,10 +385,10 @@ $mdf clarify 要不要把缓存放到 Redis
     - 更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`；替换后在当前分支提交本次路径，不 push。
     - 随后重读新 Skill。仅不符合契约的 code 才建议 `$mdf migrate`。
 - `$mdf to <target>`
-  - 用法：`$mdf to plan`、`$mdf to develop` 或 `$mdf to <分支>`
-  - 用途：进入目标 worktree；planning / 已有分支在缺树时建立。
+  - 用法：`$mdf to plan`、`$mdf to develop`、`$mdf to deploy` 或 `$mdf to <分支>`
+  - 用途：进入目标 worktree；planning、deploy 与已有分支在缺树时建立。
   - 说明：`plan` / `planning` / `plan-mode` 进 planning；`develop` 回主树。
-    已有分支可建 sibling worktree。不创建新交付分支。
+    `deploy` 检出 master 并保留 gitignore 的 config。不创建新交付分支。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：同 worktree 保留角色、计划、验收与收口，不打开消息通道。跨 worktree 才收发消息。

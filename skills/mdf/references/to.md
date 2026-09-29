@@ -1,6 +1,6 @@
 # To
 
-进入目标 worktree。规划别名与已有分支在缺树时建立 worktree。
+进入目标 worktree。规划别名、deploy 与已有分支在缺树时建立 worktree。
 不创建新的交付分支或角色分支。
 
 ## 决策树
@@ -52,6 +52,11 @@
 - 空目标停止，并展示 `$mdf help to`。
 - 规划别名（等价，进入 `planning`）：`plan`、`planning`、`plan-mode`。
 - `develop` 进入占用 develop 的 worktree，通常是主仓库根。
+- `deploy` 进入 `<repo-name>-worktrees/deploy`，并检出已有 `master`。
+  - 该路径已在、但不在 master：已跟踪改动干净则切回；否则停止。
+  - gitignore 的文件留在该目录，不删除、不提交。
+  - master 不存在，或已被其他 worktree 占用，则停止。
+  - 此别名不匹配同名分支。
 - 其余写已有 worktree 的分支名或目录名，或已有本地分支名。
 - 匹配多项则停止，不猜测。
 - ❌ 不得新建交付分支或角色分支；只给已有分支补 worktree。
@@ -67,6 +72,10 @@
 - 运行 `to --repo "$REPO_ROOT" --target <target>`。
 - 规划别名内部 `planning ensure`，创建或复用 planning worktree。
 - `develop` 复用占用 develop 的已有 worktree，不新建。
+- `deploy` 创建或复用 `<repo-name>-worktrees/deploy`，检出已有 `master`。
+  - 切回时只看已跟踪改动；gitignore 的 deploy config 保留。
+  - 不新建分支，finish 不拆除这棵树。
+  - 本树占用 master 时，release/hotfix 的合入发生在这里。
 - 已有 worktree 复用；已有分支缺树则在 `<repo-name>-worktrees/` 下 `worktree add`。
 - 以 JSON 的 `worktree` 绝对路径与 `branch` 为准。
 

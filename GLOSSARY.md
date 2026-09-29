@@ -79,6 +79,15 @@ hermetic UT 或 PT；原慢用例保留。
 - 用于 Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。
 - 主 worktree 保持 develop；合入 develop 后 `$mdf start` 才看到新对象。
 
+## Deploy 工作区
+
+`<repo-name>-worktrees/deploy`。`$mdf to deploy` 创建或进入，并检出已有 `master`。
+
+- 存放 gitignore 的 deploy config；不提交这些文件。
+- 已跟踪改动干净才从其他分支切回 master。
+- master 不存在，或已被其他 worktree 占用时停止。
+- finish 不拆除这棵树。
+
 ## Roster
 
 一次交付在 start 时冻结的参与人数与并行策略。
