@@ -123,7 +123,7 @@ duplicate_of: bug-<canonical>
 
 ```yaml
 change_kind: feature | bugfix
-source_branch: feature/<slug> | bugfix/<bug-id>
+source_branch: feature/<slug> | bugfix/<bug-id> | develop
 proposals: [prp-...]
 fixed: [bug-...]
 closed: [bug-...]
@@ -137,6 +137,10 @@ evidence:
   artifacts: []
 ```
 
+- `source_branch: feature/<slug>` / `bugfix/<bug-id>`：经 finish 交付；
+  目录 slug 必须与分支后缀的 kebab 形式对齐。
+- `source_branch: develop`：无独立交付分支的直合 Change；目录自选 kebab slug，
+  不与分支名对齐；不经 finish，只由后续 release 作 child 聚合。
 - 一个 Bug 只能出现在三个 outcome 列表之一。
   - `closed` 只存 `rejected` Bug 的 ID；拒绝原因由该 Bug 的 `reject-reason` 声明。
   - ❌ duplicate ID 不得出现在任何 outcome 列表。

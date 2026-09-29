@@ -44,6 +44,14 @@ def validate_change_file(
             "CHANGE requires source_branch",
             rel,
         )
+    elif not root and source_branch == "develop":
+        if change_kind not in {"feature", "bugfix"}:
+            add_finding(
+                findings,
+                "change.kind",
+                "develop-sourced CHANGE requires change_kind feature or bugfix",
+                rel,
+            )
     else:
         try:
             details = branch_details(source_branch)

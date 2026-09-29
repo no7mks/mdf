@@ -206,6 +206,8 @@
   - bugfix：按对象契约准备当前分支的 `changes/unreleased/<slug>/CHANGE.md`，
     slug 为 Bug ID 的 kebab-case（小写）。
     - 不要求 objectives、design、唯一 PRP 或 feature gate。记录实际 Bug outcomes 和证据。
+  - `source_branch: develop` 的直合 Change 不属于本 finish；目录自选 slug，
+    只作为后续 release 的 child 聚合。
   - release：核对已有 child Change 与 `objectives.md`；材料聚合与版本目录写入留给步骤 8。
   - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
 - 对象状态：

@@ -3,6 +3,26 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 
+def test_closeout_apply_accepts_develop_sourced_child(tmp_path: Path):
+    core = load_core_module()
+    repo = prepare_release_closeout_repo(tmp_path, slug="docs-tweak")
+    change = repo / "changes" / "unreleased" / "docs-tweak" / "CHANGE.md"
+    replace(change, "source_branch: feature/docs-tweak", "source_branch: develop")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "docs: 直合 develop 的 Change")
+    context = closeout_context_for(core, repo, tmp_path, "docs-tweak")
+
+    result = core.apply_closeout(repo.resolve(), context)
+
+    release_dir = repo / "changes" / "1.3.0"
+    assert result["slugs"] == ["docs-tweak"]
+    assert (release_dir / "docs-tweak" / "CHANGE.md").is_file()
+    assert "source_branch: develop" in (
+        release_dir / "docs-tweak" / "CHANGE.md"
+    ).read_text(encoding="utf-8")
+    assert not (repo / "changes" / "unreleased" / "docs-tweak").exists()
+
+
 def test_closeout_apply_executes_directly_without_staged_repository(
     tmp_path: Path,
 ):
