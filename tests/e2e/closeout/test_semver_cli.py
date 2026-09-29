@@ -46,6 +46,8 @@ def test_release_versions_are_strict_stable_semver(
         ("1.2.3", "2.0.0", "Removed", False, False),
         ("0.2.7", "0.2.8", "Fixed", True, False),
         ("0.2.7", "0.3.0", "Fixed", True, True),
+        ("0.2.7", "0.2.8", "Added", False, True),
+        ("0.2.7", "0.3.0", "Removed", True, True),
     ],
 )
 def test_minimum_semver_bump(

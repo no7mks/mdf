@@ -25,7 +25,8 @@ def test_stable_semver(raw, parsed):
     ({"Fixed"}, False, (1, 0, 0), "patch"),
     ({"Added"}, False, (1, 0, 0), "minor"),
     ({"Removed"}, False, (1, 0, 0), "major"),
-    ({"Removed"}, False, (0, 4, 0), "minor"),
+    ({"Removed"}, False, (0, 4, 0), "major"),
+    ({"Added"}, False, (0, 4, 0), "minor"),
     (set(), True, (2, 0, 0), "major"),
 ])
 def test_required_bump(categories, breaking, previous, bump):
@@ -33,8 +34,16 @@ def test_required_bump(categories, breaking, previous, bump):
     assert semver.required_bump(previous, categories, breaking) == bump
 
 
+def _bump_name(previous, candidate):
+    """0.x 内第二位是 major、第三位是 minor；其余按首个不同的位。"""
+    if previous[0] == 0 and candidate[0] == 0:
+        return "major" if candidate[1] != previous[1] else "minor"
+    first = next(index for index in range(3) if candidate[index] != previous[index])
+    return ("major", "minor", "patch")[first]
+
+
 def test_bump_kind_matches_the_highest_changed_part():
-    """PT：任意递增的版本对，bump_kind 等于首个不同的位；非递增一律拒绝。"""
+    """PT：任意递增的版本对按位次命名；非递增一律拒绝。"""
     semver, _, MDFError = core()
     rng = random.Random(20260927)
     for _ in range(500):
@@ -44,5 +53,4 @@ def test_bump_kind_matches_the_highest_changed_part():
             with pytest.raises(MDFError):
                 semver.bump_kind(previous, candidate)
             continue
-        first = next(index for index in range(3) if candidate[index] != previous[index])
-        assert semver.bump_kind(previous, candidate) == ("major", "minor", "patch")[first]
+        assert semver.bump_kind(previous, candidate) == _bump_name(previous, candidate)

@@ -204,6 +204,9 @@ python3 skills/mdf/scripts/mdf.py semver-check \
 `--breaking` 声明破坏性变更。命令输出实际与要求的 bump 类型；候选版本不足，
 或 `Removed` 未声明 `--breaking` 时以状态码 `2` 失败。
 
+- 上一版与候选都低于 `1.0.0` 时，第二位的变化是 major，第三位的变化是 minor。
+- 从 `0.x` 升到 `1.0.0` 仍是 major。
+
 ## `run`
 
 ```bash
