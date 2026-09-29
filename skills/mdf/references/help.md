@@ -115,7 +115,7 @@
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
 - `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立
-- `$mdf integrate`：在 worktree 之间收发联调消息；一侧只 poll 本侧；跨机器时可选 HTTP
+- `$mdf integrate`：同仓走角色与验收，不开消息通道；跨仓才收发消息；一侧只 poll 本侧
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
 
@@ -391,7 +391,7 @@ $mdf clarify 要不要把缓存放到 Redis
     已有分支可建 sibling worktree。不创建新交付分支。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
-  - 用途：在两个 worktree 之间收发联调消息。
+  - 用途：同 worktree 保留角色、计划、验收与收口，不打开消息通道。跨 worktree 才收发消息。
   - 说明：从 init 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
     先 courtesy，必须收到 ack。每等待 1 分钟互发 heartbeat。只改本仓；只 poll 本侧。15、30、45、60 秒。
 - `$mdf help`

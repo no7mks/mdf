@@ -80,7 +80,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[4][6] == "留在 5 等待"
     assert table[5][1] == "Open integrate"
     assert table[5][5] == "结束"
-    assert "必须写明需要或不需要" in text
+    assert "必须写明三种之一" in text
     assert "本侧可碰范围" in text
     assert "不得改、操作、启动或终止对端" in text
     assert "不得先做其他预发布工作" in text
@@ -291,15 +291,16 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "只有本轮修复或集成改动了实现" in review
     deliver = workflow("deliver")
     assert "### 先测后审" in deliver
-    assert "| release 需要联调且通道未打开 |" in deliver
-    assert "必须已写明需要或不需要" in deliver
-    assert "| release 联调且对端验收未通过 |" in deliver
+    assert "| release 同 worktree 联调且尚未收口 |" in deliver
+    assert "| release 跨 worktree 联调且通道未打开 |" in deliver
+    assert "必须已写明不联调、同 worktree 或跨 worktree" in deliver
+    assert "| release 跨 worktree 联调且对端验收未通过 |" in deliver
     assert "| release 联调且尚未确认无更多代码修改 |" in deliver
     assert "| bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 |" in deliver
     assert deliver.index("验证证据缺失、过期或失败") < deliver.index(
-        "release 联调且对端验收未通过"
+        "release 跨 worktree 联调且对端验收未通过"
     )
-    assert deliver.index("release 联调且对端验收未通过") < deliver.index(
+    assert deliver.index("release 跨 worktree 联调且对端验收未通过") < deliver.index(
         "release 联调且尚未确认无更多代码修改"
     )
     assert deliver.index("release 联调且尚未确认无更多代码修改") < deliver.index(

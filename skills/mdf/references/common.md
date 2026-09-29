@@ -38,7 +38,7 @@ upgrade 不读取本文件。
 
 <a id="s-banner"></a>
 
-每次回复只在第一行打印一行横幅；刚切换 worktree 时再打印一次。格式固定：
+横幅标识当前工作区，不在回复开头打印。单行格式固定：
 
 `` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``
 
@@ -47,8 +47,13 @@ upgrade 不读取本文件。
   非 Git 时 `-`。
 - `<worktree full path>`：本会话绑定的目标 worktree 绝对路径；未绑定则
   `git rev-parse --show-toplevel`。
-- ❌ 不得在回复末尾再打印。
-- 对任何 agent 都生效。help、clarify、upgrade 也必须打印；规则见 `SKILL.md`。
+- 相对上一处横幅，worktree 或 branch 变化时立刻打印三行：旧横幅、单独一行
+  `⬇️`、新横幅。
+- 没有上一处横幅时不打印切换三行。
+- 本轮输出结束、等待用户回复时，最后一行必须是当前横幅。
+  - 切换后的横幅已是最后一行时，不再重复。
+- ❌ 不得在回复开头打印。
+- 对任何 agent 都生效。help、clarify、upgrade 也必须在结尾打印；规则见 `SKILL.md`。
 
 ## 切换工作区
 
@@ -81,7 +86,7 @@ upgrade 不读取本文件。
     `git -C <路径> branch --show-current` 等于目标分支。
 
 未满足则留在当前步骤：Cursor 重复切换；其他宿主核对该绝对路径。
-不拆除已建 worktree 与分支。刚进入成功时立即再打印一行横幅。
+不拆除已建 worktree 与分支。进入成功且 worktree 或 branch 已变化时，按「工作区横幅」打印切换三行。
 
 ## 入口
 

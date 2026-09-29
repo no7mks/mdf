@@ -176,7 +176,12 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 
 ## 联调通道
 
-worktree 内由 `.gitignore` 忽略的 `.integration/` 目录。
+`$mdf integrate` 服务两种联调。不联调不进入。
+
+同 worktree（同仓）保留角色、计划、验收、修复与收口，不打开消息通道。
+跨 worktree（跨仓）才使用下面的通道。
+
+通道是 worktree 内由 `.gitignore` 忽略的 `.integration/` 目录，只用于跨 worktree。
 
 - 本机对端直接写入其 `inbox/`。
 - 另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。

@@ -12,12 +12,11 @@
 - release 的 objectives 写已选定工作线、本版收口范围、预发布工作、是否联调、
   非目标与可验证验收，不引用单个 PRP。
   - 工作线只保留开分支前选定的一条，不罗列未选路径。
-  - 该分支承担上线前预发布（含跨仓联调），不得实施新 PRP。
-  - 必须写明需要或不需要 `$mdf integrate`；需要时切到 worktree 后先开通道。
-  - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-  - 联调过程强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
-    等待对端按 15、30、45、60 秒输出正在等什么。
-  - 联调按模板工作线；双端验收且确认不再改代码后才允许 code-review。
+  - 该分支承担上线前预发布，不得实施新 PRP。工作线三选一，只写选定的一条。
+  - 不联调不执行 integrate。同 worktree 执行 integrate，不打开消息通道。
+  - 跨 worktree 切到 worktree 后先开通道。只改本仓，不得改、操作、启动或终止对端。
+  - 两种联调都强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
+  - 两端验收且确认不再改代码后才允许 code-review。
   - fact update 由 finish 前段执行；已有有效结果则不重做。
 - start 不为 bugfix/hotfix 写 objectives。
   - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 依据 Bug 补写。

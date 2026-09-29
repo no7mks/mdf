@@ -52,7 +52,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 按 integrate 停止 ────→ [按 integrate 交接]
-                 └──── 已打开 ───────────────→ [结束]
+                 └──── 已进入 ───────────────→ [结束]
 ```
 
 ## 工作流（唯一执行契约）
@@ -72,7 +72,7 @@ feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
 | 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
 | 5 | Switch worktree | 约束 | 切到 owner worktree | cwd、分支 | 需联调则 6；其他结束 | 留在 5 等待 |
-| 6 | Open integrate | 约束 | 立即执行 `$mdf integrate` | 通道、Goal、poll | 结束 | 按 integrate 交接 |
+| 6 | Open integrate | 约束 | 立即执行 `$mdf integrate` | Goal；跨 worktree 另有通道与 poll | 结束 | 按 integrate 交接 |
 
 ## 术语与数据结构
 
@@ -123,18 +123,19 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
   - 对照 `changes/unreleased/` 中非 SemVer 子目录的 child Change，
     以及 `assets/templates/release-objectives.md`。
   - 使用内部 clarify intent，议题固定为「本版工作线、收口范围、预发布工作、是否联调、非目标与可验证验收」。
-  - 工作线按是否联调二选一，开分支前必须选定：
+  - 工作线三选一，开分支前必须选定：
     - 不联调：`start → 开发 → verify → code-review → fact update → finish`
-    - 联调：`start → 开通道 → 对齐计划 → 本端验收 → 双端验收 →`
-      `确认无更多代码修改后 → code-review → fact update → finish`
+    - 同 worktree（同仓）：对齐计划后做两端验收。确认不再改代码才审查。
+    - 跨 worktree（跨仓）：先开通道并对齐计划，再做本端验收与双端验收。
+      确认不再改代码后才审查，finish 前段做 fact update。
   - 目标只写入已选定的那一条；不罗列未选路径，不写「本版选定…」。
   - fact update 由 finish 前段执行；已有有效结果则不重做。
   - 本版范围写入 start 时的 child Change 清单。
-  - 📌 必须写明需要或不需要 `$mdf integrate` 联通；不得省略，不得写待定。
-    - 需要：写对端（仓、分支或 HTTP）、通道验收，以及本侧可碰范围。
+  - 📌 必须写明三种之一；不得省略，不得写待定。
+    - 不联调：写原因。不执行 integrate。
+    - 同 worktree：两端在本树验收。执行 integrate，不打开消息通道。
+    - 跨 worktree：写对端（仓、分支或 HTTP）、通道验收，以及本侧可碰范围。
       只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-    - 不需要：写「不联调」及原因。
-    - 联调按模板工作线：对齐计划、本端验收、双端验收、确认不再改代码后才审查。
   - 跨仓 pin 写 repo 与 branch/commit/version；仓外联调证据的记录方式写入验收。
   - ✅ 允许在本分支改 Bug、配置、文档与联调证据。
   - ❌ 不得实施新 PRP，缺能力则推迟或作废本次 release，回 develop 开 feature。
@@ -251,7 +252,7 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - 向用户给出目标绝对路径与分支名。
 - Cursor 未进入则留在 5，重复切换；其他宿主绑定绝对路径后即通过。
 - 不拆除已建 worktree 与分支。
-- 已切到后看 objectives：release 且需要联调则进入 6，不得先结束。
+- 已切到后看 objectives：release 且为同 worktree 或跨 worktree 则进入 6，不得先结束。
 - 其他 kind，或不联调的 release：
   - 独立调用结束，由用户手动触发 design 或通过 next 委托。
   - deliver 内部委托时返回调用方。
@@ -264,16 +265,17 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 
 **通道**
 
-仅 release 且 objectives 写明需要 `$mdf integrate` 时进入。切到 owner 后立即执行，
-不得先做其他预发布工作。
+仅 release 且 objectives 写明同 worktree 或跨 worktree 时进入。不联调不进入。
+切到 owner 后立即执行，不得先做其他预发布工作。
 
 - 完整读取并执行 `references/integrate.md`。
+- 同 worktree 不打开消息通道。跨 worktree 从其步骤 2 打开通道。
 - 从其步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
-- 等待对端按 15、30、45、60 秒输出正在等什么，不得只盯 `waiting`。
-- 本侧只 poll 本侧 `--repo`；对端 inbox 由对端自己的 agent 消费。
+- 跨 worktree 等待对端按 15、30、45、60 秒输出正在等什么，不得只盯 `waiting`。
+- 跨 worktree 本侧只 poll 本侧 `--repo`；对端 inbox 由对端自己的 agent 消费。
 - 独立调用：integrate 结束后本 intent 结束。
 - deliver 内部委托：integrate 结束后返回调用方。
 
-验收：通道已打开，Goal 仍在，poll 在后台运行。
+验收：Goal 已创建。跨 worktree 另要求通道已打开且 poll 在后台。
 
 异常与交接：按 `references/integrate.md` 交接。

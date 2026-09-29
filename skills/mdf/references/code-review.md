@@ -134,8 +134,9 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
   - ❌ 不在未全绿的 HEAD 上派审查。
 - release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
   - 审查基线仍为上一正式发布。
-  - 📌 需要联调时，进入 2 前须双端验收通过，且双方已确认此后不再改代码。
-    - 本侧 `project-verify check` 通过不够；对端未到、未过或未冻结则停止，不派审查。
+  - 📌 同 worktree 或跨 worktree 联调时，进入 2 前须两端验收通过，且已确认此后不再改代码。
+    - 同 worktree：两端都在本树验收。
+    - 跨 worktree：未双端验收通过则不派审查。对端未到、未过或未冻结则停止。
 - hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
 - 不为形式创建 feature 材料。
 - bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；

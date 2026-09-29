@@ -233,7 +233,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
-| release 需要联调且通道未打开 | 立即执行 `$mdf integrate` |
+| release 同 worktree 联调且尚未收口 | 执行 `$mdf integrate`，不打开消息通道 |
+| release 跨 worktree 联调且通道未打开 | 立即执行 `$mdf integrate` |
 | hotfix `0,0` 且范围未写入 objectives | 确认后写入 `objectives.md` 并提交；auto-pilot 自裁定 |
 | release/hotfix ≥1，design 后记入新 Bug | 在 owner 重入 design 修订后再续各路；dev ≥1 不在 owner 实现 |
 | feature 或 roster ≥1，且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
@@ -243,7 +244,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | feature 或 roster ≥1，测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
 | bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 | 在 owner 按下文「先测后审」验证并修到全绿 |
-| release 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
+| release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
 | feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
@@ -252,13 +253,14 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 非 feature 交付的开发范围：
 
 - bugfix 在 roster `0,0` 时使用对应 Bug。
-- release 对照 `objectives.md` 完成计划内预发布工作（含跨仓联调证据）。
-  - 📌 必须已写明需要或不需要 `$mdf integrate`；未写明则停止，回 start 澄清。
-  - 需要联调且通道未打开时，先执行 `$mdf integrate`，不得先做其他预发布工作。
+- release 对照 `objectives.md` 完成计划内预发布工作。
+  - 📌 必须已写明不联调、同 worktree 或跨 worktree；未写明则停止，回 start 澄清。
+  - 同 worktree 尚未收口时先执行 `$mdf integrate`，不打开消息通道。
+  - 跨 worktree 且通道未打开时，先执行 `$mdf integrate`，不得先做其他预发布工作。
     从其步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
     等待对端按 15、30、45、60 秒输出正在等什么。
-  - 联调按模板工作线。对端验收未过或尚未确认冻结时，不进入 code-review。
-  - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
+  - 联调按选定工作线。两端验收未过或尚未确认冻结时，不进入 code-review。
+  - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
     对端缺陷发 `bug-request`。
   - 并可修已确认的 open Bug（roster `0,0` 在 owner 上修，≥1 按上表经 design 交给各路）；
     完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change。

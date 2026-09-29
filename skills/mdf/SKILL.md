@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 仅接受显式 `$mdf <intent>` 调用。裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
-每次回复只在第一行打印一行工作区横幅；刚切换 worktree 时再打印一次。格式固定：
+不在回复开头打印工作区横幅。单行格式固定：
 
 `` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``
 
@@ -19,7 +19,12 @@ disable-model-invocation: true
   非 Git 时 `-`。
 - `<worktree full path>`：本会话绑定的目标 worktree 绝对路径；未绑定则
   `git rev-parse --show-toplevel`。
-- ❌ 不得在回复末尾再打印。
+- 相对上一处横幅，worktree 或 branch 变化时立刻打印三行：旧横幅、单独一行
+  `⬇️`、新横幅。
+- 没有上一处横幅时不打印切换三行。
+- 本轮输出结束、等待用户回复时，最后一行必须是当前横幅。
+  - 切换后的横幅已是最后一行时，不再重复。
+- ❌ 不得在回复开头打印。
 - 对任何 agent、任何 intent（含 help、clarify、upgrade）都生效。
 
 ## 选择树

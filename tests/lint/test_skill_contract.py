@@ -451,7 +451,7 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "不写目标" in start
     assert "feature/release 2；其他 3" in start
     assert "release-objectives.md" in start and "Open integrate" in start
-    assert "必须写明需要或不需要" in start and "Confirm roster" in start
+    assert "必须写明三种之一" in start and "Confirm roster" in start
     assert "member、strategy 与 models" in start
     assert "no-ff 合并到本地 develop" in finish
     assert "no-ff 合并到" in finish and "master" in finish

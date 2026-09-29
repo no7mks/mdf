@@ -103,8 +103,10 @@
 - 交付主线的当前 intent 已完成而交付未结束时，可委托下一个阶段。
   - feature 阶段顺序：start → design → [write-tests ∥ implement] → converge → code-review → finish。
   - bugfix/hotfix/release 阶段顺序：开发 → Verify 阶段（`deliver.md`「先测后审」）→ code-review → finish。
-    - release 开发：objectives 必须已写明是否联调；需要且通道未打开时先 `$mdf integrate`。
-    - 联调按模板工作线；双端验收且确认不再改代码后才委托 code-review。
+    - release 开发：objectives 必须已写明不联调、同 worktree 或跨 worktree。
+    - 同 worktree 未收口时先 `$mdf integrate`，不打开消息通道。
+    - 跨 worktree 需要且通道未打开时先 `$mdf integrate`。
+    - 联调按选定工作线；双端验收且确认不再改代码后才委托 code-review。
     - Verify 阶段不是独立 intent；next 读取 `deliver.md`「先测后审」自行执行，算作一次续办。
   - 测试与实现都未完成时，沿用已有分工；无分工则先 write-tests，再由后续 next 推进 implement。
 - 存在仍在运行的执行者时报告其进度或待交接项，不重复执行其工作。

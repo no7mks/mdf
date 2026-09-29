@@ -42,7 +42,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 | `$mdf to <target>` | 进入目标 worktree；`plan` 进 planning，`develop` 回主树，已有分支缺树则建立 |
-| `$mdf integrate` | 在 worktree 之间收发联调消息；从 init 起强制 Goal；一侧只 poll 本侧；跨机器时可选 HTTP |
+| `$mdf integrate` | 同仓走角色与验收，不开消息通道；跨仓才收发消息；一侧只 poll 本侧 |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
@@ -96,12 +96,11 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - `--yolo` 同等自裁定且跳过该确认。
   - 死硬阻塞仍停止。
 - release 从 develop 开分支前确认发布目标。
-  - 工作线按是否联调二选一；目标里只写选中的那条。
-  - 该分支承担上线前预发布（含跨仓联调），不实施新 PRP。
-  - objectives 必须写明是否 `$mdf integrate`；需要时切到 worktree 后先开通道。
+  - 工作线三选一；目标里只写选中的那条。不实施新 PRP。
   - 不联调：`start → 开发 → verify → code-review → fact update → finish`。
-  - 联调：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
-  - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
+  - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
+  - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
+  - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
   - fact update 由 finish 前段执行。Goal 完成前，用户没让你停，永远不许停下来。
   - code-review 基线仍为上一正式发布。
 

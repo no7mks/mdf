@@ -343,24 +343,35 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
     common = workflow("common")
     entry = workflow("entry")
     banner = "📍**<main-repo-name>@<branch>** 📂 `<worktree full path>`"
-    assert banner in common
-    assert banner in entry
-    assert "每次回复只在第一行打印" in common
-    assert "每次回复只在第一行打印" in entry
-    assert "刚切换 worktree 时再打印一次" in common
-    assert "刚切换 worktree 时再打印一次" in entry
-    assert "不得在回复末尾再打印" in common
-    assert "不得在回复末尾再打印" in entry
+    for text in (common, entry):
+        assert banner in text
+        assert "不得在回复开头打印" in text
+        assert "单独一行\n  `⬇️`" in text
+        assert "等待用户回复" in text
+        assert "不再重复" in text
+        assert "没有上一处横幅时不打印切换三行" in text
+        assert "每次回复只在第一行打印" not in text
+        assert "不得在回复末尾再打印" not in text
     assert "不得要求用户手动切换 worktree" in common
     assert "git -C <路径>" in common
     block = (
         skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md"
     ).read_text(encoding="utf-8")
-    assert banner in block
+    for phrase in (
+        banner,
+        "不在回复开头打印工作区横幅",
+        "单独一行 `⬇️`",
+        "等待用户回复",
+        "已是该行则不重复",
+    ):
+        assert phrase in block
 
 
 def test_integrate_forces_goal_and_never_stops_poll():
     text = workflow("integrate")
+    assert "同 worktree（同仓）" in text
+    assert "跨 worktree（跨仓）" in text
+    assert "不 init、不 poll、不 listen、不 send" in text
     assert "强制 Goal" in text
     assert "Goal 完成前，用户没让你停，永远不许停下来" in text
     assert "正在等待：对端 ack" in text

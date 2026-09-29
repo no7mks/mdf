@@ -171,6 +171,7 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 ```
 
 要求 Git 根，不要求 manifest 或 clean worktree，不创建提交。
+这些子命令只用于跨 worktree 联调。同 worktree 联调不调用它们。
 
 | 子命令 | 行为 |
 | --- | --- |
