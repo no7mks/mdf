@@ -212,6 +212,10 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - 未带的 `--*-model` 不写入 roster.models 对应键。
 - `--roster` 只展开为人数与策略，不写入 delivery.json。
 - CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
+- 有 origin 时，开分支前用 `ls-remote` 核对基线，不更新远程跟踪分支。
+  - 远程提交已在本地（相同或本地更新）才通过。
+  - 远程有本地没有的提交则停止，不创建分支。
+  - 无 origin，或 origin 上没有该基线分支，则跳过。
 - feature/bugfix/release 从本地 develop 创建，hotfix 从本地 master 创建。
 - 本地已有同名分支则失败，不检查远端。
 - 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立 worktree：

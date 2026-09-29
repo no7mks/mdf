@@ -129,6 +129,7 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 | `hotfix` | 稳定 SemVer 的 `--version` | `--objectives-file` | 本地 `master` |
 
 命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
+有 origin 时用 `ls-remote` 核对基线。远程提交必须已在本地，本地可以更新。
 
 分支与 worktree：
 

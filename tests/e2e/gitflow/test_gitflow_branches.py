@@ -5,6 +5,73 @@ from _support import run
 from support_delivery import *  # noqa: F403
 
 
+def _error(result):
+    assert result.returncode != 0
+    return json.loads(result.stderr.strip().splitlines()[-1])
+
+
+def _advance_origin(remote: Path, branch: str, tmp_path: Path) -> None:
+    other = tmp_path / f"ahead-{branch}"
+    git(tmp_path, "clone", "--branch", branch, str(remote), str(other))
+    (other / f"{branch}-remote.txt").write_text("远程更新\n", encoding="utf-8")
+    commit(other, f"test: 远程推进 {branch}")
+    git(other, "push")
+
+
+def test_start_allows_local_base_ahead_of_origin(python_exe: str, tmp_path: Path):
+    repo, _remote = start_repo(tmp_path)
+    git(repo, "checkout", "develop")
+    (repo / "local-only.txt").write_text("本地更新\n", encoding="utf-8")
+    commit(repo, "test: 本地领先 develop")
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    result = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+    ))
+    assert result["base"] == "develop"
+    assert result["pushed"] is False
+
+
+@pytest.mark.parametrize("kind,base", [("feature", "develop"), ("hotfix", "master")])
+def test_start_rejects_origin_commits_missing_locally(
+    python_exe: str, tmp_path: Path, kind: str, base: str,
+):
+    repo, remote = start_repo(tmp_path)
+    _advance_origin(remote, base, tmp_path)
+    if kind == "feature":
+        obj = tmp_path / "objectives.md"
+        obj.write_text("# 目标\n\n交付健康接口。\n")
+        identifier = ["--proposal", "prp-001", "--objectives-file", str(obj)]
+        branch = "feature/service-health"
+    else:
+        identifier = ["--version", "1.3.0"]
+        branch = "hotfix/1.3.0"
+    failed = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", kind, *identifier,
+    )
+    assert _error(failed)["error"] == "remote_ahead"
+    assert run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"],
+        cwd=repo,
+    ).returncode != 0
+
+
+def test_start_rejects_diverged_base(python_exe: str, tmp_path: Path):
+    repo, remote = start_repo(tmp_path)
+    git(repo, "checkout", "develop")
+    (repo / "local-diverge.txt").write_text("本地分叉\n", encoding="utf-8")
+    commit(repo, "test: 本地分叉 develop")
+    _advance_origin(remote, "develop", tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n交付健康接口。\n")
+    failed = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+    )
+    assert _error(failed)["error"] == "remote_ahead"
+
+
 def test_start_does_not_require_origin(
     python_exe: str, tmp_path: Path,
 ):

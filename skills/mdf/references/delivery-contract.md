@@ -83,6 +83,7 @@
 
 - start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立交付 worktree，
   路径等于分支名；不在当前目录开分支，不 fetch、不 push。
+  - 有 origin 时基线的远程提交必须已在本地；本地可以更新。
 - roster 在 start 开分支前展示 member、strategy 与 models 并经确认后冻结。
   - 写入 `delivery.json`（有交付材料时）与 `branch.<owner>.mdf-roster`。
   - 字段为 `qa`、`dev`、`reviewers`，以及 `qa_strategy`、`dev_strategy`、`review_strategy`；

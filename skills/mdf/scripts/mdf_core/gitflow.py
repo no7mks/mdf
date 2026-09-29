@@ -49,6 +49,27 @@ def _exists(repo: Path, ref: str) -> bool:
                     check=False).returncode
 
 
+def _require_base_covers_origin(repo: Path, branch: str) -> None:
+    if _git(repo, "remote", "get-url", ORIGIN, check=False).returncode:
+        return
+    listed = _git(repo, "ls-remote", ORIGIN, f"refs/heads/{branch}", check=False)
+    if listed.returncode:
+        raise MDFError(f"无法读取 {ORIGIN}/{branch}", code="remote_unavailable")
+    lines = listed.stdout.strip().splitlines()
+    if not lines:
+        return
+    remote_sha = lines[0].split()[0]
+    local_sha = _git(repo, "rev-parse", f"refs/heads/{branch}").stdout.strip()
+    ancestor = _git(
+        repo, "merge-base", "--is-ancestor", remote_sha, local_sha, check=False,
+    )
+    if ancestor.returncode:
+        raise MDFError(
+            f"本地 {branch} 缺少 {ORIGIN}/{branch} 上的提交",
+            code="remote_ahead",
+        )
+
+
 def _synced(repo: Path, branch: str) -> None:
     local = f"refs/heads/{branch}"
     remote = f"refs/remotes/{ORIGIN}/{branch}"
@@ -141,6 +162,7 @@ def command_start(args) -> None:
     base = _target(args.kind)
     if not _exists(repo, f"refs/heads/{base}"):
         raise MDFError(f"Branch {base} must exist", code="missing_branch")
+    _require_base_covers_origin(repo, base)
     objectives = None
     if args.kind == "feature":
         if args.name:
