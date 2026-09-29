@@ -8,7 +8,6 @@ import unicodedata
 from conftest import skill_dir
 from support_routes import *  # noqa: F403
 
-
 def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     skill = skill_dir("mdf")
     clarify = (skill / "references" / "clarify.md").read_text(encoding="utf-8")
@@ -50,7 +49,6 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     assert "不调用 `$mdf code-review`" in verify_fix
     assert "导入错误、编译失败或环境故障不算有效红灯" in fix
     assert "明确确认才转" in review
-
 
 def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     root = skill_dir("mdf")
@@ -350,6 +348,7 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
         assert "等待用户回复" in text
         assert "不再重复" in text
         assert "没有上一处横幅时不打印切换三行" in text
+        assert "等于该路径最后两级" in text
         assert "每次回复只在第一行打印" not in text
         assert "不得在回复末尾再打印" not in text
     assert "不得要求用户手动切换 worktree" in common
@@ -363,6 +362,7 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
         "单独一行 `⬇️`",
         "等待用户回复",
         "已是该行则不重复",
+        "等于 worktree 路径最后两级",
     ):
         assert phrase in block
 

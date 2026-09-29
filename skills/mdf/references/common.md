@@ -47,6 +47,7 @@ upgrade 不读取本文件。
   非 Git 时 `-`。
 - `<worktree full path>`：本会话绑定的目标 worktree 绝对路径；未绑定则
   `git rev-parse --show-toplevel`。
+- `<branch>` 等于该路径最后两级（用 `/` 连接）时，不打印 `📂` 与目录。
 - 相对上一处横幅，worktree 或 branch 变化时立刻打印三行：旧横幅、单独一行
   `⬇️`、新横幅。
 - 没有上一处横幅时不打印切换三行。
