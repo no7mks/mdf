@@ -12,6 +12,10 @@ def test_common_jev_optional_accelerator_is_non_blocking() -> None:
     assert "禁止空探测" in text
     assert "`choice` / `noul` / `score` / `run`" in text
     assert "不是硬依赖" in text
+    assert "首次不可用提示" in text
+    assert "每会话至多一行" in text
+    assert "README「Jev 可选加速」" in text
+    assert "不得追问" in text
 
 
 def test_hung_intents_keep_optional_accelerator_marker() -> None:

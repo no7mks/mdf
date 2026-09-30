@@ -19,11 +19,15 @@ upgrade 不读取本文件。
 
 <a id="s-jev"></a>
 
-Jev（MCP tool：`choice` / `noul` / `score` / `run`）只加速「选项已知」的定型判断。
-无 Jev 时主 Agent 路径与未引入前完全一致：不停止、不追问安装、不多一轮判断。
-❌ 不是硬依赖，不是 gate，不替代用户确认、clarify、生成或确定性 CLI。
+### 角色
 
-**文档与执行顺序（无 Jev 一等）**
+- MCP tool：`choice` / `noul` / `score` / `run`，只加速「选项已知」的定型判断。
+- 无 Jev 时主 Agent 路径与未引入前完全一致。
+- 不停止、不多一轮判断、不阻塞流程。
+- ❌ 不是硬依赖，不是 gate。
+- ❌ 不替代用户确认、clarify、生成或确定性 CLI。
+
+### 文档与执行顺序
 
 1. 先按该步骤完整主 Agent 规则准备材料并写清分支。
 2. 仅当本步声明「可选加速」、会话未记 `jev=unavailable`、且 tool 列表含上列
@@ -33,24 +37,40 @@ Jev（MCP tool：`choice` / `noul` / `score` / `run`）只加速「选项已知�
 3. 采信 → 落入该步**已有**分支；不采信 / 无 tool → 仍走上文主路径。
 4. 各 intent 只写死本题的 tool、state、选项与阈值；协议以本节为准。
 
-**会话可用性**
+### 会话可用性
 
 | 情况 | 当步 | 本会话后续 |
 | --- | --- | --- |
-| 无上列 tool | 主 Agent | 记 `jev=unavailable`，不再调用 |
-| 认证失败（缺 key / 401 等） | 主 Agent | 粘性 `unavailable` |
+| 无上列 tool | 主 Agent；见下方首次提示 | 记 `jev=unavailable`，不再调用 |
+| 认证失败（缺 key / 401 等） | 主 Agent；见下方首次提示 | 粘性 `unavailable` |
 | 非认证失败或结果畸形 | 主 Agent | 不粘性禁用 |
 | 低置信度（低于该步阈值） | 不采信，主 Agent | 不禁用 |
 | 合法结果且达阈值 | 仅已枚举定型分支 | 保持可用 |
 
-默认阈值：`choice` / `score` 的 confidence ≥ 0.8；`noul` 采信 yes 当值 ≥ 0.8、
-采信 no 当值 ≤ 0.2；中间带走主 Agent。intent 可写更严阈值，不得更松除非写明。
+默认阈值：
 
-**宿主（个人能力，非仓库契约）**
+- `choice` / `score`：confidence ≥ 0.8。
+- `noul`：yes ≥ 0.8，no ≤ 0.2；中间带走主 Agent。
+- intent 可写更严阈值，不得更松除非写明。
 
-可选：stdio `jev-mcp`（如 `jev-cli`）+ Cursor `envFile` 注入密钥（如
-`OPENROUTER_API_KEY`）。密钥不进目标仓、不进 Skill 模板；缺配置即无 tool，走主路径。
-与 CodeWiki 相反：CodeWiki 缺 MCP 须停；Jev 缺了跳过加速。
+### 首次不可用提示
+
+每会话至多一行。第一次因「无 tool」或「认证失败」记 `jev=unavailable` 时，
+在当步输出中恰好加一行：
+
+- 文案固定为：
+  `未检测到可用的 Jev MCP；定型判断将由主 Agent 完成，可能更慢。安装见 Skill 所在仓库 README「Jev 可选加速」。`
+- ❌ 不得追问、不得停、不得再展开安装教程正文。
+- 同一会话后续步骤 ❌ 不再重复该行。
+- 非认证失败、低置信度、未声明可选加速的步骤：不发此提示。
+
+### 宿主
+
+- 安装见上游或已安装 Skill 对应仓库 README「Jev 可选加速」。
+- 形态：stdio `jev-mcp`（如 `jev-cli`）+ Cursor `envFile` 注入密钥。
+- 示例 key 名：`OPENROUTER_API_KEY`。
+- 密钥不进目标仓、不进 Skill 模板；缺配置即无 tool，走主路径。
+- 与 CodeWiki 相反：CodeWiki 缺 MCP 须停；Jev 缺了跳过加速。
 
 ## 目标根
 

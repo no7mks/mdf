@@ -3,11 +3,31 @@
 MDF 是一套本地优先的 Agent 文档流程。它使用版本化文件管理当前事实、工作
 意图、重要决策、可执行证据和 Agent 控制面。
 
-可选：宿主可配置 Jev MCP（如 OpenRouter + `jev-cli` 的 `jev-mcp`）。
+### Jev 可选加速
 
-- Agent 仅在写死的定型判断步骤用 `choice` / `noul` / `score` / `run`。
-- **无 Jev 时流程完全可用**，不要求安装或密钥。
-- 密钥用宿主 `envFile` 注入，不进目标仓。
+宿主可配置 Jev MCP；**无 Jev 时流程完全可用**，定型判断改由主 Agent（可能更慢）。
+Agent 仅在写死步骤使用 `choice` / `noul` / `score` / `run`。
+
+以 Cursor + OpenRouter + [`jev-cli`](https://pypi.org/project/jev-cli/) 为例：
+
+1. `uv tool install jev-cli`（得到 `jev-mcp`）。
+2. 在 `~/.config/cursor/jev.env`（`chmod 600`）写入
+   `OPENROUTER_API_KEY=...`（密钥不进目标仓）。
+3. 在 `~/.cursor/mcp.json` 增加 stdio 服务，例如：
+
+```json
+{
+  "mcpServers": {
+    "jev": {
+      "command": "jev-mcp",
+      "env": { "JEV_PROVIDER": "openrouter" },
+      "envFile": "${userHome}/.config/cursor/jev.env"
+    }
+  }
+}
+```
+
+4. 重载 MCP；会话出现上述 tool 后即可加速。其他 provider 改 `JEV_PROVIDER` 与对应 key。
 
 ## 使用
 
