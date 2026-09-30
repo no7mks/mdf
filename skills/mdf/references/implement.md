@@ -61,16 +61,18 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
   - `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo <该绝对路径> --commit <owner 完整分支名>`
 - ❌ `roster.dev ≥ 1` 时不得在 feature 上实现（指 owner，不是 kind）。
 
-会话根按调用方式处理：
+路径与会话根按调用方式处理（目标为该 dev 绝对路径与分支；index 1 形如
+`dev/feature/<slug>`，不是 owner）：
 
-- 独立调用或 deliver 步骤 4 的 subagent 将会话根切到该 dev 路径与分支（index 1
-  形如 `dev/feature/<slug>`），不是 owner：
-  - Cursor 对该 dev 路径调用 `move_agent_to_root`（禁止 `move_agent_to_cloned_root`），
-    新 shell 核对 toplevel 与当前分支。
-  - 其他宿主必须用该 dev 绝对路径继续全部操作，禁止新建 worktree，禁止切到 owner，
-    禁止要求用户切换工作区。
-  - Cursor 未进入则停止，不按 common 留步等待：角色树已由 start 建好。
-- deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner。
+- subagent（含 deliver 步骤 4）与非 Cursor 主 Agent：按 `common.md`「切换工作区」
+  绝对路径绑定该 dev；禁止新建 worktree、禁止切到 owner、禁止要求用户切换；
+  禁止 `move_agent_to_root`。
+  - 用 `git -C`、`--repo` 与该路径下绝对文件路径；核对该路径 toplevel 与分支。
+- 独立调用的 Cursor 主 Agent：按 `common.md`「切换工作区」`move_agent_to_root`
+  进入该 dev。
+- deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner；
+  用 `git -C` 与绝对路径操作。
+- 绑定或切换成功后横幅用该 dev 的路径与分支；相对上一处变化时打印切换三行。
 
 再运行 `delivery check --stage implement`，并遵守：
 

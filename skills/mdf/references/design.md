@@ -95,7 +95,9 @@ owner 另开第二个。
 - 任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，
   以及步骤 2 已确认的设计与底座方案原文。
   - hotfix 另写入已确认的热修复范围。
-- 将会话根切到 owner。
+- subagent 按 `common.md`「切换工作区」绝对路径绑定 owner；禁止新建 worktree、
+  禁止要求用户切换；禁止 `move_agent_to_root`。
+  - 绑定成功后横幅用 owner 的路径与分支；相对上一处变化时打印切换三行。
 
 执行约束：
 

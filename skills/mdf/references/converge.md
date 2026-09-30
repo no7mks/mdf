@@ -58,7 +58,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 ### 执行者
 
 无法提供 subagent 时停止，不降级代做。已有 converge 执行者先等待，不对同一
-owner 另开第二个。subagent 将会话根切到 owner。
+owner 另开第二个。subagent 按 `common.md`「切换工作区」绝对路径绑定 owner；
+禁止新建 worktree、禁止要求用户切换；禁止 `move_agent_to_root`。
+绑定成功后横幅用 owner 的路径与分支；相对上一处变化时打印切换三行。
 
 - 分派前与结束后运行
   `worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。

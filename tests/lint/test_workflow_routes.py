@@ -344,14 +344,13 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
     for text in (common, entry):
         assert banner in text
         assert "不得在回复开头打印" in text
-        assert "单独一行\n  `⬇️`" in text
         assert "等待用户回复" in text
         assert "不再重复" in text
         assert "没有上一处横幅时不打印切换三行" in text
         assert "等于该路径最后两级" in text
         assert "每次回复只在第一行打印" not in text
         assert "不得在回复末尾再打印" not in text
-    assert "不得要求用户手动切换 worktree" in common
+    assert "禁止要求用户切换" in common
     assert "git -C <路径>" in common
     block = (
         skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md"
@@ -359,7 +358,6 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
     for phrase in (
         banner,
         "不在回复开头打印工作区横幅",
-        "单独一行 `⬇️`",
         "等待用户回复",
         "已是该行则不重复",
         "等于 worktree 路径最后两级",

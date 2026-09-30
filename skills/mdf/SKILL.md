@@ -15,13 +15,20 @@ disable-model-invocation: true
 `` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``
 
 - `<main-repo-name>`：主仓库目录名（`git-common-dir` 的父目录名）。
-- `<branch>`：`git -C <工作根> branch --show-current`；detached 时 `HEAD`；
-  非 Git 时 `-`。
-- `<worktree full path>`：本会话绑定的目标 worktree 绝对路径；未绑定则
+- `<worktree full path>`：本会话当前绑定的目标 worktree 绝对路径；未绑定则
   `git rev-parse --show-toplevel`。
+- `<branch>`：对该绑定路径执行 `git -C <工作根> branch --show-current`；
+  detached 时 `HEAD`；非 Git 时 `-`。
+- 进入或重新绑定目标后，横幅必须用新路径与新分支，不得沿用上一处绑定。
 - `<branch>` 等于该路径最后两级（用 `/` 连接）时，不打印 `📂` 与目录。
-- 相对上一处横幅，worktree 或 branch 变化时立刻打印三行：旧横幅、单独一行
-  `⬇️`、新横幅。
+- 相对上一处横幅，worktree 或 branch 变化时立刻连续打印恰好三行（硬换行）：
+  1. 旧横幅全文
+  2. 仅 `⬇️`（前后无空格、无其它字符）
+  3. 新横幅全文
+  - 实际输出为裸三行硬换行，不包代码围栏；样例见 `common.md`「工作区横幅」。
+  - ❌ 禁止把 `⬇️` 与旧/新横幅写在同一行。
+  - ❌ 禁止在这三行之间插入空行或其它文字。
+  - 含仅改绝对路径绑定、未调用 `move_agent_to_root` 的情况。
 - 没有上一处横幅时不打印切换三行。
 - 本轮输出结束、等待用户回复时，最后一行必须是当前横幅。
   - 切换后的横幅已是最后一行时，不再重复。

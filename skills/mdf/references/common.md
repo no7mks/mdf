@@ -43,13 +43,25 @@ upgrade 不读取本文件。
 `` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``
 
 - `<main-repo-name>`：主仓库目录名（`git-common-dir` 的父目录名）。
-- `<branch>`：`git -C <工作根> branch --show-current`；detached 时 `HEAD`；
-  非 Git 时 `-`。
-- `<worktree full path>`：本会话绑定的目标 worktree 绝对路径；未绑定则
+- `<worktree full path>`：本会话当前绑定的目标 worktree 绝对路径；未绑定则
   `git rev-parse --show-toplevel`。
+- `<branch>`：对该绑定路径执行 `git -C <工作根> branch --show-current`；
+  detached 时 `HEAD`；非 Git 时 `-`。
+- 进入或重新绑定目标后，横幅必须用新路径与新分支，不得沿用上一处绑定。
 - `<branch>` 等于该路径最后两级（用 `/` 连接）时，不打印 `📂` 与目录。
-- 相对上一处横幅，worktree 或 branch 变化时立刻打印三行：旧横幅、单独一行
-  `⬇️`、新横幅。
+- 相对上一处横幅，worktree 或 branch 变化时立刻连续打印恰好三行（硬换行）：
+
+  ```text
+  <旧横幅>
+  ⬇️
+  <新横幅>
+  ```
+
+  - 实际输出为裸三行硬换行，不包代码围栏。
+  - 中间一行只有 `⬇️`，前后无空格、无其它字符。
+  - ❌ 禁止把 `⬇️` 与旧/新横幅写在同一行。
+  - ❌ 禁止在这三行之间插入空行或其它文字。
+  - 含仅改绝对路径绑定、未调用 `move_agent_to_root` 的情况。
 - 没有上一处横幅时不打印切换三行。
 - 本轮输出结束、等待用户回复时，最后一行必须是当前横幅。
   - 切换后的横幅已是最后一行时，不再重复。
@@ -68,26 +80,28 @@ upgrade 不读取本文件。
 
 - `.cursor/skills`、`.codex/skills`、`.kiro/skills`、`.claude/skills` 或 `.openclaw/skills`。
 
-按 agent 进入目标：
+按角色进入目标：
 
-- Cursor：立即对目标路径调用 `move_agent_to_root`（参数 `rootPath`）。
+- 仅 Cursor 主 Agent：立即对目标路径调用 `move_agent_to_root`（参数 `rootPath`）。
   - ❌ 禁止 `move_agent_to_cloned_root`（会 fetch origin，本地未推送分支会失败）。
   - 调用后必须新开 shell 再核对，不得沿用切换前的终端 cwd。
   - 无该工具时报告缺失并留在当前步骤，要求用户把工作区根打开为该路径。
   - 核对必须在切换后的环境、新 shell 执行：
     - `git rev-parse --show-toplevel` 等于目标路径。
     - `git branch --show-current` 等于目标分支。
-- 其他（含 Codex、Kiro、Claude Code、OpenClaw）：
-  - ❌ 不得要求用户手动切换 worktree、重开文件夹、交接对话或重启进程。
-  - 必须把目标绝对路径绑定为本次工作根。
+- 其他（非 Cursor 主 Agent，以及全部 subagent；含 Codex、Kiro、Claude Code、
+  OpenClaw）：
+  - 全程用该绝对路径操作；禁止新建 worktree、禁止 `move_agent_to_root`、
+    禁止要求用户切换；qa/dev 另禁止切到 owner。
   - 后续全部读写、Git 与 CLI 都用该路径：`git -C <路径>`、`--repo <路径>`、
     绝对文件路径。
   - ❌ 禁止只在原根 `cd` 冒充已进入，禁止再创建多余 worktree。
   - 核对：`git -C <路径> rev-parse --show-toplevel` 等于目标路径，
     `git -C <路径> branch --show-current` 等于目标分支。
 
-未满足则留在当前步骤：Cursor 重复切换；其他宿主核对该绝对路径。
-不拆除已建 worktree 与分支。进入成功且 worktree 或 branch 已变化时，按「工作区横幅」打印切换三行。
+未满足则留在当前步骤：Cursor 主 Agent 重复切换；其他核对该绝对路径。
+不拆除已建 worktree 与分支。进入或绑定成功且 worktree 或 branch 已变化时，
+按「工作区横幅」打印切换三行；结尾横幅必须反映当前绑定。
 
 ## 入口
 

@@ -295,13 +295,13 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf write-tests`
   - 用法：`$mdf write-tests`
   - 用途：按目标编写测试用例。
-  - 说明：可与 implement 并行；roster ≥1 时切到已有 qa worktree，先 merge owner。
+  - 说明：可与 implement 并行；roster ≥1 时在已有 qa worktree 上执行，先 merge owner。
     写完可执行测试即完成，不要求全绿。
 
 - `$mdf implement`
   - 用法：`$mdf implement`
   - 用途：按已确认设计实现。
-  - 说明：不要求测试先完成；roster ≥1 时切到已有 dev worktree，先 merge owner。
+  - 说明：不要求测试先完成；roster ≥1 时在已有 dev worktree 上执行，先 merge owner。
 
 - `$mdf converge`
   - 用法：`$mdf converge`

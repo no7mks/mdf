@@ -317,7 +317,9 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
 - 两路已有一条运行时，等待其结果并启动另一条可执行的空闲路；不得重复创建执行者。
 - 仅一路未完成走步骤 3，由主 Agent 用该角色绝对路径与 `git -C` 续办，不走步骤 4。
   - 禁止把主 Agent 会话切离 owner，禁止 `move_agent_to_root`。
-- 步骤 4 的 subagent 按其 intent 切到角色 worktree。roster `0,0` 不走步骤 4。
+- 步骤 4 的 subagent 按其 intent 用角色绝对路径操作，不切会话根；禁止新建
+  worktree、禁止切到 owner、禁止要求用户切换；禁止 `move_agent_to_root`。
+  - roster `0,0` 不走步骤 4。
 - 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
 - design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner subagent。
   - 主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
@@ -353,6 +355,8 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
 
 - 所有命令显式指定该 worktree 的工作目录或 `git -C`，文件写入使用该 worktree 下的绝对路径。
 - 不得假设 subagent 继承主 Agent cwd；工具自动分配的其他 worktree 不替代 MDF 角色树。
+- 仅 Cursor 主 Agent 可按 `common.md` 调用 `move_agent_to_root`；其他宿主与
+  subagent 一律绝对路径绑定，横幅随绑定的 worktree/branch 更新。
 - 不能绑定并验证指定路径时停止，不在默认目录开工。
 - 审查者验证 owner 与 review_head，不合并或写入。
 
