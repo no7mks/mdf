@@ -253,24 +253,19 @@
 
 **输入**
 
-- 只读准备收口输入：
-  - release 读取全部 unreleased child Change，移动留给第 8 步 CLI。
-  - hotfix 必须没有 child Change，且提供实际结果 JSON。
-  - 两者均提供规范 `--release-date`。
-- 验收：完整版本收口输入。
-- 通过条件：release 到 7，hotfix 到 6。异常与交接：停止。
-- Core 记录确定性审计，语义审阅使用本次已确认 audit。
+- 只读准备收口输入：release 读全部 unreleased child Change（移动留给步骤 8）；
+  hotfix 无 child Change 且提供实际结果 JSON；两者均提供规范 `--release-date`。
+- 验收：完整版本收口输入。通过：release→7，hotfix→6。异常：停止。
+- Core 记录确定性审计；语义审阅用本次已确认 audit。
 
 <a id="s6"></a>
 
 **热修复**
 
-- 校验 hotfix `--hotfix-change-json`：
-  - 必填 body、release_notes、evidence。
-  - 可选 proposals、fixed、closed、deferred、adrs、breaking。
-  - body 非空，三类 evidence 字符串列表合计至少一条，release notes 至少一项非空。
-- 验收：有效 JSON。
-- 异常与交接：未知字段、空字符串或缺字段时停止。
+- 校验 hotfix `--hotfix-change-json`：必填 body、release_notes、evidence；
+  可选 proposals、fixed、closed、deferred、adrs、breaking。
+  - body 非空；三类 evidence 合计至少一条；release notes 至少一项非空。
+- 验收：有效 JSON。异常：未知字段、空串或缺字段则停。
 - Core 注入 change_kind 与 source_branch。
 
 <a id="s7"></a>
@@ -302,13 +297,14 @@
 | deferred | 保持 open |
 | duplicate | 不进 outcome，canonical 与 duplicate 一并归档 |
 
-可选加速（见 `common.md`「Jev 可选加速」）：
-
-- 仅当上表分类语义仍歧义且 tool 可用时；已明确项 ❌ 不调。
-- 调用：`choice` 或一次 `run`；state = Bug 摘要与 verify/reject 证据。
-- 选项：`fixed` / `rejected` / `deferred` / `duplicate` / `ask`。
-- 采信后落入上表；`ask`/未采信走主 Agent。❌ 不放宽下方 critical/major 规则。
-
+- 可选加速（见 `common.md`「Jev 可选加速」）：
+  - 仅歧义且 tool 可用。❌ 不调：verify-fix 已通过的 `fixed`；
+    已有非 duplicate reject-reason 的 `rejected`。
+  - 调用：`choice`/`run`；选项同表键加 `ask`；state = 摘要与证据。
+  - 采信：`fixed` 仅 verify-fix 已通过；`rejected` 仅已有
+    reject-reason；否则未采信。落入上表。
+  - `ask`/未采信→主 Agent，必要时询问。❌ 不代填
+    deferred-acceptance，不放宽下方 critical/major。
 - 📌 critical 仅 fixed；major deferred/wont-fix 要用户接受、理由和 follow-up。
 - 验收：完整 closures 与验证、接受记录。
 
