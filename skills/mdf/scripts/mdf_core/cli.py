@@ -191,6 +191,11 @@ def build_parser() -> argparse.ArgumentParser:
     to_cmd.add_argument("--target", required=True)
     to_cmd.set_defaults(func=command_to)
 
+    from .sync import command_sync
+    sync_cmd = subparsers.add_parser("sync")
+    sync_cmd.add_argument("--repo", required=True)
+    sync_cmd.set_defaults(func=command_sync)
+
     from .codewiki_runtime import command_codewiki_runtime
     runtime = subparsers.add_parser("codewiki-runtime")
     runtime.add_argument("--directory", default="~/.local/share/codewiki")

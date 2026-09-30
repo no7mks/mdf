@@ -93,6 +93,7 @@ disable-model-invocation: true
                  ├──── help / help <intent> ──────────────────────────→ references/help.md
                  ├──── upgrade ───────────────────────────────────────→ references/upgrade.md
                  ├──── to <target> ───────────────────────────────────→ references/to.md
+                 ├──── sync ──────────────────────────────────────────→ references/sync.md
                  └──── integrate ─────────────────────────────────────→ references/integrate.md
 ```
 

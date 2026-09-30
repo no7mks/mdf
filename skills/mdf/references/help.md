@@ -115,6 +115,7 @@
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
 - `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，`deploy` 检出 master
+- `$mdf sync`：先拉后推 `master` / `develop` / `planning`；其他分支只报告
 - `$mdf integrate`：同仓走角色与验收，不开消息通道；跨仓才收发消息；一侧只 poll 本侧
 - `$mdf help`：展示本目录
 - `$mdf help <intent>`：展示该 intent 的用法要点
@@ -167,10 +168,10 @@ $mdf codewiki update
 $mdf upgrade
 $mdf to plan
 $mdf to develop
+$mdf sync
 $mdf integrate
 $mdf clarify 要不要把缓存放到 Redis
 ```
-
 ### 主题
 
 主题键：
@@ -181,7 +182,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 交付：`next`、`deliver`、`start`、`design`、`write-tests`、`implement`、`converge`；
   `fix`、`verify-fix`、`code-review`、`fact update`、`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
-  `to`、`integrate`、`help`
+  `to`、`sync`、`integrate`、`help`
 
 - `$mdf bootstrap`
   - 用法：`$mdf bootstrap`
@@ -379,16 +380,15 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
   - 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
-  - 说明：
-    - 默认源 `http://10.1.5.65:8929/mars/mdf`；`--source` 覆盖。
-    - 先预览新旧基线及自当前基线以来触及 Skill 的提交，确认后再替换。
-    - 更新已有 `AGENTS.md` 托管区块，不改 `.mdf/` 与 `docs/`；替换后在当前分支提交本次路径，不 push。
-    - 随后重读新 Skill。仅不符合契约的 code 才建议 `$mdf migrate`。
+  - 说明：默认源可 `--source`；预览确认后替换副本与 `AGENTS.md` 区块并提交、不 push；
+    随后重读。仅不符契约才建议 `$mdf migrate`。
 - `$mdf to <target>`
   - 用法：`$mdf to plan`、`$mdf to develop`、`$mdf to deploy` 或 `$mdf to <分支>`
   - 用途：进入目标 worktree；planning、deploy 与已有分支在缺树时建立。
   - 说明：`plan` / `planning` / `plan-mode` 进 planning；`develop` 回主树。
     `deploy` 检出 master 并保留 gitignore 的 config。不创建新交付分支。
+- `$mdf sync`
+  - 用法：`$mdf sync`；先拉后推三大 trunk，多余分支只报告；禁止 force-push。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：同 worktree 保留角色、计划、验收与收口，不打开消息通道。跨 worktree 才收发消息。

@@ -59,7 +59,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "delivery-contract.md", "common.md", "doc-structure.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 36
+    assert len(workflows) == 37
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -146,6 +146,7 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "clarify 与 help 不要求 Git 仓库" in dispatch
     assert "init/bootstrap/migrate" in dispatch and "普通目录" in dispatch
     assert "upgrade 解析 Git 根" in dispatch
+    assert "sync 解析 Git 根" in dispatch
     assert "不要求 manifest ready" in dispatch
 
 
@@ -319,6 +320,7 @@ def test_help_catalog_is_grouped_and_read_only():
     assert "$mdf help <intent>" in text
     assert "$mdf upgrade" in text
     assert "$mdf to <target>" in text
+    assert "$mdf sync" in text
     assert "未知 intent：" in text
 
 

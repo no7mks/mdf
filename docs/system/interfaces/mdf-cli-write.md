@@ -200,6 +200,24 @@ python3 skills/mdf/scripts/mdf.py to --repo /path/to/repository --target plan
 - ❌ 不创建新分支。
 - JSON 含 `target`、`alias`、`branch`、`worktree`、`created`。
 
+## `sync`
+
+```bash
+python3 skills/mdf/scripts/mdf.py sync --repo /path/to/repository
+```
+
+要求 Git 根与 `origin`；不要求 manifest 或 ready。固定对齐
+`master`、`develop`、`planning`：
+
+1. `fetch --prune`；三大分支本地与 `origin/<branch>` 都必须已存在。
+2. 占用任一 trunk 的 worktree 须干净；某 trunk 无占用者时主 worktree 须干净。
+3. 按序对三大分支 pull：远端已是祖先则 noop；可 ff 则 `--ff-only`；已分叉则
+   `--no-ff` 合并并提交 `chore(sync): 合并 origin/<branch> 到 <branch>`。
+4. 三大分支全部 pull 成功后，原子 `push origin master develop planning`。
+5. JSON 含各 trunk 的 `pull` / `push`，以及只读的 `extra_local` / `extra_remote`。
+
+❌ 不操作多余分支，不 rebase，不 force-push，不删除远端或本地分支。
+
 ## `finish-gitflow`
 
 ```bash

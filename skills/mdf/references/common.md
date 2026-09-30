@@ -91,6 +91,7 @@ upgrade 不读取本文件。
   - init/bootstrap/migrate 由 initialization 公共流程处理普通目录与父仓库边界。
   - upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
   - integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
+  - sync 解析 Git 根且不要求 manifest ready，规则见 `references/sync.md`。
 
 ## 工作区横幅
 
@@ -294,6 +295,8 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 **Git 操作授权**
 
 - push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限推导。
+- `$mdf sync` 授权对 `master` / `develop` / `planning` 执行 fetch、merge 与 push；
+  不授权删分支或 force-push。
 - ❌ 禁止 rebase，不擅自改写已有历史；异名分支使用 no-ff。
   - `develop` 与 `planning` 互相同步允许 fast-forward；已分叉仍 no-ff。
 - 阶段基线和集成要求见 `references/delivery-contract.md`。
