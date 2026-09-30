@@ -8,26 +8,37 @@ MDF 是一套本地优先的 Agent 文档流程。它使用版本化文件管理
 宿主可配置 Jev MCP；**无 Jev 时流程完全可用**，定型判断改由主 Agent（可能更慢）。
 Agent 仅在写死步骤使用 `choice` / `noul` / `score` / `run`。
 
-以 Cursor + OpenRouter + [`jev-cli`](https://pypi.org/project/jev-cli/) 为例：
+以 Cursor + OpenRouter + [`jev-cli`](https://pypi.org/project/jev-cli/) 为例
+（CLI 与 MCP 共用 `jev auth` 凭证，不进目标仓）：
 
-1. `uv tool install jev-cli`（得到 `jev-mcp`）。
-2. 在 `~/.config/cursor/jev.env`（`chmod 600`）写入
-   `OPENROUTER_API_KEY=...`（密钥不进目标仓）。
-3. 在 `~/.cursor/mcp.json` 增加 stdio 服务，例如：
+1. `uv tool install jev-cli`（得到 `jev` / `jev-mcp`）。
+2. 写入 OpenRouter 密钥（隐藏输入，落盘
+   `~/.config/jev-cli/credentials.json`，权限 `600`）：
+
+```bash
+jev auth set --provider openrouter
+jev auth test --provider openrouter
+```
+
+3. 在 `~/.cursor/mcp.json` 增加 stdio 服务（只需 provider，不必 `envFile`）：
 
 ```json
 {
   "mcpServers": {
     "jev": {
       "command": "jev-mcp",
-      "env": { "JEV_PROVIDER": "openrouter" },
-      "envFile": "${userHome}/.config/cursor/jev.env"
+      "env": { "JEV_PROVIDER": "openrouter" }
     }
   }
 }
 ```
 
-4. 重载 MCP；会话出现上述 tool 后即可加速。其他 provider 改 `JEV_PROVIDER` 与对应 key。
+4. 重载 MCP；会话出现 `noul` / `choice` / `score` / `run` 后即可加速。
+5. 换 key：再跑 `jev auth set --provider openrouter`。
+   - 若环境里仍有 `OPENROUTER_API_KEY`，会盖过 credentials；换方案后新开终端
+     / 重启 Cursor 再验。
+   - 其他 provider：改 `JEV_PROVIDER`，并用对应
+     `jev auth set --provider <名>`。
 
 ## 使用
 

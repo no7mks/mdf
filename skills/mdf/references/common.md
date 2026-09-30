@@ -67,8 +67,9 @@ upgrade 不读取本文件。
 ### 宿主
 
 - 安装见上游或已安装 Skill 对应仓库 README「Jev 可选加速」。
-- 形态：stdio `jev-mcp`（如 `jev-cli`）+ Cursor `envFile` 注入密钥。
-- 示例 key 名：`OPENROUTER_API_KEY`。
+- 形态：stdio `jev-mcp`（如 `jev-cli`）；密钥用
+  `jev auth set --provider <名>` 写入本地 credentials（CLI 与 MCP 共用）。
+- Cursor `mcp.json` 只设 `JEV_PROVIDER`（如 `openrouter`），不必再挂 `envFile`。
 - 密钥不进目标仓、不进 Skill 模板；缺配置即无 tool，走主路径。
 - 与 CodeWiki 相反：CodeWiki 缺 MCP 须停；Jev 缺了跳过加速。
 

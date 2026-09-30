@@ -76,8 +76,8 @@ hermetic UT 或 PT；原慢用例保留。
 
 可选的定型判断加速（MCP tool：`choice` / `noul` / `score` / `run`）。仅在 intent
 写死的步骤使用；无 Jev 时主 Agent 路径不变。会话内首次不可用可提示一行并指向
-README「Jev 可选加速」。密钥与 MCP 属宿主个人配置，不是仓库契约。
-协议见 `skills/mdf/references/common.md`「Jev 可选加速」。
+README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 MCP 共用，不是
+仓库契约。协议见 `skills/mdf/references/common.md`「Jev 可选加速」。
 
 ## Planning 工作区
 
