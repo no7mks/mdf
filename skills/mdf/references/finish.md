@@ -70,12 +70,12 @@
 │ 9 Hand off                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 主线前进，feature/bugfix ────→ 2 Integrate and review
-                 ├──── 主线前进，release/hotfix ────→ [报告并停止]
-                 ├──── 交付条件未通过 ──────────────→ [报告并停止]
-                 ├──── 通过且须 Gitflow 确认 ───────→ [返回 deliver 步骤 6]
+                 ├──── 主线前进，feature/bugfix ───────→ 2 Integrate and review
+                 ├──── 主线前进，release/hotfix ───────→ [报告并停止]
+                 ├──── 交付条件未通过 ─────────────────→ [报告并停止]
+                 ├──── auto-pilot 非 yolo 且须确认 ────→ [返回 deliver 步骤 6]
                  │
-                 ▼ 通过且无 Gitflow 确认关口
+                 ▼ 通过且无关口（含独立 finish / 默认 deliver / yolo）
 ┌──────────────────────────────────┐
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
@@ -108,7 +108,7 @@
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 约束 | fixed 先 verify-fix，再准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | Hand off | 约束 | 提交并复核 | clean | 无关口 10；须确认回 deliver 6 | 主线前进时 feature/bugfix 回 2；其余停 |
+| 9 | Hand off | 约束 | 提交并复核 | clean | 无关口 10；AP 非 yolo→deliver 6 | 主线前进时 feature/bugfix 回 2；其余停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构

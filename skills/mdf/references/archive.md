@@ -7,7 +7,7 @@
 │ 1 Check epoch                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 首次缺失 ────────→ 询问，留在 1 Check epoch
+                 ├──── 首次缺失 ────────→ 1 Check epoch
                  ├──── 询问后仍缺失 ────→ [停止]
                  ├──── 格式无效 ────────→ [停止]
                  │
@@ -50,7 +50,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check epoch | 约束 | 校验 RELEASE_EPOCH 为精确 MAJOR.MINOR | 有效 epoch | 2 | 首次缺失询问留 1；仍缺失或无效则停 |
+| 1 | Check epoch | 约束 | 校验 RELEASE_EPOCH 为精确 MAJOR.MINOR | 有效 epoch | 2 | 首次缺询问回 1；仍缺或无效停 |
 | 2 | Check entry | 脚本 | 在目标根运行 `doctor`，确认 ready | doctor 结果 | 3 | 停止 |
 | 3 | Preview | 脚本 | 仅预览请求：确认 clean 并运行 dry-run | 预览结果或非预览跳过 | 预览结束；非预览 4 | 停止 |
 | 4 | Check group | 脚本 | 用 `list` 列终态对象，核对 duplicate/canonical 完整组 | list 结果、archive group | 5 | 停止 |
