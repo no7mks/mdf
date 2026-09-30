@@ -277,31 +277,23 @@
 
 **对象**
 
-- 先识别将作为本版 `fixed` outcome 收入的 Bug：
-  - `status: fixed` 且 `found_in: unreleased`。
-  - 以及 child Change `fixed:` 中仍为 `fixed` 的 ID。
+- 待收入 `fixed` outcome：`status: fixed` 且 `found_in: unreleased`，以及
+  child Change `fixed:` 中仍为 `fixed` 的 ID。
 - 待收入 fixed 先委托 verify-fix，再准备 closures。
 - 委托 verify-fix：
-  - 清单非空时内部执行 `references/verify-fix.md`，传入这些 ID。
-  - 未通过则走本步骤失败，不准备 closures，不关闭对象。
-  - 报告「实现已变更」时，提交后回到步骤 4。
-    - 不准备 closures，不调用 `release-closeout`。
-    - 步骤 4 补验与增量 code-review 通过后，再重跑本步骤。
-  - 已有记录按 verify-fix「记录」的有效性规则仍有效则视为通过。
-    - 不在这里另下定义。复现命令变化则过期，须重跑其步骤 2–3。
-  - 无待收入 `fixed` Bug 则跳过委托。
+  - 清单非空时内部执行 `references/verify-fix.md`，传入这些 ID；空则跳过。
+  - 未通过则本步失败，不准备 closures，不关闭对象。
+  - 「实现已变更」：提交后回步骤 4（不 closures、不 `release-closeout`）；
+    步骤 4 补验与增量 code-review 通过后再重跑本步。
+  - 已有记录按 verify-fix「记录」有效性仍有效则通过；复现命令变化须重跑其 2–3。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
   - 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
 - 准备 `--deferred-acceptance-json`：对象，键为 Bug ID。
-  - major 且 resolution 为 `deferred` 或 `wont-fix` 时，该项必须含：
-    - `accepted: true`
-    - 非空 `reason`
-    - 非空 `follow_up`
-  - 没有这类 Bug 时传 `{}`。
+  - major 且 resolution 为 `deferred` 或 `wont-fix` 时须含 `accepted: true`、
+    非空 `reason` 与非空 `follow_up`；无此类 Bug 时传 `{}`。
 - 运行 `list --repo "$REPO_ROOT" --type bug --status open --status fixed --status rejected`：
-  - 取 `found_in` 为 `unreleased` 的条目作为待分类清单，不逐篇翻阅 `docs/bugs/`。
-  - 排除 `reject-reason: duplicate`。duplicate 不进 outcome。
-- 对每个 active 且 `found_in: unreleased` 的 Bug 分类：
+  - 待分类：`found_in: unreleased` 且非 duplicate；不翻对象目录。
+  - duplicate 不进 outcome。对每项按表分类：
 
 | 分类 | 处理 |
 | --- | --- |
@@ -309,6 +301,13 @@
 | rejected | 使用既有 reject-reason |
 | deferred | 保持 open |
 | duplicate | 不进 outcome，canonical 与 duplicate 一并归档 |
+
+可选加速（见 `common.md`「Jev 可选加速」）：
+
+- 仅当上表分类语义仍歧义且 tool 可用时；已明确项 ❌ 不调。
+- 调用：`choice` 或一次 `run`；state = Bug 摘要与 verify/reject 证据。
+- 选项：`fixed` / `rejected` / `deferred` / `duplicate` / `ask`。
+- 采信后落入上表；`ask`/未采信走主 Agent。❌ 不放宽下方 critical/major 规则。
 
 - 📌 critical 仅 fixed；major deferred/wont-fix 要用户接受、理由和 follow-up。
 - 验收：完整 closures 与验证、接受记录。

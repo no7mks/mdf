@@ -124,6 +124,31 @@
 盘点全部顶层项目项并检查项目原有的全部文档，区分 MDF 固定项、治理/生态入口、实现、测试、
 生成物与文档；登记入口 doctor 的全部 finding。
 
+可选加速（见 `common.md`「Jev 可选加速」）：
+
+- 时机：材料已列全、写定分类清单前；tool 可用时。
+- 调用：对每个待分类项 `choice`，或一次 `run` 多题。
+- state：路径、职责摘要与 doctor finding 摘录。
+- 选项键见下表；采信后写入同结构分类清单。
+- `ask` 或未采信走主 Agent，必要时澄清后回 2。
+- 路径职责已由契约或 doctor 明确时 ❌ 不调。
+- ❌ 不替代步骤 3–4 的去处澄清与用户确认，不因 Jev 移动或删除。
+
+| 键 | 含义 |
+| --- | --- |
+| `mdf_fixed` | MDF 固定项 |
+| `governance` | 治理或生态入口、构建配置 |
+| `implementation` | 业务实现 |
+| `tests` | 测试 |
+| `generated` | 生成物 |
+| `user_guide` | → `docs/user-guide/` |
+| `system` | → `docs/system/` 对应切面 |
+| `adr` | → `docs/context/adr/` |
+| `research` | → `docs/context/research/` |
+| `repowiki` | 符合 CodeWiki 契约，留原处 |
+| `exception` | 顶层或布局例外，方案单列 |
+| `ask` | 无法定型 |
+
 验收：分类清单与 finding 清单。
 
 异常与交接：
