@@ -49,10 +49,20 @@ bootstrap 仍可直接调用。
 先按 `initialization.md` 只读确认项目边界、新旧与 MDF 状态。转入前不写入 `.git/`，
 不要求用户重新调用。不因普通目录、无提交或 dirty 一概拒绝。
 
+可选加速（见 `common.md`「Jev 可选加速」）：
+
+- 仅当只读证据对 bootstrap / migrate **语义仍歧义**且 tool 可用时。
+- 调用：`choice`；state = 边界摘要与 MDF/事实迹象。
+- 选项：`bootstrap` / `migrate` / `ask`。
+- CLI 或 initialization 已明确时 ❌ 不调。
+- 采信后落入步骤 2 同一分支；`ask` 或未采信走主 Agent / 澄清。
+
 验收：明确项目根、判定依据。
 
 异常与交接：边界或改动归属不明时澄清，其他异常报告后停止。中间反馈继续本次
 流程，不重查入口。
+
+### 分流
 
 <a id="s2"></a>
 

@@ -3,6 +3,12 @@
 MDF 是一套本地优先的 Agent 文档流程。它使用版本化文件管理当前事实、工作
 意图、重要决策、可执行证据和 Agent 控制面。
 
+可选：宿主可配置 Jev MCP（如 OpenRouter + `jev-cli` 的 `jev-mcp`）。
+
+- Agent 仅在写死的定型判断步骤用 `choice` / `noul` / `score` / `run`。
+- **无 Jev 时流程完全可用**，不要求安装或密钥。
+- 密钥用宿主 `envFile` 注入，不进目标仓。
+
 ## 使用
 
 MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：

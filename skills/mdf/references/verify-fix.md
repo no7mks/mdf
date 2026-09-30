@@ -126,6 +126,12 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - 主 Agent 裁定、修复实现；修复后回到步骤 2 重跑该 Bug 的复现用例，再审新 diff。
 - 降低验收或改目标须用户确认。
 - 审查结论写入本步记录，须含实际依据。
+- 可选加速（见 `common.md`「Jev 可选加速」）：
+  - 时机：复现已绿后、裁定前；tool 可用时。
+  - 调用：`noul`（证据是否支持保持 `fixed` 结论）。
+  - state：复现结果与审查 diff 摘要。
+  - 采信后仍须写入依据；未采信走主 Agent。
+  - ❌ 不因 Jev 改 `closed` / `fixed_in`。
 
 ### 记录
 

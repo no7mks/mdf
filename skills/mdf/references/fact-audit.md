@@ -196,6 +196,15 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 文档结构：按 `references/doc-structure.md`。
   - 硬限制由 CLI 报 `prose.*`；人工审软限制与内容形态，大段文字改为列表、表格或图。
 
+可选加速（见 `common.md`「Jev 可选加速」）：
+
+- 时机：人工语义复核争议陈述时；tool 可用时。
+- 调用：`noul`（是否被 evidence 支持），或 `score`
+  （0=无问题 / 1=warning 级 / 2=须记 finding）。
+- state：陈述与 evidence 摘录。
+- 采信后仍由主 Agent 写入 finding 文案；CLI 已报的 code ❌ 不改。
+- 未采信走原复核。
+
 验收：事实复核、加载质量发现、warning、未触及理由。
 
 异常与交接：记录语义 finding 或 `agents.project_content` 后继续 4。

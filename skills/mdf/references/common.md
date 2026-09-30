@@ -15,6 +15,43 @@ upgrade 不读取本文件。
 验收：CLI 调用、产物检查与 intent 判断各自可追溯。非零退出或产物缺失走该步失败去向。
 「异常」仅指禁止用 CLI 模拟语义判断；此时停止，不另走失败去向。
 
+## Jev 可选加速
+
+<a id="s-jev"></a>
+
+Jev（MCP tool：`choice` / `noul` / `score` / `run`）只加速「选项已知」的定型判断。
+无 Jev 时主 Agent 路径与未引入前完全一致：不停止、不追问安装、不多一轮判断。
+❌ 不是硬依赖，不是 gate，不替代用户确认、clarify、生成或确定性 CLI。
+
+**文档与执行顺序（无 Jev 一等）**
+
+1. 先按该步骤完整主 Agent 规则准备材料并写清分支。
+2. 仅当本步声明「可选加速」、会话未记 `jev=unavailable`、且 tool 列表含上列
+   之一时，才做业务调用。
+   - 禁止空探测。
+   - 禁止推理「要不要用 Jev」。
+3. 采信 → 落入该步**已有**分支；不采信 / 无 tool → 仍走上文主路径。
+4. 各 intent 只写死本题的 tool、state、选项与阈值；协议以本节为准。
+
+**会话可用性**
+
+| 情况 | 当步 | 本会话后续 |
+| --- | --- | --- |
+| 无上列 tool | 主 Agent | 记 `jev=unavailable`，不再调用 |
+| 认证失败（缺 key / 401 等） | 主 Agent | 粘性 `unavailable` |
+| 非认证失败或结果畸形 | 主 Agent | 不粘性禁用 |
+| 低置信度（低于该步阈值） | 不采信，主 Agent | 不禁用 |
+| 合法结果且达阈值 | 仅已枚举定型分支 | 保持可用 |
+
+默认阈值：`choice` / `score` 的 confidence ≥ 0.8；`noul` 采信 yes 当值 ≥ 0.8、
+采信 no 当值 ≤ 0.2；中间带走主 Agent。intent 可写更严阈值，不得更松除非写明。
+
+**宿主（个人能力，非仓库契约）**
+
+可选：stdio `jev-mcp`（如 `jev-cli`）+ Cursor `envFile` 注入密钥（如
+`OPENROUTER_API_KEY`）。密钥不进目标仓、不进 Skill 模板；缺配置即无 tool，走主路径。
+与 CodeWiki 相反：CodeWiki 缺 MCP 须停；Jev 缺了跳过加速。
+
 ## 目标根
 
 <a id="s-root"></a>

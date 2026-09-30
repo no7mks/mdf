@@ -102,6 +102,11 @@
 - 按输出的 `reject-reason` 与 `duplicate_of` 核对分组，不逐篇翻阅对象目录。
 - released/rejected/replaced Proposal 可归档。
 - 📌 Bug 的 duplicate 必须随 canonical 组成 archive group。
+- 可选加速（见 `common.md`「Jev 可选加速」）：
+  - 时机：分组后对争议 group；tool 可用时。
+  - 调用：`noul`（终态齐全且 duplicate 随 canonical 是否可归档）。
+  - 采信 yes 仅辅助核对清单；实际移动仍须步骤 5 与 CLI。
+  - 未采信或 no 走主 Agent，不得单独移动。
 - 验收：候选清单与 archive group 关系。
 - 异常与交接：停止，不得单独移动。
 

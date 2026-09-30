@@ -72,6 +72,12 @@ hermetic UT 或 PT；原慢用例保留。
 
 通过 CodeWiki MCP 生成与更新的仓库结构 Wiki。
 
+## Jev
+
+可选的定型判断加速（MCP tool：`choice` / `noul` / `score` / `run`）。仅在 intent
+写死的步骤使用；无 Jev 时主 Agent 路径不变。密钥与 MCP 属宿主个人配置，不是
+仓库契约。协议见 `skills/mdf/references/common.md`「Jev 可选加速」。
+
 ## Planning 工作区
 
 唯一的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree。

@@ -163,6 +163,15 @@
 | Proposal | Problem、Desired Outcome、Scope、可验证 Acceptance Criteria |
 | Bug | Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required、`found_in` 与 active severity |
 
+可选加速（见 `common.md`「Jev 可选加速」）：
+
+- 时机：查重通过后、clarify 前；tool 可用时。
+- 调用：`choice`；state = Jot 原文与查重摘要。
+- 选项：`bug`（已观察偏差）、`proposal`（待实现意图）、
+  `insufficient`（信息不足须先问）。
+- 采信后仍按上表收敛；`insufficient` 或未采信走主 Agent / 询问。
+- ❌ 不改写 Jot。
+
 验收：完整 draft。
 
 异常与交接：停止，不得改写 Jot。
