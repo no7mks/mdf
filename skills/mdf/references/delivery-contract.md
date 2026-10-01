@@ -11,14 +11,20 @@
 - start 经 clarify（bugfix/hotfix 可精简）写入 `objectives.md`。
   并冻结 `needs_design: yes|no`（objectives 与 `delivery.json`）。
 - feature 的 objectives 引用 PRP，避免复制另一个需求来源。
-- release 的 objectives 写已选定工作线、本版收口范围、预发布工作、是否联调、
-  非目标与可验证验收，不引用单个 PRP。
+- release 的 objectives 写已选定工作线、本版收口范围、预发布工作、联调、
+  `has_dev`、非目标与可验证验收，不引用单个 PRP。
   - 工作线只保留开分支前选定的一条，不罗列未选路径。
-  - 该分支承担上线前预发布，不得实施新 PRP。工作线三选一，只写选定的一条。
-  - 不联调不执行 integrate。同 worktree 执行 integrate，不打开消息通道。
+  - 冻结 `has_dev: yes|no`：本 release 分支是否包含预发布/开发代码改动。
+    - `no`：start 写入时即将 owner 开发、converge（及无事务时的预发布工作）勾为
+      `[x]`；不跑这些 intent。
+    - `yes`：保留未勾，走 owner 开发 → converge。
+  - checklist **必须含** integrate 项；不联调由 start 写入时勾 `[x]`；同/跨
+    worktree 由 `$mdf integrate` 收口自勾。deliver/next **只读该勾选**。
+  - 该分支不得实施新 PRP。工作线三选一，只写选定的一条。
+  - 不联调不执行 integrate intent。同 worktree 执行 integrate，不打开消息通道。
   - 跨 worktree 切到 worktree 后先开通道。只改本仓，不得改、操作、启动或终止对端。
   - 两种联调都强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
-  - 两端验收且确认不再改代码后才允许 code-review。
+  - 两端验收且确认不再改代码后才允许 code-review（且 integrate 项须已 `[x]`）。
 - start 后四种工作分支均须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
   - bugfix / hotfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
   - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。
@@ -27,6 +33,8 @@
 
 - slug 取自 PRP 文件名，start 固定使用，不随标题修改。
 - delivery.json 记录 proposal/bug、slug、branch、start_commit、`needs_design`。
+- release 的 `has_dev` 只冻结在 objectives（与 checklist 跳过预勾一致），不另写入
+  delivery.json。
 - 起点是创建分支前基线的完整 commit hash，不用移动的 develop/master 代替。
 
 材料位置：
@@ -50,24 +58,29 @@
 ## 阶段与执行责任
 
 四种 kind **共用**主线。不按 branch kind 另写交付状态机。
-并行形态与是否 design 由默认 roster 与 `needs_design` 决定。
+并行形态与是否 design 由默认 roster 与 `needs_design` 决定；
+**有无开发阶段**看 objectives checklist（及 release 的 `has_dev`），
+**不**由 roster `0,0` 推导出必须空转的 owner 开发 / converge。
 
 主线步骤：
 
 1. start
-2. 可选 design
-3. write-tests / implement，或 owner 开发
-4. converge
-5. code-review
-6. verify full
-7. fact audit（必要时 fact update 后重审）
-8. close-out
+2. release：integrate（checklist 项；不联调已由 start 勾掉则跳过 intent）
+3. 可选 design
+4. write-tests / implement，或 owner 开发（无对应未勾项则跳过）
+5. converge（无对应未勾项则跳过）
+6. code-review
+7. verify full
+8. fact audit（必要时 fact update 后重审）
+9. close-out
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。
 - **进度**：唯一账本是 `objectives.md` 步骤 checklist；各 intent 成功后**自勾**。
   - deliver / next 只读勾选与依赖决定下一 intent，**不**读 stage gate、**不**对 report 做过期审判。
-- **converge**：核对 objectives 前置已勾，跑 **verify on-site**，修到达成后自勾。
+  - roster `0,0` 只表示无 qa/dev 角色；不自动要求 owner 开发或 converge。
+- **converge**：仅当 checklist 的 converge 项仍为 `[ ]` 时进入；核对前置已勾，跑
+  **verify on-site**，修到达成后自勾。
   - ❌ converge 的「验」不是 verify full。
 - **verify full / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
   - verify 默认 suite：feature/bugfix/hotfix → smoke；release → release；失败现场修到绿。
@@ -215,8 +228,8 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 补验（仅在**该** intent 内）：
 
 - 开发中与 converge 只跑 module **on-site**。
-- **verify full** 落盘 `verify.full.json`（不含 commit）；`run` 无论成败均写入；
-  失败则在本 intent 现场修到绿。
+- **verify full**：`run` 无论成败均写入 `verify.full.json`（不含 commit）；未绿可修则
+  先落盘再修、重跑，直至绿后勾选；未绿轮不写通过用 `verify.md`、不勾选。
 - 只改事实文档或 module ignore：不因「报告对齐」要求机械重跑 full
   （close-out 也不做 commit 对齐审判）。
 - fact / code-review / verify 均无 delivery stage gate。
@@ -326,20 +339,23 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 
 地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
 
-- **交付地板**（能允许的最早点 = converge 起点）：
+- **交付地板**（能允许的最早点；有 converge 时 = converge 起点）：
   - roster ≥1：`git log -1 --format=%H -- changes/unreleased/<slug>/gates/roster-join.json`
     （该文件在本分支首次引入的 commit；角色 worktree 须已清理；不得早于它）。
-  - roster `0,0`：在 `start_commit..HEAD` 上找**最晚**一次使 objectives 中 owner 开发
-    （或等价开发项）变为 `[x]` 的 commit：  
+  - roster `0,0` 且 objectives checklist **含**开发完成项（owner 开发，或
+    `needs_design: yes` 下的 write-tests / implement；含 start 跳过预勾）：在
+    `start_commit..HEAD` 上找**最晚**一次使**该**项变为 `[x]` 的 commit：  
     `git log -1 -S'[x]' --format=%H -- changes/unreleased/<slug>/objectives.md`  
     再人工核对该 diff 确含该勾选；找不到或歧义 → **不可 squash**（失败/缺失）。
+  - roster `0,0` 且 checklist **无**上述开发完成项：交付地板 = `start_commit`。
+    若其不是 HEAD 祖先，或 `start_commit..HEAD` 为空 → **不可 squash**。
 - **他人抬升**：在 `start_commit..HEAD` 上，若存在 `author` 或 `committer` email
   ≠ 当前 `git config user.email` 的 commit，地板抬到其中**最新一笔**（保留该笔，只压其后）。
   - tip 本身即他人提交 → 不可 squash。
   - roster merge 落在交付地板之前则不进区间，不必再判「是否本人」。
 
 地板 = 历史上较晚者（交付地板与他人抬升结果取更近 tip 的一侧）。  
-converge 只定义地板，不在入口询问 squash。
+有 converge 时由 converge 定义地板语义；本小节供 close-out 选用，converge 入口不询问 squash。
 
 ### 是否建议（可选启发式）
 

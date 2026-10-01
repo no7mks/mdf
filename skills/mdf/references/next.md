@@ -111,13 +111,14 @@
   - ❌ 不读 stage gate 表选型；report 只证明做过，不当通行证。
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
-  - 主线：start → 可选 design → 开发 → converge → code-review →
-    verify full → fact audit → close-out。
+  - 主线：start →（release：integrate）→ 可选 design → 开发 → converge →
+    code-review → verify full → fact audit → close-out；无对应未勾项则跳过。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
-  - release：objectives 须写明不联调 / 同 worktree / 跨 worktree。
-    - 需要且通道未打开时先 `$mdf integrate`。
-    - 双端验收且确认不再改代码后才委托 code-review。
-  - 开发未完成时：
+  - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；
+    ❌ 不因 roster `0,0` 强行进入 owner 开发或 converge。
+  - release：checklist 须含 integrate；未勾则先 `$mdf integrate`；工作线正文三选一。
+    - 双端验收且确认不再改代码、且 integrate 已勾后才委托 code-review。
+  - 开发未完成时（对应 checklist 项仍为 `[ ]`）：
     - `needs_design: yes`：沿用 qa/dev 分工；无分工则先 write-tests 再 implement。
     - `needs_design: no`：在 owner 按 objectives 完成开发（不委托 write-tests/implement，
       除非 objectives 明确要求）。

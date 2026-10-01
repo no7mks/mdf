@@ -66,7 +66,8 @@
 步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。步骤 6 由步骤 3 的 Gitflow 关口进入。框序受编号约束仍按 1–6 绘制。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
-不按 branch kind 另写交付流程；靠 `needs_design`、roster 与 objectives 选型。
+不按 branch kind 另写交付流程；靠 `needs_design`、roster 与 objectives
+checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶段）。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -241,18 +242,17 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
-| release 同 worktree 联调且尚未收口 | 执行 `$mdf integrate`，不打开消息通道 |
-| release 跨 worktree 联调且通道未打开 | 立即执行 `$mdf integrate` |
-| release objectives 未写联调模式 | 停止；必须已写明不联调、同 worktree 或跨 worktree |
+| release 缺 integrate checklist 项或正文未写工作线 | 停止；须有 integrate 项且工作线三选一 |
+| release integrate 未勾 | 执行 `$mdf integrate`（同 worktree 不开通道；跨 worktree 开通道）；不联调不得留未勾 |
 | `needs_design: yes` 且 design 未勾 | 在 owner 委托 `references/design.md` |
 | roster ≥1、未完成路数 ≥2 且前置满足 | 并行委托 write-tests / implement |
 | roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话 |
-| `needs_design: yes` 且 roster `0,0`，开发未勾 | owner 串行 write-tests → implement |
-| `needs_design: no` 且 owner 开发未勾 | owner 按 objectives 完成开发 |
-| 开发已勾但 converge 未勾 | 在 owner 委托 `references/converge.md` |
+| `needs_design: yes` 且 roster `0,0`，write-tests/implement 未勾 | owner 串行 write-tests → implement |
+| objectives 的 owner 开发项未勾 | owner 按 objectives 完成开发（`has_dev: no` 时该项须已由 start 预勾） |
+| owner 开发（或等价开发项）已勾且 converge 未勾 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
-| converge 已勾且 code-review 未勾 | 在 owner 委托 `references/code-review.md` |
+| converge 已勾（或无未勾 converge 项）、code-review 未勾 | 在 owner 委托 `references/code-review.md`（release 另须 integrate 已勾） |
 | code-review 已勾、verify full 未勾 | 委托 `references/verify.md`（full；失败现场修到绿） |
 | verify full 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
 | fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |

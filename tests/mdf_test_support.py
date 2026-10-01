@@ -33,7 +33,21 @@ def write_release_objectives(
 ) -> Path:
     path = tmp_path / name
     path.write_text(
-        "# 发布目标\n\n- needs_design: no\n\n本版收口与预发布验收。\n",
+        "# 发布目标\n\n"
+        "- needs_design: no\n"
+        "- has_dev: no\n\n"
+        "## 步骤\n\n"
+        "- [x] 确认工作线与范围（start）\n"
+        "- [x] integrate（无联调工作线：start 写入时已勾）\n"
+        "- [x] 完成预发布工作\n"
+        "- [x] owner 开发（has_dev: no）\n"
+        "- [x] converge（has_dev: no）\n"
+        "- [ ] code-review\n"
+        "- [ ] verify full\n"
+        "- [ ] fact audit\n"
+        "- [ ] close-out\n\n"
+        "## 工作线\n\n不联调\n\n"
+        "本版收口与预发布验收。\n",
         encoding="utf-8",
     )
     return path

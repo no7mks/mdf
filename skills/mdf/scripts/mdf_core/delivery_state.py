@@ -13,18 +13,29 @@ from .verification import repo_verification
 STAGES = ("design", "write-tests", "implement", "converge")
 
 
-def parse_needs_design(text: str) -> bool:
-    """从 objectives 解析 `needs_design: yes|no`（可带列表前缀）。"""
+def _parse_yes_no_field(text: str, name: str, missing_code: str) -> bool:
+    """从 objectives 解析 `name: yes|no`（可带列表前缀）。"""
     import re
     match = re.search(
-        r"(?im)^(?:[-*]\s*)?needs_design:\s*(yes|no|true|false)\s*$", text
+        rf"(?im)^(?:[-*]\s*)?{re.escape(name)}:\s*(yes|no|true|false)\s*$",
+        text,
     )
     if not match:
         raise MDFError(
-            "objectives 必须含 needs_design: yes 或 needs_design: no",
-            code="missing_needs_design",
+            f"objectives 必须含 {name}: yes 或 {name}: no",
+            code=missing_code,
         )
     return match.group(1).lower() in {"yes", "true"}
+
+
+def parse_needs_design(text: str) -> bool:
+    """从 objectives 解析 `needs_design: yes|no`（可带列表前缀）。"""
+    return _parse_yes_no_field(text, "needs_design", "missing_needs_design")
+
+
+def parse_has_dev(text: str) -> bool:
+    """从 release objectives 解析 `has_dev: yes|no`（可带列表前缀）。"""
+    return _parse_yes_no_field(text, "has_dev", "missing_has_dev")
 
 
 def git(repo, *args, check=True):

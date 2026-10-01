@@ -76,7 +76,10 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 
 ### 范围与前置条件
 
-仅在 owner 工作。`needs_design: yes` 时：
+仅在 owner 工作。objectives 的 converge 项须仍为 `[ ]`；已勾则停止并报告已完成，
+不重跑。release `has_dev: no`（该项应由 start 预勾）不得进入本 intent。
+
+`needs_design: yes` 时：
 
 - 按 roster 的 qa/dev strategy 合流（`best-of-n` / `partition`），规则同前。
 - 运行 `delivery roster-join`；合并后清理角色 worktree。
@@ -89,7 +92,8 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 - ❌ 缺少有效记录却缺角色时停止并报告。
 - `stale_roster_join` 表示现场被其他操作改变，停止。
 
-`needs_design: no`：无角色可合；确认 owner 干净且开发改动已提交；objectives 的 owner 开发项已勾。
+`needs_design: no`：无角色可合；确认 owner 干净且开发改动已提交；objectives 的
+owner 开发项已勾。❌ 不因 roster `0,0` 在无 owner 开发项或该项已预勾时仍要求「开发」。
 
 本步完成后的 owner HEAD 即 close-out 可选 squash 的**交付地板**下界（见
 `delivery-contract.md`「可选历史整理」）；本 intent **不**询问或执行 squash。

@@ -3,17 +3,20 @@
 ## 流程
 
 - needs_design: {{MDF_NEEDS_DESIGN}}
+- has_dev: {{MDF_HAS_DEV}}
 
 ## 步骤
 
 依赖链由上到下；完成一项由对应 intent **自勾** `[x]`。
 进度只认本清单，不以 `gates/*.json` 或 verify/fact 报告当通行证。
+跳过项由 start 写入时即勾为 `[x]`（不靠缺席表示跳过）。
 
 - [ ] 确认工作线与范围（start）
+- [ ] integrate（无联调工作线：start 写入时已勾；同/跨 worktree：由 `$mdf integrate` 自勾）
 - [ ] design（仅 needs_design: yes；由 `$mdf design` 自勾）
-- [ ] 完成预发布工作（owner；可与 design 后的开发合并勾选）
-- [ ] owner 开发（仅 needs_design: no 或无并行角色时）
-- [ ] converge（objectives 前置已勾 + on-site；由 `$mdf converge` 自勾）
+- [ ] 完成预发布工作（owner；无预发布事务时 start 写入时已勾）
+- [ ] owner 开发（has_dev: no：start 写入时已勾；has_dev: yes：owner 完成后自勾）
+- [ ] converge（has_dev: no：start 写入时已勾；has_dev: yes：由 `$mdf converge` 自勾）
 - [ ] code-review（由 `$mdf code-review` 自勾；报告见 code-review.md）
 - [ ] verify full（由 `$mdf verify` full 自勾；报告见 verify.full.json）
 - [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）

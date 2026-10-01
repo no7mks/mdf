@@ -316,11 +316,12 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     deliver = workflow("deliver")
     assert "外层协调者" in deliver
     assert "先测后审" not in deliver
-    assert "| release 同 worktree 联调且尚未收口 |" in deliver
-    assert "| release 跨 worktree 联调且通道未打开 |" in deliver
+    assert "| release integrate 未勾 |" in deliver
+    assert "| release 缺 integrate checklist 项或正文未写工作线 |" in deliver
     assert "integrate" in deliver
     assert "| release 跨 worktree 联调且对端验收未通过 |" in deliver
     assert "| release 联调且尚未确认无更多代码修改 |" in deliver
+    assert "has_dev: no" in deliver or "has_dev" in deliver
     assert "verify full" in deliver
     assert "close-out" in deliver
     assert "needs_design" in deliver
@@ -444,6 +445,15 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "是否建议（可选启发式）" in contract
     assert "不可 squash" in contract
     assert "建议 squash 且用户确认" in finish
+    assert "推导出必须空转的 owner 开发" in contract
+    assert "has_dev" in contract
+    verify = workflow("verify")
+    assert "成败都进 4" in verify
+    assert "未绿且可修 → 回 3" in verify or "未绿可修→3" in verify
+    assert "未绿轮不写" in verify or "未绿轮不得勾选" in verify
+    assert "integrate 未勾" in workflow("deliver")
+    assert "has_dev" in workflow("start")
+    assert "integrate 项须已" in text
 
 
 def test_role_intents_do_not_reuse_owner_session_switch():

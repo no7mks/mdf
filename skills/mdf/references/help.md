@@ -285,7 +285,8 @@ $mdf clarify 要不要把缓存放到 Redis
     - 始终在同级 `<repo-name>-worktrees/` 建 worktree，不在当前目录开分支，不 push。
     - 开分支前确认并冻结 roster（member/strategy/models）；人数 ≥1 时建 qa/dev 角色树。
     - roster 默认：feature=min-tdd；release=solo+3 partition reviewer；其他=solo。
-    - release 开分支前确认发布目标（只写选中工作线；须写明是否联调；不实施新 PRP）。
+    - release 开分支前确认发布目标（工作线、联调、`has_dev`；checklist 含 integrate；
+      不实施新 PRP；无开发则预勾 owner 开发/converge）。
     - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
 
 - `$mdf design`

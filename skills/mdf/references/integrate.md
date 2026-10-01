@@ -1,6 +1,7 @@
 # Integrate
 
-release 联调三选一，objectives 只写选定的一种。不联调不进入本 intent。
+release 联调三选一，objectives 正文只写选定的一种；checklist **必须含** integrate 项。
+不联调：start 写入时勾掉该项，不进入本 intent。同/跨 worktree：本 intent 收口自勾。
 
 | 场景 | 消息通道 | 其余步骤 |
 | --- | --- | --- |
@@ -389,9 +390,12 @@ release 联调三选一，objectives 只写选定的一种。不联调不进入�
 - 未取到这份报告时留在 8。取到后把 Goal 置 complete，不停止 poll。
 - 本步 poll 到的其它消息不进入 7，留在 8 继续 poll。
 
+双方（含同 worktree）在 Goal complete 且本侧收口条件满足后：将 `objectives.md` 的
+integrate 项改为 `[x]` 并提交（已勾则不再改）。❌ 不以 Goal 单独代替该勾选。
+
 ❌ 两侧都不执行 `$mdf finish`，等用户明确要求 finish。
 
-验收：主导方持有发送成功的结果；被动方持有取到的报告消息。
+验收：主导方持有发送成功的结果；被动方持有取到的报告消息；objectives integrate 已勾。
 
 异常与交接：提交失败、主导方发送失败，或被动方尚未取到报告，留在 8。
 用户明确停止整个会话时才停止 poll 并停掉本侧 listen。

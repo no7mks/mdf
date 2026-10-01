@@ -124,14 +124,19 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - PRP 不足时停止，提示 `$mdf prp review`。
 - release：
   - 对照 child Change 与 `assets/templates/release-objectives.md`。
-  - clarify 议题含工作线、是否联调、是否需要 design。
+  - clarify 议题含工作线、是否联调、是否需要 design、是否有开发（`has_dev`）。
+  - 📌 必须写入 `has_dev: yes` 或 `has_dev: no`（本分支是否含预发布/开发代码改动）。
+  - checklist **必须含** integrate、owner 开发、converge 项；跳过项在写入临时文件时
+    即勾 `[x]`（不联调 → integrate；`has_dev: no` → owner 开发与 converge；无预发布
+    事务 → 预发布工作）。不得靠缺席表示跳过。
   - 工作线三选一；只写入已选定的那一条；不罗列未选路径；不写「本版选定…」；📌 必须写明三种之一：
-    - 不联调：不执行 integrate。
+    - 不联调：不执行 integrate intent（checklist 项已勾）。
     - 同 worktree：执行 integrate，不打开消息通道。
     - 跨 worktree：先开通道；写本侧可碰范围；只改本仓；
       不得改、操作、启动或终止对端。
   - 主链收口前为 verify full → fact audit → close-out（不内嵌在 close-out）。
   - ❌ 不得实施新 PRP。
+  - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
   - 精简 checklist 至少含：修复/范围、converge、code-review、verify full、
@@ -139,7 +144,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
 
-验收：确认目标、`needs_design`（release 另含是否联调）以及共同理解。
+验收：确认目标、`needs_design`（release 另含联调工作线与 `has_dev`）以及共同理解。
 
 异常与交接：不写目标、不创建分支。
 

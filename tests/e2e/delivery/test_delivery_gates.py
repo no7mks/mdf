@@ -228,6 +228,18 @@ def test_start_requires_needs_design(python_exe, tmp_path):
     assert "missing_needs_design" in result.stderr
 
 
+def test_start_release_requires_has_dev(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 发布目标\n\n- needs_design: no\n\n缺少 has_dev。\n")
+    result = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "release",
+        "--version", "1.3.0", "--objectives-file", str(obj),
+    )
+    assert result.returncode != 0
+    assert "missing_has_dev" in result.stderr
+
+
 def test_roster_requires_needs_design_yes(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"

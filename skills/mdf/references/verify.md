@@ -83,22 +83,27 @@
 
 - CLI：`mdf.py verify run --level on-site|full ...`
 - 遵守「测试失败工作流」：框架报告 → 单用例复测 → 修一个复测一个 → 再继续。
-- **失败（on-site 或 full）**：在本 intent 现场修实现（改测试须批准）。
-  - 提交所改实现/测试路径后保持干净树再跑，直到绿或死硬阻塞。
+- 📌 本轮命令**无论成败**都进入 4 Record；不在本步内「修到绿才进 4」。
+  - 需改测试门槛：停在本步待批准，确认后重跑本步。
+  - 已判定死硬阻塞、不可修：停止并报告，不进 4。
+- full 未绿且可修时：先完成 4 的失败落盘，再由 4 打回本步；在本步修实现
+  （改测试须批准），提交相关路径并保持干净树后重跑 CLI，再次进 4。
   - 不回退假阶段、不发明对 converge 的过期检查。
 - 修代码时**自行从架构师角度审视**修复是否合适（范围、边界、与设计一致性）。
   - ❌ 不因此强制重开 `$mdf code-review`。
-  - 审视要点写入 `changes/unreleased/<slug>/verify.md`（与 full 摘要同文件）。
-- 本 intent 内出现业务改动（实现/测试/验证配置）：提交或还原后重跑本步，直到绿。
+  - 审视要点只在 4 于 full 已绿时写入 `verify.md`（与摘要同文件）；未绿轮不写。
+- 本 intent 内出现业务改动（实现/测试/验证配置）：提交或还原后须再跑本步并进 4。
 
 ### 4 Record
 
 - full：无论成败均写入 `changes/unreleased/<slug>/verify.full.json`；
   **report**，非 gate；不含 commit / head；`all_passed:false` 时 CLI 仍失败。
   - 未绿且可修 → 回 3（提交后重跑）；未绿且阻塞 → 停止并报告。
-  - 仅 `all_passed:true` 时追加 `verify.md` 摘要、勾选 objectives 的 verify full 并提交。
+  - 仅 `all_passed:true` 时：追加 `verify.md`（含 suite、报告路径、修绿时的架构
+    审视要点）、勾选 objectives 的 verify full 并提交。
+  - ❌ 未绿轮不得勾选 verify full，不得把失败摘要当成通过证据。
 - 主链完成条件：本 intent 内 full 已绿并勾选提交。
   - ❌ 不以相对下游 intent 的过期审判或 commit 对齐作为本步通行证。
-- on-site 不持久化为进度；结果在 stdout；本步无落盘义务。
-- quick 复现结论只写 `verify.md`，不写 `code-review.md`
+- on-site：不进 full 落盘与勾选；结果在 stdout；本步无落盘义务；命令执行完即结束。
+- quick 复现结论只在 full 已绿写入 `verify.md` 时一并记录，不写 `code-review.md`
   （审查轮次的 quick 复现仍由 code-review 自记）。

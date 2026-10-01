@@ -132,11 +132,13 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 
 各分支前置条件：
 
-- 进度只认 `objectives.md`：converge 项须已 `[x]`；未勾停止，提示先 `$mdf converge`。
+- 进度只认 `objectives.md`：converge 项须已 `[x]`（含 start 对 `has_dev: no` 的预勾）；
+  未勾停止，提示先 `$mdf converge`。
   - `needs_design: yes` 时可读 design.md 作审查上下文；不以 design/converge gate 文件为通行证。
   - 修复续办进入 3；步骤 4 按需补 on-site，不在本 intent 强制 verify full。
 - release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
   - 审查基线仍为上一正式发布。
+  - 📌 integrate 项须已 `[x]`；未勾停止，提示先 `$mdf integrate`（或不联调应由 start 预勾）。
   - 📌 同 worktree 或跨 worktree 联调时，进入 2 前须双端验收通过，且已确认此后不再改代码。
     未双端验收通过则不派审查。
 - hotfix/bugfix 读取 `objectives.md` checklist 与对应 Bug。
