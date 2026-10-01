@@ -70,7 +70,7 @@
 - **converge**：核对 objectives 前置已勾，跑 **verify on-site**，修到达成后自勾。
   - ❌ converge 的「验」不是 verify full。
 - **verify full / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
-  - verify 默认 suite：bugfix/hotfix → smoke；feature/release → release；失败现场修到绿。
+  - verify 默认 suite：feature/bugfix/hotfix → smoke；release → release；失败现场修到绿。
   - fact：verify full 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不跑 `verify check`。
@@ -291,8 +291,8 @@ converge（on-site）与 verify full **共用**：
 | suite | 成员 | 预算 | 何时必跑 |
 | --- | --- | --- | --- |
 | quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 / on-site |
-| smoke | 任意种类，包含 quick 的全部成员 | 300s | bugfix/hotfix 的 verify full |
-| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | feature/release 的 verify full |
+| smoke | 任意种类，包含 quick 的全部成员 | 300s | feature/bugfix/hotfix 的 verify full |
+| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | 仅 release 的 verify full |
 | named | 某一功能块的 test case；一 suite 一文档 | 无 | on-site 选题，不默认整 suite |
 
 - full 指全部 test case 的上界；没有入口，名字保留、不得用作 named suite。
@@ -302,8 +302,8 @@ converge（on-site）与 verify full **共用**：
 | 交付阶段 | Core 必须通过 | Agent 另须通过 |
 | --- | --- | --- |
 | 开发中 / converge on-site | 涉及 module 的 lint、build、quick | 本分支新增/改动测试；可选 named 选题 |
-| verify full（bugfix/hotfix） | lint、build、quick、smoke | bugfix 另有 `suites.json` 选题记录 |
-| verify full（feature/release） | lint、build、quick、release | — |
+| verify full（feature/bugfix/hotfix） | lint、build、quick、smoke | bugfix 另有 `suites.json` 选题记录 |
+| verify full（release） | lint、build、quick、release | — |
 | 主链收口前 | verify full 绿 + fact audit 通过 | 必要时 fact update |
 | 只改事实 / ignore | 不机械重跑业务验证 | — |
 

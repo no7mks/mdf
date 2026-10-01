@@ -13,8 +13,8 @@ Agent 执行维护改动时只读本节。列出环境要求与 `.mdf/manifest.y
 | lint | 待填 | 任何改动 |
 | build | 待填 | 任何改动 |
 | quick | 待填 | 任何改动 |
-| smoke | 待填 | feature、bugfix 收口 |
-| release | 待填 | release、hotfix |
+| smoke | 待填 | feature、bugfix、hotfix 收口 |
+| release | 待填 | 仅 release 收口 |
 
 ## 技术栈
 

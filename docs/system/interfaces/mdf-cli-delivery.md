@@ -22,7 +22,7 @@
 | status | 只读列出交付身份、roster、材料位置、可选阶段快照与 owner/qa/dev worktree 路径 |
 | check | `--stage` 指定阶段或 finish/close-out；**非进度关口**（见下） |
 | record | `--stage` 与非空 `--summary`，写入配置/指纹快照；**禁止**当作进度通行证 |
-| verify | 辅助入口：lint、build、quick + feature 默认 suite（release）；超预算即失败 |
+| verify | 辅助入口：lint、build、quick + feature 默认 suite（smoke）；超预算即失败 |
 | integrate | 按 strategy 合入；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
 | roster | 更新 strategy / 按 intent 的 models；design 完成后不能改 qa/dev strategy |
 
@@ -90,7 +90,7 @@
 `project-verify run --repo <仓库>` 按分支执行验证入口：
 
 - 始终跑 lint、build、quick。
-- 再加 smoke（bugfix/hotfix）或 release（feature/release）。
+- 再加 smoke（feature/bugfix/hotfix）或 release（仅 release）。
 - 证据 `suites` 为 `quick` 加后者。
 
 - bugfix 须有 `changes/unreleased/<slug>/suites.json` 关联 named suite。

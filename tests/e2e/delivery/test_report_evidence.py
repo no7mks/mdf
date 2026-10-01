@@ -9,8 +9,8 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     evidence = json.loads((root / "gates/verification.json").read_text())
     reports = {item["id"]: item.get("report") for item in evidence["results"]}
     assert reports["lint"] is None and reports["build"] is None
-    assert reports["quick"]["suite"] == "quick" and reports["release"]["tests"] == 1
-    assert (repo / reports["release"]["path"] / "r.xml").is_file()
+    assert reports["quick"]["suite"] == "quick" and reports["smoke"]["tests"] == 1
+    assert (repo / reports["smoke"]["path"] / "r.xml").is_file()
     assert ".mdf/" not in git(repo, "status", "--porcelain").stdout
     patch_module_command(
         repo,

@@ -4,7 +4,7 @@
 
 - **on-site**：开发与 converge 使用（lint+build+quick + 改动测试/选题）。
 - **full**：独立主链 intent（在 code-review 之后）；失败则**现场修到绿**。
-  - 默认 suite：bugfix/hotfix → smoke；feature/release → release。
+  - 默认 suite：feature/bugfix/hotfix → smoke；release → release。
   - 不做相对 converge 的过期 gatekeeping。
 
 ## 决策树
@@ -78,7 +78,7 @@
 
 **full**
 
-- bugfix / hotfix → smoke 并集；feature / release → release 并集。
+- feature / bugfix / hotfix → smoke 并集；release → release 并集。
 - 实际执行：全部 module 的 lint + build + quick + 上述套件并集。
 
 ### 3 Run

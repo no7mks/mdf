@@ -40,10 +40,10 @@ class Verification:
 
 
 def required_suite(kind):
-    # verify full 默认：feature/release → release；bugfix/hotfix → smoke
-    if kind in {"feature", "release"}:
+    # verify full 默认：release → release；其余交付分支 → smoke
+    if kind == "release":
         return "release"
-    if kind in {"bugfix", "hotfix"}:
+    if kind in {"feature", "bugfix", "hotfix"}:
         return "smoke"
     raise MDFError("验证 suite 需要 Gitflow 交付分支", code="unsupported_branch")
 

@@ -328,7 +328,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf verify --level on-site|full`
   - 用法：`$mdf verify run|check|advance --level on-site|full [--module|--paths|--test ...]`
   - 用途：module 级验证；converge/开发用 on-site，主链在 code-review 后跑 full。
-  - 说明：full 写 `verify.full.json`（bugfix/hotfix→smoke，feature/release→release）；
+  - 说明：full 写 `verify.full.json`（feature/bugfix/hotfix→smoke，release→release）；
     on-site 不落盘，选题经 `--test`。
 
 - `$mdf code-review`

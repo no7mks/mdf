@@ -30,16 +30,16 @@ def test_design_requires_named_suites(python_exe, tmp_path, policy):
     assert "invalid_policy" in result.stderr or "invalid_delivery_suite" in result.stderr
 
 
-def test_feature_delivery_verify_runs_lint_build_quick_release(python_exe, tmp_path):
-    """delivery verify 辅助入口；feature 的 suite 默认与 verify full 一致为 release。"""
+def test_feature_delivery_verify_runs_lint_build_quick_smoke(python_exe, tmp_path):
+    """delivery verify 辅助入口；feature 的 suite 默认与 verify full 一致为 smoke。"""
     repo, root = converge_ready(python_exe, tmp_path)
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     evidence = json.loads((root / "gates/verification.json").read_text())
     assert [item["id"] for item in evidence["results"]] == [
-        "lint", "build", "quick", "release",
+        "lint", "build", "quick", "smoke",
     ]
-    assert [item["budget"] for item in evidence["results"]] == [None, None, 30, None]
-    assert evidence["suites"] == ["quick", "release"]
+    assert [item["budget"] for item in evidence["results"]] == [None, None, 30, 300]
+    assert evidence["suites"] == ["quick", "smoke"]
     assert evidence["all_passed"] is True
     # converge 不再绑定 verification.json；code-review 无 stage gate
     payload(record(python_exe, repo, "converge"))

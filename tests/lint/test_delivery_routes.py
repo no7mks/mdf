@@ -265,15 +265,18 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "delivery worktree" not in implement
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
-    assert "| verify full（feature/release） | lint、build、quick、release |" in contract
-    assert "| verify full（bugfix/hotfix） | lint、build、quick、smoke |" in contract
+    assert (
+        "| verify full（feature/bugfix/hotfix） | lint、build、quick、smoke |"
+        in contract
+    )
+    assert "| verify full（release） | lint、build、quick、release |" in contract
     assert "主链收口前 | verify full 绿 + fact audit 通过 |" in contract
     assert "bugfix 的 `suites.json` 在 verify full 前关联" in contract
     assert "不在 manifest" in contract
     assert "每次运行 suite（含 named suite）都必须产出 JUnit XML 报告" in contract
     assert "即使命令退出码为 0" in contract
     assert "测试失败工作流" in contract
-    assert "verify full（feature/release）" in contract
+    assert "verify full（feature/bugfix/hotfix）" in contract
     assert "过期 gatekeeping" in workflow("verify") or "过期 gatekeeping" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
