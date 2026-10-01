@@ -39,7 +39,6 @@
 读取 `references/common.md`。
 续办尚未 Git 化的 init/bootstrap/migrate 时读取 `references/initialization.md`；
 续办任一交付时读取 `references/delivery-contract.md`；
-续办 bugfix/hotfix/release 的 Verify 阶段时读取 `references/deliver.md`「先测后审」。
 无在途时读取并执行 `references/tree.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -110,14 +109,14 @@
 
 - 先复核已完成步骤的证据，从尚未完成的步骤续办，不重做已验收且仍有效的操作。
 - 交付主线的当前 intent 已完成而交付未结束时，可委托下一个阶段。
-  - feature 阶段顺序：start → design → [write-tests ∥ implement] → converge → code-review → finish。
-  - bugfix/hotfix/release 阶段顺序：开发 → Verify 阶段（`deliver.md`「先测后审」）→ code-review → finish。
-    - release 开发：objectives 必须已写明不联调、同 worktree 或跨 worktree。
-    - 同 worktree 未收口时先 `$mdf integrate`，不打开消息通道。
-    - 跨 worktree 需要且通道未打开时先 `$mdf integrate`。
-    - 联调按选定工作线；双端验收且确认不再改代码后才委托 code-review。
-    - Verify 阶段不是独立 intent；next 读取 `deliver.md`「先测后审」自行执行，算作一次续办。
-  - 测试与实现都未完成时，沿用已有分工；无分工则先 write-tests，再由后续 next 推进 implement。
+  - 四种 kind 共用同一主线：
+    start → 可选 design → 开发 → converge → code-review →
+    verify full → fact audit → close-out。
+  - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
+  - release：objectives 须写明不联调 / 同 worktree / 跨 worktree。
+    - 需要且通道未打开时先 `$mdf integrate`。
+    - 双端验收且确认不再改代码后才委托 code-review。
+  - `needs_design: yes` 且测试与实现都未完成时，沿用分工；无分工则先 write-tests。
 - 存在仍在运行的执行者时报告其进度或待交接项，不重复执行其工作。
 - 缺失或过期证据按原阶段规则原地补验，不跳过 gate。
 

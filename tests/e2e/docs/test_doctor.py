@@ -76,7 +76,7 @@ def test_doctor_allows_in_progress_unreleased_delivery_without_change(
     git(repo, "branch", "-m", "master")
     git(repo, "branch", "develop")
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(
         mdf(
             python_exe,

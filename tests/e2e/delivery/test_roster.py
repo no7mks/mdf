@@ -19,7 +19,7 @@ def frozen(qa, dev, reviewers, **extra):
 def test_start_feature_zero_roster_has_no_role_trees(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -38,7 +38,7 @@ def test_start_feature_zero_roster_has_no_role_trees(python_exe, tmp_path):
 def test_start_feature_two_devs_creates_indexed_branches(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -67,7 +67,7 @@ def test_start_bugfix_can_set_reviewers_and_roles(python_exe, tmp_path):
 def test_start_named_roster_expands_and_overlays(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     coop = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -82,7 +82,7 @@ def test_start_named_roster_expands_and_overlays(python_exe, tmp_path):
     (tmp_path / "overlay").mkdir()
     repo2 = local_repo(tmp_path / "overlay")
     obj2 = tmp_path / "overlay-objectives.md"
-    obj2.write_text("# 目标\n\n交付健康接口。\n")
+    obj2.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     mixed = payload(mdf(
         python_exe, "start", "--repo", str(repo2), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj2),
@@ -95,7 +95,7 @@ def test_start_named_roster_expands_and_overlays(python_exe, tmp_path):
 def test_start_freezes_strategy_and_models(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -120,7 +120,7 @@ def test_start_freezes_strategy_and_models(python_exe, tmp_path):
 def test_write_tests_on_owner_when_roster_zero(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -151,7 +151,7 @@ def test_integrate_two_devs_merges_winner_and_deletes_loser(
 ):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -200,7 +200,7 @@ def test_integrate_two_devs_merges_winner_and_deletes_loser(
 def _design_feature(python_exe, tmp_path, *start_args):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj), *start_args,
@@ -324,11 +324,9 @@ def test_converge_partition_qa_uses_merged_tests_baseline(python_exe, tmp_path):
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
     assert (owner / "tests/test_one.py").is_file()
     assert (owner / "tests/test_two.py").is_file()
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(owner)))
     payload(record(python_exe, owner, "converge"))
     edited = owner / "tests/test_two.py"
     edited.write_text(edited.read_text() + "\n\ndef test_more():\n    assert True\n")
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(owner)))
     assert "test_approval_required" in record(
         python_exe, owner, "converge",
     ).stderr

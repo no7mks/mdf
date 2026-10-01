@@ -39,9 +39,10 @@ def test_invalid_verification_shapes(raw):
 
 def test_required_suites_by_branch_kind():
     verification, MDFError = core()
-    assert verification.required_suites("feature") == ["quick", "smoke"]
+    assert verification.required_suites("feature") == ["quick", "release"]
     assert verification.required_suites("bugfix") == ["quick", "smoke"]
-    assert verification.required_suites("hotfix") == ["quick", "release"]
+    assert verification.required_suites("hotfix") == ["quick", "smoke"]
+    assert verification.required_suites("release") == ["quick", "release"]
     with pytest.raises(MDFError):
         verification.required_suite("planning")
     assert verification.suites_cover(["quick", "smoke", "x"], ["quick", "smoke"])

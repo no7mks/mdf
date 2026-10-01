@@ -14,7 +14,7 @@ from support_delivery import *  # noqa: F403
 def test_design_requires_named_suites(python_exe, tmp_path, policy):
     repo, _ = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n实现健康状态接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n")
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
                        "--proposal", "prp-001", "--objectives-file", str(obj)))
     work = Path(data["worktree"])
@@ -30,22 +30,21 @@ def test_design_requires_named_suites(python_exe, tmp_path, policy):
     assert "invalid_policy" in result.stderr or "invalid_delivery_suite" in result.stderr
 
 
-def test_feature_verify_runs_lint_build_quick_smoke(python_exe, tmp_path):
+def test_feature_delivery_verify_runs_lint_build_quick_release(python_exe, tmp_path):
+    """delivery verify 辅助入口；feature 的 suite 默认与 verify full 一致为 release。"""
     repo, root = converge_ready(python_exe, tmp_path)
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     evidence = json.loads((root / "gates/verification.json").read_text())
-    assert [item["id"] for item in evidence["results"]] == ["lint", "build", "quick", "smoke"]
-    assert [item["budget"] for item in evidence["results"]] == [None, None, 30, 300]
-    assert evidence["suites"] == ["quick", "smoke"]
+    assert [item["id"] for item in evidence["results"]] == [
+        "lint", "build", "quick", "release",
+    ]
+    assert [item["budget"] for item in evidence["results"]] == [None, None, 30, None]
+    assert evidence["suites"] == ["quick", "release"]
     assert evidence["all_passed"] is True
-    evidence["suites"] = ["quick"]
-    rewrite_evidence(root, evidence)
-    assert "stale_verification" in record(python_exe, repo, "converge").stderr
-    evidence["suites"] = ["quick", "smoke"]
-    rewrite_evidence(root, evidence)
+    # converge / code-review 不再绑定 verification.json
     payload(record(python_exe, repo, "converge"))
-    set_modules_budget(repo, "quick", 45)
-    assert "stale_verification" in record(python_exe, repo, "code-review").stderr
+    payload(record(python_exe, repo, "code-review"))
+    assert (root / "gates/code-review.json").is_file()
 
 
 def test_suite_over_budget_fails(python_exe, tmp_path):

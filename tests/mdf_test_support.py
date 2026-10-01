@@ -32,7 +32,10 @@ def write_release_objectives(
     tmp_path: Path, name: str = "release-objectives.md",
 ) -> Path:
     path = tmp_path / name
-    path.write_text("# 发布目标\n\n本版收口与预发布验收。\n", encoding="utf-8")
+    path.write_text(
+        "# 发布目标\n\n- needs_design: no\n\n本版收口与预发布验收。\n",
+        encoding="utf-8",
+    )
     return path
 
 
@@ -41,7 +44,8 @@ def write_work_objectives(
 ) -> Path:
     path = tmp_path / name
     path.write_text(
-        "# 目标\n\n- [ ] 修复\n- [ ] verify full\n- [ ] fact update\n",
+        "# 目标\n\n- needs_design: no\n\n"
+        "- [ ] 修复\n- [ ] converge\n- [ ] verify full\n- [ ] fact audit\n",
         encoding="utf-8",
     )
     return path

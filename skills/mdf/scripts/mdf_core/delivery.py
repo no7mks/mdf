@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .delivery_state import (
     STAGES, fingerprints, gate, git, locate, read_json, require_design,
-    require_finish, require_green, safe, write_json,
+    require_finish, safe, write_json,
 )
 from .errors import MDFError, emit
 from .gitutil import current_branch, repo_path, require_git_root
@@ -68,7 +68,13 @@ def record_stage(repo, root, data, args):
     require_stage_branch(repo, stage, data)
     if not args.summary or not args.summary.strip():
         raise MDFError("gate 需要非空语义审查摘要", code="missing_review")
+    needs_design = data.get("needs_design", True)
+    if stage in {"write-tests", "implement"} and not needs_design:
+        raise MDFError("needs_design 为 false 时不记录 write-tests/implement",
+                       code="invalid_stage")
     if stage == "design":
+        if not needs_design:
+            raise MDFError("needs_design 为 false 时不记录 design", code="invalid_stage")
         policy = policy_input(args.policy_file)
         require_existing_local_links(
             repo, [root / "objectives.md", root / "design.md"]
@@ -76,7 +82,7 @@ def record_stage(repo, root, data, args):
         current = fingerprints(repo, root, data, policy)
     else:
         current = require_design(repo, root, data)
-        policy = gate(repo, root, "design")["policy"]
+        policy = (gate(repo, root, "design")["policy"] if needs_design else {})
     if stage == "implement":
         baseline = gate(repo, root, "design")
         if (root / "gates/write-tests.json").exists():
@@ -84,30 +90,26 @@ def record_stage(repo, root, data, args):
         if baseline["fingerprints"]["tests"] != current["tests"]:
             raise MDFError("implement 不得修改测试或验证规则", code="test_approval_required")
     if stage == "converge":
-        for prerequisite in ("write-tests", "implement"):
-            record = gate(repo, root, prerequisite)
-            if record.get("fingerprints", {}).get("design") != current["design"]:
-                raise MDFError("两路产出必须来自同一设计", code="stale_gate")
-        original = gate(repo, root, "write-tests")["fingerprints"]["tests"]
-        roster = data["roster"]
-        if roster["qa"] >= 2 and roster["qa_strategy"] == "partition":
-            original = gate(repo, root, "integration").get("tests")
-            if not original:
-                raise MDFError("缺少多路测试合并基线", code="stale_integration")
-        if original != current["tests"] and not args.test_approval:
-            raise MDFError("测试或验证规则变化，需要用户批准记录", code="test_approval_required")
-        current = require_green(repo, root, data)
+        if needs_design:
+            for prerequisite in ("write-tests", "implement"):
+                record = gate(repo, root, prerequisite)
+                if record.get("fingerprints", {}).get("design") != current["design"]:
+                    raise MDFError("两路产出必须来自同一设计", code="stale_gate")
+            original = gate(repo, root, "write-tests")["fingerprints"]["tests"]
+            roster = data["roster"]
+            if roster["qa"] >= 2 and roster["qa_strategy"] == "partition":
+                original = gate(repo, root, "integration").get("tests")
+                if not original:
+                    raise MDFError("缺少多路测试合并基线", code="stale_integration")
+            if original != current["tests"] and not args.test_approval:
+                raise MDFError("测试或验证规则变化，需要用户批准记录",
+                               code="test_approval_required")
+        # 验收为 Agent 侧 on-site + objectives；不绑定 smoke verification.json
     elif stage == "code-review":
         previous = gate(repo, root, "converge")
-        if previous.get("fingerprints", {}).get("design") != current["design"]:
+        if (needs_design
+                and previous.get("fingerprints", {}).get("design") != current["design"]):
             raise MDFError("缺少同设计的收敛证据", code="stale_gate")
-        current = require_green(repo, root, data)
-    elif stage == "fact-update":
-        previous = gate(repo, root, "code-review")
-        if previous.get("fingerprints", {}).get("code") != current["code"]:
-            raise MDFError("实现审查已过期", code="stale_gate")
-        # Facts-only edits need not invalidate business verification.
-        require_green(repo, root, data)
     record = {"stage": stage, "summary": args.summary, "fingerprints": current,
               "head": git(repo, "rev-parse", "HEAD").stdout.strip()}
     if stage == "design":
@@ -160,22 +162,22 @@ def check(repo, root, data, stage):
     if stage == "finish":
         return require_finish(repo, root, data)
     current = require_design(repo, root, data)
+    needs_design = data.get("needs_design", True)
     if stage in {"write-tests", "implement"}:
+        if not needs_design:
+            raise MDFError("needs_design 为 false 时无 write-tests/implement",
+                           code="invalid_stage")
         require_stage_branch(repo, stage, data)
         return current
     if stage == "converge":
-        for prerequisite in ("write-tests", "implement"):
-            record = gate(repo, root, prerequisite)
-            if record.get("fingerprints", {}).get("design") != current["design"]:
-                raise MDFError("并行阶段设计不一致", code="stale_gate")
+        if needs_design:
+            for prerequisite in ("write-tests", "implement"):
+                record = gate(repo, root, prerequisite)
+                if record.get("fingerprints", {}).get("design") != current["design"]:
+                    raise MDFError("并行阶段设计不一致", code="stale_gate")
         return current
     if stage == "code-review":
         gate(repo, root, "converge")
-        return require_green(repo, root, data)
-    if stage == "fact-update":
-        record = gate(repo, root, "code-review")
-        if any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design")):
-            raise MDFError("实现审查已过期", code="stale_gate")
         return current
     return current
 

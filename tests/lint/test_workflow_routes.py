@@ -57,6 +57,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     nonprocedural = {
         "repository-contract.md", "object-contract.md", "codewiki-contract.md",
         "delivery-contract.md", "common.md", "doc-structure.md",
+        "finish.md",  # alias stub → close-out.md
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
     assert len(workflows) == 38
@@ -94,7 +95,6 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
             for line in text.splitlines()
         ), path
 
-
 def test_archive_preview_is_terminal_and_apply_requires_non_preview():
     text = workflow("archive")
     table = rows(text)
@@ -106,7 +106,6 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
     assert "非预览" in diagram
     assert not re.search(r"预览成功 ─+→ 4", diagram)
 
-
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
@@ -114,7 +113,6 @@ def test_init_accepts_initializing_at_entry_before_readiness_gate():
     assert "全部 finding 记入盘点清单，由步骤 3 逐项处置" in entry
     assert "`path.symlink`）报告后停止" in entry
     assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
-
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():
     update = workflow("codewiki-update")
@@ -136,7 +134,6 @@ def test_codewiki_requires_verified_close_and_recoverable_failure():
     assert "不重新路由回 update" in recovery
     assert "没有hack且无页时跳过写入" in compact(update)
 
-
 def test_independent_intents_resolve_the_current_target_before_dispatch():
     dispatch = workflow("common").split("## 目标根", 1)[1]
     assert "本次调用" in dispatch
@@ -148,7 +145,6 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "upgrade 解析 Git 根" in dispatch
     assert "sync 解析 Git 根" in dispatch
     assert "不要求 manifest ready" in dispatch
-
 
 def test_callers_do_not_prescribe_questioning_style():
     forbidden = (
@@ -172,7 +168,6 @@ def test_callers_do_not_prescribe_questioning_style():
         for phrase in forbidden:
             assert phrase not in text, f"{path.name} contains {phrase!r}"
 
-
 def test_planning_intents_use_shared_planning_workspace():
     for name in ("prp-create", "prp-review", "intake", "prp-split"):
         text = workflow(name)
@@ -186,14 +181,12 @@ def test_planning_intents_use_shared_planning_workspace():
     assert "planning land" in common
     assert "## 切换工作区" in common
 
-
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
     assert rows(shared)[6][6] == "事实变化返回调用方；其他保留现场停止"
     assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认则结束；否则停"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
-
 
 def test_fact_audit_failure_returns_without_advancing_the_caller():
     text = workflow("fact-audit")
@@ -212,8 +205,7 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert "可修复则重验" in rows(workflow("migrate"))[5][6]
     assert rows(workflow("fact-update"))[2][5] == "通过或仅结构则 4"
     assert rows(workflow("fact-update"))[2][6] == "其他未通过或验证失败则停"
-    assert rows(workflow("finish"))[3][6] == "未过则停止并交接"
-
+    assert rows(workflow("close-out"))[3][6] == "未过则停止并交接"
 
 def test_bug_create_checks_ready_without_blocking_stale_docs():
     text = workflow("bug-create")
@@ -223,7 +215,6 @@ def test_bug_create_checks_ready_without_blocking_stale_docs():
     assert "evidence.stale" in text
     assert "其他 findings 报告后停止" not in text
 
-
 def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     text = workflow("fact-update")
     entry = text.split("### 范围与写入边界", 1)[1].split("支持用户独立调用", 1)[0]
@@ -231,13 +222,12 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     assert '任何写入或提交前运行 `doctor --repo "$REPO_ROOT"`' in entry
     for field in ("is_git_root: true", "initialized: true", "state: ready"):
         assert field in entry
-    assert "独立调用与 finish 委托均须满足" in entry
+    assert "独立调用与主链委托均须满足" in entry
     assert "不写入、不提交" in entry
     assert "不将 `normal_workflows_allowed: true` 作为前置条件" in entry
     assert "事实及 evidence 问题由步骤 2–4 按范围处理" in entry
     assert "写入分支按 `common.md` 的归属规则检查" in entry
     assert "独立调用仅记录 `branch.invalid`" not in entry
-
 
 def test_codewiki_commit_failure_does_not_rebuild_verified_output():
     for name in ("codewiki-generate", "codewiki-update"):
@@ -252,7 +242,6 @@ def test_codewiki_commit_failure_does_not_rebuild_verified_output():
         assert "同次续办先核对输出与 diff 未变且验收仍有效" in text
     assert "输出已验收且仅 Git 暂存或提交失败" in workflow("codewiki-recovery")
 
-
 def test_tree_renders_diagram_in_fence_and_index_as_table():
     text = workflow("tree")
     table = rows(text)
@@ -264,7 +253,6 @@ def test_tree_renders_diagram_in_fence_and_index_as_table():
     assert "不得改画成 json" in text
     assert "不得再展示 `index` JSON" in text
     assert "仍含表头与 `hidden:` 行" in text
-
 
 def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
@@ -299,7 +287,6 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert "需要且通道未打开时先 `$mdf integrate`" in text
     assert "双端验收且确认不再改代码后才委托 code-review" in text
 
-
 def test_next_dispatch_allows_non_git_and_delegated_continuation():
     entry = workflow("entry")
     common = workflow("common")
@@ -308,7 +295,6 @@ def test_next_dispatch_allows_non_git_and_delegated_continuation():
     assert "next 可委托识别出的在途流程" in entry
     assert "一次 next 只续办一个所选 intent" in workflow("next")
     assert "显式调用 next 委托下一阶段" in workflow("delivery-contract")
-
 
 def test_help_catalog_is_grouped_and_read_only():
     text = workflow("help")
@@ -323,7 +309,6 @@ def test_help_catalog_is_grouped_and_read_only():
     assert "$mdf sync" in text
     assert "未知 intent：" in text
 
-
 def test_to_resolves_planning_aliases_and_enters_worktree():
     text = workflow("to")
     table = rows(text)
@@ -337,7 +322,6 @@ def test_to_resolves_planning_aliases_and_enters_worktree():
     assert "切换工作区" in text
     assert "不创建新的交付分支" in text
     assert "空目标" in text
-
 
 def test_common_banner_and_non_cursor_use_absolute_paths():
     common = workflow("common")
@@ -365,7 +349,6 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
         "等于 worktree 路径最后两级",
     ):
         assert phrase in block
-
 
 def test_integrate_forces_goal_and_never_stops_poll():
     text = workflow("integrate")
@@ -397,7 +380,6 @@ def test_integrate_forces_goal_and_never_stops_poll():
     assert "收口完成不是停止理由" in text or "都不是停止理由" in text
     assert "语义结束或用户停止时才停掉" not in text
 
-
 def test_prettify_requires_structure_instead_of_suggestions():
     pretty = workflow("prettify")
     structure = workflow("doc-structure")
@@ -407,7 +389,6 @@ def test_prettify_requires_structure_instead_of_suggestions():
     assert "必须按表组织" in structure
     assert "必须写成" in structure
     assert "不得当作可忽略建议" in structure
-
 
 def test_upgrade_previews_then_confirms_before_replace():
     text = workflow("upgrade")
@@ -433,7 +414,6 @@ def test_upgrade_previews_then_confirms_before_replace():
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)
 
-
 def test_codewiki_session_is_created_by_analyze_repo():
     for name in ("codewiki-generate", "codewiki-update"):
         text = workflow(name)
@@ -446,7 +426,6 @@ def test_codewiki_session_is_created_by_analyze_repo():
     assert "读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`" in generate
     assert "save_module_tree` 并读取其写出的 `processing_order.json`" in generate
     assert rows(workflow("codewiki-recovery"))[4][2] == "约束"  # 搬移为确认后的文件操作
-
 
 def test_init_dispatches_to_bootstrap_or_migrate():
     text = workflow("init")
@@ -467,7 +446,6 @@ def test_init_dispatches_to_bootstrap_or_migrate():
     assert "或 init 依据公共分流规则的内部委托" in migrate
     assert "`$mdf init migrate`" in migrate
 
-
 def test_init_entry_is_read_only_and_existing_git_runs_doctor():
     table = rows(workflow("init"))
     assert table[0][2] == "约束"
@@ -482,7 +460,6 @@ def test_init_entry_is_read_only_and_existing_git_runs_doctor():
     assert table[0][2] == "约束"
     assert table[0][3] == "只读判定分流"
 
-
 def test_jot_promote_revalidates_without_rewriting():
     jot = workflow("jot")
     assert "不重写对象" in jot
@@ -492,7 +469,6 @@ def test_jot_promote_revalidates_without_rewriting():
     table = rows(jot)
     assert (table[4][1], table[4][2]) == ("Clarify", "约束")
     assert "复验保留；校验恢复；land 失败留现场" == table[7][6]
-
 
 def test_clarify_unavailable_facts_stop_like_cancel():
     table = rows(workflow("clarify"))

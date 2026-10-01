@@ -229,6 +229,16 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 验收：失败现场、findings 与等待状态已报告。
 异常与交接：本条即失败汇；不自行回滚，除非当前 intent 另有恢复规则。
 
+## 测试失败工作流
+
+converge（on-site）与 verify full 共用（详见 `delivery-contract.md`）：
+
+1. 测试运行必须有框架自带报告文件（JUnit 等），禁止靠 tee/tail 冒充报告。
+2. fail 后先复测单用例。
+3. 修一个用例 → 复测该单用例。
+4. 有 side effect 的 flaky 例外（须记录依据）。
+5. 相关单用例都绿后，才继续该轮 verify。
+
 ## 日志与报告
 
 <a id="logs"></a>
@@ -310,7 +320,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 
 - 阶段提交后返回调用方继续当前流程；当前 intent 全部完成后才结束。
   - 不仅为手动 commit 要求重调，也不自动触发下一个用户入口。
-- deliver 依据 `references/deliver.md` 内部串联从 start 起的剩余交付阶段，
+- deliver 按 `references/deliver.md` 串联剩余真实 intent 到 close-out。
   子 intent 完成后返回 deliver 继续。
 - init 依据 `references/initialization.md` 自动转入 bootstrap 或 migrate 是明确的内部委托，
   不自动串联交付主线。

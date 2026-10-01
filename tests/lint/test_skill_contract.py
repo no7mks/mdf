@@ -40,7 +40,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "bug create",
         "prp create",
         "prp review",
-        "archive", "finish",
+        "archive", "close-out", "finish",
         "fact audit",
         "prettify",
         "fact update",
@@ -358,7 +358,7 @@ def test_unreleased_layout_allows_in_progress_delivery_without_change() -> None:
     )
 
     assert "不必先有 CHANGE.md" in contract
-    assert "finish 在同一目录补齐 CHANGE.md" in delivery
+    assert "close-out 在同一目录补齐 CHANGE.md" in delivery
     assert "CHANGE.md 出现前即可保存交付身份与材料" in objects
     assert "finish 时" not in objects
 
@@ -378,7 +378,7 @@ def test_contracts_do_not_duplicate_intent_steps() -> None:
 def test_audit_is_reused_without_delivery_logic() -> None:
     audit = intent("fact-audit")
     migrate = intent("migrate")
-    finish = intent("finish")
+    finish = intent("close-out")
 
     assert "只读" in audit
     assert "`全量审阅`（`--scope full`）" in audit
@@ -398,10 +398,10 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`master...HEAD`" not in audit
     assert "`release-closeout`" not in audit
     assert "`fact audit` 执行`全量审阅`" in migrate
-    assert "这是交付前检查，不是 audit" in finish
-    assert "references/fact-update.md" in finish
-    assert "release 为 `--scope full`" not in finish
-    assert "release 的左端点为上一正式发布" in finish
+    close_out = intent("close-out")
+    assert "交付前检查" in close_out
+    assert "不内嵌 verify full" in close_out
+    assert "release 为 `--scope full`" not in close_out
     assert "finish 的 release 为 `full`" not in audit
     assert "`--base` 为上一正式发布" in audit
     assert "`agents.project_content`" in audit
@@ -414,7 +414,7 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`system-configuration.md`" in update
     assert "`4→3` 最多两次" in update
     assert "在 `PROJECT.md` 写入" in update
-    assert "适用 gate" in update
+    assert "无 fact-update stage gate" in update or "结构 diff" in update
     assert "强制五类表" not in migrate
     assert "核心模块表" in migrate
     assert "同一项两轮后仍在" in migrate
@@ -443,7 +443,7 @@ def test_delivery_intents_consume_current_fact_pages() -> None:
 
 def test_start_and_finish_define_strict_gitflow_operations() -> None:
     start = intent("start")
-    finish = intent("finish")
+    finish = intent("close-out")
 
     assert "master" in start and "develop" in start
     assert "不 fetch、不要求 origin、不 push" in start
@@ -452,7 +452,7 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "feature/release 2；其他 3" not in start
     assert "Resolve branch" in start and "| 2 |" in start
     assert "release-objectives.md" in start and "Open integrate" in start
-    assert "必须写明三种之一" in start and "Confirm roster" in start
+    assert "needs_design" in start and "Confirm roster" in start
     assert "member、strategy 与 models" in start
     assert "no-ff 合并到本地 develop" in finish
     assert "no-ff 合并到" in finish and "master" in finish

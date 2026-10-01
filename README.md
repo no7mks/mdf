@@ -55,7 +55,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf deliver [<target>] [--auto-pilot] [--yolo]` | 从 start 起持续推进到 finish；可并行阶段强制分派 subagent |
+| `$mdf deliver [<target>] [--auto-pilot] [--yolo]` | 持续推进到 close-out；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
@@ -68,13 +68,13 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf design` | 确认设计、测试策略和共享代码底座 |
 | `$mdf write-tests` | 按目标编写可执行测试；不要求全绿 |
 | `$mdf implement` | 按已确认设计实现 |
-| `$mdf converge` | 收敛：集成并持续修复到所需 suite 通过 |
+| `$mdf converge` | 收敛：objectives + on-site，循环到达成 |
 | `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
 | `$mdf verify-fix [<bug-id>]` | 二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复） |
 | `$mdf verify --level on-site|full` | module 级验证；开发用 on-site，closeout 前用 full |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify full 之后 |
-| `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
+| `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify full / fact 已在主链完成） |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
@@ -87,16 +87,18 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 ### 主线流程
 
-主线 intent 由用户手动触发，也可显式调用 `next` 单步续办，
-或调用 `deliver` 从 start 起持续推进当前一次交付直到 finish：
+主线 intent 由用户手动触发。
 
-`start → design → [write-tests ∥ implement] → converge → code-review → finish`
+- `$mdf next`：单步续办。
+- `$mdf deliver`：从 start 持续到 close-out。
 
-- bugfix、release、hotfix 同样先测后审：`start → 开发(on-site) → code-review → verify full → fact update → finish`。
-  - 收口复用有效的 full 证据，不重跑 release suite。
-- 一个 feature 对应一个 PRP。
-  - 设计须提交测试与实现共用的代码底座，之后两路可并行。
-  - gate 检查共同基线与有效证据。
+统一骨架：
+
+`start → [design?] → 开发 → converge → code-review → verify full → fact → close-out`
+
+- 是否 design 由 start clarify 冻结的 `needs_design` 决定。
+- converge 做 on-site 验收；verify full 为独立阶段。
+- 一个 feature 对应一个 PRP；`needs_design: yes` 时 design 提交共用底座。
 - start 始终独立 worktree。
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
 

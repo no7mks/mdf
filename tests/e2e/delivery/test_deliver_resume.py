@@ -34,7 +34,6 @@ def test_converge_can_resume_from_owner_after_role_cleanup(python_exe, tmp_path)
         gate = json.loads((root / "gates" / f"{stage}.json").read_text())
         assert gate["fingerprints"]["design"] == current["design"]
         git(owner, "merge-base", "--is-ancestor", gate["head"], "HEAD")
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(owner)))
     payload(record(python_exe, owner, "converge"))
     assert (root / "gates/converge.json").is_file()
     assert not qa.exists() and not dev.exists()

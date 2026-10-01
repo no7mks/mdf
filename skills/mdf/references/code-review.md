@@ -131,22 +131,15 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
     - 非零：读 stderr 最后一行的 `error`，不从 stdout 或落盘证据猜 check 结果。
     - 仅 `stale_verification` 且同设计已收敛时，记录过期状态，按相同条件进入 2 或 3，步骤 4 再重验。
     - 其他 `error`（含 `stale_gate`）停止，不跳过 converge。
-- bugfix/hotfix/release 不要求 feature 的 design/converge gate，但同样先测后审：
-  - 先判定走向。修复窗内进入 3，不因 `$mdf verify check --level full` 失败回到 Verify 阶段。
-  - 只有进入 2 之前才运行 `$mdf verify check --level full --repo "$REPO_ROOT"`。
-    - 证据缺失、过期或失败时停止并报告。
-    - 由 `deliver.md`「先测后审」（Verify 阶段）修到全绿后再审查。
-  - 修复续办进入 3 不要求全绿证据，由步骤 4 重验。
-  - ❌ 不在未全绿的 HEAD 上派审查。
+- 四种 kind 均要求有效 converge（主链验收在 converge / on-site，不在本步跑 full）。
+  - `needs_design: no` 时无 design gate，仍须 converge。
+  - 修复续办进入 3；步骤 4 按需补 on-site，不在本 intent 强制 verify full。
 - release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
   - 审查基线仍为上一正式发布。
-  - 📌 同 worktree 或跨 worktree 联调时，进入 2 前须两端验收通过，且已确认此后不再改代码。
-    - 同 worktree：两端都在本树验收。
-    - 跨 worktree：未双端验收通过则不派审查。对端未到、未过或未冻结则停止。
+  - 📌 同 worktree 或跨 worktree 联调时，进入 2 前须双端验收通过，且已确认此后不再改代码。
+    未双端验收通过则不派审查。
 - hotfix/bugfix 读取 `objectives.md` checklist 与对应 Bug。
-- 不为形式创建 feature 材料。
-- bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；
-  本步骤只核对其覆盖本次改动涉及的全部功能块。
+- bugfix 的 `suites.json` 在后续 verify full 前关联；本步不强制。
 
 ### 独立审查
 

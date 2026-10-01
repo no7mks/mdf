@@ -199,6 +199,13 @@ def command_start(args) -> None:
         review_strategy=args.review_strategy,
         models=models_from_args(args),
     )
+    from .delivery_state import parse_needs_design
+    needs_design = parse_needs_design(objectives)
+    if (roster["qa"] >= 1 or roster["dev"] >= 1) and not needs_design:
+        raise MDFError(
+            "roster ≥1 时 needs_design 必须为 yes",
+            code="invalid_needs_design",
+        )
     names = start_branches(branch, roster)
     for name in names:
         if _exists(repo, f"refs/heads/{name}"):
@@ -232,6 +239,7 @@ def command_start(args) -> None:
             identity = {
                 "branch": branch, "roster": roster, "slug": folder,
                 "start_commit": start_commit,
+                "needs_design": needs_design,
             }
             if args.kind == "feature":
                 identity["proposal"] = args.proposal

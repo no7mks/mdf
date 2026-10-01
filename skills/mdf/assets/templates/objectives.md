@@ -1,12 +1,18 @@
 # 交付目标
 
+## 流程
+
+- needs_design: {{MDF_NEEDS_DESIGN}}
+
 ## 步骤
 
 - [ ] 确认目标与约束
-- [ ] 完成设计与实现
+- [ ] 完成设计与实现（若 needs_design: no 则跳过 design）
+- [ ] converge（objectives + on-site）
+- [ ] code-review
 - [ ] verify full
-- [ ] fact update
-- [ ] finish 收口
+- [ ] fact audit
+- [ ] close-out
 
 ## 需求来源
 

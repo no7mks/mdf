@@ -85,7 +85,9 @@ def sync_roles(python_exe, owner):
 def setup_delivery(python_exe, tmp_path):
     repo, remote = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n实现健康状态接口。\n")
+    obj.write_text(
+        "# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n"
+    )
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
                        "--proposal", "prp-001", "--objectives-file", str(obj)))
     work = Path(data["worktree"])

@@ -1,12 +1,18 @@
 # 发布目标
 
+## 流程
+
+- needs_design: {{MDF_NEEDS_DESIGN}}
+
 ## 步骤
 
 - [ ] 确认工作线与范围
 - [ ] 完成预发布工作
+- [ ] converge（objectives + on-site）
+- [ ] code-review
 - [ ] verify full
-- [ ] fact update
-- [ ] finish 收口
+- [ ] fact audit
+- [ ] close-out
 
 ## 工作线
 

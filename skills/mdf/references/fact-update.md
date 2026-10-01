@@ -1,6 +1,7 @@
 # Fact Update
 
-工作分支上由 finish 在 **verify full 之后** 委托；中途禁止。独立调用仍可用。
+工作分支上由主链在 **verify full 之后、close-out 之前** 于 fact audit 未通过时委托；
+无 fact stage gate。独立调用仍可用。
 
 evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 
@@ -64,7 +65,7 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 任何写入或提交前运行 `doctor --repo "$REPO_ROOT"`；
 核对命令成功且结果包含 `is_git_root: true`、`initialized: true`、`state: ready`。
 
-- 独立调用与 finish 委托均须满足。
+- 独立调用与主链委托均须满足。
 - 未初始化、initializing 或 manifest 无法读取时提示 `$mdf init`，不写入、不提交。
 - `layout.migrate` 或 `manifest.schema` finding 提示 `$mdf migrate`，本 intent 不搬布局。
 - 工具失败或目标边界不符时报告并停止。
@@ -82,23 +83,23 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
     - 否则 `git merge-base develop HEAD`。
   - 范围是该起点以来实现改动该碰的事实页与被改到的路由链接，不是「分支上改过的 Markdown」。
   - 未改实现只想整理文档时显式用 `full`。
-  - finish release 的 `--base` 为上一正式发布的 master commit/tag（与 code-review 同一左端点）；
+  - close-out / 主链 release 的 `--base` 为上一正式发布的 master commit/tag（与 code-review 同一左端点）；
     首次发布无上一版本时停止确认初始基线。
 - `full`：知识面全树——`docs/user-guide/**`、`docs/system/**`、入口根文档、
   `docs/context/adr/` 的复述检查与全部体积。结构 finding 可全改。
 - `paths`：调用方给出精确实现/文档路径；独立调用列出 `<path>...` 即此形式。
   - 路径分派与缺路径、与 `--scope full|branch` 同用时的处理同 `fact-audit.md`。
 
-finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整理走显式
+主链只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整理走显式
 `$mdf fact update --scope full`。
 
-支持用户独立调用；也由 finish 在前段委托。
+支持用户独立调用；也由主链在 fact audit 后委托。
 
 - 独立调用不要求交付分支或阶段记录，不触发交付。
   - 可在当前工作相关的 feature、bugfix、release 或 hotfix 分支同步事实。
   - 在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
   - 无关的独立维护在 develop 完成，不在 master 写入。
-- finish 调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix 为
+- 主链调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix 为
   start_commit，release 为上一正式发布。
 
 验收：doctor 结果、调用方类型、scope、事实与实现范围。
@@ -149,7 +150,7 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 
 - full validation 按已提交内容判 `fact.untracked` 与 `evidence.stale`。
 - 未提交的同次写入会变成其他未通过，到不了步骤 4。
-- finish 委托时，这次事实提交由本 intent 完成。
+- 主链委托时，这次事实提交由本 intent 完成。
   调用方随后提交 Change 等其余材料。
 - 委托使用同一 `--scope` 与 `--base`。
   - `paths` 要把本次新建或拆出的页写入 `--document-path`。
@@ -196,10 +197,10 @@ finish 只能委托 `branch` 或等价 `paths`，不得改用 `full`；全库整
 - 第三次仍有结构 finding（表中的超次 finding）则停止并报告，即使本步已经改写也不回 3。
 - 无结构 finding 时无改写结束，含第三次审阅已通过。失败与无改写互斥。
 - 无改写或重审通过后，事实页应已在审阅前提交。
-  - finish 委托时不把事实页留到调用方。
-  - feature finish 委托时另运行 `delivery record --repo "$REPO_ROOT" --stage fact-update`。
+  - 主链委托时不把事实页留到调用方。
+  - ❌ 不再记录 fact-update stage gate。
     - `--summary` 写本次事实审阅确认与验证证据。
 
-验收：结构 diff、适用 gate、适用提交、feature finish 委托时的 fact-update gate。
+验收：结构 diff、适用提交；无 fact-update stage gate。
 
 异常与交接：写入失败保留现场并停止，不按无改写结束；gate 记录失败时停止并报告，不声称事实同步完成。

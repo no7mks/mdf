@@ -68,7 +68,7 @@
 
 ### 目录
 
-主线：`start → design → [write-tests ∥ implement] → converge → code-review → finish`
+主线：`start → [design?] → work → converge → code-review → verify full → fact audit → close-out`
 
 #### 起步
 
@@ -92,25 +92,27 @@
 #### 交付
 
 - `$mdf next [--depth N]`：续办在途；feature 上走交付；无在途时委托 tree
-- `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 finish；可并行阶段强制 subagent 分别执行
+- `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 close-out；可并行阶段强制 subagent 分别执行
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
-- `$mdf converge`：集成并持续修复到所需 suite 通过
+- `$mdf converge`：objectives + on-site，循环到达成
 - `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
-- `$mdf verify --level on-site|full`：module 级验证；开发 on-site，closeout/非 feature Verify 用 full
+- `$mdf verify --level on-site|full`：module 级验证；converge 用 on-site，主链在
+  code-review 后跑 full
 - `$mdf code-review`：审查并修复实现、测试和 code smell
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
-  工作分支仅 closeout 在 verify full 之后调用
-- `$mdf finish`：按 Gitflow 分支完成审计与收口
+  主链在 verify full 之后、必要时于 fact audit 前调用
+- `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify full / fact）
 
 #### 维护
 
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
-- `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构
+- `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
+  主链在 verify full 之后、close-out 之前
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
@@ -160,6 +162,7 @@ $mdf verify --level full
 $mdf code-review
 $mdf fact update
 $mdf fact update --scope full
+$mdf close-out
 $mdf finish
 $mdf fact audit
 $mdf prettify --scope full
@@ -182,7 +185,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`design`、`write-tests`、`implement`、`converge`；
-  `fix`、`verify-fix`、`verify`、`code-review`、`fact update`、`finish`
+  `fix`、`verify-fix`、`verify`、`code-review`、`fact update`、`fact audit`、`close-out`/`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
 
@@ -259,7 +262,7 @@ $mdf clarify 要不要把缓存放到 Redis
 
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`
   - 用法：`$mdf deliver`、`$mdf deliver <target>`、`$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo`
-  - 用途：锁定当前一次交付，必要时先 start，持续运行到 finish 完成。
+  - 用途：锁定当前一次交付，必要时先 start，持续运行到 close-out 完成。
   - 说明：
     - target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。已有在途交付则报错，不续办。
     - 支持 feature/bugfix/hotfix/release；roster ≥1 且两路可并行时强制分别使用
@@ -272,7 +275,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - strategy / models 可转交给 start、design、code-review：
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
-    - 包含 finish 的合并及适用的 tag、发版推送。
+    - 包含 close-out 的合并及适用的 tag、发版推送。
 
 - `$mdf start`
   - 用法：`$mdf start`；可带 `--roster`、`--*-strategy`、`--*-model`
@@ -318,7 +321,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf verify-fix [<bug-id>]`
   - 用法：`$mdf verify-fix` 或 `$mdf verify-fix <bug-id>`
   - 用途：二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复）。
-  - 说明：finish 关闭前内部委托；不标 `closed`、不写 `fixed_in`、不跑 release。
+  - 说明：close-out 关闭前内部委托；不标 `closed`、不写 `fixed_in`、不跑 release。
     无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
 
 - `$mdf verify --level on-site|full`
@@ -329,17 +332,17 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
-  - 说明：各分支 finish 前完成（feature 在 converge 后）。首轮按 roster.reviewers
+  - 说明：各分支 close-out 前完成（feature 在 converge 后）。首轮按 roster.reviewers
     覆盖起点区间；后续增量并复核。默认 replicate；partition 按切片派工。
 
 - `$mdf fact update`
   - 用法：`$mdf fact update [<path>...] [--scope branch|full|paths]`
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
-  - 说明：独立默认 `branch`；`full` 整理知识面全树。finish 只用 branch/paths；
+  - 说明：独立默认 `branch`；`full` 整理知识面全树。主链只用 branch/paths；
     release `--base` 为上一正式发布。独立调用须 manifest ready。
 
-- `$mdf finish`
-  - 用法：`$mdf finish`
+- `$mdf close-out` / `$mdf finish`
+  - 用法：`$mdf close-out` 或 `$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` Bug 前委托 `$mdf verify-fix`。
 
@@ -351,7 +354,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf fact audit`
   - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
   - 用途：只读审阅覆盖、证据、语义与加载质量。
-  - 说明：不执行 `verification`；`size.hard` 阻断。finish release `--base` 为上一正式发布。
+  - 说明：不执行 `verification`；`size.hard` 阻断。主链 release `--base` 为上一正式发布。
 
 - `$mdf prettify`
   - 用法：`$mdf prettify [<path>...] [--scope branch|full|paths]`（省略为 branch）

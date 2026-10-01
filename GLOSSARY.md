@@ -38,11 +38,11 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 
 ## `$mdf verify`
 
-- **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题 test/testcase。
-- **full**：全 module 的 lint/build/quick + 套件并集（feature/bugfix→smoke，
-  release/hotfix→release）；以 commit 为锚写入 `verify.full.json`。
-  要求/允许场景：非 feature 审查前 Verify、非 feature 的 code-review 证据过期补验、
-  finish closeout。
+- **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
+  test/testcase；converge 验收使用。
+- **full**：全 module 的 lint/build/quick + 套件并集（bugfix/hotfix→smoke，
+  feature/release→release）；以 commit 为锚写入 `verify.full.json`。
+  主链在 code-review 之后、fact audit / close-out 之前跑。
 
 ## Test、test case 与 suite
 
@@ -53,8 +53,9 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 ## 验证 suite
 
 - **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
-- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix 的 full 跑到此。
-- **release**：包含 smoke，发版所需的 test case，无预算上限；release、hotfix 的 full 跑到此。
+- **smoke**：包含 quick，可含任意种类，预算 300s；bugfix、hotfix 的 full 跑到此。
+- **release**：包含 smoke，发版所需的 test case，无预算上限；feature、release 的 full
+  跑到此。
 - **full**（概念）：全部 test case 的上界，通常没有入口，不由 gate 执行。
 - **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有
   `docs/system/testing/<name>.md`。on-site 由 Agent+Jev 选题，不默认整 suite 盲跑。
@@ -105,7 +106,7 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 - 存放 gitignore 的 deploy config；不提交这些文件。
 - 已跟踪改动干净才从其他分支切回 master。
 - master 不存在，或已被其他 worktree 占用时停止。
-- finish 不拆除这棵树。
+- close-out / finish 不拆除这棵树。
 
 ## Roster
 
@@ -146,12 +147,12 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 `$mdf deliver --auto-pilot` 的持续交付模式：
 
 - 主 Agent 自行裁定原需用户确认的步骤。
-- 仅在 finish 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认。
+- 仅在 close-out 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认。
 - 不可恢复的死硬阻塞仍停止。
 
 ## Yolo
 
-`$mdf deliver --yolo`：启用 auto-pilot，并跳过 finish 的 Gitflow 收口确认。
+`$mdf deliver --yolo`：启用 auto-pilot，并跳过 close-out 的 Gitflow 收口确认。
 不可恢复的死硬阻塞仍停止。
 
 ## ADR
@@ -223,7 +224,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
   - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
   - 需要时切到 worktree 后先打开通道。Goal 完成前，用户没让你停，永远不许停下来。
   - 双端验收且确认不再改代码后才允许 code-review。
-  - fact update 由 finish 前段执行。
+  - fact audit（必要时 fact update）在 verify full 之后、close-out 之前执行。
 - 联调测试默认由客户端主导。
 
 ## 测试类别与 Code Smell

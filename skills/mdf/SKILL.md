@@ -79,9 +79,9 @@ disable-model-invocation: true
                  ├──── code-review ───────────────────────────────────→ references/code-review.md
                  ├──── verify ────────────────────────────────────────→ references/verify.md
                  ├──── fact update ───────────────────────────────────→ references/fact-update.md
-                 ├──── prp split ─────────────────────────────────────→ references/prp-split.md
-                 ├──── finish ────────────────────────────────────────→ references/finish.md
                  ├──── fact audit ────────────────────────────────────→ references/fact-audit.md
+                 ├──── prp split ─────────────────────────────────────→ references/prp-split.md
+                 ├──── close-out / finish ────────────────────────────→ references/close-out.md
                  ├──── prettify ──────────────────────────────────────→ references/prettify.md
                  ├──── clarify <议题> ────────────────────────────────→ references/clarify.md
                  ├──── bug create ────────────────────────────────────→ references/bug-create.md
@@ -144,7 +144,8 @@ intent 只由显式调用选择：
   - 例外：显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付。
 - 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
-- deliver 可内部委托从 start 起的剩余交付阶段直到 finish。
+- deliver 可内部委托从 start 起的剩余交付阶段直到 close-out。
+- `$mdf close-out` 与 `$mdf finish` 同义，均执行 `references/close-out.md`。
 - 其他入口仍按显式调用路由。
 
 帮助与 CLI：

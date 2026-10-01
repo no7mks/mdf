@@ -110,42 +110,36 @@
 **澄清**
 
 feature、release、bugfix 与 hotfix 均按下列规则写入 objectives checklist；
-feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简 checklist。
+feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确认。
 
+- 📌 必须明确并写入 `needs_design: yes` 或 `needs_design: no`（objectives 与随后
+  `delivery.json`）。deliver/next 只读该字段。
+  - `roster ≥1` 必须为 yes；选 no 则须把 roster 收成 `0,0`。
+  - `--auto-pilot` / `--yolo` 委托时由主 Agent 按证据自裁定。
 - feature：
   - 对照 ready PRP 与 `assets/templates/objectives.md`。
-  - 使用内部 clarify intent，议题固定为「本次 feature 交付的目标、非目标、约束与可验证验收」。
-  - objectives 用 `[prp-001](../../../docs/proposals/<filename>)` 引用 PRP，
-    不另造需求来源，不改写 PRP。
-  - PRP 的问题、范围或验收仍不足以形成本次目标时停止，不写目标，提示 `$mdf prp review`。
+  - 使用内部 clarify intent，议题固定为「本次 feature 交付的目标、非目标、约束、
+    是否需要 design，与可验证验收」。
+  - objectives 用 `[prp-001](../../../docs/proposals/<filename>)` 引用 PRP。
+  - PRP 不足时停止，提示 `$mdf prp review`。
 - release：
-  - 对照 `changes/unreleased/` 中非 SemVer 子目录的 child Change，
-    以及 `assets/templates/release-objectives.md`。
-  - 使用内部 clarify intent，议题固定为「本版工作线、收口范围、预发布工作、是否联调、非目标与可验证验收」。
-  - 工作线三选一，开分支前必须选定：
-    - 不联调：`start → 开发(on-site) → code-review → verify full → fact update → finish`
-    - 同 worktree（同仓）：对齐计划后做两端验收。确认不再改代码才审查。
-    - 跨 worktree（跨仓）：先开通道并对齐计划，再做本端验收与双端验收。
-      确认不再改代码后才审查；finish 前段 **verify full → fact update**。
-  - 目标只写入已选定的那一条；不罗列未选路径，不写「本版选定…」。
-  - fact update 仅由 finish 在 verify full 之后执行；已有有效结果则不重做。
-  - 本版范围写入 start 时的 child Change 清单。
-  - 📌 必须写明三种之一；不得省略，不得写待定。
-    - 不联调：写原因。不执行 integrate。
-    - 同 worktree：两端在本树验收。执行 integrate，不打开消息通道。
-    - 跨 worktree：写对端（仓、分支或 HTTP）、通道验收，以及本侧可碰范围。
-      只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-  - 跨仓 pin 写 repo 与 branch/commit/version；仓外联调证据的记录方式写入验收。
-  - ✅ 允许在本分支改 Bug、配置、文档与联调证据。
-  - ❌ 不得实施新 PRP，缺能力则推迟或作废本次 release，回 develop 开 feature。
+  - 对照 child Change 与 `assets/templates/release-objectives.md`。
+  - clarify 议题含工作线、是否联调、是否需要 design。
+  - 工作线三选一；只写入已选定的那一条；不罗列未选路径；不写「本版选定…」；📌 必须写明三种之一：
+    - 不联调：不执行 integrate。
+    - 同 worktree：执行 integrate，不打开消息通道。
+    - 跨 worktree：先开通道；写本侧可碰范围；只改本仓；
+      不得改、操作、启动或终止对端。
+  - 主链收口前为 verify full → fact audit → close-out（不内嵌在 close-out）。
+  - ❌ 不得实施新 PRP。
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
-  - 写含 `[ ]`/`[x]` 大步骤的精简 checklist
-    （至少含修复、verify full、fact update、finish）。
-  - 可不走 clarify grilling；必须落盘临时文件供 `--objectives-file`。
+  - 精简 checklist 至少含：修复/范围、converge、code-review、verify full、
+    fact audit、close-out；并含 `needs_design`。
+  - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
 
-验收：确认目标（release 另含是否联调、本侧可碰范围）以及共同理解。
+验收：确认目标、`needs_design`（release 另含是否联调）以及共同理解。
 
 异常与交接：不写目标、不创建分支。
 

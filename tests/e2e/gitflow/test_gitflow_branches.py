@@ -24,7 +24,7 @@ def test_start_allows_local_base_ahead_of_origin(python_exe: str, tmp_path: Path
     (repo / "local-only.txt").write_text("本地更新\n", encoding="utf-8")
     commit(repo, "test: 本地领先 develop")
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -41,7 +41,7 @@ def test_start_rejects_origin_commits_missing_locally(
     _advance_origin(remote, base, tmp_path)
     if kind == "feature":
         obj = tmp_path / "objectives.md"
-        obj.write_text("# 目标\n\n交付健康接口。\n")
+        obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
         identifier = ["--proposal", "prp-001", "--objectives-file", str(obj)]
         branch = "feature/service-health"
     else:
@@ -67,7 +67,7 @@ def test_start_rejects_diverged_base(python_exe: str, tmp_path: Path):
     commit(repo, "test: 本地分叉 develop")
     _advance_origin(remote, "develop", tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     failed = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -80,7 +80,7 @@ def test_start_does_not_require_origin(
 ):
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
                          "--kind", "feature", "--proposal", "prp-001",
                          "--objectives-file", str(obj)))
@@ -116,7 +116,7 @@ def test_start_uses_local_base_without_upstream(
     expected = git(repo, "rev-parse", base).stdout.strip()
     if kind == "feature":
         obj = tmp_path / "objectives.md"
-        obj.write_text("# 目标\n\n交付健康接口。\n")
+        obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
         identifier = [
             "--proposal", "prp-001", "--objectives-file", str(obj),
         ]
@@ -255,7 +255,7 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs(prp): 增加可并行提案")
     first = tmp_path / "first.md"
-    first.write_text("# 目标\n\n交付健康接口。\n")
+    first.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     first_start = payload(mdf(python_exe, "start", "--repo", str(repo),
                  "--kind", "feature", "--proposal", "prp-001",
                  "--objectives-file", str(first)))
@@ -267,7 +267,7 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     )
 
     second = tmp_path / "second.md"
-    second.write_text("# 目标\n\n交付并行接口。\n")
+    second.write_text("# 目标\n\n- needs_design: yes\n\n交付并行接口。\n")
     created = payload(mdf(python_exe, "start", "--repo", str(repo),
                            "--kind", "feature", "--proposal", "prp-003",
                            "--objectives-file", str(second)))
@@ -303,7 +303,7 @@ def test_start_feature_rejects_name_and_derives_slug_from_prp(
 ):
     repo, _remote = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n交付健康接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     rejected = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--name", "delivery", "--proposal", "prp-001",
@@ -324,7 +324,8 @@ def test_start_rewrites_repo_root_style_objectives_links(
     repo = local_repo(tmp_path)
     obj = tmp_path / "objectives.md"
     obj.write_text(
-        f"# 目标\n\n[需求](docs/proposals/{PRP_NAME})\n"
+        f"# 目标\n\n- needs_design: yes\n\n"
+        f"[需求](docs/proposals/{PRP_NAME})\n"
         "[能力](docs/user-guide/README.md)\n"
         "[外链](/docs/user-guide/README.md)\n"
     )

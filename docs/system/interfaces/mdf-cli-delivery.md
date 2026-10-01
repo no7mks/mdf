@@ -20,9 +20,9 @@
 | action | 输入与效果 |
 | --- | --- |
 | status | 只读列出交付身份、roster、材料位置、阶段记录与 owner/qa/dev worktree 路径 |
-| check | `--stage` 指定待进入阶段或 finish，检查前置和证据有效性 |
+| check | `--stage` 指定待进入阶段或 finish/close-out，检查前置和证据有效性 |
 | record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
-| verify | 依次执行 lint、build、quick、smoke 并记录 `suites` 为 `quick`、`smoke`；suite 超预算即失败 |
+| verify | 辅助入口：lint、build、quick + feature 默认 suite（release）；超预算即失败 |
 | integrate | 按 strategy 合入；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
 | roster | 更新 strategy / 按 intent 的 models；design 后不能改 qa/dev strategy |
 
@@ -31,7 +31,7 @@
   - suite 名不得为 lint/build/quick/smoke/release/full。
 - converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`。
   - 该文本是授权证据，不是自动授权。
-- 阶段值为 design、write-tests、implement、converge、code-review、fact-update。
+- 阶段值为 design、write-tests、implement、converge、code-review（无 fact-update gate）。
 
 ### `tree`
 

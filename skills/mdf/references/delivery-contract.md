@@ -1,13 +1,15 @@
-# Feature 交付契约
+# 交付契约
 
-由 deliver、start、design、write-tests、implement、converge、code-review 与 finish
-读取。`$mdf integrate` 只读「补覆盖」。规则持续适用，不是依次执行的阶段。
+由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
+`$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。
+规则持续适用，不是依次执行的阶段。
 
 ## 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。
 
-- start 经内部 clarify 确认目标、非目标、约束与可验证验收。
+- start 经 clarify（bugfix/hotfix 可精简）写入 `objectives.md`。
+  并冻结 `needs_design: yes|no`（objectives 与 `delivery.json`）。
 - feature 的 objectives 引用 PRP，避免复制另一个需求来源。
 - release 的 objectives 写已选定工作线、本版收口范围、预发布工作、是否联调、
   非目标与可验证验收，不引用单个 PRP。
@@ -17,27 +19,24 @@
   - 跨 worktree 切到 worktree 后先开通道。只改本仓，不得改、操作、启动或终止对端。
   - 两种联调都强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
   - 两端验收且确认不再改代码后才允许 code-review。
-  - fact update 由 finish 前段执行；已有有效结果则不重做。
 - start 后四种工作分支均须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
-  - bugfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
+  - bugfix / hotfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
   - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。
-    - roster `0,0`：start 或 deliver 与用户确认后写入并提交。
-      `--auto-pilot` 按 Bug 与对话证据自裁定。
-    - roster ≥1：由 design 的 Baseline 写入或修订。
 
 身份字段：
 
 - slug 取自 PRP 文件名，start 固定使用，不随标题修改。
-- delivery.json 记录 proposal、slug、branch、start_commit。
-- 起点是创建 feature 前 develop 的完整 commit hash，不用移动的 develop 代替。
+- delivery.json 记录 proposal/bug、slug、branch、start_commit、`needs_design`。
+- 起点是创建分支前基线的完整 commit hash，不用移动的 develop/master 代替。
 
 材料位置：
 
-- 开发材料自 start 起位于 `changes/unreleased/<prp-slug>/`：
-  - objectives.md、design.md、delivery.json、gates/、code-review.md。
-  - finish 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入 `changes/<version>/<prp-slug>/`。
+- 开发材料自 start 起位于 `changes/unreleased/<slug>/`：
+  - objectives.md、delivery.json、gates/、code-review.md；
+    `needs_design: yes` 时另有 design.md。
+  - close-out 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
+    `changes/<version>/<slug>/`。
 - release 材料位于 `changes/unreleased/<semver>/`：start 写入 objectives.md 与 delivery.json。
-  - design 等阶段材料仅 roster ≥1 时出现。
 - 代码、测试、fixture 留在项目原位置，大日志不要求提交。
 
 路径写法：
@@ -50,37 +49,46 @@
 
 ## 阶段与执行责任
 
-主线为 start → design → [write-tests ∥ implement] → converge → code-review → finish。
+四种 kind **共用**主线。不按 branch kind 另写交付状态机。
+并行形态与是否 design 由默认 roster 与 `needs_design` 决定。
 
-- `fact-update` 是 CLI gate，只由 finish 收口前、在 **verify full 之后** 记录；
-  独立 `$mdf fact update` 不记录 gate。它不是用户主线箭头上的一站。
-- 开发迭代只用 `$mdf verify --level on-site`；**禁止**把 full 当日常自检反复跑。
-- **允许/要求 full**：非 feature Verify（审查前）、非 feature 的 code-review 证据过期补验、finish closeout。
-- closeout 前最后两步固定为：**verify full → fact update**；中途禁止 fact update。
-- `start` 后必须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
-- 开发中 sourceset 改动只触发对应 module 的 `$mdf verify --level on-site`。
-- bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
-  implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
-- release 与 hotfix 可修复已确认的 open Bug，标为 `fixed`；不另开 bugfix 分支，也不写 bugfix child Change。
-  - roster `0,0` 在 owner 上修。
-  - roster ≥1 先重入 design 修订 objectives 与 design，再由各路完成。
-    roster.dev ≥1 时不在 owner 实现。
-- 独立 `$mdf fix` 在当前 checkout 澄清、先记录有效红灯再修复并验证单个 open Bug，标为 `fixed`。
-  - 不 start、不切分支、不走交付主线、不记录 gate、不 code-review、不 finish，
-    也不由 deliver 内部委托。
-- 独立 `$mdf verify-fix` 对已 `fixed` 的 Bug 跑复现用例并只审这次修复。
-  - release/hotfix 的 finish 在关闭这些对象前内部委托，不标 `closed`。
-- code-review 的独立审查份数取冻结的 roster.reviewers（solo 默认 1，min-tdd 默认 2，pair 类默认 3）。
-  - finish 集成产生的不可跳过增量新一轮为 1，不改冻结 roster。见 `references/code-review.md`。
+主线步骤：
+
+1. start
+2. 可选 design
+3. write-tests / implement，或 owner 开发
+4. converge
+5. code-review
+6. verify full
+7. fact audit（必要时 fact update 后重审）
+8. close-out
+
+- **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
+  - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。
+- **converge** 是验收中心：objectives 完成 + **verify on-site**，循环修到达成。
+  - on-site = lint+build+quick + 本分支新增/改动测试。
+  - ❌ converge 的「验」不是 verify full。
+- **verify full** 为独立 intent（lint+build+quick + smoke/release）。
+  - 默认 suite：bugfix/hotfix → smoke；feature/release → release。
+  - 失败则现场修到绿；不做相对 converge 的过期 gatekeeping。
+- **fact**：无 delivery stage gate。verify full 之后、close-out 之前跑 audit。
+  - 未通过则 fact update（同 scope）后重审。默认 scope=`branch`。
+- **close-out**（`$mdf finish` 同义）保留材料与 Gitflow 收口工作。
+  - 不再内嵌 verify full / fact。
+- 开发迭代只用 `$mdf verify --level on-site`；禁止把 full 当日常自检。
+- release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
+- 独立 `$mdf fix` / `$mdf verify-fix` 不走交付主线，也不由 deliver 内部委托。
+- code-review 份数取冻结的 roster.reviewers；close-out 增量新一轮为 1。
 
 ### 触发与协调
 
 - 用户手动触发主线 intent，或显式调用 next 委托下一阶段。
-- 显式 deliver 按 `references/deliver.md` 从 start 起协调剩余阶段到 finish，
-  可并行阶段按 roster 分别委托 subagent。
-  - `--auto-pilot` 由主 Agent 自裁定，仅在 Gitflow 收口前确认；`--yolo` 跳过该确认。
-- design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，不计入 roster；
-  deliver 步骤 4 只覆盖可并行的 qa/dev。
+- 显式 deliver 按 `references/deliver.md` 串联剩余真实 intent 到 close-out。
+  - 可并行阶段按 roster 分别委托 subagent。
+  - `--auto-pilot` 由主 Agent 自裁定，仅在 Gitflow 收口前确认。
+  - `--yolo` 跳过该确认。
+- design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，不计入 roster。
+- deliver 步骤 4 只覆盖可并行的 qa/dev。
 - 不新增独立 Owner 调度服务或统一状态协议。
 - 当前执行者承担该阶段的协调与语义审查。
 
@@ -169,14 +177,14 @@ Git 约束：
 
 | 阶段 | 前置或完成条件 |
 | --- | --- |
-| write-tests、implement | 只要求已提交 design |
+| design | 仅 `needs_design: yes` |
+| write-tests、implement | 仅 `needs_design: yes`；要求已提交 design |
 | write-tests | 写完可编译或可加载执行的测试即完成，不要求全绿 |
-| converge | 需两路完成 |
-| code-review | 需收敛全绿 |
-| finish | 需当前 code-review、事实审阅和验证证据有效 |
+| converge | `needs_design: yes` 时需两路完成；证据为 objectives + on-site |
+| code-review | 需 converge；不绑定 verify full |
+| finish（close-out 检查） | 需当前 code-review 有效；无 fact-update stage gate |
 
-- 全绿由 converge 负责，且相对**当前交付所需 suite**，不等于 `.mdf/modules.yaml`
-  里每一条命令。
+- on-site 全绿由 converge 负责；verify full 由独立 intent 负责。
 - 不能手填 passed 代替 CLI 检查。
 - 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 
@@ -192,16 +200,14 @@ Git 约束：
 
 失效与补验：
 
-- 开发中只跑 module **on-site**（lint+build+quick + Agent/Jev 选题的 test/testcase）。
+- 开发中与 converge 只跑 module **on-site**（lint+build+quick + 本分支新增/改动测试
+  及 Agent/Jev 选题）。
 - **verify full** 以 commit 为锚；`run` 无论成败均写入 `verify.full.json`，
-  `all_passed:false` 时失败且 `check` 拒收。
-  - worktree 须干净；之后有 diff 时先经 Jev 判断是否重跑，不需要则 `advance` 快进 commit。
+  `all_passed:false` 时失败；失败则在该 intent **现场修到绿**，不回退到假阶段。
+  - worktree 须干净；之后有业务 diff 则重跑或修后再跑。
 - 只改事实文档或 module ignore 不重跑业务验证。
-- feature 的 `fact-update` gate 仍绑定 `facts`、`implementation` 与 `design`。
-- 审查报告已齐后的实现变化：不因此重开 Verify 阶段；closeout 前 finish 再核对/执行 full。
-  - feature：证据过期时在 code-review 补 **on-site**（可加 named 选题）。
-  - 非 feature：证据过期时补 **`$mdf verify --level full`**；named 另经 on-site 选题。
-- 缺失或过期时原地补验，不回退 intent。
+- 无 fact-update / fact-audit delivery stage gate；以 fact audit 结论为准。
+- 缺失或过期时在当前 intent 原地补验，不发明额外 gatekeeping。
 
 ### 测试层级与分类
 
@@ -241,6 +247,16 @@ Core 判定退出码与测试报告（见下节）。
 - 第三方依赖产生、本项目无法修复的 warning 或 deprecated 只可精确豁免。
   - 写明类别、来源模块与理由，记在 `docs/system/testing/`，新增或放宽须用户确认。
 
+### 测试失败工作流
+
+converge（on-site）与 verify full **共用**：
+
+1. 测试运行必须有框架自带报告文件（JUnit 等），禁止靠 tee/tail 冒充报告。
+2. fail 后先复测**单用例**。
+3. 修一个用例 → 复测该单用例。
+4. 有 side effect 的 flaky 例外（须记录依据）。
+5. 相关单用例都绿后，才继续该轮 verify（on-site 或 full）。
+
 ### 测试报告
 
 每次运行 suite（含 named suite）都必须产出 JUnit XML 报告。
@@ -255,89 +271,36 @@ Core 判定退出码与测试报告（见下节）。
   结果与用时。gate 与 code-review 证据记录报告路径与 test case 级汇总。
 - 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
-- 点名执行 test case 或 test 只用于定位，不强制 JUnit 报告。
+- 点名执行 test case 或 test 只用于定位；定位复测仍应尽量落盘框架报告。
   有运行器报告则读报告；否则用 `mdf.py run` 落盘。
 
 ### 验证 suite
 
 | suite | 成员 | 预算 | 何时必跑 |
 | --- | --- | --- | --- |
-| quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 |
-| smoke | 任意种类，包含 quick 的全部成员 | 300s | feature、bugfix 收口 |
-| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | release、hotfix |
-| named | 某一功能块的 test case；一 suite 一文档 | 无 | on-site 由 Agent+Jev 选题到 test/testcase，不默认整 suite |
+| quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 / on-site |
+| smoke | 任意种类，包含 quick 的全部成员 | 300s | bugfix/hotfix 的 verify full |
+| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | feature/release 的 verify full |
+| named | 某一功能块的 test case；一 suite 一文档 | 无 | on-site 选题，不默认整 suite |
 
-- full 指全部 test case，是 release 与各 named suite 的上界；它没有入口，不由任何
-  gate 执行，名字保留、不得用作 named suite。
-- 预算包含启动依赖与预热，不含 build；项目可在 modules `budgets` 覆盖。
-  test case 放进 quick 或 smoke 会超预算时，拆成多个 test case，只把合预算的部分放入。
-- lint 与 build 同 quick 一样必跑：on-site 只跑涉及 module 的入口；full 跑全部 module。
-- 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**，写明：
-  - 目的、testcase 构成、入口命令。
-  - testcase 本身不建独立文档，靠代码 frontmatter / stringdoc。
+- full 指全部 test case 的上界；没有入口，名字保留、不得用作 named suite。
+- lint 与 build 同 quick 一样必跑：on-site 只跑涉及 module；full 跑全部 module。
+- 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**。
 
-| 交付 | 阶段 | Core 必须通过 | Agent 另须通过 |
-| --- | --- | --- | --- |
-| 任意 | 开发中 on-site | 涉及 module 的 lint、build、quick | Agent+Jev 选题的 test/testcase |
-| feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 选题（不默认整 suite） |
-| bugfix | 审查前 Verify | `$mdf verify --level full`（smoke 并集） | `suites.json` 关联 named 的选题记录 |
-| release / hotfix | Verify、code-review、finish | lint、build、quick、release | — |
-| 任意 | closeout | **先 verify full，再 fact update** | — |
-| 任意 | 只改事实 / ignore | 不机械重跑业务验证 | — |
+| 交付阶段 | Core 必须通过 | Agent 另须通过 |
+| --- | --- | --- |
+| 开发中 / converge on-site | 涉及 module 的 lint、build、quick | 本分支新增/改动测试；可选 named 选题 |
+| verify full（bugfix/hotfix） | lint、build、quick、smoke | bugfix 另有 `suites.json` 选题记录 |
+| verify full（feature/release） | lint、build、quick、release | — |
+| 主链收口前 | verify full 绿 + fact audit 通过 | 必要时 fact update |
+| 只改事实 / ignore | 不机械重跑业务验证 | — |
 
-- release / hotfix 的 `$mdf verify --level full` 同样要求 Core 通过 lint、build、quick、release。
-- feature / bugfix 的 full 跑到 smoke 并集，不跑 release。
+named suite：不在 manifest；Agent 以 `suite-run` 执行并写入摘要。
+`needs_design: yes` 时 design 列出涉及的 named suite。
+bugfix 的 `suites.json` 在 verify full 前关联已文档化 named suite（≥1）。
 
-named suite 的执行：
-
-- named suite 不在 manifest，Core 不在门禁中执行也不核对其名称是否已文档化。
-- Agent 以 `suite-run --name <suite> --command <入口命令>` 执行 `docs/system/testing/` 中该 suite
-  的入口命令。
-  - 把命令、结果与报告路径写进对应 gate 或 code-review 记录的 summary；
-    非 feature 的 Verify 阶段写进 `changes/unreleased/<slug>/verify.md`。
-
-named suite 的划分：
-
-- named suite 按功能块划分并跨交付长期复用，不按 feature、迭代或交付轮次建立。
-  - 名称不得取自 PRP、Bug 或交付 slug。
-- 一次改动涉及几个功能块，就要修改并通过这几个功能块的 named suite：
-  - feature 在 design 列出全部涉及的功能块 suite。
-  - write-tests 把新用例归入所属功能块的 suite（或 quick、smoke）。
-  - implement 不得擅自改测试。
-- 只有出现新的功能块时才新建 named suite。
-- closeout 的 verify full：feature/bugfix → smoke 并集；release/hotfix → release 并集。
-  - 开发中不跑 full；named 只经 on-site 选题，不默认整 suite。
-
-非 feature 交付：
-
-- bugfix、release、hotfix 都先测后审：审查前由 deliver 的 Verify 阶段修到全绿。
-  - 之后只在证据过期时重验；收口复用有效 `verify.full.json`，不额外重跑 release。
-  - 审查报告已齐后的变化在 code-review 补 full（named 另 on-site），不重新进入 Verify 阶段。
-  - Verify 阶段定义见 `references/deliver.md`「先测后审」；每次运行向
-    `changes/unreleased/<slug>/verify.md` 追加一条记录并随该阶段提交。
-- roster `0,0` 的 bugfix 不创建 design/write-tests/converge，但仍写 objectives checklist。
-- bugfix 的关联文件为 `changes/unreleased/<slug>/suites.json`。
-  由 Verify 阶段在其中关联修复涉及的全部功能块中**已文档化**的 named suite（≥1）。
-  - 默认不得新建；经确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
-    默认模式由用户明确确认，`--auto-pilot` / `--yolo` 由主 Agent 自裁定并记录依据。
-
-补覆盖：
-
-- 对 feature、非 feature 与联调均适用。
-- 测试或联调中，凡需改代码才能解决的问题，先判定：原来是否缺少覆盖该问题的测试。
-  - 这是现场自检，不是先把控制权交回用户。
-  - 缺覆盖且能补：先补能 reproduce 的用例，再改实现。
-  - 优先放入 quick，其次 smoke；两者都不能放则先问用户，不得自行放入其他 suite。
-    默认模式须用户确认；`--auto-pilot` / `--yolo` 自裁定并记录依据。
-
-quick 复现：
-
-- 触发：非 quick 用例一旦在 converge 之后失败；bugfix / release / hotfix 则为第一次跑所需 suite 之后。
-  - 必须尝试补一条 quick 复现用例（hermetic 的 UT 或 PT）；原慢用例保留。
-  - 这是「补覆盖」在门禁后非 quick 失败时的专项，仍须先问是否原来缺少覆盖。
-  - 结果写入 code-review 本轮记录的「quick 复现」字段：已补则写用例位置，未补则写原因。
-  - 非 feature 由 Verify 阶段先把结论写入 verify.md，code-review 引用该记录。
-- code-review 可按既定目标自主补该用例；削弱门槛、改预期或新增豁免仍须用户批准。
+补覆盖与 quick 复现：缺覆盖则先补 reproduce；优先放入 quick，其次 smoke。
+verify full 中非 quick 失败时尝试补 quick 复现；结论写入 verify.md 或 code-review。
 
 ## 修改与提交权限
 
@@ -363,5 +326,5 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 - 架构优化可以建议；超出当前目标不直接实施。
 - 修复后在当前 intent 原地重验。
 
-fact update 可独立运行，也由 finish 前段内部调用，其事实审阅由 fact audit 完成。
-独立调用不要求交付 gate；不能因此自动进入 finish 或其他交付阶段。
+fact update / fact audit 可独立运行；交付主链在 verify full 之后、close-out 之前委托。
+无 fact stage gate。独立调用不能因此自动进入 close-out 或其他交付阶段。

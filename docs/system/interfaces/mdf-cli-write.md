@@ -91,7 +91,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 - 要求 Git 根、clean worktree、`manifest.state: ready` 与 full validation 零 finding。
 - 必须提供 `--release-date`。
-- Core 只验证确定性审计；同次 `$mdf finish` 的语义审阅与用户确认属于 intent 的职责。
+- Core 只验证确定性审计；同次 `$mdf close-out` / `$mdf finish` 的语义审阅与用户确认属于 intent 的职责。
 
 收口输入：
 
@@ -194,7 +194,7 @@ python3 skills/mdf/scripts/mdf.py to --repo /path/to/repository --target plan
 - `develop` 复用占用 develop 的 worktree，不新建。
 - `deploy` 创建或复用 `<repo-name>-worktrees/deploy`，检出已有 `master`。
   - 已跟踪改动干净才切回 master；gitignore 的文件保留。
-  - master 不存在或已被占用则失败。不新建分支，finish 不拆除。
+  - master 不存在或已被占用则失败。不新建分支，close-out / finish 不拆除。
 - 已有 worktree 按分支名或目录名复用；已有本地分支缺树则
   `worktree add` 到 `<repo-name>-worktrees/`。
 - ❌ 不创建新分支。
@@ -226,7 +226,7 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 
-外层 finish intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
+外层 close-out / finish intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
 
 1. 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
    由 Agent 自动尝试解决集成冲突。

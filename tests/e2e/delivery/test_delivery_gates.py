@@ -25,54 +25,16 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     payload(record(python_exe, qa, "write-tests"))
     commit(qa)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
     payload(record(python_exe, repo, "code-review"))
-    payload(record(python_exe, repo, "fact-update"))
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
-    fact = repo / "docs/user-guide/README.md"
-    fact.write_text(fact.read_text() + "\n补充事实说明。\n")
-    result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
-    assert "stale_gate" in result.stderr
-    payload(record(python_exe, repo, "fact-update"))
-    payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
+    # 实现改动使 code-review 过期
     implementation = repo / "src/service.py"
     implementation.write_text(implementation.read_text() + "\n# changed\n")
-    result = record(python_exe, repo, "code-review")
-    assert "stale_verification" in result.stderr
-
-
-def test_tests_only_change_does_not_expire_fact_update(python_exe, tmp_path):
-    repo, root, _ = setup_delivery(python_exe, tmp_path)
-    qa, dev = sync_roles(python_exe, repo)
-    (qa / "tests").mkdir(exist_ok=True)
-    (qa / "tests/test_health.py").write_text("def test_health():\n    assert 1 == 1\n")
-    payload(record(python_exe, qa, "write-tests"))
-    commit(qa)
-    payload(record(python_exe, dev, "implement"))
-    commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "code-review", "fact-update"):
-        payload(record(python_exe, repo, stage))
-    commit(repo)
-    fact_update = (root / "gates/fact-update.json").read_text()
-    # 纯测试改动：全绿与 code-review 过期，重验重审后 fact-update 仍有效。
-    test_file = repo / "tests/test_health.py"
-    test_file.write_text(test_file.read_text() + "\n\ndef test_more():\n    assert True\n")
-    result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
-    assert "stale_verification" in result.stderr
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    payload(record(python_exe, repo, "code-review"))
-    payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
-    assert (root / "gates/fact-update.json").read_text() == fact_update
-    # 实现改动：重验重审后 fact-update 仍过期。
-    implementation = repo / "src/service.py"
-    implementation.write_text(implementation.read_text() + "\n# changed\n")
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    payload(record(python_exe, repo, "code-review"))
     result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
     assert "stale_gate" in result.stderr
+    payload(record(python_exe, repo, "code-review"))
+    payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
 
 
 def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tmp_path):
@@ -84,28 +46,11 @@ def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tm
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     (repo / "pytest.ini").write_text("[pytest]\n")
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     assert "test_approval_required" in record(python_exe, repo, "converge").stderr
     payload(record(python_exe, repo, "converge", "--test-approval", "用户明确确认增加配置"))
     (repo / "pytest.ini").write_text("[pytest]\naddopts = -q\n")
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     payload(record(python_exe, repo, "code-review"))
     assert (root / "gates/code-review.json").is_file()
-
-
-def test_failed_verification_does_not_satisfy_gate(python_exe, tmp_path):
-    repo, root, _ = setup_delivery(python_exe, tmp_path)
-    qa, dev = sync_roles(python_exe, repo)
-    payload(record(python_exe, qa, "write-tests"))
-    commit(qa)
-    payload(record(python_exe, dev, "implement"))
-    commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    patch_module_command(repo, "smoke", lambda c: "false && " + c)
-    failed = mdf(python_exe, "delivery", "verify", "--repo", str(repo))
-    assert "verify_command_failed" in failed.stderr
-    assert json.loads((root / "gates/verification.json").read_text())["all_passed"] is False
-    assert record(python_exe, repo, "converge").returncode != 0
 
 
 def test_uncommitted_design_and_changed_design_block(python_exe, tmp_path):
@@ -126,8 +71,7 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     payload(record(python_exe, dev, "implement"))
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "code-review", "fact-update"):
+    for stage in ("converge", "code-review"):
         payload(record(python_exe, repo, stage))
     commit(repo)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
@@ -179,7 +123,6 @@ def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
     assert not qa.exists() and not dev.exists()
     assert (repo / "src/implemented.py").exists()
     assert (repo / "tests/test_case.py").exists()
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
 
 
@@ -215,8 +158,7 @@ def test_finish_rejects_pending_role_branches(python_exe, tmp_path):
     git(repo, "merge", "--no-ff", "--no-edit", "-m",
         "chore(delivery): 合入 dev/feature/service-health",
         "dev/feature/service-health")
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "code-review", "fact-update"):
+    for stage in ("converge", "code-review"):
         payload(record(python_exe, repo, stage))
     commit(repo)
     write_change_in_place(repo, root)
@@ -239,7 +181,7 @@ def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
 
 
-def test_non_fact_docs_do_not_expire_review_or_green(python_exe, tmp_path):
+def test_non_fact_docs_do_not_expire_review(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     qa, dev = sync_roles(python_exe, repo)
     payload(record(python_exe, qa, "write-tests"))
@@ -247,8 +189,7 @@ def test_non_fact_docs_do_not_expire_review_or_green(python_exe, tmp_path):
     payload(record(python_exe, dev, "implement"))
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    for stage in ("converge", "code-review", "fact-update"):
+    for stage in ("converge", "code-review"):
         payload(record(python_exe, repo, stage))
     commit(repo)
     before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
@@ -281,7 +222,7 @@ def test_record_design_rejects_repo_root_style_links(
 ):
     repo, _ = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n实现健康状态接口。\n")
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n")
     data = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", "prp-001", "--objectives-file", str(obj),
@@ -300,3 +241,27 @@ def test_record_design_rejects_repo_root_style_links(
     )
     assert result.returncode != 0
     assert "broken_link" in result.stderr
+
+
+def test_start_requires_needs_design(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n没有 needs_design 字段。\n")
+    result = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+    )
+    assert result.returncode != 0
+    assert "missing_needs_design" in result.stderr
+
+
+def test_roster_requires_needs_design_yes(python_exe, tmp_path):
+    repo, _ = start_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n- needs_design: no\n\n实现。\n")
+    result = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+    )
+    assert result.returncode != 0
+    assert "invalid_needs_design" in result.stderr

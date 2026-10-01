@@ -86,10 +86,13 @@
 `--scope` 三选一，与 fact update 共用；列出 `<path>...` 即 `paths`，
 与 `--scope full` 或 `--scope branch` 同用时停止询问：
 
-- `branch`：独立调用默认。交付分支以 `delivery.json` 的 `start_commit` 为 `--base`，没有时取 git config
-  `branch.<owner 分支>.mdf-start-commit`；都没有才由 CLI 取 `merge-base develop HEAD`。finish release 传入上一正式发布为
-  `--base`。范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
-  引用这些实现的事实页；同时检查改动到的入口页体积。
+- `branch`：独立调用默认。
+  - 交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
+  - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`。
+  - 都没有才由 CLI 取 `merge-base develop HEAD`。
+  - close-out / 主链 release 传入上一正式发布为 `--base`。
+  - 范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
+    引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
 - `paths`：调用方或独立调用给出精确实现/文档路径；未给路径时停止询问。
 
@@ -101,7 +104,7 @@
 | direct 调用 | 步骤 1 运行 `doctor --repo "$REPO_ROOT"` 读取 state，非 `ready` 即停止 |
 | migrate | `full`，允许 `initializing` |
 | 已收口 release/hotfix（直接委托） | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
-| finish 其他（含待收口 release） | 经 fact update 委托，`--scope` 同调用方，不得改用 `full` |
+| 主链其他（含待收口 release） | 经 fact update 委托或直接 audit，`--scope` 同调用方，不得改用 `full` |
 
 首次发布无上一版本时停止确认初始基线。
 审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
@@ -262,7 +265,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 确认单独提问，只问本次审阅结论是否确认，不与 Bug 分诊、收口、补验等其他决定放在同一问。
 - 用户答复其他议题不视为确认。
 - 本流程只向调用方返回确认原话与时间，不落盘。
-  - 有材料目录的调用方写入并提交确认记录；finish（含经 fact update 委托）写
+  - 有材料目录的调用方写入并提交确认记录；主链（含经 fact update 委托）写
     `changes/unreleased/<slug>/fact-audit.md`。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
 
@@ -287,7 +290,7 @@ validation 已由步骤 6 判定通过，本步不再复核。
   - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
 - 修复、补充确认或重审由调用方按其契约处理；fact audit 保持只读，不自行修复或自动重试。
 
-Audit 不检查以下内容；这些属于 `$mdf finish` 的交付前检查：
+Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查：
 
 - Gitflow 分支、变更 diff。
 - Proposal、Bug、Change、release 输入。

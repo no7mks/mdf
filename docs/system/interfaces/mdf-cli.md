@@ -89,7 +89,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 
 ## 与 intent 的关系
 
-deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 finish 命令，不新增 deliver CLI。
+deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 close-out/finish 流程，不新增 deliver CLI。
 
 - deliver 负责从尚未 start 起持续委托、并行 subagent 的 worktree 身份核验与结果交接。
 - design 的 Baseline 与 converge 的 owner subagent 由各 intent 启动，CLI 不介入。
@@ -109,7 +109,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | `sync`：三大 trunk 先拉后推；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
-| `finish` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
+| `close-out` / `finish` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。
 - `$mdf next?` 直接进入 tree，不走 next。

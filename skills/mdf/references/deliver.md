@@ -17,9 +17,9 @@
 │ 2 Select                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── finish 已完成 ─────→ 5 Report
-                 ├──── 可并行阶段 ────────→ 4 Parallel
-                 ├──── 证据冲突或阻塞 ────→ [保留现场并报告]
+                 ├──── close-out 已完成 ────→ 5 Report
+                 ├──── 可并行阶段 ──────────→ 4 Parallel
+                 ├──── 证据冲突或阻塞 ──────→ [保留现场并报告]
                  │
                  ▼ 单个待办阶段
 ┌──────────────────────────────────┐
@@ -39,7 +39,7 @@
                  ├──── 全部交接通过 ────→ 2 Select
                  └──── 失败或待确认 ────→ [保留各路现场并报告]
 
-仅步骤 2「finish 已完成」进入，不是步骤 4 的后续。
+仅步骤 2「close-out 已完成」进入，不是步骤 4 的后续。
 
 ┌──────────────────────────────────┐
 │ 5 Report                         │
@@ -56,7 +56,7 @@
                  │
                  ├──── 未决 ────────────────────────→ 6 Confirm closeout
                  ├──── 拒绝 ────────────────────────→ [保留现场并停止]
-                 ├──── 确认 ────────────────────────→ [委托 finish 步骤 10，完成后回 2]
+                 ├──── 确认 ────────────────────────→ [委托 close-out 步骤 10，完成后回 2]
                  └──── finish 10 停止或部分失败 ────→ [按其恢复规则交接并报告]
 ```
 
@@ -66,6 +66,7 @@
 步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。步骤 6 由步骤 3 的 Gitflow 关口进入。框序受编号约束仍按 1–6 绘制。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
+不按 branch kind 另写交付流程；靠 `needs_design`、roster 与 objectives 选型。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -74,14 +75,14 @@
 | 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成→2；AP 非 yolo 关口→6 | 失败/非关口待确认→原流程交接 |
 | 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路分支、提交、gate | 2 | 保留各路现场并报告 |
 | 5 | Report | 约束 | 核对 finish 实际结果，完成 Goal 并报告 | 合并、清理、适用 tag 与推送 | 结束 | 报告实际状态 |
-| 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 finish 10 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
+| 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 close-out 10 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
 
 ## 术语与数据结构
 
 ### 目标与持续授权
 
 调用 `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 授权从当前状态连续执行本次交付
-剩余工作直到 finish 完成。
+剩余工作直到 close-out 完成。
 
 - 授权含尚未完成的 start，以及原流程要求的本地提交、并行委托、集成与 finish 的 Gitflow 操作。
 - target 是唯一位置参数，不是 `--` option；`--auto-pilot` 与 `--yolo` 可在其前或后。
@@ -197,11 +198,11 @@ target 分不清就询问，不列入自裁定。除此之外不因“想听用�
 | auto-pilot 能凭仓库证据与对话上下文定出唯一目标 | 不询问，裁定后走通过 |
 | 多个在途交付无法唯一锁定，以及其他死硬条件 | 走死硬阻塞 |
 
-唯一预定确认：finish 步骤 9 通过、即将调用 `finish-gitflow` 之前。
+唯一预定确认：close-out 步骤 9 通过、即将调用 `finish-gitflow` 之前。
 
 - 展示将合入的目标主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
 - 该确认只在步骤 6 进行；未决留在步骤 6。
-- 取得明确确认后才委托 finish 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
+- 取得明确确认后才委托 close-out 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
 - 此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
 - `--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
 - 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
@@ -212,7 +213,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 宿主没有该设施时跳过本节全部 Goal 操作，改在步骤 5 的最终报告中说明进度与完成判据。
 
 步骤 1 锁定一次交付及 owner worktree，创建 Goal；
-objective 写明交付标识与完成判据（finish 实际完成）。
+objective 写明交付标识与完成判据（close-out 实际完成）。
 每次 deliver 会话只创建一次；阻塞或暂停时保持 active，不代用户暂停，续办时不重建。
 Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 步骤 5 核对 finish 实际成功后才置 complete；证据不足或部分失败时保持 active 并报告实际状态。
@@ -244,80 +245,30 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | start 未完成 | 续办 start，锁定其返回路径 |
 | release 同 worktree 联调且尚未收口 | 执行 `$mdf integrate`，不打开消息通道 |
 | release 跨 worktree 联调且通道未打开 | 立即执行 `$mdf integrate` |
-| hotfix `0,0` 且范围未写入 objectives | 确认后写入 `objectives.md` 并提交；auto-pilot 自裁定 |
-| release/hotfix ≥1，design 后记入新 Bug | 在 owner 重入 design 修订后再续各路；dev ≥1 不在 owner 实现 |
-| feature 或 roster ≥1，且设计或共用底座未完成 | 在 owner 委托 `references/design.md` |
-| roster ≥1、未完成路数 ≥2（不论哪侧）且前置满足 | 并行委托 `references/write-tests.md` / `references/implement.md` |
-| roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话、不重跑已完成的路 |
-| roster `0,0` 的 feature 测试或实现未完成 | 主 Agent 在 owner 串行 write-tests 再 implement |
-| feature 或 roster ≥1，测试与实现完成但未收敛 | 在 owner 委托 `references/converge.md` |
-| bugfix/hotfix/release 且 roster `0,0` 尚有已确认开发工作 | 在 owner 完成对应目标内的实现、修复与测试 |
-| bugfix/hotfix/release 开发完成，验证证据缺失、过期或失败 | 在 owner 按下文「先测后审」验证并修到全绿 |
+| release objectives 未写联调模式 | 停止；必须已写明不联调、同 worktree 或跨 worktree |
+| `needs_design: yes` 且设计未完成 | 在 owner 委托 `references/design.md` |
+| roster ≥1、未完成路数 ≥2 且前置满足 | 并行委托 write-tests / implement |
+| roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话 |
+| `needs_design: yes` 且 roster `0,0`，开发未完成 | owner 串行 write-tests → implement |
+| `needs_design: no` 且开发未完成 | owner 按 objectives 完成开发 |
+| 开发完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
-| feature 已收敛（全绿证据可过期）或非 feature 已全绿，且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
-| 审查有效、finish 尚未完成 | 在 owner 委托 `references/finish.md`，续办其中未完成步骤 |
-| finish 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
-
-非 feature 交付的开发范围：
-
-- bugfix 在 roster `0,0` 时使用对应 Bug。
-- release 对照 `objectives.md` 完成计划内预发布工作。
-  - 📌 必须已写明不联调、同 worktree 或跨 worktree；未写明则停止，回 start 澄清。
-  - 同 worktree 尚未收口时先执行 `$mdf integrate`，不打开消息通道。
-  - 跨 worktree 且通道未打开时，先执行 `$mdf integrate`，不得先做其他预发布工作。
-    从其步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
-    等待对端按 15、30、45、60 秒输出正在等什么。
-  - 联调按选定工作线。两端验收未过或尚未确认冻结时，不进入 code-review。
-  - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-    对端缺陷发 `bug-request`。
-  - 并可修已确认的 open Bug（roster `0,0` 在 owner 上修，≥1 按上表经 design 交给各路）；
-    完成后标为 `fixed`，不另开 bugfix、不写 bugfix child Change。
-  - ❌ 不得实施新 PRP；缺能力则推迟或作废本次 release，回 develop 开 feature。
-- hotfix 使用 `objectives.md` 记录的热修复范围，同样可修 Bug。
-- 不套用 feature 阶段 gate；roster ≥1 时走 design / write-tests / implement / converge。
+| 已收敛且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
+| 审查有效、verify full 未绿 | 委托 `references/verify.md`（full；失败现场修到绿） |
+| verify full 有效、fact audit 未通过 | 委托 fact-audit；必要时 fact-update 后重审 |
+| fact 通过、close-out 未完成 | 在 owner 委托 `references/close-out.md` |
+| close-out 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
 剩余工作与失败处理：
 
-- 没有独立开发 intent 的剩余工作由主 Agent 在步骤 3 按已确认范围处理，不借 code-review 隐式扩充目标。
-- 发现缺少设计决定或验收依据时：
-  - 默认模式询问。
-  - `--auto-pilot` 能由仓库证据裁定则自裁定，否则属死硬阻塞。
-- 不虚构开发任务，也不把未实现的目标判定为完成。
-- finish 已开始而代码发生变化时按 code-review 的复核规则处理后再续办 finish，不能跳过过期检查。
+- release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - 步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。
 
-### 先测后审
-
-bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 由 converge 完成同样的事）。
-独立 `$mdf next` 选中该阶段时同样按本节执行。
-
-- bugfix 先关联 `changes/unreleased/<slug>/suites.json`（`{"suites":["<named suite 名>"]}`）：
-  - 按修复改动涉及的全部功能块，从 `docs/system/testing/` 已文档化的 named suite 中逐个选定并提交。
-  - 没有合适的 suite 时询问用户是否新建，确认后先补该 suite 的文档再关联。
-    - `--auto-pilot` 由主 Agent 自裁定，并在 verify.md 记录依据。
-  - ❌ 不得关联 lint/build/quick/smoke/release/full。
-- 运行 `$mdf verify run --level full --repo "$REPO_ROOT"`
-  （bugfix→smoke 并集，release/hotfix→release 并集）。
-  - 开发中另以 on-site + `--test` 跑 Agent/Jev 选题；roster ≥1 的 release/hotfix
-    可参考 design policy `suites` 选题，不默认整 suite。
-  - 失败时读报告与日志定位，在已确认范围内修复实现后重跑，直到全绿。
-  - 测试、预期或验证门槛的修改：默认模式须用户确认；`--auto-pilot` 自裁定并在 verify.md 记录依据。
-  - 第一次跑所需 suite 出现非 quick 失败时，按 `delivery-contract.md`「quick 复现」尝试补用例。
-  - 需要目标决定、外部条件或同一失败连续三轮无进展时阻塞停止。
-- 已有证据经 `$mdf verify check --level full` 仍有效时不重跑。
-- 每次运行后向 `changes/unreleased/<slug>/verify.md` 追加一条记录，随本阶段提交：
-  - HEAD；`verify.full.json` 路径与实际跑过的 suites。
-  - 选题执行的命令、结果与报告路径。
-  - quick 复现结论：已补 <位置> / 未补 <原因> / 无非 quick 失败。
-- 全绿后提交，再进入审查；审查修复使证据过期时由 code-review 步骤 4 重验。
-- 📌 release 联调：本端验收即本侧 Verify 全绿，先 `send` 结果（suite、HEAD、结论）。
-  - 再读 poll 等对端同样格式的全绿，这是双端验收。
-  - 双端通过后双方 `send` 确认此后不再改代码，才进入审查。
-  - 对端未到、未过或确认后又改代码：回到本端验收，不派 code-review。
-
 ### 并行委托与 worktree 身份
+
+并行阶段读取 `references/write-tests.md` 与 `references/implement.md`。
 
 步骤 4：所有当前可并行且互不依赖的 intent 必须分别交给 subagent，不由主 Agent 串行代做。
 
@@ -389,9 +340,9 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
 
 收口：单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。
 
-- 步骤 5 必须取得 finish 的实际成功结果，按分支核对合并、源分支/worktree 清理，
-  以及 release/hotfix 的 tag 和推送。
-  - finish 删除 owner 后改用步骤 1 固定的主 worktree 核对。
-- 若 finish 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
+- 步骤 5 必须取得 finish 的实际成功结果（close-out）。
+  - 按分支核对合并、源分支/worktree 清理，以及 release/hotfix 的 tag 和推送。
+  - close-out 删除 owner 后改用步骤 1 固定的主 worktree 核对。
+- 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
 - 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。
 - 上下文恢复时用上述现有产物与实际 Git 状态重新核验，不依赖未落地的内存完成标志。

@@ -12,7 +12,21 @@ from .verification import (
     repo_verification, recorded_suites, required_suites, suites_cover,
 )
 
-STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
+STAGES = ("design", "write-tests", "implement", "converge", "code-review")
+
+
+def parse_needs_design(text: str) -> bool:
+    """从 objectives 解析 `needs_design: yes|no`（可带列表前缀）。"""
+    import re
+    match = re.search(
+        r"(?im)^(?:[-*]\s*)?needs_design:\s*(yes|no|true|false)\s*$", text
+    )
+    if not match:
+        raise MDFError(
+            "objectives 必须含 needs_design: yes 或 needs_design: no",
+            code="missing_needs_design",
+        )
+    return match.group(1).lower() in {"yes", "true"}
 
 
 def git(repo, *args, check=True):
@@ -56,6 +70,10 @@ def locate(repo, slug=None):
     if data.get("slug") != slug or data.get("branch") != owner:
         raise MDFError("交付身份不匹配", code="invalid_delivery")
     data["roster"] = require_roster(data.get("roster"))
+    needs = data.get("needs_design", True)
+    if not isinstance(needs, bool):
+        raise MDFError("needs_design 必须为布尔值", code="invalid_delivery")
+    data["needs_design"] = needs
     base = data.get("start_commit", "")
     if not isinstance(base, str) or len(base) != 40 or any(c not in "0123456789abcdef" for c in base):
         raise MDFError("起点必须为完整 commit hash", code="invalid_delivery")
@@ -100,7 +118,8 @@ def fingerprints(repo, root, data, config=None):
     tests = {name: value for name, value in code.items() if matches(name, protected)}
     implementation = {name: value for name, value in code.items() if name not in tests}
     design = {}
-    for name in ("objectives.md", "design.md"):
+    names = ("objectives.md", "design.md") if data.get("needs_design", True) else ("objectives.md",)
+    for name in names:
         path = safe(repo, root / name)
         if not path.is_file() or not path.read_text().strip():
             raise MDFError(f"缺少 {name}", code="missing_artifact")
@@ -133,6 +152,8 @@ def gate(repo, root, stage):
 
 
 def require_design(repo, root, data):
+    if not data.get("needs_design", True):
+        return fingerprints(repo, root, data, {})
     record = gate(repo, root, "design")
     current = fingerprints(repo, root, data, record.get("policy"))
     if record.get("fingerprints", {}).get("design") != current["design"]:
@@ -147,6 +168,7 @@ def require_design(repo, root, data):
 
 
 def require_green(repo, root, data):
+    """可选：delivery verify 写入的 verification.json（历史/辅助）；converge 不再依赖。"""
     record = gate(repo, root, "verification")
     current = fingerprints(repo, root, data)
     if (any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design"))
@@ -157,12 +179,10 @@ def require_green(repo, root, data):
 
 
 def require_finish(repo, root, data):
-    require_design(repo, root, data)
-    current = require_green(repo, root, data)
-    # 事实审阅对照的是实现；纯测试或验证配置改动不使其过期，只由 code-review 与全绿覆盖。
-    for stage, keys in (("code-review", ("code", "design")),
-                        ("fact-update", ("facts", "implementation", "design"))):
-        record = gate(repo, root, stage)
-        if any(record.get("fingerprints", {}).get(key) != current[key] for key in keys):
-            raise MDFError(f"{stage} 证据缺失或过期", code="stale_gate")
+    """close-out 前置：code-review 有效。verify full / fact 由独立 intent 负责，无 stage gate。"""
+    current = require_design(repo, root, data)
+    record = gate(repo, root, "code-review")
+    if any(record.get("fingerprints", {}).get(key) != current[key]
+           for key in ("code", "design")):
+        raise MDFError("code-review 证据缺失或过期", code="stale_gate")
     return current
