@@ -103,7 +103,7 @@
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
 - `$mdf verify --level on-site|full`：module 级验证；converge 用 on-site，主链在
   code-review 后跑 full
-- `$mdf code-review`：审查并修复；报告为 `code-review.md`（非 gate）
+- `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   主链在 verify full 之后、必要时于 fact audit 前调用
 - `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify full / fact）
@@ -307,8 +307,8 @@ $mdf clarify 要不要把缓存放到 Redis
 
 - `$mdf converge`
   - 用法：`$mdf converge`
-  - 用途：集成并持续修复到所需 suite 通过。
-  - 说明：本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录；
+  - 用途：roster-join（如有）并持续修复到所需 suite 通过。
+  - 说明：本 intent 派恰好 1 个 owner subagent 执行合流、验证与记录；
     测改批准回主会话，不计入 roster。修到 lint/build/quick/smoke 与本交付 named suite 通过；不要求 release。
 
 - `$mdf fix <bug-id>`
@@ -326,16 +326,16 @@ $mdf clarify 要不要把缓存放到 Redis
     无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
 
 - `$mdf verify --level on-site|full`
-  - 用法：`$mdf verify run|check|advance --level on-site|full [--module|--paths|--test ...]`
+  - 用法：`$mdf verify run --level on-site|full [--module|--paths|--test ...]`
   - 用途：module 级验证；converge/开发用 on-site，主链在 code-review 后跑 full。
-  - 说明：full 写 `verify.full.json`（feature/bugfix/hotfix→smoke，release→release）；
-    on-site 不落盘，选题经 `--test`。
+  - 说明：full 写 `verify.full.json`（feature/bugfix/hotfix→smoke，release→release；
+    不含 commit）；on-site 不落盘，选题经 `--test`。
 
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
-  - 说明：报告写 `code-review.md`（非 gate）。主链在 converge 后、verify full 前。
-    进度只认 objectives 自勾。
+  - 说明：进行中可记 tip；裁定收口后覆盖为无 commit 的 `code-review.md` 终稿（非
+    gate）。主链在 converge 后、verify full 前。进度只认 objectives 自勾。
     首轮按 roster.reviewers；后续增量并复核。默认 replicate；partition 按切片派工。
 
 - `$mdf fact update`

@@ -24,7 +24,7 @@ def test_stages_parallel_green_and_finish_without_code_review_gate(python_exe, t
     (qa / "tests/test_health.py").write_text("def test_health():\n    assert 1 == 1\n")
     payload(record(python_exe, qa, "write-tests"))
     commit(qa)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     # finish 只核材料存在；不以 converge gate 为进度关口（配置快照仍可 record）
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     payload(record(python_exe, repo, "converge"))
@@ -47,7 +47,7 @@ def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tm
     commit(qa)
     payload(record(python_exe, dev, "implement"))
     commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     (repo / "pytest.ini").write_text("[pytest]\n")
     assert "test_approval_required" in record(python_exe, repo, "converge").stderr
     payload(record(python_exe, repo, "converge", "--test-approval", "用户明确确认增加配置"))
@@ -72,7 +72,7 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     commit(qa)
     payload(record(python_exe, dev, "implement"))
     commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
     commit(repo)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
@@ -120,7 +120,7 @@ def test_parallel_worktrees_independent_gates_and_cleanup(python_exe, tmp_path):
     (dev / "src/implemented.py").write_text("value = 1\n")
     payload(record(python_exe, dev, "implement"))
     commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     assert not qa.exists() and not dev.exists()
     assert (repo / "src/implemented.py").exists()
     assert (repo / "tests/test_case.py").exists()
@@ -188,7 +188,7 @@ def test_non_fact_docs_do_not_expire_finish_check(python_exe, tmp_path):
     commit(qa)
     payload(record(python_exe, dev, "implement"))
     commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
     commit(repo)
     before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),

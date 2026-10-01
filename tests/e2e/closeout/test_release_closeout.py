@@ -290,7 +290,10 @@ def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path
     assert applied["verification"]["results"][3]["report"]["suite"] == "release"
 
 
-def test_closeout_runs_commands_when_evidence_is_stale(python_exe: str, tmp_path: Path):
+def test_closeout_reuses_after_impl_change_when_report_still_green(
+    python_exe: str, tmp_path: Path
+):
+    """不以 commit 对齐作废报告；命令序列未变则仍可复用。"""
     repo = copy_fixture(tmp_path)
     runs = tmp_path / "release-runs"
     patch_module_command(
@@ -306,6 +309,39 @@ def test_closeout_runs_commands_when_evidence_is_stale(python_exe: str, tmp_path
     (repo / "src/extra.py").write_text("changed = True\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 证据之后修改实现")
+
+    applied = payload(mdf(python_exe, *release_arguments(repo)))
+    assert applied["verification"]["reused"] == (
+        "changes/unreleased/1.3.0/verify.full.json"
+    )
+    assert runs.read_text() == "run\n"
+
+
+def test_closeout_reruns_when_command_sequence_mismatches(
+    python_exe: str, tmp_path: Path
+):
+    repo = copy_fixture(tmp_path)
+    runs = tmp_path / "release-runs"
+    patch_module_command(
+        repo, "release", lambda c: f"echo run >> {runs} && " + c
+    )
+    prepare_release(repo)
+    review = repo / "changes/unreleased/1.3.0/code-review.md"
+    review.parent.mkdir(parents=True)
+    review.write_text("# 审查记录\n\n无未解决问题。\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 审查记录")
+    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    path = repo / "changes/unreleased/1.3.0/verify.full.json"
+    evidence = json.loads(path.read_text())
+    # 伪造与当前 plan 不一致的 command，迫使 closeout 重跑
+    for item in evidence["results"]:
+        if item.get("id") == "release":
+            item["command"] = "echo forged-mismatch"
+    path.write_text(json.dumps(evidence) + "\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 伪造命令序列")
+    assert runs.read_text() == "run\n"
 
     applied = payload(mdf(python_exe, *release_arguments(repo)))
     assert applied["verification"]["reused"] is None

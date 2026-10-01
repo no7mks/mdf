@@ -142,8 +142,8 @@ def test_write_tests_on_owner_when_roster_zero(python_exe, tmp_path):
     commit(work)
     payload(record(python_exe, work, "implement"))
     commit(work)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(work)))
-    assert (root / "gates/integration.json").is_file()
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(work)))
+    assert (root / "gates/roster-join.json").is_file()
 
 
 def test_integrate_two_devs_merges_winner_and_deletes_loser(
@@ -181,10 +181,10 @@ def test_integrate_two_devs_merges_winner_and_deletes_loser(
     (winner / "src/implemented.py").write_text("value = 2\n")
     payload(record(python_exe, winner, "implement"))
     commit(winner)
-    missing = mdf(python_exe, "delivery", "integrate", "--repo", str(owner))
+    missing = mdf(python_exe, "delivery", "roster-join", "--repo", str(owner))
     assert "missing_winner" in missing.stderr
     payload(mdf(
-        python_exe, "delivery", "integrate", "--repo", str(owner),
+        python_exe, "delivery", "roster-join", "--repo", str(owner),
         "--dev-branch", "dev/2/feature/service-health",
     ))
     assert not qa.exists() and not winner.exists() and not loser.exists()
@@ -286,11 +286,11 @@ def test_integrate_partition_merges_all_dev_branches(python_exe, tmp_path):
     payload(record(python_exe, second, "implement"))
     commit(second)
     unexpected = mdf(
-        python_exe, "delivery", "integrate", "--repo", str(owner),
+        python_exe, "delivery", "roster-join", "--repo", str(owner),
         "--dev-branch", "dev/2/feature/service-health",
     )
     assert "unexpected_winner" in unexpected.stderr
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(owner)))
     assert (owner / "src/one.py").read_text() == "one = 1\n"
     assert (owner / "src/two.py").read_text() == "two = 2\n"
     assert not first.exists() and not second.exists() and not qa.exists()
@@ -321,7 +321,7 @@ def test_converge_partition_qa_uses_merged_tests_baseline(python_exe, tmp_path):
         (work / path).write_text("def test_value():\n    assert True\n")
         payload(record(python_exe, work, stage))
         commit(work)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(owner)))
     assert (owner / "tests/test_one.py").is_file()
     assert (owner / "tests/test_two.py").is_file()
     payload(record(python_exe, owner, "converge"))

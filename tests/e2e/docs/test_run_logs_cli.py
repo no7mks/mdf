@@ -58,8 +58,9 @@ def test_verify_keeps_full_output_of_every_entry(python_exe, tmp_path):
     patch_module_command(
         repo, "lint", lambda _: "python3 -c 'print(9000 * chr(120))'"
     )
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    evidence = json.loads((root / "gates/verification.json").read_text())
+    commit(repo, "test: lint 长输出")
+    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    evidence = json.loads((root / "verify.full.json").read_text())
     logs = {item["id"]: item["log"] for item in evidence["results"]}
     assert set(logs) == {"lint", "build", "quick", "smoke"}
     assert (repo / logs["lint"] / "stdout.log").read_text() == 9000 * "x" + "\n"

@@ -30,18 +30,17 @@ def test_design_requires_named_suites(python_exe, tmp_path, policy):
     assert "invalid_policy" in result.stderr or "invalid_delivery_suite" in result.stderr
 
 
-def test_feature_delivery_verify_runs_lint_build_quick_smoke(python_exe, tmp_path):
-    """delivery verify 辅助入口；feature 的 suite 默认与 verify full 一致为 smoke。"""
+def test_feature_project_verify_runs_lint_build_quick_smoke(python_exe, tmp_path):
+    """feature 的 verify full / project-verify 默认 suite 为 smoke。"""
     repo, root = converge_ready(python_exe, tmp_path)
-    payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
-    evidence = json.loads((root / "gates/verification.json").read_text())
+    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    evidence = json.loads((root / "verify.full.json").read_text())
     assert [item["id"] for item in evidence["results"]] == [
         "lint", "build", "quick", "smoke",
     ]
     assert [item["budget"] for item in evidence["results"]] == [None, None, 30, 300]
     assert evidence["suites"] == ["quick", "smoke"]
     assert evidence["all_passed"] is True
-    # converge 不再绑定 verification.json；code-review 无 stage gate
     payload(record(python_exe, repo, "converge"))
     assert not (root / "gates/code-review.json").exists()
 
@@ -50,9 +49,10 @@ def test_suite_over_budget_fails(python_exe, tmp_path):
     repo, root = converge_ready(python_exe, tmp_path)
     patch_module_command(repo, "quick", lambda c: "sleep 3; " + c)
     set_modules_budget(repo, "quick", 1)
-    result = mdf(python_exe, "delivery", "verify", "--repo", str(repo))
+    commit(repo, "test: quick 超预算")
+    result = mdf(python_exe, "project-verify", "run", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
-    evidence = json.loads((root / "gates/verification.json").read_text())
+    evidence = json.loads((root / "verify.full.json").read_text())
     quick = next(item for item in evidence["results"] if item["id"] == "quick")
     assert quick["passed"] is False
     assert quick["budget"] == 1

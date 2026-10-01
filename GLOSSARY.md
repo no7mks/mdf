@@ -41,7 +41,7 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 - **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
   test/testcase；converge 验收使用。
 - **full**：全 module 的 lint/build/quick + 套件并集（feature/bugfix/hotfix→smoke，
-  release→release）；以 commit 为锚写入 `verify.full.json`。
+  release→release）；写入 `verify.full.json`（不含 commit）。
   主链在 code-review 之后、fact audit / close-out 之前跑。
 
 ## Test、test case 与 suite

@@ -167,7 +167,7 @@ def build_parser() -> argparse.ArgumentParser:
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",
-        choices=("status", "check", "record", "verify", "integrate", "roster"),
+        choices=("status", "check", "record", "roster-join", "roster"),
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--stage", choices=(*STAGES, "finish"))
@@ -216,12 +216,12 @@ def build_parser() -> argparse.ArgumentParser:
     from .module_verify import command_verify
 
     verification = subparsers.add_parser("project-verify")
-    verification.add_argument("action", choices=("run", "check"))
+    verification.add_argument("action", choices=("run",))
     verification.add_argument("--repo", required=True)
     verification.set_defaults(func=command_project_verify)
 
     verify = subparsers.add_parser("verify")
-    verify.add_argument("action", choices=("run", "check", "advance"))
+    verify.add_argument("action", choices=("run",))
     verify.add_argument("--repo", required=True)
     verify.add_argument(
         "--level",

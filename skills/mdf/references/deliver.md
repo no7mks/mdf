@@ -226,7 +226,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 - **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
   - report（code-review.md / verify.full.json / fact-audit.md）只证明做过与声称结果。
 - 角色尚在时从对应 qa/dev worktree 读取各路提交与交接说明，不因 owner 尚未合入就重复分派。
-- 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
+- 角色已 roster-join 并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
 - 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
 
 可选加速（见 `common.md`「Jev 可选加速」）：

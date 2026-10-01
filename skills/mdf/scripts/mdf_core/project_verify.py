@@ -1,6 +1,6 @@
-"""非 feature 审查验证；full 证据以 commit 为锚（见 module_verify）。"""
+"""project-verify 兼容入口与 suite 运行辅助；full 证据见 module_verify。"""
 from .verify_run import run_verify_command
-from .delivery_state import git, safe, write_json, read_json
+from .delivery_state import git, safe, read_json
 from .errors import MDFError, emit
 from .gitutil import (
     current_branch,
@@ -8,17 +8,12 @@ from .gitutil import (
     repo_path,
     require_git_root,
     unreleased_slug,
-    ensure_clean,
 )
 from .paths import load_manifest
 from .verification import (
     SUITES,
     repo_verification,
     parse_suite_names,
-    recorded_suites,
-    required_suite,
-    required_suites,
-    suites_cover,
 )
 
 
@@ -45,7 +40,7 @@ def evidence_path(repo):
 
 
 def valid_evidence(repo):
-    """当前 HEAD commit 上仍有效的 full 全绿证据。"""
+    """已落盘且声称通过的 full 报告；不对照 HEAD。"""
     from .module_verify import valid_full
 
     return valid_full(repo)

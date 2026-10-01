@@ -132,7 +132,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
      - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
      - 不把进度行当结果，不为查看输出而重跑。
 - ❌ 不按分支 kind 选择 smoke 或 release，
-  不调用 `$mdf verify` 或 `delivery verify` 冒充本 intent 完成。
+  不调用 `$mdf verify` 冒充本 intent 完成。
 - 不要求 feature 的 design/converge gate。
 - 自检发现本阶段可修复的实现问题时原地修复并重验。
   - 可修复指同一失败未满三轮且下一步修复动作明确；否则视为无法完成。

@@ -1,4 +1,4 @@
-"""角色分支集成。"""
+"""按 roster 将 qa/dev 角色分支合流回 owner（roster-join）。"""
 import json
 
 from .delivery_state import (
@@ -9,13 +9,13 @@ from .gitutil import current_branch, ensure_clean, worktree_map
 from .roster import merge_branches, role_branches
 
 
-def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
+def roster_join(repo, root, data, approval, qa_branch=None, dev_branch=None):
     ensure_clean(repo)
     current = require_design(repo, root, data)
     if current_branch(repo) != data["branch"]:
-        raise MDFError("仅 owner 可集成", code="stage_branch")
+        raise MDFError("仅 owner 可 roster-join", code="stage_branch")
     policy = gate(repo, root, "design")["policy"]
-    receipt_path = safe(repo, root / "gates/integration.json")
+    receipt_path = safe(repo, root / "gates/roster-join.json")
     receipt = read_json(receipt_path) if receipt_path.exists() else None
     expected_names = role_branches(data["branch"], data["roster"])
     qa_merged = merge_branches(
@@ -29,17 +29,19 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
         if (receipt.get("design") != current["design"]
                 or set(receipt.get("branches", {})) != set(expected_names)
                 or set(receipt.get("merged", [])) != set(merged)):
-            raise MDFError("集成记录与当前交付不一致", code="stale_integration")
+            raise MDFError("roster-join 记录与当前交付不一致",
+                           code="stale_roster_join")
         for branch, head in receipt["branches"].items():
             if branch in receipt.get("merged", []):
                 if git(repo, "merge-base", "--is-ancestor", head, "HEAD",
                        check=False).returncode:
-                    raise MDFError("集成提交不在 owner 历史中",
-                                   code="stale_integration")
+                    raise MDFError("roster-join 提交不在 owner 历史中",
+                                   code="stale_roster_join")
             ref = git(repo, "rev-parse", "--verify", f"refs/heads/{branch}",
                       check=False)
             if not ref.returncode and ref.stdout.strip() != head:
-                raise MDFError("角色分支在集成后变化", code="stale_integration")
+                raise MDFError("角色分支在 roster-join 后变化",
+                               code="stale_roster_join")
         return cleanup(repo, expected_names)
     worktrees = worktree_map(repo)
     for branch in expected_names:
@@ -89,7 +91,7 @@ def integrate(repo, root, data, approval, qa_branch=None, dev_branch=None):
     }
     write_json(receipt_path, receipt)
     git(repo, "add", "--", str(receipt_path.relative_to(repo)))
-    git(repo, "commit", "-m", "chore(delivery): 固定角色集成证据")
+    git(repo, "commit", "-m", "chore(delivery): 固定 roster-join 收据")
     return cleanup(repo, expected_names)
 
 
@@ -106,12 +108,12 @@ def merge_role(repo, root, branch):
             for name in ("write-tests.json", "implement.json")
         }
         if not unmerged or set(unmerged) - allowed:
-            raise MDFError("集成冲突，保留现场；涉及测试的解决需用户确认",
+            raise MDFError("roster-join 冲突，保留现场；涉及测试的解决需用户确认",
                            code="merge_conflict")
         for path in unmerged:
             git(repo, "checkout", "--ours", "--", path)
             git(repo, "add", "--", path)
-    git(repo, "commit", "-m", f"chore(delivery): 集成 {branch}")
+    git(repo, "commit", "-m", f"chore(delivery): roster-join {branch}")
 
 
 def cleanup(repo, branches):
@@ -123,4 +125,4 @@ def cleanup(repo, branches):
         if not git(repo, "show-ref", "--verify", f"refs/heads/{branch}",
                    check=False).returncode:
             git(repo, "branch", "-D", branch)
-    return {"integrated": list(branches)}
+    return {"joined": list(branches)}

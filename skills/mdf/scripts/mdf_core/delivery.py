@@ -17,10 +17,7 @@ from .roster import (
     role_branch,
     write_roster_config,
 )
-from .verification import (
-    SUITES, repo_verification, parse_suite_names, required_suite, required_suites,
-)
-from .verify_run import run_verify_command
+from .verification import parse_suite_names
 from .validate_links import require_existing_local_links
 
 
@@ -98,13 +95,12 @@ def record_stage(repo, root, data, args):
             original = gate(repo, root, "write-tests")["fingerprints"]["tests"]
             roster = data["roster"]
             if roster["qa"] >= 2 and roster["qa_strategy"] == "partition":
-                original = gate(repo, root, "integration").get("tests")
+                original = gate(repo, root, "roster-join").get("tests")
                 if not original:
-                    raise MDFError("缺少多路测试合并基线", code="stale_integration")
+                    raise MDFError("缺少多路测试合并基线", code="stale_roster_join")
             if original != current["tests"] and not args.test_approval:
                 raise MDFError("测试或验证规则变化，需要用户批准记录",
                                code="test_approval_required")
-        # 验收为 Agent 侧 on-site + objectives；不绑定 smoke verification.json
     record = {"stage": stage, "summary": args.summary, "fingerprints": current,
               "head": git(repo, "rev-parse", "HEAD").stdout.strip()}
     if stage == "design":
@@ -112,42 +108,6 @@ def record_stage(repo, root, data, args):
     if args.test_approval:
         record["test_approval"] = args.test_approval
     write_json(safe(repo, root / "gates" / f"{stage}.json"), record)
-    return record
-
-
-def verify(repo, root, data):
-    before = require_design(repo, root, data)
-    verification = repo_verification(repo)
-    planned = verification.plan(required_suite("feature"))
-    results = []
-    failed = False
-    total = len(planned)
-    for index, item in enumerate(planned, 1):
-        try:
-            result = run_verify_command(
-                repo,
-                item["command"],
-                label=item["id"],
-                index=index,
-                total=total,
-                timeout=item["budget"],
-                entry=item["id"],
-                junit=item["id"] in SUITES,
-            )
-            result["passed"] = True
-        except MDFError as exc:
-            failed = True
-            result = {"command": item["command"], "passed": False,
-                      "error": exc.code, "details": exc.details}
-        results.append({"id": item["id"], "budget": item["budget"], **result})
-    after = fingerprints(repo, root, data)
-    if before["code"] != after["code"] or before["design"] != after["design"]:
-        failed = True
-    record = {"fingerprints": before, "results": results,
-              "suites": required_suites("feature"), "all_passed": not failed}
-    write_json(safe(repo, root / "gates/verification.json"), record)
-    if failed:
-        raise MDFError("项目验证失败或验证期间输入发生变化", code="verify_command_failed", details=record)
     return record
 
 
@@ -226,13 +186,11 @@ def command_delivery(args):
     root, data = locate(repo)
     if args.action == "record":
         result = record_stage(repo, root, data, args)
-    elif args.action == "verify":
-        result = verify(repo, root, data)
     elif args.action == "check":
         result = check(repo, root, data, args.stage)
-    elif args.action == "integrate":
-        from .delivery_git import integrate
-        result = integrate(
+    elif args.action == "roster-join":
+        from .delivery_git import roster_join
+        result = roster_join(
             repo, root, data, args.test_approval,
             getattr(args, "qa_branch", None), getattr(args, "dev_branch", None),
         )

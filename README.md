@@ -106,8 +106,9 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 code-review 支持 feature、bugfix、hotfix 和 release。
 
-- 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到 review_head。
-- 同一分支后续轮次只审上轮 final_head 以来的增量，并复核上轮问题。
+- 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
+- 后续增量只审相对操作左端点以来的改动，并复核上轮问题；裁定收口时洗成无
+  commit 的 `code-review.md` 终稿。
 - 默认每人全范围（replicate），也可切片审查（partition）。
 - 主 Agent 汇总裁定、修复并复核。
 - 前三种分支从固定起点审查，release 从上一正式发布版本审查。

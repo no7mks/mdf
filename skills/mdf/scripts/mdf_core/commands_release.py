@@ -49,7 +49,7 @@ def repo_release_commands(repo: Path) -> list[str]:
 
 
 def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:
-    """project-verify / verify full 证据在当前 commit 下仍有效且命令一致时复用。"""
+    """已有 full 报告声称通过且命令序列一致时复用；不对照 HEAD。"""
     from .project_verify import evidence_path, valid_evidence
 
     evidence = valid_evidence(repo)

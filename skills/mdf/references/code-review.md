@@ -51,7 +51,7 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 | 1 | Check | 约束 | 核对范围、前置条件及续办证据 | 基线、报告、检查结果 | 修复续办 3；无新则结束；否则 2 | 停止并报告 |
 | 2 | Review | Subagent | 按 roster.reviewers 启动独立 subagent 覆盖本轮 | N 份完整审查 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 汇总裁定、修复并复核 | 发现、裁定、修复依据 | 4 | 保留现场并报告 |
-| 4 | Record | 脚本 | 按需 on-site、写 `code-review.md` 并提交 | 审查记录、on-site、提交 | 结束 | 可修则 3；否则停 |
+| 4 | Record | 脚本 | 按需 on-site；裁定收口则洗成无 commit 终稿并勾选 | 终稿、on-site、提交 | 结束 | 可修则 3；否则停 |
 
 ## 术语与数据结构
 
@@ -69,33 +69,37 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
   - feature 用 delivery.json 的 slug，bugfix 用 Bug ID 的 kebab-case，
     release/hotfix 用该分支的稳定 SemVer，不用 slugify。
-  - 无该 Markdown 视为无记录。本步 on-site 结果写入该文件；full 证据是主链
-    `verify.full.json`，不写 `code-review.verification.json`。
+  - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
+    commit 终稿。full 证据是主链 `verify.full.json`，不写
+    `code-review.verification.json`。
   - ❌ 不在 `docs/context/research/` 保存审查报告。
 
 步骤 1 按已有记录判定本轮走向：
 
-- 首轮：无记录时走首轮；首次审查才固定当前 HEAD 为 review_head。
+- 首轮：无记录或仅有不完整草稿时走首轮；首次审查才固定当前 HEAD 为
+  review_head（写入进行中草稿或仅会话/派发参数，供本轮操作）。
   - 首轮未齐时进入 2 补齐。报告未齐前不改审查对象。
   - 已出现新的交付改动也不重新固定 review_head，不重派。
   - 报告齐后进入修复窗，由步骤 3 复核原 review_head 以来的改动。
-- 修复窗：本轮应派报告已齐，且 final_head 尚未与当前代码指纹对齐。
+- 修复窗：本轮应派报告已齐，且修复终点尚未与当前代码指纹对齐。
   - 窗内只修复已记录问题，保留原 review_head，不覆盖原报告。
   - 直接进入 3。不开增量新一轮，不重派 subagent；不提前跑 verify full。
   - 本轮若改了实现/测试：步骤 4 跑 on-site；失败且可修时只回 3。
-- 修复窗在 final_head 已记录、且（若本轮改过代码）on-site 已通过时关闭。
+- 修复窗在本轮修复已提交、且（若本轮改过代码）on-site 已通过时关闭。
   - 此后改实现、测试或验证配置才可进入增量新一轮。
   - 主链 verify full 的修绿改动不打开本修复窗（由 verify 自行架构审视）。
-- 无新改动：报告齐全、基线一致、无待修问题，且 final_head 到 HEAD 没有新的交付改动时，
-  核对后结束，不进入 2。
+- 无新改动：已有声称通过的终稿（或本轮已可收口）、无待修问题，且相对操作左端点到
+  HEAD 没有新的交付改动时，核对后结束，不进入 2。
   - 记录文件、纯事实、收口文档、以及非本交付 `docs/` 不是新的交付改动。
-- 增量新一轮：修复窗已关闭，且其后改了实现、测试或验证配置时进入
+- 增量新一轮：修复窗已关闭（或终稿已在），且其后改了实现、测试或验证配置时进入
   （含 close-out 集成后的不可跳过增量；不含主链 verify full 修绿）。
-  - 完整上轮记录指该轮应派份数的报告、final_head、已采纳与未解决问题清单。
-  - 左端点为上轮 final_head，重新固定 review_head 为当前 HEAD，进入 2。
-  - ❌ 不得从 start_commit 重扫已审区间。
-  - 上轮记录残缺（缺份数、缺 final_head、缺问题清单、或 final_head 不是当前 HEAD 的祖先）时
-    不得假装增量，停止并要求补记录。无记录走首轮。
+  - 完整上轮：应派份数报告已齐（或已有终稿）、已采纳与未解决问题清单齐全。
+  - 操作左端点不从终稿读 hash：close-out 集成用集成前 HEAD（当场记录）；其它增量用
+    终稿落盘提交 `git log -1 --format=%H -- <code-review.md>`；无法判定则走首轮。
+  - 重新固定 review_head 为当前 HEAD，进入 2。
+  - ❌ 不得从 start_commit 重扫已审区间（走首轮时除外）。
+  - 上轮残缺（缺份数、缺问题清单）时不得假装增量，停止并要求补记录。
+    无记录走首轮。
 - 范围无法判定时停止询问。
 - 不得把未提交改动遗漏在审查范围外；存在无关改动且无法隔离时停止。
 
@@ -119,10 +123,11 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
   - 并读取必要上下文，不能仅按提交标题或文件名审查。
 - release 首轮覆盖上一版本以来的完整变化：
   - 不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过其代码。
-- 后续轮次只覆盖上轮 final_head 以来的增量，仍须复核上轮问题。
-- 步骤 1 仅在新审查或增量新一轮时将本轮左端点与 review_head 写入草稿，
-  明确尚未通过，再启动审查。
-- 交付起点 base_commit 写入本次审查记录后固定，续办沿用，不重新追随分支或 tag。
+- 后续轮次只覆盖操作左端点以来的增量，仍须复核上轮问题。
+- 步骤 1 仅在新审查或增量新一轮时将本轮左端点与 review_head 记入进行中草稿
+  （或派发参数），明确尚未通过，再启动审查。
+- 交付起点 base_commit 在本轮操作中固定，续办沿用，不重新追随分支或 tag；
+  裁定收口写入终稿时不得保留任何 commit hash。
 
 各分支前置条件：
 
@@ -165,10 +170,10 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 - 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
 - 📌 主 Agent 在全部审查结果返回前不修改审查对象；subagent 只读审查，不修改文件或提交。
 
-报告内容：
+报告内容（进行中 / 分报告）：
 
-- 每份报告均声明审查种类（首轮 | 增量）、交付 base_commit、本轮左端点、review_head、
-  已完成的审查范围及未完成项；无未完成项时明确写无。
+- 每份报告均声明审查种类（首轮 | 增量）、派发所用 tip（base / 左端点 /
+  review_head）、已完成的审查范围及未完成项；无未完成项时明确写无。
 - 增量轮次须有上轮问题复核表，逐项写明仍解决 / 复开 / 不适用。
 - 发现问题时列出问题位置、触发条件、影响与证据；无问题时明确说明未发现问题。
 
@@ -179,8 +184,8 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 - 范围声明缺失、端点不一致或存在未完成项时，要求补齐或重新独立审查；无法补齐则停止。
 - 不足本轮应派人数、启动失败、结果缺失或未覆盖本轮范围时，补齐独立审查；
   无法补齐则停止，不记录通过。
-- 续办只复用同一左端点与 review_head 的完整报告；本轮未凑齐应派份数时不得进入修复或记录完成。
-  - 增量新一轮不复用上轮报告去覆盖新 diff。
+- 续办只复用同一左端点与 review_head 的完整报告；本轮未凑齐应派份数时不得进入修复或收口。
+  - 增量新一轮不复用上轮分报告去覆盖新 diff；收口终稿另见步骤 4。
 
 ### 汇总、修复与复核
 
@@ -212,50 +217,56 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 
 ### 验证与持久证据
 
-步骤 4：按是否改动代码决定是否跑 on-site，再写入审查记录。
+步骤 4：按是否改动代码决定是否跑 on-site；裁定本 intent 可收口时洗成终稿。
 
 - 本步不跑 verify full（留给主链下一 intent）；也不写 `gates/code-review.json`。
 - 本轮改动了实现/测试：跑 `$mdf verify run --level on-site`；失败回 3 修。
   - 未改实现/测试：跳过 on-site。
-- 把本轮是否跑 on-site、命令与结果路径写入本轮 `code-review.md`。
 - close-out 集成后的增量审查仍按下方「close-out 核对」；full 证据由主链
   `verify.full.json` 负责，不在本步伪造。
 - ❌ 不能用仅检查文档结构的 full validation 代替业务验证。
 - 非 quick 用例在 converge 之后失败且本轮触及：
   - 必须尝试补一条 quick 复现用例。
-  - 在本轮记录的「quick 复现」字段写明结果。
+  - 结果写入终稿「quick 复现」字段。
 
-四种分支均在 `changes/unreleased/<slug>/code-review.md` 按轮追加审查记录，每轮包含：
+进行中草稿（未裁定收口前）可按轮保留 tip，便于续办；每轮操作内容包括：
 
-- round、审查种类（首轮 | 增量）、固定的交付 base_commit。
-- 本轮左端点（首轮 = base_commit，增量 = 上轮 final_head）、本轮 review_head。
+- round、审查种类（首轮 | 增量）、base_commit、左端点、review_head。
 - 本轮应派人数份独立审查及其身份、本轮新发现、上轮问题复核表。
-- 逐项裁定、修复与复核、本轮结束后的最终 final_head。
+- 逐项裁定、修复与复核、本轮修复终点 tip。
 - on-site（已跑 <命令/路径> / 未改代码跳过）。
 - quick 复现（已补 <用例位置> / 未补 <原因> / 无非 quick 失败）、未解决项。
 
-记录与完成条件：
+裁定收口（无有效未解决问题，且若本轮改过代码则 on-site 已通过）时：
 
-- 先提交修复，再固定 final_head 并提交本轮 `code-review.md`
-  （路径：`changes/unreleased/<slug>/code-review.md`；**report**，非 gate）。
-- 无有效未解决问题，且（若本轮改过代码）on-site 已通过，才可记录完成。
-- 成功后将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
+1. 合并各轮/各份进行中材料，覆盖写入一份
+   `changes/unreleased/<slug>/code-review.md` **终稿**（**report**，非 gate）。
+2. 终稿须含：结论（声称通过）、已采纳与未解决清单（未解决须为空）、各轮要点与
+   裁定摘要、on-site、quick 复现；路径与证据指针用仓库相对路径，不用 hash。
+3. ❌ 终稿不得出现任何 commit hash（含 base_commit / review_head / final_head /
+   左端点 tip、完整或缩写 SHA）。
+4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
+5. 提交终稿，将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
+6. ❌ 报告未齐或仍在修复窗时不得洗稿、不得勾选。
+
 - ❌ 不运行 `delivery record --stage code-review`；不以 gate 文件为进度。
 - 语义审查由 Agent 负责；CLI 不推理各份结论。
 - 首轮未写清已采纳/未解决问题清单时，第二轮不得增量，停止并要求补记录。
 - 主链随后的 verify full 若为修绿改了代码：不强制回到本 intent；由 verify 自行架构审视。
+- 勾选后又改实现/测试/验证配置：终稿作废，重新进入本 intent（增量或首轮），再出新终稿。
 
 close-out 核对：
 
-- 记录中的基线、各轮应派份数的审查结果、最终复核均完整。
-- final_head 必须存在；close-out **集成主线之前**，final_head 应为当时审查终点。
+- 终稿存在且声称通过；已采纳/未解决清单齐全（未解决为空）。
 - 不使实现审查过期、也不强制重开审查的改动（事实仍须另审）：
   - 记录文件自身、纯事实、收口文档。
   - close-out 集成引入的非本交付 `docs/` 改动。
   - 主链 verify full 为修绿所做的改动（已在 verify 内自行架构审视）。
 - close-out 集成 develop/master 产生新提交后：
   - 仅非本交付 `docs/` 增量不新开审查；按 close-out 契约追加跳过说明。
-  - 其他集成增量一律作为增量新一轮从 1 开始，左端点为集成前 final_head。
-    - 以集成后的 HEAD 重做 1 份本轮范围审查与按需 on-site；不复用集成前报告。
-  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，人数仍为 roster.reviewers。
+  - 其他集成增量一律作为增量新一轮从 1 开始，左端点为集成前 HEAD（当场记录）。
+    - 以集成后的 HEAD 重做 1 份本轮范围审查与按需 on-site；不复用集成前终稿当增量差。
+    - 本轮完成后再次洗成无 commit 终稿并勾选。
+  - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，人数仍为
+    roster.reviewers。
 - 记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。

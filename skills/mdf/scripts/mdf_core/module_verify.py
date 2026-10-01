@@ -1,21 +1,20 @@
-"""`$mdf` CLI 的 module 级 verify：on-site 与 full（commit 锚）。"""
+"""`$mdf` CLI 的 module 级 verify：on-site 与 full。"""
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from .delivery_state import git, safe, write_json, read_json
+from .delivery_state import safe, write_json, read_json
 from .errors import MDFError, emit
 from .gitutil import (
     branch_details,
     current_branch,
     ensure_clean,
-    git_is_clean,
     repo_path,
     require_git_root,
     unreleased_slug,
 )
-from .modules import MODULES_PATH, load_modules, match, path_ignored
+from .modules import load_modules
 from .modules_check import module_commands
 from .paths import load_manifest
 from .project_verify import associated_suites, run_targets
@@ -33,33 +32,6 @@ def evidence_file(repo: Path, slug: str) -> Path:
         repo,
         repo / "changes/unreleased" / slug / "verify.full.json",
     )
-
-
-def _affects_verification(rel: str, modules) -> bool:
-    """改动是否会使 full 证据失效（实现、测试或验证配置）。"""
-    norm = rel.replace("\\", "/")
-    if norm == MODULES_PATH or norm.endswith("/suites.json"):
-        return True
-    for module in modules.modules.values():
-        if path_ignored(norm, module):
-            continue
-        if any(match(norm, pattern) for pattern in module.sourceset):
-            return True
-        for suite in (module.quick, module.smoke, module.release):
-            if any(match(norm, pattern) for pattern in suite.tests):
-                return True
-    return False
-
-
-def _full_evidence_aligned(repo: Path, recorded: str, head: str) -> bool:
-    """recorded→HEAD 无验证相关 diff 则仍对齐（文档/材料等无关改动可保留证据）。"""
-    if recorded == head:
-        return True
-    diff = git(repo, "diff", "--name-only", recorded, head).stdout.splitlines()
-    if not diff:
-        return True
-    modules = load_modules(repo)
-    return not any(_affects_verification(name, modules) for name in diff if name)
 
 
 def _delivery_slug(repo: Path) -> tuple[str, str, str]:
@@ -91,18 +63,15 @@ def plan_onsite(repo: Path, modules: list[str]) -> list[dict[str, Any]]:
 
 
 def valid_full(repo: Path) -> dict[str, Any] | None:
+    """已落盘且声称通过的 full 报告；不对照 HEAD / commit。"""
     branch, kind, slug = _delivery_slug(repo)
     path = evidence_file(repo, slug)
     if not path.is_file():
         return None
     result = read_json(path)
-    head = git(repo, "rev-parse", "HEAD").stdout.strip()
-    recorded = result.get("commit")
     if (
         result.get("branch") != branch
         or result.get("level") != "full"
-        or not isinstance(recorded, str)
-        or not _full_evidence_aligned(repo, recorded, head)
         or not suites_cover(recorded_suites(result), required_suites(kind))
         or not result.get("all_passed")
     ):
@@ -118,41 +87,17 @@ def command_verify(args) -> None:
         raise MDFError("verify 需要 ready", code="manifest_not_ready")
     level = args.level
     action = args.action
+    if action != "run":
+        raise MDFError("verify 只支持 run", code="invalid_verify_action")
     branch, kind, slug = _delivery_slug(repo)
     if level == "full":
-        _verify_full(repo, branch, kind, slug, action, args)
+        _verify_full(repo, branch, kind, slug)
     else:
-        _verify_onsite(repo, branch, kind, slug, action, args)
+        _verify_onsite(repo, branch, kind, slug, args)
 
 
-def _verify_full(repo, branch, kind, slug, action, args) -> None:
+def _verify_full(repo, branch, kind, slug) -> None:
     path = evidence_file(repo, slug)
-    if action == "check":
-        result = valid_full(repo)
-        if result is None:
-            raise MDFError(
-                "full 证据缺失、失败或 commit 未对齐",
-                code="stale_verification",
-            )
-        emit({"ok": True, "operation": "verify-full-check", "result": result})
-        return
-    if action == "advance":
-        # 脏工作区不允许；干净时把记录 commit 快进到 HEAD（由 Agent/Jev 裁定后调用）
-        if not git_is_clean(repo):
-            raise MDFError("advance 需要干净 worktree", code="dirty_worktree")
-        if not path.is_file():
-            raise MDFError("无 full 证据可快进", code="stale_verification")
-        result = read_json(path)
-        if not result.get("all_passed"):
-            raise MDFError("失败的 full 证据不能快进", code="stale_verification")
-        head = git(repo, "rev-parse", "HEAD").stdout.strip()
-        result["commit"] = head
-        result["head"] = head
-        result["advanced"] = True
-        write_json(path, result)
-        emit({"ok": True, "operation": "verify-full-advance", "result": result})
-        return
-    # run
     ensure_clean(repo)
     if kind == "bugfix" and not associated_suites(repo, slug):
         raise MDFError(
@@ -161,7 +106,6 @@ def _verify_full(repo, branch, kind, slug, action, args) -> None:
         )
     targets = plan_full(repo, kind)
     results = run_targets(repo, targets)
-    head = git(repo, "rev-parse", "HEAD").stdout.strip()
     passed = {item["id"] for item in results if item["passed"]}
     expected = {item["id"] for item in targets}
     result = {
@@ -170,8 +114,6 @@ def _verify_full(repo, branch, kind, slug, action, args) -> None:
         "kind": kind,
         "modules": load_modules(repo).names(),
         "suites": required_suites(kind),
-        "commit": head,
-        "head": head,
         "results": results,
         "all_passed": passed == expected,
     }
@@ -185,20 +127,13 @@ def _verify_full(repo, branch, kind, slug, action, args) -> None:
     emit({"ok": True, "operation": "verify-full-run", "result": result})
 
 
-def _verify_onsite(repo, branch, kind, slug, action, args) -> None:
+def _verify_onsite(repo, branch, kind, slug, args) -> None:
     modules = list(args.module or [])
     if args.paths:
         config = load_modules(repo)
         modules = sorted(
             set(modules) | set(config.modules_for_paths(repo, list(args.paths)))
         )
-    if action == "check":
-        raise MDFError(
-            "on-site 不持久化证据；用 run，并由 Agent 另跑选题 test",
-            code="verify_onsite_check",
-        )
-    if action == "advance":
-        raise MDFError("advance 仅用于 full", code="verify_onsite_advance")
     targets = plan_onsite(repo, modules)
     # 额外 test/testcase 命令由 Agent 经 suite-run / run 执行；此处只跑 lint+build+quick
     results = run_targets(repo, targets)

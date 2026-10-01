@@ -24,6 +24,8 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "git diff <previous_final_head> <review_head>" in text
     assert "仍解决 / 复开 / 不适用" in text
     assert "changes/unreleased/<slug>/code-review.md" in text
+    assert "终稿不得出现任何 commit hash" in text
+    assert "裁定收口" in text
 
 
 def test_close_out_materials_without_embedded_verify_or_fact():
@@ -174,7 +176,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
         "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
         "`--yolo` 时主 Agent 依据仓库证据与 Bug",
         "不代替该项批准", "不按分支 kind 选择 smoke 或 release",
-        "不调用 `$mdf verify` 或 `delivery verify`",
+        "不调用 `$mdf verify`",
         "master 不直接修改或提交",
         "标为 `fixed`",
         "未记录有效红灯不得改生产实现",
@@ -325,7 +327,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "进度只认 objectives" in deliver or "只认 objectives" in deliver
     finish = workflow("close-out")
     assert "不内嵌 verify full" in finish or "不再内嵌二者" in finish
-    assert "不运行 `$mdf verify check`" in finish or "不跑 `verify check`" in finish
+    assert "不做 commit 对齐审判" in finish or "不做 verify 报告的 commit 对齐" in finish
     assert "不运行 `delivery check --stage finish`" in finish
     assert "确认单独提问" in workflow("fact-audit")
     assert "不重跑" in workflow("verify-fix")
@@ -412,7 +414,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "进度只认 `objectives.md`",
         "审查基线仍为上一正式发布", "objectives.md",
         "不再改代码",
-        "不跑 verify full", "最终 final_head",
+        "不跑 verify full", "洗成无 commit 终稿",
         "不运行 `delivery record --stage code-review`",
     ):
         assert rule in text
@@ -426,7 +428,8 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "不重跑 verify full" in finish
     assert "本交付文档" in finish
     assert "以集成后的 HEAD 执行增量新一轮" in finish
-    assert "不复用集成前报告" in finish
+    assert "不复用集成前终稿充当增量差" in finish
+    assert "终稿存在、声称通过" in finish
     assert "复核上轮问题" in finish
     assert "不得跳过" in finish
     assert "report 缺失时内部执行 code-review" in finish

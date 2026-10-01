@@ -78,8 +78,8 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 
 仅在 owner 工作。`needs_design: yes` 时：
 
-- 按 roster 的 qa/dev strategy 集成（`best-of-n` / `partition`），规则同前。
-- 运行 `delivery integrate`；合并后清理角色 worktree。
+- 按 roster 的 qa/dev strategy 合流（`best-of-n` / `partition`），规则同前。
+- 运行 `delivery roster-join`；合并后清理角色 worktree。
 - 进度看 objectives：design / write-tests / implement（或 owner 开发）须已勾。
 
 续办与清理：
@@ -87,7 +87,7 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 - 续办仍调用同一命令；脚本核对已记录提交是 owner 的祖先，现存角色未改变，随后只清理剩余角色。
 - 角色均已清理时同样核验记录，不重建角色、不再次合并。
 - ❌ 缺少有效记录却缺角色时停止并报告。
-- `stale_integration` 表示现场被其他操作改变，停止。
+- `stale_roster_join` 表示现场被其他操作改变，停止。
 
 `needs_design: no`：无角色可合；确认 owner 干净且开发改动已提交；objectives 的 owner 开发项已勾。
 
@@ -100,7 +100,7 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
    `needs_design` 与 roster）；未勾则继续开发/勾选，不得虚构完成。
 2. 运行 `$mdf verify run --level on-site`（涉及 module 的 lint+build+quick +
    本分支相对 start_commit 新增/改动的测试；可加 Agent/Jev 选题）。
-3. ❌ 不得用 verify full 或 `delivery verify`（smoke/release）冒充本步。
+3. ❌ 不得用 verify full（smoke/release）冒充本步。
 4. 失败时遵守「测试失败工作流」（单用例复测 → 修一个复测一个 → 再继续）。
 5. 可修实现则修并**提交**相关实现/测试路径后再跑 on-site；改测试/门槛须批准。
 6. 循环直至前置已勾且 on-site 绿，或阻塞停止。

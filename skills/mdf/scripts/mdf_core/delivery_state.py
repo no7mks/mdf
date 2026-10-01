@@ -8,9 +8,7 @@ from .errors import MDFError
 from .gitutil import branch_details, current_branch, run, unreleased_slug
 from .paths import load_manifest, path_stays_in_repo
 from .roster import fingerprint_data, owner_branch, require_roster
-from .verification import (
-    repo_verification, recorded_suites, required_suites, suites_cover,
-)
+from .verification import repo_verification
 
 STAGES = ("design", "write-tests", "implement", "converge")
 
@@ -165,17 +163,6 @@ def require_design(repo, root, data):
         raise MDFError("设计基线必须提交", code="uncommitted_design")
     if git(repo, "diff", "HEAD", "--", *rels).stdout:
         raise MDFError("设计基线必须提交", code="uncommitted_design")
-    return current
-
-
-def require_green(repo, root, data):
-    """可选：delivery verify 写入的 verification.json（历史/辅助）；converge 不再依赖。"""
-    record = gate(repo, root, "verification")
-    current = fingerprints(repo, root, data)
-    if (any(record.get("fingerprints", {}).get(key) != current[key] for key in ("code", "design"))
-            or not suites_cover(recorded_suites(record), required_suites("feature"))
-            or not record.get("all_passed")):
-        raise MDFError("所需 suite 缺失或过期", code="stale_verification")
     return current
 
 

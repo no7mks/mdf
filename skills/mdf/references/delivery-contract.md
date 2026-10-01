@@ -73,7 +73,7 @@
   - verify 默认 suite：feature/bugfix/hotfix → smoke；release → release；失败现场修到绿。
   - fact：verify full 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
-  - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不跑 `verify check`。
+  - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌 verify full / fact。
   - 把目标主线合入交付分支前可建议 squash（见「可选历史整理」）；非强制。
 - 开发迭代只用 `$mdf verify --level on-site`；禁止把 full 当日常自检。
@@ -122,7 +122,7 @@
 - design 只在 owner 提交共用代码底座；两路不得各自再写底座。
 - design 不创建角色 worktree。
 - Clarify 由当前 Agent 在主会话完成；Baseline 由该 intent 启动恰好 1 个 owner subagent 写入。
-- converge 由该 intent 启动恰好 1 个 owner subagent 执行集成、验证与记录；测试修改批准回主会话。
+- converge 由该 intent 启动恰好 1 个 owner subagent 执行 roster-join、验证与记录；测试修改批准回主会话。
 - 均不可配人数；无法启动则停止，不降级由当前 Agent 代做。
 - write-tests 与 implement 在对应角色树上执行，入口先 no-ff merge owner；
   `0,0` 时在 owner 上编写测试与实现。
@@ -136,8 +136,8 @@
 | review | `partition` | 按切片审查 |
 
 - 各路并行产出在合入前按分支核验；同路径冲突时保留先合入的版本。
-  - qa 为 `partition` 且 ≥2 时：integrate 合完全部 qa 后，
-    可写 `gates/integration.json` 测试 fingerprint 快照。
+  - qa 为 `partition` 且 ≥2 时：roster-join 合完全部 qa 后，
+    可写 `gates/roster-join.json` 测试 fingerprint 快照。
   - 该文件是配置/辅助，**不是**进度 gate。
 - review 时 owner 仍汇总裁定，不按票数。
 
@@ -183,7 +183,7 @@ Git 约束：
 
 | Report | 典型路径 | 谁写 |
 | --- | --- | --- |
-| code-review | `changes/unreleased/<slug>/code-review.md` | code-review |
+| code-review | `…/code-review.md` 无 commit 终稿 | code-review |
 | verify full | `…/verify.full.json`（及可选 `verify.md`） | verify full |
 | fact | 材料目录内 confirmation / 会话确认记录 | fact audit（经 update 委托时同） |
 | 测试框架报告 | `.mdf/reports/` 等 | verify / suite-run |
@@ -192,7 +192,7 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 
 ### CLI 确定性辅助（非进度）
 
-`delivery status/check/record/integrate/roster` 仍可执行。
+`delivery status/check/record/roster-join/roster` 仍可执行。
 
 - `record --stage design` 可写入 **design policy 配置快照**
   （protected_paths / suites）。
@@ -201,7 +201,6 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
   **禁止**当作进度或验收关口。
   - 并行 e2e/旧脚本可能仍调用。
   - Agent 主链不得用其选型或卡 close-out。
-- `delivery verify` 仅为辅助入口，**不是** converge / verify full 的验收门。
 
 测试门槛与所需 suite：
 
@@ -216,10 +215,10 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 补验（仅在**该** intent 内）：
 
 - 开发中与 converge 只跑 module **on-site**。
-- **verify full** 以 commit 为锚；`run` 无论成败均写入 `verify.full.json`；
+- **verify full** 落盘 `verify.full.json`（不含 commit）；`run` 无论成败均写入；
   失败则在本 intent 现场修到绿。
 - 只改事实文档或 module ignore：不因「报告对齐」要求机械重跑 full
-  （close-out 也不用 `verify check` 审判）。
+  （close-out 也不做 commit 对齐审判）。
 - fact / code-review / verify 均无 delivery stage gate。
 
 ### 测试层级与分类
@@ -328,13 +327,13 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
 
 - **交付地板**（能允许的最早点 = converge 起点）：
-  - roster ≥1：`gates/integration.json` 已进入当前分支历史、且角色 worktree 已清理后的
+  - roster ≥1：`gates/roster-join.json` 已进入当前分支历史、且角色 worktree 已清理后的
     owner 提交（可用该文件在本分支首次出现的 commit；不得早于它）。
   - roster `0,0`：objectives 中 owner 开发（或等价开发项）已勾所在提交；不得早于它。
 - **他人抬升**：在 `start_commit..HEAD` 上，若存在 `author` 或 `committer` email
   ≠ 当前 `git config user.email` 的 commit，地板抬到其中**最新一笔**（保留该笔，只压其后）。
   - tip 本身即他人提交 → 不可 squash。
-  - 角色 merge 落在交付地板之前则不进区间，不必再判「是否本人」。
+  - roster merge 落在交付地板之前则不进区间，不必再判「是否本人」。
 
 converge 只定义地板，不在入口询问 squash。
 

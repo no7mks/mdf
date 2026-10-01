@@ -168,9 +168,10 @@
   - 语义不明、需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
-    - 不启动 code-review、不重跑 verify full，沿用上轮 final_head 与主链
+    - 不启动 code-review、不重跑 verify full，沿用已有 code-review 终稿与主链
       `verify.full.json`（若仍对齐集成前 HEAD；否则先按下方不可跳过路径补验）。
-    - 在 `code-review.md` 追加跳过说明（merge commit、路径清单）。
+    - 在 `code-review.md` 追加跳过说明（merge commit、路径清单；仍不得写入 commit
+      hash）。
   - 本交付文档 = 当前对象文件，以及本分支自 start_commit 到集成前 HEAD 改过的 `docs/` 路径。
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
@@ -179,16 +180,16 @@
     或集成引入了实现/测试改动：
     - 委托 `$mdf verify`（full，现场修到绿）并提交。
     - 再委托 code-review 增量轮。
-    - ❌ 不跑 `$mdf verify check` 做过期审判；缺 report 就委托 **run**。
+    - ❌ 缺 report 就委托 **run**；不做 commit 对齐审判。
   - feature：objectives 的 converge 项须已勾；未勾停止。
-  - 上轮多人结论必须已由 owner 汇总进已采纳/未解决清单并固定 final_head，
+  - 上轮多人结论必须已由 owner 汇总进终稿的已采纳/未解决清单，
     不得把上轮多份原文交给本轮唯一 reviewer 去合并。
   - 然后以集成后的 HEAD 执行增量新一轮 code-review：
-    左端点为集成前 final_head，重新固定 review_head。
+    左端点为集成前 HEAD（当场记录），重新固定 review_head。
   - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
-    完成裁定、修复与按需 on-site。
-  - 不复用集成前报告，也不将集成当作旧审查的修复续办。
-  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，
+    完成裁定、修复与按需 on-site；再洗成无 commit 终稿。
+  - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
+  - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
     人数仍为 roster.reviewers。
 - 主线已包含且审查报告已交时无需重复合并或审查。
   - report 缺失时内部执行 code-review，通过后继续本次 close-out。
@@ -209,7 +210,7 @@
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
   - objectives 中 verify full / fact audit 已勾。
   - 缺失则停止，提示先跑 `$mdf verify`（full）与 `$mdf fact audit`（必要时 fact update）。
-- ❌ 本 intent 不内嵌 verify full / fact update / fact audit；不跑 `verify check`。
+- ❌ 本 intent 不内嵌 verify full / fact update / fact audit；不做 commit 对齐审判。
 - 调用方提交材料与证据。
 - 按分支准备材料：
   - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 CHANGE.md。
@@ -235,18 +236,18 @@
 **审阅**
 
 - 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
-  - `code-review.md` 存在且有可用 final_head。
+  - `code-review.md` 终稿存在、声称通过，且无 commit hash。
   - `verify.full.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
   - fact 确认记录存在。
   - objectives：converge → code-review → verify full → fact audit 均已勾（feature 另须
     design/开发依赖项已勾）。
-- ❌ 不运行 `delivery check --stage finish`；不运行 `$mdf verify check`。
+- ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
 - 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
-  - final_head 到 HEAD 的提交只改 `changes/`、`CHANGELOG.md`、
-    `.mdf/manifest.yaml` 与 `docs/`；否则按收口状态不一致停止。
+  - 自终稿落盘提交（`git log -1 --format=%H -- …/code-review.md`）到 HEAD 的提交只改
+    `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`；否则按收口状态不一致停止。
 - report 缺失或未声称通过时：停止并交接；由主链补跑对应 intent（verify **run** /
   fact / code-review），不在本 intent 内嵌、不做过期审判。
-- 集成后需补审时从 `code-review.md` 步骤 1 执行（有完整上轮则增量，否则首轮）。
+- 集成后需补审时从 `code-review.md` 步骤 1 执行（有有效终稿则增量，否则首轮）。
 - 不回退本流程步骤编号。
 - 其他失败走本步骤的失败去向。
 - ❌ 不在本步重新委托 fact audit / fact update；仅确认主链前置已满足。
@@ -348,7 +349,7 @@
   - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现：
-  回委托 verify **run** / code-review，不跑 `verify check`。
+  回委托 verify **run** / code-review，不做 commit 对齐审判。
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。

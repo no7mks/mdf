@@ -22,7 +22,7 @@ def test_converge_can_resume_from_owner_after_role_cleanup(python_exe, tmp_path)
         assert git(path, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip() == common_dir
         payload(record(python_exe, path, stage))
         commit(path)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(owner)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(owner)))
     assert not qa.exists() and not dev.exists()
     # 模拟集成清理后、全绿之前的中断；续办仅检查已集成的证据，不再次 integrate。
     status = payload(mdf(python_exe, "delivery", "status", "--repo", str(owner)))["result"]

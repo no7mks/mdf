@@ -129,11 +129,5 @@ def converge_ready(python_exe, tmp_path):
     commit(qa)
     payload(record(python_exe, dev, "implement"))
     commit(dev)
-    payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     return repo, root
-
-
-def rewrite_evidence(root, evidence):
-    (root / "gates/verification.json").write_text(
-        json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )

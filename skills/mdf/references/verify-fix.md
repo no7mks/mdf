@@ -82,23 +82,23 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   finish 回到其步骤 4 补验与增量 code-review，再重跑其步骤 7，之后才可收口。
 - ❌ 边界：
   - 不把对象标为 `closed`，不填 `fixed_in`。
-  - 不跑 `$mdf verify run` 或 `delivery verify`，不按分支 kind 选择 suite，不因此跑 release suite。
-  - 仅允许只读 `$mdf verify check --level full` 用于引用已有报告。
+  - 不跑 `$mdf verify run`，不按分支 kind 选择 suite，不因此跑 release suite。
+  - 可只读已有 `changes/unreleased/<slug>/verify.full.json`（须 `all_passed: true`）。
 
 ### 复现验证
 
 对清单中每个 Bug，对照其「所需回归证据」确认复现用例通过。
 
 - 取证：
-  - 当前分支为 bugfix/hotfix/release 且 `$mdf verify check --level full` 退出 0 时，读 stdout 的 `result`。
+  - 当前分支为 bugfix/hotfix/release，且存在 `verify.full.json` 且 `all_passed: true` 时，
+    直接读该文件：
     - 用 `results[].report.cases` 判断该 test 是否 passed。
     - 报告目录是 `results[].log`，其中才有 `summary.json`。
     - passed 时引用该目录与 test 名，不重跑。
     - `results[].report.cases` 未命中该 test 时，改走下面的点名执行。
-      check 全绿不表示该复现用例已跑过。
-  - 非上述分支、check 非零，或 cases 未命中时，按 `docs/system/testing/` 的命令模板点名执行。
-    证据另给可执行命令时运行该命令。
-  - ⚠️ `common.md` 非零退出规则的明确例外：check 非零退出不走失败去向，只改用上一条点名执行。
+      报告全绿不表示该复现用例已跑过。
+  - 非上述分支、无可用报告，或 cases 未命中时，按 `docs/system/testing/` 的命令模板
+    点名执行。证据另给可执行命令时运行该命令。
 - 只要求这些复现用例通过；本步修改了实现时另运行 `quick-run --repo "$REPO_ROOT"`，须退出 0。
   - 成功读 stdout 的 `result`：`head`、逐项 `log` 与 quick `report`。
   - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`），不把进度行当结果。

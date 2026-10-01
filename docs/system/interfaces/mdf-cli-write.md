@@ -103,8 +103,8 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 正常运行的步骤：
 
 1. 验证：
-   - 复用条件：`project-verify` 证据在当前输入下仍有效；
-     且其命令序列与 manifest 的 lint、build、quick、release 一致。
+   - 复用条件：已有 `verify.full.json` 声称通过，且命令序列与当前 lint、build、quick、
+     release 一致（不对照 HEAD）。
    - 满足时直接复用其结果，输出 `verification.reused` 为证据路径。
    - 否则依次执行这些命令，`reused` 为 null。
 2. 随后保持 worktree clean 后写入版本 Change、归档对象和链接重写。
