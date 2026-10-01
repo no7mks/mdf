@@ -74,7 +74,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
   用 `git -C` 与绝对路径操作。
 - 绑定或切换成功后横幅用该 dev 的路径与分支；相对上一处变化时打印切换三行。
 
-再运行 `delivery check --stage implement`，并遵守：
+再遵守：
 
 - `dev_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
 - roster.models 含 `implement` 时把该值写入本路任务，按口语描述现场解析（可多个模型）。
@@ -89,18 +89,19 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 自检与交接证据
 
-实现前读取事实页，记录 gate 前完成自检并如实区分验证状态。
+实现前读取事实页，自检后自勾进度。
 
 - 实现前按 design 的当前事实锚点读取对应事实页。
   - 已记载的当前行为以事实页为准，不从源码重新推断契约。
-  - 本次要修改已记载行为时先读对应事实页再改实现，文档同步由 finish 的 fact update 完成。
+  - 本次要修改已记载行为时先读对应事实页再改实现，文档同步由主链 fact update 完成。
   - 发现事实页与实现冲突时停止并报告。
-- 在记录 gate 前逐项对照 objectives 与 design 检查实现路径、接口和错误语义。
+- 收尾前逐项对照 objectives 与 design 检查实现路径、接口和错误语义。
 - 执行当前实现适用且可运行的自检，记录命令、退出状态、结果及对应验收项。
   - 不要求测试先完成或项目全绿。
   - 无法执行的自检逐项说明原因及留给 converge 的验证项。
 - 自检发现本阶段可修复的实现问题时原地修复并重查。
   - 可修复指同一失败未满三轮且下一步修复动作明确；否则视为无法完成。
-- ❌ 目标或设计不明、实现未完成时停止并报告，不记录通过的 implement gate。
+- ❌ 目标或设计不明、实现未完成时停止并报告，不勾选通过。
 - 摘要须区分已验证结论与未验证项，不把后续验证项写成已通过。
-- 运行 `delivery record --stage implement --summary <实现与自检摘要>` 并提交。
+- 成功后将 `objectives.md` 的 implement 项改为 `[x]` 并提交（并行多路规则同 write-tests）。
+- ❌ 不以 `delivery record/check --stage implement` 为完成条件；可选 record 仅为并行辅助快照。

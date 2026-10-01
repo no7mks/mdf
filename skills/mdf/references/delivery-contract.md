@@ -32,7 +32,7 @@
 材料位置：
 
 - 开发材料自 start 起位于 `changes/unreleased/<slug>/`：
-  - objectives.md、delivery.json、gates/、code-review.md；
+  - objectives.md、delivery.json、可选 gates/（配置快照）、code-review.md；
     `needs_design: yes` 时另有 design.md。
   - close-out 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
     `changes/<version>/<slug>/`。
@@ -44,7 +44,7 @@
 - objectives/design 是受管可搬迁 Markdown。
 - 仓内 Markdown 本地链接只相对当前文件（`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。
 - 搬迁时 CLI 改写仍有效的相对路径。
-- delivery.json 与 gate 内路径一律仓库相对。
+- delivery.json 与可选 gate 快照内路径一律仓库相对。
 - fingerprint 规范化用仓库相对或 `@delivery/`，不是第二种 href 写法。
 
 ## 阶段与执行责任
@@ -65,16 +65,16 @@
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。
-- **converge** 是验收中心：objectives 完成 + **verify on-site**，循环修到达成。
-  - on-site = lint+build+quick + 本分支新增/改动测试。
+- **进度**：唯一账本是 `objectives.md` 步骤 checklist；各 intent 成功后**自勾**。
+  - deliver / next 只读勾选与依赖决定下一 intent，**不**读 stage gate、**不**对 report 做过期审判。
+- **converge**：核对 objectives 前置已勾，跑 **verify on-site**，修到达成后自勾。
   - ❌ converge 的「验」不是 verify full。
-- **verify full** 为独立 intent（lint+build+quick + smoke/release）。
-  - 默认 suite：bugfix/hotfix → smoke；feature/release → release。
-  - 失败则现场修到绿；不做相对 converge 的过期 gatekeeping。
-- **fact**：无 delivery stage gate。verify full 之后、close-out 之前跑 audit。
-  - 未通过则 fact update（同 scope）后重审。默认 scope=`branch`。
-- **close-out**（`$mdf finish` 同义）保留材料与 Gitflow 收口工作。
-  - 不再内嵌 verify full / fact。
+- **verify full / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
+  - verify 默认 suite：bugfix/hotfix → smoke；feature/release → release；失败现场修到绿。
+  - fact：verify full 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
+- **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
+  - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不跑 `verify check`。
+  - 不内嵌 verify full / fact。
 - 开发迭代只用 `$mdf verify --level on-site`；禁止把 full 当日常自检。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` / `$mdf verify-fix` 不走交付主线，也不由 deliver 内部委托。
@@ -134,10 +134,10 @@
 | review | `replicate`（默认） | 每人覆盖同一份本轮范围 |
 | review | `partition` | 按切片审查 |
 
-- 各路 stage gate 已在合入前按分支核验。
-  - 同路径 `write-tests.json` / `implement.json` 冲突时保留先合入的版本。
-  - qa 为 `partition` 且 ≥2 时，integrate 合完全部 qa 后写入测试 fingerprint。
-    位置是 `gates/integration.json`。converge 以它判断测试是否变化。
+- 各路并行产出在合入前按分支核验；同路径冲突时保留先合入的版本。
+  - qa 为 `partition` 且 ≥2 时：integrate 合完全部 qa 后，
+    可写 `gates/integration.json` 测试 fingerprint 快照。
+  - 该文件是配置/辅助，**不是**进度 gate。
 - review 时 owner 仍汇总裁定，不按票数。
 
 ### intent 参数与 models
@@ -148,7 +148,7 @@
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`。
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
 - 这些是 intent 参数，不是独立 intent。start 冻结；之后由 Agent 调用 `delivery roster` 写入。
-- qa/dev strategy 在 design gate 后锁定。
+- qa/dev strategy 在 design **完成后**锁定（看 objectives 勾选，不靠 stage gate）。
 - review_strategy 与 `models.code-review` 可在 code-review 覆盖。
 - deliver 把 strategy / models 转交给 start、design、code-review；`--roster` 只转交 start。
 - 未知 `--` token 停止询问。
@@ -169,26 +169,38 @@ Git 约束：
 - 本地工作分支不推送。
 - 禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 
-## Gate
+## 进度与 Report
 
-通过 `delivery status/check/record/verify/integrate/roster` 执行确定性操作。
+**进度唯一账本**：`objectives.md` 步骤 checklist。各 intent 成功收尾必须自勾对应项并提交。
 
-- 每阶段单独保存 gates/<stage>.json，记录摘要、基线与内容 fingerprint；避免并行写同一状态文件。
+- deliver / next / 人工续办：只读勾选决定下一 intent。
+- write-tests 写完可编译或可加载执行的测试即完成，**不要求全绿**；完成后自勾 objectives。
+- ❌ 不以 `gates/<stage>.json`、`verify.full.json`、fact 确认、`code-review.md` 当阶段通行证。
+- ❌ 不对 report 做「相对 HEAD / 相对上游 intent」的过期 gatekeeping。
 
-| 阶段 | 前置或完成条件 |
-| --- | --- |
-| design | 仅 `needs_design: yes` |
-| write-tests、implement | 仅 `needs_design: yes`；要求已提交 design |
-| write-tests | 写完可编译或可加载执行的测试即完成，不要求全绿 |
-| converge | `needs_design: yes` 时需两路完成；证据为 objectives + on-site |
-| finish（close-out 检查） | 设计基线 + 已 converge；**无** code-review / verify / fact stage gate |
+**Report**（证明做过与结果，供核对「交没交」）：
 
-- on-site 全绿由 converge 负责；verify full、code-review、fact 均无 delivery stage gate。
-- code-review 证据是 `code-review.md`（轮次/`final_head`），不写 `gates/code-review.json`。
-- 主链在 code-review 之后才跑 verify full；verify 中为修绿而改的代码**不强制**重开
-  code-review，由 verify 自行从架构角度审视修复是否合适。
-- 不能手填 passed 代替 CLI 检查。
-- 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
+| Report | 典型路径 | 谁写 |
+| --- | --- | --- |
+| code-review | `changes/unreleased/<slug>/code-review.md` | code-review |
+| verify full | `…/verify.full.json`（及可选 `verify.md`） | verify full |
+| fact | 材料目录内 confirmation / 会话确认记录 | fact audit（经 update 委托时同） |
+| 测试框架报告 | `.mdf/reports/` 等 | verify / suite-run |
+
+close-out 只查上表是否已交且声称通过；不复验对不对。
+
+### CLI 确定性辅助（非进度）
+
+`delivery status/check/record/integrate/roster` 仍可执行。
+
+- `record --stage design` 可写入 **design policy 配置快照**
+  （protected_paths / suites）。
+  - 语义是配置/report，**不是**进度 gate。
+- `record/check` 其他 stage、以及 `gates/*.json` fingerprint：
+  **禁止**当作进度或验收关口。
+  - 并行 e2e/旧脚本可能仍调用。
+  - Agent 主链不得用其选型或卡 close-out。
+- `delivery verify` 仅为辅助入口，**不是** converge / verify full 的验收门。
 
 测试门槛与所需 suite：
 
@@ -198,18 +210,16 @@ Git 约束：
 - design policy 必须另含 `suites`：本交付改动涉及的全部功能块的 named suite 名。
   - 非空列表，不得使用 lint/build/quick/smoke/release/full。
 - 点名执行 test case 或 test 仅用于定位，不替代所需 suite 通过。
-- `$mdf verify` / gate 记录必须写出 Core 实际跑过的 `suites`。
+- `$mdf verify` / 验证 report 必须写出 Core 实际跑过的 `suites`。
 
-失效与补验：
+补验（仅在**该** intent 内）：
 
-- 开发中与 converge 只跑 module **on-site**（lint+build+quick + 本分支新增/改动测试
-  及 Agent/Jev 选题）。
-- **verify full** 以 commit 为锚；`run` 无论成败均写入 `verify.full.json`，
-  `all_passed:false` 时失败；失败则在该 intent **现场修到绿**，不回退到假阶段。
-  - worktree 须干净；之后有业务 diff 则重跑或修后再跑。
-- 只改事实文档或 module ignore 不重跑业务验证。
-- 无 fact-update / fact-audit delivery stage gate；以 fact audit 结论为准。
-- 缺失或过期时在当前 intent 原地补验，不发明额外 gatekeeping。
+- 开发中与 converge 只跑 module **on-site**。
+- **verify full** 以 commit 为锚；`run` 无论成败均写入 `verify.full.json`；
+  失败则在本 intent 现场修到绿。
+- 只改事实文档或 module ignore：不因「报告对齐」要求机械重跑 full
+  （close-out 也不用 `verify check` 审判）。
+- fact / code-review / verify 均无 delivery stage gate。
 
 ### 测试层级与分类
 
@@ -270,7 +280,7 @@ converge（on-site）与 verify full **共用**：
 - test case 取 `<testcase>` 的 `classname`，缺失时取所在 `<testsuite>` 的 `name`；
   项目须配置运行器使其对应 test case。
 - Core 解析后在同目录写 `summary.json`：test case 级的结果与用时，及其下 test 级的
-  结果与用时。gate 与 code-review 证据记录报告路径与 test case 级汇总。
+  结果与用时。report 与 code-review 记录报告路径与 test case 级汇总。
 - 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
 - 点名执行 test case 或 test 只用于定位；定位复测仍应尽量落盘框架报告。
@@ -302,7 +312,9 @@ named suite：不在 manifest；Agent 以 `suite-run` 执行并写入摘要。
 bugfix 的 `suites.json` 在 verify full 前关联已文档化 named suite（≥1）。
 
 补覆盖与 quick 复现：缺覆盖则先补 reproduce；优先放入 quick，其次 smoke。
-verify full 中非 quick 失败时尝试补 quick 复现；结论写入 verify.md 或 code-review。
+verify full 中非 quick 失败时尝试补 quick 复现；结论写入
+`changes/unreleased/<slug>/verify.md`。code-review 本轮触及的非 quick 失败另在
+`code-review.md` 记「quick 复现」字段（各记各的，不互替）。
 
 ## 修改与提交权限
 
@@ -311,7 +323,7 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 
 - 只暂存当前阶段的必要路径；不得顺带提交无关用户改动。
 - 可以主动提交尚未完成的阶段产出，但须准确记录未完成状态。
-- 阶段提交不代表 gate 通过，不能绕过既有验收与审阅。
+- 阶段提交不代表 objectives 已勾或 report 已交，不能绕过既有验收与审阅。
 
 各 intent 对测试与验证门槛的权限：
 
@@ -329,4 +341,4 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 - 修复后在当前 intent 原地重验。
 
 fact update / fact audit 可独立运行；交付主链在 verify full 之后、close-out 之前委托。
-无 fact stage gate。独立调用不能因此自动进入 close-out 或其他交付阶段。
+无 fact stage gate；进度靠 objectives 自勾。独立调用不能因此自动进入 close-out 或其他交付阶段。

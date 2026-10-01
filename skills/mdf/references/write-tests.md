@@ -72,7 +72,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
   用 `git -C` 与绝对路径操作。
 - 绑定或切换成功后横幅用该 qa 的路径与分支；相对上一处变化时打印切换三行。
 
-再运行 `delivery check --stage write-tests`，并遵守：
+再遵守：
 
 - `qa_strategy` 为 `partition` 时只做 design 派给本 index 的切片，仍不看兄弟代码。
 - roster.models 含 `write-tests` 时把该值写入本路任务，按口语描述现场解析（可多个模型）。
@@ -87,7 +87,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 ### 测试与交接证据
 
-编写前读取事实页，按 suite 归类用例，确认可执行后记录 gate。
+编写前读取事实页，按 suite 归类用例，确认可执行后自勾进度。
 
 - 编写前按 design 的当前事实锚点读取对应事实页。
   - 已记载的当前行为以事实页为准，不从源码重新推断契约。
@@ -98,7 +98,7 @@ design policy `suites` 所列 named suite；归属写在代码里（marker、目
 
 - design 所列 named suite 尚无文档时，在 `docs/system/testing/` 补该 suite 的一节或一页。
   - 这属于本阶段授权。
-- 记录 gate 前核对每个声明的 named suite 都已文档化且有成员。
+- 收尾前核对每个声明的 named suite 都已文档化且有成员。
 - ❌ 不得降低项目门槛；非 hermetic 的 test case 不进 quick，超预算的 test case 不进 quick 或 smoke。
 - 新写的 test case 按依赖切分，同一 test case 内的 test 依赖一致，不写运行时 skip。
 - implement 不得擅自改测试。
@@ -107,8 +107,12 @@ design policy `suites` 所列 named suite；归属写在代码里（marker、目
 
 - 测试须能编译或加载执行；环境或导入故障不是有效完成证据。
 - 因尚未实现而产生的断言失败可以接受。
-- 本阶段不要求项目全绿，也不得因断言失败拒绝记录 gate。
+- 本阶段不要求项目全绿，也不得因断言失败拒绝完成。
 - 全绿由 converge 负责，且相对所需 suite。
 - 逐项审查 objectives 覆盖与断言。
 - 首次按确认设计编写测试与配置属于本 intent 的授权；不得改变目标或降低项目门槛。
-- 运行 `delivery record --stage write-tests --summary <覆盖与可执行性证据>` 并提交。
+- 成功后将 `objectives.md` 的 write-tests 项改为 `[x]` 并提交。
+  - 并行多路时由 converge 前 owner 统一勾，
+    或各路在交接说明中声明本路完成、由 owner 勾选。
+- ❌ 不以 `delivery record/check --stage write-tests` 为完成条件；
+  可选 record 仅为并行辅助快照。

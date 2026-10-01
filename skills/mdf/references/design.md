@@ -36,14 +36,14 @@
 - 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 - 步骤 2 读取并内部执行 `references/clarify.md`；确认的是方案稿，底座文件由步骤 3 写入。
 - 确认后，本 intent 启动恰好 1 个 owner subagent 执行步骤 3。
-  - 该 subagent 按 `assets/templates/design.md` 写入设计、共用代码底座并记录 gate。
+  - 该 subagent 按 `assets/templates/design.md` 写入设计、共用代码底座并自勾 objectives。
   - 独立调用与 deliver 委托都如此；不计入 roster，不可配人数。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 确认 start 记录与 kind 依据 | start 记录、kind 依据、适用的 objectives | 2 | 停止并报告 |
 | 2 | Clarify | 约束 | 委托 clarify，确认设计、测试策略及双方共用代码底座 | 用户确认的设计与底座方案 | 3 | 停止并报告 |
-| 3 | Baseline | Subagent | 写设计、底座并提交基线 | gate、底座、基线提交 | 结束 | 缺确认回 2；可修正则 3；否则停 |
+| 3 | Baseline | Subagent | 写设计、底座并提交基线 | design、底座、勾选、提交 | 结束 | 缺确认回 2；可修正则 3；否则停 |
 
 ## 术语与数据结构
 
@@ -60,15 +60,15 @@
 - 设计前从 `docs/README.md` 定位并读取相关当前事实页，
   在 design.md 列出当前事实锚点（页面路径）。
   - 没有对应事实页时写明本次将新增哪些页面。
-  - 不得把计划写进既有事实页，事实更新由 finish 的 fact update 完成。
-- 记录 design gate 时 CLI 校验 objectives.md 与 design.md 的本地链接目标存在。
+  - 不得把计划写进既有事实页，事实更新由主链 fact update（verify full 之后）完成。
+- 提交前 Agent 自检 objectives.md 与 design.md 的本地链接目标存在。
 - 步骤 1 按 kind 核对依据：feature 为 PRP；bugfix 为 Bug；release 为版本与 objectives；
   hotfix 只核对版本，热修复范围在步骤 2 确认。
 - feature 与 release 的 objectives 由 start 写入，步骤 1 缺失即失败。
 - roster ≥1 的 bugfix/hotfix 缺 objectives.md 时步骤 1 不失败，由步骤 3 Baseline 先写入：
   - bugfix 依据 Bug；hotfix 写入步骤 2 确认的热修复范围。
-- design gate 已存在时（如 release/hotfix 经 target 记入新 Bug），步骤 2 确认修订。
-  - 步骤 3 原地修订 objectives 与 design 并重新记录 gate。
+- design 已勾或 design.md 已存在时（如 release/hotfix 经 target 记入新 Bug），步骤 2 确认修订。
+  - 步骤 3 原地修订 objectives 与 design 并重新勾选/提交。
   - `--auto-pilot` 自裁定。
 
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库，
@@ -76,11 +76,11 @@
 
 - 底座包括类型、接口、错误语义、明确未实现的 stub 和最小测试设施。
 - ❌ 不得各自再写一份底座。
-- 纯文档改动不制造代码；底座未就绪不得记录 design gate。
+- 纯文档改动不制造代码；底座未就绪不得勾选 design 完成。
 
 ### Baseline 分派
 
-当前 Agent 执行步骤 1–2 与交接核验，不得代写 design.md、底座或 design gate。
+当前 Agent 执行步骤 1–2 与交接核验，不得代写 design.md、底座或勾选 design。
 无法提供 subagent 时停止，不降级代做。已有 Baseline 执行者先等待，不对同一
 owner 另开第二个。
 
@@ -89,7 +89,7 @@ owner 另开第二个。
 - 调用可带 `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   以及 `--write-tests-model`、`--implement-model`、`--code-review-model`。
   - 若与已冻结值不同，启动步骤 3 前运行 `delivery roster` 写入。
-  - design gate 已存在时不能改 qa/dev strategy。
+  - design 已完成后不能改 qa/dev strategy（看 objectives 勾选）。
 - 分派前与结束后运行
   `worktree-check --repo <owner绝对路径> --owner <owner绝对路径> --role owner`。
 - 任务写入 MDF_ROOT、owner 绝对路径与分支、Git common dir，
@@ -105,11 +105,11 @@ owner 另开第二个。
 - 缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
 - policy/suite 可修正时由该 subagent 内部留在步骤 3。
 - `--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
-- subagent 只写 design.md、policy、共用代码底座、design gate 与本阶段提交；
+- subagent 只写 design.md、policy、共用代码底座、可选 design 配置快照与本阶段提交；
   roster ≥1 的 bugfix/hotfix 缺 objectives.md 时另先写入它。
 
-结束后当前 Agent 再运行 `delivery check --stage design`；不以完成摘要替代。
-gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留现场并停止。
+结束后当前 Agent 核对 objectives 的 design 项已勾、底座已进同一基线提交；
+不以 `delivery check --stage design` 为完成条件。
 
 ### 设计 policy 与基线
 
@@ -135,8 +135,10 @@ gate 未跟踪、底座未进同一基线提交或 fingerprint 不符则保留�
 
 形成基线：
 
-1. 运行 `delivery record --stage design --policy-file <文件> --summary <用户确认的设计摘要>`。
-2. 提交 objectives.md、design.md、delivery.json、design gate 及共享代码底座，形成同一基线。
+1. 可选：运行 `delivery record --stage design --policy-file <文件> --summary <摘要>`
+   写入 **配置快照**（非进度 gate）。
+2. 将 `objectives.md` 的 design 项改为 `[x]`。
+3. 提交 objectives.md、design.md、delivery.json、共享代码底座（及可选快照），形成同一基线。
 
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。
 

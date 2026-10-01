@@ -91,7 +91,7 @@
 
 #### 交付
 
-- `$mdf next [--depth N]`：续办在途；feature 上走交付；无在途时委托 tree
+- `$mdf next [--depth N]`：续办在途（四种 kind 共用主线）；无在途时委托 tree
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 close-out；可并行阶段强制 subagent 分别执行
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
@@ -103,7 +103,7 @@
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
 - `$mdf verify --level on-site|full`：module 级验证；converge 用 on-site，主链在
   code-review 后跑 full
-- `$mdf code-review`：审查并修复；证据为 `code-review.md`（无 stage gate）
+- `$mdf code-review`：审查并修复；报告为 `code-review.md`（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   主链在 verify full 之后、必要时于 fact audit 前调用
 - `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify full / fact）
@@ -258,13 +258,14 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf next` 或 `$mdf next --depth N`
   - 用途：续办在途流程；无在途时委托 tree。
   - 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
-    feature 交付分支上始终续办该 feature。`$mdf next?` 见 tree。
+    四种 kind 交付分支续办当前交付主线。`$mdf next?` 见 tree。
 
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`
   - 用法：`$mdf deliver`、`$mdf deliver <target>`、`$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo`
   - 用途：锁定当前一次交付，必要时先 start，持续运行到 close-out 完成。
   - 说明：
-    - target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。已有在途交付则报错，不续办。
+    - target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。无 target 时锁定并续办
+      当前在途交付；target 冲突或命中已 in_progress 的 Proposal 时停止。
     - 支持 feature/bugfix/hotfix/release；roster ≥1 且两路可并行时强制分别使用
       qa/dev worktree 的 subagent。
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
@@ -326,13 +327,15 @@ $mdf clarify 要不要把缓存放到 Redis
 
 - `$mdf verify --level on-site|full`
   - 用法：`$mdf verify run|check|advance --level on-site|full [--module|--paths|--test ...]`
-  - 用途：module 级验证；开发 on-site，closeout/非 feature Verify 用 full。
-  - 说明：full 写 `verify.full.json`；on-site 不落盘，选题经 `--test`。
+  - 用途：module 级验证；converge/开发用 on-site，主链在 code-review 后跑 full。
+  - 说明：full 写 `verify.full.json`（bugfix/hotfix→smoke，feature/release→release）；
+    on-site 不落盘，选题经 `--test`。
 
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
-  - 说明：证据写 `code-review.md`，无 stage gate。主链在 converge 后、verify full 前。
+  - 说明：报告写 `code-review.md`（非 gate）。主链在 converge 后、verify full 前。
+    进度只认 objectives 自勾。
     首轮按 roster.reviewers；后续增量并复核。默认 replicate；partition 按切片派工。
 
 - `$mdf fact update`

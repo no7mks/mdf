@@ -19,19 +19,24 @@
 
 | action | 输入与效果 |
 | --- | --- |
-| status | 只读列出交付身份、roster、材料位置、阶段记录与 owner/qa/dev worktree 路径 |
-| check | `--stage` 指定待进入阶段或 finish/close-out，检查前置和证据有效性 |
-| record | `--stage` 与非空 `--summary`，写入通过 CLI 检查的语义审查记录 |
+| status | 只读列出交付身份、roster、材料位置、可选阶段快照与 owner/qa/dev worktree 路径 |
+| check | `--stage` 指定阶段或 finish/close-out；**非进度关口**（见下） |
+| record | `--stage` 与非空 `--summary`，写入配置/指纹快照；**禁止**当作进度通行证 |
 | verify | 辅助入口：lint、build、quick + feature 默认 suite（release）；超预算即失败 |
 | integrate | 按 strategy 合入；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
-| roster | 更新 strategy / 按 intent 的 models；design 后不能改 qa/dev strategy |
+| roster | 更新 strategy / 按 intent 的 models；design 完成后不能改 qa/dev strategy |
 
+- **进度只认** `objectives.md` 勾选；Agent 主链不得用 `record/check` 选型或卡 close-out。
 - design record 需要 `--policy-file <JSON>`，必须同时给出 `protected_paths` 与 named suite 列表 `suites`。
   - 例如 `{"protected_paths":["tests/"],"suites":["billing"]}`。
   - suite 名不得为 lint/build/quick/smoke/release/full。
+  - 写入的是 **配置快照**，不是进度 gate。
 - converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`。
   - 该文本是授权证据，不是自动授权。
-- 阶段值为 design、write-tests、implement、converge（无 code-review / fact-update gate）。
+- 阶段值为 design、write-tests、implement、converge（无 code-review / fact-update 阶段文件）。
+- `check --stage finish`：仅核对交付材料存在（objectives/delivery.json；needs_design 时另须
+  design.md）；**不**读 converge 或其他 `gates/*.json`。
+- close-out 查 report 交没交（有文件且声称通过）；不跑 `verify check` 做过期审判。
 
 ### `tree`
 
@@ -82,8 +87,11 @@
 
 ### `project-verify`
 
-`project-verify run --repo <仓库>` 按分支依次执行 lint、build、quick 与
-smoke（bugfix）或 release（release/hotfix）。证据 `suites` 为 `quick` 加后者。
+`project-verify run --repo <仓库>` 按分支执行验证入口：
+
+- 始终跑 lint、build、quick。
+- 再加 smoke（bugfix/hotfix）或 release（feature/release）。
+- 证据 `suites` 为 `quick` 加后者。
 
 - bugfix 须有 `changes/unreleased/<slug>/suites.json` 关联 named suite。
   - 缺失返回 `missing_delivery_suite`；Core 不执行 named suite。
@@ -95,7 +103,7 @@ smoke（bugfix）或 release（release/hotfix）。证据 `suites` 为 `quick` �
 - suite 超出预算即终止 process group 并失败，details 含 partial tail。
   - 预算默认 quick 30、smoke 300，可由 `verification.budgets` 覆盖。
   - lint、build 与未设预算的 release 不限时。
-- 结果写入 `changes/unreleased/<slug>/code-review.verification.json`，含 `suites`。
+- 结果写入 `changes/unreleased/<slug>/verify.full.json`，含 `suites`。
   - feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix 为该分支稳定 SemVer。
 - `project-verify check` 只读核验输入指纹、分支、suite 及全绿状态。
   - 事实/收口文档不改变代码指纹。

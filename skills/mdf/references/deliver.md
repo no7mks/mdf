@@ -73,7 +73,7 @@
 | 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 锁定→2；start 委托成功→1 | start 失败交接；须问；死硬停 |
 | 2 | Select | 约束 | 按选择表选剩余步骤 | 产物、执行者、待办 | 完成 5；并行 4；其他 3 | 冲突或阻塞则保留现场并报告 |
 | 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成→2；AP 非 yolo 关口→6 | 失败/非关口待确认→原流程交接 |
-| 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路分支、提交、gate | 2 | 保留各路现场并报告 |
+| 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路提交与勾选意向 | 2 | 保留各路现场并报告 |
 | 5 | Report | 约束 | 核对 finish 实际结果，完成 Goal 并报告 | 合并、清理、适用 tag 与推送 | 结束 | 报告实际状态 |
 | 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 close-out 10 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
 
@@ -174,7 +174,7 @@
 委托子 intent 时把本策略作为外层约束：
 
 - 原文中的询问、确认、批准与选择改由主 Agent 依据仓库证据、已确认目标和本次范围自行裁定。
-  - 在摘要或 gate 中写明依据，不向用户提问、不等待确认。
+  - 在摘要或 objectives 交接说明中写明依据，不向用户提问、不等待确认。
 - 内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
 - converge 的 `--test-approval` 记录该裁定与理由。
 - ❌ 不得削弱验收或把未实现目标判为完成。
@@ -220,23 +220,21 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 ### 从当前证据选择剩余工作
 
-步骤 2 结合原步骤、对话确认、未完成子步骤、产物、Git 历史及执行者状态判断。
-按下表自上而下命中即停止，不并行套用多行。
+步骤 2 结合 `objectives.md` 勾选、`delivery.json` 身份、对话确认、未完成子步骤、
+产物、Git 历史及执行者状态判断。按下表自上而下命中即停止，不并行套用多行。
 
-- 已完成且证据有效的阶段不重做。
-  - 不能仅凭 gate 文件存在或一次 check 成功判断整个阶段完成，
-    还须核对该阶段要求的提交、语义结论和相关内容 fingerprint。
-  - 过期证据按原阶段规则补审补验。
-- 角色尚在时从对应 qa/dev worktree 读取各路 gate 与提交，不因 owner 尚未合入就重复分派。
+- **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
+  - report（code-review.md / verify.full.json / fact-audit.md）只证明做过与声称结果。
+- 角色尚在时从对应 qa/dev worktree 读取各路提交与交接说明，不因 owner 尚未合入就重复分派。
 - 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
 - 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
 
 可选加速（见 `common.md`「Jev 可选加速」）：
 
 - 对照下表前，仅当状态语义仍歧义且 tool 可用时。
-- 调用：`choice`；state = 交付摘要与证据指纹。
+- 调用：`choice`；state = 交付摘要与 objectives 勾选。
 - 选项键取下表「当前状态」短标签，或 `ask`。
-- CLI / gate 已明确时 ❌ 不调。
+- objectives 勾选已明确时 ❌ 不调。
 - 采信后落入表中同一「后续处理」；`ask` 或未采信走主 Agent。
 - 不扩大授权、不跳过用户确认。
 
@@ -246,18 +244,18 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | release 同 worktree 联调且尚未收口 | 执行 `$mdf integrate`，不打开消息通道 |
 | release 跨 worktree 联调且通道未打开 | 立即执行 `$mdf integrate` |
 | release objectives 未写联调模式 | 停止；必须已写明不联调、同 worktree 或跨 worktree |
-| `needs_design: yes` 且设计未完成 | 在 owner 委托 `references/design.md` |
+| `needs_design: yes` 且 design 未勾 | 在 owner 委托 `references/design.md` |
 | roster ≥1、未完成路数 ≥2 且前置满足 | 并行委托 write-tests / implement |
 | roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话 |
-| `needs_design: yes` 且 roster `0,0`，开发未完成 | owner 串行 write-tests → implement |
-| `needs_design: no` 且开发未完成 | owner 按 objectives 完成开发 |
-| 开发完成但未收敛 | 在 owner 委托 `references/converge.md` |
+| `needs_design: yes` 且 roster `0,0`，开发未勾 | owner 串行 write-tests → implement |
+| `needs_design: no` 且 owner 开发未勾 | owner 按 objectives 完成开发 |
+| 开发已勾但 converge 未勾 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
-| 已收敛且 `code-review.md` 未完成 | 在 owner 委托 `references/code-review.md` |
-| 审查有效、verify full 未绿 | 委托 `references/verify.md`（full；失败现场修到绿） |
-| verify full 有效、fact audit 未通过 | 委托 fact-audit；必要时 fact-update 后重审 |
-| fact 通过、close-out 未完成 | 在 owner 委托 `references/close-out.md` |
+| converge 已勾且 code-review 未勾 | 在 owner 委托 `references/code-review.md` |
+| code-review 已勾、verify full 未勾 | 委托 `references/verify.md`（full；失败现场修到绿） |
+| verify full 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
+| fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |
 | close-out 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 
 剩余工作与失败处理：
@@ -330,10 +328,12 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 
 交接：
 
-- 各路交接报告实际绝对路径、分支、最终提交 hash、gate 路径、验证/自检结果及未解决项。
+- 各路交接报告实际绝对路径、分支、最终提交 hash、验证/自检结果及未解决项。
 - 主 Agent 对各路再次调用同一 worktree-check，传入固定设计提交并追加 `--handoff`。
-  - 脚本检查 clean、gate 已跟踪、共同设计，以及 tests（qa）或 implementation（dev）fingerprint。
+  - 脚本检查 clean、共同设计，以及 tests（qa）或 implementation（dev）内容是否已提交。
+  - ❌ 不以 gate 文件是否存在判定阶段完成。
 - 失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
+  - owner 在进入 converge 前确认 write-tests / implement 已在 objectives 勾选。
 - implement 以未决交回测试争议时由主 Agent 裁定（默认询问用户，auto-pilot 自裁定），
   按裁定续办对应路；改测试按 `delivery-contract.md`「修改与提交权限」取得批准。
 - 合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。

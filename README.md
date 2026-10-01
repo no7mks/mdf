@@ -68,7 +68,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf design` | 确认设计、测试策略和共享代码底座 |
 | `$mdf write-tests` | 按目标编写可执行测试；不要求全绿 |
 | `$mdf implement` | 按已确认设计实现 |
-| `$mdf converge` | 收敛：objectives + on-site，循环到达成 |
+| `$mdf converge` | 收敛：前置 objectives 已勾 + on-site，自勾 converge |
 | `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
 | `$mdf verify-fix [<bug-id>]` | 二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复） |
 | `$mdf verify --level on-site|full` | module 级验证；开发用 on-site，closeout 前用 full |
@@ -138,12 +138,13 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - 死硬阻塞仍停止。
 - release 从 develop 开分支前确认发布目标。
   - 工作线三选一；目标里只写选中的那条。不实施新 PRP。
-  - 不联调：`start → 开发 → verify → code-review → verify full → fact update → finish`。
-    开发中只用 on-site；full 与 fact update 只在 closeout 前。
+  - 不联调：`start → [design?] → 开发 → converge → code-review → verify full →
+    fact audit → close-out`。开发/converge 用 on-site；full 与 fact 在 code-review 之后。
   - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
   - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
   - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-  - fact update 由 finish 前段执行。Goal 完成前，用户没让你停，永远不许停下来。
+  - fact audit（必要时 fact update）在 verify full 之后、close-out 之前。
+    Goal 完成前，用户没让你停，永远不许停下来。
   - code-review 基线仍为上一正式发布。
 
 ### 写入分支与提交

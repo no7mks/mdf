@@ -234,10 +234,10 @@ def test_verify_fix_is_second_verification_before_closeout():
 
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():
     text = workflow("implement")
-    assert text.index("逐项对照 objectives") < text.index("delivery record")
+    assert "逐项对照 objectives" in text
     assert "命令、退出状态、结果及对应验收项" in text
     assert "不要求测试先完成或项目全绿" in text
-    assert "不记录通过的 implement gate" in text
+    assert "不以 `delivery record/check --stage implement` 为完成条件" in text
     assert "区分已验证结论与未验证项" in text
 
 
@@ -254,7 +254,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "worktrees.qa" in tests
     assert "不得在 feature 上编写或补写测试" in tests
     assert "本阶段不要求项目全绿" in tests
-    assert "不得因断言失败拒绝记录 gate" in tests
+    assert "不得因断言失败拒绝完成" in tests
     assert "on-site" in workflow("converge")
     assert "不要求全绿" in contract
     assert "worktrees.dev" in implement
@@ -274,7 +274,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "即使命令退出码为 0" in contract
     assert "测试失败工作流" in contract
     assert "verify full（feature/release）" in contract
-    assert "不做相对 converge 的过期 gatekeeping" in workflow("verify") or "过期 gatekeeping" in contract
+    assert "过期 gatekeeping" in workflow("verify") or "过期 gatekeeping" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
     assert "新增或放宽须用户确认" in contract
@@ -296,11 +296,10 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "把用例归入 quick、smoke 或\ndesign policy `suites` 所列 named suite" in tests
     converge = workflow("converge")
     assert "on-site" in converge
-    assert "on-site" in converge
     assert "阻塞停止" in converge
     assert "Accept" in converge
     assert "named suite 已文档化" in tests
-    assert "记录 gate 前核对每个声明的 named suite 都已文档化且有成员" in tests
+    assert "收尾前核对每个声明的 named suite 都已文档化且有成员" in tests
     assert "COLLECTIONS" not in (skill_dir("mdf") / "assets/templates/design.md").read_text()
     review = workflow("code-review")
     assert "必须尝试补一条 quick 复现用例" in review
@@ -320,9 +319,11 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "verify full" in deliver
     assert "close-out" in deliver
     assert "needs_design" in deliver
+    assert "进度只认 objectives" in deliver or "只认 objectives" in deliver
     finish = workflow("close-out")
-    assert "正常收口不再运行 release suite" in finish
     assert "不内嵌 verify full" in finish or "不再内嵌二者" in finish
+    assert "不运行 `$mdf verify check`" in finish or "不跑 `verify check`" in finish
+    assert "不运行 `delivery check --stage finish`" in finish
     assert "确认单独提问" in workflow("fact-audit")
     assert "不重跑" in workflow("verify-fix")
     assert "既有 suite 命令未产出报告时" in workflow("migrate")
@@ -359,13 +360,12 @@ def test_design_and_converge_launch_one_owner_subagent():
         "启动恰好 1 个 owner subagent 执行步骤 3",
         "不计入 roster，不可配人数",
         "当前 Agent 执行步骤 1–2 与交接核验",
-        "不得代写 design.md、底座或 design gate",
+        "不得代写 design.md、底座或勾选 design",
         "不降级代做",
         "不对同一",
         "缺确认则停止该 subagent 并回步骤 2",
         "不在 subagent 内 grilling",
-        "delivery check --stage design",
-        "不以完成摘要替代",
+        "不以 `delivery check --stage design` 为完成条件",
     ):
         assert rule in design
     converge = workflow("converge")
@@ -375,6 +375,7 @@ def test_design_and_converge_launch_one_owner_subagent():
     assert "启动恰好 1 个 owner subagent 执行步骤 2–4" in table[0][3]
     assert table[2][1] == "Accept"
     assert "可修" in table[2][6] and "3" in table[2][6]
+    assert table[3][1] == "Tick"
     for rule in (
         "当前 Agent 不得代做",
         "不计入 roster，不可配人数",
@@ -383,7 +384,7 @@ def test_design_and_converge_launch_one_owner_subagent():
         "resume\n同一 subagent",
         "--auto-pilot` / `--yolo` 由 subagent 自裁定并记录批准",
         "不回主会话提问",
-        "delivery check --stage converge",
+        "不以 `delivery record/check --stage converge` 为完成条件",
         "主会话确认后 resume 回 3",
     ):
         assert rule in converge
@@ -392,7 +393,7 @@ def test_design_and_converge_launch_one_owner_subagent():
     assert "deliver 步骤 4 只覆盖可并行的 qa/dev" in contract
     help_text = workflow("help")
     assert "Baseline 由本 intent 派恰好 1 个 owner" in help_text
-    assert "本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录" in help_text
+    assert "本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录" in help_text or "owner subagent" in help_text
     assert "不走 deliver 步骤 4" in help_text
 
 
@@ -405,7 +406,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "git diff <previous_final_head> <review_head>",
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
-        "四种 kind 均要求有效 converge",
+        "进度只认 `objectives.md`",
         "审查基线仍为上一正式发布", "objectives.md",
         "不再改代码",
         "不跑 verify full", "最终 final_head",
@@ -414,18 +415,18 @@ def test_code_review_covers_branch_starts_and_previous_release():
         assert rule in text
     finish = workflow("close-out")
     assert "develop...HEAD" not in finish and "master...HEAD" not in finish
-    assert "四种分支均须有完整且有效的各轮应派份数独立审查" in finish
+    assert "四种分支均须有完整的各轮应派份数独立审查" in finish
     assert "本轮应派人数为 1" in finish
     assert "不得把上轮多份原文交给本轮唯一 reviewer 去合并" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
     assert "不启动 code-review、" in finish
-    assert "不重验所需 suite" in finish
+    assert "不重跑 verify full" in finish
     assert "本交付文档" in finish
     assert "以集成后的 HEAD 执行增量新一轮" in finish
     assert "不复用集成前报告" in finish
     assert "复核上轮问题" in finish
     assert "不得跳过" in finish
-    assert "证据缺失或过期时内部执行 code-review" in finish
+    assert "report 缺失时内部执行 code-review" in finish
 
 
 def test_role_intents_do_not_reuse_owner_session_switch():

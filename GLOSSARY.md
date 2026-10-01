@@ -193,14 +193,22 @@ Milestone（里程碑）表示用户定义的阶段目标；PRP 的可选 `miles
 MVP（最小可行产品）是满足最小可用或验证目的的产品范围，可作为 milestone 的目标，
 不由 PRP 数量或实施顺序自动决定。
 
-## Objectives、Gate 与收敛
+## Objectives、Report 与收敛
 
-- **objectives**：本次交付的目标与验收，如：
+- **objectives**：本次交付的目标、验收与**进度唯一账本**
+  （步骤 checklist；各 intent 自勾）。
   - feature 引用单个 PRP 的目标、非目标、约束与可验证验收。
-  - release 写已选定工作线、本版收口范围、预发布工作、是否联调、非目标与可验证验收。
-- **Gate**：基于产物、内容指纹、验证与语义审查的阶段门禁。
-- write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿。
-- **converge**（收敛）：集成测试和实现，持续修复实现直到**当前交付所需 suite**通过。
+  - release 写已选定工作线、本版收口范围、预发布工作、是否联调、
+    非目标与可验证验收。
+- **Report**：
+  - 含 verify.full.json、fact 确认、code-review.md、JUnit 等。
+  - 只证明做过与声称结果；**不当**阶段通行证，不做过期审判。
+- **Gate 文件**（`gates/*.json`）：
+  - 可选配置快照 / 并行辅助。
+  - **禁止**当作进度或验收关口。
+- write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿；
+  完成后自勾 objectives。
+- **converge**（收敛）：核对 objectives 前置已勾，跑 on-site，修到达成后自勾。
   - 「全绿」相对该 suite，不等于 `.mdf/modules.yaml` 里每一条命令。
 
 ## 联调通道

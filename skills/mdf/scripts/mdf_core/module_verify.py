@@ -15,7 +15,7 @@ from .gitutil import (
     require_git_root,
     unreleased_slug,
 )
-from .modules import load_modules
+from .modules import MODULES_PATH, load_modules, match, path_ignored
 from .modules_check import module_commands
 from .paths import load_manifest
 from .project_verify import associated_suites, run_targets
@@ -33,6 +33,33 @@ def evidence_file(repo: Path, slug: str) -> Path:
         repo,
         repo / "changes/unreleased" / slug / "verify.full.json",
     )
+
+
+def _affects_verification(rel: str, modules) -> bool:
+    """改动是否会使 full 证据失效（实现、测试或验证配置）。"""
+    norm = rel.replace("\\", "/")
+    if norm == MODULES_PATH or norm.endswith("/suites.json"):
+        return True
+    for module in modules.modules.values():
+        if path_ignored(norm, module):
+            continue
+        if any(match(norm, pattern) for pattern in module.sourceset):
+            return True
+        for suite in (module.quick, module.smoke, module.release):
+            if any(match(norm, pattern) for pattern in suite.tests):
+                return True
+    return False
+
+
+def _full_evidence_aligned(repo: Path, recorded: str, head: str) -> bool:
+    """recorded→HEAD 无验证相关 diff 则仍对齐（文档/材料等无关改动可保留证据）。"""
+    if recorded == head:
+        return True
+    diff = git(repo, "diff", "--name-only", recorded, head).stdout.splitlines()
+    if not diff:
+        return True
+    modules = load_modules(repo)
+    return not any(_affects_verification(name, modules) for name in diff if name)
 
 
 def _delivery_slug(repo: Path) -> tuple[str, str, str]:
@@ -63,21 +90,6 @@ def plan_onsite(repo: Path, modules: list[str]) -> list[dict[str, Any]]:
     return targets
 
 
-def _only_verify_artifact_delta(repo: Path, recorded: str, head: str) -> bool:
-    if recorded == head:
-        return True
-    diff = git(repo, "diff", "--name-only", recorded, head).stdout.splitlines()
-    if not diff:
-        return True
-    return all(
-        name.endswith("verify.full.json")
-        or name.endswith("code-review.verification.json")
-        or name.startswith(".mdf/reports/")
-        for name in diff
-        if name
-    )
-
-
 def valid_full(repo: Path) -> dict[str, Any] | None:
     branch, kind, slug = _delivery_slug(repo)
     path = evidence_file(repo, slug)
@@ -90,7 +102,7 @@ def valid_full(repo: Path) -> dict[str, Any] | None:
         result.get("branch") != branch
         or result.get("level") != "full"
         or not isinstance(recorded, str)
-        or not _only_verify_artifact_delta(repo, recorded, head)
+        or not _full_evidence_aligned(repo, recorded, head)
         or not suites_cover(recorded_suites(result), required_suites(kind))
         or not result.get("all_passed")
     ):

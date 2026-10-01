@@ -102,7 +102,8 @@ def inventory(repo):
 
 
 def fingerprints(repo, root, data, config=None):
-    config = config or read_json(safe(repo, root / "gates/design.json")).get("policy", {})
+    if config is None:
+        config = read_json(safe(repo, root / "gates/design.json")).get("policy", {})
     files = inventory(repo)
     protected = config.get("protected_paths", [])
     # 预算与命令一样决定门禁结果，同属验证配置。
@@ -179,7 +180,19 @@ def require_green(repo, root, data):
 
 
 def require_finish(repo, root, data):
-    """close-out 的 CLI 侧：设计基线 + 已 converge。code-review / verify / fact 无 stage gate。"""
-    current = require_design(repo, root, data)
-    gate(repo, root, "converge")
-    return current
+    """close-out 的 CLI 侧：定位交付材料；不读 converge 等进度 gate。"""
+    for name in ("objectives.md", "delivery.json"):
+        path = safe(repo, root / name)
+        if not path.is_file():
+            raise MDFError(f"缺少交付材料: {name}", code="missing_delivery")
+    if data.get("needs_design", True):
+        if not safe(repo, root / "design.md").is_file():
+            raise MDFError("缺少 design.md", code="missing_design")
+    policy = {"protected_paths": [], "suites": []}
+    design_gate = root / "gates" / "design.json"
+    if design_gate.is_file():
+        try:
+            policy = read_json(safe(repo, design_gate)).get("policy") or policy
+        except MDFError:
+            pass
+    return fingerprints(repo, root, data, policy)

@@ -1,4 +1,4 @@
-"""Feature gate、内容失效、并行集成与实际 Gitflow 交付。"""
+"""Feature 阶段快照、并行集成与实际 Gitflow 交付（record 非进度 gate）。"""
 from mdf_test_support import *  # noqa: F403
 from support_delivery import *  # noqa: F403
 
@@ -25,8 +25,9 @@ def test_stages_parallel_green_and_finish_without_code_review_gate(python_exe, t
     payload(record(python_exe, qa, "write-tests"))
     commit(qa)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
+    # finish 只核材料存在；不以 converge gate 为进度关口（配置快照仍可 record）
+    payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     payload(record(python_exe, repo, "converge"))
-    # code-review 无 stage gate；finish 只核设计基线 + converge
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
     rejected = mdf(
         python_exe, "delivery", "record", "--repo", str(repo),

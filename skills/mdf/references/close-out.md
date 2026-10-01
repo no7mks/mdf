@@ -162,28 +162,35 @@
   - 语义不明、需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
-    - 不启动 code-review、不重验所需 suite，沿用上轮 final_head 与有效全绿。
+    - 不启动 code-review、不重跑 verify full，沿用上轮 final_head 与主链
+      `verify.full.json`（若仍对齐集成前 HEAD；否则先按下方不可跳过路径补验）。
     - 在 `code-review.md` 追加跳过说明（merge commit、路径清单）。
   - 本交付文档 = 当前对象文件，以及本分支自 start_commit 到集成前 HEAD 改过的 `docs/` 路径。
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
 - 不可跳过时：
-  - bugfix/release/hotfix 委托前先运行 `$mdf verify check --level full`；
-    集成或其他改动使证据过期时，先按 Verify 阶段修到全绿并提交，再委托 code-review。
-    feature 沿用 code-review 的 converge 与 `stale_verification` 规则。
+  - 若集成后无有效 `verify.full.json`（缺失，或未声称 `all_passed:true`），
+    或集成引入了实现/测试改动：
+    - 委托 `$mdf verify`（full，现场修到绿）并提交。
+    - 再委托 code-review 增量轮。
+    - ❌ 不跑 `$mdf verify check` 做过期审判；缺 report 就委托 **run**。
+  - feature：objectives 的 converge 项须已勾；未勾停止。
   - 上轮多人结论必须已由 owner 汇总进已采纳/未解决清单并固定 final_head，
     不得把上轮多份原文交给本轮唯一 reviewer 去合并。
-  - 然后以集成后的 HEAD 执行增量新一轮 code-review：左端点为集成前 final_head，重新固定 review_head。
-  - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，完成裁定、修复与所需 suite。
+  - 然后以集成后的 HEAD 执行增量新一轮 code-review：
+    左端点为集成前 final_head，重新固定 review_head。
+  - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
+    完成裁定、修复与按需 on-site。
   - 不复用集成前报告，也不将集成当作旧审查的修复续办。
-  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
-- 主线已包含且审查证据有效时无需重复合并或审查。
-  - 证据缺失或过期时内部执行 code-review，通过后继续本次 close-out。
-  - feature 仍须已 converge；审查证据看 `code-review.md`（无 stage gate）。
-- 📌 四种分支均须有完整且有效的各轮应派份数独立审查、主 Agent 裁定、修复复核与验证记录。
-- 已收口 release/hotfix 只核对已有集成与审查证据。
+  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，
+    人数仍为 roster.reviewers。
+- 主线已包含且审查报告已交时无需重复合并或审查。
+  - report 缺失时内部执行 code-review，通过后继续本次 close-out。
+  - feature：converge 须已在 objectives 勾选；审查看 `code-review.md`（report）。
+- 📌 四种分支均须有完整的各轮应派份数独立审查、主 Agent 裁定、修复复核与 on-site 记录。
+- 已收口 release/hotfix 只核对已有集成与审查报告。
   - 若需要新集成或实现修改，停止报告收口状态不一致，不得覆盖版本目录或改写已开始发布的源提交。
-- 验收：精确实现与文档路径、目标主线已包含、集成后的审查与验证、版本状态。
+- 验收：精确实现与文档路径、目标主线已包含、集成后的审查与验证报告、版本状态。
 - 通过条件：待收口或 feature/bugfix 到 3，已收口到 4。
 - 异常与交接：报告缺项或不一致并停止。这是交付前检查；fact audit 已在主链完成。
 
@@ -191,17 +198,20 @@
 
 **材料**
 
-- 确认主链已完成：`verify.full.json` 对齐当前 HEAD，且 fact audit 已通过。
+- 确认主链 report **已交且声称通过**：
+  - 存在 `verify.full.json` 且 `all_passed: true`（不复验其是否仍对齐 HEAD）。
+  - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
+  - objectives 中 verify full / fact audit 已勾。
   - 缺失则停止，提示先跑 `$mdf verify`（full）与 `$mdf fact audit`（必要时 fact update）。
-- ❌ 本 intent 不内嵌 verify full / fact update / fact audit。
+- ❌ 本 intent 不内嵌 verify full / fact update / fact audit；不跑 `verify check`。
 - 调用方提交材料与证据。
 - 按分支准备材料：
-  - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 canonical CHANGE.md，
-    与 objectives、design、gates 同级；材料不搬迁。
+  - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 CHANGE.md。
+    - 与 objectives、design、可选 gates/ 同级；材料不搬迁。
     - CHANGE.md 整理完成后提交，再进入阶段校验。
   - bugfix：按对象契约准备当前分支的 `changes/unreleased/<slug>/CHANGE.md`，
     slug 为 Bug ID 的 kebab-case（小写）。
-    - start 已写入的 objectives checklist 保留；不要求 design、唯一 PRP 或 feature gate。
+    - start 已写入的 objectives checklist 保留；不要求 design、唯一 PRP。
       记录实际 Bug outcomes 和证据。
   - `source_branch: develop` 的直合 Change 不属于本 finish；目录自选 slug，
     只作为后续 release 的 child 聚合。
@@ -211,27 +221,30 @@
   - feature/bugfix 不建版本目录。
   - feature 在成功合入 develop 的 merge commit 中转换为 implemented；bugfix 的对象状态按既有契约处理。
   - release/hotfix 按后续收口步骤管理版本与对象。
-- 验收：事实一致性、有效 gate、规范 Change 和链接检查。
+- 验收：事实一致性、所需 report 已交、规范 Change 和链接检查。
 - 异常与交接：保留现场；缺少前置阶段时报告，不自动执行被跳过的主线 intent。
 
 <a id="s4"></a>
 
 **审阅**
 
-- feature 运行 `delivery check --stage finish`（设计基线 + converge）；审查看
-  `code-review.md`，verify/fact 看主链证据，无 code-review stage gate。
-- bugfix 与待收口 release/hotfix 运行 `$mdf verify check --level full --repo "$REPO_ROOT"`。
-- 已收口 release/hotfix 不运行 `verify check`（证据已随收口移出 `changes/unreleased/`），改为核对：
-  - `changes/<semver>/code-review.md` 的 final_head 与同目录 `code-review.verification.json` 全绿。
-  - final_head 到 HEAD 的提交只改 `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`；
-    否则按收口状态不一致停止。
-  - 设计基线/`converge` 检查失败（含 `stale_gate`）或审查/验证证据不足时停止并交接；
-    由主链补跑 code-review / verify full / fact，不在本 intent 内嵌。
-  - 集成后需补审时从 `code-review.md` 步骤 1 执行（有完整上轮则增量，否则首轮）。
-  - 不回退本流程步骤编号。
+- 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
+  - `code-review.md` 存在且有可用 final_head。
+  - `verify.full.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
+  - fact 确认记录存在。
+  - objectives：converge → code-review → verify full → fact audit 均已勾（feature 另须
+    design/开发依赖项已勾）。
+- ❌ 不运行 `delivery check --stage finish`；不运行 `$mdf verify check`。
+- 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
+  - final_head 到 HEAD 的提交只改 `changes/`、`CHANGELOG.md`、
+    `.mdf/manifest.yaml` 与 `docs/`；否则按收口状态不一致停止。
+- report 缺失或未声称通过时：停止并交接；由主链补跑对应 intent（verify **run** /
+  fact / code-review），不在本 intent 内嵌、不做过期审判。
+- 集成后需补审时从 `code-review.md` 步骤 1 执行（有完整上轮则增量，否则首轮）。
+- 不回退本流程步骤编号。
 - 其他失败走本步骤的失败去向。
 - ❌ 不在本步重新委托 fact audit / fact update；仅确认主链前置已满足。
-- 验收：各分支 `code-review.md` 结论可用；feature 无缺失 converge；主链 fact 结论仍有效。
+- 验收：各分支 `code-review.md` 结论可用；objectives 前置已勾；主链 fact 确认已提交。
 - 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
   - 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。
 
@@ -325,12 +338,14 @@
 
 - 由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续。
 - 按分支：
-  - feature/bugfix 不 push，运行 finish gate 检查后进入本地 Gitflow 合并。
+  - feature/bugfix 不 push，核对 objectives 与所需 report 已交后进入本地 Gitflow 合并。
   - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
-- 按 code-review 的证据规则再次核对最终 HEAD，防止收口期间的实现改动遗漏审查。
-  - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`，不运行 `verify check`。
-  - 证据缺失或过期时停止，不进入步骤 10。
+- 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现：
+  回委托 verify **run** / code-review，不跑 `verify check`。
+  - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
+  - report 缺失时停止，不进入步骤 10。
+- 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
 - 再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
   - release/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。

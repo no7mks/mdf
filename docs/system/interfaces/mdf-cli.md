@@ -75,7 +75,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `list` | 对象清单 | [只读命令](mdf-cli-inspect.md) |
 | `tree` | draft/ready 混态依赖视图 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `prp-split` | 未开工 PRP 拆分 | [交付阶段与验证](mdf-cli-delivery.md) |
-| `delivery` | 阶段 gate 与验证 | [交付阶段与验证](mdf-cli-delivery.md) |
+| `delivery` | 交付辅助（配置快照/并行；非进度关口） | [交付阶段与验证](mdf-cli-delivery.md) |
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `project-verify` | 非 feature 全量验证与证据检查 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `quick-run` | 任意分支 lint、build、quick，不写证据 | [交付阶段与验证](mdf-cli-delivery.md) |

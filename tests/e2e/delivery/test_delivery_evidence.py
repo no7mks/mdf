@@ -40,6 +40,13 @@ def test_non_feature_verification_binds_inputs_and_records_failure(python_exe, t
     (work / "src/service.py").write_text("changed = True\n")
     commit(work, "test: 改实现")
     assert "stale_verification" in mdf(python_exe, "project-verify", "check", *args).stderr
+    guide = work / "docs/user-guide/README.md"
+    guide.parent.mkdir(parents=True, exist_ok=True)
+    # 先重新跑绿，再只改文档：check 仍应通过
+    payload(mdf(python_exe, "project-verify", "run", *args))
+    guide.write_text((guide.read_text() if guide.is_file() else "") + "\n补充。\n")
+    commit(work, "docs: 补充说明")
+    payload(mdf(python_exe, "project-verify", "check", *args))
     patch_module_command(work, "quick", lambda c: "false && " + c)
     commit(work, "test: 弄坏 quick")
     assert "verify_command_failed" in mdf(python_exe, "project-verify", "run", *args).stderr

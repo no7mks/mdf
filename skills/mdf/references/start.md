@@ -238,8 +238,9 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.json`
     （含 roster）及 `objectives.md` 并提交。
   - bugfix/hotfix 同样写入 `delivery.json`（含 roster）与含 checklist 的 `objectives.md`。
+  - 写入后将「确认目标与约束 / 确认工作线与范围」项改为 `[x]`（start 自勾）。
   - roster ≥1 时 design 可修订 objectives；roster `0,0` 亦须有 objectives。
-  - bugfix 的 named suite 关联由 deliver 的 Verify 阶段写入，本步不写。
+  - bugfix 的 named suite 关联由主链 `$mdf verify`（full）前写入，本步不写。
 - roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
 - 创建成功进入 5，本步不结束。
 

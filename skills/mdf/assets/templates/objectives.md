@@ -6,13 +6,19 @@
 
 ## 步骤
 
-- [ ] 确认目标与约束
-- [ ] 完成设计与实现（若 needs_design: no 则跳过 design）
-- [ ] converge（objectives + on-site）
-- [ ] code-review
-- [ ] verify full
-- [ ] fact audit
-- [ ] close-out
+依赖链由上到下；完成一项由对应 intent **自勾** `[x]`。
+进度只认本清单，不以 `gates/*.json` 或 verify/fact 报告当通行证。
+
+- [ ] 确认目标与约束（start）
+- [ ] design（仅 needs_design: yes；由 `$mdf design` 自勾）
+- [ ] write-tests（needs_design: yes 且有 qa；否则并入 owner 开发）
+- [ ] implement（needs_design: yes 且有 dev；否则并入 owner 开发）
+- [ ] owner 开发（仅 needs_design: no，或 roster `0,0` 的串行开发）
+- [ ] converge（objectives 前置已勾 + on-site；由 `$mdf converge` 自勾）
+- [ ] code-review（由 `$mdf code-review` 自勾；报告见 code-review.md）
+- [ ] verify full（由 `$mdf verify` full 自勾；报告见 verify.full.json）
+- [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）
+- [ ] close-out（由 `$mdf close-out` 自勾）
 
 ## 需求来源
 

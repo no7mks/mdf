@@ -79,12 +79,11 @@
 
 按需核对 manifest、当前分支、相关 worktree、产物、验证与恢复记录：
 
-- feature 使用 `references/delivery-contract.md`，通过 `delivery status` 查看
-  身份、阶段记录和 worktree 路径。
+- 四种 kind 的交付分支均读 `references/delivery-contract.md`，通过
+  `delivery status` 查看身份、阶段记录和 worktree 路径。
   - 按下一 intent 切到对应已有 worktree，缺树则停止。
-- 按原阶段要求检查 gate 是否有效；不能仅凭文件存在或历史 passed 判断阶段完成。
+- 按原阶段要求检查证据/gate 是否有效；不能仅凭文件存在或历史 passed 判断阶段完成。
 - 不能仅凭 tree CLI 的 in_progress 或当前 checkout 缺少材料断言没有在途流程。
-- 非 feature 分支按原有交付语义判断，不套用 feature gate。
 
 委托与候选：
 
@@ -107,18 +106,23 @@
 
 完整读取所选 intent 及其要求的公共引用，以其编号工作流、前置条件和失败恢复规则为准。
 
-- 先复核已完成步骤的证据，从尚未完成的步骤续办，不重做已验收且仍有效的操作。
-- 交付主线的当前 intent 已完成而交付未结束时，可委托下一个阶段。
-  - 四种 kind 共用同一主线：
-    start → 可选 design → 开发 → converge → code-review →
+- 先复核 `objectives.md` 勾选与 `delivery.json` 身份，从尚未勾选的下一步续办。
+  - 已勾且仍有效的步骤不重做已验收且仍有效的操作。
+  - ❌ 不读 stage gate 表选型；report 只证明做过，不当通行证。
+- 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
+  - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
+  - 主线：start → 可选 design → 开发 → converge → code-review →
     verify full → fact audit → close-out。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - release：objectives 须写明不联调 / 同 worktree / 跨 worktree。
     - 需要且通道未打开时先 `$mdf integrate`。
     - 双端验收且确认不再改代码后才委托 code-review。
-  - `needs_design: yes` 且测试与实现都未完成时，沿用分工；无分工则先 write-tests。
+  - 开发未完成时：
+    - `needs_design: yes`：沿用 qa/dev 分工；无分工则先 write-tests 再 implement。
+    - `needs_design: no`：在 owner 按 objectives 完成开发（不委托 write-tests/implement，
+      除非 objectives 明确要求）。
 - 存在仍在运行的执行者时报告其进度或待交接项，不重复执行其工作。
-- 缺失或过期证据按原阶段规则原地补验，不跳过 gate。
+- 缺 report 或未勾选：按原 intent 原地补做并自勾；不发明相对上游的过期 gatekeeping。
 
 授权与确认：
 

@@ -90,7 +90,7 @@
   - 交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`。
   - 都没有才由 CLI 取 `merge-base develop HEAD`。
-  - close-out / 主链 release 传入上一正式发布为 `--base`。
+  - 主链 release（verify full 之后、close-out 之前）传入上一正式发布为 `--base`。
   - 范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
     引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
@@ -266,7 +266,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 用户答复其他议题不视为确认。
 - 本流程只向调用方返回确认原话与时间，不落盘。
   - 有材料目录的调用方写入并提交确认记录；主链（含经 fact update 委托）写
-    `changes/unreleased/<slug>/fact-audit.md`。
+    `changes/unreleased/<slug>/fact-audit.md`（**report**，非 gate）。
+  - 主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。

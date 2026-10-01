@@ -83,7 +83,7 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
     - 否则 `git merge-base develop HEAD`。
   - 范围是该起点以来实现改动该碰的事实页与被改到的路由链接，不是「分支上改过的 Markdown」。
   - 未改实现只想整理文档时显式用 `full`。
-  - close-out / 主链 release 的 `--base` 为上一正式发布的 master commit/tag（与 code-review 同一左端点）；
+  - 主链 release 的 `--base` 为上一正式发布的 master commit/tag（与 code-review 同一左端点）；
     首次发布无上一版本时停止确认初始基线。
 - `full`：知识面全树——`docs/user-guide/**`、`docs/system/**`、入口根文档、
   `docs/context/adr/` 的复述检查与全部体积。结构 finding 可全改。
