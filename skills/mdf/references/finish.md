@@ -94,7 +94,7 @@
   - 另读 `references/object-contract.md` 与 `references/delivery-contract.md`。
 - 步骤 2、4 需要非 feature 补验时读取并执行 `references/deliver.md`「先测后审」（Verify 阶段）。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
-- 步骤 3 读取并内部执行 `references/fact-update.md`。
+- 步骤 3 先读并执行 `references/verify.md`（full），再读并执行 `references/fact-update.md`。
 - 步骤 4 已收口路径需要审阅时读取并内部执行 `references/fact-audit.md`。
 - 步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
 
@@ -102,7 +102,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
 | 2 | Integrate and review | 约束 | 核版本；集成；跳过或审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
-| 3 | Prepare materials | 约束 | 先委托 fact update，再按分支整理并提交材料 | 事实、gate、Change | 4 | 保留现场，停止 |
+| 3 | Prepare materials | 约束 | verify full → fact update → 整理材料 | full 证据、事实、Change | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
@@ -142,7 +142,8 @@
   - 版本根不存在，且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。
   - 版本根已跟踪、已提交，且 version、change_kind、source_branch 与当前分支完全一致、
     latest_release 等于目标版本时：
-    - 运行 full validation 并按步骤 4 已收口规则核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
+    - 运行文档 full validation（不跑 `$mdf verify`），并按步骤 4 已收口规则
+      核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
   - 版本根提交后有未纳入收口的交付改动、记录缺损或状态不一致时停止，不覆盖版本目录。
 
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
@@ -199,7 +200,7 @@
 - ❌ 中途不得 fact update；本步之前不得把 full 当开发验证反复跑。
 - 同步受影响当前事实、修范围内结构 finding 并内部完成 fact audit。
 - ❌ finish 不得改用 `full` 做全库结构整理。
-- 仅 feature 在委托前运行 `delivery check --stage fact-update`：
+- 仅 feature 在委托 fact-update 之前运行 `delivery check --stage fact-update`：
   - 确认 code-review 有效，并由 fact update 记录 fact-update gate。
 - 事实页由 fact-update 在审阅前提交。调用方提交其余材料与证据。
 - 按分支准备材料：
@@ -208,7 +209,8 @@
     - CHANGE.md 整理完成后提交，再进入阶段校验。
   - bugfix：按对象契约准备当前分支的 `changes/unreleased/<slug>/CHANGE.md`，
     slug 为 Bug ID 的 kebab-case（小写）。
-    - 不要求 objectives、design、唯一 PRP 或 feature gate。记录实际 Bug outcomes 和证据。
+    - start 已写入的 objectives checklist 保留；不要求 design、唯一 PRP 或 feature gate。
+      记录实际 Bug outcomes 和证据。
   - `source_branch: develop` 的直合 Change 不属于本 finish；目录自选 slug，
     只作为后续 release 的 child 聚合。
   - release：核对已有 child Change 与 `objectives.md`；材料聚合与版本目录写入留给步骤 8。
@@ -244,7 +246,7 @@
   - 从步骤 2 直接进入的已收口 release/hotfix 重新委托 fact audit。
   - 其他分支使用步骤 3 的本次 fact audit 结论。
   - release 为上一正式发布以来的范围审阅，其他分支为范围审阅。
-- 验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及 full validation 通过。
+- 验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；事实审阅及文档 full validation 通过。
 - 📌 fact audit 未取得当场确认视为本步未通过。
   - 确认按 `fact-audit.md` 步骤 7 单独提问并记录，不与 Bug 分诊、收口或补验等其他决定合并。
 - 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。

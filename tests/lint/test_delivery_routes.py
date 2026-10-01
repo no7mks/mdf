@@ -37,7 +37,10 @@ def test_finish_updates_facts_before_preparing_materials():
     assert "- release：" in prepare
     assert "- hotfix：" in prepare
     assert "材料不搬迁" in prepare
-    assert "不要求 objectives、design、唯一 PRP 或 feature gate" in prepare
+    assert "不要求 design、唯一 PRP 或 feature gate" in prepare
+    assert "start 已写入的 objectives checklist 保留" in prepare
+    assert "references/verify.md" in prepare
+    assert prepare.index("verify full") < prepare.index("references/fact-update.md")
     assert "--scope full" not in prepare
     assert "release 的左端点为上一正式发布" in prepare
 
@@ -63,8 +66,8 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
 def test_start_clarifies_feature_objectives_before_branch():
     text = workflow("start")
     table = rows(text)
-    assert table[0][5] == "feature/release 2；其他 3"
-    assert "内部 clarify" in table[1][3]
+    assert table[0][5] == "2"
+    assert "objectives checklist" in table[1][3]
     assert table[1][5] == "3"
     assert table[1][6] == "不写目标，停止"
     assert table[2][1] == "Confirm roster"
@@ -110,8 +113,8 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert "不要求官方 id" in text
     assert "不得实施新 PRP" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert re.search(r"bugfix/hotfix 通过 ─+→ 3 Confirm roster", diagram)
-    assert re.search(r"feature/release 通过", diagram)
+    assert re.search(r"失败/缺失 ─+→ \[留在 1 询问\]", diagram)
+    assert "bugfix/hotfix 通过" not in diagram
     assert re.search(r"3 Confirm roster", diagram)
     assert re.search(r"创建成功", diagram)
     assert re.search(r"4 Start branch", diagram)

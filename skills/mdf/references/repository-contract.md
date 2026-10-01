@@ -204,7 +204,8 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
   - 命令的可执行事实来源始终是仓库配置与脚本。
   - 运行时配置属于 `docs/system/operations/configuration.md`；
     测试分类、失败语义、skip 与各 suite 属于 `docs/system/testing/`。
-  - 开头一张验证卡片只列环境要求与 manifest 的五个验证入口，不列 named suite 或单个测试的命令；
+  - 开头一张验证卡片只列环境要求与 `.mdf/modules.yaml` 的五个验证入口
+    （repo 级并集），不列 named suite 或单个测试的命令；
     须含 `docs/system/overview.md`、`docs/README.md` 与
     `docs/system/testing/index.md`，不展开核心模块表。
   - 接口、数据与运行时行为不复述 `docs/system/` 事实页。

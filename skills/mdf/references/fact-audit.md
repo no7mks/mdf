@@ -79,7 +79,8 @@
 
 #### 范围
 
-除委托确认记录外只读：本流程不写入、移动、提交、生成持久报告或执行 manifest `verification`；
+除委托确认记录外只读：本流程不写入、移动、提交、生成持久报告；
+不执行 `.mdf/modules.yaml` 验证入口，也不调用 `$mdf verify`。
 步骤 7 的确认记录由调用方写入并提交。
 
 `--scope` 三选一，与 fact update 共用；列出 `<path>...` 即 `paths`，
@@ -144,7 +145,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 无结构化输出。
 - findings 含下列任一 code：
   - `audit.scope`、`audit.base`、`audit.scope_path`。
-  - `audit.ignore_file`、`audit.ignore_rule`。
+  - `modules.invalid`、`modules.missing`。
 
 不得把解析失败当作初始化豁免。
 
@@ -192,7 +193,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 工作对象与调研：Proposal、Bug、Jot、research 未冒充当前事实、
   未被 `docs/README.md` 当成通读清单即可。
   - 不做拆页 refine。`docs/repowiki/` 不审、不改。
-- `verification` 整段是命令，或以 `# ` 开头写文字；二者不得混排。
+- `docs/system/testing/<suite>.md` 的入口命令行：整段是命令，或以 `# ` 开头写文字；二者不得混排。
 - 文档结构：按 `references/doc-structure.md`。
   - 硬限制由 CLI 报 `prose.*`；人工审软限制与内容形态，大段文字改为列表、表格或图。
 
@@ -271,7 +272,7 @@ validation 已由步骤 6 判定通过，本步不再复核。
 - 无语义 finding（含结构 finding）。
 - 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
 - 无未确认 warning。
-- 无其他 CLI finding（如 `audit.ignore_duplicate`、`audit.ignore_empty`）。
+- 无其他 CLI finding（如 `modules.invalid`、`audit.scope`）。
 
 该确认不跨调用复用。
 

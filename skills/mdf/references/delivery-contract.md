@@ -54,8 +54,9 @@
 
 - `fact-update` 是 CLI gate，只由 finish 收口前、在 **verify full 之后** 记录；
   独立 `$mdf fact update` 不记录 gate。它不是用户主线箭头上的一站。
-- 工作分支（feature/bugfix/release/hotfix）中途禁止 `verify full` 与 fact update；
-  closeout 前最后两步固定为：**verify full → fact update**。
+- 开发迭代只用 `$mdf verify --level on-site`；**禁止**把 full 当日常自检反复跑。
+- **允许/要求 full**：非 feature Verify（审查前）、非 feature 的 code-review 证据过期补验、finish closeout。
+- closeout 前最后两步固定为：**verify full → fact update**；中途禁止 fact update。
 - `start` 后必须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
 - 开发中 sourceset 改动只触发对应 module 的 `$mdf verify --level on-site`。
 - bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
@@ -174,7 +175,8 @@ Git 约束：
 | code-review | 需收敛全绿 |
 | finish | 需当前 code-review、事实审阅和验证证据有效 |
 
-- 全绿由 converge 负责，且相对**当前交付所需 suite**，不等于 manifest 里每一条命令。
+- 全绿由 converge 负责，且相对**当前交付所需 suite**，不等于 `.mdf/modules.yaml`
+  里每一条命令。
 - 不能手填 passed 代替 CLI 检查。
 - 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 
@@ -191,11 +193,14 @@ Git 约束：
 失效与补验：
 
 - 开发中只跑 module **on-site**（lint+build+quick + Agent/Jev 选题的 test/testcase）。
-- **verify full** 以 commit 为锚；成功写入 `verify.full.json`。
+- **verify full** 以 commit 为锚；`run` 无论成败均写入 `verify.full.json`，
+  `all_passed:false` 时失败且 `check` 拒收。
   - worktree 须干净；之后有 diff 时先经 Jev 判断是否重跑，不需要则 `advance` 快进 commit。
 - 只改事实文档或 module ignore 不重跑业务验证。
 - feature 的 `fact-update` gate 仍绑定 `facts`、`implementation` 与 `design`。
-- 审查报告已齐后的实现变化在 code-review 步骤补 on-site；closeout 前再 full。
+- 审查报告已齐后的实现变化：不因此重开 Verify 阶段；closeout 前 finish 再核对/执行 full。
+  - feature：证据过期时在 code-review 补 **on-site**（可加 named 选题）。
+  - 非 feature：证据过期时补 **`$mdf verify --level full`**；named 另经 on-site 选题。
 - 缺失或过期时原地补验，不回退 intent。
 
 ### 测试层级与分类
@@ -266,7 +271,7 @@ Core 判定退出码与测试报告（见下节）。
   gate 执行，名字保留、不得用作 named suite。
 - 预算包含启动依赖与预热，不含 build；项目可在 modules `budgets` 覆盖。
   test case 放进 quick 或 smoke 会超预算时，拆成多个 test case，只把合预算的部分放入。
-- lint 与 build 同 quick 一样，on-site 与 full 都要跑涉及范围的入口。
+- lint 与 build 同 quick 一样必跑：on-site 只跑涉及 module 的入口；full 跑全部 module。
 - 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**，写明：
   - 目的、testcase 构成、入口命令。
   - testcase 本身不建独立文档，靠代码 frontmatter / stringdoc。
@@ -275,7 +280,7 @@ Core 判定退出码与测试报告（见下节）。
 | --- | --- | --- | --- |
 | 任意 | 开发中 on-site | 涉及 module 的 lint、build、quick | Agent+Jev 选题的 test/testcase |
 | feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 选题（不默认整 suite） |
-| bugfix | 开发中 / Verify | on-site；closeout 前 full→smoke | `suites.json` 关联 named 的选题 |
+| bugfix | 审查前 Verify | `$mdf verify --level full`（smoke 并集） | `suites.json` 关联 named 的选题记录 |
 | release / hotfix | Verify、code-review、finish | lint、build、quick、release | — |
 | 任意 | closeout | **先 verify full，再 fact update** | — |
 | 任意 | 只改事实 / ignore | 不机械重跑业务验证 | — |
@@ -307,7 +312,7 @@ named suite 的划分：
 
 - bugfix、release、hotfix 都先测后审：审查前由 deliver 的 Verify 阶段修到全绿。
   - 之后只在证据过期时重验；收口复用有效 `verify.full.json`，不额外重跑 release。
-  - 审查报告已齐后的变化在 code-review 步骤补 on-site，不重新进入 Verify 阶段。
+  - 审查报告已齐后的变化在 code-review 补 full（named 另 on-site），不重新进入 Verify 阶段。
   - Verify 阶段定义见 `references/deliver.md`「先测后审」；每次运行向
     `changes/unreleased/<slug>/verify.md` 追加一条记录并随该阶段提交。
 - roster `0,0` 的 bugfix 不创建 design/write-tests/converge，但仍写 objectives checklist。

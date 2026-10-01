@@ -101,7 +101,7 @@
 - `$mdf converge`：集成并持续修复到所需 suite 通过
 - `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
-- `$mdf verify --level on-site|full`：module 级验证；开发用 on-site，closeout 前用 full
+- `$mdf verify --level on-site|full`：module 级验证；开发 on-site，closeout/非 feature Verify 用 full
 - `$mdf code-review`：审查并修复实现、测试和 code smell
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   工作分支仅 closeout 在 verify full 之后调用
@@ -114,12 +114,11 @@
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
-- `$mdf upgrade [--source <url>]`：从上游拉取最新 Skill，替换已安装副本并更新 `AGENTS.md` 托管区块
-- `$mdf to <target>`：进入目标 worktree；`plan` 进 planning，`develop` 回主树，`deploy` 检出 master
-- `$mdf sync`：先拉后推 `master` / `develop` / `planning`；其他分支只报告
-- `$mdf integrate`：同仓走角色与验收，不开消息通道；跨仓才收发消息；一侧只 poll 本侧
-- `$mdf help`：展示本目录
-- `$mdf help <intent>`：展示该 intent 的用法要点
+- `$mdf upgrade [--source <url>]`：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块
+- `$mdf to <target>`：进 worktree（`plan`/`develop`/`deploy`）
+- `$mdf sync`：先拉后推三大 trunk；其他分支只报告
+- `$mdf integrate`：同仓验收；跨仓才收发消息
+- `$mdf help` / `$mdf help <intent>`：目录或单条用法
 
 #### 示例
 
@@ -156,6 +155,8 @@ $mdf fix bug-CD34
 $mdf fix bug-CD34 --yolo
 $mdf verify-fix
 $mdf verify-fix bug-CD34
+$mdf verify --level on-site
+$mdf verify --level full
 $mdf code-review
 $mdf fact update
 $mdf fact update --scope full
@@ -274,83 +275,73 @@ $mdf clarify 要不要把缓存放到 Redis
     - 包含 finish 的合并及适用的 tag、发版推送。
 
 - `$mdf start`
-  - 用法：`$mdf start`；可带：
-    - `--roster`
-    - `--qa-strategy` / `--dev-strategy` / `--review-strategy`
-    - `--write-tests-model` / `--implement-model` / `--code-review-model`
+  - 用法：`$mdf start`；可带 `--roster`、`--*-strategy`、`--*-model`
   - 用途：按 Gitflow 创建本地交付分支。
   - 说明：
-    - 始终从基线在仓库同级 `<repo-name>-worktrees/` 下建立 worktree，不在当前目录开分支，不 push。
-    - 开分支前展示 member、strategy 与 models 并确认后冻结 roster。
-    - roster 默认：feature 为 min-tdd；release 为 solo 加 3 名 partition reviewer；其他为 solo。
-    - `--*-model` 为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
-    - release 开分支前确认发布目标（工作线只写选中的一条；须写明是否联调；不实施新 PRP）。
-    - hotfix 始终在 objectives 记录已确认范围：roster `0,0` 由 start 写入，≥1 可由 design 修订。
-    - bugfix 同样写 objectives checklist（含 roster `0,0`）。
+    - 始终在同级 `<repo-name>-worktrees/` 建 worktree，不在当前目录开分支，不 push。
+    - 开分支前确认并冻结 roster（member/strategy/models）；人数 ≥1 时建 qa/dev 角色树。
+    - roster 默认：feature=min-tdd；release=solo+3 partition reviewer；其他=solo。
+    - release 开分支前确认发布目标（只写选中工作线；须写明是否联调；不实施新 PRP）。
+    - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
 
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
   - 用途：确认设计、测试策略和共享代码底座。
-  - 说明：Clarify 在当前会话；Baseline 由本 intent 派恰好 1 个 owner subagent 写设计与共用代码底座。
-    不计入 roster。partition 时在 design.md 写明各 index 切片。
+  - 说明：Clarify 在当前会话；Baseline 由本 intent 派恰好 1 个 owner subagent
+    写设计与共用代码底座，不计入 roster。partition 时在 design.md 写明各 index 切片。
 
 - `$mdf write-tests`
   - 用法：`$mdf write-tests`
   - 用途：按目标编写测试用例。
-  - 说明：可与 implement 并行；roster ≥1 时在已有 qa worktree 上执行，先 merge owner。
+  - 说明：可与 implement 并行；roster ≥1 时在 qa worktree 执行，先 merge owner。
     写完可执行测试即完成，不要求全绿。
 
 - `$mdf implement`
   - 用法：`$mdf implement`
   - 用途：按已确认设计实现。
-  - 说明：不要求测试先完成；roster ≥1 时在已有 dev worktree 上执行，先 merge owner。
+  - 说明：不要求测试先完成；roster ≥1 时在 dev worktree 执行，先 merge owner。
 
 - `$mdf converge`
   - 用法：`$mdf converge`
   - 用途：集成并持续修复到所需 suite 通过。
-  - 说明：
-    - 本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录；测试修改批准回主会话。不计入 roster。
-    - 修复实现直到 lint、build、quick、smoke 与本交付 named suite 通过；不要求跑 release。
+  - 说明：本 intent 派恰好 1 个 owner subagent 执行集成、验证与记录；
+    测改批准回主会话，不计入 roster。修到 lint/build/quick/smoke 与本交付 named suite 通过；不要求 release。
 
 - `$mdf fix <bug-id>`
   - 用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
-  - 用途：在当前 checkout 澄清、确认 failing test、修复并验证一个已有 open Bug，标为 `fixed`。
+  - 用途：澄清、确认 failing test、修复并验证一个 open Bug，标为 `fixed`。
   - 说明：
-    - 修复实现前必须有针对该 Bug 的有效红灯；没有就先写测试并确认失败。
-    - 不切分支、不 start、不 code-review、不 finish。
-    - `--yolo` 由 Agent 自裁定内部 clarify，不向用户提问；不跳过红灯，也不代替测试门槛批准。
-    - 二次验证走 `$mdf verify-fix`，不在本 intent 把对象标为 `closed`。
+    - 修复前必须有针对该 Bug 的有效红灯；没有就先写测试并确认失败。
+    - 不切分支、不 start、不 code-review、不 finish；不标 `closed`。
+    - `--yolo` 自裁定 clarify，不跳过红灯；二次验证走 `$mdf verify-fix`。
 
 - `$mdf verify-fix [<bug-id>]`
   - 用法：`$mdf verify-fix` 或 `$mdf verify-fix <bug-id>`
-  - 用途：二次验证已 `fixed` 的 Bug：只跑复现用例，失败则修到通过，并仅审这次修复的代码。
-  - 说明：
-    - release/hotfix 的 `$mdf finish` 在准备关闭这些 Bug 前内部委托。
-    - 不标 `closed`、不写 `fixed_in`、不跑 release suite。
-    - 无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
+  - 用途：二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复）。
+  - 说明：finish 关闭前内部委托；不标 `closed`、不写 `fixed_in`、不跑 release。
+    无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
+
+- `$mdf verify --level on-site|full`
+  - 用法：`$mdf verify run|check|advance --level on-site|full [--module|--paths|--test ...]`
+  - 用途：module 级验证；开发 on-site，closeout/非 feature Verify 用 full。
+  - 说明：full 写 `verify.full.json`；on-site 不落盘，选题经 `--test`。
 
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
-  - 说明：
-    - 支持 feature/bugfix/hotfix/release；各分支均在 finish 前完成，feature 位于 converge 之后。
-    - 首轮按冻结的 roster.reviewers 覆盖起点区间（solo 默认 1，min-tdd 默认 2，pair 类默认 3）；
-      后续增量并复核上轮问题。
-    - 默认 replicate 全范围审查；partition 按切片派工，本步可覆盖冻结策略。
+  - 说明：各分支 finish 前完成（feature 在 converge 后）。首轮按 roster.reviewers
+    覆盖起点区间；后续增量并复核。默认 replicate；partition 按切片派工。
 
 - `$mdf fact update`
   - 用法：`$mdf fact update [<path>...] [--scope branch|full|paths]`
-  - 用途：按实现对齐当前事实，再只修范围内的结构 finding，并委托事实审阅。
-  - 说明：
-    - `branch` 为独立调用默认，取起点以来实现改动该碰的事实页。
-    - `full` 整理知识面全树（用户指南、系统事实、入口根文档、ADR 复述、体积）。
-    - finish 只用 branch/paths，release 的 `--base` 为上一正式发布。
-      独立调用须 manifest ready；布局或 schema 不符时提示 migrate。
+  - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
+  - 说明：独立默认 `branch`；`full` 整理知识面全树。finish 只用 branch/paths；
+    release `--base` 为上一正式发布。独立调用须 manifest ready。
 
 - `$mdf finish`
   - 用法：`$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
-  - 说明：提交不代替用户确认或验收。release/hotfix 收入 `fixed` Bug 前内部委托 `$mdf verify-fix`。
+  - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` Bug 前委托 `$mdf verify-fix`。
 
 - `$mdf archive`
   - 用法：`$mdf archive`
@@ -359,35 +350,29 @@ $mdf clarify 要不要把缓存放到 Redis
 
 - `$mdf fact audit`
   - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
-  - 用途：只读审阅文档与实现的覆盖、证据、语义与加载质量
-    （入口过载、唯一归属、路由页、体积、ADR 复述）。
-  - 说明：只读；不执行 manifest `verification`。`size.hard` 阻断。
-    finish release 的 `--base` 为上一正式发布。
+  - 用途：只读审阅覆盖、证据、语义与加载质量。
+  - 说明：不执行 `verification`；`size.hard` 阻断。finish release `--base` 为上一正式发布。
 
 - `$mdf prettify`
   - 用法：`$mdf prettify [<path>...] [--scope branch|full|paths]`（省略为 branch）
-  - 用途：按 `doc-structure.md` 把大段文字改写为列表、多级列表、表格与图。
-  - 说明：只改结构不改语义；`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
+  - 用途：按 `doc-structure.md` 改写为大列表/表格/图，不改语义。
+  - 说明：`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
 
-- `$mdf codewiki generate`
-  - 用法：`$mdf codewiki generate`
-  - 用途：用 CodeWiki MCP 新建仓库结构 Wiki。
-  - 说明：仅写入 `docs/repowiki/`。
+- `$mdf codewiki generate` / `$mdf codewiki update`
+  - 用法：`$mdf codewiki generate` 或 `$mdf codewiki update`
+  - 用途：新建或增量更新 `docs/repowiki/` 结构 Wiki。
+  - 说明：update 无结构变化时可报告无更新。
 
-- `$mdf codewiki update`
-  - 用法：`$mdf codewiki update`
-  - 用途：增量更新符合 MDF 契约的结构 Wiki。
-  - 说明：无结构变化时可报告无更新。
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
-  - 用途：从上游默认分支拉取最新 Skill 并替换已安装副本。
-  - 说明：默认源可 `--source`；预览确认后替换副本与 `AGENTS.md` 区块并提交、不 push；
-    随后重读。仅不符契约才建议 `$mdf migrate`。
+  - 用途：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块并提交（不 push），随后重读。
+  - 说明：仅不符契约才建议 `$mdf migrate`。
+
 - `$mdf to <target>`
-  - 用法：`$mdf to plan`、`$mdf to develop`、`$mdf to deploy` 或 `$mdf to <分支>`
-  - 用途：进入目标 worktree；planning、deploy 与已有分支在缺树时建立。
-  - 说明：`plan` / `planning` / `plan-mode` 进 planning；`develop` 回主树。
-    `deploy` 检出 master 并保留 gitignore 的 config。不创建新交付分支。
+  - 用法：`$mdf to plan|develop|deploy|<分支>`
+  - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。
+  - 说明：`plan` 进 planning；`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
+
 - `$mdf sync`
   - 用法：`$mdf sync`；先拉后推三大 trunk，多余分支只报告；禁止 force-push。
 - `$mdf integrate`

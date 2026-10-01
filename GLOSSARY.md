@@ -39,8 +39,10 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 ## `$mdf verify`
 
 - **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题 test/testcase。
-- **full**：closeout 前全 module 并集；feature/bugfix→smoke，release/hotfix→release；
-  以 commit 为锚写入 `verify.full.json`。
+- **full**：全 module 的 lint/build/quick + 套件并集（feature/bugfix→smoke，
+  release/hotfix→release）；以 commit 为锚写入 `verify.full.json`。
+  要求/允许场景：非 feature 审查前 Verify、非 feature 的 code-review 证据过期补验、
+  finish closeout。
 
 ## Test、test case 与 suite
 
@@ -198,7 +200,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 - **Gate**：基于产物、内容指纹、验证与语义审查的阶段门禁。
 - write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿。
 - **converge**（收敛）：集成测试和实现，持续修复实现直到**当前交付所需 suite**通过。
-  - 「全绿」相对该 suite，不等于 manifest 里每一条命令。
+  - 「全绿」相对该 suite，不等于 `.mdf/modules.yaml` 里每一条命令。
 
 ## 联调通道
 

@@ -449,7 +449,8 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "不 fetch、不要求 origin、不 push" in start
     assert "内部 clarify intent" in start
     assert "不写目标" in start
-    assert "feature/release 2；其他 3" in start
+    assert "feature/release 2；其他 3" not in start
+    assert "Resolve branch" in start and "| 2 |" in start
     assert "release-objectives.md" in start and "Open integrate" in start
     assert "必须写明三种之一" in start and "Confirm roster" in start
     assert "member、strategy 与 models" in start

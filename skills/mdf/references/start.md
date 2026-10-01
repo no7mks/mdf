@@ -10,10 +10,9 @@
 │ 1 Resolve branch                 │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ─────────────→ [留在 1 询问]
-                 ├──── bugfix/hotfix 通过 ────→ 3 Confirm roster
+                 ├──── 失败/缺失 ────→ [留在 1 询问]
                  │
-                 ▼ feature/release 通过
+                 ▼ 通过
 ┌──────────────────────────────────┐
 │ 2 Clarify objectives             │
 └────────────────┬─────────────────┘
@@ -60,15 +59,15 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。
-feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
-分别对照 `assets/templates/objectives.md` 与 `assets/templates/release-objectives.md`。
+步骤 2：feature/release 内部执行 `references/clarify.md`；bugfix/hotfix 写精简 checklist，
+可不走 grilling。对照 `assets/templates/objectives.md` 或 `release-objectives.md`。
 步骤 6 读取并执行 `references/integrate.md`。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | feature/release 2；其他 3 | 留在 1 询问 |
-| 2 | Clarify objectives | 约束 | 内部 clarify 目标、非目标、约束与验收 | 确认目标 | 3 | 不写目标，停止 |
+| 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | 2 | 留在 1 询问 |
+| 2 | Clarify objectives | 约束 | 写/确认 objectives checklist（含大步骤） | 确认目标文件 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
 | 5 | Switch worktree | 约束 | 切到 owner worktree | cwd、分支 | 需联调则 6；其他结束 | 留在 5 等待 |
@@ -85,8 +84,8 @@ feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
 一次只要求一个分支的类型和必要标识：
 
 - feature 要 PRP ID，bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
-- feature 与 release 还要确认的 objectives（含 `[ ]`/`[x]` 大步骤 checklist）；
-  bugfix/hotfix 在 start 后同样写入 objectives checklist（roster `0,0` 也写）。
+- 四种 kind 均须有 objectives checklist（含 `[ ]`/`[x]` 大步骤）；roster `0,0` 也写。
+  - 在步骤 2 确认并写入临时文件，步骤 4 由 CLI 经 `--objectives-file` 落入 `objectives.md`。
   - hotfix 始终记录已确认的热修复范围；roster ≥1 可由 design 修订。
 - feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
@@ -100,7 +99,7 @@ feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
 - 用户未指定 Bug 时运行 `list --repo "$REPO_ROOT" --type bug --status open`：
   - 按 `id` 与 `title` 供用户选择；不逐篇翻阅 `docs/bugs/`。
 
-验收：明确参数；feature 另确认 PRP，bugfix 另确认 Bug，release 另确认版本与目标。
+验收：明确参数；feature 另确认 PRP，bugfix 另确认 Bug，release 另确认版本。
 
 异常与交接：询问。不得从自然语言猜测版本。
 
@@ -124,12 +123,12 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简 che
     以及 `assets/templates/release-objectives.md`。
   - 使用内部 clarify intent，议题固定为「本版工作线、收口范围、预发布工作、是否联调、非目标与可验证验收」。
   - 工作线三选一，开分支前必须选定：
-    - 不联调：`start → 开发 → verify → code-review → fact update → finish`
+    - 不联调：`start → 开发(on-site) → code-review → verify full → fact update → finish`
     - 同 worktree（同仓）：对齐计划后做两端验收。确认不再改代码才审查。
     - 跨 worktree（跨仓）：先开通道并对齐计划，再做本端验收与双端验收。
-      确认不再改代码后才审查，finish 前段做 fact update。
+      确认不再改代码后才审查；finish 前段 **verify full → fact update**。
   - 目标只写入已选定的那一条；不罗列未选路径，不写「本版选定…」。
-  - fact update 由 finish 前段执行；已有有效结果则不重做。
+  - fact update 仅由 finish 在 verify full 之后执行；已有有效结果则不重做。
   - 本版范围写入 start 时的 child Change 清单。
   - 📌 必须写明三种之一；不得省略，不得写待定。
     - 不联调：写原因。不执行 integrate。
@@ -139,9 +138,14 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简 che
   - 跨仓 pin 写 repo 与 branch/commit/version；仓外联调证据的记录方式写入验收。
   - ✅ 允许在本分支改 Bug、配置、文档与联调证据。
   - ❌ 不得实施新 PRP，缺能力则推迟或作废本次 release，回 develop 开 feature。
+- bugfix / hotfix：
+  - 对照 Bug 与 `assets/templates/objectives.md`。
+  - 写含 `[ ]`/`[x]` 大步骤的精简 checklist
+    （至少含修复、verify full、fact update、finish）。
+  - 可不走 clarify grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
 
-验收：确认目标含是否联调、本侧可碰范围，以及共同理解。
+验收：确认目标（release 另含是否联调、本侧可碰范围）以及共同理解。
 
 异常与交接：不写目标、不创建分支。
 
