@@ -49,8 +49,12 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert not (repo / "changes" / "1.3.0").exists()
     assert not git(repo, "status", "--porcelain").stdout
 
+    seed_verify_full(python_exe, repo)
     applied = payload(mdf(python_exe, *arguments))
     assert applied["dry_run"] is False
+    assert applied["verification"]["reused"] == (
+        "changes/unreleased/1.3.0/verify.full.json"
+    )
     results = applied["verification"]["results"]
     assert [(item["command"], item["exit_code"]) for item in results] == [
         ("true", 0), ("true", 0), (SUITE_OK, 0), (SUITE_OK, 0),
@@ -93,7 +97,7 @@ def test_closeout_rejects_removed_semantic_attestation_argument(
     assert "unrecognized arguments" in result.stderr
 
 
-def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
+def test_closeout_never_executes_verification_without_reusable_full(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -109,8 +113,8 @@ def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
 
     result = mdf(python_exe, *arguments)
     assert result.returncode != 0
-    assert "dirty_worktree" in result.stderr
-    assert (repo / "verification-marker").is_file()
+    assert "verify_full_not_reusable" in result.stderr
+    assert not (repo / "verification-marker").exists()
     assert not (repo / "changes" / "1.3.0").exists()
 
 
@@ -128,6 +132,7 @@ def test_closeout_rejects_unclassified_unreleased_bug_on_apply(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 遗漏未发布 Bug")
     git(repo, "checkout", "-b", "release/1.3.0")
+    seed_verify_full(python_exe, repo)
 
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0
@@ -153,6 +158,7 @@ def test_critical_bug_cannot_be_wont_fixed_at_closeout(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: critical wont-fix")
     git(repo, "checkout", "-b", "release/1.3.0")
+    seed_verify_full(python_exe, repo)
 
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0
@@ -180,6 +186,7 @@ def test_major_bug_wont_fix_needs_explicit_acceptance(
 ):
     repo = copy_fixture(tmp_path)
     prepare_wont_fix_release(repo)
+    seed_verify_full(python_exe, repo)
 
     rejected = mdf(python_exe, *release_arguments(repo))
     assert rejected.returncode != 0
@@ -199,6 +206,7 @@ def test_major_bug_wont_fix_needs_explicit_acceptance(
     accepted_root.mkdir()
     accepted_repo = copy_fixture(accepted_root)
     prepare_wont_fix_release(accepted_repo)
+    seed_verify_full(python_exe, accepted_repo)
     applied = payload(
         mdf(
             python_exe,
@@ -225,6 +233,7 @@ def test_hotfix_closeout_uses_manifest_commands(
     (review / "code-review.md").write_text("# 审查\n\n通过。\n", encoding="utf-8")
     git(repo, "add", "--", "changes/unreleased/1.2.1")
     git(repo, "commit", "-m", "docs: 热修复审查记录")
+    seed_verify_full(python_exe, repo)
     hotfix = json.dumps(
         {
             "fixed": [BUG_ID],
@@ -244,6 +253,9 @@ def test_hotfix_closeout_uses_manifest_commands(
             python_exe,
             *release_arguments(repo, hotfix_change_json=hotfix),
         )
+    )
+    assert applied["verification"]["reused"] == (
+        "changes/unreleased/1.2.1/verify.full.json"
     )
     assert applied["version"] == "1.2.1"
     assert (repo / "changes" / "1.2.1" / "CHANGE.md").is_file()
@@ -317,7 +329,7 @@ def test_closeout_reuses_after_impl_change_when_report_still_green(
     assert runs.read_text() == "run\n"
 
 
-def test_closeout_reruns_when_command_sequence_mismatches(
+def test_closeout_fails_when_command_sequence_mismatches(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -334,7 +346,7 @@ def test_closeout_reruns_when_command_sequence_mismatches(
     payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
     path = repo / "changes/unreleased/1.3.0/verify.full.json"
     evidence = json.loads(path.read_text())
-    # 伪造与当前 plan 不一致的 command，迫使 closeout 重跑
+    # 伪造与当前 plan 不一致的 command；closeout 不得重跑验证
     for item in evidence["results"]:
         if item.get("id") == "release":
             item["command"] = "echo forged-mismatch"
@@ -343,6 +355,7 @@ def test_closeout_reruns_when_command_sequence_mismatches(
     git(repo, "commit", "-m", "test: 伪造命令序列")
     assert runs.read_text() == "run\n"
 
-    applied = payload(mdf(python_exe, *release_arguments(repo)))
-    assert applied["verification"]["reused"] is None
-    assert runs.read_text() == "run\nrun\n"
+    result = mdf(python_exe, *release_arguments(repo))
+    assert result.returncode != 0
+    assert "verify_full_not_reusable" in result.stderr
+    assert runs.read_text() == "run\n"

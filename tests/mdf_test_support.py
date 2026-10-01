@@ -354,8 +354,25 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
     )
 
 
+def seed_verify_full(python_exe: str, repo: Path) -> None:
+    """写入可复用的 verify.full.json；release-closeout 只复用、不重跑验证。"""
+    branch = git(repo, "branch", "--show-current").stdout.strip()
+    folder = branch.split("/", 1)[1]
+    root = repo / "changes" / "unreleased" / folder
+    root.mkdir(parents=True, exist_ok=True)
+    review = root / "code-review.md"
+    if not review.is_file():
+        review.write_text("# 审查记录\n\n无未解决问题。\n", encoding="utf-8")
+        git(repo, "add", "--", str(review.relative_to(repo)))
+        git(repo, "commit", "-m", "test: 审查记录")
+    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 提交 verify.full")
+
+
 def prepare_release_closeout_repo(
-    tmp_path: Path, slug: str = "service-health"
+    tmp_path: Path, slug: str = "service-health",
+    *, python_exe: str | None = None,
 ) -> Path:
     repo = copy_fixture(tmp_path)
     replace(
@@ -369,6 +386,8 @@ def prepare_release_closeout_repo(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "feat: 准备服务健康变更")
     git(repo, "checkout", "-b", "release/1.3.0")
+    if python_exe is not None:
+        seed_verify_full(python_exe, repo)
     return repo
 
 

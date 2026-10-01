@@ -180,7 +180,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     python_exe: str, tmp_path: Path, kind: str,
 ):
     if kind == "release":
-        repo = prepare_release_closeout_repo(tmp_path)
+        repo = prepare_release_closeout_repo(tmp_path, python_exe=python_exe)
         version = "1.3.0"
         git(repo, "branch", "master", "main^")
         git(repo, "branch", "develop", "main")
@@ -193,6 +193,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
         git(repo, "branch", "develop")
         version = "1.2.1"
         git(repo, "checkout", "-b", f"hotfix/{version}")
+        seed_verify_full(python_exe, repo)
         extra = ["--hotfix-change-json", json.dumps({
             "body": "修复服务超时。",
             "fixed": [BUG_ID],

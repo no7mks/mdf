@@ -8,7 +8,6 @@ from .closeout_objects import active_objects
 from .closeout_stage import apply_closeout, summarize_closeout
 from .closeout_shape import unreleased_change_slugs, validate_closeout_shape
 from .closeout_validate import normalize_hotfix_change
-from .verify_run import run_verify_commands
 from .constants import SCHEMA_VERSION
 from .errors import MDFError, emit, serialize_findings
 from .gitutil import (
@@ -21,7 +20,7 @@ from .gitutil import (
     run,
 )
 from .paths import ensure_safe_managed_paths, load_manifest
-from .verification import SUITES, repo_verification
+from .verification import repo_verification
 from .yamlutil import read_frontmatter
 
 
@@ -233,23 +232,19 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         )
         return
 
-    verify_items = repo_verification(repo).plan("release")
     reused = reusable_results(repo, context["validation_commands"])
-    if reused is not None:
-        command_results = reused["results"]
-    else:
-        command_results = run_verify_commands(
-            repo,
-            context["validation_commands"],
-            labels=[item["id"] for item in verify_items],
-            timeouts=[item["budget"] for item in verify_items],
-            entries=[item["id"] for item in verify_items],
-            junits=[item["id"] in SUITES for item in verify_items],
+    if reused is None:
+        raise MDFError(
+            "release closeout 要求可复用的 verify.full.json"
+            "（all_passed 且命令序列一致）；不在 closeout 内执行验证",
+            code="verify_full_not_reusable",
         )
+    command_results = reused["results"]
     ensure_clean(repo)
     spec["verify_command_results"] = command_results
     context = validate_closeout_shape(repo, spec)
     result = apply_closeout(repo, context)
+
     post_findings = doctor.collect_findings(repo, full=True)
     if post_findings:
         raise MDFError(
@@ -276,7 +271,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
                 "suites": ["quick", "release"],
                 "commands": context["validation_commands"],
                 "results": command_results,
-                "reused": reused["path"] if reused is not None else None,
+                "reused": reused["path"],
             },
             "audit": {"deterministic": "passed"},
         }

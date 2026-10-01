@@ -18,6 +18,7 @@ def test_release_moves_delivery_materials_and_rewrites_proposal_links(python_exe
     (review / "objectives.md").write_text("# 发布目标\n\n本版收口。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 附带交付过程材料")
+    seed_verify_full(python_exe, repo)
     payload(mdf(python_exe, "release-closeout", "--repo", str(repo), "--release-date", "2026-09-10"))
     archived = repo / "changes/1.3.0/service-health"
     assert json.loads((archived / "delivery.json").read_text()) == identity

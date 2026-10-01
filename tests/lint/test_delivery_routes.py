@@ -31,7 +31,8 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
 def test_close_out_materials_without_embedded_verify_or_fact():
     text = workflow("close-out")
     prepare = text.split('<a id="s3"></a>', 1)[1].split('<a id="s4"></a>', 1)[0]
-    assert "不内嵌 verify full" in prepare or "不内嵌 verify full / fact" in text
+    assert "不内嵌、不委托 verify" in text or "不委托 verify" in text
+    assert "verify-fix（步骤 7）不算 verify 族" in text or "不算 verify 族" in text
     assert "delivery check --stage fact-update" not in text
     assert "move-change" not in text
     assert "- feature：" in prepare
@@ -327,8 +328,12 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "needs_design" in deliver
     assert "进度只认 objectives" in deliver or "只认 objectives" in deliver
     finish = workflow("close-out")
-    assert "不内嵌 verify full" in finish or "不再内嵌二者" in finish
+    assert "不委托 verify" in finish or "不内嵌、不委托 verify" in finish
+    assert "永不在 closeout 内执行验证" in finish or "verify_full_not_reusable" in finish
+    assert "不算 verify 族" in finish
     assert "不做 commit 对齐审判" in finish or "不做 verify 报告的 commit 对齐" in finish
+    contract = workflow("delivery-contract")
+    assert "只复用可复用的" in contract or "永不执行验证命令" in contract
     assert "不运行 `delivery check --stage finish`" in finish
     assert "确认单独提问" in workflow("fact-audit")
     assert "不重跑" in workflow("verify-fix")
@@ -425,8 +430,8 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "本轮应派人数为 1" in finish
     assert "不得把上轮多份原文交给本轮唯一 reviewer 去合并" in finish
     assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
-    assert "不启动 code-review、" in finish
-    assert "不重跑 verify full" in finish
+    assert "不启动 code-review" in finish
+    assert "不委托、不执行 verify" in finish or "不在 closeout 内执行验证" in finish
     assert "本交付文档" in finish
     assert "以集成后的 HEAD 执行增量新一轮" in finish
     assert "不复用集成前终稿充当增量差" in finish

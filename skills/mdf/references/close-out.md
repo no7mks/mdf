@@ -170,8 +170,8 @@
   - 语义不明、需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
-    - 不启动 code-review、不重跑 verify full，沿用已有 code-review 终稿与主链
-      `verify.full.json`（须存在且 `all_passed: true`；否则先按下方不可跳过路径补验）。
+    - 不启动 code-review；沿用已有 code-review 终稿与主链 `verify.full.json`
+      （须存在且 `all_passed: true`；否则按下方停止）。
     - 在 `code-review.md` 追加跳过说明（merge commit、路径清单；仍不得写入 commit
       hash）。
   - 本交付文档 = 当前对象文件，以及本分支自 start_commit 到集成前 HEAD 改过的 `docs/` 路径。
@@ -180,19 +180,20 @@
 - 不可跳过时：
   - 若集成后无有效 `verify.full.json`（缺失，或未声称 `all_passed:true`），
     或集成引入了实现/测试改动：
-    - 委托 `$mdf verify`（full，现场修到绿）并提交。
-    - 再委托 code-review 增量轮。
-    - ❌ 缺 report 就委托 **run**；不做 commit 对齐审判。
-  - feature：objectives 的 converge 项须已勾；未勾停止。
-  - 上轮多人结论必须已由 owner 汇总进终稿的已采纳/未解决清单，
-    不得把上轮多份原文交给本轮唯一 reviewer 去合并。
-  - 然后以集成后的 HEAD 执行增量新一轮 code-review：
-    左端点为集成前 HEAD（当场记录），重新固定 review_head。
-  - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
-    完成裁定、修复与按需 on-site；再洗成无 commit 终稿。
-  - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
-  - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
-    人数仍为 roster.reviewers。
+    - **停止并交接**：须在本 intent **之外**由主链重跑 `$mdf verify` full 并自勾后再
+      续办 close-out；❌ 本 intent 不委托、不执行 verify（含 full / on-site / run）。
+    - 不做 commit 对齐审判。
+  - 有有效 full 且无实现/测试增量、仅需审查时，进入 code-review 增量轮：
+    - feature：objectives 的 converge 项须已勾；未勾停止。
+    - 上轮多人结论必须已由 owner 汇总进终稿的已采纳/未解决清单，
+      不得把上轮多份原文交给本轮唯一 reviewer 去合并。
+    - 以集成后的 HEAD 执行增量新一轮 code-review：
+      左端点为集成前 HEAD（当场记录），重新固定 review_head。
+    - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
+      完成裁定、修复与按需 on-site；再洗成无 commit 终稿。
+    - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
+    - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
+      人数仍为 roster.reviewers。
 - 主线已包含且审查报告已交时无需重复合并或审查。
   - report 缺失时内部执行 code-review，通过后继续本次 close-out。
   - feature：converge 须已在 objectives 勾选；审查看 `code-review.md`（report）。
@@ -211,8 +212,10 @@
   - 存在 `verify.full.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
   - objectives 中 verify full / fact audit 已勾。
-  - 缺失则停止，提示先跑 `$mdf verify`（full）与 `$mdf fact audit`（必要时 fact update）。
-- ❌ 本 intent 不内嵌 verify full / fact update / fact audit；不做 commit 对齐审判。
+  - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
+    `$mdf fact audit`，❌ 本 intent 不委托补跑。
+- ❌ 本 intent 不内嵌、不委托 verify full / on-site / run，也不内嵌 fact update /
+  fact audit；不做 commit 对齐审判。verify-fix（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
 - 按分支准备材料：
   - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 CHANGE.md。
@@ -328,11 +331,11 @@
   - 版本根 Change 聚合 child outcomes/evidence，evidence 按首次出现顺序去重并追加 manifest 验证命令。
   - CLI 操作前要求 clean；主动提交本次必要材料，不夹带无关改动。
 - 运行实际收口：
-  - `verify.full.json` 在当前输入下仍有效且命令一致时，CLI 复用其结果写入版本 Change，不重跑验证。
-  - 否则在目标仓库执行验证命令，保持 clean 后写入。
-  - 步骤 4 已确认证据有效，正常收口不再运行 release suite。
+  - CLI **只复用**可复用的 `verify.full.json`（声称通过且命令序列一致）写入版本
+    Change；❌ 永不在 closeout 内执行验证命令 / release suite。
+  - 不可复用 → CLI 失败（`verify_full_not_reusable`），停止交接；主链外补 verify。
 - 验收：CLI 退出 0、收口产物和完整 diff。
-  - 退出 0：读 stdout。`verification.reused` 为复用路径或 null。
+  - 退出 0：读 stdout。`verification.reused` 为复用路径（非 null）。
   - 非零：读 stderr 最后一行 JSON，不为查看原因重跑 closeout。
 - 通过条件：成功到 9。
 - 异常与交接：失败保留现场并停止，报告命令结果与实际写入。
@@ -350,8 +353,9 @@
   - feature/bugfix 不 push，核对 objectives 与所需 report 已交后进入本地 Gitflow 合并。
   - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
-- 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现：
-  回委托 verify **run** / code-review，不做 commit 对齐审判。
+- 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：
+  **停止并交接**，须在本 intent 外补 verify / code-review 后再续办；
+  ❌ 不回委托 verify run/full。不做 commit 对齐审判。
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。

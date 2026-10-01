@@ -87,7 +87,9 @@
   - fact：verify full 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
-  - 不内嵌 verify full / fact。
+  - 不内嵌、不委托 verify（full / on-site / run）；不内嵌 fact。
+    verify-fix 不算 verify 族，release/hotfix 收口步骤可委托。
+  - `release-closeout` 只复用可复用的 `verify.full.json`，永不执行验证命令。
   - 把目标主线合入交付分支前可建议 squash（见「可选历史整理」）；非强制。
 - 开发迭代只用 `$mdf verify --level on-site`；禁止把 full 当日常自检。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
