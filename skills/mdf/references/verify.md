@@ -28,18 +28,19 @@
 │ 3 Run                            │
 └────────────────┬─────────────────┘
                  │
-                 ├──── on-site/full 失败且可修 ────→ 3 Run（提交后重跑）
-                 ├──── 需测试修改批准 ─────────────→ [确认后回 3]
-                 ├──── 阻塞或不可修 ───────────────→ [停止并报告]
+                 ├──── 需测试修改批准 ────→ [确认后回 3]
+                 ├──── 阻塞或不可修 ──────→ [停止并报告]
                  │
-                 ▼ 命令通过
+                 ▼ 本轮命令已执行（含失败）
 ┌──────────────────────────────────┐
 │ 4 Record                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ──────────────────→ [停止并报告]
+                 ├──── full 未绿且可修 ────→ 3 Run（提交后重跑）
+                 ├──── full 未绿且阻塞 ────→ [停止并报告]
+                 ├──── 落盘/勾选失败 ──────→ [停止并报告]
                  │
-                 ▼ on-site 结束；或 full 已记录并通过
+                 ▼ on-site 结束；或 full 已绿并勾选
                  [结束]
 ```
 
@@ -53,8 +54,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve modules | 约束 | 读 modules；定范围；full 要干净树 | module 列表 | 2 | 停止并报告 |
 | 2 | Select | 约束 | on-site 选题；full 选 smoke/release | 命令列表 | 3 | 停止并报告 |
-| 3 | Run | 脚本 | `mdf.py verify run`；失败则修到绿 | 运行结果 | 4 | 可修/待批准回 3；阻塞停 |
-| 4 | Record | 脚本 | full 落盘；勾选并提交 | 证据或摘要 | 结束 | 停止并报告 |
+| 3 | Run | 脚本 | `mdf.py verify run`（成败都进 4） | 运行结果 | 4 | 待批准回 3；阻塞停 |
+| 4 | Record | 脚本 | full 无论成败落盘；绿则勾选提交 | 证据或摘要 | 结束 | 未绿可修→3；阻塞/落盘失败停 |
 
 ### 1 Resolve modules
 
@@ -92,13 +93,12 @@
 
 ### 4 Record
 
-- full `run`：无论成败均写入 `changes/unreleased/<slug>/verify.full.json`；
+- full：无论成败均写入 `changes/unreleased/<slug>/verify.full.json`；
   **report**，非 gate；不含 commit / head；`all_passed:false` 时 CLI 仍失败。
-- 主链完成条件：本 intent 内 full 已绿（`all_passed:true`），且已自勾 objectives 的
-  verify full 项并提交。
+  - 未绿且可修 → 回 3（提交后重跑）；未绿且阻塞 → 停止并报告。
+  - 仅 `all_passed:true` 时追加 `verify.md` 摘要、勾选 objectives 的 verify full 并提交。
+- 主链完成条件：本 intent 内 full 已绿并勾选提交。
   - ❌ 不以相对下游 intent 的过期审判或 commit 对齐作为本步通行证。
-- on-site 不持久化为进度；结果在 stdout。
-- full 通过后向 `changes/unreleased/<slug>/verify.md` 追加摘要：
-  suite、报告路径、修绿时的架构审视要点；再勾 `objectives.md` 的 verify full。
-- quick 复现结论只写本文件，不写 `code-review.md`
+- on-site 不持久化为进度；结果在 stdout；本步无落盘义务。
+- quick 复现结论只写 `verify.md`，不写 `code-review.md`
   （审查轮次的 quick 复现仍由 code-review 自记）。

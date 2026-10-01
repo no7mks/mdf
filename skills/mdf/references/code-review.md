@@ -118,8 +118,9 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
   - 基线缺失、歧义或对象不可解析时停止询问。
 - 📌 基线必须是当前 HEAD 的祖先。
 - 审查内容：
-  - 首轮审查两个端点的内容差异 `git diff <base_commit> <review_head>`。
-  - 增量新一轮审查 `git diff <previous_final_head> <review_head>`。
+  - 首轮：`git diff <base_commit> <review_head>`。
+  - 增量：`git diff <操作左端点> <review_head>`（操作左端点按上方规则，不读终稿
+    hash）。
   - 并读取必要上下文，不能仅按提交标题或文件名审查。
 - release 首轮覆盖上一版本以来的完整变化：
   - 不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过其代码。

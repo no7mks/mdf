@@ -21,7 +21,7 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "非本交付 `docs/` 不是新的交付改动" in text
     assert "finish 集成增量轮为 1" in text
     assert "不得把上轮多份独立报告交给本轮" in text
-    assert "git diff <previous_final_head> <review_head>" in text
+    assert "git diff <操作左端点> <review_head>" in text
     assert "仍解决 / 复开 / 不适用" in text
     assert "changes/unreleased/<slug>/code-review.md" in text
     assert "终稿不得出现任何 commit hash" in text
@@ -408,7 +408,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "delivery.json 的 start_commit", "mdf-start-commit",
         "上一正式发布版本的 master commit/tag", "首次发布没有上一版本",
         "git diff <base_commit> <review_head>", "基线必须是当前 HEAD 的祖先",
-        "git diff <previous_final_head> <review_head>",
+        "git diff <操作左端点> <review_head>",
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "进度只认 `objectives.md`",
@@ -441,6 +441,9 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "git restore --source=" in contract
     assert "git merge --squash" in contract
     assert "擅自改写历史" in contract
+    assert "是否建议（可选启发式）" in contract
+    assert "不可 squash" in contract
+    assert "建议 squash 且用户确认" in finish
 
 
 def test_role_intents_do_not_reuse_owner_session_switch():

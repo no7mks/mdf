@@ -327,15 +327,28 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
 
 - **交付地板**（能允许的最早点 = converge 起点）：
-  - roster ≥1：`gates/roster-join.json` 已进入当前分支历史、且角色 worktree 已清理后的
-    owner 提交（可用该文件在本分支首次出现的 commit；不得早于它）。
-  - roster `0,0`：objectives 中 owner 开发（或等价开发项）已勾所在提交；不得早于它。
+  - roster ≥1：`git log -1 --format=%H -- changes/unreleased/<slug>/gates/roster-join.json`
+    （该文件在本分支首次引入的 commit；角色 worktree 须已清理；不得早于它）。
+  - roster `0,0`：在 `start_commit..HEAD` 上找**最晚**一次使 objectives 中 owner 开发
+    （或等价开发项）变为 `[x]` 的 commit：  
+    `git log -1 -S'[x]' --format=%H -- changes/unreleased/<slug>/objectives.md`  
+    再人工核对该 diff 确含该勾选；找不到或歧义 → **不可 squash**（失败/缺失）。
 - **他人抬升**：在 `start_commit..HEAD` 上，若存在 `author` 或 `committer` email
   ≠ 当前 `git config user.email` 的 commit，地板抬到其中**最新一笔**（保留该笔，只压其后）。
   - tip 本身即他人提交 → 不可 squash。
   - roster merge 落在交付地板之前则不进区间，不必再判「是否本人」。
 
+地板 = 历史上较晚者（交付地板与他人抬升结果取更近 tip 的一侧）。  
 converge 只定义地板，不在入口询问 squash。
+
+### 是否建议（可选启发式）
+
+无硬门槛。可先收集信号再交 Jev/Agent 定型（`noul` / `choice`）：
+
+- `git rev-list --count <地板>..HEAD` ≥ 5；或
+- `git log --oneline <地板>..HEAD` 含 ≥2 条标题匹配 `wip|fixup|tmp|临时`（大小写不敏感）。
+
+未达信号也可建议；用户拒绝或信号不足则跳过。
 
 ### 手段（只允许 soft reset）
 

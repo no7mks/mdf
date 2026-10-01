@@ -51,7 +51,7 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Dispatch | Subagent | 启动恰好 1 个 owner subagent 执行步骤 2–4 | 已派执行者 | 2 | 停止并报告 |
-| 2 | Join | 约束 | 按需集成角色或检查 owner | 集成/状态 | 3 | 待批准重试 2；拒绝停；其他停 |
+| 2 | Join | 约束 | 按需 roster-join 或检查 owner | roster-join/状态 | 3 | 待批准重试 2；拒绝停；其他停 |
 | 3 | Accept | 约束 | 前置勾选 + on-site；循环到达成 | checklist、on-site | 4 | 可修/待批准回 3；拒绝或阻塞停 |
 | 4 | Tick | 约束 | 自勾 objectives 的 converge 项并提交 | objectives、提交 | 结束 | 停止并报告 |
 

@@ -14,10 +14,11 @@
 │ 2 Integrate and review           │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 已收口且证据有效 ────→ 4 Recheck
-                 ├──── 集成冲突无法解决 ────→ [停止并询问]
-                 ├──── 内部审查失败 ────────→ [停止]
-                 ├──── 状态不一致 ──────────→ [停止]
+                 ├──── 建议 squash 且用户确认 ────→（整理后继续本步）
+                 ├──── 已收口且证据有效 ──────────→ 4 Recheck
+                 ├──── 集成冲突无法解决 ──────────→ [停止并询问]
+                 ├──── 内部审查失败 ──────────────→ [停止]
+                 ├──── 状态不一致 ────────────────→ [停止]
                  │
                  ▼ 待收口或 feature/bugfix
 ┌──────────────────────────────────┐
@@ -147,10 +148,11 @@
 
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
 
-- **可选 squash**（第一次把目标主线合入交付分支之前）：
-  - 读 `delivery-contract.md`「可选历史整理（squash）」：定地板、Jev/Agent 建议、
-    用户确认后仅用 `reset --soft` + 按段界 `restore` 提交。
-  - 拒绝、不适用（他人 tip / 已推送 / 无可压区间）或未确认 → 跳过，不改写。
+- **可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
+  - 读 `delivery-contract.md`「可选历史整理（squash）」：定地板（含 `0,0` 定位失败则
+    不可压）、可选启发式、Jev/Agent 定型；用户确认后仅用 `reset --soft` + 按段界
+    `restore` 提交。
+  - 拒绝、不适用（他人 tip / 已推送 / 地板缺失 / 无可压区间）或未确认 → 跳过。
   - ❌ `--auto-pilot` / `--yolo` 不得擅自 squash；禁止 rebase / `merge --squash`。
   - 完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
@@ -169,7 +171,7 @@
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
     - 不启动 code-review、不重跑 verify full，沿用已有 code-review 终稿与主链
-      `verify.full.json`（若仍对齐集成前 HEAD；否则先按下方不可跳过路径补验）。
+      `verify.full.json`（须存在且 `all_passed: true`；否则先按下方不可跳过路径补验）。
     - 在 `code-review.md` 追加跳过说明（merge commit、路径清单；仍不得写入 commit
       hash）。
   - 本交付文档 = 当前对象文件，以及本分支自 start_commit 到集成前 HEAD 改过的 `docs/` 路径。
@@ -206,7 +208,7 @@
 **材料**
 
 - 确认主链 report **已交且声称通过**：
-  - 存在 `verify.full.json` 且 `all_passed: true`（不复验其是否仍对齐 HEAD）。
+  - 存在 `verify.full.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
   - objectives 中 verify full / fact audit 已勾。
   - 缺失则停止，提示先跑 `$mdf verify`（full）与 `$mdf fact audit`（必要时 fact update）。
