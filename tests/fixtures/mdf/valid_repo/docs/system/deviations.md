@@ -3,7 +3,6 @@ title: "Known deviations"
 doc_type: system-deviations
 evidence:
   - path: src/service.py
-    verification: "python -m pytest"
 ---
 
 # Known deviations

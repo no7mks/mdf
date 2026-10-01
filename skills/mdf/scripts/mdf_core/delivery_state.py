@@ -9,7 +9,7 @@ from .gitutil import branch_details, current_branch, run, unreleased_slug
 from .paths import load_manifest, path_stays_in_repo
 from .roster import fingerprint_data, owner_branch, require_roster
 from .verification import (
-    manifest_verification, recorded_suites, required_suites, suites_cover,
+    repo_verification, recorded_suites, required_suites, suites_cover,
 )
 
 STAGES = ("design", "write-tests", "implement", "converge", "code-review", "fact-update")
@@ -88,7 +88,7 @@ def fingerprints(repo, root, data, config=None):
     files = inventory(repo)
     protected = config.get("protected_paths", [])
     # 预算与命令一样决定门禁结果，同属验证配置。
-    commands = manifest_verification(load_manifest(repo)).config()
+    commands = repo_verification(repo).config()
     facts = {name: value for name, value in files.items()
              if name == "GLOSSARY.md" or (name.endswith(".md")
                  and name.startswith(("docs/user-guide/", "docs/system/")))}

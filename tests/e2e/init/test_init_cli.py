@@ -3,11 +3,11 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 
-def test_verification_commands_are_required_while_initializing(
+def test_modules_required_while_ready(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(repo / ".mdf" / "manifest.yaml", f'  quick: "{SUITE_OK}"\n', "")
+    (repo / ".mdf" / "modules.yaml").unlink()
     replace(
         repo / ".mdf" / "manifest.yaml", "state: ready", "state: initializing"
     )
@@ -16,18 +16,14 @@ def test_verification_commands_are_required_while_initializing(
     targeted = mdf(python_exe, "validate", "--repo", str(repo))
     assert targeted.returncode != 0
     assert "manifest.initializing" in targeted.stdout
-    assert "manifest.verification" in targeted.stdout
-
-    full = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
-    assert full.returncode != 0
-    assert "manifest.verification" in full.stdout
+    assert "modules.missing" in targeted.stdout
 
     replace(
         repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready"
     )
     ready = mdf(python_exe, "validate", "--repo", str(repo))
     assert ready.returncode != 0
-    assert "manifest.verification" in ready.stdout
+    assert "modules.missing" in ready.stdout
 
 
 def test_init_requires_a_non_empty_verification_command(

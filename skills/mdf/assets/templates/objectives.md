@@ -1,5 +1,13 @@
 # 交付目标
 
+## 步骤
+
+- [ ] 确认目标与约束
+- [ ] 完成设计与实现
+- [ ] verify full
+- [ ] fact update
+- [ ] finish 收口
+
 ## 需求来源
 
 {{MDF_PROPOSAL_REFERENCE}}

@@ -132,8 +132,8 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
     - 仅 `stale_verification` 且同设计已收敛时，记录过期状态，按相同条件进入 2 或 3，步骤 4 再重验。
     - 其他 `error`（含 `stale_gate`）停止，不跳过 converge。
 - bugfix/hotfix/release 不要求 feature 的 design/converge gate，但同样先测后审：
-  - 先判定走向。修复窗内进入 3，不因 `project-verify check` 失败回到 Verify 阶段。
-  - 只有进入 2 之前才运行 `project-verify check --repo "$REPO_ROOT"`。
+  - 先判定走向。修复窗内进入 3，不因 `$mdf verify check --level full` 失败回到 Verify 阶段。
+  - 只有进入 2 之前才运行 `$mdf verify check --level full --repo "$REPO_ROOT"`。
     - 证据缺失、过期或失败时停止并报告。
     - 由 `deliver.md`「先测后审」（Verify 阶段）修到全绿后再审查。
   - 修复续办进入 3 不要求全绿证据，由步骤 4 重验。
@@ -143,7 +143,7 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
   - 📌 同 worktree 或跨 worktree 联调时，进入 2 前须两端验收通过，且已确认此后不再改代码。
     - 同 worktree：两端都在本树验收。
     - 跨 worktree：未双端验收通过则不派审查。对端未到、未过或未冻结则停止。
-- hotfix 无 objectives，使用热修复范围。bugfix 读取对应 Bug。
+- hotfix/bugfix 读取 `objectives.md` checklist 与对应 Bug。
 - 不为形式创建 feature 材料。
 - bugfix 的 `changes/unreleased/<slug>/suites.json` 由 Verify 阶段关联；
   本步骤只核对其覆盖本次改动涉及的全部功能块。
@@ -229,20 +229,18 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 - feature：
   - 先运行 `delivery check --stage code-review`。
     - 非零读 stderr 最后一行的 `error`。除 `stale_verification` 外均停止。
-  - 以下任一成立时运行 `delivery verify`：
+  - 以下任一成立时运行 `delivery verify`（smoke 并集，写入 `gates/verification.json`；
+    不是 closeout 的 verify full）：
     - finish 本次集成产生新提交且增量不可跳过；
     - `error` 为 `stale_verification`；
     - 本轮改动实现、测试、验证配置。
-  - `delivery verify` 只跑 lint、build、quick、smoke，不含 named suite。
-  - design 所列 named suite 另以 `suite-run` 执行。
-    - 成功读 stdout 的 `result`：`log` 是目录，`report` 是汇总。
-    - 失败读 stderr 最后一行。不要把 `report` 当目录。
+  - `delivery verify` 只跑 lint、build、quick、smoke；named 改由 on-site 选题，不默认整 suite。
   - 仅非本交付 `docs/` 的集成不强制重验。
   - 仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
 - bugfix/hotfix/release：
-  - 先运行 `project-verify check`。
+  - 先运行 `$mdf verify check --level full`。
   - 只有本轮修复或集成改动了实现、测试或验证配置使证据过期时，
-    才运行 `project-verify run --repo "$REPO_ROOT"`。
+    才运行 `$mdf verify run --level full --repo "$REPO_ROOT"`；否则可 `advance`。
   - 脚本按当前分支执行所需 suite：
     依次执行 lint、build、quick 与 smoke（bugfix）或 release（release/hotfix）。
     - 逐项记录命令、预算、退出状态、报告汇总与 `suites`。
@@ -251,12 +249,9 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
   - 成功：读退出码、stdout 的 JSON，或落盘证据。
   - 失败：读 stderr 最后一行 JSON。
   - suite 超出预算即终止 process group 并判为失败。
-  - 重跑时另以 `suite-run` 执行 named suite：
-    - bugfix：`suites.json` 所列。
-    - release/hotfix 且 roster ≥1：design policy `suites` 所列。
-  - 未重跑时，named suite 结果与 quick 复现结论引用同目录 `verify.md` 中 Verify 阶段的记录。
+  - 重跑时可另跑 on-site 选题；未重跑时引用同目录 `verify.md` 中 Verify 阶段记录。
   - 证据未覆盖所需 suite 视为过期。
-  - finish 使用 `project-verify check --repo "$REPO_ROOT"` 核对输入 fingerprint、suite 与全绿结果；
+  - finish 使用 `$mdf verify check --level full --repo "$REPO_ROOT"` 核对 suite 与全绿结果；
     已收口 release/hotfix 改按 finish 步骤 4 核对 `changes/<semver>/` 的版本记录。
 - ❌ 不能用仅检查文档结构的 full validation 代替业务验证。
 - 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。

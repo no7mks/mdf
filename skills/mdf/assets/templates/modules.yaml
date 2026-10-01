@@ -1,0 +1,23 @@
+# Module 验证入口。命令与 tests glob 分 module 声明；repo 级同名套件为并集。
+# ignore.pattern 命中的路径不触发 verify，也不产生 uncovered 提示。
+# named suite 每个名字必须对应 docs/system/testing/<name>.md。
+modules:
+  default:
+    sourceset:
+      - "src/**"
+    ignore: []
+    lint: "true"
+    build: "true"
+    quick:
+      command: "true"
+      tests:
+        - "tests/**"
+    smoke:
+      command: "true"
+      tests:
+        - "tests/**"
+    release:
+      command: "true"
+      tests:
+        - "tests/**"
+    named: []

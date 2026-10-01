@@ -6,12 +6,6 @@ state: initializing
 versioning:
   strategy: semver
   latest_release: {{MDF_QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
-verification:
-  lint: "{{MDF_NON_EMPTY_LINT_COMMAND}}"
-  build: "{{MDF_NON_EMPTY_BUILD_COMMAND}}"
-  quick: "{{MDF_NON_EMPTY_QUICK_SUITE_COMMAND}}"
-  smoke: "{{MDF_NON_EMPTY_SMOKE_SUITE_COMMAND}}"
-  release: "{{MDF_NON_EMPTY_RELEASE_SUITE_COMMAND}}"
 implementation_roots:
   - "{{MDF_REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
 baselines:

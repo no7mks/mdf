@@ -45,7 +45,10 @@ def test_start_rejects_origin_commits_missing_locally(
         identifier = ["--proposal", "prp-001", "--objectives-file", str(obj)]
         branch = "feature/service-health"
     else:
-        identifier = ["--version", "1.3.0"]
+        identifier = [
+            "--version", "1.3.0",
+            "--objectives-file", str(write_work_objectives(tmp_path)),
+        ]
         branch = "hotfix/1.3.0"
     failed = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", kind, *identifier,
@@ -118,14 +121,20 @@ def test_start_uses_local_base_without_upstream(
             "--proposal", "prp-001", "--objectives-file", str(obj),
         ]
     elif kind == "bugfix":
-        identifier = ["--bug", "bug-CD34"]
+        identifier = [
+            "--bug", "bug-CD34",
+            "--objectives-file", str(write_work_objectives(tmp_path)),
+        ]
     elif kind == "release":
         identifier = [
             "--version", "1.3.0",
             "--objectives-file", str(write_release_objectives(tmp_path)),
         ]
     else:
-        identifier = ["--version", "1.3.0"]
+        identifier = [
+            "--version", "1.3.0",
+            "--objectives-file", str(write_work_objectives(tmp_path)),
+        ]
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
                          "--kind", kind, *identifier))
 
@@ -144,17 +153,23 @@ def test_start_uses_local_base_without_upstream(
         qa = Path(result["roles"]["qa"][0]["worktree"])
         assert qa == repo.parent / f"{repo.name}-worktrees" / "qa" / Path(result["branch"])
         assert git(qa, "rev-parse", "HEAD").stdout.strip() == result["start_commit"]
-    elif kind == "release":
+    elif kind in {"release", "bugfix", "hotfix"}:
         expected = git(work, "rev-parse", "HEAD").stdout.strip()
         assert expected != result["start_commit"]
-        root = work / "changes/unreleased/1.3.0"
+        folder = {
+            "release": "1.3.0",
+            "hotfix": "1.3.0",
+            "bugfix": "bug-cd34",
+        }[kind]
+        root = work / "changes/unreleased" / folder
         assert (root / "objectives.md").is_file()
         assert (root / "delivery.json").is_file()
         identity = json.loads((root / "delivery.json").read_text())
-        assert identity["branch"] == "release/1.3.0"
+        assert identity["branch"] == result["branch"]
         assert identity["start_commit"] == result["start_commit"]
-        doctor = payload(mdf(python_exe, "doctor", "--repo", str(work)))
-        assert doctor["findings"] == []
+        if kind == "release":
+            doctor = payload(mdf(python_exe, "doctor", "--repo", str(work)))
+            assert doctor["findings"] == []
     assert git(work, "rev-parse", "HEAD").stdout.strip() == expected
     tracking = run(["git", "rev-parse", "--abbrev-ref", "@{upstream}"], cwd=work)
     assert tracking.returncode != 0
@@ -264,7 +279,9 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     assert git(work, "branch", "--show-current").stdout.strip() == "feature/parallel"
 
     extra = payload(mdf(python_exe, "start", "--repo", str(repo),
-                          "--kind", "bugfix", "--bug", "bug-CD34"))
+                          "--kind", "bugfix", "--bug", "bug-CD34",
+                          "--objectives-file",
+                          str(write_work_objectives(tmp_path))))
     bugfix = Path(extra["worktree"])
     assert extra["branch"] == "bugfix/bug-CD34"
     assert extra["pushed"] is False
@@ -326,23 +343,25 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
     python_exe: str, tmp_path: Path,
 ):
     repo, _remote = start_repo(tmp_path)
+    obj = write_work_objectives(tmp_path)
     named = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
-        "--name", "timeout-fix",
+        "--name", "timeout-fix", "--objectives-file", str(obj),
     )
     assert "unexpected_name" in named.stderr
     missing = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
+        "--objectives-file", str(obj),
     )
     assert "missing_bug" in missing.stderr
     wrong = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
-        "--bug", "prp-001",
+        "--bug", "prp-001", "--objectives-file", str(obj),
     )
     assert "missing_bug" in wrong.stderr
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
-        "--bug", "bug-CD34",
+        "--bug", "bug-CD34", "--objectives-file", str(obj),
     ))
     assert created["branch"] == "bugfix/bug-CD34"
     assert created["roster"] == {
@@ -351,14 +370,22 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
         "review_strategy": "replicate",
     }
     assert created["roles"] == {"qa": [], "dev": []}
+    work = Path(created["worktree"])
+    assert (work / "changes/unreleased/bug-cd34/objectives.md").is_file()
 
 
 @pytest.mark.parametrize("kind", ["bugfix", "hotfix"])
 def test_review_start_stays_fixed_when_parent_moves(python_exe, tmp_path, kind):
     repo = local_repo(tmp_path)
-    identifier = ["--bug", "bug-CD34"] if kind == "bugfix" else ["--version", "1.2.1"]
+    obj = write_work_objectives(tmp_path)
+    identifier = (
+        ["--bug", "bug-CD34", "--objectives-file", str(obj)]
+        if kind == "bugfix"
+        else ["--version", "1.2.1", "--objectives-file", str(obj)]
+    )
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind, *identifier))
     work = Path(data["worktree"])
+    head_before = git(work, "rev-parse", "HEAD").stdout.strip()
     git(repo, "checkout", data["base"])
     (repo / "later.txt").write_text("后续交付\n")
     git(repo, "add", "--all")
@@ -367,7 +394,8 @@ def test_review_start_stays_fixed_when_parent_moves(python_exe, tmp_path, kind):
     saved = git(work, "config", "--local", "--get", key).stdout.strip()
     assert saved == data["start_commit"]
     assert saved != git(repo, "rev-parse", data["base"]).stdout.strip()
-    assert git(work, "diff", saved, "HEAD").stdout == ""
+    assert git(work, "rev-parse", "HEAD").stdout.strip() == head_before
+    assert head_before != saved
 
 
 def test_start_release_requires_objectives_and_rejects_markers(
@@ -386,9 +414,14 @@ def test_start_release_requires_objectives_and_rejects_markers(
         "--version", "1.3.0", "--objectives-file", str(template),
     )
     assert "missing_objectives" in marked.stderr
-    hotfix = mdf(
+    hotfix_missing = mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
+        "--version", "1.2.1",
+    )
+    assert "missing_objectives" in hotfix_missing.stderr
+    hotfix = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
         "--version", "1.2.1", "--objectives-file",
-        str(write_release_objectives(tmp_path)),
-    )
-    assert "unexpected_objectives" in hotfix.stderr
+        str(write_work_objectives(tmp_path)),
+    ))
+    assert (Path(hotfix["worktree"]) / "changes/unreleased/1.2.1/objectives.md").is_file()

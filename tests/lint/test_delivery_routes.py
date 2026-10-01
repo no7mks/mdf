@@ -176,7 +176,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
         "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
         "`--yolo` 时主 Agent 依据仓库证据与 Bug",
         "不代替该项批准", "不按分支 kind 选择 smoke 或 release",
-        "不调用 `project-verify` 或 `delivery verify`",
+        "不调用 `$mdf verify` 或 `delivery verify`",
         "master 不直接修改或提交",
         "标为 `fixed`",
         "未记录有效红灯不得改生产实现",
@@ -269,13 +269,14 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "两路不得各自再写底座" in contract
     assert "| feature | converge、code-review、finish | lint、build、quick、smoke |" in contract
     assert "| release / hotfix | Verify、code-review、finish | lint、build、quick、release |" in contract
-    assert "release / hotfix 的 `project-verify` 同样要求 Core 通过 lint、build、quick、release" in contract
+    assert "release / hotfix 的 `$mdf verify --level full` 同样要求 Core 通过 lint、build、quick、release" in contract
     assert "关联修复涉及的全部功能块中**已文档化**的" in contract
     assert "Core 不在门禁中执行也不核对其名称是否已文档化" in contract
     assert "每次运行 suite（含 named suite）都必须产出 JUnit XML 报告" in contract
     assert "即使命令退出码为 0" in contract
     assert "不按 feature、迭代或交付轮次建立" in contract
-    assert "不跑 release，更不跑 full" in contract
+    assert "closeout 的 verify full" in contract
+    assert "开发中不跑 full" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
     assert "新增或放宽须用户确认" in contract
@@ -287,16 +288,16 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "补覆盖按" in workflow("integrate")
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
     assert "full 指全部 test case，是 release 与各 named suite 的上界；它没有入口" in contract
-    assert "非 feature 分支变更 manifest `verification` 或新增 named suite：默认模式需用户确认" in contract
+    assert "非 feature 分支变更 modules.yaml 套件入口或新增 named suite：默认模式需用户确认" in contract
     repo_contract = workflow("repository-contract")
-    assert "只接受 `quick`、`smoke`、\n  `release`" in repo_contract
-    assert "named suite 与 full（全部 test case）不写入 manifest" in repo_contract
+    assert "验证命令**不在** manifest；写在 `.mdf/modules.yaml`" in repo_contract
+    assert "`named` 中每个名字必须有独立文档" in repo_contract
     design_text = workflow("design")
     assert "验收到 quick、smoke 与本交付 named suite 的映射" in design_text
     assert "必须同时给出 `protected_paths` 与 `suites`" in design_text
     assert "把用例归入 quick、smoke 或\ndesign policy `suites` 所列 named suite" in tests
     converge = workflow("converge")
-    assert "未跑 named suite 不得记录全绿" in converge
+    assert "未选题不得记录全绿" in converge or "未跑 named suite 不得记录全绿" in converge
     assert "仅缺 suite 文档则补齐回 3" in converge
     assert "阻塞停止" in converge
     assert "仅缺 named suite 文档 ────→ 3 Verify" in converge
@@ -309,6 +310,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "changes/unreleased/<slug>/suites.json" in review
     assert "不在未全绿的 HEAD 上派审查" in review
     assert "只有本轮修复或集成改动了实现" in review
+    assert "`$mdf verify run --level full`" in review or "verify run --level full" in review
     deliver = workflow("deliver")
     assert "### 先测后审" in deliver
     assert "| release 同 worktree 联调且尚未收口 |" in deliver

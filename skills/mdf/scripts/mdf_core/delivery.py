@@ -18,7 +18,7 @@ from .roster import (
     write_roster_config,
 )
 from .verification import (
-    SUITES, manifest_verification, parse_suite_names, required_suite, required_suites,
+    SUITES, repo_verification, parse_suite_names, required_suite, required_suites,
 )
 from .verify_run import run_verify_command
 from .validate_links import require_existing_local_links
@@ -120,7 +120,7 @@ def record_stage(repo, root, data, args):
 
 def verify(repo, root, data):
     before = require_design(repo, root, data)
-    verification = manifest_verification(load_manifest(repo))
+    verification = repo_verification(repo)
     planned = verification.plan(required_suite("feature"))
     results = []
     failed = False

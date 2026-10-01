@@ -3,7 +3,6 @@ title: "限制与恢复"
 doc_type: system-operations
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 限制与恢复

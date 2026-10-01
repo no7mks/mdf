@@ -3,7 +3,6 @@ title: "用户指南"
 doc_type: user-guide
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 用户指南

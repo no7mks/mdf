@@ -3,7 +3,6 @@ title: "Current capabilities"
 doc_type: user-guide
 evidence:
   - path: src/service.py
-    verification: "python -m pytest"
 ---
 
 # Current capabilities

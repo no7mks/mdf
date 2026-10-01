@@ -132,14 +132,6 @@ def _read_objectives(path: str | None) -> str:
     return text
 
 
-def _reject_objectives(kind: str, path: str | None) -> None:
-    if path:
-        raise MDFError(
-            f"{kind} 不要传 --objectives-file",
-            code="unexpected_objectives",
-        )
-
-
 def _unreleased_collision(repo: Path, base: str, folder: str) -> None:
     if not _git(
         repo, "cat-file", "-e", f"{base}:changes/unreleased/{folder}",
@@ -187,7 +179,7 @@ def command_start(args) -> None:
             )
         if not args.bug:
             raise MDFError("bugfix 需要 --bug", code="missing_bug")
-        _reject_objectives(args.kind, args.objectives_file)
+        objectives = _read_objectives(args.objectives_file)
         from .bugs import bug_id_on_ref, require_startable_bug
         suffix = bug_id_on_ref(repo, args.bug, base)
         _unreleased_collision(repo, base, slugify(suffix))
@@ -196,8 +188,9 @@ def command_start(args) -> None:
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     else:
-        _reject_objectives(args.kind, args.objectives_file)
         suffix = _require_version(args.version)
+        objectives = _read_objectives(args.objectives_file)
+        _unreleased_collision(repo, base, suffix)
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
         args.kind, args.qa, args.dev, args.reviewers,
@@ -226,7 +219,7 @@ def command_start(args) -> None:
         _git(work, "config", "--local",
              f"branch.{branch}.mdf-start-commit", start_commit)
         write_roster_config(work, branch, roster)
-        write_identity = objectives is not None or roster["qa"] > 0
+        write_identity = True
         if write_identity:
             from .delivery_state import safe, write_json
             folder = suffix if args.kind == "feature" else unreleased_slug(
@@ -257,8 +250,10 @@ def command_start(args) -> None:
                 message = f"docs(delivery): 确认 {args.proposal} 交付目标"
             elif args.kind == "release":
                 message = f"docs(delivery): 确认 {args.version} 发布目标"
+            elif args.kind == "bugfix":
+                message = f"docs(delivery): 确认 {args.bug} 修复目标"
             else:
-                message = "docs(delivery): 冻结 roster"
+                message = f"docs(delivery): 确认 {args.version} 热修复目标"
             _git(work, "commit", "-m", message)
     except MDFError:
         _discard(repo, created)

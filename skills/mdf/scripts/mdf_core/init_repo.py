@@ -76,19 +76,8 @@ def parse_baselines(values: list[str]) -> dict[str, dict[str, str]]:
 def render_manifest(
     baselines: dict[str, dict[str, str]],
     latest_release: str | None,
-    verification: dict[str, Any],
     implementation_roots: list[str],
 ) -> str:
-    command_lines = [
-        f"  {name}: {yaml_quote(command)}"
-        for name, command in verification["commands"].items()
-    ]
-    if verification["budgets"]:
-        command_lines.append("  budgets:")
-        command_lines.extend(
-            f"    {name}: {seconds}"
-            for name, seconds in verification["budgets"].items()
-        )
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",
@@ -99,8 +88,6 @@ def render_manifest(
             if latest_release is not None
             else "  latest_release: null"
         ),
-        "verification:",
-        *command_lines,
         "implementation_roots:",
         *[f"  - {yaml_quote(root)}" for root in implementation_roots],
         "baselines:",
@@ -155,17 +142,32 @@ def init_files(
     verification: dict[str, Any],
     implementation_roots: list[str],
 ) -> dict[Path, str]:
+    from .modules_check import render_modules_yaml
+
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
             latest_release,
-            verification,
             implementation_roots,
         )
     }
-    ignore = repo / ".mdf" / "audit-ignore.yaml"
-    if not ignore.exists():
-        files[ignore] = template_text("audit-ignore.yaml", "ignored: []\n")
+    modules = repo / ".mdf" / "modules.yaml"
+    if not modules.exists():
+        commands = verification.get("commands", verification)
+        budgets = verification.get("budgets", {})
+        sourceset = [f"{root}/**" for root in implementation_roots]
+        files[modules] = render_modules_yaml(
+            sourceset=sourceset or ["src/**"],
+            lint=commands["lint"],
+            build=commands["build"],
+            quick=commands["quick"],
+            smoke=commands["smoke"],
+            release=commands["release"],
+            budgets=budgets or None,
+            tests_quick=["tests/**"],
+            tests_smoke=["tests/**"],
+            tests_release=["tests/**"],
+        )
     for root in implementation_roots:
         path = repo / root / ".gitkeep"
         if not path.exists():

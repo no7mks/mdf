@@ -1,5 +1,6 @@
-"""项目验证入口：lint、build 与 quick/smoke/release 三个全局 suite；失败标准由项目命令负责。"""
+"""项目验证入口：lint、build 与 quick/smoke/release；命令来自 `.mdf/modules.yaml`。"""
 import re
+from pathlib import Path
 
 from .errors import MDFError
 
@@ -14,7 +15,7 @@ MIGRATE_HINT = "；用 $mdf migrate 收敛到当前契约"
 
 
 class Verification:
-    """manifest.verification 的已校验视图：commands 为入口名 -> 命令，budgets 为 suite -> 秒数。"""
+    """已校验的验证视图：commands 为入口名 -> 命令，budgets 为 suite -> 秒数。"""
 
     def __init__(self, commands, budgets):
         self.commands = commands
@@ -25,8 +26,14 @@ class Verification:
 
     def plan(self, suite):
         names = [*STEPS, "quick"] + ([suite] if suite != "quick" else [])
-        return [{"id": name, "command": self.commands[name], "budget": self.budget(name)}
-                for name in names]
+        return [
+            {
+                "id": name,
+                "command": self.commands[name],
+                "budget": self.budget(name),
+            }
+            for name in names
+        ]
 
     def config(self):
         return {"commands": self.commands, "budgets": self.budgets}
@@ -57,11 +64,17 @@ def suites_cover(recorded, required):
 
 def parse_suite_names(raw):
     if not isinstance(raw, list) or not raw:
-        raise MDFError("named suite 必须为非空名称列表", code="invalid_delivery_suite")
+        raise MDFError(
+            "named suite 必须为非空名称列表", code="invalid_delivery_suite"
+        )
     seen = []
     for name in raw:
-        if (not isinstance(name, str) or not NAME_RE.fullmatch(name)
-                or name in RESERVED or name in seen):
+        if (
+            not isinstance(name, str)
+            or not NAME_RE.fullmatch(name)
+            or name in RESERVED
+            or name in seen
+        ):
             raise MDFError(
                 "named suite 名称无效、重复或占用 lint/build/quick/smoke/release/full",
                 code="invalid_delivery_suite",
@@ -71,22 +84,37 @@ def parse_suite_names(raw):
 
 
 def validate_verification(raw):
-    if not isinstance(raw, dict) or set(raw) - {*ENTRIES, "budgets"} or set(ENTRIES) - set(raw):
+    """兼容旧 manifest.verification 形状；新仓以 modules 为准。"""
+    if (
+        not isinstance(raw, dict)
+        or set(raw) - {*ENTRIES, "budgets"}
+        or set(ENTRIES) - set(raw)
+    ):
         raise MDFError(
-            "verification 必须且只能声明 lint、build、quick、smoke、release 与可选 budgets"
-            + MIGRATE_HINT,
+            "verification 必须且只能声明 lint、build、quick、smoke、release "
+            "与可选 budgets" + MIGRATE_HINT,
             code="invalid_verification",
         )
     commands = {}
     for name in ENTRIES:
         value = raw[name]
         if not isinstance(value, str) or not value.strip():
-            raise MDFError(f"verification.{name} 必须为非空命令", code="invalid_verification")
+            raise MDFError(
+                f"verification.{name} 必须为非空命令",
+                code="invalid_verification",
+            )
         commands[name] = value
     budgets = raw.get("budgets", {})
-    if (not isinstance(budgets, dict) or set(budgets) - set(SUITES)
-            or any(isinstance(value, bool) or not isinstance(value, int) or value <= 0
-                   for value in budgets.values())):
+    if (
+        not isinstance(budgets, dict)
+        or set(budgets) - set(SUITES)
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value <= 0
+            for value in budgets.values()
+        )
+    ):
         raise MDFError(
             "verification.budgets 只接受 quick、smoke、release 的正整数秒数",
             code="invalid_verification",
@@ -94,8 +122,21 @@ def validate_verification(raw):
     return Verification(commands, dict(budgets))
 
 
+def repo_verification(repo: Path):
+    """从 `.mdf/modules.yaml` 构建 repo 级 Verification（并集命令）。"""
+    from .modules import load_modules
+
+    return load_modules(repo).verification()
+
+
 def manifest_verification(manifest):
-    return validate_verification(manifest.get("verification"))
+    """优先由调用方改用 repo_verification(repo)；保留 manifest 兼容路径。"""
+    if isinstance(manifest, dict) and "verification" in manifest:
+        return validate_verification(manifest.get("verification"))
+    raise MDFError(
+        "验证命令已迁至 .mdf/modules.yaml" + MIGRATE_HINT,
+        code="invalid_verification",
+    )
 
 
 def parse_budgets(raw):
@@ -103,6 +144,8 @@ def parse_budgets(raw):
     for value in raw:
         name, sep, seconds = value.partition("=")
         if not sep or name in budgets or not seconds.isdigit():
-            raise MDFError("--budget 必须为 <suite>=<秒数>", code="invalid_verification")
+            raise MDFError(
+                "--budget 必须为 <suite>=<秒数>", code="invalid_verification"
+            )
         budgets[name] = int(seconds)
     return budgets

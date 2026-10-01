@@ -213,10 +213,40 @@ def build_parser() -> argparse.ArgumentParser:
     worktree.set_defaults(func=command_worktree_check)
 
     from .project_verify import command_project_verify, command_quick_run, command_suite_run
+    from .module_verify import command_verify
+
     verification = subparsers.add_parser("project-verify")
     verification.add_argument("action", choices=("run", "check"))
     verification.add_argument("--repo", required=True)
     verification.set_defaults(func=command_project_verify)
+
+    verify = subparsers.add_parser("verify")
+    verify.add_argument("action", choices=("run", "check", "advance"))
+    verify.add_argument("--repo", required=True)
+    verify.add_argument(
+        "--level",
+        choices=("on-site", "full"),
+        required=True,
+    )
+    verify.add_argument(
+        "--module",
+        action="append",
+        default=[],
+        help="on-site 目标 module；可重复",
+    )
+    verify.add_argument(
+        "--paths",
+        action="append",
+        default=[],
+        help="改动路径，用于推断 on-site module",
+    )
+    verify.add_argument(
+        "--test",
+        action="append",
+        default=[],
+        help="on-site 额外 test/testcase 命令（Agent+Jev 选题后传入）",
+    )
+    verify.set_defaults(func=command_verify)
 
     quick_run = subparsers.add_parser("quick-run")
     quick_run.add_argument("--repo", required=True)

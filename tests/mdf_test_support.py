@@ -36,6 +36,17 @@ def write_release_objectives(
     return path
 
 
+def write_work_objectives(
+    tmp_path: Path, name: str = "work-objectives.md",
+) -> Path:
+    path = tmp_path / name
+    path.write_text(
+        "# 目标\n\n- [ ] 修复\n- [ ] verify full\n- [ ] fact update\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def mdf(python_exe: str, *args: str, cwd: Path | None = None):
     """调用同一进程内的 CLI，避免每个命令再起一个 Python 解释器。"""
     scripts = str((skill_dir("mdf") / "scripts").resolve())
@@ -165,6 +176,47 @@ def replace(path: Path, old: str, new: str) -> None:
 
 
 SUITE_OK = "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+
+
+def modules_yaml(repo: Path) -> Path:
+    return repo / ".mdf" / "modules.yaml"
+
+
+def patch_module_command(repo: Path, entry: str, transform) -> None:
+    """改写 default module 的 lint/build 命令，或 suite 的 command 字符串。"""
+    path = modules_yaml(repo)
+    text = path.read_text(encoding="utf-8")
+    if entry in ("lint", "build"):
+        old = f'    {entry}: "'
+        start = text.index(old) + len(old)
+        end = text.index('"', start)
+        path.write_text(text[:start] + transform(text[start:end]) + text[end:])
+        return
+    marker = f"    {entry}:\n      command: \""
+    start = text.index(marker) + len(marker)
+    end = text.index('"', start)
+    path.write_text(text[:start] + transform(text[start:end]) + text[end:])
+
+
+def set_modules_budget(repo: Path, suite: str, seconds: int) -> None:
+    path = modules_yaml(repo)
+    text = path.read_text(encoding="utf-8")
+    if text.rstrip().endswith("named: []") or "\nnamed: []\n" in text:
+        pass
+    if "\nbudgets:\n" in text:
+        import re
+
+        text = re.sub(
+            rf"(budgets:\n(?:  .*\n)*?)(  {suite}: )\d+",
+            rf"\g<1>\g<2>{seconds}",
+            text,
+            count=1,
+        )
+        if f"  {suite}:" not in text.split("budgets:\n", 1)[-1]:
+            text = text.replace("budgets:\n", f"budgets:\n  {suite}: {seconds}\n", 1)
+    else:
+        text = text.rstrip() + f"\nbudgets:\n  {suite}: {seconds}\n"
+    path.write_text(text, encoding="utf-8")
 
 
 def verification_args(command: str = "true") -> list[str]:

@@ -31,10 +31,12 @@ def test_quick_run_passes_on_master_and_detached_without_evidence(python_exe, tm
 
 def test_quick_run_runs_all_and_reports_every_failure(python_exe, tmp_path):
     repo = local_repo(tmp_path)
-    manifest = repo / ".mdf/manifest.yaml"
-    replace(manifest, 'build: "true"', 'build: "false"')
-    replace(manifest, "quick: \"echo '<testsuite><testcase/></testsuite>'",
-            "quick: \"echo '<testsuite><testcase><skipped/></testcase></testsuite>'")
+    patch_module_command(repo, "build", lambda _: "false")
+    patch_module_command(
+        repo,
+        "quick",
+        lambda _: "echo '<testsuite><testcase><skipped/></testcase></testsuite>' > $MDF_REPORT_DIR/r.xml",
+    )
     error = error_of(mdf(python_exe, "quick-run", "--repo", str(repo)))
     assert error["error"] == "verify_command_failed"
     details = error["details"]
@@ -49,12 +51,9 @@ def test_quick_run_runs_all_and_reports_every_failure(python_exe, tmp_path):
 
 def test_quick_run_rejects_missing_report_and_not_ready(python_exe, tmp_path):
     repo = local_repo(tmp_path)
-    manifest = repo / ".mdf/manifest.yaml"
-    original = manifest.read_text()
-    replace(manifest, "quick: \"echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml\"",
-            'quick: "true"')
+    patch_module_command(repo, "quick", lambda _: "true")
     error = error_of(mdf(python_exe, "quick-run", "--repo", str(repo)))
     quick = error["details"]["results"][-1]
     assert quick["id"] == "quick" and quick["error"] == "missing_test_report"
-    manifest.write_text(original.replace("state: ready", "state: initializing"))
+    replace(repo / ".mdf/manifest.yaml", "state: ready", "state: initializing")
     assert error_of(mdf(python_exe, "quick-run", "--repo", str(repo)))["error"] == "manifest_not_ready"

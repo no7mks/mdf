@@ -12,10 +12,11 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     assert reports["quick"]["suite"] == "quick" and reports["smoke"]["tests"] == 1
     assert (repo / reports["smoke"]["path"] / "r.xml").is_file()
     assert ".mdf/" not in git(repo, "status", "--porcelain").stdout
-    manifest = repo / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace(
-        SUITE_OK, SUITE_OK.replace("<testcase/>", "<testcase><skipped/></testcase>"), 1,
-    ))
+    patch_module_command(
+        repo,
+        "quick",
+        lambda c: c.replace("<testcase/>", "<testcase><skipped/></testcase>"),
+    )
     result = mdf(python_exe, "delivery", "verify", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
     evidence = json.loads((root / "gates/verification.json").read_text())

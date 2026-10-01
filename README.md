@@ -71,8 +71,9 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf converge` | 收敛：集成并持续修复到所需 suite 通过 |
 | `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
 | `$mdf verify-fix [<bug-id>]` | 二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复） |
+| `$mdf verify --level on-site|full` | module 级验证；开发用 on-site，closeout 前用 full |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
-| `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；finish 前段自动调用 |
+| `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify full 之后 |
 | `$mdf finish` | 按 Gitflow 分支完成审计与收口 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
@@ -91,8 +92,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 `start → design → [write-tests ∥ implement] → converge → code-review → finish`
 
-- bugfix、release、hotfix 同样先测后审：`start → 开发 → verify → code-review → finish`。
-  - 收口复用有效的验证证据，不重跑 release suite。
+- bugfix、release、hotfix 同样先测后审：`start → 开发(on-site) → code-review → verify full → fact update → finish`。
+  - 收口复用有效的 full 证据，不重跑 release suite。
 - 一个 feature 对应一个 PRP。
   - 设计须提交测试与实现共用的代码底座，之后两路可并行。
   - gate 检查共同基线与有效证据。
@@ -135,7 +136,8 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - 死硬阻塞仍停止。
 - release 从 develop 开分支前确认发布目标。
   - 工作线三选一；目标里只写选中的那条。不实施新 PRP。
-  - 不联调：`start → 开发 → verify → code-review → fact update → finish`。
+  - 不联调：`start → 开发 → verify → code-review → verify full → fact update → finish`。
+    开发中只用 on-site；full 与 fact update 只在 closeout 前。
   - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
   - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
   - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。

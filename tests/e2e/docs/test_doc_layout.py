@@ -204,8 +204,15 @@ def test_agents_size_warning_can_be_ignored(python_exe: str, tmp_path: Path):
     agents = repo / "AGENTS.md"
     text = agents.read_text(encoding="utf-8")
     agents.write_text("\n".join(["自定义规则。"] * 300) + "\n" + text, encoding="utf-8")
-    (repo / ".mdf" / "audit-ignore.yaml").write_text(
-        "ignored:\n  - path: AGENTS.md\n    reason: 保留托管块外说明\n",
+    modules = repo / ".mdf" / "modules.yaml"
+    modules.write_text(
+        modules.read_text().replace(
+            "    ignore: []\n",
+            "    ignore:\n"
+            "      - pattern: AGENTS.md\n"
+            "        reason: 保留托管块外说明\n",
+            1,
+        ),
         encoding="utf-8",
     )
     init_git(repo)

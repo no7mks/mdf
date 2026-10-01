@@ -55,6 +55,7 @@ def test_start_bugfix_can_set_reviewers_and_roles(python_exe, tmp_path):
     plain = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
         "--bug", "bug-CD34", "--reviewers", "2",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
     ))
     assert plain["roster"] == frozen(0, 0, 2)
     assert plain["roles"] == {"qa": [], "dev": []}
@@ -338,6 +339,7 @@ def test_bugfix_roster_update_without_delivery_json(python_exe, tmp_path):
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
         "--bug", "bug-CD34",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
     ))
     work = Path(started["worktree"])
     updated = payload(mdf(

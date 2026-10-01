@@ -101,9 +101,10 @@
 - `$mdf converge`：集成并持续修复到所需 suite 通过
 - `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
+- `$mdf verify --level on-site|full`：module 级验证；开发用 on-site，closeout 前用 full
 - `$mdf code-review`：审查并修复实现、测试和 code smell
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
-  finish 前段自动调用
+  工作分支仅 closeout 在 verify full 之后调用
 - `$mdf finish`：按 Gitflow 分支完成审计与收口
 
 #### 维护
@@ -180,7 +181,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`design`、`write-tests`、`implement`、`converge`；
-  `fix`、`verify-fix`、`code-review`、`fact update`、`finish`
+  `fix`、`verify-fix`、`verify`、`code-review`、`fact update`、`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
 
@@ -284,8 +285,8 @@ $mdf clarify 要不要把缓存放到 Redis
     - roster 默认：feature 为 min-tdd；release 为 solo 加 3 名 partition reviewer；其他为 solo。
     - `--*-model` 为口语描述，可点名多个模型。人数 ≥1 时建立 qa/dev 角色树。
     - release 开分支前确认发布目标（工作线只写选中的一条；须写明是否联调；不实施新 PRP）。
-    - hotfix 始终在 objectives 记录已确认范围：roster `0,0` 由 deliver 在开发前写，≥1 由 design 写。
-    - bugfix roster `0,0` 不写 objectives；≥1 由 design 写。
+    - hotfix 始终在 objectives 记录已确认范围：roster `0,0` 由 start 写入，≥1 可由 design 修订。
+    - bugfix 同样写 objectives checklist（含 roster `0,0`）。
 
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
@@ -391,9 +392,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf sync`；先拉后推三大 trunk，多余分支只报告；禁止 force-push。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
-  - 用途：同 worktree 保留角色、计划、验收与收口，不打开消息通道。跨 worktree 才收发消息。
-  - 说明：从 init 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
-    先 courtesy，必须收到 ack。每等待 1 分钟互发 heartbeat。只改本仓；只 poll 本侧。15、30、45、60 秒。
+  - 用途：同 worktree 保留角色与验收；跨 worktree 才收发消息。强制 Goal，先 courtesy 等 ack。
+  - 说明：每分钟 heartbeat；只改本仓、只 poll 本侧。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

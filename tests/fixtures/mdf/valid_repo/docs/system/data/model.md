@@ -3,7 +3,6 @@ title: "Data model"
 doc_type: system-data
 evidence:
   - path: src/service.py
-    verification: "python -m pytest"
 ---
 
 # Data model

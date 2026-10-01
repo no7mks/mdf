@@ -115,18 +115,19 @@ owner 另开第二个。subagent 按 `common.md`「切换工作区」绝对路�
 
 ### 验证与阻塞记录
 
-先跑 Core，再跑 named suite：
+先跑 Core，再按需选题：
 
 1. 运行 `delivery verify`；脚本依次执行 lint、build、quick、smoke，suite 超预算即失败。
-2. 再以 `suite-run` 执行 design policy `suites` 所列每个 named suite 的文档化入口命令。
+   （写入 `gates/verification.json`；不是 closeout 的 `$mdf verify --level full`。）
+2. 再据 design policy `suites` 与改动摘要，由 Agent+Jev 选题跑具体 test/testcase（可 `suite-run`）。
 
 - roster ≥1 的非 feature 同样经 `delivery verify` 只跑到 smoke；release suite 有意留给其后
-  deliver 的 Verify 阶段执行。
+  deliver 的 Verify 阶段 / closeout full 执行。
 
 - 修复循环可按该页的命令模板点名执行 test case 或 test 定位失败。
-- 📌 最终必须 Core 与 named suite 全部通过；未跑 named suite 不得记录全绿。
+- 📌 最终必须 Core 通过；design 声明的 named 须有可追溯选题结果，未选题不得记录全绿。
 - 所列 named suite 在 `docs/system/testing/` 无文档时：
-  - 仅缺文档、无需改测试：converge 执行者在 owner 的 `docs/system/testing/` 补该 suite 的一节或一页。
+  - 仅缺文档、无需改测试：converge 执行者在 owner 的 `docs/system/testing/` 补该 suite 的独立一页。
     写入 summary 并随本阶段提交，然后留在步骤 3。
   - 须改测试（如该 suite 尚无成员）：属测试修改，按下方修改授权取得批准后在 owner 完成，
     记录 `--test-approval`。

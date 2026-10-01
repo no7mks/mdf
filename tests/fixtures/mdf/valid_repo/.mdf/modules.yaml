@@ -1,0 +1,23 @@
+modules:
+  default:
+    sourceset:
+      - "src/**"
+    ignore: []
+    lint: "true"
+    build: "true"
+    quick:
+      command: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+      tests:
+        - "tests/**"
+        - "src/**"
+    smoke:
+      command: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+      tests:
+        - "tests/**"
+        - "src/**"
+    release:
+      command: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
+      tests:
+        - "tests/**"
+        - "src/**"
+    named: []

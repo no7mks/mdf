@@ -3,7 +3,6 @@ title: "可观测性"
 doc_type: system-operations
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 可观测性

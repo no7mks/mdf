@@ -77,6 +77,7 @@ disable-model-invocation: true
                  ├──── fix <bug-id> [--yolo] ─────────────────────────→ references/fix.md
                  ├──── verify-fix [<bug-id>] ─────────────────────────→ references/verify-fix.md
                  ├──── code-review ───────────────────────────────────→ references/code-review.md
+                 ├──── verify ────────────────────────────────────────→ references/verify.md
                  ├──── fact update ───────────────────────────────────→ references/fact-update.md
                  ├──── prp split ─────────────────────────────────────→ references/prp-split.md
                  ├──── finish ────────────────────────────────────────→ references/finish.md

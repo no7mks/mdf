@@ -3,7 +3,6 @@ title: "系统边界"
 doc_type: system-boundary
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 系统边界

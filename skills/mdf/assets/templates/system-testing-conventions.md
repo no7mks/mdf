@@ -3,7 +3,6 @@ title: "测试约定"
 doc_type: system-testing
 evidence:
   - path: PROJECT.md
-    verification: "# 对照验证卡片、manifest verification 与本页各 suite 的入口命令、预算是否一致"
 ---
 
 # 测试约定

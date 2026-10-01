@@ -21,7 +21,7 @@ from .gitutil import (
     run,
 )
 from .paths import ensure_safe_managed_paths, load_manifest
-from .verification import SUITES, manifest_verification
+from .verification import SUITES, repo_verification
 from .yamlutil import read_frontmatter
 
 
@@ -37,11 +37,19 @@ def _json_argument(raw: str | None, *, name: str, default: Any) -> Any:
 
 
 def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
-    return [item["command"] for item in manifest_verification(manifest).plan("release")]
+    del manifest  # 命令来自 modules.yaml
+    raise MDFError(
+        "改用 repo_verification(repo).plan('release')",
+        code="invalid_verification",
+    )
+
+
+def repo_release_commands(repo: Path) -> list[str]:
+    return [item["command"] for item in repo_verification(repo).plan("release")]
 
 
 def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:
-    """project-verify 证据在当前输入下仍有效且命令一致时，复用其结果而不重跑。"""
+    """project-verify / verify full 证据在当前 commit 下仍有效且命令一致时复用。"""
     from .project_verify import evidence_path, valid_evidence
 
     evidence = valid_evidence(repo)
@@ -179,7 +187,7 @@ def derive_closeout_spec(
             "--deferred-acceptance-json 必须是对象",
             code="invalid_closeout_spec",
         )
-    commands = manifest_verification_commands(manifest)
+    commands = repo_release_commands(repo)
     return {
         "schema_version": SCHEMA_VERSION,
         "mode": mode,
@@ -225,7 +233,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
         )
         return
 
-    verify_items = manifest_verification(manifest).plan("release")
+    verify_items = repo_verification(repo).plan("release")
     reused = reusable_results(repo, context["validation_commands"])
     if reused is not None:
         command_results = reused["results"]

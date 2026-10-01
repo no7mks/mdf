@@ -8,7 +8,11 @@ from support_upgrade import *  # noqa: F403
 @pytest.mark.parametrize("after_push", [False, True])
 def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, monkeypatch, after_push):
     repo, remote = start_repo(tmp_path)
-    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix", "--version", "1.2.1"))
+    created = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
+        "--version", "1.2.1",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
+    ))
     work = Path(created["worktree"])
     write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
@@ -50,7 +54,11 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
 @pytest.mark.parametrize("push_develop", [False, True])
 def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeypatch, push_develop):
     repo, remote = start_repo(tmp_path)
-    created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix", "--version", "1.2.1"))
+    created = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
+        "--version", "1.2.1",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
+    ))
     work = Path(created["worktree"])
     write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
@@ -85,10 +93,13 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
 def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_path, kind, advance, pushed):
     repo, remote = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind,
-                          "--version", "1.2.1", *([
-                              "--objectives-file",
-                              str(write_release_objectives(tmp_path)),
-                          ] if kind == "release" else [])))
+                          "--version", "1.2.1",
+                          "--objectives-file",
+                          str(
+                              write_release_objectives(tmp_path)
+                              if kind == "release"
+                              else write_work_objectives(tmp_path)
+                          )))
     work = Path(created["worktree"])
     write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")

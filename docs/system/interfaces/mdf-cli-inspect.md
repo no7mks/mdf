@@ -74,7 +74,7 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 | Proposal、Bug、`docs/JOTS.md` | 500 |
 
 - 整份 `AGENTS.md` 超过 200 行另发 warning `agents.size`。
-  - `.mdf/audit-ignore.yaml` 可写 `path: AGENTS.md` 记住后不再提示。
+  - `.mdf/modules.yaml` 可写 `pattern: AGENTS.md` 记住后不再提示。
 - `full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。
 
 同一检查面还按 `skills/mdf/references/doc-structure.md` 报结构硬限制（`docs/JOTS.md` 除外，

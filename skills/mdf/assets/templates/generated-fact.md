@@ -3,7 +3,6 @@ title: "{{MDF_TITLE}}"
 doc_type: "{{MDF_DOC_TYPE}}"
 evidence:
   - path: "{{MDF_SOURCE_PATH}}"
-    verification: "{{MDF_GENERATOR_COMMAND}}"
 generated:
   source: "{{MDF_SOURCE_PATH}}"
   generator: "{{MDF_GENERATOR_PATH}}"

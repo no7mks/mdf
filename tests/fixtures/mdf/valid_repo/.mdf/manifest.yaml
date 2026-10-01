@@ -3,12 +3,6 @@ state: ready
 versioning:
   strategy: semver
   latest_release: "1.2.0"
-verification:
-  lint: "true"
-  build: "true"
-  quick: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
-  smoke: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
-  release: "echo '<testsuite><testcase/></testsuite>' > $MDF_REPORT_DIR/r.xml"
 implementation_roots: [src]
 baselines:
   glossary:

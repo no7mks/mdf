@@ -85,10 +85,9 @@ feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
 一次只要求一个分支的类型和必要标识：
 
 - feature 要 PRP ID，bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
-- feature 与 release 还要确认的 objectives；start 不为 bugfix/hotfix 写 objectives。
-  - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 补写。
-  - hotfix 始终记录已确认的热修复范围：roster `0,0` 由 deliver 在开发前确认并写入，
-    roster ≥1 由 design 的 Baseline 写入。
+- feature 与 release 还要确认的 objectives（含 `[ ]`/`[x]` 大步骤 checklist）；
+  bugfix/hotfix 在 start 后同样写入 objectives checklist（roster `0,0` 也写）。
+  - hotfix 始终记录已确认的热修复范围；roster ≥1 可由 design 修订。
 - feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 - bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，不得另选 slug。
@@ -111,7 +110,8 @@ feature 与 release 的步骤 2 读取并内部执行 `references/clarify.md`。
 
 **澄清**
 
-feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤。
+feature、release、bugfix 与 hotfix 均按下列规则写入 objectives checklist；
+feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简 checklist。
 
 - feature：
   - 对照 ready PRP 与 `assets/templates/objectives.md`。
@@ -198,9 +198,9 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 | kind | 追加参数 | 说明 |
 | --- | --- | --- |
 | feature | `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>` | 不传 `--name`；CLI 从 PRP 文件名取出 slug |
-| bugfix | `--bug <Bug-ID>` | 不传 `--name`；CLI 用该 ID 作为分支名 |
+| bugfix | `--bug <Bug-ID> --objectives-file <checklist 文件>` | 不传 `--name`；CLI 用该 ID 作为分支名 |
 | release | `--version <semver> --objectives-file <步骤 2 确认文件>` | — |
-| hotfix | `--version <semver>` | 不传 `--objectives-file` |
+| hotfix | `--version <semver> --objectives-file <checklist 文件>` | — |
 
 - 将步骤 3 确认的 roster 传给 CLI，不得改写已确认值：
   - 选用 named 时传 `--roster`。
@@ -239,8 +239,8 @@ feature 与 release 按下列规则澄清；hotfix 与 bugfix 不进入本步骤
 - 阶段材料：
   - feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.json`
     （含 roster）及 `objectives.md` 并提交。
-  - roster ≥1 的 bugfix/hotfix 写入 `delivery.json`（含 roster），不写 objectives（由 design 补写）。
-  - roster `0,0` 的 bugfix/hotfix 不创建阶段材料；hotfix 的 objectives.md 由 deliver 在开发前写入。
+  - bugfix/hotfix 同样写入 `delivery.json`（含 roster）与含 checklist 的 `objectives.md`。
+  - roster ≥1 时 design 可修订 objectives；roster `0,0` 亦须有 objectives。
   - bugfix 的 named suite 关联由 deliver 的 Verify 阶段写入，本步不写。
 - roster ≥1 时后续 write-tests / implement 使用 `roles` 列表中的路径。
 - 创建成功进入 5，本步不结束。

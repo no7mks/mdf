@@ -66,6 +66,7 @@ def test_dirty_planning_does_not_block_feature_finish(python_exe, tmp_path):
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
         "--bug", "bug-CD34",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
     ))
     bugfix = Path(created["worktree"])
     (bugfix / "fix.txt").write_text("ok\n")

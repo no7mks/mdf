@@ -3,7 +3,6 @@ title: "System boundary"
 doc_type: system-boundary
 evidence:
   - path: src/service.py
-    verification: "python -m pytest"
 ---
 
 # System boundary

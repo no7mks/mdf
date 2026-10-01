@@ -3,7 +3,6 @@ title: "Current architecture"
 doc_type: system-architecture
 evidence:
   - path: src/service.py
-    verification: "python -m pytest"
 ---
 
 # Current architecture

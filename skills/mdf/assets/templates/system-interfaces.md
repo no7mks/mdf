@@ -3,7 +3,6 @@ title: "{{MDF_TOPIC_TITLE}}"
 doc_type: system-interfaces
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # {{MDF_TOPIC_TITLE}}

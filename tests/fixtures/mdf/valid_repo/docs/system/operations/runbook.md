@@ -3,7 +3,6 @@ title: "Current operations"
 doc_type: system-operations
 evidence:
   - path: src/service.py
-    verification: "python -m pytest"
 ---
 
 # Current operations

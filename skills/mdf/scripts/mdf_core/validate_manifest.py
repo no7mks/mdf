@@ -116,11 +116,14 @@ def validate_manifest(
             "state must be initializing or ready",
             ".mdf/manifest.yaml",
         )
-    from .verification import manifest_verification
-    try:
-        manifest_verification(manifest)
-    except MDFError as exc:
-        add_finding(findings, "manifest.verification", str(exc), ".mdf/manifest.yaml")
+    if "verification" in manifest:
+        add_finding(
+            findings,
+            "manifest.verification_moved",
+            "verification 已迁至 .mdf/modules.yaml；请从 manifest 删除 verification"
+            "；用 $mdf migrate 收敛到当前契约",
+            ".mdf/manifest.yaml",
+        )
     versioning = manifest.get("versioning")
     if (
         not isinstance(versioning, dict)

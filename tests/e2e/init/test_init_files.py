@@ -67,8 +67,11 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
     assert "state: initializing" in manifest
     assert "latest_release: null" in manifest
-    assert '  smoke: "true"\n' in manifest
-    assert "  budgets:\n    quick: 45\n" in manifest
+    assert "verification:" not in manifest
+    modules = (repo / ".mdf" / "modules.yaml").read_text(encoding="utf-8")
+    assert 'lint: "true"' in modules or "lint:" in modules
+    assert "budgets:" in modules
+    assert "quick: 45" in modules
     full = mdf(
         python_exe,
         "validate",
@@ -79,7 +82,8 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     )
     assert full.returncode != 0
     assert "manifest.initializing" in full.stdout
-    assert "manifest.verification" not in full.stdout
+    assert "modules.invalid" not in full.stdout
+    assert "manifest.verification_moved" not in full.stdout
 
     replace(
         repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready"

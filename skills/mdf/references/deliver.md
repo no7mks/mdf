@@ -298,17 +298,18 @@ bugfix/hotfix/release 在审查前先验证，以下称 Verify 阶段（feature 
   - 没有合适的 suite 时询问用户是否新建，确认后先补该 suite 的文档再关联。
     - `--auto-pilot` 由主 Agent 自裁定，并在 verify.md 记录依据。
   - ❌ 不得关联 lint/build/quick/smoke/release/full。
-- 运行 `project-verify run --repo "$REPO_ROOT"`（bugfix 到 smoke，release/hotfix 到 release）。
-  - bugfix 另以 `suite-run` 执行所列 named suite；roster ≥1 的 release/hotfix 另以 `suite-run`
-    执行 design policy `suites` 所列每个 named suite。
+- 运行 `$mdf verify run --level full --repo "$REPO_ROOT"`
+  （bugfix→smoke 并集，release/hotfix→release 并集）。
+  - 开发中另以 on-site + `--test` 跑 Agent/Jev 选题；roster ≥1 的 release/hotfix
+    可参考 design policy `suites` 选题，不默认整 suite。
   - 失败时读报告与日志定位，在已确认范围内修复实现后重跑，直到全绿。
   - 测试、预期或验证门槛的修改：默认模式须用户确认；`--auto-pilot` 自裁定并在 verify.md 记录依据。
   - 第一次跑所需 suite 出现非 quick 失败时，按 `delivery-contract.md`「quick 复现」尝试补用例。
   - 需要目标决定、外部条件或同一失败连续三轮无进展时阻塞停止。
-- 已有证据经 `project-verify check` 仍有效时不重跑。
+- 已有证据经 `$mdf verify check --level full` 仍有效时不重跑。
 - 每次运行后向 `changes/unreleased/<slug>/verify.md` 追加一条记录，随本阶段提交：
-  - HEAD；`project-verify` 证据路径与实际跑过的 suites。
-  - 每个 named suite 的命令、结果与报告路径（经 `suite-run`）。
+  - HEAD；`verify.full.json` 路径与实际跑过的 suites。
+  - 选题执行的命令、结果与报告路径。
   - quick 复现结论：已补 <位置> / 未补 <原因> / 无非 quick 失败。
 - 全绿后提交，再进入审查；审查修复使证据过期时由 code-review 步骤 4 重验。
 - 📌 release 联调：本端验收即本侧 Verify 全绿，先 `send` 结果（suite、HEAD、结论）。

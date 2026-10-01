@@ -8,6 +8,7 @@ from .validate_jots import validate_jots
 from .validate_layout import validate_layout
 from .validate_links import validate_links
 from .validate_manifest import validate_manifest
+from .modules_check import validate_modules
 from .validate_objects import iter_object_files, validate_object
 from .validate_records import validate_adrs, validate_record_references
 from .validate_release import validate_changelog, validate_release_history
@@ -34,6 +35,7 @@ def collect_findings(
             path.relative_to(repo).as_posix(),
         )
     manifest = validate_manifest(repo, findings)
+    validate_modules(repo, findings)
     validate_layout(repo, findings)
     validate_agents_block(repo, findings)
     validate_jots(repo, findings)

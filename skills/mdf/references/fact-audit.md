@@ -225,7 +225,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 - 逐条审阅 CLI warning（`audit.uncovered`、`agents.size`）以及步骤 3 记下的
   `agents.project_content`。
-- `.mdf/audit-ignore.yaml` 已覆盖 `AGENTS.md` 时，
+- `.mdf/modules.yaml` 某 module 的 `ignore` 已覆盖 `AGENTS.md` 时，
   不再确认 `agents.size` 与 `agents.project_content`。
 
 验收：

@@ -1,5 +1,13 @@
 # 发布目标
 
+## 步骤
+
+- [ ] 确认工作线与范围
+- [ ] 完成预发布工作
+- [ ] verify full
+- [ ] fact update
+- [ ] finish 收口
+
 ## 工作线
 
 {{MDF_RELEASE_WORK_LINE}}

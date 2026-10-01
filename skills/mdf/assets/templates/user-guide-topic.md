@@ -3,7 +3,6 @@ title: "{{MDF_TITLE}}"
 doc_type: user-guide
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # {{MDF_TITLE}}

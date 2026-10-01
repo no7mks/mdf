@@ -1,5 +1,4 @@
 import os
-import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -17,52 +16,25 @@ from .gitutil import GitPathIndex, commit_is_after
 from .paths import path_stays_in_repo, relative
 from .yamlutil import read_frontmatter
 
-# 命令形态里出现这些字符，视为夹了文字（汉字、CJK 标点、全角）。
-_PROSE_IN_COMMAND_RE = re.compile(
-    r"[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\uffef]"
-)
 
-
-def verification_form_error(method: str) -> str | None:
-    """命令与「# 」文字二选一；混排或空文字返回错误说明。"""
-    text = method.strip()
-    if not text:
-        return None
-    if text.startswith("#"):
-        if not text.startswith("# ") or not text[2:].strip():
-            return "文字形态的 verification 必须以「# 」开头且其后非空"
-        return None
-    if "# " in text or _PROSE_IN_COMMAND_RE.search(text):
-        return (
-            "verification 不能命令与文字混排：以「# 」开头写文字，"
-            "否则整段必须是命令"
-        )
-    return None
-
-
-def frontmatter_evidence(
-    metadata: dict[str, Any],
-) -> list[tuple[str, str | None]]:
+def frontmatter_evidence(metadata: dict[str, Any]) -> list[str]:
+    """evidence 仅为 path 列表（允许字符串或 {path: ...}，忽略其余键）。"""
     raw = metadata.get("evidence")
-    result: list[tuple[str, str | None]] = []
+    result: list[str] = []
     if isinstance(raw, list):
         for item in raw:
-            if isinstance(item, str):
-                result.append((item, None))
+            if isinstance(item, str) and item.strip():
+                result.append(item.strip())
             elif isinstance(item, dict) and isinstance(item.get("path"), str):
-                method = item.get("verification", item.get("verify"))
-                result.append(
-                    (item["path"], method if isinstance(method, str) else None)
-                )
+                path = item["path"].strip()
+                if path:
+                    result.append(path)
     elif isinstance(raw, dict):
         paths = raw.get("paths")
-        method = raw.get("verification", raw.get("verify"))
         if isinstance(paths, list):
             for path in paths:
-                if isinstance(path, str):
-                    result.append(
-                        (path, method if isinstance(method, str) else None)
-                    )
+                if isinstance(path, str) and path.strip():
+                    result.append(path.strip())
     return result
 
 
@@ -164,7 +136,7 @@ def validate_evidence(
                 rel,
             )
         doc_commit = index.last_commit(doc) if check_staleness else None
-        for evidence_path, method in evidence:
+        for evidence_path in evidence:
             raw_candidate = Path(evidence_path)
             candidate = (repo / raw_candidate).resolve()
             if raw_candidate.is_absolute():
@@ -202,23 +174,7 @@ def validate_evidence(
                     rel,
                 )
                 continue
-            if not method or not method.strip():
-                add_finding(
-                    findings,
-                    "evidence.verification",
-                    f"Evidence lacks a verification method: {evidence_path}",
-                    rel,
-                )
-            else:
-                form_error = verification_form_error(method)
-                if form_error:
-                    add_finding(
-                        findings,
-                        "evidence.verification_form",
-                        f"{form_error}: {evidence_path}",
-                        rel,
-                    )
-            # 事实页之间的引用只是链接；比较先后会让路由页随叶子页或收口的链接改写连锁过期。
+            # 事实页之间的引用只是链接；不比较先后。
             if not check_staleness or candidate in fact_paths:
                 continue
             if not index.tracked(candidate):
@@ -280,9 +236,7 @@ def validate_evidence(
                         rel,
                     )
                     source_path = None
-                elif check_staleness and not index.tracked(
-                    source_path
-                ):
+                elif check_staleness and not index.tracked(source_path):
                     add_finding(
                         findings,
                         "generated.untracked",
@@ -325,9 +279,7 @@ def validate_evidence(
                         rel,
                     )
                     generator_path = None
-                elif check_staleness and not index.tracked(
-                    generator_path
-                ):
+                elif check_staleness and not index.tracked(generator_path):
                     add_finding(
                         findings,
                         "generated.untracked",

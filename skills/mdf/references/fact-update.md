@@ -1,5 +1,9 @@
 # Fact Update
 
+工作分支上由 finish 在 **verify full 之后** 委托；中途禁止。独立调用仍可用。
+
+evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
+
 ## 决策树
 
 ```text

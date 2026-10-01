@@ -27,14 +27,13 @@ def test_project_verify_stdout_stays_json_and_labels_item_id(
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
         "--bug", "bug-CD34",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
     ))
     work = Path(created["worktree"])
     link_bugfix_suite(work)
-    manifest = work / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace(
-        'lint: "true"',
-        'lint: "echo OUT; echo ERR >&2"',
-    ))
+    commit(work, "test: suites")
+    patch_module_command(work, "lint", lambda _: "echo OUT; echo ERR >&2")
+    commit(work, "test: lint 输出")
     result = mdf(python_exe, "project-verify", "run", "--repo", str(work))
     payload(result)
     stdout_lines = result.stdout.splitlines()
@@ -50,14 +49,13 @@ def test_project_verify_error_json_is_last_stderr_line(python_exe, tmp_path):
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
         "--bug", "bug-CD34",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
     ))
     work = Path(created["worktree"])
     link_bugfix_suite(work)
-    manifest = work / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace(
-        'lint: "true"',
-        'lint: "printf no-newline; exit 1"',
-    ))
+    commit(work, "test: suites")
+    patch_module_command(work, "lint", lambda _: "printf no-newline; exit 1")
+    commit(work, "test: lint 失败")
     result = mdf(python_exe, "project-verify", "run", "--repo", str(work))
     assert result.returncode != 0
     error = last_json(result.stderr)

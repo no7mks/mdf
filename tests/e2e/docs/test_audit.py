@@ -29,9 +29,6 @@ def test_audit_reports_evidence_mapping_without_running_commands(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(
-        repo / ".mdf" / "manifest.yaml", '\n  release: "', '\n  release: "touch audit-ran && '
-    )
     init_git(repo)
 
     result = mdf(python_exe, "fact-audit", "--repo", str(repo))
@@ -60,18 +57,25 @@ def test_audit_uncovered_file_is_warning_and_ignorelist_can_cover_it(
         "src/generated/client.py"
     ]
 
-    (repo / ".mdf" / "audit-ignore.yaml").write_text(
-        "ignored:\n  - path: src/generated\n    reason: generated client\n",
+    modules = repo / ".mdf" / "modules.yaml"
+    modules.write_text(
+        modules.read_text().replace(
+            "    ignore: []\n",
+            "    ignore:\n"
+            "      - pattern: src/generated/**\n"
+            "        reason: generated client\n",
+            1,
+        ),
         encoding="utf-8",
     )
-    git(repo, "add", ".mdf/audit-ignore.yaml")
+    git(repo, "add", ".mdf/modules.yaml")
     git(repo, "commit", "-m", "test: 忽略生成客户端")
     data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
     assert data["warning_count"] == 0
     assert data["ignored"] == [
         {
             "path": "src/generated/client.py",
-            "ignore_path": "src/generated",
+            "ignore_path": "src/generated/**",
             "reason": "generated client",
         }
     ]
@@ -94,15 +98,22 @@ def test_audit_rejects_invalid_ignore_and_scope_paths(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    (repo / ".mdf" / "audit-ignore.yaml").write_text(
-        "ignored:\n  - path: src/nope.py\n    reason: stale rule\n",
+    modules = repo / ".mdf" / "modules.yaml"
+    modules.write_text(
+        modules.read_text().replace(
+            "    ignore: []\n",
+            "    ignore:\n"
+            "      - pattern: src/nope.py\n"
+            "        reason: stale rule\n",
+            1,
+        ),
         encoding="utf-8",
     )
     init_git(repo)
 
     result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     assert result.returncode == 2
-    assert "audit.ignore_rule" in result.stdout
+    assert "audit.ignore_empty" in result.stdout
 
     result = mdf(
         python_exe,
@@ -149,33 +160,27 @@ def test_audit_rejects_overlapping_implementation_roots(
     assert "manifest.implementation_root_overlap" in result.stdout
 
 
-@pytest.mark.parametrize(
-    ("content", "expected"),
-    [
-        (
-            "ignored:\n  - path: src/service.py\n    reason: one\n"
-            "  - path: src/service.py\n    reason: two\n",
-            "audit.ignore_duplicate",
-        ),
-        (
-            "ignored:\n  - path: src/empty\n    reason: intentionally empty\n",
-            "audit.ignore_empty",
-        ),
-    ],
-)
-def test_audit_rejects_duplicate_or_empty_ignore_rules(
-    python_exe: str, tmp_path: Path, content: str, expected: str
+def test_audit_rejects_empty_ignore_pattern(
+    python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     (repo / "src" / "empty").mkdir()
-    (repo / ".mdf" / "audit-ignore.yaml").write_text(
-        content, encoding="utf-8"
+    modules = repo / ".mdf" / "modules.yaml"
+    modules.write_text(
+        modules.read_text().replace(
+            "    ignore: []\n",
+            "    ignore:\n"
+            "      - pattern: src/empty/**\n"
+            "        reason: intentionally empty\n",
+            1,
+        ),
+        encoding="utf-8",
     )
     init_git(repo)
 
     result = mdf(python_exe, "fact-audit", "--repo", str(repo))
     assert result.returncode == 2
-    assert expected in result.stdout
+    assert "audit.ignore_empty" in result.stdout
 
 
 def test_audit_accepts_exact_range_paths(
@@ -307,23 +312,20 @@ def test_audit_does_not_let_dirty_fact_docs_hide_stale_evidence(
     assert "evidence" in result.stdout
 
 
-def test_validate_rejects_mixed_command_and_text_verification(
+def test_validate_rejects_missing_evidence_path_still(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     replace(
         repo / "docs" / "system" / "data" / "model.md",
-        '    verification: "python -m pytest"',
-        (
-            '    verification: "npm run test:shared；'
-            '启动保留可恢复 pending 的细节在 client-persistence.md"'
-        ),
+        "  - path: src/service.py\n",
+        "  - path: src/missing-evidence.py\n",
     )
     init_git(repo)
 
     result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
     assert result.returncode != 0
-    assert "evidence.verification_form" in result.stdout
+    assert "evidence.missing_path" in result.stdout
 
 
 def test_generated_fact_requires_evidence_and_repository_relative_paths(
@@ -341,19 +343,19 @@ def test_generated_fact_requires_evidence_and_repository_relative_paths(
         (
             "evidence:\n"
             "  - path: src/service.py\n"
-            '    verification: "python -m pytest"'
         ),
         (
+            "evidence:\n"
+            "  - path: src/service.py\n"
             "generated:\n"
             f"  source: {outside_source}\n"
-            f"  generator: {outside_generator}"
+            f"  generator: {outside_generator}\n"
         ),
     )
     init_git(repo)
 
     result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
     assert result.returncode != 0
-    assert "evidence.missing" in result.stdout
     assert "generated.outside_repo" in result.stdout
 
 
@@ -381,9 +383,10 @@ def test_audit_does_not_rerun_generated_document_generator(
     fact = repo / "docs" / "system" / "interfaces" / "api.md"
     replace(
         fact,
-        '    verification: "python -m pytest"\n',
+        "evidence:\n  - path: src/service.py\n",
         (
-            '    verification: "python -m pytest"\n'
+            "evidence:\n"
+            "  - path: src/service.py\n"
             "generated:\n"
             "  source: src/service.py\n"
             "  generator: scripts/generate-interface.py\n"

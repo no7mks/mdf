@@ -97,10 +97,8 @@ def test_closeout_uses_manifest_commands_and_stops_if_they_dirty_repo(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(
-        repo / ".mdf" / "manifest.yaml",
-        '\n  release: "',
-        '\n  release: "touch verification-marker && ',
+    patch_module_command(
+        repo, "release", lambda c: "touch verification-marker && " + c
     )
     prepare_release(repo)
     arguments = release_arguments(repo)
@@ -270,12 +268,15 @@ def test_closeout_requires_clean_worktree_for_preview_and_apply(
 def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     runs = tmp_path / "release-runs"
-    replace(repo / ".mdf/manifest.yaml", '\n  release: "',
-            f'\n  release: "echo run >> {runs} && ')
+    patch_module_command(
+        repo, "release", lambda c: f"echo run >> {runs} && " + c
+    )
     prepare_release(repo)
     review = repo / "changes/unreleased/1.3.0/code-review.md"
     review.parent.mkdir(parents=True)
     review.write_text("# 审查记录\n\n无未解决问题。\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 审查记录")
     payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 提交验证证据")
@@ -283,7 +284,7 @@ def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path
 
     applied = payload(mdf(python_exe, *release_arguments(repo)))
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/code-review.verification.json"
+        "changes/unreleased/1.3.0/verify.full.json"
     )
     assert runs.read_text() == "run\n"
     assert applied["verification"]["results"][3]["report"]["suite"] == "release"
@@ -292,12 +293,15 @@ def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path
 def test_closeout_runs_commands_when_evidence_is_stale(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     runs = tmp_path / "release-runs"
-    replace(repo / ".mdf/manifest.yaml", '\n  release: "',
-            f'\n  release: "echo run >> {runs} && ')
+    patch_module_command(
+        repo, "release", lambda c: f"echo run >> {runs} && " + c
+    )
     prepare_release(repo)
     review = repo / "changes/unreleased/1.3.0/code-review.md"
     review.parent.mkdir(parents=True)
     review.write_text("# 审查记录\n\n无未解决问题。\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 审查记录")
     payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
     (repo / "src/extra.py").write_text("changed = True\n")
     git(repo, "add", "--all")

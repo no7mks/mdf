@@ -18,12 +18,12 @@
   - 两种联调都强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
   - 两端验收且确认不再改代码后才允许 code-review。
   - fact update 由 finish 前段执行；已有有效结果则不重做。
-- start 不为 bugfix/hotfix 写 objectives。
-  - bugfix：roster `0,0` 时不需要；roster ≥1 时由 design 的 Baseline 依据 Bug 补写。
+- start 后四种工作分支均须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
+  - bugfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
   - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。
-    - roster `0,0`：deliver 或开发前的主 Agent 与用户确认后写入并提交。
+    - roster `0,0`：start 或 deliver 与用户确认后写入并提交。
       `--auto-pilot` 按 Bug 与对话证据自裁定。
-    - roster ≥1：由 design 的 Baseline 写入。
+    - roster ≥1：由 design 的 Baseline 写入或修订。
 
 身份字段：
 
@@ -52,8 +52,12 @@
 
 主线为 start → design → [write-tests ∥ implement] → converge → code-review → finish。
 
-- `fact-update` 是 CLI gate，只由 finish 前段内嵌的 fact update 记录；独立 `$mdf fact update`
-  不记录 gate。它不是用户主线箭头上的一站。
+- `fact-update` 是 CLI gate，只由 finish 收口前、在 **verify full 之后** 记录；
+  独立 `$mdf fact update` 不记录 gate。它不是用户主线箭头上的一站。
+- 工作分支（feature/bugfix/release/hotfix）中途禁止 `verify full` 与 fact update；
+  closeout 前最后两步固定为：**verify full → fact update**。
+- `start` 后必须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
+- 开发中 sourceset 改动只触发对应 module 的 `$mdf verify --level on-site`。
 - bugfix/hotfix/release 在 roster `0,0` 时不要求 feature 的 design、write-tests、
   implement 或 converge 阶段；roster ≥1 时与 feature 走同一主线。
 - release 与 hotfix 可修复已确认的 open Bug，标为 `fixed`；不另开 bugfix 分支，也不写 bugfix child Change。
@@ -177,23 +181,21 @@ Git 约束：
 测试门槛与所需 suite：
 
 - 设计 policy 的 protected_paths 覆盖所有测试、fixture、快照和工具配置，包括 named suite 的路径。
-  - manifest 的 `verification` 始终属于测试门槛。
+  - modules.yaml 的分套件入口始终属于测试门槛。
   - 路径可以是仓库相对文件、目录或 glob。
 - design policy 必须另含 `suites`：本交付改动涉及的全部功能块的 named suite 名。
   - 非空列表，不得使用 lint/build/quick/smoke/release/full。
 - 点名执行 test case 或 test 仅用于定位，不替代所需 suite 通过。
-- `delivery verify` / `project-verify` / gate 记录必须写出 Core 实际跑过的 `suites`。
+- `$mdf verify` / gate 记录必须写出 Core 实际跑过的 `suites`。
 
 失效与补验：
 
-- 代码和验证配置（含预算）改变使全绿失效。只改事实文档不重跑业务验证，只重审事实。
-- `fact-update` gate 绑定 `facts`、`implementation` 与 `design`。
-  - 只改测试或验证配置不使事实审阅过期，但仍使全绿与 code-review 过期。
-- `code` fingerprint 覆盖 `docs/`、`changes/`、仓根 Markdown 与 manifest 之外的全部受管文件。
-  - ADR、调研、Proposal 或 Change 材料的改动不使 code-review 或全绿过期。
-- 记录文件不参与其自身校验对象的 fingerprint。
-- 审查报告已齐且 final_head 尚未与当前代码指纹对齐时，补验留在 code-review 步骤 3–4。
-  - 不回到 Verify 阶段，不重派审查。
+- 开发中只跑 module **on-site**（lint+build+quick + Agent/Jev 选题的 test/testcase）。
+- **verify full** 以 commit 为锚；成功写入 `verify.full.json`。
+  - worktree 须干净；之后有 diff 时先经 Jev 判断是否重跑，不需要则 `advance` 快进 commit。
+- 只改事实文档或 module ignore 不重跑业务验证。
+- feature 的 `fact-update` gate 仍绑定 `facts`、`implementation` 与 `design`。
+- 审查报告已齐后的实现变化在 code-review 步骤补 on-site；closeout 前再 full。
 - 缺失或过期时原地补验，不回退 intent。
 
 ### 测试层级与分类
@@ -258,26 +260,28 @@ Core 判定退出码与测试报告（见下节）。
 | quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 |
 | smoke | 任意种类，包含 quick 的全部成员 | 300s | feature、bugfix 收口 |
 | release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | release、hotfix |
-| named | 某一功能块（如 module）的 test case，均属于 full | 无 | 改动该功能块后 |
+| named | 某一功能块的 test case；一 suite 一文档 | 无 | on-site 由 Agent+Jev 选题到 test/testcase，不默认整 suite |
 
 - full 指全部 test case，是 release 与各 named suite 的上界；它没有入口，不由任何
   gate 执行，名字保留、不得用作 named suite。
-- 预算包含启动依赖与预热，不含 build；项目可在 manifest `budgets` 覆盖。
+- 预算包含启动依赖与预热，不含 build；项目可在 modules `budgets` 覆盖。
   test case 放进 quick 或 smoke 会超预算时，拆成多个 test case，只把合预算的部分放入。
-- lint 与 build 同 quick 一样，任何改动都要跑。
-- 每个 suite 在 `docs/system/testing/` 有一节或一页，写明：
-  - 目的、入口命令、成员选择规则、预算、环境。
-  - 点名执行 test case / test 的命令模板。
+- lint 与 build 同 quick 一样，on-site 与 full 都要跑涉及范围的入口。
+- 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**，写明：
+  - 目的、testcase 构成、入口命令。
+  - testcase 本身不建独立文档，靠代码 frontmatter / stringdoc。
 
 | 交付 | 阶段 | Core 必须通过 | Agent 另须通过 |
 | --- | --- | --- | --- |
-| feature | write-tests | 只要求可执行测试已写；不要求全绿 | — |
-| feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 所列 named suite |
-| bugfix | Verify、code-review、finish | lint、build、quick、smoke | `suites.json` 所列 named suite（≥1） |
-| release / hotfix | Verify、code-review、finish | lint、build、quick、release | roster ≥1 时 design 所列 named suite |
-| 任意 | 只改事实文档 | 不机械重跑业务验证；实现、测试或验证配置变更仍使对应验证过期 | — |
+| 任意 | 开发中 on-site | 涉及 module 的 lint、build、quick | Agent+Jev 选题的 test/testcase |
+| feature | converge、code-review、finish | lint、build、quick、smoke | design policy `suites` 选题（不默认整 suite） |
+| bugfix | 开发中 / Verify | on-site；closeout 前 full→smoke | `suites.json` 关联 named 的选题 |
+| release / hotfix | Verify、code-review、finish | lint、build、quick、release | — |
+| 任意 | closeout | **先 verify full，再 fact update** | — |
+| 任意 | 只改事实 / ignore | 不机械重跑业务验证 | — |
 
-- release / hotfix 的 `project-verify` 同样要求 Core 通过 lint、build、quick、release。
+- release / hotfix 的 `$mdf verify --level full` 同样要求 Core 通过 lint、build、quick、release。
+- feature / bugfix 的 full 跑到 smoke 并集，不跑 release。
 
 named suite 的执行：
 
@@ -296,16 +300,17 @@ named suite 的划分：
   - write-tests 把新用例归入所属功能块的 suite（或 quick、smoke）。
   - implement 不得擅自改测试。
 - 只有出现新的功能块时才新建 named suite。
-- feature、bugfix 收口只跑 smoke 与涉及的 named suite，不跑 release，更不跑 full。
+- closeout 的 verify full：feature/bugfix → smoke 并集；release/hotfix → release 并集。
+  - 开发中不跑 full；named 只经 on-site 选题，不默认整 suite。
 
 非 feature 交付：
 
 - bugfix、release、hotfix 都先测后审：审查前由 deliver 的 Verify 阶段修到全绿。
-  - 之后只在指纹变化时重验，收口复用有效证据，不重跑 release suite。
-  - 审查报告已齐后的指纹变化在 code-review 步骤 4 重验，不重新进入 Verify 阶段。
+  - 之后只在证据过期时重验；收口复用有效 `verify.full.json`，不额外重跑 release。
+  - 审查报告已齐后的变化在 code-review 步骤补 on-site，不重新进入 Verify 阶段。
   - Verify 阶段定义见 `references/deliver.md`「先测后审」；每次运行向
     `changes/unreleased/<slug>/verify.md` 追加一条记录并随该阶段提交。
-- roster `0,0` 的 bugfix 不创建 design/write-tests/converge。
+- roster `0,0` 的 bugfix 不创建 design/write-tests/converge，但仍写 objectives checklist。
 - bugfix 的关联文件为 `changes/unreleased/<slug>/suites.json`。
   由 Verify 阶段在其中关联修复涉及的全部功能块中**已文档化**的 named suite（≥1）。
   - 默认不得新建；经确认后先在 `docs/system/testing/` 补该 suite 的文档，再关联。
@@ -348,7 +353,7 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 - converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
   - `--auto-pilot` / `--yolo` 由 converge 执行者自裁定并记录。
 - code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
-- 非 feature 分支变更 manifest `verification` 或新增 named suite：默认模式需用户确认；
+- 非 feature 分支变更 modules.yaml 套件入口或新增 named suite：默认模式需用户确认；
   `--auto-pilot` / `--yolo` 由主 Agent 自裁定并记录依据。
 - 架构优化可以建议；超出当前目标不直接实施。
 - 修复后在当前 intent 原地重验。

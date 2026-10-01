@@ -55,10 +55,9 @@ def test_unmanaged_directory_logs_to_fallback(python_exe, tmp_path, monkeypatch)
 
 def test_verify_keeps_full_output_of_every_entry(python_exe, tmp_path):
     repo, root = converge_ready(python_exe, tmp_path)
-    manifest = repo / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text().replace(
-        '  lint: "true"', '  lint: "python3 -c \'print(9000 * chr(120))\'"', 1,
-    ))
+    patch_module_command(
+        repo, "lint", lambda _: "python3 -c 'print(9000 * chr(120))'"
+    )
     payload(mdf(python_exe, "delivery", "verify", "--repo", str(repo)))
     evidence = json.loads((root / "gates/verification.json").read_text())
     logs = {item["id"]: item["log"] for item in evidence["results"]}

@@ -10,13 +10,14 @@
 - `validation`（契约校验）：对目录、`manifest`、文档结构、链接、对象关系与
   `evidence`执行的确定性检查，输出 findings。它只校验`验证命令`的配置，不执行
   命令，也不替代`事实复核`。
-- `evidence`：`当前事实文档` 中指向仓库内已跟踪证据及其验证方式的元数据。
+- `evidence`：`当前事实文档` 中指向仓库内已跟踪证据路径的元数据（仅 path）。
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
-- `验证命令`：`manifest.verification` 中由仓库执行的五个入口：`lint`、`build`；
-  以及 `quick`、`smoke`、`release` 三个全局 suite。
-- `验证 suite`：test case 的具名集合。全局 suite 由 manifest 声明并由 Core 执行；
-  其余为 named suite，只记在 `docs/system/testing/`，由 Agent 执行。
+- `验证命令`：`.mdf/modules.yaml` 中按 module 声明的五个入口：`lint`、`build`；
+  以及 `quick`、`smoke`、`release` 三个 suite；repo 级为各 module 同名入口的并集。
+- `验证 suite`：test case 的具名集合。全局 suite 由 modules 声明并由 Core 执行；
+  named suite 隶属 module，每个 suite 必须有 `docs/system/testing/<name>.md`。
+- `module`：`.mdf/modules.yaml` 中的交付单元，含 sourceset、ignore 与分套件命令。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
 - `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。
 
@@ -26,6 +27,7 @@
 /
 ├── README.md                 # 用户入口：项目是干什么 → user-guide
 ├── .mdf/manifest.yaml
+├── .mdf/modules.yaml
 ├── AGENTS.md
 ├── PROJECT.md
 ├── GLOSSARY.md
@@ -132,7 +134,7 @@
 - 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
 - 超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。
 - 整份 `AGENTS.md`（含非托管正文）超过 200 行是 CLI warning `agents.size`，不是 `size.hard`。
-  - 写入 `.mdf/audit-ignore.yaml` 的 `path: AGENTS.md` 后不再提示。
+  - 写入某 module 的 `ignore`（`pattern: AGENTS.md`）后不再提示。
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。
 
@@ -247,56 +249,53 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 - 八项`基线`键为 `glossary`、`user_guide`、`system_boundary`、`architecture`；
   以及 `interfaces`、`data`、`operations`、`deviations`。
   - `user_guide` 默认路径 `docs/user-guide/README.md`，其余 system 基线默认指向对应切面的路由页。
-- 它还包含共享`验证命令`：
-
-```yaml
-verification:
-  lint: "ruff check ."
-  build: "python3 -m compileall -q src"
-  quick: "python3 -m pytest -m quick"
-  smoke: "python3 -m pytest -m smoke"
-  release: "python3 -m pytest -m release"
-  budgets:
-    quick: 45
-```
-
-- `lint`、`build`、`quick`、`smoke`、`release` 五项都必须声明为非空命令，不得有其他键。
-  - lint、build 没有对应检查时写 `"true"`。
-  - quick、smoke、release 必须是把 JUnit XML 写进 `$MDF_REPORT_DIR` 的真实运行器命令；
-    ⚠️ 占位命令必然失败。
-  - 每项是一条入口命令，不列单个 test 或 test case。
-- 可选 `budgets` 覆盖 suite 的时间预算（正整数秒），只接受 `quick`、`smoke`、
-  `release`。默认 quick 30、smoke 300，release 与 lint、build 无上限。
-- Core 按 `lint → build → quick → smoke|release` 顺序执行，suite 超出预算视为失败。
-  build 不计入预算；依赖下载与镜像拉取放进 build。
-- suite 命令必须把 JUnit XML 报告写进环境变量 `MDF_REPORT_DIR` 所指目录，见
-  `delivery-contract.md`「测试报告」。
-- suite 的语义与各 gate 所需 suite 见 `delivery-contract.md`「验证 suite」。
-  named suite 与 full（全部 test case）不写入 manifest。
-- 不符合本形状的 `verification` 是 finding，由 `$mdf migrate` 收敛。
-
-- 初始化时通过 CLI 传入 `--lint`、`--build`、`--quick`、`--smoke`、`--release`，
-  可重复 `--budget <suite>=<秒数>`。
-  - 没有业务检查的空仓库 lint、build 可用 `git diff --check`。
-  - suite 在出现第一个 test 前无法通过，由首个交付的 write-tests 补齐。
-- 命令在目标仓库执行，产物必须自行清理或被 `.gitignore` 忽略。
+- 验证命令**不在** manifest；写在 `.mdf/modules.yaml`。manifest 若仍含 `verification`
+  报 `manifest.verification_moved`，由 `$mdf migrate` 收敛。
 - `implementation_roots` 是非空、互不重叠的仓库相对目录列表。
   - 每个目录必须存在、不为符号链接且位于仓库内。
   - `fact audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
   - 单 module 通常为 `[src]`；多 module 列出各 `<module>/src`。
 
-`.mdf/audit-ignore.yaml` 是受 Git 跟踪的 audit 例外清单：
+## Modules
+
+`.mdf/modules.yaml` 声明每个 module 的 sourceset、ignore 与分套件入口：
 
 ```yaml
-ignored:
-  - path: src/generated
-    reason: "由上游工具受管"
+modules:
+  default:
+    sourceset: ["src/**"]
+    ignore: []
+    lint: "true"
+    build: "true"
+    quick:
+      command: "python3 -m pytest -m quick"
+      tests: ["tests/unit/**"]
+    smoke:
+      command: "python3 -m pytest -m smoke"
+      tests: ["tests/unit/**", "tests/smoke/**"]
+    release:
+      command: "python3 -m pytest -m release"
+      tests: ["tests/**"]
+    named: []
+budgets:
+  quick: 45
 ```
 
-- 每项只能包含仓库相对的 `path` 与非空 `reason`。路径须满足其一：
-  - 位于实现根目录且匹配至少一个被跟踪实现文件（目录递归匹配）；
-  - 恰好为 `AGENTS.md`（用于记住 `agents.size` 与 `agents.project_content`，不再每次提醒）。
-- 未被 `evidence` 引用的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
+- 每个 module 必须声明 `sourceset`、`lint`、`build`、以及
+  `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
+  - 可选 `ignore` 与 `named`。
+- **ignore**：`pattern` + `reason`；命中路径不触发 verify，也不产生 uncovered /
+  `agents.size` 类提示（`pattern: AGENTS.md` 可记住 AGENTS 警告）。
+- **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
+- repo 级同名入口 = 各 module 命令按名称排序后用 ` && ` 连接。
+- `named` 中每个名字必须有独立文档 `docs/system/testing/<name>.md`，写明目的与
+  testcase 构成；testcase 本身靠代码 frontmatter/stringdoc，不另建 docs。
+- 初始化仍可通过 CLI 传入 `--lint` 等，写入默认 module。
+- 占位命令必然失败：不得用恒成功的空命令冒充真实 lint/build/suite。
+
+`.mdf/audit-ignore.yaml` 已废弃；例外改写在 module `ignore`。
+
+- 未被 `evidence` 引用且未被 ignore 的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
   - 锁文件、`.gitignore` 与版本钉等不承载行为的文件不产生该 warning。
 
 ## YAML 子集
@@ -356,30 +355,24 @@ accepted、superseded 或 deprecated。沟通时写完整 ID，如 `adr-use-sqli
 
 ## Fact frontmatter：evidence 与 generated
 
-每个`当前事实文档`至少声明一条 `evidence`，支持两种形态：
+每个`当前事实文档`至少声明一条 `evidence`，仅为 path 列表：
 
 ```yaml
-# 形态一：逐条 evidence，各自带验证方式
+evidence:
+  - "<repo-relative-path>"
+# 或
 evidence:
   - path: "<repo-relative-path>"
-    verification: "python -m pytest"
-# 形态二：一组路径共享验证方式
-evidence:
-  paths: ["<repo-relative-path>"]
-  verification: "# 对照路由表是否指向已有主题叶"
 ```
 
-- `evidence` 路径必须仓库相对、存在且被 Git 跟踪，并带 verification 方式。
-  - 裸字符串列表形态缺 verification 会报 finding。
+- `evidence` 路径必须仓库相对、存在且被 Git 跟踪。
+- ❌ 不再在 evidence 上声明 `verification`；怎么验归 `.mdf/modules.yaml` 的套件与 `$mdf verify`。
 - `full validation` 下 `evidence` 在文档之后变更会报 `evidence.stale`。
 - ❌ 发版流程会改写的记录不能作为 evidence（`evidence.record`）：
   `.mdf/manifest.yaml`、`CHANGELOG.md`、`docs/JOTS.md`；`changes/**`、`docs/proposals/**`、`docs/bugs/**`。
 - evidence 为另一份当前事实文档时只核对存在与已跟踪，不比较提交先后。
 - 过期只相对实现、测试、配置等非事实文件判定，同一次提交中的文件互不算「晚于」。
-- `verification` 整段二选一，不得混排（`evidence.verification_form`）：
-  不以 `#` 开头则整段是命令；以 `# `（井号加空格）开头则其后是文字，且须加引号。
-  命令里出现汉字、全角标点或行内 `# ` 视为混排；文字不复述正文已写的行为。
-- 无需为消除 warning 把不承载行为的文件写入 evidence 或 ignorelist。
+- 无需为消除 warning 把不承载行为的文件写入 evidence；用 module `ignore` 排除。
 
 由脚本生成的文档额外声明 `generated`：
 

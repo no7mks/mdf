@@ -3,7 +3,6 @@ title: "错误"
 doc_type: system-interfaces
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 错误

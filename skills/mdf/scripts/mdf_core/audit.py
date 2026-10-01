@@ -11,13 +11,11 @@ from .overview_modules import (
     project_entry_link_findings,
 )
 from .paths import path_stays_in_repo, relative
+from .modules import MODULES_PATH, load_modules
 from .validate_evidence import fact_documents, frontmatter_evidence
 from .constants import SIZE_AGENTS_FILE
 from .validate_manifest import implementation_roots
-from .yamlutil import parse_yaml, read_frontmatter
-
-
-IGNORE_PATH = ".mdf/audit-ignore.yaml"
+from .yamlutil import read_frontmatter
 
 # 不承载行为的被跟踪实现文件：版本钉、锁文件与本地配置。
 # 它们不产生 audit.uncovered warning，也无需写入 evidence 或 ignorelist。
@@ -156,7 +154,7 @@ def _branch_scope(
             metadata, _ = read_frontmatter(document)
         except MDFError:
             continue
-        for raw, _ in frontmatter_evidence(metadata):
+        for raw in frontmatter_evidence(metadata):
             if (repo / raw).resolve() in touched:
                 documents.add(document)
                 break
@@ -164,95 +162,47 @@ def _branch_scope(
 
 
 def _ignored_paths(
-    repo: Path, sources: list[Path], roots: list[Path], findings: list[Finding]
+    repo: Path, sources: list[Path], findings: list[Finding]
 ) -> dict[Path, dict[str, str]]:
-    path = repo / IGNORE_PATH
-    if (
-        not path.is_file()
-        or path.is_symlink()
-        or not git_path_tracked(repo, path)
-    ):
-        add_finding(
-            findings, "audit.ignore_file", "audit ignorelist must be tracked",
-            IGNORE_PATH,
-        )
-        return {}
+    """按 `.mdf/modules.yaml` 各 module 的 ignore.pattern 匹配。"""
+    from .modules import match as _match
+
     try:
-        raw = parse_yaml(path.read_text(encoding="utf-8"))
+        config = load_modules(repo)
     except MDFError as exc:
-        add_finding(findings, "audit.ignore_file", str(exc), IGNORE_PATH)
-        return {}
-    entries = raw.get("ignored") if isinstance(raw, dict) else None
-    if not isinstance(entries, list):
-        add_finding(
-            findings, "audit.ignore_file", "ignored must be a list", IGNORE_PATH
-        )
+        add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
         return {}
     result: dict[Path, dict[str, str]] = {}
-    seen: set[Path] = set()
-    for entry in entries:
-        if not isinstance(entry, dict) or set(entry) != {"path", "reason"}:
-            add_finding(
-                findings,
-                "audit.ignore_rule",
-                "ignore rule needs path and reason",
-                IGNORE_PATH,
-            )
-            continue
-        raw_path, reason = entry["path"], entry["reason"]
-        candidate = Path(raw_path) if isinstance(raw_path, str) else Path()
-        target = (repo / candidate).resolve()
-        agents_ignore = (
-            isinstance(raw_path, str) and candidate.as_posix() == "AGENTS.md"
-        )
-        if (
-            not isinstance(raw_path, str)
-            or not raw_path.strip()
-            or candidate.is_absolute()
-            or not path_stays_in_repo(repo, target)
-            or not isinstance(reason, str)
-            or not reason.strip()
-            or not target.exists()
-            or target.is_symlink()
-            or (
-                not agents_ignore
-                and not any(
-                    target == root or root in target.parents for root in roots
+    agents = (repo / "AGENTS.md").resolve()
+    for module in config.modules.values():
+        for rule in module.ignore:
+            matched = [
+                item
+                for item in sources
+                if _match(relative(repo, item), rule.pattern)
+            ]
+            if rule.pattern.replace("\\", "/") in {"AGENTS.md"}:
+                if agents.is_file() and not agents.is_symlink():
+                    result[agents] = {
+                        "path": rule.pattern,
+                        "reason": rule.reason,
+                        "module": module.name,
+                    }
+                continue
+            if not matched:
+                add_finding(
+                    findings,
+                    "audit.ignore_empty",
+                    "ignore pattern matches no tracked implementation file",
+                    f"{module.name}:{rule.pattern}",
                 )
-            )
-            or (
-                agents_ignore
-                and (not target.is_file() or not git_path_tracked(repo, target))
-            )
-        ):
-            add_finding(
-                findings, "audit.ignore_rule", "ignore rule is invalid",
-                str(raw_path),
-            )
-            continue
-        if target in seen:
-            add_finding(
-                findings,
-                "audit.ignore_duplicate",
-                "ignore rules must not repeat",
-                raw_path,
-            )
-            continue
-        seen.add(target)
-        if agents_ignore:
-            result[target] = {"path": raw_path, "reason": reason}
-            continue
-        matched = [
-            item for item in sources if item == target or target in item.parents
-        ]
-        if not matched:
-            add_finding(
-                findings, "audit.ignore_empty",
-                "ignore rule matches no tracked implementation file", raw_path,
-            )
-            continue
-        for item in matched:
-            result[item] = {"path": raw_path, "reason": reason}
+                continue
+            for item in matched:
+                result[item] = {
+                    "path": rule.pattern,
+                    "reason": rule.reason,
+                    "module": module.name,
+                }
     return result
 
 
@@ -309,7 +259,7 @@ def audit_payload(
     findings.extend(structure_findings(repo, sized))
     findings.extend(overview_core_module_findings(repo, documents))
     findings.extend(project_entry_link_findings(repo, sized))
-    ignored = _ignored_paths(repo, all_sources, roots, findings)
+    ignored = _ignored_paths(repo, all_sources, findings)
     mappings: list[dict[str, Any]] = []
     covered: set[Path] = set()
     for document in documents:
@@ -318,7 +268,7 @@ def audit_payload(
         except MDFError:
             evidence: list[str] = []
         else:
-            evidence = [path for path, _ in frontmatter_evidence(metadata)]
+            evidence = frontmatter_evidence(metadata)
         resolved = []
         for raw in evidence:
             candidate = (repo / raw).resolve()
@@ -352,7 +302,7 @@ def audit_payload(
                 Finding(
                     "agents.size",
                     f"AGENTS.md 整份 {count} 行，超过 {limit}；"
-                    "可下沉到 PROJECT.md 或写入 audit-ignore",
+                    "可下沉到 PROJECT.md 或写入 modules.yaml ignore",
                     "AGENTS.md",
                     "warning",
                 )

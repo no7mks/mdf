@@ -3,7 +3,6 @@ title: "已知偏差"
 doc_type: system-deviations
 evidence:
   - path: "{{MDF_EVIDENCE_PATH}}"
-    verification: "{{MDF_VERIFICATION_METHOD}}"
 ---
 
 # 已知偏差

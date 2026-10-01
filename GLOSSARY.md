@@ -25,11 +25,22 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 ## 验证命令
 
-`manifest.verification` 的五个入口，均必须声明：
+`.mdf/modules.yaml` 按 module 声明的五个入口：
 
 - `lint`、`build`。
-- `quick`、`smoke`、`release` 三个全局 suite 的入口命令。
-- 可选 `budgets` 覆盖 suite 预算。
+- `quick`、`smoke`、`release` 三个 suite（含 `command` 与 `tests` glob）。
+- 可选 `budgets` 覆盖 suite 预算；repo 级入口为各 module 同名命令的并集。
+
+## Module
+
+`.mdf/modules.yaml` 中的交付单元：含 `sourceset`、`ignore`、分套件命令与可选 `named`
+suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提示。
+
+## `$mdf verify`
+
+- **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题 test/testcase。
+- **full**：closeout 前全 module 并集；feature/bugfix→smoke，release/hotfix→release；
+  以 commit 为锚写入 `verify.full.json`。
 
 ## Test、test case 与 suite
 
@@ -40,12 +51,11 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 ## 验证 suite
 
 - **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
-- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix 收口时跑。
-- **release**：包含 smoke，发版所需的 test case，无预算上限；release、hotfix 时跑。
-- **full**：全部 test case 的概念，通常没有入口，不由 gate 执行。
-- **named suite**：某一功能块（如 module）的 test case 集合，跨交付长期复用，不按
-  feature 建立；只记在 `docs/system/testing/`，由 Agent 执行。改动该功能块后跑，
-  由 design policy 或 bugfix `suites.json` 列出全部涉及的功能块。
+- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix 的 full 跑到此。
+- **release**：包含 smoke，发版所需的 test case，无预算上限；release、hotfix 的 full 跑到此。
+- **full**（概念）：全部 test case 的上界，通常没有入口，不由 gate 执行。
+- **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有
+  `docs/system/testing/<name>.md`。on-site 由 Agent+Jev 选题，不默认整 suite 盲跑。
 
 预算包含启动依赖与预热，不含 build；超出预算视为失败。
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
