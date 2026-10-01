@@ -91,6 +91,9 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 
 `needs_design: no`：无角色可合；确认 owner 干净且开发改动已提交；objectives 的 owner 开发项已勾。
 
+本步完成后的 owner HEAD 即 close-out 可选 squash 的**交付地板**下界（见
+`delivery-contract.md`「可选历史整理」）；本 intent **不**询问或执行 squash。
+
 ### Accept（前置勾选 + on-site）
 
 1. 核对 `objectives.md`：converge **之前**的依赖项须为 `[x]`（design / 开发相关项按

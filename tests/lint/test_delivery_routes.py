@@ -430,6 +430,14 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "复核上轮问题" in finish
     assert "不得跳过" in finish
     assert "report 缺失时内部执行 code-review" in finish
+    assert "可选 squash" in finish
+    assert "第一次把目标主线合入交付分支之前" in finish
+    contract = workflow("delivery-contract")
+    assert "可选历史整理（squash）" in contract
+    assert "git reset --soft" in contract
+    assert "git restore --source=" in contract
+    assert "git merge --squash" in contract
+    assert "擅自改写历史" in contract
 
 
 def test_role_intents_do_not_reuse_owner_session_switch():

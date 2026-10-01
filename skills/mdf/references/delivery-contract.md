@@ -75,6 +75,7 @@
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不跑 `verify check`。
   - 不内嵌 verify full / fact。
+  - 把目标主线合入交付分支前可建议 squash（见「可选历史整理」）；非强制。
 - 开发迭代只用 `$mdf verify --level on-site`；禁止把 full 当日常自检。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` / `$mdf verify-fix` 不走交付主线，也不由 deliver 内部委托。
@@ -315,6 +316,44 @@ bugfix 的 `suites.json` 在 verify full 前关联已文档化 named suite（≥
 verify full 中非 quick 失败时尝试补 quick 复现；结论写入
 `changes/unreleased/<slug>/verify.md`。code-review 本轮触及的非 quick 失败另在
 `code-review.md` 记「quick 复现」字段（各记各的，不互替）。
+
+## 可选历史整理（squash）
+
+close-out 在**第一次把目标主线合入交付分支**之前（feature/bugfix←develop，
+release/hotfix←master），可建议整理交付分支本地历史。非强制；用户拒绝则跳过。
+`--auto-pilot` / `--yolo` **不得**擅自改写历史。
+
+### 地板（`reset --soft` 目标）
+
+地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
+
+- **交付地板**（能允许的最早点 = converge 起点）：
+  - roster ≥1：`gates/integration.json` 已进入当前分支历史、且角色 worktree 已清理后的
+    owner 提交（可用该文件在本分支首次出现的 commit；不得早于它）。
+  - roster `0,0`：objectives 中 owner 开发（或等价开发项）已勾所在提交；不得早于它。
+- **他人抬升**：在 `start_commit..HEAD` 上，若存在 `author` 或 `committer` email
+  ≠ 当前 `git config user.email` 的 commit，地板抬到其中**最新一笔**（保留该笔，只压其后）。
+  - tip 本身即他人提交 → 不可 squash。
+  - 角色 merge 落在交付地板之前则不进区间，不必再判「是否本人」。
+
+converge 只定义地板，不在入口询问 squash。
+
+### 手段（只允许 soft reset）
+
+先记下 tip 与各段界完整 hash。Jev（或主 Agent）只做定型判断：是否建议、几段、切法
+（`noul` / `choice` / `run`）；**不写** commit message。主 Agent 撰写每段中文
+Conventional Commit（含 Bug 的段保留完整 Bug ID），必要时请用户确认。
+
+执行（多段 = 1 次 soft reset + N 次按段界树提交）：
+
+1. `git reset --soft <地板>`
+2. 对每个段界 tip（原历史上的 commit）：  
+   `git restore --source=<段界> --staged --worktree .` → `git commit`
+3. `git diff <旧 tip> HEAD` 必须为空；`start_commit` 仍为 HEAD 祖先。
+
+❌ 禁止：`git rebase` / `rebase -i`、`git merge --squash`、越过地板、涵盖他人
+commit、已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。
+仅当各段改动文件完全不重叠时，才可偷懒按路径分批；通用流程仍按段界 **tree**。
 
 ## 修改与提交权限
 

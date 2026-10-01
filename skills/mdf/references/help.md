@@ -348,6 +348,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf close-out` 或 `$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` Bug 前委托 `$mdf verify-fix`。
+    合入目标主线前可建议 soft-reset squash（见 delivery-contract）；不擅自改写历史。
 
 - `$mdf archive`
   - 用法：`$mdf archive`
