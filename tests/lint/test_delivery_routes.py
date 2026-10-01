@@ -307,8 +307,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "quick 复现（已补 <用例位置>" in review
     assert "suites.json" in review or "verify full" in review or True
     assert "converge" in review
-    assert "只有本轮修复或集成改动了实现" in review
-    assert "`$mdf verify run --level full`" in review or "verify run --level full" in review
+    assert "不跑 verify full" in review
+    assert "`$mdf verify run --level on-site`" in review or "verify run --level on-site" in review
     deliver = workflow("deliver")
     assert "外层协调者" in deliver
     assert "先测后审" not in deliver
@@ -408,7 +408,8 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "四种 kind 均要求有效 converge",
         "审查基线仍为上一正式发布", "objectives.md",
         "不再改代码",
-        "按当前分支执行所需 suite", "最终 final_head",
+        "不跑 verify full", "最终 final_head",
+        "不运行 `delivery record --stage code-review`",
     ):
         assert rule in text
     finish = workflow("close-out")

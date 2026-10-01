@@ -13,7 +13,7 @@ def write_change_in_place(repo, root):
     replace(repo / "docs/proposals" / PRP_NAME, "status: implemented", "status: ready")
 
 
-def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
+def test_stages_parallel_green_and_finish_without_code_review_gate(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     qa, dev = sync_roles(python_exe, repo)
     payload(record(python_exe, dev, "implement"))
@@ -26,14 +26,16 @@ def test_stages_parallel_green_and_expiry(python_exe, tmp_path):
     commit(qa)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
     payload(record(python_exe, repo, "converge"))
-    payload(record(python_exe, repo, "code-review"))
+    # code-review 无 stage gate；finish 只核设计基线 + converge
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
-    # 实现改动使 code-review 过期
+    rejected = mdf(
+        python_exe, "delivery", "record", "--repo", str(repo),
+        "--stage", "code-review", "--summary", "不应接受",
+    )
+    assert rejected.returncode != 0
+    # 实现改动不使 finish CLI 因审查 fingerprint 失败
     implementation = repo / "src/service.py"
     implementation.write_text(implementation.read_text() + "\n# changed\n")
-    result = mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish")
-    assert "stale_gate" in result.stderr
-    payload(record(python_exe, repo, "code-review"))
     payload(mdf(python_exe, "delivery", "check", "--repo", str(repo), "--stage", "finish"))
 
 
@@ -49,8 +51,7 @@ def test_converge_needs_test_approval_but_review_can_repair_tests(python_exe, tm
     assert "test_approval_required" in record(python_exe, repo, "converge").stderr
     payload(record(python_exe, repo, "converge", "--test-approval", "用户明确确认增加配置"))
     (repo / "pytest.ini").write_text("[pytest]\naddopts = -q\n")
-    payload(record(python_exe, repo, "code-review"))
-    assert (root / "gates/code-review.json").is_file()
+    assert not (root / "gates/code-review.json").exists()
 
 
 def test_uncommitted_design_and_changed_design_block(python_exe, tmp_path):
@@ -71,8 +72,7 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     payload(record(python_exe, dev, "implement"))
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    for stage in ("converge", "code-review"):
-        payload(record(python_exe, repo, stage))
+    payload(record(python_exe, repo, "converge"))
     commit(repo)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
     write_change_in_place(repo, root)
@@ -158,8 +158,7 @@ def test_finish_rejects_pending_role_branches(python_exe, tmp_path):
     git(repo, "merge", "--no-ff", "--no-edit", "-m",
         "chore(delivery): 合入 dev/feature/service-health",
         "dev/feature/service-health")
-    for stage in ("converge", "code-review"):
-        payload(record(python_exe, repo, stage))
+    payload(record(python_exe, repo, "converge"))
     commit(repo)
     write_change_in_place(repo, root)
     commit(repo)
@@ -181,7 +180,7 @@ def test_executable_mode_and_design_fragment_changes_invalidate_evidence(python_
     assert "stale_gate" in record(python_exe, dev, "implement").stderr
 
 
-def test_non_fact_docs_do_not_expire_review(python_exe, tmp_path):
+def test_non_fact_docs_do_not_expire_finish_check(python_exe, tmp_path):
     repo, root, _ = setup_delivery(python_exe, tmp_path)
     qa, dev = sync_roles(python_exe, repo)
     payload(record(python_exe, qa, "write-tests"))
@@ -189,8 +188,7 @@ def test_non_fact_docs_do_not_expire_review(python_exe, tmp_path):
     payload(record(python_exe, dev, "implement"))
     commit(dev)
     payload(mdf(python_exe, "delivery", "integrate", "--repo", str(repo)))
-    for stage in ("converge", "code-review"):
-        payload(record(python_exe, repo, stage))
+    payload(record(python_exe, repo, "converge"))
     commit(repo)
     before = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
                           "--stage", "finish"))["result"]
@@ -217,32 +215,6 @@ def test_design_fingerprint_stable_across_sibling_href_spelling(python_exe, tmp_
     assert current["design"] == recorded
 
 
-def test_record_design_rejects_repo_root_style_links(
-    python_exe: str, tmp_path: Path
-):
-    repo, _ = start_repo(tmp_path)
-    obj = tmp_path / "objectives.md"
-    obj.write_text("# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n")
-    data = payload(mdf(
-        python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
-    ))
-    work = Path(data["worktree"])
-    root = work / "changes/unreleased/service-health"
-    (root / "design.md").write_text(
-        "# 设计\n\n[能力](docs/user-guide/README.md)\n"
-    )
-    policy = tmp_path / "policy.json"
-    policy.write_text(json.dumps({"protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"]}))
-    result = mdf(
-        python_exe, "delivery", "record", "--repo", str(work),
-        "--stage", "design", "--policy-file", str(policy),
-        "--summary", "用户确认接口及验收；测试配置已识别",
-    )
-    assert result.returncode != 0
-    assert "broken_link" in result.stderr
-
-
 def test_start_requires_needs_design(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     obj = tmp_path / "objectives.md"
@@ -265,3 +237,31 @@ def test_roster_requires_needs_design_yes(python_exe, tmp_path):
     )
     assert result.returncode != 0
     assert "invalid_needs_design" in result.stderr
+
+
+def test_record_design_rejects_repo_root_style_links(
+    python_exe: str, tmp_path: Path
+):
+    repo, _ = start_repo(tmp_path)
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n")
+    data = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
+        "--proposal", "prp-001", "--objectives-file", str(obj),
+    ))
+    work = Path(data["worktree"])
+    root = work / "changes/unreleased/service-health"
+    (root / "design.md").write_text(
+        "# 设计\n\n[能力](docs/user-guide/README.md)\n"
+    )
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps({
+        "protected_paths": ["tests/", "pytest.ini"], "suites": ["billing"],
+    }))
+    result = mdf(
+        python_exe, "delivery", "record", "--repo", str(work),
+        "--stage", "design", "--policy-file", str(policy),
+        "--summary", "用户确认接口及验收；测试配置已识别",
+    )
+    assert result.returncode != 0
+    assert "broken_link" in result.stderr

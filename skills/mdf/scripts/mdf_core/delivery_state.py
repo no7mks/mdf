@@ -12,7 +12,7 @@ from .verification import (
     repo_verification, recorded_suites, required_suites, suites_cover,
 )
 
-STAGES = ("design", "write-tests", "implement", "converge", "code-review")
+STAGES = ("design", "write-tests", "implement", "converge")
 
 
 def parse_needs_design(text: str) -> bool:
@@ -179,10 +179,7 @@ def require_green(repo, root, data):
 
 
 def require_finish(repo, root, data):
-    """close-out 前置：code-review 有效。verify full / fact 由独立 intent 负责，无 stage gate。"""
+    """close-out 的 CLI 侧：设计基线 + 已 converge。code-review / verify / fact 无 stage gate。"""
     current = require_design(repo, root, data)
-    record = gate(repo, root, "code-review")
-    if any(record.get("fingerprints", {}).get(key) != current[key]
-           for key in ("code", "design")):
-        raise MDFError("code-review 证据缺失或过期", code="stale_gate")
+    gate(repo, root, "converge")
     return current

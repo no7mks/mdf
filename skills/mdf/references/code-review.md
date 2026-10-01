@@ -124,13 +124,9 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 各分支前置条件：
 
 - feature 保留前置要求：
-  - 运行 `delivery status` 定位材料，读取 design 与 converge gate，
+  - 运行 `delivery status` 定位材料；`needs_design: yes` 时读取 design 与 converge gate，
     核对两者的 `fingerprints.design` 一致；收敛记录缺失、损坏或设计不一致时停止。
-  - 运行 `delivery check --stage code-review`。
-    - 退出 0：读 stdout，按报告有效性与续办条件进入 2 或 3。
-    - 非零：读 stderr 最后一行的 `error`，不从 stdout 或落盘证据猜 check 结果。
-    - 仅 `stale_verification` 且同设计已收敛时，记录过期状态，按相同条件进入 2 或 3，步骤 4 再重验。
-    - 其他 `error`（含 `stale_gate`）停止，不跳过 converge。
+  - 运行 `delivery check --stage converge` 确认已收敛（本 intent **无** stage gate）。
 - 四种 kind 均要求有效 converge（主链验收在 converge / on-site，不在本步跑 full）。
   - `needs_design: no` 时无 design gate，仍须 converge。
   - 修复续办进入 3；步骤 4 按需补 on-site，不在本 intent 强制 verify full。
@@ -219,38 +215,13 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 
 步骤 4 先按分支判定是否重验，再保存证据。
 
-- feature：
-  - 先运行 `delivery check --stage code-review`。
-    - 非零读 stderr 最后一行的 `error`。除 `stale_verification` 外均停止。
-  - 以下任一成立时运行 `delivery verify`（smoke 并集，写入 `gates/verification.json`；
-    不是 closeout 的 verify full）：
-    - finish 本次集成产生新提交且增量不可跳过；
-    - `error` 为 `stale_verification`；
-    - 本轮改动实现、测试、验证配置。
-  - `delivery verify` 只跑 lint、build、quick、smoke；named 改由 on-site 选题，不默认整 suite。
-  - 仅非本交付 `docs/` 的集成不强制重验。
-  - 仅检查通过且上述强制重验条件均不成立时，沿用有效全绿证据。
-- bugfix/hotfix/release：
-  - 先运行 `$mdf verify check --level full`。
-  - 只有本轮修复或集成改动了实现、测试或验证配置使证据过期时，
-    才运行 `$mdf verify run --level full --repo "$REPO_ROOT"`；否则可 `advance`。
-  - 脚本按当前分支执行所需 suite：
-    依次执行 lint、build、quick 与 smoke（bugfix）或 release（release/hotfix）。
-    - 逐项记录命令、预算、退出状态、报告汇总与 `suites`。
-  - 输出并保存同目录 `code-review.verification.json`；失败保留失败证据。
-  - 验证期间 stderr 为进度与子进程原文。
-  - 成功：读退出码、stdout 的 JSON，或落盘证据。
-  - 失败：读 stderr 最后一行 JSON。
-  - suite 超出预算即终止 process group 并判为失败。
-  - 重跑时可另跑 on-site 选题；未重跑时引用同目录 `verify.md` 中 Verify 阶段记录。
-  - 证据未覆盖所需 suite 视为过期。
-  - finish 使用 `$mdf verify check --level full --repo "$REPO_ROOT"` 核对 suite 与全绿结果；
-    已收口 release/hotfix 改按 finish 步骤 4 核对 `changes/<semver>/` 的版本记录。
+- 本步不跑 verify full（留给主链下一 intent）；也不写 `gates/code-review.json`。
+- 本轮若改动了实现/测试：跑 `$mdf verify run --level on-site` 确认可继续；失败回 3 修。
+- 可选：把 on-site 命令与结果路径记入本轮 `code-review.md`。
+- close-out 集成后的增量审查仍按下方「close-out 核对」；所需 full 证据由主链 verify full 负责。
 - ❌ 不能用仅检查文档结构的 full validation 代替业务验证。
-- 重验失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核并重验。
-- 重验时不改树。suite 失败即停，回 3 改完再跑。
-- 跑的过程中文件变化则该次证据作废，不因此重开审查。
-- 非 quick 用例在 converge 之后（或 bugfix/release/hotfix 等价 gate 之后）失败时：
+- on-site 失败且可在既定权限内修复时返回 3，由主 Agent 修复、复核后再验。
+- 非 quick 用例在 converge 之后失败且本轮触及：
   - 必须尝试补一条 quick 复现用例。
   - 在本轮记录的「quick 复现」字段写明结果。
 
@@ -266,29 +237,24 @@ finish 内部委托时完成后返回 finish，继续事实审阅与收口。
 
 记录与完成条件：
 
-- 先提交修复，再固定 final_head 并提交本轮记录。
-- 无有效未解决问题且验证全绿才可记录完成。
-- feature 另运行 `delivery record --stage code-review --summary <审查、裁定、修复与验证依据>`
-  并提交 gate。
-- 非 feature 以该审查记录为证据，不伪造 feature gate；语义审查由 Agent 负责，CLI 不推理各份结论。
+- 先提交修复，再固定 final_head 并提交本轮 `code-review.md`。
+- 无有效未解决问题才可记录完成。
+- ❌ 不运行 `delivery record --stage code-review`（无该 stage gate）。
+- 语义审查由 Agent 负责；CLI 不推理各份结论。
 - 首轮未写清已采纳/未解决问题清单时，第二轮不得增量，停止并要求补记录。
+- 主链随后的 verify full 若为修绿改了代码：不强制回到本 intent；由 verify 自行架构审视。
 
-finish 核对：
+close-out 核对：
 
-- 记录中的基线、各轮应派份数的审查结果、最终复核及验证均完整。
-- 检查 final_head 到当前 HEAD 是否有实现、测试、验证配置或本交付目标变化；
-  final_head 必须存在且为当前 HEAD 的祖先。
-- 不使实现审查过期、也不强制重验的改动（事实仍须另审）：
+- 记录中的基线、各轮应派份数的审查结果、最终复核均完整。
+- final_head 必须存在；close-out **集成主线之前**，final_head 应为当时审查终点。
+- 不使实现审查过期、也不强制重开审查的改动（事实仍须另审）：
   - 记录文件自身、纯事实、收口文档。
-  - finish 集成引入的非本交付 `docs/` 改动。
-- 实现或本交付目标变化后不得沿用通过结论：
-  - 修复窗未关闭时回到 3，不从 1 重开。
-  - 修复窗已关闭后的新交付改动作为增量新一轮从 1 开始。
-- finish 集成 develop/master 产生新提交后：
-  - 仅非本交付 `docs/` 增量不新开审查、不重验；按 finish 契约追加跳过说明，不把集成当修复续办。
-  - 其他增量一律作为增量新一轮从 1 开始，左端点为集成前 final_head。
-    - 以集成后的 HEAD 重做 1 份本轮范围审查与当前交付所需 suite。
-    - 不复用集成前报告。
-  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
-- feature 还须通过 CLI fingerprint 检查。
+  - close-out 集成引入的非本交付 `docs/` 改动。
+  - 主链 verify full 为修绿所做的改动（已在 verify 内自行架构审视）。
+- close-out 集成 develop/master 产生新提交后：
+  - 仅非本交付 `docs/` 增量不新开审查；按 close-out 契约追加跳过说明。
+  - 其他集成增量一律作为增量新一轮从 1 开始，左端点为集成前 final_head。
+    - 以集成后的 HEAD 重做 1 份本轮范围审查；不复用集成前报告。
+  - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，人数仍为 roster.reviewers。
 - 记录或提交失败时保留现场并报告；不把阶段提交视为审查通过。

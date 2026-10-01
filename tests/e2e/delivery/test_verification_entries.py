@@ -41,10 +41,9 @@ def test_feature_delivery_verify_runs_lint_build_quick_release(python_exe, tmp_p
     assert [item["budget"] for item in evidence["results"]] == [None, None, 30, None]
     assert evidence["suites"] == ["quick", "release"]
     assert evidence["all_passed"] is True
-    # converge / code-review 不再绑定 verification.json
+    # converge 不再绑定 verification.json；code-review 无 stage gate
     payload(record(python_exe, repo, "converge"))
-    payload(record(python_exe, repo, "code-review"))
-    assert (root / "gates/code-review.json").is_file()
+    assert not (root / "gates/code-review.json").exists()
 
 
 def test_suite_over_budget_fails(python_exe, tmp_path):

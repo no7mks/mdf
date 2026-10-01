@@ -31,7 +31,7 @@
   - suite 名不得为 lint/build/quick/smoke/release/full。
 - converge/integrate 的测试规则变更需要 `--test-approval <用户确认记录>`。
   - 该文本是授权证据，不是自动授权。
-- 阶段值为 design、write-tests、implement、converge、code-review（无 fact-update gate）。
+- 阶段值为 design、write-tests、implement、converge（无 code-review / fact-update gate）。
 
 ### `tree`
 

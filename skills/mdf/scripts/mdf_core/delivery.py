@@ -105,11 +105,6 @@ def record_stage(repo, root, data, args):
                 raise MDFError("测试或验证规则变化，需要用户批准记录",
                                code="test_approval_required")
         # 验收为 Agent 侧 on-site + objectives；不绑定 smoke verification.json
-    elif stage == "code-review":
-        previous = gate(repo, root, "converge")
-        if (needs_design
-                and previous.get("fingerprints", {}).get("design") != current["design"]):
-            raise MDFError("缺少同设计的收敛证据", code="stale_gate")
     record = {"stage": stage, "summary": args.summary, "fingerprints": current,
               "head": git(repo, "rev-parse", "HEAD").stdout.strip()}
     if stage == "design":
@@ -175,9 +170,6 @@ def check(repo, root, data, stage):
                 record = gate(repo, root, prerequisite)
                 if record.get("fingerprints", {}).get("design") != current["design"]:
                     raise MDFError("并行阶段设计不一致", code="stale_gate")
-        return current
-    if stage == "code-review":
-        gate(repo, root, "converge")
         return current
     return current
 

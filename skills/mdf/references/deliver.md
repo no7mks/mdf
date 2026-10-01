@@ -254,7 +254,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 开发完成但未收敛 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
-| 已收敛且审查缺失或过期 | 在 owner 委托 `references/code-review.md` |
+| 已收敛且 `code-review.md` 未完成 | 在 owner 委托 `references/code-review.md` |
 | 审查有效、verify full 未绿 | 委托 `references/verify.md`（full；失败现场修到绿） |
 | verify full 有效、fact audit 未通过 | 委托 fact-audit；必要时 fact-update 后重审 |
 | fact 通过、close-out 未完成 | 在 owner 委托 `references/close-out.md` |

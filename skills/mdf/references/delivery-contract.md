@@ -181,10 +181,12 @@ Git 约束：
 | write-tests、implement | 仅 `needs_design: yes`；要求已提交 design |
 | write-tests | 写完可编译或可加载执行的测试即完成，不要求全绿 |
 | converge | `needs_design: yes` 时需两路完成；证据为 objectives + on-site |
-| code-review | 需 converge；不绑定 verify full |
-| finish（close-out 检查） | 需当前 code-review 有效；无 fact-update stage gate |
+| finish（close-out 检查） | 设计基线 + 已 converge；**无** code-review / verify / fact stage gate |
 
-- on-site 全绿由 converge 负责；verify full 由独立 intent 负责。
+- on-site 全绿由 converge 负责；verify full、code-review、fact 均无 delivery stage gate。
+- code-review 证据是 `code-review.md`（轮次/`final_head`），不写 `gates/code-review.json`。
+- 主链在 code-review 之后才跑 verify full；verify 中为修绿而改的代码**不强制**重开
+  code-review，由 verify 自行从架构角度审视修复是否合适。
 - 不能手填 passed 代替 CLI 检查。
 - 语义结论不是 CLI 推理结果，summary 必须包含实际审查依据。
 

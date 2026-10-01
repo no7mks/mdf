@@ -179,7 +179,7 @@
   - 无有效上轮记录时按首轮从交付起点审到集成后 HEAD，不得跳过，人数仍为 roster.reviewers。
 - 主线已包含且审查证据有效时无需重复合并或审查。
   - 证据缺失或过期时内部执行 code-review，通过后继续本次 close-out。
-  - feature 仍须满足 code-review 的 design/converge 前置条件。
+  - feature 仍须已 converge；审查证据看 `code-review.md`（无 stage gate）。
 - 📌 四种分支均须有完整且有效的各轮应派份数独立审查、主 Agent 裁定、修复复核与验证记录。
 - 已收口 release/hotfix 只核对已有集成与审查证据。
   - 若需要新集成或实现修改，停止报告收口状态不一致，不得覆盖版本目录或改写已开始发布的源提交。
@@ -218,24 +218,20 @@
 
 **审阅**
 
-- feature 运行 `delivery check --stage finish`，使用本次有效 code-review、事实与验证证据。
+- feature 运行 `delivery check --stage finish`（设计基线 + converge）；审查看
+  `code-review.md`，verify/fact 看主链证据，无 code-review stage gate。
 - bugfix 与待收口 release/hotfix 运行 `$mdf verify check --level full --repo "$REPO_ROOT"`。
 - 已收口 release/hotfix 不运行 `verify check`（证据已随收口移出 `changes/unreleased/`），改为核对：
   - `changes/<semver>/code-review.md` 的 final_head 与同目录 `code-review.verification.json` 全绿。
   - final_head 到 HEAD 的提交只改 `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`；
     否则按收口状态不一致停止。
-- 返回 `stale_gate` 或证据过期时停止并交接；由主链重新跑 code-review / verify full /
-  fact audit（必要时 fact update），不在本 intent 内嵌。
-  - 再内部从 `code-review.md` 步骤 1 执行审查后复核。
-    - 有完整上轮记录则增量新一轮，否则首轮；不把集成当修复续办。
-  - 不回退本流程步骤编号；语义或实现变化必须补审补验。
-  - 补验期间 stderr 为进度与子进程原文。
-  - 成功：读退出码、stdout JSON 或落盘证据。
-  - 失败：读 stderr 最后一行 JSON。
-    - 用其中的 `error` 区分 `stale_gate`、`stale_verification` 与其他失败。
+  - 设计基线/`converge` 检查失败（含 `stale_gate`）或审查/验证证据不足时停止并交接；
+    由主链补跑 code-review / verify full / fact，不在本 intent 内嵌。
+  - 集成后需补审时从 `code-review.md` 步骤 1 执行（有完整上轮则增量，否则首轮）。
+  - 不回退本流程步骤编号。
 - 其他失败走本步骤的失败去向。
 - ❌ 不在本步重新委托 fact audit / fact update；仅确认主链前置已满足。
-- 验收：各分支 code-review 证据有效，feature 无缺失或过期 gate；主链 fact 结论仍有效。
+- 验收：各分支 `code-review.md` 结论可用；feature 无缺失 converge；主链 fact 结论仍有效。
 - 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
   - 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。
 

@@ -103,7 +103,7 @@
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
 - `$mdf verify --level on-site|full`：module 级验证；converge 用 on-site，主链在
   code-review 后跑 full
-- `$mdf code-review`：审查并修复实现、测试和 code smell
+- `$mdf code-review`：审查并修复；证据为 `code-review.md`（无 stage gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   主链在 verify full 之后、必要时于 fact audit 前调用
 - `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify full / fact）
@@ -332,8 +332,8 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
-  - 说明：各分支 close-out 前完成（feature 在 converge 后）。首轮按 roster.reviewers
-    覆盖起点区间；后续增量并复核。默认 replicate；partition 按切片派工。
+  - 说明：证据写 `code-review.md`，无 stage gate。主链在 converge 后、verify full 前。
+    首轮按 roster.reviewers；后续增量并复核。默认 replicate；partition 按切片派工。
 
 - `$mdf fact update`
   - 用法：`$mdf fact update [<path>...] [--scope branch|full|paths]`
