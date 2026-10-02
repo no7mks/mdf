@@ -38,7 +38,7 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
                  ├──── 失败/缺失 ─────────────────→ [停止并报告]
                  ├──── 有改写 ────────────────────→ 3 Audit
                  │
-                 ▼ 无改写且无超次 finding
+                 ▼ 无结构 finding
                  [结束]
 ```
 
@@ -52,7 +52,7 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
 | 3 | Audit | 约束 | 委托同 scope 的 fact audit；按变更验证 | 审阅、验证 | 通过或仅结构则 4 | 其他未通过或验证失败则停 |
-| 4 | Refine structure | 约束 | 改结构 | gate | 未超次改写回 3；无改写且无超次 finding 结束 | 超次 finding 或失败则停 |
+| 4 | Refine structure | 约束 | 改结构并提交 | 结构 diff、提交 | 未超次改写回 3；无 finding 结束 | 超次或无法改写则停 |
 
 ## 术语与数据结构
 
@@ -195,12 +195,13 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
   - `branch` 与 `full` 保持原 scope，不附加路径。
   - 只改本次 audit 范围内的页面。
 - 第三次仍有结构 finding（表中的超次 finding）则停止并报告，即使本步已经改写也不回 3。
-- 无结构 finding 时无改写结束，含第三次审阅已通过。失败与无改写互斥。
+- 无结构 finding 时无改写结束，含第三次审阅已通过。
+- 仍有结构 finding 却无法改写时停止并报告，不按无改写结束。
 - 无改写或重审通过后，事实页应已在审阅前提交。
   - 主链委托时不把事实页留到调用方。
   - ❌ 不再记录 fact-update stage gate。
-    - `--summary` 写本次事实审阅确认与验证证据。
+  - 本次事实审阅确认与验证证据按 fact audit 的返回规则交接。
 
 验收：结构 diff、适用提交；无 fact-update stage gate。
 
-异常与交接：写入失败保留现场并停止，不按无改写结束；gate 记录失败时停止并报告，不声称事实同步完成。
+异常与交接：写入失败保留现场并停止，不按无改写结束；提交失败时停止并报告，不声称事实同步完成。

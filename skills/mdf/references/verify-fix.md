@@ -79,10 +79,11 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - 修复写入前（步骤 2、3）运行 `git branch --show-current`：为 `master` 或为空（detached HEAD）时
   不写入，停止并报告。只读复现验证不受此限。
 - finish 委托模式：本次步骤 2–3 修改了实现、测试或验证配置时，记录并提交后向 finish 报告「实现已变更」；
-  finish 回到其步骤 4 补验与增量 code-review，再重跑其步骤 7，之后才可收口。
+  finish 回到其步骤 4 报告失效并交接；主链在 close-out 外补验与增量 code-review，
+  再续办步骤 7，之后才可收口。
 - ❌ 边界：
   - 不把对象标为 `closed`，不填 `fixed_in`。
-  - 不跑 `$mdf verify run`，不按分支 kind 选择 suite，不因此跑 release suite。
+  - 不跑 branch/named 验证；只在本步修改实现后运行下方 smart，不按分支 kind 选择 suite。
   - 可只读已有 `changes/unreleased/<slug>/verify.branch.json`（须 `all_passed: true`）。
 
 ### 复现验证

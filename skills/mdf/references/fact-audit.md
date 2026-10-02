@@ -42,8 +42,9 @@
 │ 6 Validate                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败且独立调用 ────→ [停止]
-                 ├──── 失败且内部委托 ────→ [返回未通过，调用方走失败分支]
+                 ├──── 失败且独立调用 ──────────────→ [停止]
+                 ├──── 失败且 update 仅结构问题 ────→ [返回仅结构 finding，调用方修结构]
+                 ├──── 其他失败且内部委托 ──────────→ [返回未通过，调用方走失败分支]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -68,7 +69,7 @@
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
-| 6 | Validate | 脚本 | 运行 full validation，不跑验证命令 | validation findings | 7 | 独立停止；委托返回未通过 |
+| 6 | Validate | 脚本 | 运行 full validation，不跑验证命令 | validation findings | 7 | update 仅结构返回；其余未通过 |
 | 7 | Confirm review | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
@@ -252,7 +253,14 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 通过条件：输出可解析且无 finding（migrate 仅余 `manifest.initializing`）；有 finding 时 CLI
 退出码为 2，按未通过处理；无输出或不可解析同样未通过。
 
-异常与交接：独立调用报告并停止；内部委托返回未通过，调用方走失败分支。
+异常与交接：
+
+- fact-update 委托的例外须同时满足：
+  - 本轮语义、CLI 与 validation 问题均仅属步骤 7 定义的结构 finding。
+  - 没有未确认 warning。
+  满足时返回「仅结构 finding」与清单，由调用方步骤 4 修结构。
+  不宣称审阅通过，不勾选进度。
+- 其余失败：独立调用报告并停止；内部委托返回未通过，调用方走失败分支。
 
 <a id="s7"></a>
 

@@ -1,5 +1,4 @@
 # 仓库与当前事实文档契约
-
 ## 核心术语
 
 - `当前事实文档`：描述当前 checkout 已成立行为的版本化 Markdown 文档。它只能
@@ -21,7 +20,6 @@
 - `module`：`.mdf/modules.yaml` 中的交付单元，含 sourceset、ignore 与分套件命令。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
 - `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。
-
 ## 固定布局
 
 ```text
@@ -65,7 +63,6 @@
 - ⚠️ `docs/product/`、`docs/adr/` 与根 `docs/testing.md` 不属于当前布局；
   存在即为 `layout.migrate` finding，由 `$mdf migrate` 收敛。
 - ⚠️ 缺少 `docs/system/testing/index.md` 或其主题叶时为 `layout.testing` finding。
-
 ## 文档分类与按需加载
 
 `docs/` 按读者与用途分类；audit 扫描全部 `docs/**` 与根 `README.md`、

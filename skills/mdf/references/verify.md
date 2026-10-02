@@ -16,7 +16,7 @@
 │ 1 Resolve modules                │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ───────────────────→ [停止并报告]
+                 ├──── 失败/缺失 ────→ [停止并报告]
                  │
                  ▼ module 已确定
 ┌──────────────────────────────────┐
@@ -40,13 +40,15 @@
                  │
                  ├──── branch 未绿且可修 ────→ 3 Run（提交后重跑）
                  ├──── branch 未绿且阻塞 ────→ [停止并报告]
-                 ├──── 落盘/勾选失败 ──────→ [停止并报告]
+                 ├──── 落盘/勾选失败 ────────→ [停止并报告]
                  │
                  ▼ smart/named 结束；或 branch 已绿并勾选
                  [结束]
 ```
 
 ## 工作流（唯一执行契约）
+
+读取 `references/common.md` 与 `references/delivery-contract.md`。
 
 入口：`$mdf verify run --scope smart|branch|named`；可选
 `--module` / `--paths` / `--test`。
@@ -59,7 +61,9 @@
 | 3 | Run | 脚本 | `mdf.py verify run`（成败都进 4） | 运行结果 | 4 | 待批准回 3；阻塞停 |
 | 4 | Record | 脚本 | branch 无论成败落盘；绿则勾选提交 | 证据或摘要 | 结束 | 未绿可修→3；阻塞/落盘失败停 |
 
-### 1 Resolve modules
+## 术语与数据结构
+
+### 范围与 module
 
 - 读 `.mdf/modules.yaml`。
 - smart：`--paths` 命中 sourceset（非 ignore）并与 `--module` 合并。
@@ -67,7 +71,7 @@
 - bugfix 的 branch `run`：须已有 `suites.json` 关联 ≥1 已文档化 named suite。
   缺失则 `missing_delivery_suite`。
 
-### 2 Select
+### 选题与命令
 
 **smart**
 
@@ -85,7 +89,7 @@
 - 实际执行：全部 module 的 lint + build + quick + 上述套件，默认按 module
   **串行展开**；`modules.yaml` 顶层 `verification` 覆写的入口用单命令。
 
-### 3 Run
+### 执行与失败处理
 
 - CLI：`mdf.py verify run --scope smart|branch|named ...`
 - 遵守「测试失败工作流」：框架报告 → 单用例复测 → 修一个复测一个 → 再继续。
@@ -100,7 +104,7 @@
   - 审视要点只在 4 于 branch 已绿时写入 `verify.md`（与摘要同文件）；未绿轮不写。
 - 本 intent 内出现业务改动（实现/测试/验证配置）：提交或还原后须再跑本步并进 4。
 
-### 4 Record
+### 记录与完成
 
 - branch：无论成败均写入 `changes/unreleased/<slug>/verify.branch.json`；
   **report**，非 gate；不含 commit / head；`all_passed:false` 时 CLI 仍失败。

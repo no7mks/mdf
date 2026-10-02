@@ -193,7 +193,7 @@
 
 - Bug：按 `references/common.md` 的归属规则确定写入分支。
   - 与当前交付分支工作相关在当前分支，无关在 develop。
-  - 使用 `make-id --type bug --slug <slug>` 生成 ID，以模板写入 `docs/bugs/`。
+  - 使用 `make-id --type bug --repo "$REPO_ROOT" --slug <slug>` 生成 ID，以模板写入 `docs/bugs/`。
 - Proposal：在 planning 工作区写入。
   1. 运行 `planning ensure --repo "$REPO_ROOT"`。
   2. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`

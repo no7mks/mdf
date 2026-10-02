@@ -113,11 +113,7 @@ owner 另开第二个。
 
 ### 设计 policy 与基线
 
-准备 policy JSON，必须同时给出 `protected_paths` 与 `suites`，例如：
-
-```json
-{"protected_paths": ["tests/", "pyproject.toml"], "suites": ["billing"]}
-```
+准备 policy JSON，必须同时给出 `protected_paths` 与 `suites`。
 
 | 返回 | 条件 |
 | --- | --- |

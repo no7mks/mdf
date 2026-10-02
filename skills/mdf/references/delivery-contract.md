@@ -3,7 +3,6 @@
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
 `$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。
 规则持续适用，不是依次执行的阶段。
-
 ## 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。
@@ -54,12 +53,11 @@
 - 搬迁时 CLI 改写仍有效的相对路径。
 - delivery.json 与可选 gate 快照内路径一律仓库相对。
 - fingerprint 规范化用仓库相对或 `@delivery/`，不是第二种 href 写法。
-
 ## 阶段与执行责任
 
 四种 kind **共用**主线。不按 branch kind 另写交付状态机。
 并行形态与是否 design 由默认 roster 与 `needs_design` 决定；
-**有无开发阶段**看 objectives checklist（及 release 的 `has_dev`），
+**有无开发阶段**看 objectives checklist（及 release 的 `has_dev`）。
 **不**由 roster `0,0` 推导出必须空转的 owner 开发 / converge。
 
 主线步骤：
@@ -95,7 +93,6 @@
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` / `$mdf verify-fix` 不走交付主线，也不由 deliver 内部委托。
 - code-review 份数取冻结的 roster.reviewers；close-out 增量新一轮为 1。
-
 ### 触发与协调
 
 - 用户手动触发主线 intent，或显式调用 next 委托下一阶段。
@@ -107,7 +104,6 @@
 - deliver 步骤 4 只覆盖可并行的 qa/dev。
 - 不新增独立 Owner 调度服务或统一状态协议。
 - 当前执行者承担该阶段的协调与语义审查。
-
 ### worktree 与 roster
 
 - start 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立交付 worktree，
@@ -131,7 +127,6 @@
 - qa 与 dev 只能同时为 0 或都 ≥1；一侧为 0 另一侧 ≥1 时把 0 抬成 1 再冻结。
 - `0,0` 时测试与实现都在 owner 上做。
 - `≥1` 时 start 按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`。
-
 ### 底座、执行者与策略
 
 - design 只在 owner 提交共用代码底座；两路不得各自再写底座。
@@ -155,7 +150,6 @@
     可写 `gates/roster-join.json` 测试 fingerprint 快照。
   - 该文件是配置/辅助，**不是**进度 gate。
 - review 时 owner 仍汇总裁定，不按票数。
-
 ### intent 参数与 models
 
 - `$mdf start`、`$mdf deliver` 可带 `--roster <name>`，只在尚未 start 时展开；
@@ -184,7 +178,6 @@ Git 约束：
 
 - 本地工作分支不推送。
 - 禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
-
 ## 进度与 Report
 
 **进度唯一账本**：`objectives.md` 步骤 checklist。各 intent 成功收尾必须自勾对应项并提交。
@@ -204,7 +197,6 @@ Git 约束：
 | 测试框架报告 | `.mdf/reports/` 等 | verify |
 
 close-out 只查上表是否已交且声称通过；不复验对不对。
-
 ### CLI 确定性辅助（非进度）
 
 `delivery status/check/record/roster-join/roster` 仍可执行。
@@ -235,7 +227,6 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 - 只改事实文档或 module ignore：不因「报告对齐」要求机械重跑 full
   （close-out 也不做 commit 对齐审判）。
 - fact / code-review / verify 均无 delivery stage gate。
-
 ### 测试层级与分类
 
 - 层级：test 是含若干断言的最小测试项，通常为函数；test case 是服务于同一目标的
@@ -247,7 +238,6 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 - 依赖按是否 hermetic 划分：测试进程能自行拉起全部依赖、不需要预先存在的环境、
   凭据或网络即为 hermetic；依赖第三方资源或真实兄弟产品（如联调对端）即为
   external。第三方资源不含待测产品与兄弟产品；mock 掉兄弟产品后才算 hermetic。
-
 ### 失败语义
 
 五个入口出现以下任一情况都是失败：
@@ -273,7 +263,6 @@ Core 判定退出码与测试报告（见下节）。
   并把配置写进 `docs/system/testing/`；code-review 核对该配置。
 - 第三方依赖产生、本项目无法修复的 warning 或 deprecated 只可精确豁免。
   - 写明类别、来源模块与理由，记在 `docs/system/testing/`，新增或放宽须用户确认。
-
 ### 测试失败工作流
 
 converge（smart）与 verify branch **共用**：
@@ -283,7 +272,6 @@ converge（smart）与 verify branch **共用**：
 3. 修一个用例 → 复测该单用例。
 4. 有 side effect 的 flaky 例外（须记录依据）。
 5. 相关单用例都绿后，才继续该轮 verify（smart 或 branch）。
-
 ### 测试报告
 
 每次运行 suite（含 named suite）都必须产出 JUnit XML 报告。
@@ -300,7 +288,6 @@ converge（smart）与 verify branch **共用**：
   该 suite 失败，即使命令退出码为 0。
 - 点名执行 test case 或 test 只用于定位；定位复测仍应尽量落盘框架报告。
   有运行器报告则读报告；否则用 `mdf.py run` 落盘。
-
 ### 验证 suite
 
 | suite | 成员 | 预算 | 何时必跑 |
@@ -330,38 +317,36 @@ bugfix 的 `suites.json` 在 verify branch 前关联已文档化 named suite（�
 verify branch 中非 quick 失败时尝试补 quick 复现；结论写入
 `changes/unreleased/<slug>/verify.md`。code-review 本轮触及的非 quick 失败另在
 `code-review.md` 记「quick 复现」字段（各记各的，不互替）。
-
 ## 可选历史整理（squash）
 
-close-out 在**第一次把目标主线合入交付分支**之前（feature/bugfix←develop，
-release/hotfix←master），可建议整理交付分支本地历史。非强制；用户拒绝则跳过。
+close-out 可在**第一次把目标主线合入交付分支**之前建议整理本地历史。
+集成方向：feature/bugfix←develop，release/hotfix←master。非强制；用户拒绝则跳过。
 `--auto-pilot` / `--yolo` **不得**擅自改写历史。
 
 **职责**：调用方决定是否激活（启发式 + 用户确认）。公开 `$mdf squash` 负责地板、
 切段定型、message、确认后执行；可用 `--dry-run` 只产出建议。
-
 ### 地板（`reset --soft` 目标）
 
 地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
 
 - **交付地板**（能允许的最早点；有 converge 时 = converge 起点）：
   - roster ≥1：`git log -1 --format=%H -- changes/unreleased/<slug>/gates/roster-join.json`
-    （该文件在本分支首次引入的 commit；角色 worktree 须已清理；不得早于它）。
+    定位该文件的 commit。它须为该文件在本分支首次引入的 commit；角色 worktree 须已清理；不得早于它。
   - roster `0,0` 且 objectives checklist **含**开发完成项（owner 开发，或
-    `needs_design: yes` 下的 write-tests / implement；含 start 跳过预勾）：在
-    `start_commit..HEAD` 上找**最晚**一次使**该**项变为 `[x]` 的 commit：  
-    `git log -1 -S'[x]' --format=%H -- changes/unreleased/<slug>/objectives.md`  
-    再人工核对该 diff 确含该勾选；找不到或歧义 → **不可 squash**（失败/缺失）。
+    `needs_design: yes` 下的 write-tests / implement；含 start 跳过预勾）：
+    - 在 `start_commit..HEAD` 上找**最晚**一次使**该**项变为 `[x]` 的 commit。
+    - 命令：`git log -1 -S'[x]' --format=%H -- changes/unreleased/<slug>/objectives.md`。
+    - 再人工核对该 diff 确含该勾选；找不到或歧义 → **不可 squash**（失败/缺失）。
   - roster `0,0` 且 checklist **无**上述开发完成项：交付地板 = `start_commit`。
     若其不是 HEAD 祖先，或 `start_commit..HEAD` 为空 → **不可 squash**。
-- **他人抬升**：在 `start_commit..HEAD` 上，若存在 `author` 或 `committer` email
-  ≠ 当前 `git config user.email` 的 commit，地板抬到其中**最新一笔**（保留该笔，只压其后）。
+- **他人抬升**：检查 `start_commit..HEAD`。
+  - `author` 或 `committer` email ≠ 当前 `git config user.email` 的 commit 为他人提交。
+  - 若存在他人提交，地板抬到其中**最新一笔**；保留该笔，只压其后。
   - tip 本身即他人提交 → 不可 squash。
   - roster merge 落在交付地板之前则不进区间，不必再判「是否本人」。
 
 地板 = 历史上较晚者（交付地板与他人抬升结果取更近 tip 的一侧）。  
 有 converge 时由 converge 定义地板语义；本小节供 close-out 选用，converge 入口不询问 squash。
-
 ### 是否建议（可选启发式）
 
 无硬门槛。调用方先取得 `$mdf squash` dry-run 计划，再用计划中的地板收集信号，
@@ -373,7 +358,6 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 
 - 未达信号也可展示 dry-run 建议。
 - 用户拒绝或调用方决定不展示 → 跳过执行。
-
 ### 手段（只允许 soft reset）
 
 公开 `$mdf squash` 承担地板计算、切段定型、message 与执行（见
@@ -385,9 +369,9 @@ Conventional Commit（含 Bug 的段保留完整 Bug ID）。调用方的「是�
 `start_commit` 仍为 HEAD 祖先。`--dry-run` 只展示计划、不改写。
 
 ❌ 禁止：`git rebase` / `rebase -i`、`git merge --squash`、越过地板、涵盖他人
-commit、已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。
+commit。
+❌ 也禁止：已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。
 仅当各段改动文件完全不重叠时，才可偷懒按路径分批；通用流程仍按段界 **tree**。
-
 ## 修改与提交权限
 
 调用交付 intent 授权其必要的设计基线、阶段提交和工作分支集成，提交使用中文

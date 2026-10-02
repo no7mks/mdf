@@ -65,6 +65,8 @@
 读取 `references/common.md` 与 `references/delivery-contract.md`。
 步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。步骤 6 由步骤 3 的 Gitflow 关口进入。框序受编号约束仍按 1–6 绘制。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
+审查阶段读取 `references/code-review.md`；fact 阶段读取 fact-audit，须修复时另读 fact-update。
+
 本 intent 是持续交付的外层协调者，不新增 deliver CLI、交付阶段 gate 或统一 workflow 状态文件。
 不按 branch kind 另写交付流程；靠 `needs_design`、roster 与 objectives
 checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶段）。
@@ -216,6 +218,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 步骤 1 锁定一次交付及 owner worktree，创建 Goal；
 objective 写明交付标识与完成判据（close-out 实际完成）。
 每次 deliver 会话只创建一次；阻塞或暂停时保持 active，不代用户暂停，续办时不重建。
+已有同一交付的 Goal 时复用；内部委托传入该 Goal，子 intent 不得提前将它置 complete。
 Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 步骤 5 核对 finish 实际成功后才置 complete；证据不足或部分失败时保持 active 并报告实际状态。
 
@@ -227,7 +230,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 - **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
   - report（code-review.md / verify.branch.json / fact-audit.md）只证明做过与声称结果。
 - 角色尚在时从对应 qa/dev worktree 读取各路提交与交接说明，不因 owner 尚未合入就重复分派。
-- 角色已 roster-join 并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
+- 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
 - 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
 
 可选加速（见 `common.md`「Jev 可选加速」）：
@@ -252,8 +255,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | owner 开发（或等价开发项）已勾且 converge 未勾 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
-| converge 已勾（或无未勾 converge 项）、code-review 未勾 | 在 owner 委托 `references/code-review.md`（release 另须 integrate 已勾） |
-| code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（full；失败现场修到绿） |
+| converge 已勾（或无未勾 converge 项）、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
+| code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |
 | verify branch 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
 | fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |
 | close-out 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |

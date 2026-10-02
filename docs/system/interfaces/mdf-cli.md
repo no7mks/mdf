@@ -46,8 +46,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   - 对象写入类 CLI 本身不创建提交。
   - 外层写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；
     不夹带无关改动，不替代用户确认或验收。
-  - start、delivery roster-join、finish-gitflow、planning、upgrade、`sync`
-    与 `merge-no-ff` 按各自协议做提交、集成或远端操作。
+  - 以下命令按各自协议做提交、集成或远端操作：
+    - start、delivery roster-join、finish-gitflow、planning。
+    - upgrade、`sync` 与 `merge-no-ff`。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
 

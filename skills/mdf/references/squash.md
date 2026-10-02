@@ -56,8 +56,8 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 | 1 | Check entry | 约束 | 核交付上下文与改写门禁 | 可进入 | 2 | 停止 |
 | 2 | Plan | 约束 | 定地板、定型切段、起草 message | 建议计划 | dry-run 结束；否则 3 | 不可压或失败则停 |
 | 3 | Confirm | 约束 | 用户确认计划（地板、段界、messages） | 已确认计划 | 4 | 未确认留 3；拒绝结束 |
-| 4 | Execute | 约束 | soft reset 后按段界 restore 并 commit | 新提交链 | 5 | 保留现场并停止 |
-| 5 | Verify | 约束 | 树与旧 tip 一致且 start_commit 仍祖先 | 空 diff、clean | 结束 | 保留现场并停止 |
+| 4 | Execute | 脚本 | 调用 squash_execute.py 执行已确认计划 | 退出 0、新提交链、Git trace | 5 | 保留现场并停止 |
+| 5 | Verify | 脚本 | 同一计划调用 --verify-only | tree_equal、start_is_ancestor、clean | 结束 | 保留现场并停止 |
 
 `$mdf squash` 执行本流程；`--dry-run` 在步骤 2 后展示建议并结束，不改写。  
 独立调用只推进本 intent；close-out 内部委托时完成后返回。
@@ -90,6 +90,8 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 - 主 Agent 撰写每段中文 Conventional Commit message（含 Bug 的段保留完整 Bug ID）。
 - 定型或撰写失败 → 报告并停止。
 - 产出建议计划：地板 hash、段界 tip、messages、旧 tip。
+- 计划 JSON 写入仓外临时文件：`branch`、`start_commit`、`floor`、`old_tip`，
+  以及有序 `segments`（每项 `tip`、`message`）；commit 均为完整 hash。
 - `--dry-run`：展示建议计划后结束；❌ 不 reset、不 commit。
 - 同会话若已有未过期 dry-run 计划且 HEAD 仍为该旧 tip，完整调用可复用，不必重算。
 
@@ -106,24 +108,26 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 <a id="s4"></a>
 
-- 只使用已确认计划；先记下旧 tip 完整 hash。
-- `git reset --soft <地板>`
-- 按确认顺序处理每个段界 tip：
-  - `git restore --source=<段界> --staged --worktree .`
-  - `git commit`（该段已确认 message）
-- 多段 = 1 次 soft reset + N 次按段界树提交；一段时 N=1。
+- 执行前复核入口门禁与计划确认仍有效；HEAD 已变化则停止，重新计划与确认。
+- 通过 Core `run` 调用以下命令，留存完整 JSON 与 Git trace。
+
+  ```bash
+  python3 "$MDF_ROOT/scripts/squash_execute.py" --repo "$REPO_ROOT" --plan-file <已确认计划>
+  ```
+- 脚本核对分支、祖先、段界、身份与远程引用；预检未通过不改写。
+- 预检通过后脚本执行一次 `git reset --soft` 与逐段 `git restore --source=`、commit。
 - ❌ 禁止 `git rebase` / `rebase -i` / `git merge --squash`、越过地板、涵盖他人
   commit。
 - ❌ 不得改写已确认 message，不得增删段界。
-- 各段文件完全不重叠时才可按路径分批；通用流程仍按段界 **tree**。
+- 统一使用脚本按段界 tree 执行，不由 Agent 现场编写同类脚本。
 - 失败：保留现场，报告旧 tip 与当前 HEAD；❌ 不自动 `reset --hard`。
 
 ### 校验
 
 <a id="s5"></a>
 
-- `git diff <旧 tip> HEAD` 必须为空。
-- `start_commit` 仍为 HEAD 祖先。
-- 工作区 clean。
+- 使用同一计划，通过 Core `run` 调用上方脚本，追加 `--verify-only`。
+- 验收：退出 0；结果 `tree_equal`、`start_is_ancestor`、`clean` 均为 true。
+  `clean` 指已跟踪改动干净；未跟踪文件不得与段界路径冲突。
 - 验收通过：独立调用结束；close-out 委托则返回调用方。
 - 失败：保留现场，报告旧 tip 与当前 HEAD；不自动回滚。

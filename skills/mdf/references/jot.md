@@ -218,7 +218,7 @@
 核对通过后生成 ID：
 
 - Proposal：`make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`。
-- Bug：`make-id --type bug --slug <slug>`。
+- Bug：`make-id --type bug --repo "$REPO_ROOT" --slug <slug>`。
 - Proposal 写为 `draft`，Bug 写为 `open`，运行写入校验（`targeted validation`）。
 
 验收：写入根、Jot 核对结果、新对象与写入校验。

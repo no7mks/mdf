@@ -71,13 +71,11 @@
 主线：`start → [design?] → work → converge → code-review → verify branch → fact audit → close-out`
 
 #### 起步
-
 - `$mdf bootstrap`：为全新或几乎全新的项目建立 MDF 起点
 - `$mdf init`：接入已有项目或调整配置；新项目转入 bootstrap，已有项目转入 migrate
 - `$mdf init migrate`：将已有项目材料与布局收敛到当前结构；也可 `$mdf migrate`
 
 #### 规划
-
 - `$mdf intake`：将外部想法分诊为 Bug 和/或多个 Proposal
 - `$mdf jot`：追加一条未分诊的随手记录
 - `$mdf jot promote`：提升一条 Jot 为 Proposal 或 Bug
@@ -90,7 +88,6 @@
 - `$mdf clarify <议题>`：压力测试计划、决策或想法
 
 #### 交付
-
 - `$mdf next [--depth N]`：续办在途（四种 kind 共用主线）；无在途时委托 tree
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 close-out；可并行阶段强制 subagent 分别执行
 - `$mdf start`：按 Gitflow 创建本地交付分支；始终在
@@ -110,7 +107,6 @@
 - `$mdf squash [--dry-run]`：定地板与切段并 soft-reset；dry-run 只给建议
 
 #### 维护
-
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
 - `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
   主链在 verify branch 之后、close-out 之前
@@ -190,78 +186,63 @@ $mdf clarify 要不要把缓存放到 Redis
   `fix`、`verify-fix`、`verify`、`code-review`、`fact update`、`fact audit`、`close-out`/`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
-
 - `$mdf bootstrap`
   - 用法：`$mdf bootstrap`
   - 用途：为全新或几乎全新的项目建立 MDF 起点。
   - 说明：不搭建业务工程或测试；已有实现时停止并提示 migrate。
-
 - `$mdf init`
   - 用法：`$mdf init`
   - 用途：接入已有项目或调整 MDF 配置。
   - 说明：新项目转入 bootstrap，已有项目转入 migrate。
-
 - `$mdf init migrate`
   - 用法：`$mdf init migrate` 或 `$mdf migrate`
   - 用途：将已有项目材料与布局收敛到当前 MDF 结构。
   - 说明：init 的子 intent；也可由 `$mdf init` 内部委托；新项目停止并提示 bootstrap。
-
 - `$mdf migrate`
   - 用法：`$mdf migrate` 或 `$mdf init migrate`
   - 用途：将已有项目材料与布局收敛到当前 MDF 结构。
   - 说明：与 `$mdf init migrate` 相同；新项目停止并提示 bootstrap。
-
 - `$mdf intake`
   - 用法：`$mdf intake`
   - 用途：将外部想法或临时来源分诊为 Bug 和/或多个 Proposal。
   - 说明：在 planning 工作区写入；必填事实未确认时不写入对象。
-
 - `$mdf jot`
   - 用法：`$mdf jot`
   - 用途：追加一条未分诊的随手记录到 `docs/JOTS.md`。
   - 说明：Jot 不是 Proposal、Bug 或 Change。
-
 - `$mdf jot promote`
   - 用法：`$mdf jot promote`
   - 用途：提升一条既有 Jot 为 Proposal 或 Bug，并移除原条目。
   - 说明：同一份待提交改动中完成提升与删除；提升为 Proposal 时在 planning 工作区进行。
-
 - `$mdf bug create`
   - 用法：`$mdf bug create`
   - 用途：按已确认内容手动创建一个 open Bug。
   - 说明：一次只创建一个对象；外部来源应走 intake。不要求 doctor 零 finding。
-
 - `$mdf prp create`
   - 用法：`$mdf prp create`
   - 用途：按已确认内容手动创建一个 draft Proposal。
   - 说明：一次只创建一个对象；须在 planning 工作区创建并合入 develop；随后需 `$mdf prp review`。
-
 - `$mdf prp review`
   - 用法：`$mdf prp review`
   - 用途：修订单个 active Proposal，验证后转为 ready。
   - 说明：在 planning 工作区修订；终态或 archive 中的 Proposal 拒绝修改。
-
 - `$mdf prp split`
   - 用法：`$mdf prp split`
   - 用途：拆分未开工 PRP，并完整改写依赖。
   - 说明：不拆已开工交付；须在 planning 工作区拆分并合入 develop。
-
 - `$mdf clarify <议题>`
   - 用法：`$mdf clarify <议题>`
   - 用途：压力测试计划、决策或想法。
   - 说明：议题不能为空；不要求 Git 仓库。
-
 - `$mdf tree [--depth N]`
   - 用法：`$mdf tree`、`$mdf prp tree`、`$mdf next?` 或 `$mdf tree --depth N`
   - 用途：画出按 milestone 分组的 draft/ready PRP 混态依赖树与索引。
   - 说明：深度省略时默认 3；只读。问号版 next 进入本主题，不是 next。
-
 - `$mdf next [--depth N]`
   - 用法：`$mdf next` 或 `$mdf next --depth N`
   - 用途：续办在途流程；无在途时委托 tree。
   - 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
     四种 kind 交付分支续办当前交付主线。`$mdf next?` 见 tree。
-
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`
   - 用法：`$mdf deliver`、`$mdf deliver <target>`、`$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo`
   - 用途：锁定当前一次交付，必要时先 start，持续运行到 close-out 完成。
@@ -279,7 +260,6 @@ $mdf clarify 要不要把缓存放到 Redis
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
     - 包含 close-out 的合并及适用的 tag、发版推送。
-
 - `$mdf start`
   - 用法：`$mdf start`；可带 `--roster`、`--*-strategy`、`--*-model`
   - 用途：按 Gitflow 创建本地交付分支。
@@ -290,30 +270,25 @@ $mdf clarify 要不要把缓存放到 Redis
     - release 开分支前确认发布目标（工作线、联调、`has_dev`；checklist 含 integrate；
       不实施新 PRP；无开发则预勾 owner 开发/converge）。
     - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
-
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
   - 用途：确认设计、测试策略和共享代码底座。
   - 说明：Clarify 在当前会话；Baseline 由本 intent 派恰好 1 个 owner subagent
     写设计与共用代码底座，不计入 roster。partition 时在 design.md 写明各 index 切片。
-
 - `$mdf write-tests`
   - 用法：`$mdf write-tests`
   - 用途：按目标编写测试用例。
   - 说明：可与 implement 并行；roster ≥1 时在 qa worktree 执行，先 merge owner。
     写完可执行测试即完成，不要求全绿。
-
 - `$mdf implement`
   - 用法：`$mdf implement`
   - 用途：按已确认设计实现。
   - 说明：不要求测试先完成；roster ≥1 时在 dev worktree 执行，先 merge owner。
-
 - `$mdf converge`
   - 用法：`$mdf converge`
   - 用途：roster-join（如有）并持续修复到所需 suite 通过。
   - 说明：本 intent 派恰好 1 个 owner subagent 执行合流、验证与记录；
     测改批准回主会话，不计入 roster。修到 lint/build/quick/smoke 与本交付 named suite 通过；不要求 release。
-
 - `$mdf fix <bug-id>`
   - 用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
   - 用途：澄清、确认 failing test、修复并验证一个 open Bug，标为 `fixed`。
@@ -321,13 +296,11 @@ $mdf clarify 要不要把缓存放到 Redis
     - 修复前必须有针对该 Bug 的有效红灯；没有就先写测试并确认失败。
     - 不切分支、不 start、不 code-review、不 finish；不标 `closed`。
     - `--yolo` 自裁定 clarify，不跳过红灯；二次验证走 `$mdf verify-fix`。
-
 - `$mdf verify-fix [<bug-id>]`
   - 用法：`$mdf verify-fix` 或 `$mdf verify-fix <bug-id>`
   - 用途：二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复）。
   - 说明：close-out 关闭前内部委托；不标 `closed`、不写 `fixed_in`、不跑 release。
     无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
-
 - `$mdf verify --scope smart|branch|named`
   - 用法：`$mdf verify run --scope smart|branch|named [--suites ...]
     [--module|--paths|--test ...]`
@@ -336,61 +309,50 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：branch 写 `verify.branch.json`（feature/bugfix/hotfix→smoke，
     release→release；不含 commit）；smart/named 不落盘；真 named 命令来自
     testing 文档 frontmatter。
-
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
   - 说明：进行中可记 tip；裁定收口后覆盖为无 commit 的 `code-review.md` 终稿（非
     gate）。主链在 converge 后、verify branch 前。进度只认 objectives 自勾。
     首轮按 roster.reviewers；后续增量并复核。默认 replicate；partition 按切片派工。
-
 - `$mdf fact update`
   - 用法：`$mdf fact update [<path>...] [--scope branch|full|paths]`
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
   - 说明：独立默认 `branch`；`full` 整理知识面全树。主链只用 branch/paths；
     release `--base` 为上一正式发布。独立调用须 manifest ready。
-
 - `$mdf close-out` / `$mdf finish`
   - 用法：`$mdf close-out` 或 `$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 verify-fix。合入目标
     主线前先 squash dry-run，再按启发式决定是否展示；确认后完整执行。
-
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`
   - 用途：定地板、定型切段、写 message；确认后 soft-reset 多段整理。
   - 说明：激活由调用方决定；`--dry-run` 只展示建议。失败不硬回滚。
-
 - `$mdf archive`
   - 用法：`$mdf archive`
   - 用途：归档终态 Proposal 及 closed/rejected Bug。
   - 说明：仅用户要求预览时 dry-run；未要求则实际归档。
-
 - `$mdf fact audit`
   - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
   - 用途：只读审阅覆盖、证据、语义与加载质量。
   - 说明：不执行 `verification`；`size.hard` 阻断。主链 release `--base` 为上一正式发布。
-
 - `$mdf prettify`
   - 用法：`$mdf prettify [<path>...] [--scope branch|full|paths]`（省略为 branch）
   - 用途：按 `doc-structure.md` 改写为大列表/表格/图，不改语义。
   - 说明：`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
-
 - `$mdf codewiki generate` / `$mdf codewiki update`
   - 用法：`$mdf codewiki generate` 或 `$mdf codewiki update`
   - 用途：新建或增量更新 `docs/repowiki/` 结构 Wiki。
   - 说明：update 无结构变化时可报告无更新。
-
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
   - 用途：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块并提交（不 push），随后重读。
   - 说明：仅不符契约才建议 `$mdf migrate`。
-
 - `$mdf to <target>`
   - 用法：`$mdf to plan|develop|deploy|<分支>`
   - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。
   - 说明：`plan` 进 planning；`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
-
 - `$mdf sync`
   - 用法：`$mdf sync`；先拉后推三大 trunk，多余分支只报告；禁止 force-push。
 - `$mdf integrate`

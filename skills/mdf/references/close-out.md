@@ -105,7 +105,7 @@
 | 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 核对已有 full/fact；整理材料 | full 证据、fact、Change | 4 | 保留现场，停止 |
-| 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
+| 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 约束 | fixed 先 verify-fix，再准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
@@ -117,9 +117,7 @@
 
 ### 交付范围与审阅
 
-<a id="s1"></a>
-
-**入口**
+**入口** <a id="s1"></a>
 
 - 本 intent 执行实际收口，不提供预览模式。
   - 用户明确要求仅预览或只读时，说明此入口不支持并停止。
@@ -130,9 +128,7 @@
   - Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或 `hotfix/<semver>`。
   - 实际收口授权；只读请求在本步骤停止。
 
-<a id="s2"></a>
-
-**范围**
+**范围** <a id="s2"></a>
 
 先识别本次相关未提交改动，按公共规则复核并提交后确定交付范围；范围不明时先澄清。
 
@@ -208,9 +204,7 @@
 - 通过条件：待收口或 feature/bugfix 到 3，已收口到 4。
 - 异常与交接：报告缺项或不一致并停止。这是交付前检查；fact audit 已在主链完成。
 
-<a id="s3"></a>
-
-**材料**
+**材料** <a id="s3"></a>
 
 - 确认主链 report **已交且声称通过**：
   - 存在 `verify.branch.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
@@ -235,14 +229,13 @@
   - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
 - 对象状态：
   - feature/bugfix 不建版本目录。
-  - feature 在成功合入 develop 的 merge commit 中转换为 implemented；bugfix 的对象状态按既有契约处理。
+  - feature 在成功合入 develop 的 merge commit 中转换为 implemented。
+    bugfix 的对象状态按既有契约处理。
   - release/hotfix 按后续收口步骤管理版本与对象。
 - 验收：事实一致性、所需 report 已交、规范 Change 和链接检查。
 - 异常与交接：保留现场；缺少前置阶段时报告，不自动执行被跳过的主线 intent。
 
-<a id="s4"></a>
-
-**审阅**
+**审阅** <a id="s4"></a>
 
 - 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
@@ -252,8 +245,10 @@
     design/开发依赖项已勾）。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
 - 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
-  - 自终稿落盘提交（`git log -1 --format=%H -- …/code-review.md`）到 HEAD 的提交只改
-    `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`；否则按收口状态不一致停止。
+  - 用 `git log -1 --format=%H -- …/code-review.md` 定位终稿落盘提交。
+  - 自该提交到 HEAD 只允许以下路径：
+    `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`。
+    否则按收口状态不一致停止。
 - report 缺失或未声称通过时：停止并交接；由主链补跑对应 intent（verify **run** /
   fact / code-review），不在本 intent 内嵌、不做过期审判。
 - 集成后需补审时从 `code-review.md` 步骤 1 执行（有有效终稿则增量，否则首轮）。
@@ -266,18 +261,14 @@
 
 ### 版本收口输入与执行
 
-<a id="s5"></a>
-
-**输入**
+**输入** <a id="s5"></a>
 
 - 只读准备收口输入：release 读全部 unreleased child Change（移动留给步骤 8）；
   hotfix 无 child Change 且提供实际结果 JSON；两者均提供规范 `--release-date`。
 - 验收：完整版本收口输入。通过：release→7，hotfix→6。异常：停止。
 - Core 记录确定性审计；语义审阅用本次已确认 audit。
 
-<a id="s6"></a>
-
-**热修复**
+**热修复** <a id="s6"></a>
 
 - 校验 hotfix `--hotfix-change-json`：必填 body、release_notes、evidence；
   可选 proposals、fixed、closed、deferred、adrs、breaking。
@@ -285,9 +276,7 @@
 - 验收：有效 JSON。异常：未知字段、空串或缺字段则停。
 - Core 注入 change_kind 与 source_branch。
 
-<a id="s7"></a>
-
-**对象**
+**对象** <a id="s7"></a>
 
 - 待收入 `fixed` outcome：`status: fixed` 且 `found_in: unreleased`，以及
   child Change `fixed:` 中仍为 `fixed` 的 ID。
@@ -296,7 +285,7 @@
   - 清单非空时内部执行 `references/verify-fix.md`，传入这些 ID；空则跳过。
   - 未通过则本步失败，不准备 closures，不关闭对象。
   - 「实现已变更」：提交后回步骤 4（不 closures、不 `release-closeout`）；
-    步骤 4 补验与增量 code-review 通过后再重跑本步。
+    步骤 4 按失效规则交接；主链在本 intent 外补验与增量 code-review 后再重跑本步。
   - 已有记录按 verify-fix「记录」有效性仍有效则通过；复现命令变化须重跑其 2–3。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
   - 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
@@ -325,9 +314,7 @@
 - 📌 critical 仅 fixed；major deferred/wont-fix 要用户接受、理由和 follow-up。
 - 验收：完整 closures 与验证、接受记录。
 
-<a id="s8"></a>
-
-**收口**
+**收口** <a id="s8"></a>
 
 - 调用 `release-closeout`：
   - 传入步骤 7 的 `--closures-json` 与 `--deferred-acceptance-json`。
@@ -348,9 +335,7 @@
 
 ### 提交与 Gitflow
 
-<a id="s9"></a>
-
-**交接**
+**交接** <a id="s9"></a>
 
 - 由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续。
 - 按分支：
@@ -369,9 +354,7 @@
 - 核对 clean 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
 - 验收：必要提交、当前 clean 和交付条件。
 
-<a id="s10"></a>
-
-**合并**
+**合并** <a id="s10"></a>
 
 - 执行关口：
   - 由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 且步骤 9 通过：

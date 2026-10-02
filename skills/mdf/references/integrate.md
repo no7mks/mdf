@@ -76,10 +76,10 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
                  ├──── 无法处理 ────────→ [停止]
                  ├──── 提交失败 ────────→ 7 Dispatch
                  ├──── 用户停止 ────────→ [停止]
-                 ├──── 只传收到 end ────→ [关闭通道并结束]
+                 ├──── 只传收到 end ────→ [结束流程，保留 poll/listen]
                  ├──── 非收口 ──────────→ 6 Transfer
                  │
-                 ▼ 收口完成
+                 ▼ 收口或同仓计划完成
 ┌──────────────────────────────────┐
 │ 8 Close                          │
 └────────────────┬─────────────────┘
@@ -102,20 +102,19 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check root | 脚本 | 用 `--repo` 解析绝对 Git 根 | Git 根 | 2 | 不是 Git 根则停止 |
-| 2 | Open channel | 脚本 | 跨仓开通道；同仓只建 Goal | Goal 或 poll | 同仓 4；否则 3 | 写入失败或前台占住则停 |
+| 2 | Open channel | 脚本 | 跨仓开通道；同仓只建 Goal | Goal；跨仓另有 poll | 同仓 4；否则 3 | 写入失败或前台占住则停 |
 | 3 | Address peer | 约束 | 对端、ping、courtesy 等到 ack | peers、ack | 4 | 未就绪或未 ack 留 3；否则停 |
 | 4 | Assign roles | 约束 | 定角色 | 角色或只传 | 已确认则 5；只传则 6 | 不明或告知失败留 4；无法处理或用户停止则停 |
 | 5 | Agree plan | 约束 | 确认计划并准备数据 | 计划与就绪 | 同仓 7；否则 6 | 失败留 5；无法处理或用户停止则停 |
 | 6 | Transfer | 约束 | 从后台 poll 读取下一条「收到」 | 「收到」行 | 7 | 非「收到」忽略并续读；用户停止则停 |
-| 7 | Dispatch | 约束 | 按种类处理 | 处理结果 | 非收口则 6；收口完成则 8；只传 end 则结束 | 无法处理则停；提交失败留 7 |
+| 7 | Dispatch | 约束 | 执行计划/处理消息 | 结果 | 非收口 6；同仓完成/收口 8；只传 end 结束 | 无法处理停；提交失败留 7 |
 | 8 | Close | 约束 | 提交并送达测试报告 | 发送结果或报告 | 结束 | 提交失败、发送失败或未取到报告留 8；用户停止则停 |
 
 ## 术语与数据结构
 
 ### 入口
 
-<a id="s1"></a>
-**根**
+**根** <a id="s1"></a>
 
 `integrate` 各动作都带 `--repo`。用 `git rev-parse --show-toplevel` 核对这个目录。
 不读取 manifest，不运行 doctor。不要求 shell 当前目录就是该根。
@@ -124,15 +123,17 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 
 异常与交接：不是 Git 根则停止。
 
-<a id="s2"></a>
-**通道**
+**通道** <a id="s2"></a>
 
 - 跨 worktree：缺少 `.integration/session.yaml` 时运行 `integrate init --repo "$REPO_ROOT"`。
   - 它创建 inbox，写入本侧 token，并在仓库根 `.gitignore` 加入 `.integration/`。
   - 该行可以提交；目录内容不提交。
 - 已有 session 时 init 保留 token。
 - init 完成后立即创建 Goal；本次 integrate 只创建一次，续办不重建。
-  - objective 写明联调标识与完成判据（步骤 8 完成，或用户停止）。
+  - 同 worktree 不 init，直接创建 Goal。
+  - 内部委托已有同一交付的外层 Goal 时复用它，不新建；只回报联调完成，不置外层 complete。
+    下文置 complete 仅适用于本 intent 自建 Goal；外层 Goal 由调用方收口。
+  - objective 写明联调标识与完成判据：联调为步骤 8 完成，只传为步骤 7 收到 end。
   - 等待对端、阻塞或暂停时保持 active，不代用户暂停。
   - Goal 完成前，用户没让你停，永远不许停下来。
   - 宿主没有 Goal 设施时仍按同一 goal 持续做，不把控制权交回用户，不结束。
@@ -173,9 +174,7 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 异常与交接：写入失败或前台占住则停止。
 
 ### 对端与角色
-
-<a id="s3"></a>
-**对端**
+**对端** <a id="s3"></a>
 
 - `integrate peer --repo "$REPO_ROOT" --name <name> --target <target>`；`--target` 每次都必填。
 - target 为绝对路径、`http://host:port`，或本仓 `git worktree list` 能解析的分支名。
@@ -199,8 +198,7 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 
 异常与交接：地址、token 未就绪或未收到 ack 时留在 3。前台占住或用户明确停止则停止。
 
-<a id="s4"></a>
-**角色**
+**角色** <a id="s4"></a>
 
 「只传」指用户明确只要传消息，或 poll 到正文为 `relay-only` 的 `send`。
 
@@ -236,9 +234,7 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 异常与交接：不明或告知失败时留在 4。无法处理或用户明确停止则停止。
 
 ### 计划
-
-<a id="s5"></a>
-**计划**
+**计划** <a id="s5"></a>
 
 主导方写成可执行条目，先给本侧用户确认，再用 `send` 发给被动方。
 
@@ -268,8 +264,7 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 
 ### 传输
 
-<a id="s6"></a>
-**传输**
+**传输** <a id="s6"></a>
 
 命令：
 
@@ -313,8 +308,7 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 
 ### 分派
 
-<a id="s7"></a>
-**分派**
+**分派** <a id="s7"></a>
 
 步骤 6 送来的消息先原样交给当前 agent，再处理。只有非收口才回到 6。
 收口完成进入 8。主导方自己发出的 `end` 不是收口完成。
@@ -326,11 +320,12 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 | `ping` / `courtesy` / `ack` / `heartbeat` | ping 记 token；courtesy 立刻 ack；heartbeat 留下。非收口 |
 | `send` | 按正文处理。测试问题按下方修复规则，去向由该规则决定。其它 send 是非收口 |
 | `bug-request` | 不写 `docs/bugs/`。展示四个字段后走 `$mdf bug create`，再按修复规则提交 |
-| `end` | 「只传」时关闭通道并结束；否则按下方收口判定，listen 继续运行 |
+| `end` | 「只传」时结束流程，保留 poll/listen；否则按下方收口判定，listen 继续运行 |
 
 `bug-request` 用 `--observed`、`--expected`、`--repro`、`--impact` 发送。
 
 「只传」收到任何 `end`：向用户报告后结束本流程；不做收口判定、不回复、不进入 8。
+只传 Goal 在确认已收到 end 后置 complete。
 不停止 poll；listen 继续运行，直到用户明确停止整个会话。
 
 `end` 收口判定（非「只传」）：
@@ -359,19 +354,19 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
     - 不创建 bug，仍提交已有用例，并 `send` 告知对端未建 bug 及原因。
     - 提交成功后按非收口回到 6。
 - 上述提交非零则留在 7，不回到 6，不进入 8。提交成功则非收口，回到 6。
+  - 同 worktree 提交成功后继续本树计划，完成后进 8，不进入需要 poll 的步骤 6。
 
-验收：消息已按种类处理，并且已经按上表进入 6 或 8，或已关闭通道并结束，或已停止。
+验收：消息已按种类处理，并且已经按上表进入 6 或 8，或只传结束且 poll/listen 保留，或已停止。
 
 异常与交接：无法处理或用户明确停止则停止。提交失败留在 7。
 
 ### 收口
 
-<a id="s8"></a>
-**收口**
+**收口** <a id="s8"></a>
 
 先提交尚未提交的本轮改动。无改动视为这一步的提交已完成。
 
-- 同 worktree：把测试报告交给用户，不 send。Goal 置 complete 后结束。
+- 同 worktree：把测试报告交给用户，不 send；随后按下方勾选并完成 Goal。
 - 提交非零则留在 8，不发送报告，被动方也不开始等待报告。
 - 主导方不走「未取到报告」。被动方不走「发送失败」。
 
@@ -380,18 +375,21 @@ release 联调三选一，objectives 正文只写选定的一种；checklist **�
 - 提交完成后，发送一条 `send` 测试报告，正文写明计划条目、热修复、
   未当场修好的缺陷和结论。
 - 确认 `end` 之后、这条报告之前，主导方不再发送别的消息。
-- 发送非零则留在 8。发送成功后，主导方把 Goal 置 complete，不停止 poll。
+- 发送非零则留在 8。发送成功后，主导方已满足报告条件，不停止 poll。
 
 被动方：
 
 - 提交完成后继续 poll，不回到 7。
 - 开始等报告时 `send` 一次在等报告，之后读 poll，不要只盯「等待」。
-- 正文同时写明计划条目、热修复、未当场修好的缺陷和结论的 `send` 才是测试报告。
-- 未取到这份报告时留在 8。取到后把 Goal 置 complete，不停止 poll。
+- 测试报告是 `send`，正文须同时写明计划条目、热修复、未当场修好的缺陷和结论。
+- 未取到这份报告时留在 8。取到后已满足报告条件，不停止 poll。
 - 本步 poll 到的其它消息不进入 7，留在 8 继续 poll。
 
-双方（含同 worktree）在 Goal complete 且本侧收口条件满足后：将 `objectives.md` 的
-integrate 项改为 `[x]` 并提交（已勾则不再改）。❌ 不以 Goal 单独代替该勾选。
+双方（含同 worktree）在本侧报告条件满足后：
+
+- release 交付将 `objectives.md` 的 integrate 项改为 `[x]` 并提交，已勾则不再改。
+- 独立调用无交付 objectives 时，仅报告本侧收口结果。
+- 上述提交成功或无需提交后，才把 Goal 置 complete。❌ 不以 Goal 单独代替该勾选。
 
 ❌ 两侧都不执行 `$mdf finish`，等用户明确要求 finish。
 

@@ -36,9 +36,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 按 roster 进入 dev/owner 并检查 gate | worktree、底座 | 2 | 缺底座提示 `$mdf design`；其他停止 |
+| 1 | Check | 约束 | 按 roster 进入 dev/owner 并核对底座 | worktree、底座 | 2 | 缺底座提示 `$mdf design`；其他停止 |
 | 2 | Implement | 约束 | 按目标与设计实现并自检 | 自检命令、结果、待验项 | 3 | 下一步明确则 2；测试争议交回；否则停 |
-| 3 | Record | 脚本 | 记录 implement gate 并提交实现 | gate、自检摘要、提交 | 结束 | 停止并报告 |
+| 3 | Record | 约束 | 自勾 objectives 并提交实现 | 勾选、自检摘要、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 

@@ -8,7 +8,6 @@ import unicodedata
 from conftest import skill_dir
 from support_routes import *  # noqa: F403
 
-
 def test_review_resume_routes_to_repair_without_replacing_initial_head():
     from conftest import skill_dir
     text = (skill_dir("mdf") / "references/code-review.md").read_text()
@@ -27,7 +26,6 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "终稿不得出现任何 commit hash" in text
     assert "裁定收口" in text
 
-
 def test_close_out_materials_without_embedded_verify_or_fact():
     text = workflow("close-out")
     prepare = text.split('<a id="s3"></a>', 1)[1].split('<a id="s4"></a>', 1)[0]
@@ -41,7 +39,6 @@ def test_close_out_materials_without_embedded_verify_or_fact():
     assert "- hotfix：" in prepare
     assert "材料不搬迁" in prepare
     assert "start 已写入的 objectives checklist 保留" in prepare
-
 
 def test_finish_keeps_pending_closeout_on_the_release_path():
     text = workflow("close-out")
@@ -59,7 +56,6 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     assert "正文为本版 CHANGELOG" in text
     assert "精简条目" in text
     assert "--dry-run" not in text
-
 
 def test_start_clarifies_feature_objectives_before_branch():
     text = workflow("start")
@@ -119,7 +115,6 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert re.search(r"5 Switch worktree", diagram)
     assert re.search(r"6 Open integrate", diagram)
     assert re.search(r"已切到且 release 需联调", diagram)
-
 
 def test_start_switches_agent_to_owner_worktree():
     text = workflow("start")
