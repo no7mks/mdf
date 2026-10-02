@@ -443,8 +443,6 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "第一次把目标主线合入交付分支之前" in finish
     contract = workflow("delivery-contract")
     assert "可选历史整理（squash）" in contract
-    assert "git reset --soft" in contract
-    assert "git restore --source=" in contract
     assert "git merge --squash" in contract
     assert "擅自改写历史" in contract
     assert "是否建议（可选启发式）" in contract

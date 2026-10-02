@@ -374,12 +374,9 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 （`noul` / `choice` / `run`）；**不写** commit message。主 Agent 撰写每段中文
 Conventional Commit（含 Bug 的段保留完整 Bug ID），必要时请用户确认。
 
-执行（多段 = 1 次 soft reset + N 次按段界树提交）：
-
-1. `git reset --soft <地板>`
-2. 对每个段界 tip（原历史上的 commit）：  
-   `git restore --source=<段界> --staged --worktree .` → `git commit`
-3. `git diff <旧 tip> HEAD` 必须为空；`start_commit` 仍为 HEAD 祖先。
+执行由公开 `$mdf squash` 承担（见 `references/squash.md`）：多段 =
+1 次 soft reset + N 次按段界树提交；完成后树须与旧 tip 一致，且
+`start_commit` 仍为 HEAD 祖先。
 
 ❌ 禁止：`git rebase` / `rebase -i`、`git merge --squash`、越过地板、涵盖他人
 commit、已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。

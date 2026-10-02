@@ -14,7 +14,7 @@
 │ 2 Integrate and review           │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 建议 squash 且用户确认 ────→（整理后继续本步）
+                 ├──── 建议 squash 且用户确认 ────→ [委托 squash 后继续本步]
                  ├──── 已收口且证据有效 ──────────→ 4 Recheck
                  ├──── 集成冲突无法解决 ──────────→ [停止并询问]
                  ├──── 内部审查失败 ──────────────→ [停止]
@@ -96,12 +96,13 @@
 - 入口前置：主链须已完成 verify full（有效 `verify.full.json`）与 fact audit；
   本 intent 不再内嵌二者。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
+- 步骤 2 用户确认 squash 后读取并内部执行 `references/squash.md`。
 - 步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
-| 2 | Integrate and review | 约束 | 可选 squash；核版本；集成；跳过或审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
+| 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 核对已有 full/fact；整理材料 | full 证据、fact、Change | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 运行 gate；过期补验后复核 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
@@ -149,12 +150,14 @@
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
 
 - **可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
-  - 读 `delivery-contract.md`「可选历史整理（squash）」：定地板（含 `0,0` 定位失败则
-    不可压）、可选启发式、Jev/Agent 定型；用户确认后仅用 `reset --soft` + 按段界
-    `restore` 提交。
+  - 读 `delivery-contract.md`「可选历史整理（squash）」：
+    - 定地板（含 `0,0` 定位失败则不可压）
+    - 可选启发式与 Jev/Agent 定型（是否建议、几段、切法；不写 message）
+  - 用户确认段界后，主 Agent 写每段中文 Conventional Commit message（必要时再确认）。
+  - 三元组（地板、有序段界、messages）齐后内部执行 `references/squash.md`。
   - 拒绝、不适用（他人 tip / 已推送 / 地板缺失 / 无可压区间）或未确认 → 跳过。
   - ❌ `--auto-pilot` / `--yolo` 不得擅自 squash；禁止 rebase / `merge --squash`。
-  - 完成后须 clean，且树与 squash 前 tip 一致。
+  - 委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
   - feature/bugfix 使用本地 develop，不 fetch、不 push。
   - release/hotfix 使用 master，先 fetch origin 并核对本地 master/develop 与远端一致，不自动覆盖分歧。

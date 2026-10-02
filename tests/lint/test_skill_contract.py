@@ -40,7 +40,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "bug create",
         "prp create",
         "prp review",
-        "archive", "close-out", "finish",
+        "archive", "close-out", "finish", "squash",
         "fact audit",
         "prettify",
         "fact update",

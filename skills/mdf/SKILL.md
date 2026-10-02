@@ -82,6 +82,7 @@ disable-model-invocation: true
                  ├──── fact audit ────────────────────────────────────→ references/fact-audit.md
                  ├──── prp split ─────────────────────────────────────→ references/prp-split.md
                  ├──── close-out / finish ────────────────────────────→ references/close-out.md
+                 ├──── squash ────────────────────────────────────────→ references/squash.md
                  ├──── prettify ──────────────────────────────────────→ references/prettify.md
                  ├──── clarify <议题> ────────────────────────────────→ references/clarify.md
                  ├──── bug create ────────────────────────────────────→ references/bug-create.md

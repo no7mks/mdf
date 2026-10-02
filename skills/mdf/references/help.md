@@ -107,6 +107,7 @@
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   主链在 verify full 之后、必要时于 fact audit 前调用
 - `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify full / fact）
+- `$mdf squash`：执行已确认的 soft-reset 多段整理（不含是否/几段判断）
 
 #### 维护
 
@@ -164,6 +165,7 @@ $mdf fact update
 $mdf fact update --scope full
 $mdf close-out
 $mdf finish
+$mdf squash
 $mdf fact audit
 $mdf prettify --scope full
 $mdf archive
@@ -348,8 +350,13 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf close-out` / `$mdf finish`
   - 用法：`$mdf close-out` 或 `$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
-  - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` Bug 前委托 `$mdf verify-fix`。
-    合入目标主线前可建议 soft-reset squash（见 delivery-contract）；不擅自改写历史。
+  - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 verify-fix。合入目标
+    主线前可建议 squash，确认后委托 `$mdf squash`；不擅自改写历史。
+
+- `$mdf squash`
+  - 用法：`$mdf squash`（无参数）
+  - 用途：按已确认地板与段界执行 soft-reset 多段整理。
+  - 说明：不定型；独立调用可起草 message 后确认；Execute 不改。可委托；失败不硬回滚。
 
 - `$mdf archive`
   - 用法：`$mdf archive`
