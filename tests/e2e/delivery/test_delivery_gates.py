@@ -97,7 +97,8 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         return
     primary = git_primary(repo)
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
-    assert not repo.exists()
+    assert repo.is_dir()
+    assert not git(repo, "branch", "--show-current").stdout.strip()
     assert "implemented" in git(primary, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
     dest_json = git(primary, "show",
                     "develop:changes/unreleased/service-health/delivery.json").stdout

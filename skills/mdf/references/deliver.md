@@ -177,6 +177,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 委托子 intent 时把本策略作为外层约束：
 
 - 原文中的询问、确认、批准与选择改由主 Agent 依据仓库证据、已确认目标和本次范围自行裁定。
+  - 收尾后的工作区删除确认除外，所有模式都须由用户明确答复。
   - 在摘要或 objectives 交接说明中写明依据，不向用户提问、不等待确认。
 - 内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
 - converge 的 `--test-approval` 记录该裁定与理由。
@@ -201,12 +202,13 @@ target 分不清就询问，不列入自裁定。除此之外不因“想听用�
 | auto-pilot 能凭仓库证据与对话上下文定出唯一目标 | 不询问，裁定后走通过 |
 | 多个在途交付无法唯一锁定，以及其他死硬条件 | 走死硬阻塞 |
 
-唯一预定确认：close-out 步骤 9 通过、即将调用 `finish-gitflow` 之前。
+Gitflow 前的预定确认：close-out 步骤 9 通过、即将调用 `finish-gitflow` 之前。
 
-- 展示将合入的目标主线、源分支、将删除的 worktree 与源分支，以及 release/hotfix 的 tag 与推送。
+- 展示将合入的目标主线、将删除的源分支与将保留的 detached worktree，
+  以及 release/hotfix 的 tag 与推送。
 - 该确认只在步骤 6 进行；未决留在步骤 6。
 - 取得明确确认后才委托 close-out 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
-- 此关口不是死硬阻塞，是 auto-pilot 相对完全无人值守的唯一用户确认。
+- 此关口不是死硬阻塞，是 auto-pilot 的 Gitflow 前用户确认。
 - `--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
 - 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
 
@@ -259,7 +261,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |
 | verify branch 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
 | fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |
-| close-out 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
+| close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
 
 剩余工作与失败处理：
 
@@ -344,8 +346,11 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 收口：单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。
 
 - 步骤 5 必须取得 finish 的实际成功结果（close-out）。
-  - 按分支核对合并、源分支/worktree 清理，以及 release/hotfix 的 tag 和推送。
-  - close-out 删除 owner 后改用步骤 1 固定的主 worktree 核对。
+  - 按分支核对合并、源分支删除、owner 工作区保留且 detached，以及 release/hotfix 的 tag 和推送。
+  - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
 - 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。
+- 核验、Goal 与报告完成后，按 `references/close-out.md`「工作区清理」询问是否删除 owner 工作区。
+  - 所有模式都须明确确认；拒绝或未决时保留，不影响 deliver 完成。
+  - 确认删除时将删除命令作为最后一次 tool call，并说明本对话不要再继续。
 - 上下文恢复时用上述现有产物与实际 Git 状态重新核验，不依赖未落地的内存完成标志。

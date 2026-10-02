@@ -255,7 +255,11 @@ release/hotfix：
 
 通用：
 
-- 若 `--repo` 位于 `<repo-name>-worktrees/` 下，合并后移除该 worktree。
+- 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
+- JSON 含 `retained_worktree`（保留路径，无则为 null）与 `primary_worktree`（主路径）。
+- Agent 完成核验与报告后询问是否删除工作区；所有模式都须用户明确确认。
+  - 确认后直接从主 worktree 执行 `git worktree remove`，并说明本对话不要再继续。
+  - 不新增清理脚本；拒绝或未决则保留，不影响交付完成。
 - ⚠️ 任一 merge 冲突都会立即 abort，不会推送或删除分支。
 
 ## `upgrade`

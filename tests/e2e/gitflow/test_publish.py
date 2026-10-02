@@ -33,10 +33,16 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
         patch.setattr(gitflow, "_git", fail_push)
         with pytest.raises(MDFError):
             gitflow.command_finish_gitflow(SimpleNamespace(repo=str(work), source=None))
+    source = source_head(work)
     before = {ref: git(repo, "rev-parse", ref).stdout for ref in ("master", "develop", "v1.2.1")}
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     assert done["pushed"] is True
-    assert not work.exists()
+    assert done["retained_worktree"] == str(work)
+    assert done["primary_worktree"] == str(repo)
+    assert source_head(work) == source
+    assert work.is_dir()
+    assert not git(work, "branch", "--show-current").stdout.strip()
+    assert not git(repo, "for-each-ref", f"refs/heads/{created['branch']}").stdout
     for ref, head in before.items():
         assert git(repo, "rev-parse", ref).stdout == head
     assert git(remote, "rev-parse", "master").stdout == before["master"]
@@ -46,9 +52,13 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
     ).stdout
     assert contents.startswith("chore(release): 发布 v1.2.1")
     assert "测试发布条目" in contents
-    # 清理后仍可从主 worktree 核验同一次成功操作，不重复创建提交/tag。
+    # 从主 worktree 恢复不会删除已经 detached 的工作区或重复创建提交/tag。
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/1.2.1"))
     assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
+    assert work.is_dir()
+    assert source_head(work) == source
+    git(repo, "worktree", "remove", str(work))
+    assert not work.exists()
 
 
 @pytest.mark.parametrize("push_develop", [False, True])
@@ -134,4 +144,6 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_
     assert state["pushed"] is True
     for ref in ("master", "develop", "refs/tags/v1.2.1"):
         assert git(remote, "rev-parse", ref).stdout == git(repo, "rev-parse", ref).stdout
-    assert not work.exists()
+    assert work.is_dir()
+    assert not git(work, "branch", "--show-current").stdout.strip()
+    assert not git(repo, "for-each-ref", f"refs/heads/{kind}/1.2.1").stdout

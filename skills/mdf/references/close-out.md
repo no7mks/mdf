@@ -81,7 +81,7 @@
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ──────────────────→ [结束]
+                 ├──── 通过 ──────────────────→ [核验、报告并询问工作区清理]
                  ├──── 失败且用户决定继续 ────→ 10 Finish Gitflow
                  ├──── 失败且未决 ────────────→ 10 Finish Gitflow
                  └──── 失败且用户停止 ────────→ [报告现场并停止]
@@ -359,33 +359,36 @@
 - 执行关口：
   - 由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 且步骤 9 通过：
     - 必须返回 deliver 步骤 6，待其取得确认后才执行本步骤；不得自行调用 `finish-gitflow`。
-    - 拒绝则不执行本步骤。
   - 由 `$mdf deliver --yolo` 委托时步骤 9 通过后直接执行本步骤，不返回确认。
   - 独立 `$mdf close-out`（`$mdf finish` 同义） 与默认 `$mdf deliver` 不增加该关口。
 - 调用 `finish-gitflow --repo "$REPO_ROOT"`：
-  - feature/bugfix 不 fetch、不 push；no-ff 合并到本地 develop，删除本地源分支。
-    - 角色分支仍在则失败。
+  - feature/bugfix 不 fetch、不 push；no-ff 合并到本地 develop；角色分支仍在则失败。
   - release/hotfix 要求 origin；首次调用 fetch 后要求本地 master/develop 与远端一致。
     - no-ff 合并到 master，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
       精简条目），再 no-ff 合并 master 到 develop。
     - 原子 push `master`、`develop` 与 tag。不推送、不删除远端 `release/*`/`hotfix/*`。
-  - 若当前位于 `<repo-name>-worktrees/` 下的交付 worktree，合并后移除该 worktree。
-- 验收：合并、tag 与（release/hotfix 的）推送结果。
+  - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
+- 验收：合并、源分支删除、保留工作区的 detached 状态、tag 与（release/hotfix 的）推送结果。
 - 异常与交接：停止并报告当前分支、已完成合并、tag 与推送状态。
   - 冲突时 CLI abort 当前 merge，但不得声称此前已完成的合并也被回退。
-  - 不继续推送或删分支，询问用户如何继续。
-  - 用户决定继续或尚未决定则回到步骤 10，再调用同一命令或继续询问。用户停止则停止。
+  - 不继续推送或删分支；询问用户是否继续。继续或未决回步骤 10，用户停止则停止。
   - 必要修复按确认范围由 Agent 复核并提交。
 
+工作区清理（Gitflow 成功后）：
+- 先核验、完成所有收尾并报告；删除工作区不是 close-out 完成条件。
+- deliver 委托时先返回，由其步骤 5 完成核验、Goal 与报告后执行本节。
+- `retained_worktree` 为 null 或指向主 worktree 时不删除主工作区。
+- 否则展示绝对路径，询问是否删除；所有模式（含 `--auto-pilot`、`--yolo`）都须明确答复。
+  - 说明：删除后本对话不要再继续，后续工作在主 worktree 开新对话。
+  - 拒绝或未决则保留，不影响交付完成。
+- 确认后直接执行 `git -C <主路径> worktree remove <保留路径>`，不引入另一个脚本。
+  - 从主 worktree 启动，作为最后一次 tool call；成功后只报告删除结果并结束本对话。
+  - 不加 `--force`；失败则保留现场并报告，不重跑 finish。
+
 release/hotfix 首次发布前，CLI 保存发布进度记录：
-
-- 位置：Git common dir 的 `mdf/finish/<完整分支名>.json`。
-- 内容：源提交、origin、目标起点及后续进度。
-
-- 续办调用：
-  - 失败后取得用户继续决定，再调用同一命令。
-  - 若源 worktree 已删除或当前已不在原分支，
-    从主 worktree 调用 `finish-gitflow --repo <主路径> --source <原分支>`。
+- 位置：Git common dir 的 `mdf/finish/<完整分支名>.json`；含源提交、origin、目标起点与进度。
+- 源 worktree 已 detached、已删除或已切分支时，从主 worktree 续办：
+  `finish-gitflow --repo <主路径> --source <原分支>`。
 - 脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag。
   - 推送结果丢失时先查询远端，完全一致则仅继续清理。
 - release/hotfix 分支存在期间 develop 可继续前进：
@@ -395,4 +398,3 @@ release/hotfix 首次发布前，CLI 保存发布进度记录：
   - master 仍严格核对原基线；最终原子推送前的远端校验使用刷新后的 develop 基线。
 - 记录、源提交、origin 或目标引用冲突时返回 `publish_state_changed`：
   - 停止并报告，不重置分支、不覆盖 tag、不盲目重推。
-- 完成记录保留供清理中断后续办。

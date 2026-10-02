@@ -253,13 +253,15 @@ $mdf clarify 要不要把缓存放到 Redis
       qa/dev worktree 的 subagent。
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
     - 默认遇到需用户决定或外部阻塞时暂停。
-    - `--auto-pilot` 由 Agent 自裁定，仅在 Gitflow 收口（合入目标主线并删除源 worktree）前确认；
+    - `--auto-pilot` 由 Agent 自裁定，仅在 Gitflow 收口（合入目标主线并删除源分支）前确认；
       `--yolo` 同等自裁定且跳过该确认；死硬阻塞仍停止。
     - `--roster` 可转交给 start，仅尚未 start 时有效。
     - strategy / models 可转交给 start、design、code-review：
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
     - 包含 close-out 的合并及适用的 tag、发版推送。
+    - finish 保留 detached worktree；收尾后询问是否删除，所有模式都须明确确认。
+      删除后本对话不要再继续，后续工作在主 worktree 开新对话。
 - `$mdf start`
   - 用法：`$mdf start`；可带 `--roster`、`--*-strategy`、`--*-model`
   - 用途：按 Gitflow 创建本地交付分支。

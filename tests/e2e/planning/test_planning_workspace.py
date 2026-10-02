@@ -78,7 +78,8 @@ def test_dirty_planning_does_not_block_feature_finish(python_exe, tmp_path):
         python_exe, "finish-gitflow", "--repo", str(bugfix),
     ))
     assert finished["ok"] is True
-    assert not bugfix.exists()
+    assert bugfix.is_dir()
+    assert not git(bugfix, "branch", "--show-current").stdout.strip()
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(repo, "show", "develop:fix.txt").stdout == "ok\n"
     assert (plan / "review-wip.md").is_file()

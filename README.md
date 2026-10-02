@@ -135,9 +135,11 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 - 可传位置参数 target（PRP 或 Bug ID，自动分辨）。
 - 需要用户决定时暂停。
 - 自裁定模式：
-  - `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源 worktree 前确认。
+  - `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源分支前确认。
   - `--yolo` 同等自裁定且跳过该确认。
   - 死硬阻塞仍停止。
+  - finish 保留 detached worktree；Agent 收尾后另行询问是否删除，所有模式都须明确确认。
+    确认删除后结束本对话，后续工作在主 worktree 开新对话。
 - release 从 develop 开分支前确认发布目标。
   - 工作线三选一；目标里只写选中的那条。不实施新 PRP。
   - 不联调：`start → [design?] → 开发 → converge → code-review → verify branch →

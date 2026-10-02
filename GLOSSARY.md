@@ -150,13 +150,15 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 `$mdf deliver --auto-pilot` 的持续交付模式：
 
 - 主 Agent 自行裁定原需用户确认的步骤。
-- 仅在 close-out 的 Gitflow 收口（合入目标主线并删除源 worktree）前停住确认。
+- 仅在 close-out 的 Gitflow 收口（合入目标主线并删除源分支）前停住确认。
 - 不可恢复的死硬阻塞仍停止。
 
 ## Yolo
 
 `$mdf deliver --yolo`：启用 auto-pilot，并跳过 close-out 的 Gitflow 收口确认。
 不可恢复的死硬阻塞仍停止。
+
+finish 保留 detached worktree；收尾后删除工作区仍须用户明确确认，不由 auto-pilot/yolo 代答。
 
 ## ADR
 

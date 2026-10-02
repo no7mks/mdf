@@ -247,7 +247,7 @@ def _add_ready_prp(repo: Path, identifier: str, slug: str) -> None:
     (repo / "docs/proposals" / f"{identifier}-{slug}.md").write_text(text)
 
 
-def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
+def test_start_from_delivery_branch_creates_worktree_and_finish_detaches_it(
     python_exe: str, tmp_path: Path,
 ):
     repo, _remote = start_repo(tmp_path)
@@ -290,9 +290,16 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_removes_it(
     (bugfix / "fix.txt").write_text("ok\n")
     git(bugfix, "add", "--all")
     git(bugfix, "commit", "-m", "fix: 补充热修复文件")
+    source = git(bugfix, "rev-parse", "HEAD").stdout
     finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(bugfix)))
     assert finished["pushed"] is False
-    assert not bugfix.exists()
+    assert bugfix.is_dir()
+    assert finished["retained_worktree"] == str(bugfix)
+    assert finished["primary_worktree"] == str(repo)
+    assert not git(bugfix, "branch", "--show-current").stdout.strip()
+    assert git(bugfix, "rev-parse", "HEAD").stdout == source
+    assert not git(bugfix, "status", "--porcelain").stdout
+    assert not git(repo, "for-each-ref", "refs/heads/bugfix/bug-CD34").stdout
     assert run(["git", "config", "--local", "--get",
                 "branch.bugfix/bug-CD34.mdf-start-commit"], cwd=repo).returncode == 1
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"

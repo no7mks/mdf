@@ -376,14 +376,11 @@ def command_finish_gitflow(args) -> None:
         publish_release(repo, source, details["version"])
     remaining = worktree_map(primary)
     source_wt = remaining.get(source)
-    if source_wt is not None:
-        _git(primary, "worktree", "remove", str(source_wt))
-        remaining = worktree_map(primary)
-    delete_at = remaining.get(targets[-1], repo)
+    retained = source_wt or (repo if repo != primary else None)
+    if retained is not None:
+        _git(retained, "checkout", "--detach")
     if _exists(primary, f"refs/heads/{source}"):
-        _git(delete_at, "branch", "-D", source)
-    if repo.resolve() != primary.resolve() and repo.exists():
-        _git(primary, "worktree", "remove", str(repo))
+        _git(primary, "branch", "-D", source)
     tag = f"v{details['version']}" if publish else None
     emit(
         {
@@ -392,6 +389,8 @@ def command_finish_gitflow(args) -> None:
             "source": source,
             "targets": targets,
             "deleted": source,
+            "retained_worktree": str(retained) if retained is not None else None,
+            "primary_worktree": str(primary),
             "tag": tag,
             "pushed": publish,
         }
