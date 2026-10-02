@@ -1,12 +1,31 @@
-"""suite 报告写入 verify.full 证据，以及 suite-run 对 named suite 的运行。"""
+"""suite 报告写入 verify.branch 证据，以及 named scope 运行。"""
 from mdf_test_support import *  # noqa: F403
 from support_delivery import *  # noqa: F403
 
 
+def _register_billing(repo: Path, command: str = SUITE_OK) -> None:
+    modules = repo / ".mdf/modules.yaml"
+    text = modules.read_text(encoding="utf-8")
+    if "billing" not in text:
+        text = text.replace("named: []", "named:\n      - billing")
+        modules.write_text(text, encoding="utf-8")
+    doc = repo / "docs/system/testing/billing.md"
+    doc.parent.mkdir(parents=True, exist_ok=True)
+    doc.write_text(
+        "---\n"
+        f'command: "{command}"\n'
+        "---\n\n"
+        "# billing\n\n"
+        "目的：计费回归。\n\n"
+        "testcase 构成：计费相关用例。\n",
+        encoding="utf-8",
+    )
+
+
 def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     repo, root = converge_ready(python_exe, tmp_path)
-    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
-    evidence = json.loads((root / "verify.full.json").read_text())
+    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    evidence = json.loads((root / "verify.branch.json").read_text())
     reports = {item["id"]: item.get("report") for item in evidence["results"]}
     assert reports["lint:default"] is None and reports["build:default"] is None
     assert reports["quick:default"]["suite"] == "quick"
@@ -19,9 +38,9 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
         lambda c: c.replace("<testcase/>", "<testcase><skipped/></testcase>"),
     )
     commit(repo, "test: quick 含 skipped")
-    result = mdf(python_exe, "project-verify", "run", "--repo", str(repo))
+    result = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
-    evidence = json.loads((root / "verify.full.json").read_text())
+    evidence = json.loads((root / "verify.branch.json").read_text())
     quick = next(
         item for item in evidence["results"] if item["id"] == "quick:default"
     )
@@ -29,17 +48,100 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     assert quick["details"]["report"]["skipped"] == 1
 
 
-def test_suite_run_reports_named_suite(python_exe, tmp_path):
+def test_verify_named_reports_suite(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    result = payload(mdf(python_exe, "suite-run", "--repo", str(repo),
-                         "--name", "billing", "--command", SUITE_OK))
-    assert result["result"]["report"]["suite"] == "billing"
-    assert result["result"]["report"]["path"].startswith(".mdf/reports/")
-    assert result["result"]["report"]["path"].endswith("-billing")
-    reserved = mdf(python_exe, "suite-run", "--repo", str(repo),
-                   "--name", "full", "--command", SUITE_OK)
+    _register_billing(repo, SUITE_OK)
+    result = payload(
+        mdf(
+            python_exe,
+            "verify",
+            "run",
+            "--scope",
+            "named",
+            "--suites",
+            "billing",
+            "--repo",
+            str(repo),
+        )
+    )
+    item = result["result"]["results"][0]
+    assert item["report"]["suite"] == "billing"
+    assert item["report"]["path"].startswith(".mdf/reports/")
+    assert item["report"]["path"].endswith("-billing")
+    reserved = mdf(
+        python_exe,
+        "verify",
+        "run",
+        "--scope",
+        "named",
+        "--suites",
+        "full",
+        "--repo",
+        str(repo),
+    )
     assert "invalid_delivery_suite" in reserved.stderr
-    missing = mdf(python_exe, "suite-run", "--repo", str(repo),
-                  "--name", "billing", "--command", "true")
+    _register_billing(repo, "true")
+    missing = mdf(
+        python_exe,
+        "verify",
+        "run",
+        "--scope",
+        "named",
+        "--suites",
+        "billing",
+        "--repo",
+        str(repo),
+    )
     assert "missing_test_report" in missing.stderr
+
+
+def test_verify_named_fixed_suite_quick(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    result = payload(
+        mdf(
+            python_exe,
+            "verify",
+            "run",
+            "--scope",
+            "named",
+            "--suites",
+            "quick",
+            "--repo",
+            str(repo),
+        )
+    )
+    assert [item["id"] for item in result["result"]["results"]] == ["quick:default"]
+    assert result["result"]["all_passed"] is True
+
+
+def test_verify_named_parallel_rejects_over_five(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    modules = repo / ".mdf/modules.yaml"
+    text = modules.read_text(encoding="utf-8")
+    text = text.replace("named: []", "named:\n      - bulk")
+    modules.write_text(text, encoding="utf-8")
+    commands = "\n".join(f'  - "{SUITE_OK}"' for _ in range(6))
+    doc = repo / "docs/system/testing/bulk.md"
+    doc.write_text(
+        "---\n"
+        f"commands:\n{commands}\n"
+        "parallel: true\n"
+        "---\n\n"
+        "# bulk\n\n目的：并行上限。\n\ntestcase 构成：六条。\n",
+        encoding="utf-8",
+    )
+    result = mdf(
+        python_exe,
+        "verify",
+        "run",
+        "--scope",
+        "named",
+        "--suites",
+        "bulk",
+        "--repo",
+        str(repo),
+    )
+    assert "too_many_parallel_commands" in result.stderr

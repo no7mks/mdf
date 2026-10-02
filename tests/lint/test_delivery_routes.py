@@ -177,7 +177,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
         "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
         "`--yolo` 时主 Agent 依据仓库证据与 Bug",
         "不代替该项批准", "不按分支 kind 选择 smoke 或 release",
-        "不调用 `$mdf verify`",
+        "不调用 `$mdf verify --scope branch`",
         "master 不直接修改或提交",
         "标为 `fixed`",
         "未记录有效红灯不得改生产实现",
@@ -258,7 +258,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "不得在 feature 上编写或补写测试" in tests
     assert "本阶段不要求项目全绿" in tests
     assert "不得因断言失败拒绝完成" in tests
-    assert "on-site" in workflow("converge")
+    assert "smart" in workflow("converge")
     assert "不要求全绿" in contract
     assert "worktrees.dev" in implement
     assert "不得在 feature 上实现" in implement
@@ -269,17 +269,17 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "入口先 no-ff merge owner" in contract
     assert "两路不得各自再写底座" in contract
     assert (
-        "| verify full（feature/bugfix/hotfix） | lint、build、quick、smoke |"
+        "| verify branch（feature/bugfix/hotfix） | lint、build、quick、smoke |"
         in contract
     )
-    assert "| verify full（release） | lint、build、quick、release |" in contract
-    assert "主链收口前 | verify full 绿 + fact audit 通过 |" in contract
-    assert "bugfix 的 `suites.json` 在 verify full 前关联" in contract
-    assert "不在 manifest" in contract
+    assert "| verify branch（release） | lint、build、quick、release |" in contract
+    assert "主链收口前 | verify branch 绿 + fact audit 通过 |" in contract
+    assert "bugfix 的 `suites.json` 在 verify branch 前关联" in contract
+    assert "verify --scope named --suites" in contract and "frontmatter" in contract
     assert "每次运行 suite（含 named suite）都必须产出 JUnit XML 报告" in contract
     assert "即使命令退出码为 0" in contract
     assert "测试失败工作流" in contract
-    assert "verify full（feature/bugfix/hotfix）" in contract
+    assert "verify branch（feature/bugfix/hotfix）" in contract
     assert "过期 gatekeeping" in workflow("verify") or "过期 gatekeeping" in contract
     assert "mock 掉兄弟产品后才算 hermetic" in contract
     assert "xfail 或 xpass，以及 suite 未选中任何 test" in contract
@@ -301,7 +301,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "必须同时给出 `protected_paths` 与 `suites`" in design_text
     assert "把用例归入 quick、smoke 或\ndesign policy `suites` 所列 named suite" in tests
     converge = workflow("converge")
-    assert "on-site" in converge
+    assert "smart" in converge
     assert "阻塞停止" in converge
     assert "Accept" in converge
     assert "named suite 已文档化" in tests
@@ -312,8 +312,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "quick 复现（已补 <用例位置>" in review
     assert "suites.json" in review or "verify full" in review or True
     assert "converge" in review
-    assert "不跑 verify full" in review
-    assert "`$mdf verify run --level on-site`" in review or "verify run --level on-site" in review
+    assert "不跑 verify branch" in review
+    assert "`$mdf verify run --scope smart`" in review or "verify run --scope smart" in review
     deliver = workflow("deliver")
     assert "外层协调者" in deliver
     assert "先测后审" not in deliver
@@ -323,7 +323,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "| release 跨 worktree 联调且对端验收未通过 |" in deliver
     assert "| release 联调且尚未确认无更多代码修改 |" in deliver
     assert "has_dev: no" in deliver or "has_dev" in deliver
-    assert "verify full" in deliver
+    assert "verify branch" in deliver
     assert "close-out" in deliver
     assert "needs_design" in deliver
     assert "进度只认 objectives" in deliver or "只认 objectives" in deliver
@@ -420,7 +420,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "进度只认 `objectives.md`",
         "审查基线仍为上一正式发布", "objectives.md",
         "不再改代码",
-        "不跑 verify full", "洗成无 commit 终稿",
+        "不跑 verify branch", "洗成无 commit 终稿",
         "不运行 `delivery record --stage code-review`",
     ):
         assert rule in text

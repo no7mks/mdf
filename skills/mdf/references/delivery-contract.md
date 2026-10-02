@@ -70,7 +70,7 @@
 4. write-tests / implement，或 owner 开发（无对应未勾项则跳过）
 5. converge（无对应未勾项则跳过）
 6. code-review
-7. verify full
+7. verify branch
 8. fact audit（必要时 fact update 后重审）
 9. close-out
 
@@ -80,18 +80,18 @@
   - deliver / next 只读勾选与依赖决定下一 intent，**不**读 stage gate、**不**对 report 做过期审判。
   - roster `0,0` 只表示无 qa/dev 角色；不自动要求 owner 开发或 converge。
 - **converge**：仅当 checklist 的 converge 项仍为 `[ ]` 时进入；核对前置已勾，跑
-  **verify on-site**，修到达成后自勾。
-  - ❌ converge 的「验」不是 verify full。
-- **verify full / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
+  **verify smart**，修到达成后自勾。
+  - ❌ converge 的「验」不是 verify branch。
+- **verify branch / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
   - verify 默认 suite：feature/bugfix/hotfix → smoke；release → release；失败现场修到绿。
-  - fact：verify full 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
+  - fact：verify branch 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
-  - 不内嵌、不委托 verify（full / on-site / run）；不内嵌 fact。
+  - 不内嵌、不委托 verify（full / smart / run）；不内嵌 fact。
     verify-fix 不算 verify 族，release/hotfix 收口步骤可委托。
-  - `release-closeout` 只复用可复用的 `verify.full.json`，永不执行验证命令。
+  - `release-closeout` 只复用可复用的 `verify.branch.json`，永不执行验证命令。
   - 把目标主线合入交付分支前可建议 squash（见「可选历史整理」）；非强制。
-- 开发迭代只用 `$mdf verify --level on-site`；禁止把 full 当日常自检。
+- 开发迭代只用 `$mdf verify --scope smart`；禁止把 full 当日常自检。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` / `$mdf verify-fix` 不走交付主线，也不由 deliver 内部委托。
 - code-review 份数取冻结的 roster.reviewers；close-out 增量新一轮为 1。
@@ -191,7 +191,7 @@ Git 约束：
 
 - deliver / next / 人工续办：只读勾选决定下一 intent。
 - write-tests 写完可编译或可加载执行的测试即完成，**不要求全绿**；完成后自勾 objectives。
-- ❌ 不以 `gates/<stage>.json`、`verify.full.json`、fact 确认、`code-review.md` 当阶段通行证。
+- ❌ 不以 `gates/<stage>.json`、`verify.branch.json`、fact 确认、`code-review.md` 当阶段通行证。
 - ❌ 不对 report 做「相对 HEAD / 相对上游 intent」的过期 gatekeeping。
 
 **Report**（证明做过与结果，供核对「交没交」）：
@@ -199,9 +199,9 @@ Git 约束：
 | Report | 典型路径 | 谁写 |
 | --- | --- | --- |
 | code-review | `…/code-review.md` 无 commit 终稿 | code-review |
-| verify full | `…/verify.full.json`（及可选 `verify.md`） | verify full |
+| verify branch | `…/verify.branch.json`（及可选 `verify.md`） | verify branch |
 | fact | 材料目录内 confirmation / 会话确认记录 | fact audit（经 update 委托时同） |
-| 测试框架报告 | `.mdf/reports/` 等 | verify / suite-run |
+| 测试框架报告 | `.mdf/reports/` 等 | verify |
 
 close-out 只查上表是否已交且声称通过；不复验对不对。
 
@@ -229,8 +229,8 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 
 补验（仅在**该** intent 内）：
 
-- 开发中与 converge 只跑 module **on-site**。
-- **verify full**：`run` 无论成败均写入 `verify.full.json`（不含 commit）；未绿可修则
+- 开发中与 converge 只跑 module **smart**。
+- **verify branch**：`run` 无论成败均写入 `verify.branch.json`（不含 commit）；未绿可修则
   先落盘再修、重跑，直至绿后勾选；未绿轮不写通过用 `verify.md`、不勾选。
 - 只改事实文档或 module ignore：不因「报告对齐」要求机械重跑 full
   （close-out 也不做 commit 对齐审判）。
@@ -276,13 +276,13 @@ Core 判定退出码与测试报告（见下节）。
 
 ### 测试失败工作流
 
-converge（on-site）与 verify full **共用**：
+converge（smart）与 verify branch **共用**：
 
 1. 测试运行必须有框架自带报告文件（JUnit 等），禁止靠 tee/tail 冒充报告。
 2. fail 后先复测**单用例**。
 3. 修一个用例 → 复测该单用例。
 4. 有 side effect 的 flaky 例外（须记录依据）。
-5. 相关单用例都绿后，才继续该轮 verify（on-site 或 full）。
+5. 相关单用例都绿后，才继续该轮 verify（smart 或 branch）。
 
 ### 测试报告
 
@@ -305,29 +305,29 @@ converge（on-site）与 verify full **共用**：
 
 | suite | 成员 | 预算 | 何时必跑 |
 | --- | --- | --- | --- |
-| quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 / on-site |
-| smoke | 任意种类，包含 quick 的全部成员 | 300s | feature/bugfix/hotfix 的 verify full |
-| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | 仅 release 的 verify full |
-| named | 某一功能块的 test case；一 suite 一文档 | 无 | on-site 选题，不默认整 suite |
+| quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 / smart |
+| smoke | 任意种类，包含 quick 的全部成员 | 300s | feature/bugfix/hotfix 的 verify branch |
+| release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | 仅 release 的 verify branch |
+| named | 某一功能块的 test case；一 suite 一文档 | 无 | smart 选题，不默认整 suite |
 
 - full 指全部 test case 的上界；没有入口，名字保留、不得用作 named suite。
-- lint 与 build 同 quick 一样必跑：on-site 只跑涉及 module；full 跑全部 module。
+- lint 与 build 同 quick 一样必跑：smart 只跑涉及 module；branch 跑全部 module。
 - 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**。
 
 | 交付阶段 | Core 必须通过 | Agent 另须通过 |
 | --- | --- | --- |
-| 开发中 / converge on-site | 涉及 module 的 lint、build、quick | 本分支新增/改动测试；可选 named 选题 |
-| verify full（feature/bugfix/hotfix） | lint、build、quick、smoke | bugfix 另有 `suites.json` 选题记录 |
-| verify full（release） | lint、build、quick、release | — |
-| 主链收口前 | verify full 绿 + fact audit 通过 | 必要时 fact update |
+| 开发中 / converge smart | 涉及 module 的 lint、build、quick | 本分支新增/改动测试；可选 named 选题 |
+| verify branch（feature/bugfix/hotfix） | lint、build、quick、smoke | bugfix 另有 `suites.json` 选题记录 |
+| verify branch（release） | lint、build、quick、release | — |
+| 主链收口前 | verify branch 绿 + fact audit 通过 | 必要时 fact update |
 | 只改事实 / ignore | 不机械重跑业务验证 | — |
 
-named suite：不在 manifest；Agent 以 `suite-run` 执行并写入摘要。
+named suite：命令在 `docs/system/testing/<name>.md` frontmatter；用 `verify --scope named --suites <名>` 执行。
 `needs_design: yes` 时 design 列出涉及的 named suite。
-bugfix 的 `suites.json` 在 verify full 前关联已文档化 named suite（≥1）。
+bugfix 的 `suites.json` 在 verify branch 前关联已文档化 named suite（≥1）。
 
 补覆盖与 quick 复现：缺覆盖则先补 reproduce；优先放入 quick，其次 smoke。
-verify full 中非 quick 失败时尝试补 quick 复现；结论写入
+verify branch 中非 quick 失败时尝试补 quick 复现；结论写入
 `changes/unreleased/<slug>/verify.md`。code-review 本轮触及的非 quick 失败另在
 `code-review.md` 记「quick 复现」字段（各记各的，不互替）。
 
@@ -412,5 +412,5 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 - 架构优化可以建议；超出当前目标不直接实施。
 - 修复后在当前 intent 原地重验。
 
-fact update / fact audit 可独立运行；交付主链在 verify full 之后、close-out 之前委托。
+fact update / fact audit 可独立运行；交付主链在 verify branch 之后、close-out 之前委托。
 无 fact stage gate；进度靠 objectives 自勾。独立调用不能因此自动进入 close-out 或其他交付阶段。

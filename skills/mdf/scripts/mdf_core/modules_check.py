@@ -103,7 +103,7 @@ def render_modules_yaml(
 def module_commands(
     config: ModulesConfig, names: list[str], entry: str
 ) -> list[dict[str, Any]]:
-    """按 module 拆开的入口，供 on-site 执行；id 为 entry:module。"""
+    """按 module 拆开的入口，供 smart 执行；id 为 entry:module。"""
     budget = None
     if entry in SUITES:
         budget = config.budgets.get(entry, DEFAULT_BUDGETS.get(entry))
@@ -182,6 +182,9 @@ def _validate_sourceset(module: Module, findings: list[Finding]) -> None:
 def _validate_named_docs(
     repo: Path, module: Module, findings: list[Finding]
 ) -> None:
+    from .yamlutil import read_frontmatter
+    from .verification import parse_named_commands
+
     for suite in module.named:
         rel = f"{SUITE_DOC_DIR}/{suite}.md"
         path = repo / rel
@@ -193,8 +196,19 @@ def _validate_named_docs(
                 rel,
             )
             continue
-        text = path.read_text(encoding="utf-8")
-        lower = text.lower()
+        try:
+            meta, body = read_frontmatter(path)
+            parse_named_commands(meta)
+        except MDFError as exc:
+            add_finding(
+                findings,
+                "modules.named_doc_command",
+                f"named suite 文档命令无效: {exc}",
+                rel,
+            )
+            body = path.read_text(encoding="utf-8")
+        lower = body.lower()
+        text = body
         if "目的" not in text and "purpose" not in lower:
             add_finding(
                 findings,

@@ -134,12 +134,12 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
     - 同 worktree：执行 integrate，不打开消息通道。
     - 跨 worktree：先开通道；写本侧可碰范围；只改本仓；
       不得改、操作、启动或终止对端。
-  - 主链收口前为 verify full → fact audit → close-out（不内嵌在 close-out）。
+  - 主链收口前为 verify branch → fact audit → close-out（不内嵌在 close-out）。
   - ❌ 不得实施新 PRP。
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
-  - 精简 checklist 至少含：修复/范围、converge、code-review、verify full、
+  - 精简 checklist 至少含：修复/范围、converge、code-review、verify branch、
     fact audit、close-out；并含 `needs_design`。
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。

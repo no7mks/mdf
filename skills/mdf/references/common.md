@@ -232,7 +232,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 
 ## 测试失败工作流
 
-converge（on-site）与 verify full 共用（详见 `delivery-contract.md`）：
+converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）：
 
 1. 测试运行必须有框架自带报告文件（JUnit 等），禁止靠 tee/tail 冒充报告。
 2. fail 后先复测单用例。

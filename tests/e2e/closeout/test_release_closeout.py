@@ -53,7 +53,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     applied = payload(mdf(python_exe, *arguments))
     assert applied["dry_run"] is False
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/verify.full.json"
+        "changes/unreleased/1.3.0/verify.branch.json"
     )
     results = applied["verification"]["results"]
     assert [(item["command"], item["exit_code"]) for item in results] == [
@@ -257,7 +257,7 @@ def test_hotfix_closeout_uses_manifest_commands(
         )
     )
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.2.1/verify.full.json"
+        "changes/unreleased/1.2.1/verify.branch.json"
     )
     assert applied["version"] == "1.2.1"
     assert (repo / "changes" / "1.2.1" / "CHANGE.md").is_file()
@@ -279,7 +279,7 @@ def test_closeout_requires_clean_worktree_for_preview_and_apply(
         assert "dirty_worktree" in result.stderr
 
 
-def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path: Path):
+def test_closeout_reuses_valid_verify_full_evidence(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     runs = tmp_path / "release-runs"
     patch_module_command(
@@ -291,14 +291,14 @@ def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path
     review.write_text("# 审查记录\n\n无未解决问题。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 提交验证证据")
     assert runs.read_text() == "run\n"
 
     applied = payload(mdf(python_exe, *release_arguments(repo)))
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/verify.full.json"
+        "changes/unreleased/1.3.0/verify.branch.json"
     )
     assert runs.read_text() == "run\n"
     assert any(
@@ -322,14 +322,14 @@ def test_closeout_reuses_after_impl_change_when_report_still_green(
     review.write_text("# 审查记录\n\n无未解决问题。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
     (repo / "src/extra.py").write_text("changed = True\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 证据之后修改实现")
 
     applied = payload(mdf(python_exe, *release_arguments(repo)))
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/verify.full.json"
+        "changes/unreleased/1.3.0/verify.branch.json"
     )
     assert runs.read_text() == "run\n"
 
@@ -348,8 +348,8 @@ def test_closeout_fails_when_command_sequence_mismatches(
     review.write_text("# 审查记录\n\n无未解决问题。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
-    path = repo / "changes/unreleased/1.3.0/verify.full.json"
+    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    path = repo / "changes/unreleased/1.3.0/verify.branch.json"
     evidence = json.loads(path.read_text())
     # 伪造与当前 plan 不一致的 command；closeout 不得重跑验证
     for item in evidence["results"]:

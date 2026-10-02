@@ -26,6 +26,7 @@ SUITE_DOC_DIR = "docs/system/testing"
 class SuiteEntry:
     command: str
     tests: tuple[str, ...]
+    parallel: bool = False
 
 
 @dataclass(frozen=True)
@@ -326,16 +327,28 @@ def _parse_suite(module: str, suite: str, raw: Any) -> SuiteEntry:
             f"{label} 必须是含 command 与 tests 的 mapping",
             code="modules_invalid",
         )
-    if not isinstance(raw, dict) or set(raw) != {"command", "tests"}:
+    if not isinstance(raw, dict):
         raise MDFError(
-            f"{label} 必须且只能含 command 与 tests",
+            f"{label} 必须是含 command 与 tests 的 mapping",
+            code="modules_invalid",
+        )
+    allowed = {"command", "tests", "parallel"}
+    if set(raw) - allowed or "command" not in raw or "tests" not in raw:
+        raise MDFError(
+            f"{label} 必须含 command 与 tests，可选 parallel",
             code="modules_invalid",
         )
     command = _nonempty_command(raw["command"], f"{label}.command")
     tests = _string_list(raw["tests"], f"{label}.tests")
     if not tests:
         raise MDFError(f"{label}.tests 不能为空", code="modules_invalid")
-    return SuiteEntry(command=command, tests=tuple(tests))
+    parallel = raw.get("parallel", False)
+    if not isinstance(parallel, bool):
+        raise MDFError(
+            f"{label}.parallel 必须为布尔",
+            code="modules_invalid",
+        )
+    return SuiteEntry(command=command, tests=tuple(tests), parallel=parallel)
 
 
 def _parse_named(module: str, raw: Any, seen: set[str]) -> list[str]:

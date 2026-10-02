@@ -30,11 +30,11 @@ def test_design_requires_named_suites(python_exe, tmp_path, policy):
     assert "invalid_policy" in result.stderr or "invalid_delivery_suite" in result.stderr
 
 
-def test_feature_project_verify_runs_lint_build_quick_smoke(python_exe, tmp_path):
-    """feature 的 verify full / project-verify 默认 suite 为 smoke。"""
+def test_feature_verify_full_runs_lint_build_quick_smoke(python_exe, tmp_path):
+    """feature 的 verify branch 默认 suite 为 smoke。"""
     repo, root = converge_ready(python_exe, tmp_path)
-    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
-    evidence = json.loads((root / "verify.full.json").read_text())
+    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    evidence = json.loads((root / "verify.branch.json").read_text())
     assert [item["id"] for item in evidence["results"]] == [
         "lint:default", "build:default", "quick:default", "smoke:default",
     ]
@@ -52,9 +52,9 @@ def test_suite_over_budget_fails(python_exe, tmp_path):
     patch_module_command(repo, "quick", lambda c: "sleep 3; " + c)
     set_modules_budget(repo, "quick", 1)
     commit(repo, "test: quick 超预算")
-    result = mdf(python_exe, "project-verify", "run", "--repo", str(repo))
+    result = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
-    evidence = json.loads((root / "verify.full.json").read_text())
+    evidence = json.loads((root / "verify.branch.json").read_text())
     quick = next(
         item for item in evidence["results"] if item["id"] == "quick:default"
     )

@@ -39,11 +39,13 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 
 ## `$mdf verify`
 
-- **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
+- **smart**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
   test/testcase；converge 验收使用。
-- **full**：全 module 的 lint/build/quick + 套件（feature/bugfix/hotfix→smoke，
-  release→release），默认按 module 串行展开；写入 `verify.full.json`（不含 commit）。
-  主链在 code-review 之后、fact audit / close-out 之前跑。
+- **branch**：全 module 的 lint/build/quick + 套件。
+  - feature/bugfix/hotfix→smoke，release→release；默认按 module 串行展开。
+  - 写入 `verify.branch.json`（不含 commit）。
+  - 主链在 code-review 之后、fact audit / close-out 之前跑。
+- **named**：`--suites` 指定五固定或真 named；不写 branch 证据。
 
 ## Test、test case 与 suite
 
@@ -59,7 +61,7 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 - **release**：包含 smoke，发版所需的 test case，无预算上限；仅 release 的 full 跑到此。
 - **full**（概念）：全部 test case 的上界，通常没有入口，不由 gate 执行。
 - **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有
-  `docs/system/testing/<name>.md`。on-site 由 Agent+Jev 选题，不默认整 suite 盲跑。
+  `docs/system/testing/<name>.md`。smart 由 Agent+Jev 选题，不默认整 suite 盲跑。
 
 预算包含启动依赖与预热，不含 build；超出预算视为失败。
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的
@@ -202,14 +204,14 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
   - release 写已选定工作线、本版收口范围、预发布工作、是否联调、
     非目标与可验证验收。
 - **Report**：
-  - 含 verify.full.json、fact 确认、code-review.md、JUnit 等。
+  - 含 verify.branch.json、fact 确认、code-review.md、JUnit 等。
   - 只证明做过与声称结果；**不当**阶段通行证，不做过期审判。
 - **Gate 文件**（`gates/*.json`）：
   - 可选配置快照 / 并行辅助。
   - **禁止**当作进度或验收关口。
 - write-tests 完成条件是测试已编写且可编译或可加载执行，不要求全绿；
   完成后自勾 objectives。
-- **converge**（收敛）：核对 objectives 前置已勾，跑 on-site，修到达成后自勾。
+- **converge**（收敛）：核对 objectives 前置已勾，跑 smart，修到达成后自勾。
   - 「全绿」相对该 suite，不等于 `.mdf/modules.yaml` 里每一条命令。
 
 ## 联调通道
@@ -233,7 +235,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
   - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
   - 需要时切到 worktree 后先打开通道。Goal 完成前，用户没让你停，永远不许停下来。
   - 双端验收且确认不再改代码后才允许 code-review。
-  - fact audit（必要时 fact update）在 verify full 之后、close-out 之前执行。
+  - fact audit（必要时 fact update）在 verify branch 之后、close-out 之前执行。
 - 联调测试默认由客户端主导。
 
 ## 测试类别与 Code Smell

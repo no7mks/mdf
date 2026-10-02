@@ -43,7 +43,7 @@ def write_release_objectives(
         "- [x] owner 开发（has_dev: no）\n"
         "- [x] converge（has_dev: no）\n"
         "- [ ] code-review\n"
-        "- [ ] verify full\n"
+        "- [ ] verify branch\n"
         "- [ ] fact audit\n"
         "- [ ] close-out\n\n"
         "## 工作线\n\n不联调\n\n"
@@ -59,7 +59,7 @@ def write_work_objectives(
     path = tmp_path / name
     path.write_text(
         "# 目标\n\n- needs_design: no\n\n"
-        "- [ ] 修复\n- [ ] converge\n- [ ] verify full\n- [ ] fact audit\n",
+        "- [ ] 修复\n- [ ] converge\n- [ ] verify branch\n- [ ] fact audit\n",
         encoding="utf-8",
     )
     return path
@@ -355,7 +355,7 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
 
 
 def seed_verify_full(python_exe: str, repo: Path) -> None:
-    """写入可复用的 verify.full.json；release-closeout 只复用、不重跑验证。"""
+    """写入可复用的 verify.branch.json；release-closeout 只复用、不重跑验证。"""
     branch = git(repo, "branch", "--show-current").stdout.strip()
     folder = branch.split("/", 1)[1]
     root = repo / "changes" / "unreleased" / folder
@@ -365,9 +365,9 @@ def seed_verify_full(python_exe: str, repo: Path) -> None:
         review.write_text("# 审查记录\n\n无未解决问题。\n", encoding="utf-8")
         git(repo, "add", "--", str(review.relative_to(repo)))
         git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
     git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 提交 verify.full")
+    git(repo, "commit", "-m", "test: 提交 verify.branch")
 
 
 def prepare_release_closeout_repo(

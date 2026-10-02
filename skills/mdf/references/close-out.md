@@ -93,7 +93,7 @@
 
 - 读取 `references/common.md`、`references/repository-contract.md`：
   - 另读 `references/object-contract.md` 与 `references/delivery-contract.md`。
-- 入口前置：主链须已完成 verify full（有效 `verify.full.json`）与 fact audit；
+- 入口前置：主链须已完成 verify branch（有效 `verify.branch.json`）与 fact audit；
   本 intent 不再内嵌二者。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
 - 步骤 2 可选 squash：先内部执行 `references/squash.md` 的 dry-run，确认执行后再
@@ -174,7 +174,7 @@
   - 语义不明、需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
-    - 不启动 code-review；沿用已有 code-review 终稿与主链 `verify.full.json`
+    - 不启动 code-review；沿用已有 code-review 终稿与主链 `verify.branch.json`
       （须存在且 `all_passed: true`；否则按下方停止）。
     - 在 `code-review.md` 追加跳过说明（merge commit、路径清单；仍不得写入 commit
       hash）。
@@ -182,10 +182,10 @@
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
 - 不可跳过时：
-  - 若集成后无有效 `verify.full.json`（缺失，或未声称 `all_passed:true`），
+  - 若集成后无有效 `verify.branch.json`（缺失，或未声称 `all_passed:true`），
     或集成引入了实现/测试改动：
-    - **停止并交接**：须在本 intent **之外**由主链重跑 `$mdf verify` full 并自勾后再
-      续办 close-out；❌ 本 intent 不委托、不执行 verify（含 full / on-site / run）。
+    - **停止并交接**：须在本 intent **之外**由主链重跑 `$mdf verify` branch 并自勾后再
+      续办 close-out；❌ 本 intent 不委托、不执行 verify（含 full / smart / run）。
     - 不做 commit 对齐审判。
   - 有有效 full 且无实现/测试增量、仅需审查时，进入 code-review 增量轮：
     - feature：objectives 的 converge 项须已勾；未勾停止。
@@ -194,14 +194,14 @@
     - 以集成后的 HEAD 执行增量新一轮 code-review：
       左端点为集成前 HEAD（当场记录），重新固定 review_head。
     - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
-      完成裁定、修复与按需 on-site；再洗成无 commit 终稿。
+      完成裁定、修复与按需 smart；再洗成无 commit 终稿。
     - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
     - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
       人数仍为 roster.reviewers。
 - 主线已包含且审查报告已交时无需重复合并或审查。
   - report 缺失时内部执行 code-review，通过后继续本次 close-out。
   - feature：converge 须已在 objectives 勾选；审查看 `code-review.md`（report）。
-- 📌 四种分支均须有完整的各轮应派份数独立审查、主 Agent 裁定、修复复核与 on-site 记录。
+- 📌 四种分支均须有完整的各轮应派份数独立审查、主 Agent 裁定、修复复核与 smart 记录。
 - 已收口 release/hotfix 只核对已有集成与审查报告。
   - 若需要新集成或实现修改，停止报告收口状态不一致，不得覆盖版本目录或改写已开始发布的源提交。
 - 验收：精确实现与文档路径、目标主线已包含、集成后的审查与验证报告、版本状态。
@@ -213,12 +213,12 @@
 **材料**
 
 - 确认主链 report **已交且声称通过**：
-  - 存在 `verify.full.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
+  - 存在 `verify.branch.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
-  - objectives 中 verify full / fact audit 已勾。
+  - objectives 中 verify branch / fact audit 已勾。
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
     `$mdf fact audit`，❌ 本 intent 不委托补跑。
-- ❌ 本 intent 不内嵌、不委托 verify full / on-site / run，也不内嵌 fact update /
+- ❌ 本 intent 不内嵌、不委托 verify branch / smart / run，也不内嵌 fact update /
   fact audit；不做 commit 对齐审判。verify-fix（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
 - 按分支准备材料：
@@ -246,9 +246,9 @@
 
 - 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
-  - `verify.full.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
+  - `verify.branch.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
   - fact 确认记录存在。
-  - objectives：converge → code-review → verify full → fact audit 均已勾（feature 另须
+  - objectives：converge → code-review → verify branch → fact audit 均已勾（feature 另须
     design/开发依赖项已勾）。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
 - 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
@@ -335,7 +335,7 @@
   - 版本根 Change 聚合 child outcomes/evidence，evidence 按首次出现顺序去重并追加 manifest 验证命令。
   - CLI 操作前要求 clean；主动提交本次必要材料，不夹带无关改动。
 - 运行实际收口：
-  - CLI **只复用**可复用的 `verify.full.json`（声称通过且命令序列一致）写入版本
+  - CLI **只复用**可复用的 `verify.branch.json`（声称通过且命令序列一致）写入版本
     Change；❌ 永不在 closeout 内执行验证命令 / release suite。
   - 不可复用 → CLI 失败（`verify_full_not_reusable`），停止交接；主链外补 verify。
 - 验收：CLI 退出 0、收口产物和完整 diff。

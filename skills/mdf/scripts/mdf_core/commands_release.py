@@ -235,7 +235,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     reused = reusable_results(repo, context["validation_commands"])
     if reused is None:
         raise MDFError(
-            "release closeout 要求可复用的 verify.full.json"
+            "release closeout 要求可复用的 verify.branch.json"
             "（all_passed 且命令序列一致）；不在 closeout 内执行验证",
             code="verify_full_not_reusable",
         )

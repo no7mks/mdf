@@ -1,20 +1,19 @@
-"""project-verify 兼容入口与 suite 运行辅助；full 证据见 module_verify。"""
+"""suite 运行辅助与 branch 证据路径；verify 入口见 module_verify。"""
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from .verify_run import run_verify_command
-from .delivery_state import git, safe, read_json
-from .errors import MDFError, emit
+from .delivery_state import safe, read_json
+from .errors import MDFError
 from .gitutil import (
     current_branch,
     branch_details,
-    repo_path,
-    require_git_root,
     unreleased_slug,
 )
-from .paths import load_manifest
-from .verification import (
-    SUITES,
-    repo_verification,
-    parse_suite_names,
-)
+from .verification import SUITES
+
+MAX_PARALLEL = 5
 
 
 def associated_suites(repo, slug):
@@ -26,6 +25,8 @@ def associated_suites(repo, slug):
         raise MDFError(
             "suites.json 只接受 suites 列表", code="invalid_delivery_suite"
         )
+    from .verification import parse_suite_names
+
     return parse_suite_names(data["suites"])
 
 
@@ -35,89 +36,69 @@ def evidence_path(repo):
     slug = unreleased_slug(details)
     return safe(
         repo,
-        repo / "changes/unreleased" / slug / "verify.full.json",
+        repo / "changes/unreleased" / slug / "verify.branch.json",
     )
 
 
 def valid_evidence(repo):
-    """已落盘且声称通过的 full 报告；不对照 HEAD。"""
-    from .module_verify import valid_full
+    """已落盘且声称通过的 branch 报告；不对照 HEAD。"""
+    from .module_verify import valid_branch
 
-    return valid_full(repo)
-
-
-def run_targets(repo, targets):
-    """全部运行，不因单项失败中断；每项带 passed 与失败 error/details。"""
-    results = []
-    total = len(targets)
-    for index, item in enumerate(targets, 1):
-        try:
-            entry = item.get("entry") or item["id"].split(":", 1)[0]
-            detail = run_verify_command(
-                repo,
-                item["command"],
-                label=item["id"],
-                index=index,
-                total=total,
-                timeout=item.get("budget"),
-                entry=entry,
-                junit=entry in SUITES,
-            )
-            results.append({**item, **detail, "passed": True})
-        except MDFError as exc:
-            results.append(
-                {
-                    **item,
-                    "passed": False,
-                    "error": exc.code,
-                    "details": exc.details,
-                }
-            )
-    return results
+    return valid_branch(repo)
 
 
-def command_quick_run(args):
-    repo = repo_path(args.repo)
-    require_git_root(repo)
-    manifest = load_manifest(repo)
-    if manifest.get("state") != "ready":
-        raise MDFError("quick-run 需要 ready", code="manifest_not_ready")
-    results = run_targets(repo, repo_verification(repo).plan("quick"))
-    result = {
-        "head": git(repo, "rev-parse", "HEAD").stdout.strip(),
-        "results": results,
-        "all_passed": all(item["passed"] for item in results),
-    }
-    if not result["all_passed"]:
-        raise MDFError(
-            "lint、build 或 quick 失败",
-            code="verify_command_failed",
-            details=result,
+def _run_one(repo, item, index, total):
+    entry = item.get("entry") or item["id"].split(":", 1)[0]
+    try:
+        detail = run_verify_command(
+            repo,
+            item["command"],
+            label=item["id"],
+            index=index,
+            total=total,
+            timeout=item.get("budget"),
+            entry=entry,
+            junit=entry in SUITES or item.get("junit", False),
         )
-    emit({"ok": True, "operation": "quick-run", "result": result})
+        return {**item, **detail, "passed": True}
+    except MDFError as exc:
+        return {
+            **item,
+            "passed": False,
+            "error": exc.code,
+            "details": exc.details,
+        }
 
 
-def command_project_verify(args):
-    """兼容入口：等价于 `verify full`。"""
-    from .module_verify import command_verify
-    import argparse
-
-    ns = argparse.Namespace(
-        repo=args.repo,
-        level="full",
-        action=args.action,
-        module=[],
-        paths=[],
-        test=[],
-    )
-    command_verify(ns)
-
-
-def command_suite_run(args):
-    repo = repo_path(args.repo)
-    require_git_root(repo)
-    name = parse_suite_names([args.name])[0]
-    result = run_verify_command(
-        repo, args.command, label=name, entry=name, junit=True
-    )
-    emit({"ok": True, "operation": "suite-run", "result": result})
+def run_targets(
+    repo,
+    targets,
+    *,
+    parallel: bool = False,
+    index_base: int = 0,
+    grand_total: int | None = None,
+):
+    """全部运行，不因单项失败中断；每项带 passed 与失败 error/details。"""
+    total = grand_total if grand_total is not None else len(targets)
+    if not parallel:
+        return [
+            _run_one(repo, item, index_base + index, total)
+            for index, item in enumerate(targets, 1)
+        ]
+    if len(targets) > MAX_PARALLEL:
+        raise MDFError(
+            f"并行命令数 {len(targets)} 超过上限 {MAX_PARALLEL}",
+            code="too_many_parallel_commands",
+            details={"count": len(targets), "max": MAX_PARALLEL},
+        )
+    results: list[dict | None] = [None] * len(targets)
+    with ThreadPoolExecutor(max_workers=len(targets)) as pool:
+        futures = {
+            pool.submit(
+                _run_one, repo, item, index_base + index, total
+            ): index - 1
+            for index, item in enumerate(targets, 1)
+        }
+        for future in as_completed(futures):
+            results[futures[future]] = future.result()
+    return list(results)

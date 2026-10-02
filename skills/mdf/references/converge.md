@@ -1,7 +1,7 @@
 # 收敛（Converge）
 
-核对 objectives **前置**已勾，跑 **verify on-site** 修到达成，再自勾 converge。
-❌ 此处的「验」不是 verify full。
+核对 objectives **前置**已勾，跑 **verify smart** 修到达成，再自勾 converge。
+❌ 此处的「验」不是 verify branch。
 ❌ 不以 `gates/converge.json` 为完成条件或进度账本。
 
 ## 决策树
@@ -27,12 +27,12 @@
 │ 3 Accept                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 前置未勾或 on-site 可修 ────→ 3 Accept
+                 ├──── 前置未勾或 smart 可修 ────→ 3 Accept
                  ├──── 需测试修改批准 ─────────────→ [确认后 resume 回 3]
                  ├──── 拒绝测试修改 ───────────────→ [写阻塞记录并停止]
                  ├──── 外部阻塞或三轮无进展 ───────→ [记录阻塞并停止]
                  │
-                 ▼ 前置已勾且 on-site 通过
+                 ▼ 前置已勾且 smart 通过
 ┌──────────────────────────────────┐
 │ 4 Tick                           │
 └────────────────┬─────────────────┘
@@ -52,7 +52,7 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Dispatch | Subagent | 启动恰好 1 个 owner subagent 执行步骤 2–4 | 已派执行者 | 2 | 停止并报告 |
 | 2 | Join | 约束 | 按需 roster-join 或检查 owner | roster-join/状态 | 3 | 待批准重试 2；拒绝停；其他停 |
-| 3 | Accept | 约束 | 前置勾选 + on-site；循环到达成 | checklist、on-site | 4 | 可修/待批准回 3；拒绝或阻塞停 |
+| 3 | Accept | 约束 | 前置勾选 + smart；循环到达成 | checklist、smart | 4 | 可修/待批准回 3；拒绝或阻塞停 |
 | 4 | Tick | 约束 | 自勾 objectives 的 converge 项并提交 | objectives、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
@@ -99,16 +99,16 @@ owner 开发项已勾。❌ 不因 roster `0,0` 在无 owner 开发项或该项�
 `delivery-contract.md`「可选历史整理」）；本 intent **不**询问、执行或委托
 `$mdf squash`。
 
-### Accept（前置勾选 + on-site）
+### Accept（前置勾选 + smart）
 
 1. 核对 `objectives.md`：converge **之前**的依赖项须为 `[x]`（design / 开发相关项按
    `needs_design` 与 roster）；未勾则继续开发/勾选，不得虚构完成。
-2. 运行 `$mdf verify run --level on-site`（涉及 module 的 lint+build+quick +
+2. 运行 `$mdf verify run --scope smart`（涉及 module 的 lint+build+quick +
    本分支相对 start_commit 新增/改动的测试；可加 Agent/Jev 选题）。
-3. ❌ 不得用 verify full（smoke/release）冒充本步。
+3. ❌ 不得用 verify branch（smoke/release）冒充本步。
 4. 失败时遵守「测试失败工作流」（单用例复测 → 修一个复测一个 → 再继续）。
-5. 可修实现则修并**提交**相关实现/测试路径后再跑 on-site；改测试/门槛须批准。
-6. 循环直至前置已勾且 on-site 绿，或阻塞停止。
+5. 可修实现则修并**提交**相关实现/测试路径后再跑 smart；改测试/门槛须批准。
+6. 循环直至前置已勾且 smart 绿，或阻塞停止。
 
 阻塞写入 `changes/unreleased/<slug>/converge-blocked.md`
 （目标决定、拒绝测试修改、三轮无进展）。

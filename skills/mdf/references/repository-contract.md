@@ -206,10 +206,10 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
   - 命令的可执行事实来源始终是仓库配置与脚本。
   - 运行时配置属于 `docs/system/operations/configuration.md`；
     测试分类、失败语义、skip 与各 suite 属于 `docs/system/testing/`。
-  - 开头一张验证卡片只列环境要求与 `.mdf/modules.yaml` 的五个验证入口
-    （默认按 module 串行），不列 named suite 或单个测试的命令；
-    须含 `docs/system/overview.md`、`docs/README.md` 与
-    `docs/system/testing/index.md`，不展开核心模块表。
+  - 开头一张验证卡片只列环境要求与 `.mdf/modules.yaml` 的五个验证入口。
+    - 默认按 module 串行；不列 named suite 或单个测试的命令。
+    - 须含 `docs/system/overview.md`、`docs/README.md` 与
+      `docs/system/testing/index.md`，不展开核心模块表。
   - 接口、数据与运行时行为不复述 `docs/system/` 事实页。
   - 超过体积限制时下沉到 `docs/system/`，不扩写进 `README.md`。
 - `AGENTS.md` 仅面向在仓库中工作的 Agent。
@@ -295,8 +295,11 @@ budgets:
 - repo 级同名入口默认按 module 名排序**串行展开**执行（plan id 为
   `<entry>:<module>`）；可选顶层 `verification` 覆写子集为单命令（id 为
   `<entry>`）。`budgets` 仍为顶层可选。
-- `named` 中每个名字必须有独立文档 `docs/system/testing/<name>.md`，写明目的与
-  testcase 构成；testcase 本身靠代码 frontmatter/stringdoc，不另建 docs。
+- `named` 中每个名字必须有独立文档 `docs/system/testing/<name>.md`：
+  - frontmatter 必填 `commands`（非空字符串列表）或简写 `command`；
+    可选 `parallel: true`（并行时命令数须 ≤5，否则 Core 报错）。
+  - 正文写明目的与 testcase 构成；testcase 本身靠代码 frontmatter/stringdoc。
+- `quick`/`smoke`/`release` mapping 可选 `parallel: true`（按 module 展开的多命令）。
 - 初始化仍可通过 CLI 传入 `--lint` 等，写入默认 module。
 - 占位命令必然失败：不得用恒成功的空命令冒充真实 lint/build/suite。
 

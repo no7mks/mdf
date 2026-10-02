@@ -212,51 +212,39 @@ def build_parser() -> argparse.ArgumentParser:
     worktree.add_argument("--handoff", action="store_true")
     worktree.set_defaults(func=command_worktree_check)
 
-    from .project_verify import command_project_verify, command_quick_run, command_suite_run
     from .module_verify import command_verify
-
-    verification = subparsers.add_parser("project-verify")
-    verification.add_argument("action", choices=("run",))
-    verification.add_argument("--repo", required=True)
-    verification.set_defaults(func=command_project_verify)
 
     verify = subparsers.add_parser("verify")
     verify.add_argument("action", choices=("run",))
     verify.add_argument("--repo", required=True)
     verify.add_argument(
-        "--level",
-        choices=("on-site", "full"),
+        "--scope",
+        choices=("smart", "branch", "named"),
         required=True,
+    )
+    verify.add_argument(
+        "--suites",
+        help="named 范围：逗号分隔的 suite 名（五固定或 named）",
     )
     verify.add_argument(
         "--module",
         action="append",
         default=[],
-        help="on-site 目标 module；可重复",
+        help="smart 目标 module；可重复",
     )
     verify.add_argument(
         "--paths",
         action="append",
         default=[],
-        help="改动路径，用于推断 on-site module",
+        help="改动路径，用于推断 smart module",
     )
     verify.add_argument(
         "--test",
         action="append",
         default=[],
-        help="on-site 额外 test/testcase 命令（Agent+Jev 选题后传入）",
+        help="smart 额外 test/testcase 命令（Agent+Jev 选题后传入）",
     )
     verify.set_defaults(func=command_verify)
-
-    quick_run = subparsers.add_parser("quick-run")
-    quick_run.add_argument("--repo", required=True)
-    quick_run.set_defaults(func=command_quick_run)
-
-    suite_run = subparsers.add_parser("suite-run")
-    suite_run.add_argument("--repo", required=True)
-    suite_run.add_argument("--name", required=True)
-    suite_run.add_argument("--command", required=True)
-    suite_run.set_defaults(func=command_suite_run)
 
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)

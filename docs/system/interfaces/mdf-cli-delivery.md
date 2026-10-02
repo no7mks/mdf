@@ -84,14 +84,16 @@
   - `--handoff` 要求 clean 与有效阶段指纹。
   - 审查者用 `--expected-head <hash>` 固定只读对象。
 
-### `project-verify`
+### `verify`
 
-`project-verify run --repo <仓库>` 按分支执行验证入口：
+`verify run --scope smart|branch|named --repo <仓库>` 按 scope 执行验证入口。
+
+**branch**
 
 - 始终跑 lint、build、quick。
 - 再加 smoke（feature/bugfix/hotfix）或 release（仅 release）。
 - 证据 `suites` 为 `quick` 加后者。
-
+- 须在 Gitflow 交付分支；执行前 worktree 必须干净。
 - bugfix 须有 `changes/unreleased/<slug>/suites.json` 关联 named suite。
   - 缺失返回 `missing_delivery_suite`；Core 不执行 named suite。
 - 证据文件损坏返回 `invalid_delivery`。
@@ -102,23 +104,29 @@
 - suite 超出预算即终止 process group 并失败，details 含 partial tail。
   - 预算默认 quick 30、smoke 300，可由 `verification.budgets` 覆盖。
   - lint、build 与未设预算的 release 不限时。
-- 结果写入 `changes/unreleased/<slug>/verify.full.json`，含 `suites`，不含 commit。
+- 结果写入 `changes/unreleased/<slug>/verify.branch.json`，含 `suites`，不含 commit。
   - feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix 为该分支稳定 SemVer。
+- 同入口多命令：默认串行；`modules.yaml` 中 quick/smoke/release 可设
+  `parallel: true`（命令数 >5 返回 `too_many_parallel_commands`）。
 
-### `quick-run`
+**smart**
 
-`quick-run --repo <仓库>` 在任意分支（含 master 与 detached HEAD）依次执行 manifest 的 lint、build、quick。
+- 须至少一个 `--module` 或可由 `--paths` 推断的 module。
+- 跑涉及 module 的 lint、build、quick；可选 `--test` 追加点名命令。
+- 不写 `verify.branch.json`；stdout 返回结果 JSON。
 
-- 要求 manifest `ready`，否则返回 `manifest_not_ready`。
-- 预算、运行目录、stderr 进度与 quick 报告校验同 `project-verify run`。
-- 全部入口都运行，单项失败不中断；不写任何证据文件或 gate。
-- 结果含 `head`、逐项 `results`（命令、预算、`log`、quick 的 `report`、`passed`）与 `all_passed`。
-  - 全部通过时 stdout 输出结果 JSON，退出 0。
-  - 任一失败返回 `verify_command_failed`，details 为同一结果，失败项带 `error` 与 `details`。
+**named**
 
-### 测试报告与 `suite-run`
+- 需要 `--suites <名>[,<名>…]`（五固定或 `module.named` 中的真 named）。
+- 不要求交付分支；不写 `verify.branch.json`。
+- 五固定：命令来自 `.mdf/modules.yaml`（override 或按 module 展开）。
+- 真 named：命令来自 `docs/system/testing/<name>.md` frontmatter 的
+  `commands`（或简写 `command`）；可选 `parallel: true`（>5 报错）。
+- suite 之间按 `--suites` 顺序串行；suite 内可并行。
 
-`project-verify run`、`quick-run` 与 `release-closeout` 执行 quick、smoke、release 时：
+### 测试报告
+
+`verify run` 与 `release-closeout` 执行 quick、smoke、release 与 named 时：
 
 1. 为每次运行新建 `.mdf/reports/<时间戳>-<suite>/`，以 `MDF_REPORT_DIR` 传给命令。
 2. 命令结束后解析其中的 JUnit XML，写入 `summary.json`。
@@ -136,12 +144,6 @@
 | 无法解析 | `invalid_test_report` |
 | 不含 test | `empty_test_report` |
 | 含 failure、error 或 skipped | `test_report_failed` |
-
-`suite-run --repo <仓库> --name <named suite> --command <命令>` 以同样方式处理 named suite。
-
-- 为 named suite 新建报告目录、运行命令并校验报告。
-- 输出命令结果与 `report`；不写 gate。
-- 名称不得为 lint/build/quick/smoke/release/full。
 
 ### `codewiki-runtime`
 

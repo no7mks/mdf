@@ -225,7 +225,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 产物、Git 历史及执行者状态判断。按下表自上而下命中即停止，不并行套用多行。
 
 - **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
-  - report（code-review.md / verify.full.json / fact-audit.md）只证明做过与声称结果。
+  - report（code-review.md / verify.branch.json / fact-audit.md）只证明做过与声称结果。
 - 角色尚在时从对应 qa/dev worktree 读取各路提交与交接说明，不因 owner 尚未合入就重复分派。
 - 角色已 roster-join 并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
 - 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
@@ -253,8 +253,8 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
 | converge 已勾（或无未勾 converge 项）、code-review 未勾 | 在 owner 委托 `references/code-review.md`（release 另须 integrate 已勾） |
-| code-review 已勾、verify full 未勾 | 委托 `references/verify.md`（full；失败现场修到绿） |
-| verify full 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
+| code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（full；失败现场修到绿） |
+| verify branch 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
 | fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |
 | close-out 实际完成 | 进入 5，不因 owner 已删除而重新识别新任务 |
 

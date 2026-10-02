@@ -76,7 +76,7 @@ class Verification:
 
 
 def required_suite(kind):
-    # verify full 默认：release → release；其余交付分支 → smoke
+    # verify branch 默认：release → release；其余交付分支 → smoke
     if kind == "release":
         return "release"
     if kind in {"feature", "bugfix", "hotfix"}:
@@ -186,3 +186,41 @@ def parse_budgets(raw):
             )
         budgets[name] = int(seconds)
     return budgets
+
+
+def parse_named_commands(meta: dict) -> tuple[list[str], bool]:
+    """从 named suite 文档 frontmatter 解析 commands 与 parallel。"""
+    parallel = meta.get("parallel", False)
+    if not isinstance(parallel, bool):
+        raise MDFError(
+            "named suite parallel 必须为布尔",
+            code="invalid_named_suite",
+        )
+    if "commands" in meta:
+        raw = meta["commands"]
+        if not isinstance(raw, list) or not raw:
+            raise MDFError(
+                "named suite commands 必须为非空列表",
+                code="invalid_named_suite",
+            )
+        commands: list[str] = []
+        for item in raw:
+            if not isinstance(item, str) or not item.strip():
+                raise MDFError(
+                    "named suite commands 项必须为非空字符串",
+                    code="invalid_named_suite",
+                )
+            commands.append(item.strip())
+        return commands, parallel
+    if "command" in meta:
+        value = meta["command"]
+        if not isinstance(value, str) or not value.strip():
+            raise MDFError(
+                "named suite command 必须为非空字符串",
+                code="invalid_named_suite",
+            )
+        return [value.strip()], parallel
+    raise MDFError(
+        "named suite 文档 frontmatter 需要 commands 或 command",
+        code="invalid_named_suite",
+    )

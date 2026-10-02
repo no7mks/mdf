@@ -18,7 +18,7 @@
 - [ ] owner 开发（has_dev: no：start 写入时已勾；has_dev: yes：owner 完成后自勾）
 - [ ] converge（has_dev: no：start 写入时已勾；has_dev: yes：由 `$mdf converge` 自勾）
 - [ ] code-review（由 `$mdf code-review` 自勾；报告见 code-review.md）
-- [ ] verify full（由 `$mdf verify` full 自勾；报告见 verify.full.json）
+- [ ] verify branch（由 `$mdf verify` branch 自勾；报告见 verify.branch.json）
 - [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）
 - [ ] close-out（由 `$mdf close-out` 自勾）
 

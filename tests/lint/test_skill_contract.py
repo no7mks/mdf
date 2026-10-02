@@ -400,7 +400,7 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`fact audit` 执行`全量审阅`" in migrate
     close_out = intent("close-out")
     assert "交付前检查" in close_out
-    assert "不内嵌 verify full" in close_out
+    assert "不内嵌 verify branch" in close_out or "不内嵌、不委托 verify" in close_out
     assert "release 为 `--scope full`" not in close_out
     assert "finish 的 release 为 `full`" not in audit
     assert "`--base` 为上一正式发布" in audit

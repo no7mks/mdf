@@ -68,7 +68,7 @@
 
 ### 目录
 
-主线：`start → [design?] → work → converge → code-review → verify full → fact audit → close-out`
+主线：`start → [design?] → work → converge → code-review → verify branch → fact audit → close-out`
 
 #### 起步
 
@@ -98,22 +98,22 @@
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
-- `$mdf converge`：objectives + on-site，循环到达成
+- `$mdf converge`：objectives + smart，循环到达成
 - `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
 - `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
-- `$mdf verify --level on-site|full`：module 级验证；converge 用 on-site，主链在
-  code-review 后跑 full
+- `$mdf verify --scope smart|branch|named`：module 级验证；converge 用 smart，主链在
+  code-review 后跑 branch；named 用 `--suites`
 - `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
-  主链在 verify full 之后、必要时于 fact audit 前调用
-- `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify full / fact）
+  主链在 verify branch 之后、必要时于 fact audit 前调用
+- `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify branch / fact）
 - `$mdf squash [--dry-run]`：定地板与切段并 soft-reset；dry-run 只给建议
 
 #### 维护
 
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
 - `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
-  主链在 verify full 之后、close-out 之前
+  主链在 verify branch 之后、close-out 之前
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
@@ -158,8 +158,8 @@ $mdf fix bug-CD34
 $mdf fix bug-CD34 --yolo
 $mdf verify-fix
 $mdf verify-fix bug-CD34
-$mdf verify --level on-site
-$mdf verify --level full
+$mdf verify --scope smart
+$mdf verify --scope branch
 $mdf code-review
 $mdf fact update
 $mdf fact update --scope full
@@ -328,17 +328,20 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：close-out 关闭前内部委托；不标 `closed`、不写 `fixed_in`、不跑 release。
     无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
 
-- `$mdf verify --level on-site|full`
-  - 用法：`$mdf verify run --level on-site|full [--module|--paths|--test ...]`
-  - 用途：module 级验证；converge/开发用 on-site，主链在 code-review 后跑 full。
-  - 说明：full 写 `verify.full.json`（feature/bugfix/hotfix→smoke，release→release；
-    不含 commit）；on-site 不落盘，选题经 `--test`。
+- `$mdf verify --scope smart|branch|named`
+  - 用法：`$mdf verify run --scope smart|branch|named [--suites ...]
+    [--module|--paths|--test ...]`
+  - 用途：module 级验证；converge/开发用 smart，主链在 code-review 后跑 branch；
+    named 按 `--suites` 跑指定 suite。
+  - 说明：branch 写 `verify.branch.json`（feature/bugfix/hotfix→smoke，
+    release→release；不含 commit）；smart/named 不落盘；真 named 命令来自
+    testing 文档 frontmatter。
 
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
   - 说明：进行中可记 tip；裁定收口后覆盖为无 commit 的 `code-review.md` 终稿（非
-    gate）。主链在 converge 后、verify full 前。进度只认 objectives 自勾。
+    gate）。主链在 converge 后、verify branch 前。进度只认 objectives 自勾。
     首轮按 roster.reviewers；后续增量并复核。默认 replicate；partition 按切片派工。
 
 - `$mdf fact update`

@@ -68,13 +68,13 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf design` | 确认设计、测试策略和共享代码底座 |
 | `$mdf write-tests` | 按目标编写可执行测试；不要求全绿 |
 | `$mdf implement` | 按已确认设计实现 |
-| `$mdf converge` | 收敛：前置 objectives 已勾 + on-site，自勾 converge |
+| `$mdf converge` | 收敛：前置 objectives 已勾 + smart，自勾 converge |
 | `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
 | `$mdf verify-fix [<bug-id>]` | 二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复） |
-| `$mdf verify --level on-site|full` | module 级验证；开发用 on-site，closeout 前用 full |
+| `$mdf verify --scope smart|branch|named` | module 级验证；开发用 smart，closeout 前用 full |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
-| `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify full 之后 |
-| `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify full / fact 已在主链完成） |
+| `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
+| `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify branch / fact 已在主链完成） |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
@@ -95,10 +95,10 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 统一骨架：
 
-`start → [design?] → 开发 → converge → code-review → verify full → fact → close-out`
+`start → [design?] → 开发 → converge → code-review → verify branch → fact → close-out`
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
-- converge 做 on-site 验收；verify full 为独立阶段。
+- converge 做 smart 验收；verify branch 为独立阶段。
 - 一个 feature 对应一个 PRP；`needs_design: yes` 时 design 提交共用底座。
 - start 始终独立 worktree。
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
@@ -140,12 +140,12 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - 死硬阻塞仍停止。
 - release 从 develop 开分支前确认发布目标。
   - 工作线三选一；目标里只写选中的那条。不实施新 PRP。
-  - 不联调：`start → [design?] → 开发 → converge → code-review → verify full →
-    fact audit → close-out`。开发/converge 用 on-site；full 与 fact 在 code-review 之后。
+  - 不联调：`start → [design?] → 开发 → converge → code-review → verify branch →
+    fact audit → close-out`。开发/converge 用 smart；full 与 fact 在 code-review 之后。
   - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
   - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
   - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
-  - fact audit（必要时 fact update）在 verify full 之后、close-out 之前。
+  - fact audit（必要时 fact update）在 verify branch 之后、close-out 之前。
     Goal 完成前，用户没让你停，永远不许停下来。
   - code-review 基线仍为上一正式发布。
 

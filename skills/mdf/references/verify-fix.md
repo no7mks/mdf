@@ -56,7 +56,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 脚本 | 核对 ready、待收入的 `fixed` Bug | doctor、list、参数 | 有清单则 2；空清单则结束 | 停止并报告 |
-| 2 | Verify | 约束 | 跑复现用例；失败则修并 `quick-run` | 命令、结果、quick-run | 3 | 可修或获批回 2；否则停 |
+| 2 | Verify | 约束 | 跑复现用例；失败则修并 smart（quick suite） | 命令、结果、smart | 3 | 可修或获批回 2；否则停 |
 | 3 | Review | 约束 | 只审这次修复的代码并裁定 | 范围 diff、结论 | 4 | 有可修回 2；需决定则停 |
 | 4 | Record | 脚本 | 写下二次验证记录并提交 | 记录、提交或会话报告 | 结束；finish 委托且改了实现则回 finish 4 | 停止 |
 
@@ -83,14 +83,14 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - ❌ 边界：
   - 不把对象标为 `closed`，不填 `fixed_in`。
   - 不跑 `$mdf verify run`，不按分支 kind 选择 suite，不因此跑 release suite。
-  - 可只读已有 `changes/unreleased/<slug>/verify.full.json`（须 `all_passed: true`）。
+  - 可只读已有 `changes/unreleased/<slug>/verify.branch.json`（须 `all_passed: true`）。
 
 ### 复现验证
 
 对清单中每个 Bug，对照其「所需回归证据」确认复现用例通过。
 
 - 取证：
-  - 当前分支为 bugfix/hotfix/release，且存在 `verify.full.json` 且 `all_passed: true` 时，
+  - 当前分支为 bugfix/hotfix/release，且存在 `verify.branch.json` 且 `all_passed: true` 时，
     直接读该文件：
     - 用 `results[].report.cases` 判断该 test 是否 passed。
     - 报告目录是 `results[].log`，其中才有 `summary.json`。
@@ -99,9 +99,14 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
       报告全绿不表示该复现用例已跑过。
   - 非上述分支、无可用报告，或 cases 未命中时，按 `docs/system/testing/` 的命令模板
     点名执行。证据另给可执行命令时运行该命令。
-- 只要求这些复现用例通过；本步修改了实现时另运行 `quick-run --repo "$REPO_ROOT"`，须退出 0。
-  - 成功读 stdout 的 `result`：`head`、逐项 `log` 与 quick `report`。
-  - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`），不把进度行当结果。
+- 只要求这些复现用例通过。
+- 本步修改了实现时，另对涉及 module 跑 smart（含 quick suite），须退出 0。
+  - CLI：`verify run --scope smart --repo "$REPO_ROOT"`。
+  - 用 `--paths` / `--module` 圈定涉及 module。
+  - 成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
+  - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
+  - 不把进度行当结果。
+  - ❌ 不调用 `$mdf verify --scope branch` 冒充本步。
 - 缺可执行复现命令时停止并报告，提示先 `$mdf fix` 补红灯，不在本步新造用例。
 - 失败且可修实现时原地修复并重验。
   - 可修复指同一失败未满三轮且下一步明确；否则视为无法完成。

@@ -60,7 +60,7 @@
 - 设计前从 `docs/README.md` 定位并读取相关当前事实页，
   在 design.md 列出当前事实锚点（页面路径）。
   - 没有对应事实页时写明本次将新增哪些页面。
-  - 不得把计划写进既有事实页，事实更新由主链 fact update（verify full 之后）完成。
+  - 不得把计划写进既有事实页，事实更新由主链 fact update（verify branch 之后）完成。
 - 提交前 Agent 自检 objectives.md 与 design.md 的本地链接目标存在。
 - 步骤 1 按 kind 核对依据：feature 为 PRP；bugfix 为 Bug；release 为版本与 objectives；
   hotfix 只核对版本，热修复范围在步骤 2 确认。

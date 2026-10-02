@@ -1,6 +1,6 @@
 # Fact Update
 
-工作分支上由主链在 **verify full 之后、close-out 之前** 于 fact audit 未通过时委托；
+工作分支上由主链在 **verify branch 之后、close-out 之前** 于 fact audit 未通过时委托；
 无 fact stage gate。独立调用仍可用。
 
 evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。

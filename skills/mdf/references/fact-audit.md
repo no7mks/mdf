@@ -90,7 +90,7 @@
   - 交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`。
   - 都没有才由 CLI 取 `merge-base develop HEAD`。
-  - 主链 release（verify full 之后、close-out 之前）传入上一正式发布为 `--base`。
+  - 主链 release（verify branch 之后、close-out 之前）传入上一正式发布为 `--base`。
   - 范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
     引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。

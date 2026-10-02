@@ -18,7 +18,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - 输出与错误：
   - 成功时命令向 stdout 输出 JSON。
   - 业务规则拒绝时 stderr 最后一行为 JSON 错误，并以非零状态退出。
-  - 长验证（`project-verify run`、`release-closeout`）期间
+  - 长验证（`verify run`、`release-closeout`）期间
     stderr 可含进度行与子进程原文。
   - 解析失败时取 stderr 最后一行 JSON；失败细节也可读落盘证据中的
     `stdout_tail` / `stderr_tail`。
@@ -64,7 +64,6 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `validate` | 确定性校验 | [只读命令](mdf-cli-inspect.md) |
 | `fact-audit` | 确定性审计 | [只读命令](mdf-cli-inspect.md) |
 | `prose-check` | 文档结构硬限制检查 | [只读命令](mdf-cli-inspect.md) |
-| `suite-run` | named suite 运行与报告校验 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `make-id` | 对象 ID | [只读命令](mdf-cli-inspect.md) |
 | `make-jot-id` | Jot ID | [只读命令](mdf-cli-inspect.md) |
 | `branch` | 分支解析 | [只读命令](mdf-cli-inspect.md) |
@@ -77,8 +76,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `prp-split` | 未开工 PRP 拆分 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `delivery` | 交付辅助（配置快照/并行；非进度关口） | [交付阶段与验证](mdf-cli-delivery.md) |
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
-| `project-verify` | 非 feature 全量验证（等价 verify full run） | [交付阶段与验证](mdf-cli-delivery.md) |
-| `quick-run` | 任意分支 lint、build、quick，不写证据 | [交付阶段与验证](mdf-cli-delivery.md) |
+| `verify` | module 级验证（smart / branch / named） | [交付阶段与验证](mdf-cli-delivery.md) |
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |

@@ -112,7 +112,7 @@
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线：start →（release：integrate）→ 可选 design → 开发 → converge →
-    code-review → verify full → fact audit → close-out；无对应未勾项则跳过。
+    code-review → verify branch → fact audit → close-out；无对应未勾项则跳过。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；
     ❌ 不因 roster `0,0` 强行进入 owner 开发或 converge。

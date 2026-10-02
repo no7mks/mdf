@@ -56,7 +56,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 | 1 | Check | 脚本 | 核对入口、分支、Bug 与回归 | doctor、list | open 或未过则 2；fixed 仍过则只读结束 | 停止并报告 |
 | 2 | Clarify | 约束 | 内部 clarify 修复范围与方案 | 共同理解 | 3 | 不修复，停止 |
 | 3 | Reproduce | 约束 | 确认或编写该 Bug 的有效红灯测试 | 命令、退出状态、失败断言 | 4 | 停止并报告 |
-| 4 | Repair | 约束 | 修到红灯转绿并 `quick-run` | 命令、退出状态、quick-run | 5 | 未满三轮且下一步明确则 4；否则停 |
+| 4 | Repair | 约束 | 修到红灯转绿并 smart（quick suite） | 命令、退出状态、smart | 5 | 未满三轮且下一步明确则 4；否则停 |
 | 5 | Record | 脚本 | 标为 `fixed`、校验并提交 | 对象、validate、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
@@ -127,12 +127,14 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - 验证顺序：
   1. 先让该红灯测试转绿。
   2. 再按所需回归证据重跑对应命令直到通过；记录命令、退出状态、结果及对应证据项。
-  3. 随后运行 `quick-run --repo "$REPO_ROOT"`（依次执行 manifest 的 lint、build、quick），须退出 0。
-     - 成功读 stdout 的 `result`：`head`、逐项 `log` 与 quick `report`。
+  3. 随后对涉及 module 跑 smart（含 quick suite），须退出 0。
+     - CLI：`verify run --scope smart --repo "$REPO_ROOT"`。
+     - 用 `--paths` / `--module` 圈定涉及 module。
+     - 成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
      - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
      - 不把进度行当结果，不为查看输出而重跑。
 - ❌ 不按分支 kind 选择 smoke 或 release，
-  不调用 `$mdf verify` 冒充本 intent 完成。
+  不调用 `$mdf verify --scope branch` 冒充本 intent 完成。
 - 不要求 feature 的 design/converge gate。
 - 自检发现本阶段可修复的实现问题时原地修复并重验。
   - 可修复指同一失败未满三轮且下一步修复动作明确；否则视为无法完成。
