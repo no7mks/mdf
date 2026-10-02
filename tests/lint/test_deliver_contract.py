@@ -76,6 +76,6 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
         "禁止 `move_agent_to_root`",
         "用角色绝对路径操作，不切会话根",
         "仅 Cursor 主 Agent 可按",
-        "横幅随绑定的 worktree/branch 更新",
+        "横幅随绑定的 worktree 更新",
     ):
         assert rule in text

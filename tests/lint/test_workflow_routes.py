@@ -323,17 +323,22 @@ def test_to_resolves_planning_aliases_and_enters_worktree():
     assert "不创建新的交付分支" in text
     assert "空目标" in text
 
-def test_common_banner_and_non_cursor_use_absolute_paths():
+def test_common_banner_and_non_cursor_use_bound_worktrees():
     common = workflow("common")
     entry = workflow("entry")
-    banner = "📍**<main-repo-name>@<branch>** 📂 `<worktree full path>`"
+    banner = "<logo_emoji> <main-repo-name>@<worktree-path>"
     for text in (common, entry):
         assert banner in text
         assert "不得在回复开头打印" in text
         assert "等待用户回复" in text
         assert "不再重复" in text
         assert "没有上一处横幅时不打印切换三行" in text
-        assert "等于该路径最后两级" in text
+        assert "git 主工作区" in text
+        assert "<main-repo-name>-worktrees/" in text
+        assert "保留完整层级" in text
+        assert "顶层 `logo`" in text
+        assert "<branch>" not in text
+        assert "worktree 或 branch 变化" not in text
         assert "每次回复只在第一行打印" not in text
         assert "不得在回复末尾再打印" not in text
     assert "禁止要求用户切换" in common
@@ -346,7 +351,9 @@ def test_common_banner_and_non_cursor_use_absolute_paths():
         "不在回复开头打印工作区横幅",
         "等待用户回复",
         "已是该行则不重复",
-        "等于 worktree 路径最后两级",
+        "git 主工作区",
+        "<main-repo-name>-worktrees/",
+        "顶层 `logo`",
     ):
         assert phrase in block
 

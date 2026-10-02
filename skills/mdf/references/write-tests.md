@@ -70,7 +70,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
   进入该 qa。
 - deliver 步骤 3 主 Agent 续办时禁止切会话与 `move_agent_to_root`，保持 owner；
   用 `git -C` 与绝对路径操作。
-- 绑定或切换成功后横幅用该 qa 的路径与分支；相对上一处变化时打印切换三行。
+- 绑定或切换成功后横幅用该 qa 的 worktree 路径；相对上一处变化时打印切换三行。
 
 再遵守：
 

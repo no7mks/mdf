@@ -125,7 +125,7 @@ def test_start_switches_agent_to_owner_worktree():
     assert "仅 Cursor 主 Agent" in common
     assert "全部 subagent" in common
     assert "禁止 `move_agent_to_root`" in common
-    assert "横幅必须用新路径与新分支" in common
+    assert "横幅必须用新路径与新项目 logo" in common
     assert "仅改绝对路径绑定" in common
     assert "<旧横幅>\n  ⬇️\n  <新横幅>" in common
     assert "实际输出为裸三行硬换行" in common
@@ -144,11 +144,12 @@ def test_start_switches_agent_to_owner_worktree():
     block = (
         skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md"
     ).read_text(encoding="utf-8")
-    assert "当前绑定的 worktree 与 branch" in block
+    assert "当前绑定的 worktree" in block
+    assert "worktree 与 branch" not in block
     assert "仅含 `⬇️` 的一行" in block
     assert "禁止把 `⬇️` 与横幅同一行" in block
     entry = workflow("entry")
-    assert "横幅必须用新路径与新分支" in entry
+    assert "横幅必须用新路径与新项目 logo" in entry
     assert "1. 旧横幅全文" in entry
     assert "2. 仅 `⬇️`" in entry
     assert "3. 新横幅全文" in entry
@@ -484,7 +485,7 @@ def test_role_intents_do_not_reuse_owner_session_switch():
     assert "禁止把主 Agent 会话切离 owner" in deliver
     assert "用角色绝对路径操作，不切会话根" in deliver
     assert "仅 Cursor 主 Agent 可按" in deliver
-    assert "横幅随绑定的 worktree/branch 更新" in deliver
+    assert "横幅随绑定的 worktree 更新" in deliver
     assert "仅一路未完成走步骤 3" in deliver
     assert "不走步骤 4" in deliver
 

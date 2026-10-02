@@ -97,7 +97,7 @@ owner 另开第二个。
   - hotfix 另写入已确认的热修复范围。
 - subagent 按 `common.md`「切换工作区」绝对路径绑定 owner；禁止新建 worktree、
   禁止要求用户切换；禁止 `move_agent_to_root`。
-  - 绑定成功后横幅用 owner 的路径与分支；相对上一处变化时打印切换三行。
+  - 绑定成功后横幅用 owner 的 worktree 路径；相对上一处变化时打印切换三行。
 
 执行约束：
 

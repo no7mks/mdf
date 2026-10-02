@@ -243,7 +243,8 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 
 ## Manifest
 
-`.mdf/manifest.yaml` 是控制面。
+`.mdf/manifest.yaml` 是控制面；可选顶层 `logo` 为横幅 emoji 字符串，缺省、`null`
+或空字符串时用 `📍`；直接编辑配置，init 保留已配置值。
 
 - `schema_version` 必须为 `3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased` 不是版本线值。
 - 八项`基线`键为 `glossary`、`user_guide`、`system_boundary`、`architecture`；
@@ -252,8 +253,7 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 - 验证命令**不在** manifest；写在 `.mdf/modules.yaml`。manifest 若仍含 `verification`
   报 `manifest.verification_moved`，由 `$mdf migrate` 收敛。
 - `implementation_roots` 是非空、互不重叠的仓库相对目录列表。
-  - 每个目录必须存在、不为符号链接且位于仓库内。
-  - `fact audit` 以其中被 Git 跟踪的常规文件作为实现覆盖范围。
+  - 每个目录必须存在、不为符号链接且位于仓库内；`fact audit` 只覆盖其中 Git 跟踪的常规文件。
   - 单 module 通常为 `[src]`；多 module 列出各 `<module>/src`。
 
 ## Modules

@@ -320,7 +320,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 - 所有命令显式指定该 worktree 的工作目录或 `git -C`，文件写入使用该 worktree 下的绝对路径。
 - 不得假设 subagent 继承主 Agent cwd；工具自动分配的其他 worktree 不替代 MDF 角色树。
 - 仅 Cursor 主 Agent 可按 `common.md` 调用 `move_agent_to_root`；其他宿主与
-  subagent 一律绝对路径绑定，横幅随绑定的 worktree/branch 更新。
+  subagent 一律绝对路径绑定，横幅随绑定的 worktree 更新。
 - 不能绑定并验证指定路径时停止，不在默认目录开工。
 - 审查者验证 owner 与 review_head，不合并或写入。
 

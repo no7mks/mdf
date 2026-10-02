@@ -66,7 +66,7 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
   owner 另开第二个。
 - subagent 绝对路径绑定 owner；禁止新建 worktree、禁止要求用户切换；
   禁止 `move_agent_to_root`。
-- 绑定成功后横幅用 owner 的路径与分支。
+- 绑定成功后横幅用 owner 的 worktree 路径。
 - 结束后核对 objectives 的 converge 项已勾；不以 gate 文件代替。
 - 需测试修改批准时 subagent 停止并交出未决；主会话确认后 resume
 同一 subagent：

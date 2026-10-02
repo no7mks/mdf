@@ -99,16 +99,18 @@ upgrade 不读取本文件。
 
 横幅标识当前工作区，不在回复开头打印。单行格式固定：
 
-`` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``
+`<logo_emoji> <main-repo-name>@<worktree-path>`
 
+- `<logo_emoji>`：当前目标项目 `.mdf/manifest.yaml` 的顶层 `logo`；
+  manifest 不存在、字段缺省、`null` 或空字符串时用 `📍`。
 - `<main-repo-name>`：主仓库目录名（`git-common-dir` 的父目录名）。
-- `<worktree full path>`：本会话当前绑定的目标 worktree 绝对路径；未绑定则
-  `git rev-parse --show-toplevel`。
-- `<branch>`：对该绑定路径执行 `git -C <工作根> branch --show-current`；
-  detached 时 `HEAD`；非 Git 时 `-`。
-- 进入或重新绑定目标后，横幅必须用新路径与新分支，不得沿用上一处绑定。
-- `<branch>` 等于该路径最后两级（用 `/` 连接）时，不打印 `📂` 与目录。
-- 相对上一处横幅，worktree 或 branch 变化时立刻连续打印恰好三行（硬换行）：
+- 工作根：本会话当前绑定的目标 worktree 绝对路径；未绑定则
+  `git rev-parse --show-toplevel`，非 Git 时用当前工作目录。
+- `<worktree-path>`：工作根为 Git 主 worktree 时显示字面量 `git 主工作区`；
+  其他 worktree 显示相对于主仓库同级 `<main-repo-name>-worktrees/` 的路径，
+  用 `/` 连接并保留完整层级；非 Git 时显示工作根绝对路径。
+- 进入或重新绑定目标后，横幅必须用新路径与新项目 logo，不得沿用上一处绑定。
+- 相对上一处横幅，worktree 变化时立刻连续打印恰好三行（硬换行）：
 
   ```text
   <旧横幅>

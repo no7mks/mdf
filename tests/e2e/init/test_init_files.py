@@ -66,6 +66,7 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     assert agents.count("<!-- MDF:END -->") == 1
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
     assert "state: initializing" in manifest
+    assert 'logo: "📍"' in manifest
     assert "latest_release: null" in manifest
     assert "verification:" not in manifest
     modules = (repo / ".mdf" / "modules.yaml").read_text(encoding="utf-8")
@@ -169,11 +170,18 @@ def test_init_writes_files_from_assets_templates(
     )
 
 
+@pytest.mark.parametrize("logo, expected", [
+    (None, "📍"), ("null", "📍"), ('""', "📍"), ('"📍"', "📍"), ('"🚀"', "🚀"),
+])
 def test_init_updates_existing_manifest_and_managed_block(
-    python_exe: str, tmp_path: Path
+    python_exe: str, tmp_path: Path, logo: str | None, expected: str
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    manifest_path = repo / ".mdf" / "manifest.yaml"
+    if logo is not None:
+        with manifest_path.open("a", encoding="utf-8") as stream:
+            stream.write(f"logo: {logo}\n")
     arguments = [
         "init",
         "--repo",
@@ -188,6 +196,7 @@ def test_init_updates_existing_manifest_and_managed_block(
 
     manifest = (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
     assert "schema_version: 3" in manifest
+    assert f'logo: "{expected}"' in manifest
     assert 'latest_release: "1.2.0"' in manifest
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
     assert agents.count("<!-- MDF:BEGIN -->") == 1

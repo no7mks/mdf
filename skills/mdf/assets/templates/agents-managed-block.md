@@ -35,10 +35,14 @@
   `adr-` 前缀），不得省略前缀或只写序号/短码/slug。
 - 仅在用户显式调用 `$mdf …` 时执行对应 MDF 流程，不自动触发其他用户入口。
 - 不在回复开头打印工作区横幅。单行格式：
-  `` 📍**<main-repo-name>@<branch>** 📂 `<worktree full path>` ``。
-- 横幅用本会话当前绑定的 worktree 与 branch；重新绑定后不得沿用旧值。
-- `<branch>` 等于 worktree 路径最后两级时，不打印 `📂` 与目录。
-- worktree 或 branch 相对上一处变化时连续打印恰好三行（硬换行）：旧横幅、
+  `<logo_emoji> <main-repo-name>@<worktree-path>`。
+- logo 取当前目标项目 manifest 顶层 `logo`；manifest 不存在、字段缺省、`null`
+  或空字符串时用 `📍`。repo name 为 Git 主仓库目录名。
+- 横幅用本会话当前绑定的 worktree；重新绑定后不得沿用旧值。
+- 主 worktree 显示字面量 `git 主工作区`；其他 worktree 显示相对于主仓库同级
+  `<main-repo-name>-worktrees/` 的路径，用 `/` 连接并保留完整层级。
+  - 未绑定时用 `git rev-parse --show-toplevel`；非 Git 时显示当前工作目录绝对路径。
+- worktree 相对上一处变化时连续打印恰好三行（硬换行）：旧横幅、
   仅含 `⬇️` 的一行、新横幅。
   - ❌ 禁止把 `⬇️` 与横幅同一行，禁止三行间插空行或其它文字。
   - 含仅改绝对路径绑定、未切换会话根的情况。

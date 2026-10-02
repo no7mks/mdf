@@ -12,6 +12,7 @@ from .constants import (
     TESTING_INDEX,
 )
 from .errors import MDFError
+from .paths import load_manifest, manifest_path
 from .yamlutil import yaml_quote
 
 
@@ -77,10 +78,12 @@ def render_manifest(
     baselines: dict[str, dict[str, str]],
     latest_release: str | None,
     implementation_roots: list[str],
+    logo: str | None = None,
 ) -> str:
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
         "state: initializing",
+        f"logo: {yaml_quote(logo or '📍')}",
         "versioning:",
         "  strategy: semver",
         (
@@ -144,11 +147,13 @@ def init_files(
 ) -> dict[Path, str]:
     from .modules_check import render_modules_yaml
 
+    logo = load_manifest(repo).get("logo") if manifest_path(repo).is_file() else None
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
             latest_release,
             implementation_roots,
+            logo=logo,
         )
     }
     modules = repo / ".mdf" / "modules.yaml"

@@ -3,6 +3,7 @@
 # 删除所有 {{MDF_...}} 标记。
 schema_version: 3
 state: initializing
+logo: "📍"
 versioning:
   strategy: semver
   latest_release: {{MDF_QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
