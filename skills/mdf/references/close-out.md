@@ -96,8 +96,8 @@
 - 入口前置：主链须已完成 verify full（有效 `verify.full.json`）与 fact audit；
   本 intent 不再内嵌二者。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
-- 步骤 2 建议 squash 时先内部执行 `references/squash.md` 的 dry-run；
-  用户确认执行后再内部执行完整 `references/squash.md`。
+- 步骤 2 可选 squash：先内部执行 `references/squash.md` 的 dry-run，确认执行后再
+  内部执行完整 `references/squash.md`。
 - 步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -151,12 +151,12 @@
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
 
 - **可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
-  - 读 `delivery-contract.md`「是否建议」启发式，决定是否向用户建议整理。
-  - 若建议：内部执行 `references/squash.md` 的 dry-run，展示地板/切段/message
-    建议；不可压则跳过。
-  - 用户确认执行后，再内部执行完整 `references/squash.md`（可复用同会话 dry-run
-    计划）。
-  - 拒绝、不适用、dry-run 不可压或未确认执行 → 跳过。
+  - 先内部执行 `references/squash.md` 的 dry-run（由 squash 定地板/切段/message）。
+  - dry-run 不可压或失败 → 跳过。
+  - 用 `delivery-contract.md`「是否建议」启发式（地板取 dry-run 计划）决定是否向
+    用户展示该建议；未达信号也可展示。
+  - 用户确认执行后，再内部执行完整 `references/squash.md`（可复用同会话计划）。
+  - 拒绝展示、拒绝执行或未确认 → 跳过。
   - ❌ `--auto-pilot` / `--yolo` 不得擅自 squash；禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：

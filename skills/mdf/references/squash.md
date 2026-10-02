@@ -17,14 +17,15 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 │ 2 Plan                           │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 不可压 ───────→ [报告并停止]
-                 ├──── --dry-run ────→ [展示建议并结束]
+                 ├──── 不可压或失败 ────→ [报告并停止]
+                 ├──── --dry-run ───────→ [展示建议并结束]
                  │
                  ▼ 完整调用
 ┌──────────────────────────────────┐
 │ 3 Confirm                        │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 未确认 ──────→ 3 Confirm
                  ├──── 用户拒绝 ────→ [结束]
                  │
                  ▼ 已确认
@@ -48,13 +49,13 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 - 读取 `references/common.md`。
 - 读取 `references/delivery-contract.md`「可选历史整理（squash）」：
   地板、禁止项、切法定型与手段。
-- 「是否建议」启发式由调用方选用；本 intent 不决定是否激活。
+- 「是否建议」启发式由调用方在 dry-run 计划之上选用；本 intent 不决定是否激活。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 约束 | 核交付上下文与改写门禁 | 可进入 | 2 | 停止 |
-| 2 | Plan | 约束 | 定地板、定型切段、起草 message | 建议计划 | dry-run 结束；否则 3 | 不可压则停 |
-| 3 | Confirm | 约束 | 用户确认计划（地板、段界、messages） | 已确认计划 | 4 | 拒绝则结束 |
+| 2 | Plan | 约束 | 定地板、定型切段、起草 message | 建议计划 | dry-run 结束；否则 3 | 不可压或失败则停 |
+| 3 | Confirm | 约束 | 用户确认计划（地板、段界、messages） | 已确认计划 | 4 | 未确认留 3；拒绝结束 |
 | 4 | Execute | 约束 | soft reset 后按段界 restore 并 commit | 新提交链 | 5 | 保留现场并停止 |
 | 5 | Verify | 约束 | 树与旧 tip 一致且 start_commit 仍祖先 | 空 diff、clean | 结束 | 保留现场并停止 |
 
@@ -66,8 +67,6 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 ### 入口与门禁
 
 <a id="s1"></a>
-
-**入口**
 
 - 解析 Git 根；工作区对已跟踪改动须 clean。
 - 须在交付分支：读当前交付材料的 `delivery.json`，取 `start_commit`；
@@ -83,13 +82,13 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 <a id="s2"></a>
 
-**定型**
-
 - 按 contract **地板**规则计算地板（交付地板与他人抬升取较晚者）。
   - 不可压（地板缺失、区间空、tip 他人等）→ 报告原因并停止。
-- Jev/Agent 定型**几段与切法**（`noul` / `choice` / `run`）；**不写** message。
+- Jev/Agent 定型**几段与切法**（`noul` / `choice` / `run`，见 `common.md`）；
+  **不写** message。
   - 段界 = 有序 tip 列表（均在地板..HEAD；末段 = 当前 HEAD；≥1 段）。
 - 主 Agent 撰写每段中文 Conventional Commit message（含 Bug 的段保留完整 Bug ID）。
+- 定型或撰写失败 → 报告并停止。
 - 产出建议计划：地板 hash、段界 tip、messages、旧 tip。
 - `--dry-run`：展示建议计划后结束；❌ 不 reset、不 commit。
 - 同会话若已有未过期 dry-run 计划且 HEAD 仍为该旧 tip，完整调用可复用，不必重算。
@@ -98,18 +97,14 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 <a id="s3"></a>
 
-**确认**
-
 - 向用户展示建议计划；须明确确认地板、段界与 messages。
-- 拒绝 → 结束，不改写。
+- 答复不明 → 留在本步再问；拒绝 → 结束，不改写。
 - 修改段界或 message 后须再确认；❌ 不得在未确认下进入执行。
 - close-out 委托：用户已对 dry-run 建议确认「执行」时，本步可直接采信该确认。
 
 ### 执行
 
 <a id="s4"></a>
-
-**执行**
 
 - 只使用已确认计划；先记下旧 tip 完整 hash。
 - `git reset --soft <地板>`
@@ -126,8 +121,6 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 ### 校验
 
 <a id="s5"></a>
-
-**校验**
 
 - `git diff <旧 tip> HEAD` 必须为空。
 - `start_commit` 仍为 HEAD 祖先。

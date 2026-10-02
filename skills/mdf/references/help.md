@@ -351,7 +351,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf close-out` 或 `$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 verify-fix。合入目标
-    主线前可 dry-run 建议 squash，确认执行后再委托完整 `$mdf squash`。
+    主线前先 squash dry-run，再按启发式决定是否展示；确认后完整执行。
 
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`

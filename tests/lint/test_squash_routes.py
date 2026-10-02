@@ -4,7 +4,7 @@ from __future__ import annotations
 from support_routes import workflow
 
 
-def test_squash_plans_and_closeout_uses_dry_run_then_execute():
+def test_squash_plans_and_closeout_dry_run_before_heuristic():
     squash = workflow("squash")
     finish = workflow("close-out")
     contract = workflow("delivery-contract")
@@ -17,11 +17,16 @@ def test_squash_plans_and_closeout_uses_dry_run_then_execute():
     assert "几段与切法" in squash
     assert "不得改写已确认 message" in squash
     assert "展示建议并结束" in squash
+    assert "未确认留 3" in squash or "未确认 ──────→ 3 Confirm" in squash
+    assert "不可压或失败" in squash
     assert "references/squash.md" in finish
     assert "dry-run" in finish and "--dry-run" not in finish
+    assert "先内部执行" in finish and "dry-run" in finish
+    assert "地板取 dry-run 计划" in finish or "计划中的地板" in contract
     assert "[委托 squash 后继续本步]" in finish
     assert "dry-run 建议且用户确认执行" in finish
     assert "公开 `$mdf squash` 负责" in contract or "公开 `$mdf squash` 承担" in contract
+    assert "dry-run 计划" in contract
     assert "$mdf squash" in workflow("help")
     assert "[--dry-run]" in workflow("help")
     converge = workflow("converge")

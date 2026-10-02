@@ -364,12 +364,15 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 
 ### 是否建议（可选启发式）
 
-无硬门槛。可先收集信号再交 Jev/Agent 定型（`noul` / `choice`）：
+无硬门槛。调用方先取得 `$mdf squash` dry-run 计划，再用计划中的地板收集信号，
+交 Jev/Agent 定型是否展示（`noul` / `choice`）：
 
 - `git rev-list --count <地板>..HEAD` ≥ 5；或
-- `git log --oneline <地板>..HEAD` 含 ≥2 条标题匹配 `wip|fixup|tmp|临时`（大小写不敏感）。
+- `git log --oneline <地板>..HEAD` 含 ≥2 条标题匹配 `wip|fixup|tmp|临时`
+  （大小写不敏感）。
 
-未达信号也可建议；用户拒绝或信号不足则跳过。
+- 未达信号也可展示 dry-run 建议。
+- 用户拒绝或调用方决定不展示 → 跳过执行。
 
 ### 手段（只允许 soft reset）
 
