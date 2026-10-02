@@ -67,6 +67,7 @@ class Module:
 class ModulesConfig:
     modules: dict[str, Module] = field(default_factory=dict)
     budgets: dict[str, int] = field(default_factory=dict)
+    overrides: dict[str, str] = field(default_factory=dict)
 
     def names(self) -> list[str]:
         return sorted(self.modules)
@@ -84,16 +85,14 @@ class ModulesConfig:
         return ownership
 
     def verification(self) -> Verification:
-        """Repo 级入口 = 各 module 同名命令按名称排序后用 ` && ` 连接。"""
-        commands: dict[str, str] = {}
-        for entry in ENTRIES:
-            parts = [
-                self.modules[name].command(entry) for name in self.names()
-            ]
-            commands[entry] = " && ".join(parts)
+        """默认按 module 串行展开；顶层 verification 覆写的入口用单命令。"""
+        module_commands = {
+            name: {entry: self.modules[name].command(entry) for entry in ENTRIES}
+            for name in self.names()
+        }
         budgets = dict(DEFAULT_BUDGETS)
         budgets.update(self.budgets)
-        return Verification(commands, budgets)
+        return Verification(module_commands, dict(self.overrides), budgets)
 
     def modules_for_paths(self, repo: Path, paths: list[str]) -> list[str]:
         hit: set[str] = set()
@@ -143,7 +142,7 @@ def load_modules(repo: Path) -> ModulesConfig:
 def parse_modules(raw: Any) -> ModulesConfig:
     if not isinstance(raw, dict):
         raise MDFError("modules.yaml 根必须是 mapping", code="modules_invalid")
-    extra = set(raw) - {"modules", "budgets"}
+    extra = set(raw) - {"modules", "budgets", "verification"}
     if extra:
         raise MDFError(
             f"modules.yaml 含未知键: {sorted(extra)}",
@@ -156,6 +155,7 @@ def parse_modules(raw: Any) -> ModulesConfig:
             code="modules_invalid",
         )
     budgets = _parse_budgets(raw.get("budgets", {}))
+    overrides = _parse_overrides(raw.get("verification"))
     modules: dict[str, Module] = {}
     seen_named: set[str] = set()
     for name, body in modules_raw.items():
@@ -171,7 +171,30 @@ def parse_modules(raw: Any) -> ModulesConfig:
             )
         module = _parse_module(name, body, seen_named)
         modules[name] = module
-    return ModulesConfig(modules=modules, budgets=budgets)
+    return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides)
+
+
+def _parse_overrides(raw: Any) -> dict[str, str]:
+    """顶层 verification：可只覆写五集中的若干项；空 mapping / 缺省 = 无覆写。"""
+    if raw is None or raw == {}:
+        return {}
+    if not isinstance(raw, dict):
+        raise MDFError(
+            "verification 必须是 mapping",
+            code="modules_invalid",
+        )
+    extra = set(raw) - set(ENTRIES)
+    if extra:
+        raise MDFError(
+            f"verification 含未知键: {sorted(extra)}",
+            code="modules_invalid",
+        )
+    overrides: dict[str, str] = {}
+    for name, value in raw.items():
+        overrides[name] = _nonempty_command(
+            value, f"verification.{name}"
+        )
+    return overrides
 
 
 def match(path: str, pattern: str) -> bool:

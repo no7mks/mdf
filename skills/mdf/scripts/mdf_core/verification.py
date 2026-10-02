@@ -15,10 +15,16 @@ MIGRATE_HINT = "；用 $mdf migrate 收敛到当前契约"
 
 
 class Verification:
-    """已校验的验证视图：commands 为入口名 -> 命令，budgets 为 suite -> 秒数。"""
+    """验证视图：默认按 module 串行展开；repo 级 verification 可覆写单入口。"""
 
-    def __init__(self, commands, budgets):
-        self.commands = commands
+    def __init__(
+        self,
+        module_commands: dict[str, dict[str, str]],
+        overrides: dict[str, str],
+        budgets: dict[str, int],
+    ):
+        self.module_commands = module_commands
+        self.overrides = overrides
         self.budgets = budgets
 
     def budget(self, name):
@@ -26,17 +32,47 @@ class Verification:
 
     def plan(self, suite):
         names = [*STEPS, "quick"] + ([suite] if suite != "quick" else [])
+        items = []
+        for entry in names:
+            items.extend(self._items_for_entry(entry))
+        return items
+
+    def _items_for_entry(self, entry: str) -> list[dict]:
+        budget = self.budget(entry)
+        if entry in self.overrides:
+            return [
+                {
+                    "id": entry,
+                    "command": self.overrides[entry],
+                    "budget": budget,
+                    "entry": entry,
+                }
+            ]
+        if not self.module_commands:
+            raise MDFError(
+                f"验证入口 {entry} 既无 module 命令也无 repo 覆写",
+                code="invalid_verification",
+            )
         return [
             {
-                "id": name,
-                "command": self.commands[name],
-                "budget": self.budget(name),
+                "id": f"{entry}:{module}",
+                "command": self.module_commands[module][entry],
+                "budget": budget,
+                "entry": entry,
+                "module": module,
             }
-            for name in names
+            for module in sorted(self.module_commands)
         ]
 
     def config(self):
-        return {"commands": self.commands, "budgets": self.budgets}
+        return {
+            "overrides": dict(sorted(self.overrides.items())),
+            "modules": {
+                name: dict(commands)
+                for name, commands in sorted(self.module_commands.items())
+            },
+            "budgets": dict(sorted(self.budgets.items())),
+        }
 
 
 def required_suite(kind):
@@ -85,7 +121,7 @@ def parse_suite_names(raw):
 
 
 def validate_verification(raw):
-    """兼容旧 manifest.verification 形状；新仓以 modules 为准。"""
+    """完整五集命令视图（初始化 CLI 等）；全部视为 repo 覆写，不展开 module。"""
     if (
         not isinstance(raw, dict)
         or set(raw) - {*ENTRIES, "budgets"}
@@ -96,7 +132,7 @@ def validate_verification(raw):
             "与可选 budgets" + MIGRATE_HINT,
             code="invalid_verification",
         )
-    commands = {}
+    overrides = {}
     for name in ENTRIES:
         value = raw[name]
         if not isinstance(value, str) or not value.strip():
@@ -104,7 +140,7 @@ def validate_verification(raw):
                 f"verification.{name} 必须为非空命令",
                 code="invalid_verification",
             )
-        commands[name] = value
+        overrides[name] = value.strip()
     budgets = raw.get("budgets", {})
     if (
         not isinstance(budgets, dict)
@@ -120,11 +156,11 @@ def validate_verification(raw):
             "verification.budgets 只接受 quick、smoke、release 的正整数秒数",
             code="invalid_verification",
         )
-    return Verification(commands, dict(budgets))
+    return Verification({}, overrides, dict(budgets))
 
 
 def repo_verification(repo: Path):
-    """从 `.mdf/modules.yaml` 构建 repo 级 Verification（并集命令）。"""
+    """从 `.mdf/modules.yaml` 构建 repo 级 Verification（默认按 module 串行展开）。"""
     from .modules import load_modules
 
     return load_modules(repo).verification()

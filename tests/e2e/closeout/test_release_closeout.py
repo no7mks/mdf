@@ -60,9 +60,11 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
         ("true", 0), ("true", 0), (SUITE_OK, 0), (SUITE_OK, 0),
     ]
     assert "report" not in results[0]
-    assert results[3]["report"]["suite"] == "release"
-    assert results[3]["report"]["tests"] == 1
-    assert (repo / results[3]["report"]["path"] / "summary.json").is_file()
+    release_item = next(
+        item for item in results if item.get("report", {}).get("suite") == "release"
+    )
+    assert release_item["report"]["tests"] == 1
+    assert (repo / release_item["report"]["path"] / "summary.json").is_file()
     assert ".mdf/reports" not in git(repo, "status", "--porcelain", "--ignored=no").stdout
     release_dir = repo / "changes" / "1.3.0"
     assert (release_dir / "CHANGE.md").is_file()
@@ -299,7 +301,10 @@ def test_closeout_reuses_valid_project_verify_evidence(python_exe: str, tmp_path
         "changes/unreleased/1.3.0/verify.full.json"
     )
     assert runs.read_text() == "run\n"
-    assert applied["verification"]["results"][3]["report"]["suite"] == "release"
+    assert any(
+        item.get("report", {}).get("suite") == "release"
+        for item in applied["verification"]["results"]
+    )
 
 
 def test_closeout_reuses_after_impl_change_when_report_still_green(
@@ -348,7 +353,7 @@ def test_closeout_fails_when_command_sequence_mismatches(
     evidence = json.loads(path.read_text())
     # 伪造与当前 plan 不一致的 command；closeout 不得重跑验证
     for item in evidence["results"]:
-        if item.get("id") == "release":
+        if item.get("id") in {"release", "release:default"}:
             item["command"] = "echo forged-mismatch"
     path.write_text(json.dumps(evidence) + "\n")
     git(repo, "add", "--all")

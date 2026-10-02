@@ -36,9 +36,11 @@ def test_feature_project_verify_runs_lint_build_quick_smoke(python_exe, tmp_path
     payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
     evidence = json.loads((root / "verify.full.json").read_text())
     assert [item["id"] for item in evidence["results"]] == [
-        "lint", "build", "quick", "smoke",
+        "lint:default", "build:default", "quick:default", "smoke:default",
     ]
-    assert [item["budget"] for item in evidence["results"]] == [None, None, 30, 300]
+    assert [item["budget"] for item in evidence["results"]] == [
+        None, None, 30, 300,
+    ]
     assert evidence["suites"] == ["quick", "smoke"]
     assert evidence["all_passed"] is True
     payload(record(python_exe, repo, "converge"))
@@ -53,7 +55,9 @@ def test_suite_over_budget_fails(python_exe, tmp_path):
     result = mdf(python_exe, "project-verify", "run", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
     evidence = json.loads((root / "verify.full.json").read_text())
-    quick = next(item for item in evidence["results"] if item["id"] == "quick")
+    quick = next(
+        item for item in evidence["results"] if item["id"] == "quick:default"
+    )
     assert quick["passed"] is False
     assert quick["budget"] == 1
     assert evidence["all_passed"] is False

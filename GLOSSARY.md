@@ -29,7 +29,8 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 - `lint`、`build`。
 - `quick`、`smoke`、`release` 三个 suite（含 `command` 与 `tests` glob）。
-- 可选 `budgets` 覆盖 suite 预算；repo 级入口为各 module 同名命令的并集。
+- 可选 `budgets` 覆盖 suite 预算；repo 级默认按 module 串行展开同名入口，
+  可用顶层 `verification` 覆写单项。
 
 ## Module
 
@@ -40,8 +41,8 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 
 - **on-site**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
   test/testcase；converge 验收使用。
-- **full**：全 module 的 lint/build/quick + 套件并集（feature/bugfix/hotfix→smoke，
-  release→release）；写入 `verify.full.json`（不含 commit）。
+- **full**：全 module 的 lint/build/quick + 套件（feature/bugfix/hotfix→smoke，
+  release→release），默认按 module 串行展开；写入 `verify.full.json`（不含 commit）。
   主链在 code-review 之后、fact audit / close-out 之前跑。
 
 ## Test、test case 与 suite

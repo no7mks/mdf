@@ -18,7 +18,9 @@ def test_plan_runs_steps_then_quick_then_target_with_budgets():
         ("lint", None), ("build", None), ("quick", 45), ("smoke", 300),
     ]
     assert [item["id"] for item in config.plan("quick")] == ["lint", "build", "quick"]
-    assert config.plan("release")[-1] == {"id": "release", "command": "r", "budget": None}
+    assert config.plan("release")[-1] == {
+        "id": "release", "command": "r", "budget": None, "entry": "release",
+    }
 
 
 @pytest.mark.parametrize("raw", [

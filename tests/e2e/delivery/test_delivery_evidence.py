@@ -103,7 +103,9 @@ def test_bugfix_requires_named_suite_and_runs_smoke(python_exe, tmp_path):
     path = work / "changes/unreleased/bug-cd34/verify.full.json"
     evidence = json.loads(path.read_text())
     assert evidence["suites"] == ["quick", "smoke"]
-    assert [item["id"] for item in evidence["results"]] == ["lint", "build", "quick", "smoke"]
+    assert [item["id"] for item in evidence["results"]] == [
+        "lint:default", "build:default", "quick:default", "smoke:default",
+    ]
     assert "commit" not in evidence
 
 
@@ -131,9 +133,9 @@ def test_release_runs_release_suite(python_exe, tmp_path):
     evidence = json.loads(path.read_text())
     assert evidence["suites"] == ["quick", "release"]
     assert [item["id"] for item in evidence["results"]] == [
-        "lint",
-        "build",
-        "quick",
-        "release",
+        "lint:default",
+        "build:default",
+        "quick:default",
+        "release:default",
     ]
     assert "commit" not in evidence

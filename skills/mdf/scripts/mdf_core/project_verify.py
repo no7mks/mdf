@@ -52,6 +52,7 @@ def run_targets(repo, targets):
     total = len(targets)
     for index, item in enumerate(targets, 1):
         try:
+            entry = item.get("entry") or item["id"].split(":", 1)[0]
             detail = run_verify_command(
                 repo,
                 item["command"],
@@ -59,9 +60,8 @@ def run_targets(repo, targets):
                 index=index,
                 total=total,
                 timeout=item.get("budget"),
-                entry=item.get("entry", item["id"]),
-                junit=item.get("entry", item["id"]) in SUITES
-                or item["id"].split(":")[-1] in SUITES,
+                entry=entry,
+                junit=entry in SUITES,
             )
             results.append({**item, **detail, "passed": True})
         except MDFError as exc:

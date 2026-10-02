@@ -153,7 +153,11 @@ def init_files(
     }
     modules = repo / ".mdf" / "modules.yaml"
     if not modules.exists():
-        commands = verification.get("commands", verification)
+        overrides = verification.get("overrides")
+        if isinstance(overrides, dict) and overrides:
+            commands = overrides
+        else:
+            commands = verification.get("commands", verification)
         budgets = verification.get("budgets", {})
         sourceset = [f"{root}/**" for root in implementation_roots]
         files[modules] = render_modules_yaml(

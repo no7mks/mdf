@@ -14,7 +14,8 @@
 - `基线`：`manifest.baselines` 对八项当前状态主题的声明；每项为有证据的文档，
   或带理由的 `not_applicable`。
 - `验证命令`：`.mdf/modules.yaml` 中按 module 声明的五个入口：`lint`、`build`；
-  以及 `quick`、`smoke`、`release` 三个 suite；repo 级为各 module 同名入口的并集。
+  以及 `quick`、`smoke`、`release` 三个 suite。repo 级默认按 module **串行展开**；
+  可用顶层 `verification` 覆写其中一项或多项为单命令。
 - `验证 suite`：test case 的具名集合。全局 suite 由 modules 声明并由 Core 执行；
   named suite 隶属 module，每个 suite 必须有 `docs/system/testing/<name>.md`。
 - `module`：`.mdf/modules.yaml` 中的交付单元，含 sourceset、ignore 与分套件命令。
@@ -206,7 +207,7 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
   - 运行时配置属于 `docs/system/operations/configuration.md`；
     测试分类、失败语义、skip 与各 suite 属于 `docs/system/testing/`。
   - 开头一张验证卡片只列环境要求与 `.mdf/modules.yaml` 的五个验证入口
-    （repo 级并集），不列 named suite 或单个测试的命令；
+    （默认按 module 串行），不列 named suite 或单个测试的命令；
     须含 `docs/system/overview.md`、`docs/README.md` 与
     `docs/system/testing/index.md`，不展开核心模块表。
   - 接口、数据与运行时行为不复述 `docs/system/` 事实页。
@@ -263,6 +264,8 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 `.mdf/modules.yaml` 声明每个 module 的 sourceset、ignore 与分套件入口：
 
 ```yaml
+# verification:          # 可选；覆写的入口不再按 module 展开
+#   lint: "make -j1 lint"
 modules:
   default:
     sourceset: ["src/**"]
@@ -289,7 +292,9 @@ budgets:
 - **ignore**：`pattern` + `reason`；命中路径不触发 verify，也不产生 uncovered /
   `agents.size` 类提示（`pattern: AGENTS.md` 可记住 AGENTS 警告）。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
-- repo 级同名入口 = 各 module 命令按名称排序后用 ` && ` 连接。
+- repo 级同名入口默认按 module 名排序**串行展开**执行（plan id 为
+  `<entry>:<module>`）；可选顶层 `verification` 覆写子集为单命令（id 为
+  `<entry>`）。`budgets` 仍为顶层可选。
 - `named` 中每个名字必须有独立文档 `docs/system/testing/<name>.md`，写明目的与
   testcase 构成；testcase 本身靠代码 frontmatter/stringdoc，不另建 docs。
 - 初始化仍可通过 CLI 传入 `--lint` 等，写入默认 module。

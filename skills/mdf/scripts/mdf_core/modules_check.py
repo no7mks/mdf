@@ -103,23 +103,29 @@ def render_modules_yaml(
 def module_commands(
     config: ModulesConfig, names: list[str], entry: str
 ) -> list[dict[str, Any]]:
-    """按 module 拆开的入口，供 on-site / full 执行。"""
-    targets = []
-    for name in names:
-        module = config.get(name)
-        budget = None
-        if entry in SUITES:
-            budget = config.budgets.get(entry, DEFAULT_BUDGETS.get(entry))
-        targets.append(
+    """按 module 拆开的入口，供 on-site 执行；id 为 entry:module。"""
+    budget = None
+    if entry in SUITES:
+        budget = config.budgets.get(entry, DEFAULT_BUDGETS.get(entry))
+    if entry in config.overrides:
+        return [
             {
-                "id": f"{name}:{entry}",
-                "module": name,
+                "id": entry,
                 "entry": entry,
-                "command": module.command(entry),
+                "command": config.overrides[entry],
                 "budget": budget,
             }
-        )
-    return targets
+        ]
+    return [
+        {
+            "id": f"{entry}:{name}",
+            "module": name,
+            "entry": entry,
+            "command": config.get(name).command(entry),
+            "budget": budget,
+        }
+        for name in sorted(names)
+    ]
 
 
 def _match_tests(tracked: list[str], patterns: tuple[str, ...]) -> set[str]:

@@ -73,8 +73,13 @@ def test_project_verify_progress_uses_global_total(python_exe, tmp_path):
     work = Path(created["worktree"])
     result = mdf(python_exe, "project-verify", "run", "--repo", str(work))
     payload(result)
-    lines = [f"[{index}/4] start {name}"
-             for index, name in enumerate(("lint", "build", "quick", "release"), 1)]
+    lines = [
+        f"[{index}/4] start {name}"
+        for index, name in enumerate(
+            ("lint:default", "build:default", "quick:default", "release:default"),
+            1,
+        )
+    ]
     assert [result.stderr.index(line) for line in lines] == sorted(
         result.stderr.index(line) for line in lines
     )

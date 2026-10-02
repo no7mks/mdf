@@ -8,9 +8,10 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
     evidence = json.loads((root / "verify.full.json").read_text())
     reports = {item["id"]: item.get("report") for item in evidence["results"]}
-    assert reports["lint"] is None and reports["build"] is None
-    assert reports["quick"]["suite"] == "quick" and reports["smoke"]["tests"] == 1
-    assert (repo / reports["smoke"]["path"] / "r.xml").is_file()
+    assert reports["lint:default"] is None and reports["build:default"] is None
+    assert reports["quick:default"]["suite"] == "quick"
+    assert reports["smoke:default"]["tests"] == 1
+    assert (repo / reports["smoke:default"]["path"] / "r.xml").is_file()
     assert ".mdf/" not in git(repo, "status", "--porcelain").stdout
     patch_module_command(
         repo,
@@ -21,7 +22,9 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     result = mdf(python_exe, "project-verify", "run", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
     evidence = json.loads((root / "verify.full.json").read_text())
-    quick = next(item for item in evidence["results"] if item["id"] == "quick")
+    quick = next(
+        item for item in evidence["results"] if item["id"] == "quick:default"
+    )
     assert quick["passed"] is False and quick["error"] == "test_report_failed"
     assert quick["details"]["report"]["skipped"] == 1
 

@@ -62,6 +62,8 @@ def test_verify_keeps_full_output_of_every_entry(python_exe, tmp_path):
     payload(mdf(python_exe, "project-verify", "run", "--repo", str(repo)))
     evidence = json.loads((root / "verify.full.json").read_text())
     logs = {item["id"]: item["log"] for item in evidence["results"]}
-    assert set(logs) == {"lint", "build", "quick", "smoke"}
-    assert (repo / logs["lint"] / "stdout.log").read_text() == 9000 * "x" + "\n"
-    assert (repo / logs["build"] / "stderr.log").is_file()
+    assert set(logs) == {
+        "lint:default", "build:default", "quick:default", "smoke:default",
+    }
+    assert (repo / logs["lint:default"] / "stdout.log").read_text() == 9000 * "x" + "\n"
+    assert (repo / logs["build:default"] / "stderr.log").is_file()

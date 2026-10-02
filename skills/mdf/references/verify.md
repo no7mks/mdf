@@ -73,11 +73,15 @@
 2. 打开相关 `docs/system/testing/<suite>.md`。
 3. Jev（或主 Agent）决定跑哪些 test/testcase；经 `--test` 传入。
 4. 默认不整份跑 named suite。
+5. lint/build/quick：未覆写的入口只跑 Resolve 得到的 module（`--module` /
+   `--paths`）；顶层 `verification` 已覆写的入口仍跑该**整仓单命令**，
+   不因 `--module` 缩小范围。
 
 **full**
 
-- feature / bugfix / hotfix → smoke 并集；release → release 并集。
-- 实际执行：全部 module 的 lint + build + quick + 上述套件并集。
+- feature / bugfix / hotfix → smoke；release → release。
+- 实际执行：全部 module 的 lint + build + quick + 上述套件，默认按 module
+  **串行展开**；`modules.yaml` 顶层 `verification` 覆写的入口用单命令。
 
 ### 3 Run
 
