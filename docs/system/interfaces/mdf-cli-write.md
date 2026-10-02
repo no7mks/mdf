@@ -286,3 +286,12 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 - `--dry-run` 只拉取并报告 `new_commit`、各目标当前基线、`history`、`agents` 与 `commit` 计划。
   - `history` 按已安装 `.version` 分组，列出上游 `skills/mdf` 在该基线到 HEAD 之间的提交与文件变更。
   - 无法对照时带 `status`，不视为失败。
+
+
+## `bug close`
+
+`bug close <bug-id> --fixed-in <version> --repo <仓库>` 是 bug close intent 验收完成后的状态写入。
+
+- intent 先完成复现验证与修复代码审查；Core 不执行这些语义验收。
+- 要求 ready、active fixed Bug、稳定 SemVer；release/hotfix 上版本须与分支一致。
+- 写入 status: closed 与 fixed_in，保留 found_in，不提交或归档。

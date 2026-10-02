@@ -42,7 +42,7 @@ def test_mdf_clarify_delegates_or_clarifies_until_shared_understanding():
     assert "`--yolo` 时主 Agent 依据仓库证据与 Bug" in fix
     assert "不由 deliver 内部委托" in fix
     assert "未记录有效红灯不得改生产实现" in fix
-    verify_fix = (skill / "references" / "verify-fix.md").read_text(
+    verify_fix = (skill / "references" / "bug-close.md").read_text(
         encoding="utf-8"
     )
     assert "只要求这些复现用例通过" in verify_fix
@@ -266,7 +266,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert "全部 MDF workflow" in text
     for name in (
         "init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki",
-        "clarify", "fix", "verify-fix",
+        "clarify", "fix", "bug close",
     ):
         assert name in text
     assert "不得在识别前统一要求 manifest ready 或 clean" in text

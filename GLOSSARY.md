@@ -12,7 +12,7 @@ Proposal 或 Bug。Jot 不是 Proposal/Bug 的 `draft` 状态，也不是 Change
 ## Bug 状态
 
 Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
-`$mdf verify-fix` 二次验证后，在 release/hotfix 收口转为 `closed`；
+`$mdf bug close <bug-id> --fixed-in <version>` 二次验证与修复审查后转为 `closed`；
 `rejected` 是终态，并由 `reject-reason` 记录拒绝原因。
 
 ## 当前事实文档
@@ -38,6 +38,8 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提示。
 
 ## `$mdf verify`
+
+`verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named suite 名解析。
 
 - **smart**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
   test/testcase；converge 验收使用。

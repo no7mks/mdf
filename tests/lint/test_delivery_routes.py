@@ -1,4 +1,4 @@
-"""交付主线 intent（start 至 finish、fix、verify-fix）的文档路由与约束。"""
+"""交付主线 intent（start 至 finish、fix、bug close）的文档路由与约束。"""
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 from types import SimpleNamespace
@@ -30,7 +30,7 @@ def test_close_out_materials_without_embedded_verify_or_fact():
     text = workflow("close-out")
     prepare = text.split('<a id="s3"></a>', 1)[1].split('<a id="s4"></a>', 1)[0]
     assert "不内嵌、不委托 verify" in text or "不委托 verify" in text
-    assert "verify-fix（步骤 7）不算 verify 族" in text or "不算 verify 族" in text
+    assert "bug close（步骤 7）不算 verify 族" in text or "不算 verify 族" in text
     assert "delivery check --stage fact-update" not in text
     assert "move-change" not in text
     assert "- feature：" in prepare
@@ -200,13 +200,13 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
 
 
 def test_verify_fix_is_second_verification_before_closeout():
-    text = workflow("verify-fix")
+    text = workflow("bug-close")
     table = rows(text)
     assert [row[1] for row in table] == ["Check", "Verify", "Review", "Record"]
     assert table[1][6] == "可修或获批回 2；否则停"
     assert table[2][6] == "有可修回 2；需决定则停"
     for rule in (
-        "不标 `closed`", "不写 `fixed_in`", "不跑全局",
+        "标为 `closed` 并写 `fixed_in`", "--fixed-in", "不跑全局",
         "不替代 `$mdf code-review`",
         "只要求这些复现用例通过",
         "不调用 `$mdf code-review`",
@@ -215,20 +215,20 @@ def test_verify_fix_is_second_verification_before_closeout():
         "可修复实现问题",
         "finish 内部委托时完成后返回调用方",
         "不由 deliver 直接委托",
-        "verify-fix.md",
+        "bug-close.md",
     ):
         assert rule in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"可修复实现问题 ─+→ 2 Verify", diagram)
     assert re.search(r"有可修问题 ─+→ 2 Verify", diagram)
     finish = workflow("close-out")
-    assert "references/verify-fix.md" in finish
-    assert "待收入 fixed 先委托 verify-fix" in finish
-    assert "verify-fix 未通过" in finish
+    assert "references/bug-close.md" in finish
+    assert "待收入 fixed 先委托 bug close" in finish
+    assert "bug close 未通过" in finish
     help_text = workflow("help")
-    assert "$mdf verify-fix [<bug-id>]" in help_text
+    assert "$mdf bug close <bug-id> --fixed-in <version>" in help_text
     keys = help_text.split("### 主题", 1)[1].split("`$mdf bootstrap`", 1)[0]
-    assert "`verify-fix`" in keys
+    assert "`bug close`" in keys
 
 
 def test_implementation_handoff_distinguishes_checks_from_remaining_work():
@@ -309,7 +309,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "suites.json" in review or "verify full" in review or True
     assert "converge" in review
     assert "不跑 verify branch" in review
-    assert "`$mdf verify run --scope smart`" in review or "verify run --scope smart" in review
+    assert "`$mdf verify --scope smart`" in review or "verify --scope smart" in review
     deliver = workflow("deliver")
     assert "外层协调者" in deliver
     assert "先测后审" not in deliver
@@ -332,7 +332,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "只复用可复用的" in contract or "永不执行验证命令" in contract
     assert "不运行 `delivery check --stage finish`" in finish
     assert "确认单独提问" in workflow("fact-audit")
-    assert "不重跑" in workflow("verify-fix")
+    assert "不重跑" in workflow("bug-close")
     assert "既有 suite 命令未产出报告时" in workflow("migrate")
     assert "占位命令必然失败" in workflow("repository-contract")
     assert "`unknown_suite`" not in review

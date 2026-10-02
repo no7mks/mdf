@@ -24,7 +24,7 @@ def _register_billing(repo: Path, command: str = SUITE_OK) -> None:
 
 def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     repo, root = converge_ready(python_exe, tmp_path)
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
     evidence = json.loads((root / "verify.branch.json").read_text())
     reports = {item["id"]: item.get("report") for item in evidence["results"]}
     assert reports["lint:default"] is None and reports["build:default"] is None
@@ -38,7 +38,7 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
         lambda c: c.replace("<testcase/>", "<testcase><skipped/></testcase>"),
     )
     commit(repo, "test: quick 含 skipped")
-    result = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo))
+    result = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
     evidence = json.loads((root / "verify.branch.json").read_text())
     quick = next(
@@ -56,7 +56,6 @@ def test_verify_named_reports_suite(python_exe, tmp_path):
         mdf(
             python_exe,
             "verify",
-            "run",
             "--scope",
             "named",
             "--suites",
@@ -72,7 +71,6 @@ def test_verify_named_reports_suite(python_exe, tmp_path):
     reserved = mdf(
         python_exe,
         "verify",
-        "run",
         "--scope",
         "named",
         "--suites",
@@ -85,7 +83,6 @@ def test_verify_named_reports_suite(python_exe, tmp_path):
     missing = mdf(
         python_exe,
         "verify",
-        "run",
         "--scope",
         "named",
         "--suites",
@@ -103,7 +100,6 @@ def test_verify_named_fixed_suite_quick(python_exe, tmp_path):
         mdf(
             python_exe,
             "verify",
-            "run",
             "--scope",
             "named",
             "--suites",
@@ -136,7 +132,6 @@ def test_verify_named_parallel_rejects_over_five(python_exe, tmp_path):
     result = mdf(
         python_exe,
         "verify",
-        "run",
         "--scope",
         "named",
         "--suites",
@@ -145,3 +140,34 @@ def test_verify_named_parallel_rejects_over_five(python_exe, tmp_path):
         str(repo),
     )
     assert "too_many_parallel_commands" in result.stderr
+
+
+@pytest.mark.parametrize("target", ["billing", "quick"])
+def test_verify_suite_shortcut(python_exe, tmp_path, target):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    _register_billing(repo)
+    result = payload(mdf(python_exe, "verify", target, "--repo", str(repo)))
+    assert result["result"]["suites"] == [target]
+    assert result["result"]["all_passed"] is True
+
+
+@pytest.mark.parametrize("target", ["smart", "branch"])
+def test_verify_scope_shortcut(python_exe, tmp_path, target):
+    repo, root = converge_ready(python_exe, tmp_path)
+    extra = ["--module", "default"] if target == "smart" else []
+    result = payload(mdf(python_exe, "verify", target, *extra, "--repo", str(repo)))
+    assert result["result"]["level"] == target
+
+
+def test_verify_named_shortcut_and_conflicting_scope(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    result = payload(mdf(
+        python_exe, "verify", "named", "--suites", "quick", "--repo", str(repo),
+    ))
+    assert result["result"]["suites"] == ["quick"]
+    conflict = mdf(
+        python_exe, "verify", "quick", "--scope", "branch", "--repo", str(repo),
+    )
+    assert "invalid_verify_scope" in conflict.stderr

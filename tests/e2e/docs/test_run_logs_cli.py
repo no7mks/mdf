@@ -16,7 +16,7 @@ def test_cli_call_logs_full_output_and_error_points_to_log(python_exe, tmp_path)
     assert json.loads((run / "stdout.log").read_text())["ok"] is True
     meta = json.loads((run / "meta.json").read_text())
     assert meta["argv"][0] == "doctor" and meta["exit_code"] == 0
-    failed = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo))
+    failed = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo))
     error = json.loads(failed.stderr.strip().splitlines()[-1])
     log = Path(error["log"])
     assert log.parent == (repo / ".mdf/logs").resolve()
@@ -59,7 +59,7 @@ def test_verify_keeps_full_output_of_every_entry(python_exe, tmp_path):
         repo, "lint", lambda _: "python3 -c 'print(9000 * chr(120))'"
     )
     commit(repo, "test: lint 长输出")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
     evidence = json.loads((root / "verify.branch.json").read_text())
     logs = {item["id"]: item["log"] for item in evidence["results"]}
     assert set(logs) == {

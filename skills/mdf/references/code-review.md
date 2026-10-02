@@ -224,7 +224,7 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 步骤 4：按是否改动代码决定是否跑 smart；裁定本 intent 可收口时洗成终稿。
 
 - 本步不跑 verify branch（留给主链下一 intent）；也不写 `gates/code-review.json`。
-- 本轮改动了实现/测试：跑 `$mdf verify run --scope smart`；失败回 3 修。
+- 本轮改动了实现/测试：跑 `$mdf verify --scope smart`；失败回 3 修。
   - 未改实现/测试：跳过 smart。
 - close-out 集成后的增量审查仍按下方「close-out 核对」；full 证据由主链
   `verify.branch.json` 负责，不在本步伪造。

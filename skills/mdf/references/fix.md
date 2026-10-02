@@ -128,7 +128,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   1. 先让该红灯测试转绿。
   2. 再按所需回归证据重跑对应命令直到通过；记录命令、退出状态、结果及对应证据项。
   3. 随后对涉及 module 跑 smart（含 quick suite），须退出 0。
-     - CLI：`verify run --scope smart --repo "$REPO_ROOT"`。
+     - CLI：`verify --scope smart --repo "$REPO_ROOT"`。
      - 用 `--paths` / `--module` 圈定涉及 module。
      - 成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
      - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
@@ -158,9 +158,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 2. 运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并核对 `fixed` 与完整 diff。
    - 校验退出 0 且零 finding。
 3. 按 `common.md` 提交本次红灯测试、修复、回归验证与对象状态；不夹带无关改动。
-   - 提交说明须含完整 Bug ID；release/hotfix 上的直接修复同样适用，供 verify-fix 定位审查范围。
+   - 提交说明须含完整 Bug ID；release/hotfix 上的直接修复同样适用，供 bug close 定位审查范围。
    - 摘要须区分已验证结论与未验证项，并写明红灯命令与转绿证据。
 
 验收：有效红灯曾失败、现已通过、`fixed` Bug、校验零 finding、提交或明确无新改动。
 
-- 二次验证与关闭对象由 `$mdf verify-fix` 与发版收口完成，不在本 intent 把状态改为 `closed`。
+- 二次验证与关闭对象由 `$mdf bug close <bug-id> --fixed-in <version>` 完成，不在本 intent 把状态改为 `closed`。

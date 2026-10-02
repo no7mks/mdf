@@ -293,7 +293,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 - 用户明确要求暂不提交时遵从；无改动不创建空提交。
 - 中文 Conventional Commit 应准确描述内容和必要的未完成状态。
 - 修复某个 Bug 的提交说明必须含该 Bug 的完整 ID（如 `bug-AB12`）。
-  - 供 verify-fix 用 `git log --fixed-strings --grep=<Bug ID>` 定位。
+  - 供 bug close 用 `git log --fixed-strings --grep=<Bug ID>` 定位。
   - 只改 `docs/` 与 `changes/` 的提交不要求。
 
 **提交范围**

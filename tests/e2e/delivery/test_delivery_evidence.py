@@ -32,7 +32,7 @@ def test_non_feature_verification_records_run_and_rerun_after_impl_change(
     suites.parent.mkdir(parents=True, exist_ok=True)
     suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     commit(work, "test: 关联 named suite")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", *args))
+    payload(mdf(python_exe, "verify", "--scope", "branch", *args))
     evidence = work / "changes/unreleased/bug-cd34/verify.branch.json"
     assert evidence.is_file()
     first = json.loads(evidence.read_text())
@@ -43,10 +43,10 @@ def test_non_feature_verification_records_run_and_rerun_after_impl_change(
     commit(work, "test: 改实现")
     # 报告仍声称通过；主链不以 commit 对齐作废。需要新结果时再 run。
     assert json.loads(evidence.read_text())["all_passed"] is True
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", *args))
+    payload(mdf(python_exe, "verify", "--scope", "branch", *args))
     patch_module_command(work, "quick", lambda c: "false && " + c)
     commit(work, "test: 弄坏 quick")
-    assert "verify_command_failed" in mdf(python_exe, "verify", "run", "--scope", "branch", *args).stderr
+    assert "verify_command_failed" in mdf(python_exe, "verify", "--scope", "branch", *args).stderr
     failed = json.loads(evidence.read_text())
     assert failed["all_passed"] is False
 
@@ -89,17 +89,17 @@ def test_bugfix_requires_named_suite_and_runs_smoke(python_exe, tmp_path):
                           "--objectives-file", str(write_work_objectives(tmp_path))))
     work = Path(created["worktree"])
     args = ["--repo", str(work)]
-    missing = mdf(python_exe, "verify", "run", "--scope", "branch", *args)
+    missing = mdf(python_exe, "verify", "--scope", "branch", *args)
     assert "missing_delivery_suite" in missing.stderr
     suites = work / "changes/unreleased/bug-cd34/suites.json"
     suites.parent.mkdir(parents=True, exist_ok=True)
     suites.write_text(json.dumps({"suites": ["smoke"]}) + "\n")
     commit(work, "test: 误用保留 suite 名")
-    reserved = mdf(python_exe, "verify", "run", "--scope", "branch", *args)
+    reserved = mdf(python_exe, "verify", "--scope", "branch", *args)
     assert "invalid_delivery_suite" in reserved.stderr
     suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     commit(work, "test: 关联 billing")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", *args))
+    payload(mdf(python_exe, "verify", "--scope", "branch", *args))
     path = work / "changes/unreleased/bug-cd34/verify.branch.json"
     evidence = json.loads(path.read_text())
     assert evidence["suites"] == ["quick", "smoke"]
@@ -128,7 +128,7 @@ def test_release_runs_release_suite(python_exe, tmp_path):
     )
     work = Path(created["worktree"])
     args = ["--repo", str(work)]
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", *args))
+    payload(mdf(python_exe, "verify", "--scope", "branch", *args))
     path = work / "changes/unreleased/1.3.0/verify.branch.json"
     evidence = json.loads(path.read_text())
     assert evidence["suites"] == ["quick", "release"]

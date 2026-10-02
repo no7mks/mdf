@@ -38,7 +38,7 @@ def closeout_args(repo: Path, *extra: str) -> list[str]:
 
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
-    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.3.0")
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, slug)  # noqa: F405
     git(repo, "add", "--all")  # noqa: F405
@@ -90,6 +90,9 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
         "found_in: unreleased",
         "found_in: 'unreleased' # current line",
     )
+    if outcome == "fixed":
+        replace(bug, 'status: "fixed" # pending verification',
+                'status: "closed" # accepted\nfixed_in: 1.3.0')
     if outcome != "fixed":
         replace(bug, "severity: major", "severity: trivial")  # noqa: F405
     init_git(repo)  # noqa: F405
@@ -232,7 +235,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
     tmp_path: Path,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
-    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.2.1")  # noqa: F405
     init_git(repo)  # noqa: F405
     git(repo, "checkout", "-b", "hotfix/1.2.1")  # noqa: F405
     seed_verify_full(python_exe, repo)  # noqa: F405
@@ -270,7 +273,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     tmp_path: Path,
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
-    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")  # noqa: F405
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.3.0")  # noqa: F405
     init_git(repo)  # noqa: F405
     write_unreleased_change(repo, "alpha")  # noqa: F405
     write_unreleased_change(repo, "zeta")  # noqa: F405

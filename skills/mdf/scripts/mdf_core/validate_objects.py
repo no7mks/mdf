@@ -322,13 +322,6 @@ def validate_object(
                     "found_in 必须是稳定 SemVer 或 unreleased",
                     rel,
                 )
-            if status == "closed" and is_unreleased_sentinel(found_in):
-                add_finding(
-                    findings,
-                    "bug.closed_unreleased",
-                    "closed Bug 必须关联稳定 found_in 版本",
-                    rel,
-                )
             fixed_in = metadata.get("fixed_in")
             if status == "closed" and stable_semver(fixed_in) is None:
                 add_finding(

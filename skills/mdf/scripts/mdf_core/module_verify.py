@@ -170,10 +170,24 @@ def command_verify(args) -> None:
     manifest = load_manifest(repo)
     if manifest.get("state") != "ready":
         raise MDFError("verify 需要 ready", code="manifest_not_ready")
-    scope = getattr(args, "scope", None) or getattr(args, "level", None)
-    action = args.action
-    if action != "run":
-        raise MDFError("verify 只支持 run", code="invalid_verify_action")
+    scope = args.scope
+    target = args.target
+    if target:
+        if scope or (args.suites and target != "named"):
+            raise MDFError(
+                "位置参数不能与 --scope 同用；仅 named 可带 --suites",
+                code="invalid_verify_scope",
+            )
+        if target in {"smart", "branch", "named"}:
+            scope = target
+        else:
+            scope = "named"
+            args.suites = target
+    if not scope:
+        raise MDFError(
+            "verify 需要 scope 或 named suite 名",
+            code="invalid_verify_scope",
+        )
     if scope == "named":
         _verify_named(repo, args)
         return

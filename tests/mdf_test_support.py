@@ -365,7 +365,7 @@ def seed_verify_full(python_exe: str, repo: Path) -> None:
         review.write_text("# 审查记录\n\n无未解决问题。\n", encoding="utf-8")
         git(repo, "add", "--", str(review.relative_to(repo)))
         git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 提交 verify.branch")
 
@@ -378,7 +378,7 @@ def prepare_release_closeout_repo(
     replace(
         repo / "docs/bugs" / BUG_NAME,
         "status: open",
-        "status: fixed",
+        "status: closed\nfixed_in: 1.3.0",
     )
     init_git(repo)
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")

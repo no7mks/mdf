@@ -9,7 +9,7 @@ from mdf_test_support import *  # noqa: F403
         (
             "fixed",
             {"id": BUG_ID, "resolution": "fixed", "fixed_in": "1.3.0"},
-            "status: closed",
+            'status: "closed" # pending verification',
         ),
         (
             "rejected",
@@ -30,7 +30,7 @@ def test_closeout_uses_parsed_quoted_status_and_found_in(
 ):
     core = load_core_module()  # noqa: F405
     status = (
-        "rejected" if resolution == "rejected" else "open" if resolution == "deferred" else "fixed"
+        "rejected" if resolution == "rejected" else "open" if resolution == "deferred" else "closed"
     )
     reject_reason = "reject-reason: wont-fix\n" if status == "rejected" else ""
     text = (
@@ -38,6 +38,7 @@ def test_closeout_uses_parsed_quoted_status_and_found_in(
         f"id: {BUG_ID}\n"  # noqa: F405
         "type: bug\n"
         f'status: "{status}" # pending verification\n'
+        + ("fixed_in: 1.3.0\n" if status == "closed" else "")
         + reject_reason
         + "severity: major\n"
         + "found_in: 'unreleased' # current line\n"

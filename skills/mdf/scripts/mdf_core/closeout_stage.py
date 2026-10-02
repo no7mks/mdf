@@ -170,7 +170,7 @@ def apply_closeout(
         identifier
         for identifier, (kind, _path, metadata) in objects.items()
         if kind == "bug"
-        and metadata.get("status") in {"open", "fixed", "rejected"}
+        and metadata.get("status") in {"open", "fixed", "closed", "rejected"}
         and is_unreleased_sentinel(metadata.get("found_in"))
         and metadata.get("reject-reason") != "duplicate"
     )
@@ -211,7 +211,7 @@ def apply_closeout(
             ("implemented" if resolution == "released" else "rejected")
             if kind == "proposal"
             else (
-                "fixed"
+                "closed"
                 if resolution == "fixed"
                 else "open" if resolution == "deferred" else "rejected"
             )

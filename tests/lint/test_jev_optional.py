@@ -23,7 +23,7 @@ def test_hung_intents_keep_optional_accelerator_marker() -> None:
     paths = (
         "jot.md", "intake.md", "init.md", "prp-review.md", "code-review.md",
         "next.md", "deliver.md", "fact-audit.md", "archive.md",
-        "verify-fix.md", "fix.md", "migrate.md", "close-out.md",
+        "bug-close.md", "fix.md", "migrate.md", "close-out.md",
     )
     for name in paths:
         text = (root / name).read_text(encoding="utf-8")

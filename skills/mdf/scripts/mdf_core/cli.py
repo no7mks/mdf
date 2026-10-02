@@ -29,6 +29,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    from .bug_close import command_bug_close
+
+    bug = subparsers.add_parser("bug")
+    bug_actions = bug.add_subparsers(dest="action", required=True)
+    bug_close = bug_actions.add_parser("close")
+    bug_close.add_argument("bug_id")
+    bug_close.add_argument("--repo", required=True)
+    bug_close.add_argument("--fixed-in", required=True)
+    bug_close.set_defaults(func=command_bug_close)
+
     info = subparsers.add_parser("info")
     info.set_defaults(func=command_info)
 
@@ -215,12 +225,11 @@ def build_parser() -> argparse.ArgumentParser:
     from .module_verify import command_verify
 
     verify = subparsers.add_parser("verify")
-    verify.add_argument("action", choices=("run",))
+    verify.add_argument("target", nargs="?", help="scope 或 named suite 名")
     verify.add_argument("--repo", required=True)
     verify.add_argument(
         "--scope",
         choices=("smart", "branch", "named"),
-        required=True,
     )
     verify.add_argument(
         "--suites",

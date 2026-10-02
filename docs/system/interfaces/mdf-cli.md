@@ -18,7 +18,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - 输出与错误：
   - 成功时命令向 stdout 输出 JSON。
   - 业务规则拒绝时 stderr 最后一行为 JSON 错误，并以非零状态退出。
-  - 长验证（`verify run`、`release-closeout`）期间
+  - 长验证（`verify`、`release-closeout`）期间
     stderr 可含进度行与子进程原文。
   - 解析失败时取 stderr 最后一行 JSON；失败细节也可读落盘证据中的
     `stdout_tail` / `stderr_tail`。
@@ -77,6 +77,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `prp-split` | 未开工 PRP 拆分 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `delivery` | 交付辅助（配置快照/并行；非进度关口） | [交付阶段与验证](mdf-cli-delivery.md) |
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
+| `bug close` | 验收后的 Bug 关闭写入 | [仓库写入命令](mdf-cli-write.md) |
 | `verify` | module 级验证（smart / branch / named） | [交付阶段与验证](mdf-cli-delivery.md) |
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |

@@ -46,7 +46,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "fact update",
         "design", "write-tests", "implement", "converge",
         "fix <bug-id> [--yolo]",
-        "verify-fix [<bug-id>]", "verify",
+        "bug close <bug-id> --fixed-in <version>", "verify",
         "code-review", "prp split",
         "clarify <议题>",
         "help", "help <intent>",

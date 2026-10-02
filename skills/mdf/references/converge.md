@@ -103,7 +103,7 @@ owner 开发项已勾。❌ 不因 roster `0,0` 在无 owner 开发项或该项�
 
 1. 核对 `objectives.md`：converge **之前**的依赖项须为 `[x]`（design / 开发相关项按
    `needs_design` 与 roster）；未勾则继续开发/勾选，不得虚构完成。
-2. 运行 `$mdf verify run --scope smart`（涉及 module 的 lint+build+quick +
+2. 运行 `$mdf verify --scope smart`（涉及 module 的 lint+build+quick +
    本分支相对 start_commit 新增/改动的测试；可加 Agent/Jev 选题）。
 3. ❌ 不得用 verify branch（smoke/release）冒充本步。
 4. 失败时遵守「测试失败工作流」（单用例复测 → 修一个复测一个 → 再继续）。

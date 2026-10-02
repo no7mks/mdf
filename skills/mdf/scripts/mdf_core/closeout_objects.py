@@ -106,16 +106,18 @@ def close_object_text(
             code="invalid_closure",
         )
     if resolution == "fixed":
-        _require_status(metadata, str(identifier), "fixed")
-        if closure.get("fixed_in") != version or "released_in" in closure:
+        _require_status(metadata, str(identifier), "closed")
+        if (
+            metadata.get("fixed_in") != version
+            or closure.get("fixed_in") != version
+            or "released_in" in closure
+        ):
             raise MDFError(
                 "fixed closure requires fixed_in equal to release version",
                 code="invalid_closure",
             )
         if is_unreleased_sentinel(metadata.get("found_in")):
             frontmatter = _set_field(frontmatter, "found_in", version)
-        frontmatter = _set_field(frontmatter, "fixed_in", version)
-        frontmatter = _set_field(frontmatter, "status", "closed")
     elif resolution in BUG_REJECT_REASONS:
         _require_status(metadata, str(identifier), "rejected")
         if metadata.get("reject-reason") != resolution:

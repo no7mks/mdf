@@ -86,12 +86,12 @@
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（full / smart / run）；不内嵌 fact。
-    verify-fix 不算 verify 族，release/hotfix 收口步骤可委托。
+    bug close 不算 verify 族，release/hotfix 收口步骤可委托。
   - `release-closeout` 只复用可复用的 `verify.branch.json`，永不执行验证命令。
   - 把目标主线合入交付分支前可建议 squash（见「可选历史整理」）；非强制。
 - 开发迭代只用 `$mdf verify --scope smart`；禁止把 full 当日常自检。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
-- 独立 `$mdf fix` / `$mdf verify-fix` 不走交付主线，也不由 deliver 内部委托。
+- 独立 `$mdf fix` / `$mdf bug close` 不走交付主线，也不由 deliver 内部委托。
 - code-review 份数取冻结的 roster.reviewers；close-out 增量新一轮为 1。
 ### 触发与协调
 

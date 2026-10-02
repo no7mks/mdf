@@ -70,8 +70,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf implement` | 按已确认设计实现 |
 | `$mdf converge` | 收敛：前置 objectives 已勾 + smart，自勾 converge |
 | `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
-| `$mdf verify-fix [<bug-id>]` | 二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复） |
-| `$mdf verify --scope smart|branch|named` | module 级验证；开发用 smart，closeout 前用 full |
+| `$mdf bug close <bug-id> --fixed-in <version>` | 验证与审查已 `fixed` 的 Bug，通过后关闭并写入版本 |
+| `$mdf verify [arg]` | module 级验证；开发用 smart，closeout 前用 branch |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
 | `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify branch / fact 已在主链完成） |

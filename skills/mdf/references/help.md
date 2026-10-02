@@ -97,8 +97,8 @@
 - `$mdf implement`：按已确认设计实现
 - `$mdf converge`：objectives + smart，循环到达成
 - `$mdf fix <bug-id> [--yolo]`：先确认 failing test，再修复并标为 fixed
-- `$mdf verify-fix [<bug-id>]`：二次验证已 fixed 的 Bug（复现用例 + 仅审该修复）
-- `$mdf verify --scope smart|branch|named`：module 级验证；converge 用 smart，主链在
+- `$mdf bug close <bug-id> --fixed-in <version>`：验证与审查 fixed Bug，通过后关闭并写入版本
+- `$mdf verify [arg]`：module 级验证；converge 用 smart，主链在
   code-review 后跑 branch；named 用 `--suites`
 - `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
@@ -152,8 +152,7 @@ $mdf implement
 $mdf converge
 $mdf fix bug-CD34
 $mdf fix bug-CD34 --yolo
-$mdf verify-fix
-$mdf verify-fix bug-CD34
+$mdf bug close bug-CD34 --fixed-in 1.2.0
 $mdf verify --scope smart
 $mdf verify --scope branch
 $mdf code-review
@@ -183,7 +182,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`design`、`write-tests`、`implement`、`converge`；
-  `fix`、`verify-fix`、`verify`、`code-review`、`fact update`、`fact audit`、`close-out`/`finish`
+  `fix`、`bug close`、`verify`、`code-review`、`fact update`、`fact audit`、`close-out`/`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -297,14 +296,15 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：
     - 修复前必须有针对该 Bug 的有效红灯；没有就先写测试并确认失败。
     - 不切分支、不 start、不 code-review、不 finish；不标 `closed`。
-    - `--yolo` 自裁定 clarify，不跳过红灯；二次验证走 `$mdf verify-fix`。
-- `$mdf verify-fix [<bug-id>]`
-  - 用法：`$mdf verify-fix` 或 `$mdf verify-fix <bug-id>`
-  - 用途：二次验证已 `fixed` 的 Bug（复现用例 + 仅审该修复）。
-  - 说明：close-out 关闭前内部委托；不标 `closed`、不写 `fixed_in`、不跑 release。
-    无 ID 时只处理当前 release/hotfix 上待收入的 `fixed` Bug。
-- `$mdf verify --scope smart|branch|named`
-  - 用法：`$mdf verify run --scope smart|branch|named [--suites ...]
+    - `--yolo` 自裁定 clarify，不跳过红灯；二次验证走 `$mdf bug close`。
+- `$mdf bug close <bug-id> --fixed-in <version>`
+  - 用法：`$mdf bug close <bug-id> --fixed-in <version>`
+  - 用途：验证与审查已 `fixed` 的 Bug，通过后关闭并写入版本。
+  - 说明：版本必填且为稳定 SemVer；release/hotfix 上须与分支版本一致。
+    验证与审查通过后写 closed 与 fixed_in；close-out 内部委托时传入发布版本。
+- `$mdf verify [arg]`
+  - shortcut：arg 为 smart/branch/named 时按 scope 解析，否则按 named suite 名解析。
+  - 用法：`$mdf verify [arg] [--scope smart|branch|named] [--suites ...]
     [--module|--paths|--test ...]`
   - 用途：module 级验证；converge/开发用 smart，主链在 code-review 后跑 branch；
     named 按 `--suites` 跑指定 suite。
@@ -325,7 +325,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf close-out` / `$mdf finish`
   - 用法：`$mdf close-out` 或 `$mdf finish`
   - 用途：按 Gitflow 分支完成审计与收口。
-  - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 verify-fix。合入目标
+  - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 bug close。合入目标
     主线前先 squash dry-run，再按启发式决定是否展示；确认后完整执行。
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`

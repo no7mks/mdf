@@ -77,7 +77,7 @@ disable-model-invocation: true
                  ├──── implement ─────────────────────────────────────→ references/implement.md
                  ├──── converge ──────────────────────────────────────→ references/converge.md
                  ├──── fix <bug-id> [--yolo] ─────────────────────────→ references/fix.md
-                 ├──── verify-fix [<bug-id>] ─────────────────────────→ references/verify-fix.md
+                 ├──── bug close <bug-id> --fixed-in <version> ───────→ references/bug-close.md
                  ├──── code-review ───────────────────────────────────→ references/code-review.md
                  ├──── verify ────────────────────────────────────────→ references/verify.md
                  ├──── fact update ───────────────────────────────────→ references/fact-update.md
@@ -126,9 +126,11 @@ disable-model-invocation: true
   - `--auto-pilot` 与 `--yolo` 可在 target 前或后；target 由 deliver 解析。
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
   - `--yolo` 仅自动确认内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
-- `$mdf verify-fix [<bug-id>]` 仍是 verify-fix；无 ID 时只在 release/hotfix 上处理待收入的 `fixed` Bug。
-- `$mdf verify` 可带 `--scope smart|branch|named`（必选）、`--suites`（named）、
-  `--module`、`--paths`、`--test`；以及子命令 `run`（由 verify 解析）。
+- `$mdf bug close <bug-id> --fixed-in <version>`：ID 与稳定 SemVer 必填；
+  release/hotfix 上版本须与分支一致，通过验收后关闭 Bug。
+- `$mdf verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named
+  suite 名解析。也可用 `--scope smart|branch|named`、`--suites`（named）、
+  `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - start、design、deliver、code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；

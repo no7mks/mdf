@@ -86,7 +86,9 @@
 
 ### `verify`
 
-`verify run --scope smart|branch|named --repo <仓库>` 按 scope 执行验证入口。
+`verify [arg] --repo <仓库>`：arg 为 smart/branch/named 时按 scope 解析，
+其他值按 named suite 名解析。也可显式使用 `--scope smart|branch|named`。
+位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 
 **branch**
 
@@ -126,7 +128,7 @@
 
 ### 测试报告
 
-`verify run` 与 `release-closeout` 执行 quick、smoke、release 与 named 时：
+`verify` 与 `release-closeout` 执行 quick、smoke、release 与 named 时：
 
 1. 为每次运行新建 `.mdf/reports/<时间戳>-<suite>/`，以 `MDF_REPORT_DIR` 传给命令。
 2. 命令结束后解析其中的 JUnit XML，写入 `summary.json`。

@@ -50,15 +50,21 @@
 
 读取 `references/common.md` 与 `references/delivery-contract.md`。
 
-入口：`$mdf verify run --scope smart|branch|named`；可选
+入口：`$mdf verify [arg]`；arg 为 smart/branch/named 时按 scope 解析，其他值
+作为 named suite 名。也可显式使用 `--scope smart|branch|named`；可选
 `--module` / `--paths` / `--test`。
+
+- 位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
+- `verify named` 需通过 `--suites` 指定 suite。
+- 示例：`verify smart --module api`、`verify branch`、`verify billing`。
+
 主链委托 branch 时：失败须现场修到绿后再结束本 intent。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve modules | 约束 | 读 modules；定范围；branch 要干净树 | module 列表 | 2 | 停止并报告 |
 | 2 | Select | 约束 | smart 选题；branch 选 smoke/release | 命令列表 | 3 | 停止并报告 |
-| 3 | Run | 脚本 | `mdf.py verify run`（成败都进 4） | 运行结果 | 4 | 待批准回 3；阻塞停 |
+| 3 | Run | 脚本 | `mdf.py verify`（成败都进 4） | 运行结果 | 4 | 待批准回 3；阻塞停 |
 | 4 | Record | 脚本 | branch 无论成败落盘；绿则勾选提交 | 证据或摘要 | 结束 | 未绿可修→3；阻塞/落盘失败停 |
 
 ## 术语与数据结构
@@ -68,7 +74,7 @@
 - 读 `.mdf/modules.yaml`。
 - smart：`--paths` 命中 sourceset（非 ignore）并与 `--module` 合并。
 - branch：全部 module；执行前 worktree 必须干净。
-- bugfix 的 branch `run`：须已有 `suites.json` 关联 ≥1 已文档化 named suite。
+- bugfix 的 branch 验证：须已有 `suites.json` 关联 ≥1 已文档化 named suite。
   缺失则 `missing_delivery_suite`。
 
 ### 选题与命令
@@ -91,7 +97,7 @@
 
 ### 执行与失败处理
 
-- CLI：`mdf.py verify run --scope smart|branch|named ...`
+- CLI：`mdf.py verify --scope smart|branch|named ...`
 - 遵守「测试失败工作流」：框架报告 → 单用例复测 → 修一个复测一个 → 再继续。
 - 📌 本轮命令**无论成败**都进入 4 Record；不在本步内「修到绿才进 4」。
   - 需改测试门槛：停在本步待批准，确认后重跑本步。

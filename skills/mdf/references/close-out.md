@@ -55,9 +55,9 @@
 │ 7 Prepare closures               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── verify-fix 改了实现 ────→ 4 Recheck
-                 ├──── verify-fix 未通过 ──────→ [停止]
-                 ├──── 失败/缺失 ──────────────→ [停止]
+                 ├──── bug close 改了实现 ────→ 4 Recheck
+                 ├──── bug close 未通过 ──────→ [停止]
+                 ├──── 失败/缺失 ─────────────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -98,7 +98,7 @@
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
 - 步骤 2 可选 squash：先内部执行 `references/squash.md` 的 dry-run，确认执行后再
   内部执行完整 `references/squash.md`。
-- 步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/verify-fix.md`。
+- 步骤 7 有待收入的 `fixed` Bug 时读取并内部执行 `references/bug-close.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -108,7 +108,7 @@
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
-| 7 | Prepare closures | 约束 | fixed 先 verify-fix，再准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
+| 7 | Prepare closures | 约束 | bug close 关闭 fixed；准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | Hand off | 约束 | 提交并复核 | clean | 无关口 10；AP 非 yolo→deliver 6 | 主线前进时 feature/bugfix 回 2；其余停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
@@ -213,7 +213,7 @@
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
     `$mdf fact audit`，❌ 本 intent 不委托补跑。
 - ❌ 本 intent 不内嵌、不委托 verify branch / smart / run，也不内嵌 fact update /
-  fact audit；不做 commit 对齐审判。verify-fix（步骤 7）不算 verify 族，可留。
+  fact audit；不做 commit 对齐审判。bug close（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
 - 按分支准备材料：
   - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 CHANGE.md。
@@ -249,7 +249,7 @@
   - 自该提交到 HEAD 只允许以下路径：
     `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`。
     否则按收口状态不一致停止。
-- report 缺失或未声称通过时：停止并交接；由主链补跑对应 intent（verify **run** /
+- report 缺失或未声称通过时：停止并交接；由主链补跑对应 intent（verify /
   fact / code-review），不在本 intent 内嵌、不做过期审判。
 - 集成后需补审时从 `code-review.md` 步骤 1 执行（有有效终稿则增量，否则首轮）。
 - 不回退本流程步骤编号。
@@ -280,13 +280,13 @@
 
 - 待收入 `fixed` outcome：`status: fixed` 且 `found_in: unreleased`，以及
   child Change `fixed:` 中仍为 `fixed` 的 ID。
-- 待收入 fixed 先委托 verify-fix，再准备 closures。
-- 委托 verify-fix：
-  - 清单非空时内部执行 `references/verify-fix.md`，传入这些 ID；空则跳过。
+- 待收入 fixed 先委托 bug close；已 closed 且 fixed_in 等于本版的 Bug 纳入 fixed outcome。
+  close-out 只核对版本、聚合和归档，不重复关闭。
+- 委托 bug close：
+  - 清单非空时内部执行 `references/bug-close.md`，传入这些 ID 与 `--fixed-in <当前发布版本>`；空则跳过。
   - 未通过则本步失败，不准备 closures，不关闭对象。
   - 「实现已变更」：提交后回步骤 4（不 closures、不 `release-closeout`）；
     步骤 4 按失效规则交接；主链在本 intent 外补验与增量 code-review 后再重跑本步。
-  - 已有记录按 verify-fix「记录」有效性仍有效则通过；复现命令变化须重跑其 2–3。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
   - 本 release/hotfix 上直接修复、尚无 child Change 的 Bug 必须补录入 closures。
 - 准备 `--deferred-acceptance-json`：对象，键为 Bug ID。
@@ -298,16 +298,16 @@
 
 | 分类 | 处理 |
 | --- | --- |
-| `fixed` | 须已通过本步委托的 verify-fix，再由 CLI 关闭并写 `fixed_in` |
+| `fixed` | 须由 bug close 关闭并写 `fixed_in`；CLI 仅核对 closed 与版本一致 |
 | rejected | 使用既有 reject-reason |
 | deferred | 保持 open |
 | duplicate | 不进 outcome，canonical 与 duplicate 一并归档 |
 
 - 可选加速（见 `common.md`「Jev 可选加速」）：
-  - 仅歧义且 tool 可用。❌ 不调：verify-fix 已通过的 `fixed`；
+  - 仅歧义且 tool 可用。❌ 不调：bug close 已通过的 `fixed`；
     已有非 duplicate reject-reason 的 `rejected`。
   - 调用：`choice`/`run`；选项同表键加 `ask`；state = 摘要与证据。
-  - 采信：`fixed` 仅 verify-fix 已通过；`rejected` 仅已有
+  - 采信：`fixed` 仅 bug close 已通过；`rejected` 仅已有
     reject-reason；否则未采信。落入上表。
   - `ask`/未采信→主 Agent，必要时询问。❌ 不代填
     deferred-acceptance，不放宽下方 critical/major。
@@ -344,7 +344,7 @@
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：
   **停止并交接**，须在本 intent 外补 verify / code-review 后再续办；
-  ❌ 不回委托 verify run/full。不做 commit 对齐审判。
+  ❌ 不回委托 verify/full。不做 commit 对齐审判。
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。

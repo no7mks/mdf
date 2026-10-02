@@ -129,6 +129,13 @@ def derive_closeout_spec(
         closed = set(hotfix_change["closed"])
         deferred = set(hotfix_change["deferred"])
     records = active_objects(repo)
+    fixed.update(
+        identifier
+        for identifier, (kind, _path, metadata) in records.items()
+        if kind == "bug"
+        and metadata.get("status") == "closed"
+        and metadata.get("fixed_in") == version
+    )
     reject_reasons = {
         identifier: metadata.get("reject-reason")
         for identifier in closed

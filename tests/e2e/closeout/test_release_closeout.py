@@ -17,7 +17,7 @@ def release_arguments(repo: Path, **extra: str) -> list[str]:
 
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
-    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.3.0")
     init_git(repo)
     write_unreleased_change(repo, slug)
     git(repo, "add", "--all")
@@ -227,7 +227,7 @@ def test_hotfix_closeout_uses_manifest_commands(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
+    replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.2.1")
     init_git(repo)
     git(repo, "checkout", "-b", "hotfix/1.2.1")
     review = repo / "changes/unreleased/1.2.1"
@@ -291,7 +291,7 @@ def test_closeout_reuses_valid_verify_full_evidence(python_exe: str, tmp_path: P
     review.write_text("# 审查记录\n\n无未解决问题。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 提交验证证据")
     assert runs.read_text() == "run\n"
@@ -322,7 +322,7 @@ def test_closeout_reuses_after_impl_change_when_report_still_green(
     review.write_text("# 审查记录\n\n无未解决问题。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
     (repo / "src/extra.py").write_text("changed = True\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 证据之后修改实现")
@@ -348,7 +348,7 @@ def test_closeout_fails_when_command_sequence_mismatches(
     review.write_text("# 审查记录\n\n无未解决问题。\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
-    payload(mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(repo)))
+    payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
     path = repo / "changes/unreleased/1.3.0/verify.branch.json"
     evidence = json.loads(path.read_text())
     # 伪造与当前 plan 不一致的 command；closeout 不得重跑验证
@@ -364,3 +364,22 @@ def test_closeout_fails_when_command_sequence_mismatches(
     assert result.returncode != 0
     assert "verify_full_not_reusable" in result.stderr
     assert runs.read_text() == "run\n"
+
+
+@pytest.mark.parametrize("pending", [True, False])
+def test_closeout_requires_bug_closed_for_matching_version(python_exe, tmp_path, pending):
+    repo = copy_fixture(tmp_path)
+    prepare_release(repo)
+    bug = repo / "docs/bugs" / BUG_NAME
+    if pending:
+        replace(bug, "status: closed\nfixed_in: 1.3.0", "status: fixed")
+    else:
+        replace(bug, "fixed_in: 1.3.0", "fixed_in: 1.4.0")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 未验收或交付版本不符")
+    seed_verify_full(python_exe, repo)
+    before = bug.read_text()
+    result = mdf(python_exe, *release_arguments(repo))
+    assert result.returncode != 0 and "invalid_closure" in result.stderr
+    assert bug.read_text() == before
+    assert not (repo / "docs/bugs/archive/1.3" / BUG_NAME).exists()

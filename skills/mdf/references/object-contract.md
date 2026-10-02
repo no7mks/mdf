@@ -89,7 +89,7 @@ Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。
 | --- | --- |
 | `open` | 待修复 |
 | `fixed` | 已修复、等待独立二次验证 |
-| `closed` | 二次验证通过后才在发版收口转入 |
+| `closed` | 由 bug close 二次验证与修复审查通过后转入 |
 | `rejected` | 终态，必须有 `reject-reason` |
 
 - 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release 或 hotfix 交付。
@@ -99,7 +99,7 @@ Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。
 - `reject-reason` 取值：`wont-fix`、`not-a-bug`、`cannot-reproduce`、`obsolete` 或 `duplicate`。
 - 非 duplicate 的 `open`、`fixed`、`closed` Bug
   必须有 `critical`、`major` 或 `trivial` 三值 severity。
-- `fixed_in` 只允许在 `closed` Bug 中，且必须是稳定 SemVer。
+- `fixed_in` 只允许在 `closed` Bug 中且必填，必须是稳定 SemVer；发版前代表确定的交付目标版本。
 
 duplicate 是被拒绝的 Bug：
 

@@ -34,7 +34,7 @@ def test_verify_full_stdout_stays_json_and_labels_item_id(
     commit(work, "test: suites")
     patch_module_command(work, "lint", lambda _: "echo OUT; echo ERR >&2")
     commit(work, "test: lint 输出")
-    result = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(work))
+    result = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(work))
     payload(result)
     stdout_lines = result.stdout.splitlines()
     assert len(stdout_lines) == 1
@@ -56,7 +56,7 @@ def test_verify_full_error_json_is_last_stderr_line(python_exe, tmp_path):
     commit(work, "test: suites")
     patch_module_command(work, "lint", lambda _: "printf no-newline; exit 1")
     commit(work, "test: lint 失败")
-    result = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(work))
+    result = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(work))
     assert result.returncode != 0
     error = last_json(result.stderr)
     assert error["error"] == "verify_command_failed"
@@ -71,7 +71,7 @@ def test_verify_full_progress_uses_global_total(python_exe, tmp_path):
         str(write_release_objectives(tmp_path)),
     ))
     work = Path(created["worktree"])
-    result = mdf(python_exe, "verify", "run", "--scope", "branch", "--repo", str(work))
+    result = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(work))
     payload(result)
     lines = [
         f"[{index}/4] start {name}"
