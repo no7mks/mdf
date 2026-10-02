@@ -75,7 +75,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify full 之后 |
 | `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify full / fact 已在主链完成） |
-| `$mdf squash` | 执行已确认的 soft-reset 多段整理（不含是否/几段判断） |
+| `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |

@@ -337,6 +337,9 @@ close-out 在**第一次把目标主线合入交付分支**之前（feature/bugf
 release/hotfix←master），可建议整理交付分支本地历史。非强制；用户拒绝则跳过。
 `--auto-pilot` / `--yolo` **不得**擅自改写历史。
 
+**职责**：调用方决定是否激活（启发式 + 用户确认）。公开 `$mdf squash` 负责地板、
+切段定型、message、确认后执行；可用 `--dry-run` 只产出建议。
+
 ### 地板（`reset --soft` 目标）
 
 地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
@@ -370,13 +373,13 @@ release/hotfix←master），可建议整理交付分支本地历史。非强制
 
 ### 手段（只允许 soft reset）
 
-先记下 tip 与各段界完整 hash。Jev（或主 Agent）只做定型判断：是否建议、几段、切法
-（`noul` / `choice` / `run`）；**不写** commit message。主 Agent 撰写每段中文
-Conventional Commit（含 Bug 的段保留完整 Bug ID），必要时请用户确认。
+公开 `$mdf squash` 承担地板计算、切段定型、message 与执行（见
+`references/squash.md`）。Jev/Agent 在 squash 内定型几段与切法
+（`noul` / `choice` / `run`），**不写** commit message；主 Agent 撰写中文
+Conventional Commit（含 Bug 的段保留完整 Bug ID）。调用方的「是否建议」不在本段。
 
-执行由公开 `$mdf squash` 承担（见 `references/squash.md`）：多段 =
-1 次 soft reset + N 次按段界树提交；完成后树须与旧 tip 一致，且
-`start_commit` 仍为 HEAD 祖先。
+执行：多段 = 1 次 soft reset + N 次按段界树提交；完成后树须与旧 tip 一致，且
+`start_commit` 仍为 HEAD 祖先。`--dry-run` 只展示计划、不改写。
 
 ❌ 禁止：`git rebase` / `rebase -i`、`git merge --squash`、越过地板、涵盖他人
 commit、已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。

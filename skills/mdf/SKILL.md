@@ -82,7 +82,7 @@ disable-model-invocation: true
                  ├──── fact audit ────────────────────────────────────→ references/fact-audit.md
                  ├──── prp split ─────────────────────────────────────→ references/prp-split.md
                  ├──── close-out / finish ────────────────────────────→ references/close-out.md
-                 ├──── squash ────────────────────────────────────────→ references/squash.md
+                 ├──── squash [--dry-run] ────────────────────────────→ references/squash.md
                  ├──── prettify ──────────────────────────────────────→ references/prettify.md
                  ├──── clarify <议题> ────────────────────────────────→ references/clarify.md
                  ├──── bug create ────────────────────────────────────→ references/bug-create.md
@@ -147,6 +147,7 @@ intent 只由显式调用选择：
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托从 start 起的剩余交付阶段直到 close-out。
 - `$mdf close-out` 与 `$mdf finish` 同义，均执行 `references/close-out.md`。
+- `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
 - 其他入口仍按显式调用路由。
 
 帮助与 CLI：

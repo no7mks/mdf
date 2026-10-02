@@ -447,7 +447,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "擅自改写历史" in contract
     assert "是否建议（可选启发式）" in contract
     assert "不可 squash" in contract
-    assert "建议 squash 且用户确认" in finish
+    assert "dry-run 建议且用户确认执行" in finish
     assert "推导出必须空转的 owner 开发" in contract
     assert "has_dev" in contract
     verify = workflow("verify")

@@ -1,7 +1,7 @@
 # Squash
 
-`$mdf squash` 在已确认的地板与段界上，用 soft reset 压成一段或多段提交。
-只执行，不做「是否建议 / 几段 / 切法」。无 CLI 参数。
+`$mdf squash [--dry-run]` 在交付分支上整理本地历史：定地板、定型切段、撰写
+message，确认后 soft reset 多段提交。是否激活由调用方决定；本 intent 负责怎么压。
 
 ## 决策树
 
@@ -14,14 +14,29 @@
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 2 Execute                        │
+│ 2 Plan                           │
+└────────────────┬─────────────────┘
+                 │
+                 ├──── 不可压 ───────→ [报告并停止]
+                 ├──── --dry-run ────→ [展示建议并结束]
+                 │
+                 ▼ 完整调用
+┌──────────────────────────────────┐
+│ 3 Confirm                        │
+└────────────────┬─────────────────┘
+                 │
+                 ├──── 用户拒绝 ────→ [结束]
+                 │
+                 ▼ 已确认
+┌──────────────────────────────────┐
+│ 4 Execute                        │
 └────────────────┬─────────────────┘
                  │
                  ├──── 失败/缺失 ────→ [保留现场并停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 3 Verify                         │
+│ 5 Verify                         │
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过 ─────────→ [结束]
@@ -30,16 +45,21 @@
 
 ## 工作流（唯一执行契约）
 
-读取 `references/common.md` 与 `references/delivery-contract.md`
-「可选历史整理（squash）」的地板规则与禁止项；不读启发式、不定型。
+- 读取 `references/common.md`。
+- 读取 `references/delivery-contract.md`「可选历史整理（squash）」：
+  地板、禁止项、切法定型与手段。
+- 「是否建议」启发式由调用方选用；本 intent 不决定是否激活。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 约束 | 核交付上下文、门禁与已确认三元组 | 合法计划 | 2 | 停止 |
-| 2 | Execute | 约束 | soft reset 后按段界 restore 并 commit | 新提交链 | 3 | 保留现场并停止 |
-| 3 | Verify | 约束 | 树与旧 tip 一致且 start_commit 仍祖先 | 空 diff、clean | 结束 | 保留现场并停止 |
+| 1 | Check entry | 约束 | 核交付上下文与改写门禁 | 可进入 | 2 | 停止 |
+| 2 | Plan | 约束 | 定地板、定型切段、起草 message | 建议计划 | dry-run 结束；否则 3 | 不可压则停 |
+| 3 | Confirm | 约束 | 用户确认计划（地板、段界、messages） | 已确认计划 | 4 | 拒绝则结束 |
+| 4 | Execute | 约束 | soft reset 后按段界 restore 并 commit | 新提交链 | 5 | 保留现场并停止 |
+| 5 | Verify | 约束 | 树与旧 tip 一致且 start_commit 仍祖先 | 空 diff、clean | 结束 | 保留现场并停止 |
 
-`$mdf squash` 执行本流程。独立调用只推进本 intent；close-out 内部委托时完成后返回。
+`$mdf squash` 执行本流程；`--dry-run` 在步骤 2 后展示建议并结束，不改写。  
+独立调用只推进本 intent；close-out 内部委托时完成后返回。
 
 ## 术语与数据结构
 
@@ -52,30 +72,48 @@
 - 解析 Git 根；工作区对已跟踪改动须 clean。
 - 须在交付分支：读当前交付材料的 `delivery.json`，取 `start_commit`；
   缺失或不是 HEAD 祖先 → 停止。
+- 仅接受可选 `--dry-run`；其它未知 `--` 停止询问。
 - 门禁（任一命中则停、不改写；原文见 `delivery-contract.md` 禁止项）：
   - 已推送分支上改写
   - 审查窗未关时改写
   - 目标主线已合入交付分支后再压
   - tip 为他人提交（author 或 committer email ≠ `git config user.email`）
 
-### 三元组
-
-- 三元组 = 地板 hash + 有序段界 tip（末段=HEAD，≥1）+ 一一对应 messages
-  （中文 Conventional Commit；含 Bug 段保留完整 Bug ID）。
-- 须调用方已确认，或独立调用在本步收集并确认。
-- 独立调用：可算地板**候选**；确认前可起草 message。❌ 不得提案段界/切法。
-- close-out 委托：只复核已确认三元组；不起草 message、不定型。
-- 复核地板（≥交付地板、≥他人抬升）与段界；地板..HEAD 非空；否则停。
-- ❌ 无确认三元组不得进步骤 2；步骤 2 不改已确认 message；不定型。
-- 验收：门禁通过、三元组已确认且复核合法 → 执行；否则停止、不改写。
-
-### 执行
+### 计划
 
 <a id="s2"></a>
 
-- 只使用步骤 1 已确认的三元组；先记下旧 tip 完整 hash。
+**定型**
+
+- 按 contract **地板**规则计算地板（交付地板与他人抬升取较晚者）。
+  - 不可压（地板缺失、区间空、tip 他人等）→ 报告原因并停止。
+- Jev/Agent 定型**几段与切法**（`noul` / `choice` / `run`）；**不写** message。
+  - 段界 = 有序 tip 列表（均在地板..HEAD；末段 = 当前 HEAD；≥1 段）。
+- 主 Agent 撰写每段中文 Conventional Commit message（含 Bug 的段保留完整 Bug ID）。
+- 产出建议计划：地板 hash、段界 tip、messages、旧 tip。
+- `--dry-run`：展示建议计划后结束；❌ 不 reset、不 commit。
+- 同会话若已有未过期 dry-run 计划且 HEAD 仍为该旧 tip，完整调用可复用，不必重算。
+
+### 确认
+
+<a id="s3"></a>
+
+**确认**
+
+- 向用户展示建议计划；须明确确认地板、段界与 messages。
+- 拒绝 → 结束，不改写。
+- 修改段界或 message 后须再确认；❌ 不得在未确认下进入执行。
+- close-out 委托：用户已对 dry-run 建议确认「执行」时，本步可直接采信该确认。
+
+### 执行
+
+<a id="s4"></a>
+
+**执行**
+
+- 只使用已确认计划；先记下旧 tip 完整 hash。
 - `git reset --soft <地板>`
-- 按确认顺序处理每个段界 tip（原历史上的 commit）：
+- 按确认顺序处理每个段界 tip：
   - `git restore --source=<段界> --staged --worktree .`
   - `git commit`（该段已确认 message）
 - 多段 = 1 次 soft reset + N 次按段界树提交；一段时 N=1。
@@ -83,12 +121,13 @@
   commit。
 - ❌ 不得改写已确认 message，不得增删段界。
 - 各段文件完全不重叠时才可按路径分批；通用流程仍按段界 **tree**。
-- 验收：产生 N 个新提交 → 校验。
 - 失败：保留现场，报告旧 tip 与当前 HEAD；❌ 不自动 `reset --hard`。
 
 ### 校验
 
-<a id="s3"></a>
+<a id="s5"></a>
+
+**校验**
 
 - `git diff <旧 tip> HEAD` 必须为空。
 - `start_commit` 仍为 HEAD 祖先。
