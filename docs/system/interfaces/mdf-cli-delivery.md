@@ -106,7 +106,7 @@
 - suite 超出预算即终止 process group 并失败，details 含 partial tail。
   - 预算默认 quick 30、smoke 300，可由 `verification.budgets` 覆盖。
   - lint、build 与未设预算的 release 不限时。
-- 结果写入 `changes/unreleased/<slug>/verify.branch.json`，含 `suites`，不含 commit。
+- 结果写入 `changes/unreleased/<slug>/verification-report.json`，含 `suites`，不含 commit。
   - feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix 为该分支稳定 SemVer。
 - 同入口多命令：默认串行；`modules.yaml` 中 quick/smoke/release 可设
   `parallel: true`（命令数 >5 返回 `too_many_parallel_commands`）。
@@ -115,12 +115,12 @@
 
 - 须至少一个 `--module` 或可由 `--paths` 推断的 module。
 - 跑涉及 module 的 lint、build、quick；可选 `--test` 追加点名命令。
-- 不写 `verify.branch.json`；stdout 返回结果 JSON。
+- 不写 `verification-report.json`；stdout 返回结果 JSON。
 
 **named**
 
 - 需要 `--suites <名>[,<名>…]`（五固定或 `module.named` 中的真 named）。
-- 不要求交付分支；不写 `verify.branch.json`。
+- 不要求交付分支；不写 `verification-report.json`。
 - 五固定：命令来自 `.mdf/modules.yaml`（override 或按 module 展开）。
 - 真 named：命令来自 `docs/system/testing/<name>.md` frontmatter 的
   `commands`（或简写 `command`）；可选 `parallel: true`（>5 报错）。

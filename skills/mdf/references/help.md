@@ -308,7 +308,7 @@ $mdf clarify 要不要把缓存放到 Redis
     [--module|--paths|--test ...]`
   - 用途：module 级验证；converge/开发用 smart，主链在 code-review 后跑 branch；
     named 按 `--suites` 跑指定 suite。
-  - 说明：branch 写 `verify.branch.json`（feature/bugfix/hotfix→smoke，
+  - 说明：branch 写 `verification-report.json`（feature/bugfix/hotfix→smoke，
     release→release；不含 commit）；smart/named 不落盘；真 named 命令来自
     testing 文档 frontmatter。
 - `$mdf code-review`

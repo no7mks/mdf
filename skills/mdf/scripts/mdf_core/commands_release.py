@@ -20,7 +20,7 @@ from .gitutil import (
     run,
 )
 from .paths import ensure_safe_managed_paths, load_manifest
-from .verification import repo_verification
+from .verification import recorded_suites, repo_verification, required_suite
 from .yamlutil import read_frontmatter
 
 
@@ -43,12 +43,13 @@ def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
     )
 
 
-def repo_release_commands(repo: Path) -> list[str]:
-    return [item["command"] for item in repo_verification(repo).plan("release")]
+def repo_branch_commands(repo: Path, kind: str) -> list[str]:
+    suite = required_suite(kind)
+    return [item["command"] for item in repo_verification(repo).plan(suite)]
 
 
 def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:
-    """已有 full 报告声称通过且命令序列一致时复用；不对照 HEAD。"""
+    """已有 branch 报告声称通过且命令序列一致时复用；不对照 HEAD。"""
     from .project_verify import evidence_path, valid_evidence
 
     evidence = valid_evidence(repo)
@@ -59,6 +60,7 @@ def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:
         return None
     return {
         "path": str(evidence_path(repo).relative_to(repo)),
+        "suites": recorded_suites(evidence),
         "results": [
             {key: item[key] for key in ("command", "exit_code", "log", "report")
              if key in item}
@@ -193,7 +195,7 @@ def derive_closeout_spec(
             "--deferred-acceptance-json 必须是对象",
             code="invalid_closeout_spec",
         )
-    commands = repo_release_commands(repo)
+    commands = repo_branch_commands(repo, mode)
     return {
         "schema_version": SCHEMA_VERSION,
         "mode": mode,
@@ -242,9 +244,9 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     reused = reusable_results(repo, context["validation_commands"])
     if reused is None:
         raise MDFError(
-            "release closeout 要求可复用的 verify.branch.json"
+            "release closeout 要求可复用的 verification-report.json"
             "（all_passed 且命令序列一致）；不在 closeout 内执行验证",
-            code="verify_full_not_reusable",
+            code="verification_report_not_reusable",
         )
     command_results = reused["results"]
     ensure_clean(repo)
@@ -275,7 +277,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             "semver": result["semver"],
             "rewrites": result["rewrites"],
             "verification": {
-                "suites": ["quick", "release"],
+                "suites": reused["suites"],
                 "commands": context["validation_commands"],
                 "results": command_results,
                 "reused": reused["path"],

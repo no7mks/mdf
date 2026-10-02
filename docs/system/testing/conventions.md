@@ -52,7 +52,7 @@
 | smoke | `python -m pytest tests/unit tests/e2e` | 300s | 约 42s | 改动收口 |
 | release | `python -m pytest tests/unit tests/e2e` | 无 | 约 42s | 发布前 |
 
-full（全部 test case）即 `python -m pytest`，等于 lint 与 release 之和，没有单独入口。
+全部 test case 的检查命令为 `python -m pytest`，等于 lint 与 release 之和，没有单独入口。
 
 ## named suite
 

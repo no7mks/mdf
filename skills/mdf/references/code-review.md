@@ -70,7 +70,7 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
   - feature 用 delivery.json 的 slug，bugfix 用 Bug ID 的 kebab-case，
     release/hotfix 用该分支的稳定 SemVer，不用 slugify。
   - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
-    commit 终稿。full 证据是主链 `verify.branch.json`，不写
+    commit 终稿。branch 验证证据是主链 `verification-report.json`，不写
     `code-review.verification.json`。
   - ❌ 不在 `docs/context/research/` 保存审查报告。
 
@@ -226,9 +226,9 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 - 本步不跑 verify branch（留给主链下一 intent）；也不写 `gates/code-review.json`。
 - 本轮改动了实现/测试：跑 `$mdf verify --scope smart`；失败回 3 修。
   - 未改实现/测试：跳过 smart。
-- close-out 集成后的增量审查仍按下方「close-out 核对」；full 证据由主链
-  `verify.branch.json` 负责，不在本步伪造。
-- ❌ 不能用仅检查文档结构的 full validation 代替业务验证。
+- close-out 集成后的增量审查仍按下方「close-out 核对」；branch 验证证据由主链
+  `verification-report.json` 负责，不在本步伪造。
+- ❌ 不能用仅检查文档结构的全量 validation 代替业务验证。
 - 非 quick 用例在 converge 之后失败且本轮触及：
   - 必须尝试补一条 quick 复现用例。
   - 结果写入终稿「quick 复现」字段。

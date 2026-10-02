@@ -50,4 +50,4 @@ test case 不属于某 suite 时由成员选择规则排除，不在运行时 sk
 ### release
 
 包含 smoke，发版所需的 test case；仅 release 的 verify branch 跑到此。全部 test
-case 即 full，通常没有入口。
+case 的集合通常没有独立入口。

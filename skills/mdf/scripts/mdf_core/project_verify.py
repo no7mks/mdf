@@ -36,7 +36,7 @@ def evidence_path(repo):
     slug = unreleased_slug(details)
     return safe(
         repo,
-        repo / "changes/unreleased" / slug / "verify.branch.json",
+        repo / "changes/unreleased" / slug / "verification-report.json",
     )
 
 

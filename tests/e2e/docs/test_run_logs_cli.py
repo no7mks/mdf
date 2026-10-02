@@ -60,7 +60,7 @@ def test_verify_keeps_full_output_of_every_entry(python_exe, tmp_path):
     )
     commit(repo, "test: lint 长输出")
     payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
-    evidence = json.loads((root / "verify.branch.json").read_text())
+    evidence = json.loads((root / "verification-report.json").read_text())
     logs = {item["id"]: item["log"] for item in evidence["results"]}
     assert set(logs) == {
         "lint:default", "build:default", "quick:default", "smoke:default",

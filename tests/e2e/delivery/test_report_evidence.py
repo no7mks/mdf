@@ -25,7 +25,9 @@ def _register_billing(repo: Path, command: str = SUITE_OK) -> None:
 def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     repo, root = converge_ready(python_exe, tmp_path)
     payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
-    evidence = json.loads((root / "verify.branch.json").read_text())
+    evidence = json.loads((root / "verification-report.json").read_text())
+    assert evidence["scope"] == "branch"
+    assert "level" not in evidence
     reports = {item["id"]: item.get("report") for item in evidence["results"]}
     assert reports["lint:default"] is None and reports["build:default"] is None
     assert reports["quick:default"]["suite"] == "quick"
@@ -40,7 +42,7 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     commit(repo, "test: quick 含 skipped")
     result = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo))
     assert "verify_command_failed" in result.stderr
-    evidence = json.loads((root / "verify.branch.json").read_text())
+    evidence = json.loads((root / "verification-report.json").read_text())
     quick = next(
         item for item in evidence["results"] if item["id"] == "quick:default"
     )
@@ -157,7 +159,7 @@ def test_verify_scope_shortcut(python_exe, tmp_path, target):
     repo, root = converge_ready(python_exe, tmp_path)
     extra = ["--module", "default"] if target == "smart" else []
     result = payload(mdf(python_exe, "verify", target, *extra, "--repo", str(repo)))
-    assert result["result"]["level"] == target
+    assert result["result"]["scope"] == target
 
 
 def test_verify_named_shortcut_and_conflicting_scope(python_exe, tmp_path):

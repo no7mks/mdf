@@ -7,6 +7,7 @@ from .paths import relative
 from .validate_change_schema import validate_change_file
 from .validate_links import validate_links
 from .validate_records import validate_record_references
+from .verification import required_suites
 
 
 def summarize_closeout(repo: Path, context: dict[str, Any]) -> dict[str, Any]:
@@ -69,7 +70,7 @@ def summarize_closeout(repo: Path, context: dict[str, Any]) -> dict[str, Any]:
         "moves": moves,
         "affected_files": sorted(affected),
         "verification": {
-            "suites": ["quick", "release"],
+            "suites": required_suites(context["mode"]),
             "commands": context["validation_commands"],
             "executed": False,
         },

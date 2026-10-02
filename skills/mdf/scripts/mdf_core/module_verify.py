@@ -36,7 +36,7 @@ from .yamlutil import read_frontmatter
 def evidence_file(repo: Path, slug: str) -> Path:
     return safe(
         repo,
-        repo / "changes/unreleased" / slug / "verify.branch.json",
+        repo / "changes/unreleased" / slug / "verification-report.json",
     )
 
 
@@ -150,18 +150,12 @@ def valid_branch(repo: Path) -> dict[str, Any] | None:
     result = read_json(path)
     if (
         result.get("branch") != branch
-        or result.get("level") != "branch"
+        or result.get("scope") != "branch"
         or not suites_cover(recorded_suites(result), required_suites(kind))
         or not result.get("all_passed")
     ):
         return None
     return result
-
-
-# 兼容旧名引用
-valid_full = valid_branch
-plan_full = plan_branch
-plan_onsite = plan_smart
 
 
 def command_verify(args) -> None:
@@ -194,6 +188,11 @@ def command_verify(args) -> None:
     if getattr(args, "suites", None):
         raise MDFError(
             "--suites 仅用于 --scope named",
+            code="invalid_verify_scope",
+        )
+    if scope == "branch" and (args.module or args.paths or args.test):
+        raise MDFError(
+            "branch 不接受 --module / --paths / --test",
             code="invalid_verify_scope",
         )
     branch, kind, slug = _delivery_slug(repo)
@@ -248,7 +247,7 @@ def _verify_branch(repo, branch, kind, slug) -> None:
     expected = {item["id"] for item in plan_branch(repo, kind)}
     passed = {item["id"] for item in results if item["passed"]}
     result = {
-        "level": "branch",
+        "scope": "branch",
         "branch": branch,
         "kind": kind,
         "modules": load_modules(repo).names(),
@@ -328,7 +327,7 @@ def _verify_smart(repo, branch, kind, slug, args) -> None:
             )
     all_passed = all(item["passed"] for item in results)
     result = {
-        "level": "smart",
+        "scope": "smart",
         "branch": branch,
         "kind": kind,
         "modules": modules,
@@ -375,7 +374,7 @@ def _verify_named(repo, args) -> None:
         results.extend(run_targets(repo, targets, parallel=parallel))
     all_passed = all(item["passed"] for item in results)
     result = {
-        "level": "named",
+        "scope": "named",
         "suites": names,
         "results": results,
         "all_passed": all_passed,

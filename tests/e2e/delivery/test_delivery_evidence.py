@@ -33,7 +33,7 @@ def test_non_feature_verification_records_run_and_rerun_after_impl_change(
     suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     commit(work, "test: 关联 named suite")
     payload(mdf(python_exe, "verify", "--scope", "branch", *args))
-    evidence = work / "changes/unreleased/bug-cd34/verify.branch.json"
+    evidence = work / "changes/unreleased/bug-cd34/verification-report.json"
     assert evidence.is_file()
     first = json.loads(evidence.read_text())
     assert first["all_passed"] is True
@@ -100,7 +100,7 @@ def test_bugfix_requires_named_suite_and_runs_smoke(python_exe, tmp_path):
     suites.write_text(json.dumps({"suites": ["billing"]}) + "\n")
     commit(work, "test: 关联 billing")
     payload(mdf(python_exe, "verify", "--scope", "branch", *args))
-    path = work / "changes/unreleased/bug-cd34/verify.branch.json"
+    path = work / "changes/unreleased/bug-cd34/verification-report.json"
     evidence = json.loads(path.read_text())
     assert evidence["suites"] == ["quick", "smoke"]
     assert [item["id"] for item in evidence["results"]] == [
@@ -129,7 +129,7 @@ def test_release_runs_release_suite(python_exe, tmp_path):
     work = Path(created["worktree"])
     args = ["--repo", str(work)]
     payload(mdf(python_exe, "verify", "--scope", "branch", *args))
-    path = work / "changes/unreleased/1.3.0/verify.branch.json"
+    path = work / "changes/unreleased/1.3.0/verification-report.json"
     evidence = json.loads(path.read_text())
     assert evidence["suites"] == ["quick", "release"]
     assert [item["id"] for item in evidence["results"]] == [

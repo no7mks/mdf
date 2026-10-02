@@ -57,7 +57,7 @@
 - 位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 - `verify named` 需通过 `--suites` 指定 suite。
 - 无 arg 且无 `--scope` 时停止并要求补充；不默认选择 scope。
-- `--module` / `--paths` / `--test` 仅用于 smart；branch 不用这些参数缩小范围。
+- `--module` / `--paths` / `--test` 仅用于 smart；branch/named 携带这些参数则停止。
 
 主链委托 branch 时：失败须现场修到绿后再结束本 intent。
 
@@ -110,20 +110,21 @@
   - 不回退假阶段、不发明对 converge 的过期检查。
 - 修代码时**自行从架构师角度审视**修复是否合适（范围、边界、与设计一致性）。
   - ❌ 不因此强制重开 `$mdf code-review`。
-  - 审视要点只在 4 于 branch 已绿时写入 `verify.md`（与摘要同文件）；未绿轮不写。
+  - 审视要点只在 4 于 branch 已绿时写入 `verification-report.md`（与摘要同文件）；未绿轮不写。
 - 本 intent 内出现业务改动（实现/测试/验证配置）：提交或还原后须再跑本步并进 4。
 
 ### 记录与完成
 
-- branch：无论成败均写入 `changes/unreleased/<slug>/verify.branch.json`；
+- branch：无论成败均写入 `changes/unreleased/<slug>/verification-report.json`；
   **report**，非 gate；不含 commit / head；`all_passed:false` 时 CLI 仍失败。
   - 未绿且可修 → 回 3（提交后重跑）；未绿且阻塞 → 停止并报告。
-  - 仅 `all_passed:true` 时：追加 `verify.md`（suite、报告路径、架构审视要点）。
+  - 仅 `all_passed:true` 时：追加 `verification-report.md`（suite、报告路径、架构审视要点）。
+    报告标题为 Verification Report，写明 scope: branch 与实际 suites；阶段仍为 verify branch。
     勾选 objectives 的 verify branch 并提交。
   - ❌ 未绿轮不得勾选 verify branch，不得把失败摘要当成通过证据。
 - 主链完成条件：本 intent 内 branch 已绿并勾选提交。
   - ❌ 不以相对下游 intent 的过期审判或 commit 对齐作为本步通行证。
 - smart/named：不写 branch 证据，不勾选 objectives；通过读 stdout，失败读 stderr JSON。
   本步无额外落盘义务；失败报告失败，不宣称通过。
-- quick 复现结论只在 branch 已绿写入 `verify.md` 时一并记录。
+- quick 复现结论只在 branch 已绿写入 `verification-report.md` 时一并记录。
   - 不写 `code-review.md`（审查轮次的 quick 复现仍由 code-review 自记）。

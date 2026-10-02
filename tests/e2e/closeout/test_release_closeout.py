@@ -49,11 +49,11 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert not (repo / "changes" / "1.3.0").exists()
     assert not git(repo, "status", "--porcelain").stdout
 
-    seed_verify_full(python_exe, repo)
+    seed_verify_branch(python_exe, repo)
     applied = payload(mdf(python_exe, *arguments))
     assert applied["dry_run"] is False
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/verify.branch.json"
+        "changes/unreleased/1.3.0/verification-report.json"
     )
     results = applied["verification"]["results"]
     assert [(item["command"], item["exit_code"]) for item in results] == [
@@ -115,7 +115,7 @@ def test_closeout_never_executes_verification_without_reusable_full(
 
     result = mdf(python_exe, *arguments)
     assert result.returncode != 0
-    assert "verify_full_not_reusable" in result.stderr
+    assert "verification_report_not_reusable" in result.stderr
     assert not (repo / "verification-marker").exists()
     assert not (repo / "changes" / "1.3.0").exists()
 
@@ -134,7 +134,7 @@ def test_closeout_rejects_unclassified_unreleased_bug_on_apply(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 遗漏未发布 Bug")
     git(repo, "checkout", "-b", "release/1.3.0")
-    seed_verify_full(python_exe, repo)
+    seed_verify_branch(python_exe, repo)
 
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0
@@ -160,7 +160,7 @@ def test_critical_bug_cannot_be_wont_fixed_at_closeout(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: critical wont-fix")
     git(repo, "checkout", "-b", "release/1.3.0")
-    seed_verify_full(python_exe, repo)
+    seed_verify_branch(python_exe, repo)
 
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0
@@ -188,7 +188,7 @@ def test_major_bug_wont_fix_needs_explicit_acceptance(
 ):
     repo = copy_fixture(tmp_path)
     prepare_wont_fix_release(repo)
-    seed_verify_full(python_exe, repo)
+    seed_verify_branch(python_exe, repo)
 
     rejected = mdf(python_exe, *release_arguments(repo))
     assert rejected.returncode != 0
@@ -208,7 +208,7 @@ def test_major_bug_wont_fix_needs_explicit_acceptance(
     accepted_root.mkdir()
     accepted_repo = copy_fixture(accepted_root)
     prepare_wont_fix_release(accepted_repo)
-    seed_verify_full(python_exe, accepted_repo)
+    seed_verify_branch(python_exe, accepted_repo)
     applied = payload(
         mdf(
             python_exe,
@@ -235,7 +235,7 @@ def test_hotfix_closeout_uses_manifest_commands(
     (review / "code-review.md").write_text("# 审查\n\n通过。\n", encoding="utf-8")
     git(repo, "add", "--", "changes/unreleased/1.2.1")
     git(repo, "commit", "-m", "docs: 热修复审查记录")
-    seed_verify_full(python_exe, repo)
+    seed_verify_branch(python_exe, repo)
     hotfix = json.dumps(
         {
             "fixed": [BUG_ID],
@@ -257,7 +257,7 @@ def test_hotfix_closeout_uses_manifest_commands(
         )
     )
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.2.1/verify.branch.json"
+        "changes/unreleased/1.2.1/verification-report.json"
     )
     assert applied["version"] == "1.2.1"
     assert (repo / "changes" / "1.2.1" / "CHANGE.md").is_file()
@@ -279,7 +279,7 @@ def test_closeout_requires_clean_worktree_for_preview_and_apply(
         assert "dirty_worktree" in result.stderr
 
 
-def test_closeout_reuses_valid_verify_full_evidence(python_exe: str, tmp_path: Path):
+def test_closeout_reuses_valid_verify_branch_evidence(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     runs = tmp_path / "release-runs"
     patch_module_command(
@@ -298,7 +298,7 @@ def test_closeout_reuses_valid_verify_full_evidence(python_exe: str, tmp_path: P
 
     applied = payload(mdf(python_exe, *release_arguments(repo)))
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/verify.branch.json"
+        "changes/unreleased/1.3.0/verification-report.json"
     )
     assert runs.read_text() == "run\n"
     assert any(
@@ -329,7 +329,7 @@ def test_closeout_reuses_after_impl_change_when_report_still_green(
 
     applied = payload(mdf(python_exe, *release_arguments(repo)))
     assert applied["verification"]["reused"] == (
-        "changes/unreleased/1.3.0/verify.branch.json"
+        "changes/unreleased/1.3.0/verification-report.json"
     )
     assert runs.read_text() == "run\n"
 
@@ -349,7 +349,7 @@ def test_closeout_fails_when_command_sequence_mismatches(
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 审查记录")
     payload(mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo)))
-    path = repo / "changes/unreleased/1.3.0/verify.branch.json"
+    path = repo / "changes/unreleased/1.3.0/verification-report.json"
     evidence = json.loads(path.read_text())
     # 伪造与当前 plan 不一致的 command；closeout 不得重跑验证
     for item in evidence["results"]:
@@ -362,7 +362,7 @@ def test_closeout_fails_when_command_sequence_mismatches(
 
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0
-    assert "verify_full_not_reusable" in result.stderr
+    assert "verification_report_not_reusable" in result.stderr
     assert runs.read_text() == "run\n"
 
 
@@ -377,7 +377,7 @@ def test_closeout_requires_bug_closed_for_matching_version(python_exe, tmp_path,
         replace(bug, "fixed_in: 1.3.0", "fixed_in: 1.4.0")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 未验收或交付版本不符")
-    seed_verify_full(python_exe, repo)
+    seed_verify_branch(python_exe, repo)
     before = bug.read_text()
     result = mdf(python_exe, *release_arguments(repo))
     assert result.returncode != 0 and "invalid_closure" in result.stderr

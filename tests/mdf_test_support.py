@@ -354,8 +354,8 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
     )
 
 
-def seed_verify_full(python_exe: str, repo: Path) -> None:
-    """写入可复用的 verify.branch.json；release-closeout 只复用、不重跑验证。"""
+def seed_verify_branch(python_exe: str, repo: Path) -> None:
+    """写入可复用的 verification-report.json；release-closeout 只复用、不重跑验证。"""
     branch = git(repo, "branch", "--show-current").stdout.strip()
     folder = branch.split("/", 1)[1]
     root = repo / "changes" / "unreleased" / folder
@@ -387,7 +387,7 @@ def prepare_release_closeout_repo(
     git(repo, "commit", "-m", "feat: 准备服务健康变更")
     git(repo, "checkout", "-b", "release/1.3.0")
     if python_exe is not None:
-        seed_verify_full(python_exe, repo)
+        seed_verify_branch(python_exe, repo)
     return repo
 
 

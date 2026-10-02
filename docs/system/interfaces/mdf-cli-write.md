@@ -103,7 +103,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 正常运行的步骤：
 
 1. 验证：
-   - 复用条件：已有 `verify.branch.json` 声称通过，且命令序列与当前 lint、build、quick、
+   - 复用条件：已有 `verification-report.json` 声称通过，且命令序列与当前 lint、build、quick、
      release 一致（不对照 HEAD）。
    - 满足时直接复用其结果，输出 `verification.reused` 为证据路径。
    - 否则依次执行这些命令，`reused` 为 null。

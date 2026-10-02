@@ -143,7 +143,7 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 - release 从 develop 开分支前确认发布目标。
   - 工作线三选一；目标里只写选中的那条。不实施新 PRP。
   - 不联调：`start → [design?] → 开发 → converge → code-review → verify branch →
-    fact audit → close-out`。开发/converge 用 smart；full 与 fact 在 code-review 之后。
+    fact audit → close-out`。开发/converge 用 smart；branch 验证与 fact 在 code-review 之后。
   - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
   - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
   - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。

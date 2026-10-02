@@ -287,7 +287,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "补覆盖" in contract
     assert "补覆盖按" in workflow("integrate")
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
-    assert "full 指全部 test case" in contract
+    assert "验证入口仅 lint/build/quick/smoke/release" in contract
     assert "非 feature 分支变更 modules.yaml 套件入口或新增 named suite：默认模式需用户确认" in contract
     repo_contract = workflow("repository-contract")
     assert "验证命令**不在** manifest；写在 `.mdf/modules.yaml`" in repo_contract
@@ -306,7 +306,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     review = workflow("code-review")
     assert "必须尝试补一条 quick 复现用例" in review
     assert "quick 复现（已补 <用例位置>" in review
-    assert "suites.json" in review or "verify full" in review or True
+    assert "suites.json" in review or "verify branch" in review or True
     assert "converge" in review
     assert "不跑 verify branch" in review
     assert "`$mdf verify --scope smart`" in review or "verify --scope smart" in review
@@ -325,7 +325,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "进度只认 objectives" in deliver or "只认 objectives" in deliver
     finish = workflow("close-out")
     assert "不委托 verify" in finish or "不内嵌、不委托 verify" in finish
-    assert "永不在 closeout 内执行验证" in finish or "verify_full_not_reusable" in finish
+    assert "永不在 closeout 内执行验证" in finish or "verification_report_not_reusable" in finish
     assert "不算 verify 族" in finish
     assert "不做 commit 对齐审判" in finish or "不做 verify 报告的 commit 对齐" in finish
     contract = workflow("delivery-contract")

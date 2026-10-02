@@ -198,7 +198,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
         ))
         git(repo, "add", "--all")
         git(repo, "commit", "-m", "test: 验收并关闭热修复 Bug")
-        seed_verify_full(python_exe, repo)
+        seed_verify_branch(python_exe, repo)
         extra = ["--hotfix-change-json", json.dumps({
             "body": "修复服务超时。",
             "fixed": [BUG_ID],

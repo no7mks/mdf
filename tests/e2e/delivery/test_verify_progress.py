@@ -20,7 +20,7 @@ def last_json(stderr: str) -> dict:
     return json.loads(stderr.rstrip().splitlines()[-1])
 
 
-def test_verify_full_stdout_stays_json_and_labels_item_id(
+def test_verify_branch_stdout_stays_json_and_labels_item_id(
     python_exe, tmp_path
 ):
     repo, _ = start_repo(tmp_path)
@@ -44,7 +44,7 @@ def test_verify_full_stdout_stays_json_and_labels_item_id(
     assert "done exit=0" in result.stderr
 
 
-def test_verify_full_error_json_is_last_stderr_line(python_exe, tmp_path):
+def test_verify_branch_error_json_is_last_stderr_line(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
@@ -63,7 +63,7 @@ def test_verify_full_error_json_is_last_stderr_line(python_exe, tmp_path):
     assert "no-newline" in result.stderr
 
 
-def test_verify_full_progress_uses_global_total(python_exe, tmp_path):
+def test_verify_branch_progress_uses_global_total(python_exe, tmp_path):
     repo, _ = start_repo(tmp_path)
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "release",

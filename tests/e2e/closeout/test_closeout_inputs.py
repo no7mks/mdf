@@ -117,7 +117,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
     git(repo, "add", "--all")  # noqa: F405
     git(repo, "commit", "-m", "test: 引号与注释对象")  # noqa: F405
     git(repo, "checkout", "-b", "release/1.3.0")  # noqa: F405
-    seed_verify_full(python_exe, repo)  # noqa: F405
+    seed_verify_branch(python_exe, repo)  # noqa: F405
 
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
 
@@ -238,7 +238,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.2.1")  # noqa: F405
     init_git(repo)  # noqa: F405
     git(repo, "checkout", "-b", "hotfix/1.2.1")  # noqa: F405
-    seed_verify_full(python_exe, repo)  # noqa: F405
+    seed_verify_branch(python_exe, repo)  # noqa: F405
     hotfix = json.dumps(
         {
             "body": "调用超时已经修复。",
@@ -296,7 +296,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
     git(repo, "add", "--all")  # noqa: F405
     git(repo, "commit", "-m", "test: 两个 Change 证据")  # noqa: F405
     git(repo, "checkout", "-b", "release/1.3.0")  # noqa: F405
-    seed_verify_full(python_exe, repo)  # noqa: F405
+    seed_verify_branch(python_exe, repo)  # noqa: F405
 
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
     root = (repo / "changes" / "1.3.0" / "CHANGE.md").read_text(
@@ -344,7 +344,7 @@ def test_release_closeout_archives_the_whole_duplicate_group(
     repo = copy_fixture(tmp_path)  # noqa: F405
     write_closed_duplicate(repo)
     prepare_release(repo)
-    seed_verify_full(python_exe, repo)  # noqa: F405
+    seed_verify_branch(python_exe, repo)  # noqa: F405
 
     payload(mdf(python_exe, *closeout_args(repo)))  # noqa: F405
 

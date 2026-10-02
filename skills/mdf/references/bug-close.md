@@ -2,7 +2,7 @@
 
 二次验证已 `fixed` 的 Bug：只跑该 Bug 的复现用例，失败则像 converge 一样修到
 通过，并仅审查这次修复的代码。通过后标为 `closed` 并写 `fixed_in`，不跑全局
-full，不替代 `$mdf code-review`。
+验证，不替代 `$mdf code-review`。
 
 ## 决策树
 
@@ -86,7 +86,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - ❌ 边界：
   - 只有复现验证与修复审查都通过，才写 `closed` 与 `fixed_in`。
   - 不跑 branch/named 验证；只在本步修改实现/测试/配置后运行下方 smart，不按分支 kind 选择 suite。
-  - 可只读已有 `changes/unreleased/<slug>/verify.branch.json`（须 `all_passed: true`）。
+  - 可只读已有 `changes/unreleased/<slug>/verification-report.json`（须 `all_passed: true`）。
 
 ### 复现验证
 
@@ -94,7 +94,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 
 - 取证：
   - 本轮改过实现、测试或验证配置时，不复用修改前的报告；点名执行复现用例。
-  - 否则在 bugfix/hotfix/release 上，能证明报告覆盖当前实现时可读已绿的 verify.branch.json：
+  - 否则在 bugfix/hotfix/release 上，能证明报告覆盖当前实现时可读已绿的 verification-report.json：
     - 由本次执行记录确认报告之后未改相关实现/测试/配置；无法证明则点名执行。
     - results[].report.cases 仅含 test case 汇总，不含具体 test 清单。
     - 从 results[].log 读取 summary.json，用 cases[].tests[] 的 name/result

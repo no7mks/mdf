@@ -93,7 +93,7 @@
 
 - 读取 `references/common.md`、`references/repository-contract.md`：
   - 另读 `references/object-contract.md` 与 `references/delivery-contract.md`。
-- 入口前置：主链须已完成 verify branch（有效 `verify.branch.json`）与 fact audit；
+- 入口前置：主链须已完成 verify branch（有效 `verification-report.json`）与 fact audit；
   本 intent 不再内嵌二者。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
 - 步骤 2 可选 squash：先内部执行 `references/squash.md` 的 dry-run，确认执行后再
@@ -104,7 +104,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
-| 3 | Prepare materials | 约束 | 核对已有 full/fact；整理材料 | full 证据、fact、Change | 4 | 保留现场，停止 |
+| 3 | Prepare materials | 约束 | 核对已有 branch/fact；整理材料 | branch 验证证据、fact、Change | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
@@ -140,7 +140,7 @@
   - 版本根不存在，且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。
   - 版本根已跟踪、已提交，且 version、change_kind、source_branch 与当前分支完全一致、
     latest_release 等于目标版本时：
-    - 运行文档 full validation（不跑 `$mdf verify`），并按步骤 4 已收口规则
+    - 运行文档全量 validation（不跑 `$mdf verify`），并按步骤 4 已收口规则
       核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
   - 版本根提交后有未纳入收口的交付改动、记录缺损或状态不一致时停止，不覆盖版本目录。
 
@@ -170,7 +170,7 @@
   - 语义不明、需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
-    - 不启动 code-review；沿用已有 code-review 终稿与主链 `verify.branch.json`
+    - 不启动 code-review；沿用已有 code-review 终稿与主链 `verification-report.json`
       （须存在且 `all_passed: true`；否则按下方停止）。
     - 在 `code-review.md` 追加跳过说明（merge commit、路径清单；仍不得写入 commit
       hash）。
@@ -178,12 +178,12 @@
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
 - 不可跳过时：
-  - 若集成后无有效 `verify.branch.json`（缺失，或未声称 `all_passed:true`），
+  - 若集成后无有效 `verification-report.json`（缺失，或未声称 `all_passed:true`），
     或集成引入了实现/测试改动：
     - **停止并交接**：须在本 intent **之外**由主链重跑 `$mdf verify` branch 并自勾后再
-      续办 close-out；❌ 本 intent 不委托、不执行 verify（含 full / smart / run）。
+      续办 close-out；❌ 本 intent 不委托、不执行 verify（含 branch / smart / named）。
     - 不做 commit 对齐审判。
-  - 有有效 full 且无实现/测试增量、仅需审查时，进入 code-review 增量轮：
+  - 有有效 branch 报告且无实现/测试增量、仅需审查时，进入 code-review 增量轮：
     - feature：objectives 的 converge 项须已勾；未勾停止。
     - 上轮多人结论必须已由 owner 汇总进终稿的已采纳/未解决清单，
       不得把上轮多份原文交给本轮唯一 reviewer 去合并。
@@ -207,12 +207,12 @@
 **材料** <a id="s3"></a>
 
 - 确认主链 report **已交且声称通过**：
-  - 存在 `verify.branch.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
+  - 存在 `verification-report.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
   - objectives 中 verify branch / fact audit 已勾。
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
     `$mdf fact audit`，❌ 本 intent 不委托补跑。
-- ❌ 本 intent 不内嵌、不委托 verify branch / smart / run，也不内嵌 fact update /
+- ❌ 本 intent 不内嵌、不委托 verify branch / smart / named，也不内嵌 fact update /
   fact audit；不做 commit 对齐审判。bug close（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
 - 按分支准备材料：
@@ -239,7 +239,7 @@
 
 - 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
-  - `verify.branch.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
+  - `verification-report.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
   - fact 确认记录存在。
   - objectives：converge → code-review → verify branch → fact audit 均已勾（feature 另须
     design/开发依赖项已勾）。
@@ -322,9 +322,9 @@
   - 版本根 Change 聚合 child outcomes/evidence，evidence 按首次出现顺序去重并追加 manifest 验证命令。
   - CLI 操作前要求 clean；主动提交本次必要材料，不夹带无关改动。
 - 运行实际收口：
-  - CLI **只复用**可复用的 `verify.branch.json`（声称通过且命令序列一致）写入版本
+  - CLI **只复用**可复用的 `verification-report.json`（声称通过且命令序列一致）写入版本
     Change；❌ 永不在 closeout 内执行验证命令 / release suite。
-  - 不可复用 → CLI 失败（`verify_full_not_reusable`），停止交接；主链外补 verify。
+  - 不可复用 → CLI 失败（`verification_report_not_reusable`），停止交接；主链外补 verify。
 - 验收：CLI 退出 0、收口产物和完整 diff。
   - 退出 0：读 stdout。`verification.reused` 为复用路径（非 null）。
   - 非零：读 stderr 最后一行 JSON，不为查看原因重跑 closeout。
@@ -344,7 +344,7 @@
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：
   **停止并交接**，须在本 intent 外补 verify / code-review 后再续办；
-  ❌ 不回委托 verify/full。不做 commit 对齐审判。
+  ❌ 不回委托 verify branch。不做 commit 对齐审判。
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。

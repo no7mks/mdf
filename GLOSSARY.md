@@ -45,7 +45,7 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
   test/testcase；converge 验收使用。
 - **branch**：全 module 的 lint/build/quick + 套件。
   - feature/bugfix/hotfix→smoke，release→release；默认按 module 串行展开。
-  - 写入 `verify.branch.json`（不含 commit）。
+  - 写入 `verification-report.json`（不含 commit）。
   - 主链在 code-review 之后、fact audit / close-out 之前跑。
 - **named**：`--suites` 指定五固定或真 named；不写 branch 证据。
 
@@ -58,10 +58,9 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 ## 验证 suite
 
 - **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
-- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix、hotfix 的 full
+- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix、hotfix 的 branch 验证
   跑到此。
-- **release**：包含 smoke，发版所需的 test case，无预算上限；仅 release 的 full 跑到此。
-- **full**（概念）：全部 test case 的上界，通常没有入口，不由 gate 执行。
+- **release**：包含 smoke，发版所需的 test case，无预算上限；仅 release 的 branch 验证跑到此。
 - **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有
   `docs/system/testing/<name>.md`。smart 由 Agent+Jev 选题，不默认整 suite 盲跑。
 
@@ -208,7 +207,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
   - release 写已选定工作线、本版收口范围、预发布工作、是否联调、
     非目标与可验证验收。
 - **Report**：
-  - 含 verify.branch.json、fact 确认、code-review.md、JUnit 等。
+  - 含 verification-report.json、fact 确认、code-review.md、JUnit 等。
   - 只证明做过与声称结果；**不当**阶段通行证，不做过期审判。
 - **Gate 文件**（`gates/*.json`）：
   - 可选配置快照 / 并行辅助。
