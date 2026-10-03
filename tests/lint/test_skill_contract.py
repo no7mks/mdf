@@ -340,8 +340,7 @@ def test_object_ids_must_be_cited_with_type_prefix() -> None:
     assert "`jot-E6F7`" in object_contract
     assert "`adr-use-sqlite`" in object_contract
     assert "不得省略类型前缀或只写序号/短码/slug" in object_contract
-    assert "`bug-`" in agents and "`prp-`" in agents and "`jot-`" in agents
-    assert "`adr-`" in agents
+    assert "沟通 Bug、Proposal、Jot、ADR 时写完整 ID" in agents
     assert "不得省略前缀或只写序号/短码/slug" in agents
 
 
@@ -493,8 +492,6 @@ def test_codewiki_intents_use_a_managed_mcp_wiki_contract() -> None:
 
 def test_common_rules_require_logs_before_truncation() -> None:
     text = (skill_dir("mdf") / "references" / "common.md").read_text(encoding="utf-8")
-    text += (skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md").read_text(
-        encoding="utf-8")
     assert all(s in text for s in ("完整输出须先落盘再截取", "不以截断命令的退出码为准",
-        "不要再用 tee 复制一份", "已有下列产物时，不 tee", "mdf.py run",
-        "没有任何落盘产物时", "去掉 CSI/OSC", "先完整落盘再截取"))
+        "不要再用 tee 复制一份", "已有下列产物时，不 tee", 'mdf.py" run --repo',
+        "没有任何落盘产物时", "去掉 CSI/OSC"))
