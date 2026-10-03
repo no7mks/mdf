@@ -343,19 +343,6 @@ def test_common_banner_and_non_cursor_use_bound_worktrees():
         assert "不得在回复末尾再打印" not in text
     assert "禁止要求用户切换" in common
     assert "git -C <路径>" in common
-    block = (
-        skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md"
-    ).read_text(encoding="utf-8")
-    for phrase in (
-        banner,
-        "不在回复开头打印工作区横幅",
-        "等待用户回复",
-        "已是该行则不重复",
-        "git 主工作区",
-        "<main-repo-name>-worktrees/",
-        "顶层 `logo`",
-    ):
-        assert phrase in block
 
 def test_integrate_forces_goal_and_never_stops_poll():
     text = workflow("integrate")

@@ -141,13 +141,6 @@ def test_start_switches_agent_to_owner_worktree():
     assert "git branch --show-current" in common
     assert "不得再 `git worktree add`" in common
     assert "不得只在原根 `cd` 冒充已进入" in common
-    block = (
-        skill_dir("mdf") / "assets" / "templates" / "agents-managed-block.md"
-    ).read_text(encoding="utf-8")
-    assert "当前绑定的 worktree" in block
-    assert "worktree 与 branch" not in block
-    assert "仅含 `⬇️` 的一行" in block
-    assert "禁止把 `⬇️` 与横幅同一行" in block
     entry = workflow("entry")
     assert "横幅必须用新路径与新项目 logo" in entry
     assert "1. 旧横幅全文" in entry

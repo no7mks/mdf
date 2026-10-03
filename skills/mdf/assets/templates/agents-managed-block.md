@@ -2,28 +2,17 @@
 
 ## Mars Development Flow
 
-- 你的角色是维护者，不是终端用户。不要从根 `README.md` 或 `docs/user-guide/`
-  开始通读；维护工作先读 `PROJECT.md`（验证、技术栈、目录约定与文档入口）。
-- 系统边界是 `docs/system/overview.md`。
-- 需要按主题找文档时打开 `docs/README.md`。
-  - 只打开与本次相关的一份 `docs/system/` 主题叶。
-  - 不通读 `docs/system/` 或 `docs/user-guide/`。
-- grep、CodeWiki 等搜索只用来定位路径；定位后只读命中的那一份或 `docs/README.md`
-  指定的一两份，不把全部命中读进上下文。
-- `README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不把根文档当作
-  行为事实来源。最短可运行路径在 `docs/user-guide/`。
-- 当前行为以 `docs/system/` 与 `docs/user-guide/` 的事实页为准；一条契约只住
-  一页，其他页只链接。事实页已覆盖的行为不从源码重新推断，除非本次要修改该行为
-  或发现文档与实现冲突。
-- `docs/user-guide/` 面向使用者；维护改动默认不打开，改动对外可观察行为时
-  必须打开并同步。架构问题以 `docs/system/architecture/` 为准。
-- 默认不读取 `docs/context/`（含 ADR）、Proposal 与 Bug，除非本次点名具体 ID
-  或事实页链接到它。ADR 只记录理由，不作为当前结构来源。
-- `docs/repowiki/` 存在时由 CodeWiki 管理、用于按需搜索符号，不得人工修改；
-  不存在时忽略。
-- `docs/system/`、`docs/user-guide/` 只记录当前检出版本的事实，不混入待实现计划。
-- 维护改动按 `PROJECT.md` 的验证要求执行检查。测试分类、失败语义与 skip 以
-  `docs/system/testing/` 为准。
+- 你的角色是维护者，按需读取以下入口：
+  - [README.md](README.md)：项目定位。
+  - [PROJECT.md](PROJECT.md)：维护工作的起点；遵循其中的验证要求。
+  - [GLOSSARY.md](GLOSSARY.md)：领域术语。
+  - [docs/system/overview.md](docs/system/overview.md)：系统边界。
+  - [docs/README.md](docs/README.md)：按主题定位，只打开本次相关的一两份页面。
+- 当前行为以事实页为准；修改行为或发现冲突时核对源码。
+  - 事实页记录当前检出版本；一条契约只住一页。
+  - 架构问题读架构主题；对外可观察行为变化时同步用户指南。
+  - 点名具体 ID 或事实页链接到工作上下文、ADR、Proposal、Bug 时再读取；ADR 记录理由。
+  - CodeWiki 用于按需搜索符号，由 CodeWiki 管理。
 - 执行的每条命令都要留下完整日志或报告。
   - 优先读工具或系统自己写的日志与报告，不另 tee。
   - `$mdf` / `mdf.py`、pytest/JUnit 与带 `--log` 的工具读其产物。
@@ -34,18 +23,5 @@
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（`bug-` / `prp-` / `jot-` /
   `adr-` 前缀），不得省略前缀或只写序号/短码/slug。
 - 仅在用户显式调用 `$mdf …` 时执行对应 MDF 流程，不自动触发其他用户入口。
-- 不在回复开头打印工作区横幅。单行格式：
-  `<logo_emoji> <main-repo-name>@<worktree-path>`。
-- logo 取当前目标项目 manifest 顶层 `logo`；manifest 不存在、字段缺省、`null`
-  或空字符串时用 `📍`。repo name 为 Git 主仓库目录名。
-- 横幅用本会话当前绑定的 worktree；重新绑定后不得沿用旧值。
-- 主 worktree 显示字面量 `git 主工作区`；其他 worktree 显示相对于主仓库同级
-  `<main-repo-name>-worktrees/` 的路径，用 `/` 连接并保留完整层级。
-  - 未绑定时用 `git rev-parse --show-toplevel`；非 Git 时显示当前工作目录绝对路径。
-- worktree 相对上一处变化时连续打印恰好三行（硬换行）：旧横幅、
-  仅含 `⬇️` 的一行、新横幅。
-  - ❌ 禁止把 `⬇️` 与横幅同一行，禁止三行间插空行或其它文字。
-  - 含仅改绝对路径绑定、未切换会话根的情况。
-- 输出结束并等待用户回复时，最后一行打印当前横幅；已是该行则不重复。
 
 <!-- MDF:END -->
