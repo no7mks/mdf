@@ -357,7 +357,7 @@
 **合并** <a id="s10"></a>
 
 - 执行关口：
-  - 由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 且步骤 9 通过：
+  - 由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 且步骤 9 通过；Goal 不能代替用户要求 close-out：
     - 必须返回 deliver 步骤 6，待其取得确认后才执行本步骤；不得自行调用 `finish-gitflow`。
   - 由 `$mdf deliver --yolo` 委托时步骤 9 通过后直接执行本步骤，不返回确认。
   - 独立 `$mdf close-out`（`$mdf finish` 同义） 与默认 `$mdf deliver` 不增加该关口。
