@@ -79,6 +79,7 @@ def render_manifest(
     latest_release: str | None,
     implementation_roots: list[str],
     logo: str | None = None,
+    hooks: dict | None = None,
 ) -> str:
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
@@ -103,6 +104,13 @@ def render_manifest(
             lines.append(f"    path: {yaml_quote(entry['path'])}")
         if "reason" in entry:
             lines.append(f"    reason: {yaml_quote(entry['reason'])}")
+    if hooks:
+        from .hooks import validate_hooks
+        validate_hooks({"hooks": hooks})
+        lines.append("hooks:")
+        for name, entry in hooks.items():
+            lines.extend([f"  {name}:", f"    type: {entry['type']}",
+                          f"    path: {yaml_quote(entry['path'])}"])
     return "\n".join(lines) + "\n"
 
 
@@ -147,13 +155,14 @@ def init_files(
 ) -> dict[Path, str]:
     from .modules_check import render_modules_yaml
 
-    logo = load_manifest(repo).get("logo") if manifest_path(repo).is_file() else None
+    manifest = load_manifest(repo) if manifest_path(repo).is_file() else {}
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
             latest_release,
             implementation_roots,
-            logo=logo,
+            logo=manifest.get("logo"),
+            hooks=manifest.get("hooks"),
         )
     }
     modules = repo / ".mdf" / "modules.yaml"

@@ -139,6 +139,8 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 - 成功 JSON 含该 `worktree`、冻结后的 `roster` 与 `roles` 列表。
 - roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，第 2 路起为 `qa/2/<owner>`。
 - 创建失败拆除已建 worktree 与分支。
+- 成功后的可选 hook 见 [post-gitflow-start](../../../skills/mdf/references/hooks/post-gitflow-start.md)。
+  - command 由 Core 执行，rule 以 `hook.status: pending` 交给 Agent；失败只汇报。
 
 roster 参数：
 

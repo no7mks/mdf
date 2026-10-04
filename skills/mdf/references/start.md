@@ -227,6 +227,10 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，
   第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`；`0,0` 只建 owner。
 - 成功 JSON 含 `worktree`（owner）、冻结后的 `roster` 与 `roles.qa` / `roles.dev` 列表。
+- CLI 成功后按 [post-gitflow-start](hooks/post-gitflow-start.md) 执行 hook。
+  - command 已由 CLI 执行，Agent 汇报前后说明与结果。
+  - JSON 的 `hook.status: pending` 表示 rule；切到 owner 后读取并执行规则，
+    执行前说明名称、path 与 cwd，执行后汇报成功或失败；失败不影响 start。
 - 创建中失败时 CLI 自动回滚本次已建的全部 worktree 与分支，Agent 不再手工拆除。
 
 验收：检查、本地分支与实际工作目录。

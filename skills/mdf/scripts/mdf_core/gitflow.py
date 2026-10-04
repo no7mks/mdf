@@ -287,6 +287,9 @@ def command_start(args) -> None:
             for role in ("qa", "dev")
         },
     }
+    from .hooks import post_gitflow_start
+    if (hook := post_gitflow_start(repo, work)) is not None:
+        payload["hook"] = hook
     emit(payload)
 
 

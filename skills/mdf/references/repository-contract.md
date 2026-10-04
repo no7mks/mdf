@@ -243,7 +243,7 @@ MDF 管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规�
 
 ## Manifest
 
-`.mdf/manifest.yaml` 是控制面；可选顶层 `logo` 为横幅 emoji 字符串，缺省、`null`
+可选 [hooks](hooks/post-gitflow-start.md)。`.mdf/manifest.yaml` 是控制面；可选顶层 `logo` 为横幅 emoji 字符串，缺省、`null`
 或空字符串时用 `📍`；直接编辑配置，init 保留已配置值。
 
 - `schema_version` 必须为 `3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased` 不是版本线值。

@@ -108,6 +108,11 @@ def validate_manifest(
             f"schema_version must be {SCHEMA_VERSION}；用 $mdf migrate 收敛到当前契约",
             ".mdf/manifest.yaml",
         )
+    from .hooks import validate_hooks
+    try:
+        validate_hooks(manifest)
+    except MDFError as exc:
+        add_finding(findings, "manifest.hooks", str(exc), ".mdf/manifest.yaml")
     implementation_roots(repo, manifest, findings)
     if manifest.get("state") not in ("initializing", "ready"):
         add_finding(
