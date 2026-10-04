@@ -4,7 +4,7 @@ from support_delivery import *  # noqa: F403
 from support_upgrade import *  # noqa: F403
 
 
-def test_worktree_check_rejects_wrong_role_and_stale_handoff(python_exe, tmp_path):
+def test_worktree_check_rejects_wrong_role_and_uncommitted_handoff(python_exe, tmp_path):
     owner, _, _ = setup_delivery(python_exe, tmp_path)
     qa, _ = sync_roles(python_exe, owner)
     design = source_head(owner)
@@ -16,8 +16,9 @@ def test_worktree_check_rejects_wrong_role_and_stale_handoff(python_exe, tmp_pat
     assert result["path"] == str(qa)
     (qa / "tests").mkdir(exist_ok=True)
     (qa / "tests/late.py").write_text("assert True\n")
+    assert "dirty_worktree" in mdf(python_exe, *args, "--repo", str(qa), "--handoff").stderr
     commit(qa)
-    assert "stale_gate" in mdf(python_exe, *args, "--repo", str(qa), "--handoff").stderr
+    payload(mdf(python_exe, *args, "--repo", str(qa), "--handoff"))
 
 
 def test_non_feature_verification_records_run_and_rerun_after_impl_change(

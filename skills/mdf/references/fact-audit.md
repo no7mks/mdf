@@ -275,7 +275,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 本流程只向调用方返回确认原话与时间，不落盘。
   - 有材料目录的调用方写入并提交确认记录；主链（含经 fact update 委托）写
     `changes/unreleased/<slug>/fact-audit.md`（**report**，非 gate）。
-  - 主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
+  - 普通主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
+  - 人工 feature 经 fact update 委托时，只返回确认记录，由 fact update 完成后勾其自身项。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。

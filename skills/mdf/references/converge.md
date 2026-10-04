@@ -82,10 +82,11 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 `needs_design: yes` 时：
 
 - 按 roster 的 qa/dev strategy 合流（`best-of-n` / `partition`），规则同前。
-- 运行 `delivery roster-join`；合并后清理角色 worktree。
+- qa/dev ≥1 时运行 `delivery roster-join`；合并后清理角色 worktree。
+  roster `0,0` 无角色，不调用 roster-join；检查 owner 产出已提交。
 - 进度看 objectives：design / write-tests / implement（或 owner 开发）须已勾。
 
-续办与清理：
+qa/dev ≥1 时的续办与清理：
 
 - 续办仍调用同一命令；脚本核对已记录提交是 owner 的祖先，现存角色未改变，随后只清理剩余角色。
 - 角色均已清理时同样核验记录，不重建角色、不再次合并。

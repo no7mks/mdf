@@ -62,11 +62,10 @@
 
 ## 工作流（唯一执行契约）
 
-人工 feature 按 `references/manual-feature.md`续办，优先于下文普通主线选型。
-尚未 start 时将 `--manual` 转交 start；不要求 target 或选择 PRP。
-人工工作未由用户显式勾选时停止并交接，不进入 owner 开发、design 或 converge。
-该规则同样适用于 auto-pilot / yolo；用户勾选后依次委托 code-review、verify branch
-（自勾 verify smoke）、fact update、close-out。
+人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
+尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
+人工工作未勾时交接用户，所有模式均不得代勾。
+已勾后，经本表步骤 3 执行该续办工作流的步骤 3，完成后回 Select；收口确认仍走步骤 6。
 
 
 读取 `references/common.md` 与 `references/delivery-contract.md`。
@@ -152,6 +151,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 - 尚未 start 时把 `--roster` 转交给 start；已有交付再带 `--roster` 则停止。
 - 委托 start、design、code-review 时原样转交细项。
+- `--manual` 与 target 互斥；已有交付仅当 `manual: true` 时允许沿用该参数，否则停止。
 - 省略 target 时不在此步选型，继续上方既有锁定规则。
 
 按下列顺序自动分辨 Proposal 与 Bug，命中唯一对象即停止：
@@ -187,6 +187,8 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
   - 收尾后的工作区删除确认除外，所有模式都须由用户明确答复。
   - 在摘要或 objectives 交接说明中写明依据，不向用户提问、不等待确认。
 - 内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
+  - 人工 feature 的 slug 须先询问用户再建议并确认，人工工作须由用户显式勾选；
+    这两项不由 auto-pilot / yolo 自裁定。
 - converge 的 `--test-approval` 记录该裁定与理由。
 - ❌ 不得削弱验收或把未实现目标判为完成。
 

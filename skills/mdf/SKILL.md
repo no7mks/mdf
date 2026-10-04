@@ -128,7 +128,8 @@ disable-model-invocation: true
   - `--yolo` 仅自动确认内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
 - `$mdf bug close <bug-id> --fixed-in <version>`：ID 与稳定 SemVer 必填；
   release/hotfix 上版本须与分支一致，通过验收后关闭 Bug。
-- `$mdf verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named
+- 人工 feature 的 `$mdf verify smoke` 先按 `references/verify.md` 解析为 branch 主链。
+- 其他 `$mdf verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named
   suite 名解析。也可用 `--scope smart|branch|named`、`--suites`（named）、
   `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。

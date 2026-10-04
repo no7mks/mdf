@@ -90,7 +90,7 @@
 #### 交付
 - `$mdf next [--depth N]`：续办在途（四种 kind 共用主线）；无在途时委托 tree
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 close-out；可并行阶段强制 subagent 分别执行
-- `$mdf start`：按 Gitflow 创建本地交付分支；始终在
+- `$mdf start`（可带 `--manual`）：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
@@ -243,7 +243,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
     四种 kind 交付分支续办当前交付主线。`$mdf next?` 见 tree。
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`
-  - 用法：`$mdf deliver`、`$mdf deliver <target>`、`$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo`
+  - 用法：`$mdf deliver`、`$mdf deliver <target>`。
+    可带 `--manual`、`--auto-pilot` 或 `--yolo`。
   - 用途：锁定当前一次交付，必要时先 start，持续运行到 close-out 完成。
   - 说明：
     - target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。无 target 时锁定并续办
@@ -262,7 +263,10 @@ $mdf clarify 要不要把缓存放到 Redis
     - finish 保留 detached worktree；收尾后询问是否删除，所有模式都须明确确认。
       删除后本对话不要再继续，后续工作在主 worktree 开新对话。
 - `$mdf start`
-  - 用法：`$mdf start`；可带 `--roster`、`--*-strategy`、`--*-model`
+  - 用法：`$mdf start` 或 `$mdf start --manual`；可带 `--roster`、`--*-strategy`、`--*-model`
+  - 人工 feature：无 PRP，先经 clarify 询问，再建议并确认 slug；固定 roster `0,0,1`。
+    - 顺序：start → 人工工作 → code-review → verify smoke → fact update → close-out。
+    - 人工工作仅由用户显式勾选，允许 Agent 介入。
   - 用途：按 Gitflow 创建本地交付分支。
   - 说明：
     - 始终在同级 `<repo-name>-worktrees/` 建 worktree，不在当前目录开分支，不 push。
@@ -306,6 +310,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - shortcut：arg 为 smart/branch/named 时按 scope 解析，否则按 named suite 名解析。
   - 用法：`$mdf verify [arg] [--scope smart|branch|named] [--suites ...]
     [--module|--paths|--test ...]`
+  - 人工 feature 的 `$mdf verify smoke` 执行 branch scope，并勾选 verify smoke。
   - 用途：module 级验证；converge/开发用 smart，主链在 code-review 后跑 branch；
     named 按 `--suites` 跑指定 suite。
   - 说明：branch 写 `verification-report.json`（feature/bugfix/hotfix→smoke，
@@ -365,9 +370,3 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。
   - 说明：不检查仓库、不写入；未知主题时回退到完整目录。
-
-### 人工 feature 入口
-
-- `$mdf start --manual`：无需 PRP，先经 clarify 询问并确认 slug，按 feature 建立 worktree。
-- roster 固定 `0,0,1`；允许 Agent 介入，人工工作必须由用户显式勾选。
-- 主线：`start → 人工工作 → code-review → verify smoke → fact update → close-out`。

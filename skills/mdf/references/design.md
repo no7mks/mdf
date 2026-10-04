@@ -64,9 +64,8 @@
 - 提交前 Agent 自检 objectives.md 与 design.md 的本地链接目标存在。
 - 步骤 1 按 kind 核对依据：feature 为 PRP；bugfix 为 Bug；release 为版本与 objectives；
   hotfix 只核对版本，热修复范围在步骤 2 确认。
-- feature 与 release 的 objectives 由 start 写入，步骤 1 缺失即失败。
-- roster ≥1 的 bugfix/hotfix 缺 objectives.md 时步骤 1 不失败，由步骤 3 Baseline 先写入：
-  - bugfix 依据 Bug；hotfix 写入步骤 2 确认的热修复范围。
+- 四种 kind 的 objectives 均由 start 写入，步骤 1 缺失即停止并报告。
+- `needs_design: no` 或人工 feature 不进入本 intent，不添加 design 清单项。
 - design 已勾或 design.md 已存在时（如 release/hotfix 经 target 记入新 Bug），步骤 2 确认修订。
   - 步骤 3 原地修订 objectives 与 design 并重新勾选/提交。
   - `--auto-pilot` 自裁定。
@@ -106,14 +105,15 @@ owner 另开第二个。
 - policy/suite 可修正时由该 subagent 内部留在步骤 3。
 - `--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
 - subagent 只写 design.md、policy、共用代码底座、可选 design 配置快照与本阶段提交；
-  roster ≥1 的 bugfix/hotfix 缺 objectives.md 时另先写入它。
+  不代 start 补建缺失的 objectives。
 
 结束后当前 Agent 核对 objectives 的 design 项已勾、底座已进同一基线提交；
 不以 `delivery check --stage design` 为完成条件。
 
 ### 设计 policy 与基线
 
-准备 policy JSON，必须同时给出 `protected_paths` 与 `suites`。
+在 `changes/unreleased/<slug>/design-policy.json` 写入 policy JSON。
+必须同时给出 `protected_paths` 与 `suites`；与设计、底座一起提交，不作为进度账本。
 
 | 返回 | 条件 |
 | --- | --- |
@@ -134,7 +134,8 @@ owner 另开第二个。
 1. 可选：运行 `delivery record --stage design --policy-file <文件> --summary <摘要>`
    写入 **配置快照**（非进度 gate）。
 2. 将 `objectives.md` 的 design 项改为 `[x]`。
-3. 提交 objectives.md、design.md、delivery.json、共享代码底座（及可选快照），形成同一基线。
+3. 提交 objectives.md、design.md、delivery.json、design-policy.json 与共享代码底座。
+   可选快照一起提交，形成同一基线。
 
 底座未写入该基线则不得结束。角色 worktree 已由 start 建立，本步不创建。
 

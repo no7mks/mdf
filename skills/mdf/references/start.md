@@ -56,13 +56,8 @@
 
 ## 工作流（唯一执行契约）
 
-人工 feature：用户要求无 PRP 的手动工作时，使用 `$mdf start --manual`。
-按 `references/manual-feature.md`执行，步骤 1 不列 PRP 候选；步骤 2 必须
-通过 clarify 先询问用户，再给 slug 建议并确认。采用 `manual-objectives.md`，
-不写 design/converge 项；步骤 3 固定 roster `0,0,1`。
-步骤 4 调用 `start --kind feature --manual --name <确认的slug> --objectives-file <文件>`，
-不传 `--proposal`；步骤 5 切换后交接人工工作。
-
+人工 feature 使用 `--manual`，只读取 `references/manual-feature.md`「身份与启动」。
+按本表创建交付，不执行该文件的续办工作流。
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
@@ -74,7 +69,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve branch | 脚本 | 确认标识；feature 用 list 选 PRP | 参数、list | 2 | 留在 1 询问 |
+| 1 | Resolve branch | 脚本 | 确认 kind；普通 feature 选 PRP，人工 feature 确认 manual | 参数、list | 2 | 留在 1 询问 |
 | 2 | Clarify objectives | 约束 | 写/确认 objectives checklist（含大步骤） | 确认目标文件 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
@@ -91,17 +86,18 @@
 
 一次只要求一个分支的类型和必要标识：
 
-- feature 要 PRP ID，bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
+- 普通 feature 要 PRP ID；人工 feature 要 `--manual` 与已确认 slug。
+  bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
 - 四种 kind 均须有 objectives checklist（含 `[ ]`/`[x]` 大步骤）；roster `0,0` 也写。
   - 在步骤 2 确认并写入临时文件，步骤 4 由 CLI 经 `--objectives-file` 落入 `objectives.md`。
   - hotfix 始终记录已确认的热修复范围；roster ≥1 可由 design 修订。
-- feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
+- 普通 feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 - bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，不得另选 slug。
   - ⚠️ 已锁定的 release 或 hotfix 上修复 Bug 不走本 intent，不创建 bugfix 分支。
 - release 必须绑定稳定 SemVer；本版范围是 start 时已在 develop 的 child Change。
   - 不得把新 PRP 当作本版实现范围。
-- 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`：
+- 普通 feature 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`：
   - 只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选。
   - 按 `id` 与 `title` 供用户选择；不逐篇翻阅 `docs/proposals/`。
 - 用户未指定 Bug 时运行 `list --repo "$REPO_ROOT" --type bug --status open`：
@@ -116,6 +112,12 @@
 <a id="s2"></a>
 
 **澄清**
+
+人工 feature 先执行内部 clarify，议题为工作范围、验收与 slug。
+必须先询问用户，再依据回答给 slug 建议并确认；auto-pilot / yolo 不代答。
+采用 `manual-objectives.md`，start 已勾，其余五项未勾，不添加 design / converge。
+`needs_design: false` 由 CLI 写入 delivery.json，objectives 不要求该字段。
+下列普通交付的 needs_design、PRP 与阶段要求不适用于人工 feature。
 
 feature、release、bugfix 与 hotfix 均按下列规则写入 objectives checklist；
 feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确认。
@@ -164,7 +166,8 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 
 解析将冻结的 roster：
 
-- 未指定 `--roster` 时的默认值：
+- 人工 feature 固定 `0,0,1`，参数与之冲突时停止；不建立 qa/dev 角色分支。
+- 其他交付未指定 `--roster` 时的默认值：
   - feature 默认 `min-tdd`。
   - release 默认 `solo` 加 3 名 partition reviewer。
   - bugfix 与 hotfix 默认 `solo`。
@@ -208,7 +211,8 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 
 | kind | 追加参数 | 说明 |
 | --- | --- | --- |
-| feature | `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>` | 不传 `--name`；CLI 从 PRP 文件名取出 slug |
+| 人工 feature | `--manual --name <确认slug> --objectives-file <确认文件>` | 不传 `--proposal` |
+| 普通 feature | `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>` | 不传 `--name`；CLI 从 PRP 文件名取出 slug |
 | bugfix | `--bug <Bug-ID> --objectives-file <checklist 文件>` | 不传 `--name`；CLI 用该 ID 作为分支名 |
 | release | `--version <semver> --objectives-file <步骤 2 确认文件>` | — |
 | hotfix | `--version <semver> --objectives-file <checklist 文件>` | — |
@@ -251,8 +255,10 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 以 `branch.<完整分支名>.mdf-start-commit` 固定起点完整 hash，供 bugfix/hotfix code-review 使用。
   - 以 `branch.<owner>.mdf-roster` 冻结人数与策略。
   - 删除分支时该配置随分支删除，不设置 upstream。
-- 阶段材料：
-  - feature 与 release 始终在 owner 写入 `changes/unreleased/<slug>/delivery.json`
+- 人工 feature 写入 `manual: true`，不写 proposal。
+  材料与人工清单按专用契约。
+- 其他交付阶段材料：
+  - 普通 feature 与 release 的 owner 写入 `changes/unreleased/<slug>/delivery.json`
     （含 roster）及 `objectives.md` 并提交。
   - bugfix/hotfix 同样写入 `delivery.json`（含 roster）与含 checklist 的 `objectives.md`。
   - 写入后将「确认目标与约束 / 确认工作线与范围」项改为 `[x]`（start 自勾）。

@@ -76,6 +76,7 @@ def record_stage(repo, root, data, args):
         require_existing_local_links(
             repo, [root / "objectives.md", root / "design.md"]
         )
+        write_json(safe(repo, root / "design-policy.json"), policy)
         current = fingerprints(repo, root, data, policy)
     else:
         current = require_design(repo, root, data)

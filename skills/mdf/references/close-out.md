@@ -185,7 +185,7 @@
       续办 close-out；❌ 本 intent 不委托、不执行 verify（含 branch / smart / named）。
     - 不做 commit 对齐审判。
   - 有有效 branch 报告且无实现/测试增量、仅需审查时，进入 code-review 增量轮：
-    - feature：objectives 的 converge 项须已勾；未勾停止。
+    - feature：普通交付的 converge 项须已勾；人工交付的人工工作须已由用户勾选。
     - 上轮多人结论必须已由 owner 汇总进终稿的已采纳/未解决清单，
       不得把上轮多份原文交给本轮唯一 reviewer 去合并。
     - 以集成后的 HEAD 执行增量新一轮 code-review：
@@ -197,7 +197,7 @@
       人数仍为 roster.reviewers。
 - 主线已包含且审查报告已交时无需重复合并或审查。
   - report 缺失时内部执行 code-review，通过后继续本次 close-out。
-  - feature：converge 须已在 objectives 勾选；审查看 `code-review.md`（report）。
+  - feature：普通交付须勾 converge；人工交付须用户勾人工工作；审查看 `code-review.md`（report）。
 - 📌 四种分支均须有完整的各轮应派份数独立审查、主 Agent 裁定、修复复核与 smart 记录。
 - 已收口 release/hotfix 只核对已有集成与审查报告。
   - 若需要新集成或实现修改，停止报告收口状态不一致，不得覆盖版本目录或改写已开始发布的源提交。
@@ -209,14 +209,14 @@
 - 确认主链 report **已交且声称通过**：
   - 存在 `verification-report.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
-  - objectives 中 verify branch / fact audit 已勾。
+  - 普通交付 objectives 中 verify branch / fact audit 已勾；人工交付勾 verify smoke / fact update。
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
     `$mdf fact audit`，❌ 本 intent 不委托补跑。
 - ❌ 本 intent 不内嵌、不委托 verify branch / smart / named，也不内嵌 fact update /
   fact audit；不做 commit 对齐审判。bug close（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
 - 按分支准备材料：
-  - feature：在 `changes/unreleased/<slug>/` 补齐唯一 PRP 对应的 CHANGE.md。
+  - feature：在 `changes/unreleased/<slug>/` 补齐 CHANGE.md；普通交付对应唯一 PRP，人工交付 `proposals: []`。
     - 与 objectives、design、可选 gates/ 同级；材料不搬迁。
     - CHANGE.md 整理完成后提交，再进入阶段校验。
   - bugfix：按对象契约准备当前分支的 `changes/unreleased/<slug>/CHANGE.md`，
@@ -229,7 +229,7 @@
   - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
 - 对象状态：
   - feature/bugfix 不建版本目录。
-  - feature 在成功合入 develop 的 merge commit 中转换为 implemented。
+  - 普通 feature 的 PRP 在成功合入 develop 的 merge commit 中转换为 implemented。
     bugfix 的对象状态按既有契约处理。
   - release/hotfix 按后续收口步骤管理版本与对象。
 - 验收：事实一致性、所需 report 已交、规范 Change 和链接检查。
@@ -241,8 +241,8 @@
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
   - `verification-report.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
   - fact 确认记录存在。
-  - objectives：converge → code-review → verify branch → fact audit 均已勾（feature 另须
-    design/开发依赖项已勾）。
+  - objectives：普通交付勾 converge、code-review、verify branch、fact audit 及开发依赖。
+    人工交付勾人工工作、code-review、verify smoke、fact update。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
 - 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
   - 用 `git log -1 --format=%H -- …/code-review.md` 定位终稿落盘提交。

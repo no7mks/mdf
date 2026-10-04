@@ -1,7 +1,7 @@
 """核验分派目录、角色分支、共同 Git 仓库与交接证据；不写入。"""
 from pathlib import Path
 
-from .delivery_state import git, locate, require_design, gate
+from .delivery_state import git, locate, committed_design, design_on_ref
 from .errors import MDFError, emit
 from .gitutil import branch_details, current_branch, ensure_clean, repo_path, require_git_root, worktree_map
 from .roster import owner_branch, role_branch
@@ -40,8 +40,10 @@ def command_worktree_check(args):
             raise MDFError("角色未包含共同设计提交", code="missing_design_commit")
         root, data = locate(repo)
         owner_root, owner_data = locate(owner)
-        current = require_design(repo, root, data)
-        if current["design"] != require_design(owner, owner_root, owner_data)["design"]:
+        current = committed_design(repo, root, data)
+        baseline = design_on_ref(repo, root, args.design_commit)
+        if (current["design"] != baseline
+                or committed_design(owner, owner_root, owner_data)["design"] != baseline):
             raise MDFError("角色与 owner 的设计不同", code="stale_gate")
         roster = data["roster"]
         if args.role != "owner" and index > roster[args.role]:
@@ -52,11 +54,8 @@ def command_worktree_check(args):
             stage = {"qa": "write-tests", "dev": "implement"}.get(args.role)
             if stage is None:
                 raise MDFError("交接只适用于 qa/dev", code="stage_branch")
-            record = gate(repo, root, stage)
-            key = "tests" if args.role == "qa" else "implementation"
-            if any(record.get("fingerprints", {}).get(k) != current[k] for k in ("design", key)):
-                raise MDFError("交接 gate 已过期", code="stale_gate")
-            git(repo, "ls-files", "--error-unmatch", str((root / f"gates/{stage}.json").relative_to(repo)))
+            # clean 与 ls-files 证明产出已提交；阶段进度由调用方核对 objectives。
+            git(repo, "ls-files", "--error-unmatch", str((root / "objectives.md").relative_to(repo)))
             result["head"] = git(repo, "rev-parse", "HEAD").stdout.strip()
     elif args.handoff:
         raise MDFError("交接需要固定设计提交", code="missing_design_commit")

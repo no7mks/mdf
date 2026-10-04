@@ -36,9 +36,8 @@
 
 ## 工作流（唯一执行契约）
 
-人工 feature 按 `references/manual-feature.md`选型，优先于普通主线。
-人工工作未由用户显式勾选时交接；Agent 可以按用户请求协助，但不得代勾。
-已勾则依次单步委托 code-review、verify branch（自勾 verify smoke）、fact update、close-out。
+人工 feature 先执行 `references/manual-feature.md` 的续办工作流，替代普通主线选型。
+一次仅推进一个所选阶段；人工工作未勾则交接用户。
 
 
 读取 `references/common.md`。

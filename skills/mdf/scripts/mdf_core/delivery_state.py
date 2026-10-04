@@ -110,9 +110,9 @@ def inventory(repo):
     return result
 
 
-def fingerprints(repo, root, data, config=None):
+def fingerprints(repo, root, data, config=None, *, ref=None):
     if config is None:
-        config = read_json(safe(repo, root / "gates/design.json")).get("policy", {})
+        config = read_json(safe(repo, root / "design-policy.json"))
     files = inventory(repo)
     protected = config.get("protected_paths", [])
     # 预算与命令一样决定门禁结果，同属验证配置。
@@ -136,7 +136,11 @@ def fingerprints(repo, root, data, config=None):
         from .constants import ALL_MARKDOWN_LINK_RE, MARKER_RE
         from .moves import rewrite_link_raw
         from .validate_links import canonical_local_link, split_link_target
-        text = path.read_text()
+        text = (git(repo, "show", f"{ref}:{path.relative_to(repo)}").stdout
+                if ref else path.read_text())
+        if name == "objectives.md":
+            import re
+            text = re.sub(r"(?m)^([-*]\s+)\[[ xX]\]", r"\1[ ]", text)
         if MARKER_RE.search(text):
             raise MDFError("设计材料仍含模板占位内容", code="missing_artifact")
         def normalize(match):
@@ -157,24 +161,48 @@ def fingerprints(repo, root, data, config=None):
             "facts": digest(facts)}
 
 
+def design_on_ref(repo, root, ref):
+    """只从固定 Git 提交读取共同设计，不把阶段勾选纳入 fingerprint。"""
+    def record(name):
+        raw = git(repo, "show", f"{ref}:{(root / name).relative_to(repo)}").stdout
+        try:
+            return json.loads(raw)
+        except ValueError as exc:
+            raise MDFError("固定设计提交的配置无法解析", code="invalid_delivery") from exc
+    data = record("delivery.json")
+    policy = record("design-policy.json")
+    return fingerprints(repo, root, data, policy, ref=ref)["design"]
+
+
 def gate(repo, root, stage):
     return read_json(safe(repo, root / "gates" / f"{stage}.json"))
 
 
-def require_design(repo, root, data):
+def committed_design(repo, root, data):
+    """主链只核设计配置与提交，不读取阶段 Gate。"""
     if not data.get("needs_design", True):
         return fingerprints(repo, root, data, {})
-    record = gate(repo, root, "design")
-    current = fingerprints(repo, root, data, record.get("policy"))
-    if record.get("fingerprints", {}).get("design") != current["design"]:
-        raise MDFError("设计基线已变化，需用户确认后原地重新记录", code="stale_gate")
+    from .delivery import policy_input
+    policy = policy_input(safe(repo, root / "design-policy.json"))
+    current = fingerprints(repo, root, data, policy)
     rels = [str((root / name).relative_to(repo))
-            for name in ("objectives.md", "design.md", "delivery.json", "gates/design.json")]
+            for name in ("objectives.md", "design.md", "delivery.json", "design-policy.json")]
     if git(repo, "ls-files", "--error-unmatch", *rels, check=False).returncode:
         raise MDFError("设计基线必须提交", code="uncommitted_design")
     if git(repo, "diff", "HEAD", "--", *rels).stdout:
         raise MDFError("设计基线必须提交", code="uncommitted_design")
     return current
+
+
+def require_design(repo, root, data):
+    """显式辅助 record/check 可核对其设计快照；主链不使用该检查。"""
+    if data.get("needs_design", True) and (root / "gates/design.json").is_file():
+        policy = read_json(safe(repo, root / "design-policy.json"))
+        current = fingerprints(repo, root, data, policy)
+        record = gate(repo, root, "design")
+        if record.get("fingerprints", {}).get("design") != current["design"]:
+            raise MDFError("设计基线已变化，需用户确认后原地重新记录", code="stale_gate")
+    return committed_design(repo, root, data)
 
 
 def require_finish(repo, root, data):

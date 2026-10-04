@@ -1,8 +1,6 @@
 """按 roster 将 qa/dev 角色分支合流回 owner（roster-join）。"""
-import json
-
 from .delivery_state import (
-    fingerprints, gate, git, matches, require_design, read_json, safe, write_json,
+    fingerprints, git, matches, committed_design, read_json, safe, write_json,
 )
 from .errors import MDFError
 from .gitutil import current_branch, ensure_clean, worktree_map
@@ -11,10 +9,10 @@ from .roster import merge_branches, role_branches
 
 def roster_join(repo, root, data, approval, qa_branch=None, dev_branch=None):
     ensure_clean(repo)
-    current = require_design(repo, root, data)
+    current = committed_design(repo, root, data)
     if current_branch(repo) != data["branch"]:
         raise MDFError("仅 owner 可 roster-join", code="stage_branch")
-    policy = gate(repo, root, "design")["policy"]
+    policy = read_json(safe(repo, root / "design-policy.json"))
     receipt_path = safe(repo, root / "gates/roster-join.json")
     receipt = read_json(receipt_path) if receipt_path.exists() else None
     expected_names = role_branches(data["branch"], data["roster"])
@@ -54,16 +52,12 @@ def roster_join(repo, root, data, approval, qa_branch=None, dev_branch=None):
         *((name, "write-tests", "qa") for name in qa_merged),
         *((name, "implement", "dev") for name in dev_merged),
     ):
-        rel = str((root / "gates" / f"{stage}.json").relative_to(repo))
-        shown = git(repo, "show", f"{branch}:{rel}", check=False)
-        if shown.returncode:
-            raise MDFError(f"角色分支缺少 {stage} 记录", code="stale_gate")
-        try:
-            record = json.loads(shown.stdout)
-        except ValueError as exc:
-            raise MDFError("角色分支阶段记录损坏",
-                           code="invalid_delivery") from exc
-        if record.get("fingerprints", {}).get("design") != current["design"]:
+        if branch not in worktrees:
+            raise MDFError(f"缺少角色 worktree {branch}", code="missing_role")
+        role_repo = worktrees[branch]
+        from .delivery_state import locate
+        role_root, role_data = locate(role_repo)
+        if committed_design(role_repo, role_root, role_data)["design"] != current["design"]:
             raise MDFError("角色分支没有共同设计基线", code="stale_gate")
         common = git(repo, "merge-base", "HEAD", branch).stdout.strip()
         changed = git(repo, "diff", "--name-only", common, branch).stdout.splitlines()
