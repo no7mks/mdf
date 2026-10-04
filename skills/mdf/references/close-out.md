@@ -89,6 +89,9 @@
 
 ## 工作流（唯一执行契约）
 
+人工 feature 先读取 `references/manual-feature.md`，按其清单与 PRP 规则收口。
+其余 feature 的集成与 Gitflow 规则沿用下文。
+
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 - 读取 `references/common.md`、`references/repository-contract.md`：
@@ -118,7 +121,6 @@
 ### 交付范围与审阅
 
 **入口** <a id="s1"></a>
-
 - 本 intent 执行实际收口，不提供预览模式。
   - 用户明确要求仅预览或只读时，说明此入口不支持并停止。
   - ❌ 不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
@@ -129,7 +131,6 @@
   - 实际收口授权；只读请求在本步骤停止。
 
 **范围** <a id="s2"></a>
-
 先识别本次相关未提交改动，按公共规则复核并提交后确定交付范围；范围不明时先澄清。
 
 - 写入前按 code-review 记录固定交付范围：
@@ -205,7 +206,6 @@
 - 异常与交接：报告缺项或不一致并停止。这是交付前检查；fact audit 已在主链完成。
 
 **材料** <a id="s3"></a>
-
 - 确认主链 report **已交且声称通过**：
   - 存在 `verification-report.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。

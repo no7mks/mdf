@@ -36,6 +36,11 @@
 
 ## 工作流（唯一执行契约）
 
+人工 feature 按 `references/manual-feature.md`选型，优先于普通主线。
+人工工作未由用户显式勾选时交接；Agent 可以按用户请求协助，但不得代勾。
+已勾则依次单步委托 code-review、verify branch（自勾 verify smoke）、fact update、close-out。
+
+
 读取 `references/common.md`。
 续办尚未 Git 化的 init/bootstrap/migrate 时读取 `references/initialization.md`；
 续办任一交付时读取 `references/delivery-contract.md`；

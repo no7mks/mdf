@@ -156,7 +156,16 @@ def command_start(args) -> None:
         raise MDFError(f"Branch {base} must exist", code="missing_branch")
     _require_base_covers_origin(repo, base)
     objectives = None
-    if args.kind == "feature":
+    manual = getattr(args, "manual", False)
+    if manual:
+        if args.kind != "feature" or args.proposal or args.bug or args.version:
+            raise MDFError("--manual 仅用于无 PRP 的 feature", code="invalid_manual")
+        if not args.name or slugify(args.name) != args.name:
+            raise MDFError("人工 feature 需要确认的 kebab-case --name", code="invalid_slug")
+        suffix = args.name
+        objectives = _read_objectives(args.objectives_file)
+        _unreleased_collision(repo, base, suffix)
+    elif args.kind == "feature":
         if args.name:
             raise MDFError(
                 "feature 的 slug 由 PRP 文件名决定，不要传 --name",
@@ -194,13 +203,18 @@ def command_start(args) -> None:
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
         args.kind, args.qa, args.dev, args.reviewers,
-        named=args.roster, qa_strategy=args.qa_strategy,
+        named=(args.roster or "solo") if manual else args.roster, qa_strategy=args.qa_strategy,
         dev_strategy=args.dev_strategy,
         review_strategy=args.review_strategy,
         models=models_from_args(args),
     )
     from .delivery_state import parse_has_dev, parse_needs_design
-    needs_design = parse_needs_design(objectives)
+    if manual and (roster["qa"], roster["dev"], roster["reviewers"]) != (0, 0, 1):
+        raise MDFError("人工 feature 的 roster 固定为 0,0,1", code="invalid_manual")
+    needs_design = False if manual else parse_needs_design(objectives)
+    if manual:
+        from .manual import require_manual_objectives
+        require_manual_objectives(objectives, starting=True)
     if (roster["qa"] >= 1 or roster["dev"] >= 1) and not needs_design:
         raise MDFError(
             "roster ≥1 时 needs_design 必须为 yes",
@@ -220,7 +234,7 @@ def command_start(args) -> None:
             add_linked_worktree(repo, name, path, base)
             created.append((name, path))
         work = created[0][1]
-        if args.kind == "feature":
+        if args.kind == "feature" and not manual:
             require_startable(work, args.proposal)
         elif args.kind == "bugfix":
             require_startable_bug(work, args.bug)
@@ -243,7 +257,9 @@ def command_start(args) -> None:
                 "start_commit": start_commit,
                 "needs_design": needs_design,
             }
-            if args.kind == "feature":
+            if manual:
+                identity["manual"] = True
+            elif args.kind == "feature":
                 identity["proposal"] = args.proposal
             elif args.kind == "bugfix":
                 identity["bug"] = args.bug
@@ -257,7 +273,7 @@ def command_start(args) -> None:
             write_json(target / "delivery.json", identity)
             _git(work, "add", "--", str(target.relative_to(work)))
             if args.kind == "feature":
-                message = f"docs(delivery): 确认 {args.proposal} 交付目标"
+                message = f"docs(delivery): 确认 {suffix if manual else args.proposal} 交付目标"
             elif args.kind == "release":
                 message = f"docs(delivery): 确认 {args.version} 发布目标"
             elif args.kind == "bugfix":
@@ -334,29 +350,8 @@ def command_finish_gitflow(args) -> None:
         raise MDFError("Branch develop must exist", code="missing_branch")
     complete_feature = None
     if kind == "feature":
-        from .delivery_state import locate, require_finish
-        from .proposals import records
-        from .prp_split import render
-        root, data = locate(repo)
-        require_finish(repo, root, data)
-        change = root / "CHANGE.md"
-        if not change.is_file():
-            raise MDFError("finish 前必须补齐 Change", code="missing_change")
-        from .yamlutil import read_frontmatter
-        meta, _ = read_frontmatter(change)
-        if meta.get("proposals") != [data["proposal"]] or meta.get("source_branch") != source:
-            raise MDFError("Change 必须对应本 feature 的唯一 PRP", code="invalid_change")
-        path, proposal, body = records(repo)[data["proposal"]]
-        if proposal["status"] != "ready":
-            raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
-        proposal_rel = path.relative_to(repo)
-        def complete_feature(merge_repo: Path):
-            # Only a successful merge to develop can mark the result implemented.
-            target_path = merge_repo / proposal_rel
-            merged, merged_body = read_frontmatter(target_path)
-            target_path.write_text(render({**merged, "status": "implemented"}, merged_body))
-            _git(merge_repo, "add", "--", str(proposal_rel))
-        finish_roster = data["roster"]
+        from .manual import feature_completion
+        complete_feature, finish_roster = feature_completion(repo, source)
     else:
         finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)

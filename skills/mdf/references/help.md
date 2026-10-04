@@ -365,3 +365,9 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。
   - 说明：不检查仓库、不写入；未知主题时回退到完整目录。
+
+### 人工 feature 入口
+
+- `$mdf start --manual`：无需 PRP，先经 clarify 询问并确认 slug，按 feature 建立 worktree。
+- roster 固定 `0,0,1`；允许 Agent 介入，人工工作必须由用户显式勾选。
+- 主线：`start → 人工工作 → code-review → verify smoke → fact update → close-out`。

@@ -48,6 +48,11 @@
 
 ## 工作流（唯一执行契约）
 
+人工 feature 的 objectives 项名为 verify smoke；执行 branch scope，沿用 feature
+的 lint/build/quick/smoke 和 branch 报告要求，通过后自勾 verify smoke。
+在该交付上 `$mdf verify smoke` 也按此 branch 主链解释，不走 named shortcut。
+
+
 读取 `references/common.md` 与 `references/delivery-contract.md`。
 
 入口：`$mdf verify [arg]`；arg 为 smart/branch/named 时按 scope 解析，其他值

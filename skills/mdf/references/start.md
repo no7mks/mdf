@@ -56,6 +56,14 @@
 
 ## 工作流（唯一执行契约）
 
+人工 feature：用户要求无 PRP 的手动工作时，使用 `$mdf start --manual`。
+按 `references/manual-feature.md`执行，步骤 1 不列 PRP 候选；步骤 2 必须
+通过 clarify 先询问用户，再给 slug 建议并确认。采用 `manual-objectives.md`，
+不写 design/converge 项；步骤 3 固定 roster `0,0,1`。
+步骤 4 调用 `start --kind feature --manual --name <确认的slug> --objectives-file <文件>`，
+不传 `--proposal`；步骤 5 切换后交接人工工作。
+
+
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。

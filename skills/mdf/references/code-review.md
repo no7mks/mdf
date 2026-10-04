@@ -133,7 +133,8 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 
 各分支前置条件：
 
-- 进度只认 `objectives.md`：converge 项须已 `[x]`（含 start 对 `has_dev: no` 的预勾）；
+- 人工 feature：仅要求用户显式勾选人工工作，不要求 converge；使用 1 个 reviewer。
+- 其他交付进度只认 `objectives.md`：converge 项须已 `[x]`（含 start 对 `has_dev: no` 的预勾）；
   未勾停止，提示先 `$mdf converge`。
   - `needs_design: yes` 时可读 design.md 作审查上下文；不以 design/converge gate 文件为通行证。
   - 修复续办进入 3；步骤 4 按需补 smart，不在本 intent 强制 verify branch。

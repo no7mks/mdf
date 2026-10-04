@@ -55,7 +55,8 @@ Proposal 使用 Markdown + YAML frontmatter：id、type: proposal、status、dep
   - active（非 archive）Proposal 与 Bug 的 slug 必须全局唯一。
   - slug 不得与对象 ID 同形（如 `prp-001`、`bug-c4d5`、`adr-use-sqlite`）。
 - 分支命名：
-  - feature 的分支与 `changes/unreleased/<slug>/` 使用该 PRP 文件名 slug，start 不再另选。
+  - 绑定 PRP 的 feature 分支与 `changes/unreleased/<slug>/` 使用 PRP 文件名 slug。
+  - 人工 feature 不绑定 PRP；slug 在 start clarify 时由用户确认，Change 使用 `proposals: []`。
   - bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
 
 ### 关联与正文

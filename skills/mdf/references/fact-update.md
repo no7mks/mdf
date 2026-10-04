@@ -44,6 +44,10 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 
 ## 工作流（唯一执行契约）
 
+人工 feature 在 verify smoke 完成后直接调用本 intent，沿用内部 Audit 步骤。
+全部完成后自勾 objectives 的 fact update 并提交；不新增独立 fact audit 步骤。
+
+
 读取 `references/common.md` 与 `references/repository-contract.md`；
 步骤 3 读取并内部执行 `references/fact-audit.md`。
 

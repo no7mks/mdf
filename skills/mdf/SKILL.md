@@ -131,6 +131,8 @@ disable-model-invocation: true
 - `$mdf verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named
   suite 名解析。也可用 `--scope smart|branch|named`、`--suites`（named）、
   `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
+- start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
+  - start 的 `--name` 仅用于人工 feature；已有交付直接按 delivery.json 续办。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - start、design、deliver、code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；

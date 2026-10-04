@@ -62,6 +62,13 @@
 
 ## 工作流（唯一执行契约）
 
+人工 feature 按 `references/manual-feature.md`续办，优先于下文普通主线选型。
+尚未 start 时将 `--manual` 转交 start；不要求 target 或选择 PRP。
+人工工作未由用户显式勾选时停止并交接，不进入 owner 开发、design 或 converge。
+该规则同样适用于 auto-pilot / yolo；用户勾选后依次委托 code-review、verify branch
+（自勾 verify smoke）、fact update、close-out。
+
+
 读取 `references/common.md` 与 `references/delivery-contract.md`。
 步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。步骤 6 由步骤 3 的 Gitflow 关口进入。框序受编号约束仍按 1–6 绘制。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
@@ -134,7 +141,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
 
-已知 option 为 `--auto-pilot`、`--yolo` 与下表各项。
+已知 option 为 `--manual`、`--auto-pilot`、`--yolo` 与下表各项。
 除这些外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
 
 | option | 取值 |
@@ -186,7 +193,8 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 死硬阻塞才停止：
 
 - CLI/Git/工具不可恢复失败。
-- 无可启动目标（无合格 ready PRP、无合格 open Bug，且未指定合法 release/hotfix 版本）。
+- 无可启动目标（未指定人工 feature，且无合格 ready PRP、无合格 open Bug，
+  也未指定合法 release/hotfix 版本）。
 - 已有交付缺少 worktree。
 - 用户明确只读或禁止提交/推送且与完成条件冲突。
 - 必须切换 worktree 但宿主无法由 Agent 完成。

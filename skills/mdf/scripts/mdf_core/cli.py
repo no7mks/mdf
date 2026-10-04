@@ -137,6 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
     start.add_argument("--name")
+    start.add_argument("--manual", action="store_true")
     start.add_argument("--proposal")
     start.add_argument("--bug")
     start.add_argument("--objectives-file")

@@ -1,8 +1,8 @@
 # 交付契约
 
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
-`$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。
-规则持续适用，不是依次执行的阶段。
+`$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。规则持续适用。
+人工 feature 先读取并执行 [专用契约](manual-feature.md)，优先于下文普通主线。
 ## 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。

@@ -297,3 +297,14 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 - intent 先完成复现验证与修复代码审查；Core 不执行这些语义验收。
 - 要求 ready、active fixed Bug、稳定 SemVer；release/hotfix 上版本须与分支一致。
 - 写入 status: closed 与 fixed_in，保留 found_in，不提交或归档。
+
+## 无 PRP 的人工 feature
+
+`start --repo <repo> --kind feature --manual --name <slug> --objectives-file <file>`
+
+- `--manual` 仅支持 feature，与 `--proposal`、`--bug`、`--version` 互斥。
+- `--name` 为已确认的 kebab-case slug；roster 固定 `0,0,1`。
+- objectives 六项依次为 start、人工工作、code-review、verify smoke、fact update、close-out。
+  start 时仅 start 已勾；人工工作由用户显式勾选。
+- 创建 owner worktree，写入 `manual: true` 与 `needs_design: false`，不写 proposal。
+- finish-gitflow 要求清单全部完成，Change 不引用 PRP；合入 develop 不更新 PRP。

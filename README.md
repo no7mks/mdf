@@ -237,3 +237,9 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 
 维护环境、验证命令与仓库约束见 [`PROJECT.md`](PROJECT.md)；测试范围和说明见
 [docs/system/testing/conventions.md](./docs/system/testing/conventions.md)。
+
+### 人工 feature 入口
+
+- `$mdf start --manual`：无需 PRP，先经 clarify 询问并确认 slug，按 feature 建立 worktree。
+- roster 固定 `0,0,1`；允许 Agent 介入，人工工作必须由用户显式勾选。
+- 主线：`start → 人工工作 → code-review → verify smoke → fact update → close-out`。
