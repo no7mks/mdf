@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -48,27 +49,90 @@ def _require_origin(repo: Path) -> None:
 
 def _local_heads(repo: Path) -> list[str]:
     raw = _git(
-        repo, "for-each-ref", "--format=%(refname:short)", "refs/heads",
+        repo, "for-each-ref", "--format=%(refname)", "refs/heads",
     ).stdout
-    return [line for line in raw.splitlines() if line]
+    return [line.removeprefix("refs/heads/") for line in raw.splitlines() if line]
 
 
 def _remote_heads(repo: Path) -> list[str]:
     raw = _git(
-        repo, "for-each-ref", "--format=%(refname:short)",
+        repo, "for-each-ref", "--format=%(refname)",
         f"refs/remotes/{ORIGIN}",
     ).stdout
     names: list[str] = []
     for line in raw.splitlines():
-        name = line.removeprefix(f"{ORIGIN}/")
+        name = line.removeprefix(f"refs/remotes/{ORIGIN}/")
         if name and name != "HEAD":
             names.append(name)
     return names
 
 
+def _relationship_graph(repo: Path, name: str, info: dict[str, Any], refs: list[str]) -> str:
+    local = f"o {str(info['local'])[:12]} (local refs/heads/{name})"
+    remote = f"o {str(info['remote'])[:12]} (remote refs/remotes/{ORIGIN}/{name})"
+    relation = info["relation"]
+    if relation == "local_only":
+        return local
+    if relation == "remote_only":
+        return remote
+    if relation == "equal":
+        return f"{local} = {remote}"
+    if relation == "ahead":
+        return f"{remote}\n| +{info['ahead']} commit\n{local}"
+    if relation == "behind":
+        return f"{local}\n| +{info['behind']} commit\n{remote}"
+    bases = _git(repo, "merge-base", "--all", *refs, check=False).stdout.split()
+    if not bases:
+        return f"{local}\n{remote}\n（无共同祖先，不可普通 merge）"
+    base = "、".join(sha[:12] for sha in bases)
+    return (f"共同祖先 {base}\n"
+            f"├── +{info['ahead']} commit ── {local}\n"
+            f"└── +{info['behind']} commit ── {remote}")
+
+
+def _preview(repo: Path) -> dict[str, Any]:
+    local = set(_local_heads(repo))
+    remote = set(_remote_heads(repo))
+    branches = {}
+    for name in sorted(local | remote):
+        refs = []
+        info = {"sync": name in TRUNKS}
+        for side, exists, ref in (
+            ("local", name in local, f"refs/heads/{name}"),
+            ("remote", name in remote, f"refs/remotes/{ORIGIN}/{name}"),
+        ):
+            info[side] = _sha(repo, ref) if exists else None
+            if exists:
+                refs.append(ref)
+        if len(refs) == 2:
+            ahead, behind = map(int, _git(
+                repo, "rev-list", "--left-right", "--count", f"{refs[0]}...{refs[1]}",
+            ).stdout.split())
+            relation = ("diverged" if ahead and behind else
+                        "ahead" if ahead else "behind" if behind else "equal")
+            info.update(ahead=ahead, behind=behind, relation=relation)
+        else:
+            info.update(ahead=None, behind=None,
+                        relation="local_only" if name in local else "remote_only")
+        info["graph"] = _relationship_graph(repo, name, info, refs)
+        branches[name] = info
+    snapshot = "\0".join([
+        str(repo),
+        _git(repo, "remote", "get-url", "--all", ORIGIN).stdout,
+        _git(repo, "remote", "get-url", "--push", "--all", ORIGIN).stdout,
+        *(f"{name}:{branches[name]['local']}:{branches[name]['remote']}" for name in TRUNKS),
+    ])
+    return {
+        "ok": True, "operation": "sync-preview", "branches": branches,
+        "confirmation": hashlib.sha256(snapshot.encode()).hexdigest(),
+        "extra_local": sorted(local - set(TRUNKS)),
+        "extra_remote": sorted(remote - set(TRUNKS)),
+    }
+
+
 def _pull_into(work: Path, branch: str) -> str:
     """把 origin/<branch> 合入当前 checkout；返回 noop / ff / merged。"""
-    remote = f"{ORIGIN}/{branch}"
+    remote = f"refs/remotes/{ORIGIN}/{branch}"
     if git_in_progress_head(work) == "MERGE_HEAD":
         raise MDFError(
             "未结束的合并（MERGE_HEAD 仍在）；"
@@ -86,27 +150,18 @@ def _pull_into(work: Path, branch: str) -> str:
         work, "merge", "--no-ff", "--no-commit", remote, check=False,
     )
     if result.returncode:
-        if (
-            result.returncode != 1
-            and git_in_progress_head(work) == "MERGE_HEAD"
-        ):
-            raise MDFError(
-                "未结束的合并（MERGE_HEAD 仍在）；"
-                "先完成提交或执行 git merge --abort",
-                code="unfinished_merge",
-            )
-        _git(work, "merge", "--abort", check=False)
+        conflicts = [name for name in _git(
+            work, "diff", "--name-only", "--diff-filter=U", "-z",
+        ).stdout.split("\0") if name]
         raise MDFError(
-            f"Merge conflict: {remote} -> {branch}; merge was aborted",
-            code="merge_conflict",
+            f"合并失败: {remote} -> {branch}；保留现场，先尝试解决 conflict",
+            code="merge_conflict" if conflicts else "git_failed",
+            details={"branch": branch, "worktree": str(work), "conflicts": conflicts,
+                     "stdout": result.stdout, "stderr": result.stderr},
         )
-    if not _git(work, "status", "--porcelain").stdout.strip():
-        if git_in_progress_head(work) == "MERGE_HEAD":
-            _git(work, "merge", "--abort", check=False)
-        return "noop"
     _git(
         work, "commit", "-m",
-        f"chore(sync): 合并 {remote} 到 {branch}",
+        f"chore(sync): 合并 {ORIGIN}/{branch} 到 {branch}",
     )
     return "merged"
 
@@ -126,6 +181,15 @@ def command_sync(args) -> None:
                 f"Branch {branch} and {ORIGIN}/{branch} must both exist",
                 code="missing_upstream_branch",
             )
+
+    preview = _preview(primary)
+    if not args.confirm:
+        emit(preview)
+        return
+    if args.confirm != preview["confirmation"]:
+        raise MDFError(
+            "分支关系或同步目标已变化；重新展示图并请用户确认", code="sync_plan_changed", details=preview,
+        )
 
     trees = worktree_map(primary)
     need_primary = False
@@ -148,10 +212,10 @@ def command_sync(args) -> None:
     try:
         for branch in TRUNKS:
             work = trees.get(branch) or primary
-            before_remote = _sha(primary, f"{ORIGIN}/{branch}")
-            before_local = _sha(primary, branch)
+            before_remote = _sha(primary, f"refs/remotes/{ORIGIN}/{branch}")
+            before_local = _sha(primary, f"refs/heads/{branch}")
             pull = _pull_into(work, branch)
-            after_local = _sha(primary, branch)
+            after_local = _sha(primary, f"refs/heads/{branch}")
             trunks[branch] = {
                 "pull": pull,
                 "before": before_local,
@@ -160,10 +224,12 @@ def command_sync(args) -> None:
                 "worktree": str(work),
             }
     finally:
-        if original is not None and current_branch(primary) != original:
+        if (original is not None and current_branch(primary) != original
+                and git_in_progress_head(primary) is None):
             _git(primary, "checkout", original)
 
-    _git(primary, "push", "--atomic", ORIGIN, *TRUNKS)
+    refspecs = [f"refs/heads/{branch}:refs/heads/{branch}" for branch in TRUNKS]
+    _git(primary, "push", "--atomic", "--no-follow-tags", ORIGIN, *refspecs)
     for branch, info in trunks.items():
         info["push"] = (
             "noop" if info["after"] == info["origin_before"] else "updated"

@@ -308,7 +308,8 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 **Git 操作授权**
 
 - push、merge、tag 和删分支仍按各自流程授权，不从 commit 权限推导。
-- `$mdf sync` 授权对 `master` / `develop` / `planning` 执行 fetch、merge 与 push；
+- `$mdf sync` 先 fetch 并展示分支关系图；用户确认计划后才对
+  `master` / `develop` / `planning` 执行 merge 与 push；
   不授权删分支或 force-push。
 - ❌ 禁止 rebase，不擅自改写已有历史；异名分支使用 no-ff。
   - `develop` 与 `planning` 互相同步允许 fast-forward；已分叉仍 no-ff。

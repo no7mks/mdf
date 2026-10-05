@@ -211,12 +211,20 @@ python3 skills/mdf/scripts/mdf.py sync --repo /path/to/repository
 要求 Git 根与 `origin`；不要求 manifest 或 ready。固定对齐
 `master`、`develop`、`planning`：
 
-1. `fetch --prune`；三大分支本地与 `origin/<branch>` 都必须已存在。
+1. 默认 `fetch --prune` 后仅预览；三大分支本地与 `origin/<branch>` 都必须已存在。
+   - JSON `branches` 含所有分支的 local / remote SHA、ahead / behind、relation、graph 与 sync。
+   - graph 折叠 commit 路径但始终保留双方 tip；diverged 表示可能 conflict。
+   - 用户确认后传 `--confirm <confirmation>` 执行；绑定目标仓库、origin fetch / push URL 与 tip。
+     再次 fetch 后任一绑定项变化则以 `sync_plan_changed` 返回新预览，须重新确认。
 2. 占用任一 trunk 的 worktree 须干净；某 trunk 无占用者时主 worktree 须干净。
 3. 按序对三大分支 pull：远端已是祖先则 noop；可 ff 则 `--ff-only`；已分叉则
    `--no-ff` 合并并提交 `chore(sync): 合并 origin/<branch> 到 <branch>`。
-4. 三大分支全部 pull 成功后，原子 `push origin master develop planning`。
-5. JSON 含各 trunk 的 `pull` / `push`，以及只读的 `extra_local` / `extra_remote`。
+4. 三大分支全部 pull 成功后，以完整 refspec 原子 push 三者，显式 `--no-follow-tags`。
+5. 执行 JSON 含各 trunk 的 `pull` / `push`，以及只读的 `extra_local` / `extra_remote`。
+
+conflict 保留 MERGE_HEAD 与 checkout；错误 details 含 branch、worktree、conflicts 和 Git 输出。
+Agent 先尝试解决并验证，无法处理才询问用户；解决后提交并重新预览，继续剩余同步。
+仅本次已授权的 pull 与 resolution 改变 local tip 且 remote 未变时可继续，否则重新确认。
 
 ❌ 不操作多余分支，不 rebase，不 force-push，不删除远端或本地分支。
 

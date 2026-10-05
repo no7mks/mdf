@@ -205,6 +205,7 @@ def build_parser() -> argparse.ArgumentParser:
     from .sync import command_sync
     sync_cmd = subparsers.add_parser("sync")
     sync_cmd.add_argument("--repo", required=True)
+    sync_cmd.add_argument("--confirm")
     sync_cmd.set_defaults(func=command_sync)
 
     from .codewiki_runtime import command_codewiki_runtime

@@ -7,7 +7,7 @@ def test_sync_pulls_trunks_then_pushes_and_reports_extras():
     text = workflow("sync")
     table = rows(text)
     assert [row[1] for row in table] == [
-        "Check root", "Sync trunks", "Report result",
+        "Check root", "Preview branches", "Confirm sync", "Sync trunks", "Report result",
     ]
     assert "sync --repo" in text
     assert "master" in text and "develop" in text and "planning" in text

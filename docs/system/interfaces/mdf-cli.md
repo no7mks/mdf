@@ -82,7 +82,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
-| `sync` | 三大 trunk 先拉后推 | [仓库写入命令](mdf-cli-write.md) |
+| `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | 替换已安装 Skill | [仓库写入命令](mdf-cli-write.md) |
 | `integrate` | 联调 inbox 与可选 HTTP | [交付阶段与验证](mdf-cli-delivery.md) |
@@ -108,7 +108,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
-| `sync` | `sync`：三大 trunk 先拉后推；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
+| `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
 | `close-out` / `finish` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。
