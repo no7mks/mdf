@@ -24,5 +24,7 @@
 - 失败时先读已有日志、报告，拒绝为了查看输出而重跑。
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（不得省略前缀或只写序号/短码/slug）。
 - 仅在用户显式调用 `$mdf …` 时执行对应 MDF 流程，不自动触发其他用户入口。
+- 直接在 develop 上改动时，按事项创建 `changes/unreleased/<slug>/`，至少留存 `CHANGE.md`。
+  - `CHANGE.md` 参照 [MDF Change 模板]($MDF_ROOT/assets/templates/change.md) 编写。
 
 <!-- MDF:END -->
