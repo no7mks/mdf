@@ -100,7 +100,9 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
 
 @pytest.mark.parametrize("kind", ["release", "hotfix"])
 @pytest.mark.parametrize("advance,pushed", [("develop", True), ("develop", False), ("master", True)])
-def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_path, kind, advance, pushed):
+def test_publish_resume_after_dirty_worktree_and_branch_advance(
+    python_exe, tmp_path, monkeypatch, kind, advance, pushed,
+):
     repo, remote = start_repo(tmp_path)
     created = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", kind,
                           "--version", "1.2.1",
@@ -115,11 +117,20 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(python_exe, tmp_
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()
+    from mdf_core import gitflow
     from mdf_core.publish import state_path
     path = state_path(work, f"{kind}/1.2.1")
     dirty = repo / "dirty.txt"
-    dirty.write_text("未提交\n")
-    assert "dirty_worktree" in mdf(python_exe, "finish-gitflow", "--repo", str(work)).stderr
+    original_fetch = gitflow._fetch
+
+    def fetch_then_dirty(worktree):
+        original_fetch(worktree)
+        # 模拟其他操作在首次只读预检之后写入；实际合并前仍须检查并保留。
+        dirty.write_text("未提交\n")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(gitflow, "_fetch", fetch_then_dirty)
+        assert "dirty_worktree" in mdf(python_exe, "finish-gitflow", "--repo", str(work)).stderr
     state = json.loads(path.read_text())
     assert state["merged"] == {}
     dirty.unlink()

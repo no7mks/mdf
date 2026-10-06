@@ -124,6 +124,8 @@ code-review 支持 feature、bugfix、hotfix 和 release。
 
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
 
+- 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。
+  不自动 abort、reset、stash 或 Commit 他人的工作；无关脏分支不阻断。
 - 集成产生新提交后：
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。

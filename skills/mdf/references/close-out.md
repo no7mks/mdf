@@ -125,10 +125,12 @@
   - 用户明确要求仅预览或只读时，说明此入口不支持并停止。
   - ❌ 不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
-- 验收：
-  - manifest `ready`、非 detached。
-  - Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或 `hotfix/<semver>`。
-  - 实际收口授权；只读请求在本步骤停止。
+- 写入前只读检查目标 worktree；有未提交改动或 `MERGE_HEAD` 即停止并报告路径与状态。
+  - feature/bugfix 检查 develop；release/hotfix 检查 master、develop；未 checkout 时查实际合并目录。
+  - ❌ 不得为 clean 而 abort、reset、restore、stash、自动 Commit 或清理他人改动；无关脏分支不检查。
+  - 源工作区已有 merge 同样须停；冲突已解决、已 add 或 diff 为空仍须保留 `MERGE_HEAD`。
+- 验收：实际收口授权；manifest `ready`、非 detached。
+  Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或 `hotfix/<semver>`。
 
 **范围** <a id="s2"></a>
 先识别本次相关未提交改动，按公共规则复核并提交后确定交付范围；范围不明时先澄清。
@@ -165,8 +167,7 @@
     - `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo "$REPO_ROOT" --commit <目标commit>`
   - ❌ 禁止 rebase，不在主线上解决交付冲突。
 - 冲突：
-  - 冲突时 CLI 保留 MERGE_HEAD；
-    Agent 按已确认目标、设计及两侧改动自动尝试 resolve，逐项核对后提交 merge。
+  - CLI 保留 MERGE_HEAD；Agent 按已确认目标、设计及两侧改动自动尝试 resolve，逐项核对后提交 merge。
   - ❌ 不得整侧覆盖或削弱测试来消除冲突。
   - 语义不明、需变更目标或无法解决时才停止询问，报告冲突与已尝试的修复。
 - 跳过判定：本次集成产生新提交后，用 `git diff --name-only <集成前HEAD> HEAD` 判定增量。
@@ -351,8 +352,7 @@
 - 再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
   - release/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。
-- 核对 clean 与当前证据后进入 Gitflow 合并，不自动处理无关改动。
-- 验收：必要提交、当前 clean 和交付条件。
+- 验收：必要提交、当前证据、源与全部目标 worktree clean；有脏状态或已有 merge 即停止，不处理无关改动。
 
 **合并** <a id="s10"></a>
 
@@ -370,7 +370,7 @@
   - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
 - 验收：合并、源分支删除、保留工作区的 detached 状态、tag 与（release/hotfix 的）推送结果。
 - 异常与交接：停止并报告当前分支、已完成合并、tag 与推送状态。
-  - 冲突时 CLI abort 当前 merge，但不得声称此前已完成的合并也被回退。
+  - CLI 仅 abort 本次新产生的 merge；保留调用前已有 merge；不得声称此前已完成的合并也被回退。
   - 不继续推送或删分支；询问用户是否继续。继续或未决回步骤 10，用户停止则停止。
   - 必要修复按确认范围由 Agent 复核并提交。
 

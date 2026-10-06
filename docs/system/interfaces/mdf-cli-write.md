@@ -236,6 +236,12 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 
+- 在 fetch、合并或发布记录写入前，一次性只读检查源与全部目标 worktree。
+  feature/bugfix 检查 develop；release/hotfix 检查 master、develop；未占用目标按实际合并目录检查。
+- 任一工作区有未提交改动或 `MERGE_HEAD` 等未结束操作即以 `dirty_worktree` 停止。
+  即使冲突已解决、已 add 或 diff 为空也保留现场；不为 clean 自动 abort、reset、stash 或 Commit。
+- 无关分支的脏状态不阻断 finish，也不被整理。
+
 外层 close-out / finish intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
 
 1. 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
@@ -270,7 +276,7 @@ release/hotfix：
 - Agent 完成核验与报告后询问是否删除工作区；所有模式都须用户明确确认。
   - 确认后直接从主 worktree 执行 `git worktree remove`，并说明本对话不要再继续。
   - 不新增清理脚本；拒绝或未决则保留，不影响交付完成。
-- ⚠️ 任一 merge 冲突都会立即 abort，不会推送或删除分支。
+- ⚠️ 本次新产生的 merge 冲突才会 abort，不会推送或删除分支；Git 拒绝开始合并时保留现场。
 
 ## `upgrade`
 

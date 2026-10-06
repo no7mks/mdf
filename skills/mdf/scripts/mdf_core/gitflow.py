@@ -310,10 +310,16 @@ def command_start(args) -> None:
 
 
 def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
+    ensure_clean(repo)
     if current_branch(repo) != target:
         _git(repo, "checkout", target)
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
+        if result.returncode != 1:
+            raise MDFError(
+                result.stderr.strip() or "Git 拒绝开始合并；保留现场",
+                code="command_failed",
+            )
         _git(repo, "merge", "--abort", check=False)
         raise MDFError(
             f"Merge conflict: {source} -> {target}; merge was aborted",
@@ -336,14 +342,7 @@ def command_finish_gitflow(args) -> None:
                        code="unsupported_branch")
     kind = details["kind"]
     publish = kind in {"release", "hotfix"}
-    if publish:
-        _fetch(repo)
-        require_master_default(repo)
-    targets = (
-        ["develop"]
-        if kind in {"feature", "bugfix"}
-        else ["master", "develop"]
-    )
+    targets = ["develop"] if kind in {"feature", "bugfix"} else ["master", "develop"]
     if args.source and not publish:
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
     if not publish and not _exists(repo, "refs/heads/develop"):
@@ -356,6 +355,12 @@ def command_finish_gitflow(args) -> None:
         finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)
     trees = worktree_map(primary)
+    # 先只读检查全部目标，避免部分发布后才发现别人的未提交工作或 merge。
+    for target in targets:
+        ensure_clean(trees.get(target) or (primary if publish else repo))
+    if publish:
+        _fetch(repo)
+        require_master_default(repo)
     for name in role_branches(source, finish_roster):
         if _exists(repo, f"refs/heads/{name}") or name in trees:
             raise MDFError("角色分支尚未集成", code="roles_pending")
