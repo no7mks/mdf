@@ -76,7 +76,8 @@
 
 **入口**
 
-1. 解析 `REPO_ROOT` 并运行 `doctor`。
+1. 解析 `REPO_ROOT` 并运行 `doctor`；先核对 `normal_workflows_allowed: true`。
+   未通过时按下方异常规则停止，不运行 `planning ensure`。
 2. 运行 `planning ensure --repo "$REPO_ROOT"`。
 3. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`（分支 `planning`）。
 4. 再重新解析目标根。

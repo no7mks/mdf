@@ -105,7 +105,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 确认实际收口授权；运行 doctor 与 branch | ready、Gitflow 分支 | 2 | 停止 |
+| 1 | Check entry | 脚本 | 核授权、doctor、branch；只读检查现场 | ready、分支、现场 | 2 | 停止并报告 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 核对已有 branch/fact；整理材料 | branch 验证证据、fact、Change | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
@@ -113,7 +113,7 @@
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 约束 | bug close 关闭 fixed；准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | Hand off | 约束 | 提交并复核 | clean | 无关口 10；AP 非 yolo→deliver 6 | 主线前进时 feature/bugfix 回 2；其余停 |
+| 9 | Hand off | 约束 | 提交、核现场 | clean | 无关口 10；AP 非 yolo→deliver 6 | 主线前进 feature/bugfix 回 2；其余停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构

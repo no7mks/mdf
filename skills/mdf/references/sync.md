@@ -24,14 +24,18 @@
 │ 3 Confirm sync                   │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── 未确认 ────→ 3 Confirm sync
+                 ├──── 取消 ──────→ [停止]
                  │
-                 ▼ 通过
+                 ▼ 确认或恢复核对通过
 ┌──────────────────────────────────┐
 │ 4 Sync trunks                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── 计划变化 ─────────────────→ 2 Preview branches
+                 ├──── conflict 已解决并提交 ────→ 2 Preview branches
+                 ├──── conflict 无法处理 ────────→ [保留现场并询问]
+                 ├──── 其他失败 ─────────────────→ [报告现场并停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -53,8 +57,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check root | 脚本 | 运行 `info`，解析 Git 根 | 三个版本为 3、REPO_ROOT | 2 | 停止 |
 | 2 | Preview branches | 脚本 | fetch 并展示分支关系图与同步计划 | JSON branches、confirmation | 3 | 停止 |
-| 3 | Confirm sync | 约束 | 用户明确确认图中的计划 | 用户确认 | 4 | 等待或取消 |
-| 4 | Sync trunks | 脚本 | 确认后先拉后推，conflict 先自行解决 | JSON trunks | 5 | 无法处理才问用户 |
+| 3 | Confirm sync | 约束 | 确认或核对恢复授权 | 授权快照、核对 | 4 | 未确认留 3；取消停止 |
+| 4 | Sync trunks | 脚本 | 按已确认计划同步、处理 conflict | trunks、现场 | 5 | 变化/解决回 2；无法解决询问；其余停 |
 | 5 | Report result | 约束 | 报告 trunks 与多余分支 | 摘要含 extras | 结束 | 停止 |
 
 `$mdf sync` 执行本流程。
@@ -74,11 +78,11 @@
 
 验收：Git 根为用户目标、三个版本为 3。
 
-通过条件：进入同步。异常与交接：停止，不得模拟 CLI。
+通过条件：进入步骤 2 预览。异常与交接：停止，不得模拟 CLI。
 
 <a id="s2"></a>
 
-### 预览与确认
+### 预览
 
 ```bash
 python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT"
@@ -101,28 +105,31 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT"
 | diverged | 双方各有独有 commit | no-ff merge 后 push；可能 conflict，不能保证无冲突 |
 | local_only / remote_only | 只存在于一侧 | 其他分支仅报告，不创建另一侧 |
 
-示例（实际 SHA、分支名与数量以 CLI 为准）：
+<a id="s3"></a>
 
-```text
-             L (local planning，ahead 1)
-            /
-共同祖先 B
-            \
-             R (remote origin/planning，local behind 1)
-→ diverged：no-ff merge，可能 conflict；成功后 push
-```
+### 确认
 
-用户明确确认展示的计划后，使用本次预览的 `confirmation`，不得自行代答：
+- 用户明确确认展示的计划后，记录确认原话与授权快照，不得自行代答。
+  - 快照含目标仓库、origin fetch / push URL、三大 trunk 的 local / remote 完整 tip 与 `confirmation`。
+  - 从预览 JSON 取 tip；用 `git remote get-url --all origin` 与 `git remote get-url --push --all origin` 取 URL。
+- 未确认时留在步骤 3 等待，取消则停止。
+- conflict 恢复回到本步时，对照原授权快照及本次 pull / resolution 记录：
+  - 仅已授权 pull / merge resolution 改变 local tip，且原 remote tip、仓库与两组 URL 均未变，才复用授权。
+  - 否则重新确认新图与计划；缺原快照或无法证明变更来源时也须重新确认。
+
+<a id="s4"></a>
+
+### 执行与 conflict
+
+使用通过步骤 3 核对的本次预览 `confirmation`：
 
 ```bash
 python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMATION"
 ```
 
-### 执行与 conflict
-
 - confirmation 绑定目标仓库、origin fetch / push URL 与三大 trunk tip。
 - 执行前再次 fetch；任一绑定项变化，CLI 以 `sync_plan_changed` 返回新预览。
-  - 重新展示图与计划，重新确认；不得用新 token 自动重试。
+  - 回步骤 2 展示新图与计划，再按步骤 3 核对授权；不得只换 token 自动重试。
 - 占用任一 trunk 的 worktree 必须干净；缺占用者时主 worktree 须干净。
 - 按序全部 pull：remote 已是祖先则 noop；可 fast-forward 则 ff；已分叉则 no-ff merge。
   - merge 与 push 使用完整 ref；全部 pull 成功后才原子 push 三者，不顺带推送 tag。
@@ -132,9 +139,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMA
   - Agent 在返回的 worktree 读取 base / ours / theirs 与双方 diff，先尝试保留双方意图。
   - 不得一律选 ours / theirs；意图不明或无法验证正确结果时，说明文件、分歧与方案再问用户。
   - 只暂存解决的 conflict 文件，确认无 unmerged entry，并按目标项目要求验证相关改动。
-  - 验证通过后提交 `chore(sync): 合并 origin/<branch> 到 <branch>`，再次预览并展示新关系。
-  - 仅本次已授权的 pull 与 merge resolution 改变 local tip、remote 未变时，可继续执行新 token；
-    有其他 tip 或同步目标变化则重新确认。完成所有 pull 后才 push。
+  - 验证通过后提交 `chore(sync): 合并 origin/<branch> 到 <branch>`，回步骤 2 预览新关系。
+  - 步骤 3 核对恢复条件后才继续；完成所有 pull 后才 push。
 - 非 conflict 的 Git 失败读日志并报告，不当作 conflict 擅自改文件。
 - `extra_local` / `extra_remote` 只报告，不拉取、不推送、不删除。
 
@@ -142,7 +148,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMA
 
 异常与交接：无法处理的 conflict 才向用户提问；其他失败报告现场，不声称整体完成。
 
-<a id="s3"></a>
+<a id="s5"></a>
 
 **报告**
 
