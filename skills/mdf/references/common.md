@@ -15,6 +15,11 @@ upgrade 不读取本文件。
 验收：CLI 调用、产物检查与 intent 判断各自可追溯。非零退出或产物缺失走该步失败去向。
 「异常」仅指禁止用 CLI 模拟语义判断；此时停止，不另走失败去向。
 
+- intent 要求正常流程可用时，以 `doctor` 的 `normal_workflows_allowed` 为准。
+  - `evidence.stale`、`generated.stale` 只报告，不单独阻断正常流程。
+  - 其他 findings 与各操作的 clean 要求仍按原规则处理。
+  - `validate full` 与 fact audit 仍严格检查 stale，不因此放宽验收。
+
 ## Jev 可选加速
 
 <a id="s-jev"></a>

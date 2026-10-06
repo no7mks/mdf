@@ -88,7 +88,8 @@
 
 验收：`normal_workflows_allowed: true`。
 
-异常与交接：manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
+异常与交接：manifest 未就绪时提示 `$mdf init`；`normal_workflows_allowed: false` 时报告
+findings 后停止。
 
 <a id="s2"></a>
 

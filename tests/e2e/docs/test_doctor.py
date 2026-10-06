@@ -68,6 +68,106 @@ def test_doctor_reports_dirty_without_blocking_normal_workflows(
     assert (repo / "untracked.txt").read_text() == "dirty\n"
 
 
+@pytest.mark.parametrize("change_state", ["dirty", "staged", "committed"])
+def test_doctor_allows_stale_evidence_but_full_checks_reject_it(
+    python_exe: str, tmp_path: Path, change_state: str,
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    service = repo / "src/service.py"
+    service.write_text(service.read_text() + "\n# 新的 evidence\n")
+    if change_state != "dirty":
+        git(repo, "add", "src/service.py")
+    if change_state == "committed":
+        git(repo, "commit", "-m", "test: 更新 evidence")
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert {item["code"] for item in data["findings"]} == {"evidence.stale"}
+    assert all(item["severity"] == "error" for item in data["findings"])
+    assert data["normal_workflows_allowed"] is True
+    assert data["clean"] is (change_state == "committed")
+    for command in ("validate", "fact-audit"):
+        result = mdf(python_exe, command, "--repo", str(repo), "--scope", "full")
+        assert result.returncode == 2
+        checked = json.loads(result.stdout)
+        assert checked["ok"] is False
+        assert "evidence.stale" in {item["code"] for item in checked["findings"]}
+
+
+@pytest.mark.parametrize("changed_path", ["schema.yaml", "generate.py"])
+@pytest.mark.parametrize("committed", [False, True])
+def test_doctor_allows_stale_generated_facts_but_full_checks_reject_them(
+    python_exe: str, tmp_path: Path, changed_path: str, committed: bool,
+):
+    repo = copy_fixture(tmp_path)
+    (repo / "schema.yaml").write_text("value: initial\n")
+    generator = repo / "generate.py"
+    generator.write_text("#!/usr/bin/env python3\n")
+    generator.chmod(0o755)
+    replace(
+        repo / "docs/system/interfaces/api.md",
+        "evidence:\n  - path: src/service.py\n",
+        "evidence:\n  - path: src/service.py\n"
+        "generated:\n  source: schema.yaml\n  generator: generate.py\n",
+    )
+    init_git(repo)
+    assert payload(mdf(python_exe, "doctor", "--repo", str(repo)))["findings"] == []
+    changed = repo / changed_path
+    changed.write_text(changed.read_text() + "\n# 更新 generated 输入\n")
+    if committed:
+        git(repo, "add", changed_path)
+        git(repo, "commit", "-m", "test: 更新 generated 输入")
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert {item["code"] for item in data["findings"]} == {"generated.stale"}
+    assert all(item["severity"] == "error" for item in data["findings"])
+    assert data["normal_workflows_allowed"] is True
+    assert data["clean"] is committed
+    for command in ("validate", "fact-audit"):
+        result = mdf(python_exe, command, "--repo", str(repo), "--scope", "full")
+        assert result.returncode == 2
+        checked = json.loads(result.stdout)
+        assert checked["ok"] is False
+        assert "generated.stale" in {item["code"] for item in checked["findings"]}
+
+
+@pytest.mark.parametrize("other_error", [
+    "evidence.missing_path", "evidence.untracked", "evidence.outside_repo",
+    "manifest.schema", "layout.migrate", "manifest.initializing",
+])
+def test_doctor_still_blocks_other_findings_alongside_stale_evidence(
+    python_exe: str, tmp_path: Path, other_error: str,
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    service = repo / "src/service.py"
+    service.write_text(service.read_text() + "\n# 新的 evidence\n")
+    if other_error.startswith("evidence."):
+        extra = "src/extra.py"
+        if other_error == "evidence.untracked":
+            (repo / extra).write_text("# 未跟踪的 evidence\n")
+        elif other_error == "evidence.outside_repo":
+            extra = str(tmp_path / "outside.py")
+            Path(extra).write_text("# 仓库外的 evidence\n")
+        replace(
+            repo / "docs/system/data/model.md",
+            "  - path: src/service.py\n",
+            f"  - path: src/service.py\n  - path: {extra}\n",
+        )
+    elif other_error == "manifest.schema":
+        replace(repo / ".mdf/manifest.yaml", "schema_version: 3", "schema_version: 2")
+    elif other_error == "manifest.initializing":
+        replace(repo / ".mdf/manifest.yaml", "state: ready", "state: initializing")
+    else:
+        (repo / "docs/product").mkdir()
+        (repo / "docs/product/note.md").write_text("# 错误布局\n")
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    codes = {item["code"] for item in data["findings"]}
+    assert {"evidence.stale", other_error} <= codes
+    assert data["normal_workflows_allowed"] is False
+
+
 def test_doctor_allows_in_progress_unreleased_delivery_without_change(
     python_exe: str, tmp_path: Path
 ):

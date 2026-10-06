@@ -96,7 +96,10 @@ def command_doctor(args: argparse.Namespace) -> None:
             payload["state"] = "invalid"
         payload["normal_workflows_allowed"] = (
             payload["state"] == "ready"
-            and not findings
+            and not any(
+                finding.code not in {"evidence.stale", "generated.stale"}
+                for finding in findings
+            )
         )
     emit(payload)
 

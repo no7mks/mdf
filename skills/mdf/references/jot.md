@@ -107,7 +107,7 @@
 异常与交接：
 
 - 未知子动作停止。
-- manifest 未就绪时提示 `$mdf init`，其他 findings 报告后停止。
+- manifest 未就绪时提示 `$mdf init`；`normal_workflows_allowed: false` 时报告 findings 后停止。
 - 同次仅处理一个 Jot，且保留其原文。
 
 <a id="s2"></a>
