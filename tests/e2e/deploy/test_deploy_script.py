@@ -57,11 +57,6 @@ def test_install_archives_head_and_writes_baseline(tmp_path: Path) -> None:
     assert (installed / "SKILL.md").read_text() == (
         source / "skills" / "mdf" / "SKILL.md"
     ).read_text()
-    for name in ("verify.md", "verify.html"):
-        relative = Path("assets/examples") / name
-        assert (installed / relative).read_bytes() == (
-            source / "skills" / "mdf" / relative
-        ).read_bytes()
 
 
 def test_install_requires_clean_source_worktree(tmp_path: Path) -> None:

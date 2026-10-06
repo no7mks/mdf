@@ -1,6 +1,6 @@
 # verify
 
-Agent 按用户指定的 scope 运行验证；smart/branch 要求交付分支，named 不要求。
+按 scope 运行验证；smart/branch 要求交付分支，named 不要求。
 
 - **smart**：开发与 converge 使用（lint+build+quick + 改动测试/选题）。
 - **branch**：独立主链 intent（在 code-review 之后）；失败则**现场修到绿**。
@@ -91,7 +91,7 @@ Agent 按用户指定的 scope 运行验证；smart/branch 要求交付分支，
 
 1. 收集涉及 module 的 named suite 列表与本分支相对 start_commit 的测试改动。
 2. 打开相关 `docs/system/testing/<suite>.md`。
-3. 主 Agent 决定跑哪些 test/testcase（可用 Jev 加速）；经 `--test` 传入。
+3. Jev（或主 Agent）决定跑哪些 test/testcase；经 `--test` 传入。
 4. 默认不整份跑 named suite。
 5. lint/build/quick：未覆写的入口只跑 Resolve 得到的 module（`--module` /
    `--paths`）；顶层 `verification` 已覆写的入口仍跑该**整仓单命令**，
@@ -133,12 +133,3 @@ Agent 按用户指定的 scope 运行验证；smart/branch 要求交付分支，
   本步无额外落盘义务；失败报告失败，不宣称通过。
 - quick 复现结论只在 branch 已绿写入 `verification-report.md` 时一并记录。
   - 不写 `code-review.md`（审查轮次的 quick 复现仍由 code-review 自记）。
-
-### 按需讲解
-
-用户需要比较 scope 或理解流程时，Agent 按 `doc-structure.md` 生成辅助解释。
-
-- 文字与图解示例：[verify 规则讲解](../assets/examples/verify.md)。
-- 用户明确需要交互讲解时，打开或交付 [verify HTML 示例](../assets/examples/verify.html)。
-  - 浏览器直接打开；两个 selector 使用固定示例，不读取仓库、不运行验证、不产生通过证据。
-- 按本 intent 核对例外与失败回路后使用；示例不替代执行契约，不在常规验证中自动加载。
