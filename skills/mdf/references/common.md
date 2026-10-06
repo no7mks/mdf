@@ -342,6 +342,8 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 对用户沟通及产出中的 Proposal、Bug、Jot 须写完整前缀 ID，不得省略前缀或只写序号/短码。
 不符合时改写后再继续。
 
+- MDF 生成或管理的文档按 `references/doc-structure.md` 的 ASD-STE100 写作约定编写并人工复核。
+
 ## 按需读取
 
 按操作需要读取：`references/repository-contract.md` 定义仓库目录、`manifest` 与 `基线`；
@@ -353,5 +355,5 @@ intent 声明读取的契约或模板缺失时停止并报告，不猜测内容�
 | 意图 | `references/` | 读取显式调用命中的流程及其声明委托的内部流程 |
 | 公共契约 | `references/` | 按 intent 指定读取目录、对象或 CodeWiki 契约 |
 | 模板 | `assets/` | intent 要求写入仓库产出物时读取对应模板 |
-| 文档结构 | `references/doc-structure.md` | 写入或改写任何 Markdown 产出物前读取 |
+| 文档结构与写作 | `references/doc-structure.md` | 写入或改写任何 Markdown 产出物前读取 |
 | 确定性 CLI | `scripts/` | intent 要求确定性操作时调用 |

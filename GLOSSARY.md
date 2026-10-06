@@ -19,6 +19,11 @@ Bug 使用 `open`、`fixed`、`closed` 或 `rejected`。`fixed` 必须经
 
 描述当前 checkout 已成立行为，并由仓库内 evidence 支持的文档。
 
+## ASD-STE100
+
+Simplified Technical English；由写作规则与受控词典组成的 English 技术写作标准。
+MDF 的适用方式见 [文档结构规则](skills/mdf/references/doc-structure.md)。
+
 ## 基线
 
 `manifest.baselines` 中对当前状态主题的有证据声明。

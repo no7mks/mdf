@@ -70,6 +70,7 @@ docs/repowiki/
 
 ## 写作与事实
 
+- 写入或改写 Wiki 前读取 `references/doc-structure.md`，采用其中的 ASD-STE100 写作约定并人工复核。
 - 以当前 checkout 的代码、配置、schema、测试和已跟踪生成物为证据。已有手工文档
   或旧 Wiki 只可辅助定位，不可覆盖代码证据。
 - 能由本仓查证的行为必须读完并写成事实；不得用“待确认”、TODO 或猜测代替阅读。

@@ -200,6 +200,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - `docs/system/testing/<suite>.md` 的入口命令行：整段是命令，或以 `# ` 开头写文字；二者不得混排。
 - 文档结构：按 `references/doc-structure.md`。
   - 硬限制由 CLI 报 `prose.*`；人工审软限制与内容形态，大段文字改为列表、表格或图。
+  - 按同一规则人工复核 ASD-STE100 写作原则，记录措辞改进建议；CLI 不验证标准符合性。
 
 可选加速（见 `common.md`「Jev 可选加速」）：
 
