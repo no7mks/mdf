@@ -55,14 +55,10 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     documents = [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
     # 按文件职责识别范围，避免缺少执行表的流程从检查中消失。
     nonprocedural = {
-        "repository-contract.md", "object-contract.md", "codewiki-contract.md",
-        "delivery-contract.md", "common.md", "doc-structure.md",
-        "collab-mode.md",  # integrate 的专用契约，不是独立 intent。
-        "integration-heartbeat.md",  # 通道各阶段共用的状态确认契约。
-        "finish.md",  # alias stub → close-out.md
+        "repository-contract.md", "object-contract.md", "doc-structure.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 40
+    assert len(workflows) == 45
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -75,19 +71,21 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         assert [row[0] for row in table] == numbers, path
         assert all(len(row) == 7 and all(row) for row in table), path
         assert all(row[2] in {"脚本", "Subagent", "约束"} for row in table), path
-        diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-        boxes = re.findall(r"^│ (\d+) [A-Za-z][A-Za-z ]+│$", diagram, re.MULTILINE)
-        assert boxes == numbers, path
-        assert "▼" in diagram, path
-        assert "┌" in diagram and "└" in diagram, path
-        assert "+---" not in diagram and "---->" not in diagram, path
-        assert re.search(r"[├└]──── ", diagram), path
-        # 每个编号步骤都必须有分支，不能只画成功路径。
-        blocks = re.split(r"^│ \d+ [A-Za-z][A-Za-z ]+│$", diagram,
-                          flags=re.MULTILINE)[1:]
-        assert all(re.search(r"[├└]──── ", block) for block in blocks), path
-        for block in blocks:
-            assert_branch_alignment(block, path)
+        if "树形：not-tree。" in text:
+            assert "## 决策树" not in text and "## 选择树" not in text, path
+        else:
+            diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
+            boxes = re.findall(r"^│ (\d+) [A-Za-z][A-Za-z ]+│$", diagram, re.MULTILINE)
+            assert boxes == numbers, path
+            assert "▼" in diagram, path
+            assert "┌" in diagram and "└" in diagram, path
+            assert "+---" not in diagram and "---->" not in diagram, path
+            assert re.search(r"[├└]──── ", diagram), path
+            blocks = re.split(r"^│ \d+ [A-Za-z][A-Za-z ]+│$", diagram,
+                              flags=re.MULTILINE)[1:]
+            assert all(re.search(r"[├└]──── ", block) for block in blocks), path
+            for block in blocks:
+                assert_branch_alignment(block, path)
         for target in re.findall(r"\]\(#([^)]*)\)", text):
             assert f'<a id="{target}"></a>' in text, (path, target)
         for target in re.findall(r"references/[a-z-]+\.md", text):
@@ -181,7 +179,7 @@ def test_planning_intents_use_shared_planning_workspace():
     common = workflow("common")
     assert "`planning` 分支" in common
     assert "planning land" in common
-    assert "## 切换工作区" in common
+    assert "### 切换工作区" in common
 
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
@@ -329,7 +327,8 @@ def test_common_banner_and_non_cursor_use_bound_worktrees():
     common = workflow("common")
     entry = workflow("entry")
     banner = "<logo_emoji> <main-repo-name>@<worktree-path>"
-    for text in (common, entry):
+    assert "references/common.md" in entry and "s-banner" in entry
+    for text in (common,):
         assert banner in text
         assert "不得在回复开头打印" in text
         assert "等待用户回复" in text

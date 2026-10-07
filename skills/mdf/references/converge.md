@@ -97,7 +97,7 @@ qa/dev ≥1 时的续办与清理：
 owner 开发项已勾。❌ 不因 roster `0,0` 在无 owner 开发项或该项已预勾时仍要求「开发」。
 
 本步完成后的 owner HEAD 即 close-out 可选 squash 的**交付地板**下界（见
-`delivery-contract.md`「可选历史整理」）；本 intent **不**询问、执行或委托
+`squash.md`「可选历史整理」）；本 intent **不**询问、执行或委托
 `$mdf squash`。
 
 ### Accept（前置勾选 + smart）

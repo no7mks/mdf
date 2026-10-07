@@ -152,7 +152,7 @@
 - **可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
   - 先内部执行 `references/squash.md` 的 dry-run（由 squash 定地板/切段/message）。
   - dry-run 不可压或失败 → 跳过。
-  - 用 `delivery-contract.md`「是否建议」启发式（地板取 dry-run 计划）决定是否向
+  - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）决定是否向
     用户展示该建议；未达信号也可展示。
   - 用户确认执行后，再内部执行完整 `references/squash.md`（可复用同会话计划）。
   - 拒绝展示、拒绝执行或未确认 → 跳过。
@@ -180,25 +180,25 @@
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
 - 不可跳过时：
-  - 若集成后无有效 `verification-report.json`（缺失，或未声称 `all_passed:true`），
-    或集成引入了实现/测试改动：
-    - **停止并交接**：须在本 intent **之外**由主链重跑 `$mdf verify` branch 并自勾后再
-      续办 close-out；❌ 本 intent 不委托、不执行 verify（含 branch / smart / named）。
-    - 不做 commit 对齐审判。
-  - 有有效 branch 报告且无实现/测试增量、仅需审查时，进入 code-review 增量轮：
+  - code-review 退回 `[ ]`；草稿记录集成前左端点与 tip，未完成不作终稿，范围不是进度账本。
+  - 引入实现/测试/验证配置改动时，另将分支验证与 fact 项退回 `[ ]`。
+    人工 feature 对应 verify smoke / fact update；其余对应 verify branch / fact audit。
+  - 本轮增量 code-review：
     - feature：普通交付的 converge 项须已勾；人工交付的人工工作须已由用户勾选。
-    - 上轮多人结论必须已由 owner 汇总进终稿的已采纳/未解决清单，
-      不得把上轮多份原文交给本轮唯一 reviewer 去合并。
-    - 以集成后的 HEAD 执行增量新一轮 code-review：
-      左端点为集成前 HEAD（当场记录），重新固定 review_head。
-    - 本轮应派人数为 1（不改冻结 roster），覆盖增量并复核上轮问题，
-      完成裁定、修复与按需 smart；再洗成无 commit 终稿。
+    - owner 已汇总上轮采纳/未解清单；不得把上轮多份原文交给本轮唯一 reviewer 去合并。
+    - 以集成后的 HEAD 执行增量新一轮；左端点为已记录的集成前 HEAD，重新固定 review_head。
+    - 本轮应派人数为 1，不改 roster；覆盖增量并复核上轮问题，修复与 smart 后洗成无 commit 终稿。
     - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
     - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
       人数仍为 roster.reviewers。
-- 主线已包含且审查报告已交时无需重复合并或审查。
+  - 补审完成后，适用的分支验证或 fact 项未勾，或 branch 报告缺失/未声称 `all_passed:true` 时：
+    - 停止并交接，由本 intent 之外的主链完成 branch 验证与 fact audit 后续办。
+      本 intent 不委托、不执行 verify（含 branch / smart / named），不做 commit 对齐审判。
+- 主线已包含且 objectives 的 code-review 已勾、没有未完成补审时，才可不重复合并或审查。
+  - 续办时 code-review 未勾则用草稿保存的左端点先补审；缺少可验证范围时停止询问，不沿用旧终稿。
   - report 缺失时内部执行 code-review，通过后继续本次 close-out。
   - feature：普通交付须勾 converge；人工交付须用户勾人工工作；审查看 `code-review.md`（report）。
+- 即使没有新 merge，适用的分支验证或 fact 项仍未勾时也停止交接，不能凭旧报告直接收口。
 - 📌 四种分支均须有完整的各轮应派份数独立审查、主 Agent 裁定、修复复核与 smart 记录。
 - 已收口 release/hotfix 只核对已有集成与审查报告。
   - 若需要新集成或实现修改，停止报告收口状态不一致，不得覆盖版本目录或改写已开始发布的源提交。

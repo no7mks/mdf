@@ -16,6 +16,8 @@ def test_channel_entry_keeps_body_out_of_json():
     text = format_channel_entry(
         "out",
         {
+            "id": "question-id",
+            "reply_to": "",
             "at": "2026-09-28 20:49:12 +0800",
             "kind": "send",
             "to": "right",
@@ -24,7 +26,7 @@ def test_channel_entry_keeps_body_out_of_json():
         },
     )
     assert text == (
-        "2026-09-28 20:49:12 +0800  发出  left/master -> right  send\n"
+        "2026-09-28 20:49:12 +0800  发出  left/master -> right  send  id=question-id reply_to=-\n"
         "看到超时\n\n"
     )
 
@@ -34,6 +36,8 @@ def test_channel_entry_formats_bug_request_fields():
     text = format_channel_entry(
         "in",
         {
+            "id": "bug-id",
+            "reply_to": "question-id",
             "at": "2026-09-28 20:49:12 +0800",
             "kind": "bug-request",
             "to": "right",
@@ -48,6 +52,7 @@ def test_channel_entry_formats_bug_request_fields():
     )
     assert "收到  left/master -> right  bug-request" in text
     assert "observed: 超时" in text
+    assert "id=bug-id reply_to=question-id" in text
     assert "{" not in text
 
 
@@ -56,6 +61,8 @@ def test_channel_entry_formats_heartbeat_without_json():
     text = format_channel_entry(
         "out",
         {
+            "id": "heartbeat-id",
+            "reply_to": "",
             "at": "2026-09-28 20:49:12 +0800",
             "kind": "heartbeat",
             "to": "right",
@@ -64,6 +71,6 @@ def test_channel_entry_formats_heartbeat_without_json():
         },
     )
     assert text.startswith(
-        "2026-09-28 20:49:12 +0800  发出  left/master -> right  heartbeat\n"
+        "2026-09-28 20:49:12 +0800  发出  left/master -> right  heartbeat  id=heartbeat-id reply_to=-\n"
     )
     assert "{" not in text

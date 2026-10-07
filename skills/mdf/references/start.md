@@ -24,8 +24,9 @@
 │ 3 Confirm roster                 │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 未决 ────→ [留在 3]
-                 ├──── 拒绝 ────→ [停止]
+                 ├──── 未决 ────────────────────→ [留在 3]
+                 ├──── 拒绝 ────────────────────→ [停止]
+                 ├──── 与 needs_design 冲突 ────→ 2 Clarify objectives
                  │
                  ▼ 确认
 ┌──────────────────────────────────┐
@@ -72,7 +73,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve branch | 脚本 | 确认 kind；普通 feature 选 PRP，人工 feature 确认 manual | 参数、list | 2 | 留在 1 询问 |
 | 2 | Clarify objectives | 约束 | 写/确认 objectives checklist（含大步骤） | 确认目标文件 | 3 | 不写目标，停止 |
-| 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
+| 3 | Confirm roster | 约束 | 确认 member、strategy 与 models | 明确确认与设计一致 | 冲突2；否则4 | 拒绝停止；未决留3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
 | 5 | Switch worktree | 约束 | 切到 owner；交接 | 路径、交接 | 同/跨→6；collab 交接结束；其他结束 | 留在 5 等待 |
 | 6 | Open integrate | 约束 | 立即执行 `$mdf integrate` | Goal；跨 worktree 另有通道与 poll | 结束 | 按 integrate 交接 |
@@ -196,6 +197,8 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 确认规则：
 
 - 用户可改人数或策略；改后按上列规则重新展示，不得静默沿用旧值。
+- qa/dev 改动与已确认 needs_design 冲突时回步骤 2，仅重确认受影响内容并更新临时 objectives。
+  不用未更新的旧文件进入 start CLI；此前未变的目标、slug 与其他确认直接复用。
 - 📌 必须取得明确确认才进入创建；不得把沉默当作同意。
 - 由 `$mdf deliver --auto-pilot` 或 `--yolo` 委托时本步按已给参数与上述默认值自裁定，
   不向用户提问。

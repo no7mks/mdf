@@ -67,8 +67,8 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[2][1] == "Confirm roster"
     assert table[2][2] == "约束"
     assert "member、strategy 与 models" in table[2][3]
-    assert table[2][5] == "4"
-    assert table[2][6] == "拒绝停止；未决留 3"
+    assert table[2][5] == "冲突2；否则4"
+    assert table[2][6] == "拒绝停止；未决留3"
     assert table[3][1] == "Start branch"
     assert table[3][5] == "5"
     assert table[4][1] == "Switch worktree"
@@ -143,11 +143,8 @@ def test_start_switches_agent_to_owner_worktree():
     assert "不得再 `git worktree add`" in common
     assert "不得只在原根 `cd` 冒充已进入" in common
     entry = workflow("entry")
-    assert "横幅必须用新路径与新项目 logo" in entry
-    assert "1. 旧横幅全文" in entry
-    assert "2. 仅 `⬇️`" in entry
-    assert "3. 新横幅全文" in entry
-    assert "实际输出为裸三行硬换行" in entry
+    assert "references/common.md" in entry and "s-banner" in entry
+    assert "所有 intent（含 help/clarify/upgrade）均适用" in entry
 
 
 def test_fix_is_branch_agnostic_and_stops_at_fixed():
@@ -307,7 +304,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     deliver = workflow("deliver")
     assert "外层协调者" in deliver
     assert "交接结束" in rows(deliver)[1][5]
-    assert re.search(r"collab-mode 尚待接手 ─+→ \[交接并结束\]", deliver)
+    assert re.search(r"collab-mode 联调未完且待接手 ─+→ \[交接并结束\]", deliver)
     assert "先测后审" not in deliver
     assert "| release integrate 未勾 |" in deliver
     assert "| release 缺 integrate checklist 项或正文未写工作线 |" in deliver
@@ -435,10 +432,12 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "第一次把目标主线合入交付分支之前" in finish
     contract = workflow("delivery-contract")
     assert "可选历史整理（squash）" in contract
-    assert "git merge --squash" in contract
-    assert "擅自改写历史" in contract
-    assert "是否建议（可选启发式）" in contract
-    assert "不可 squash" in contract
+    assert "references/squash.md" in contract
+    squash = workflow("squash")
+    assert "git merge --squash" in squash
+    assert "擅自改写历史" in squash
+    assert "是否建议（可选启发式）" in squash
+    assert "不可 squash" in squash
     assert "dry-run 建议且用户确认执行" in finish
     assert "推导出必须空转的 owner 开发" in contract
     assert "has_dev" in contract

@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import queue
+import re
 import subprocess
 import threading
 import time
@@ -140,6 +141,32 @@ def test_local_send_keeps_poll_running(tmp_path: Path, python_exe: str) -> None:
         assert again["token"] in inbox.read_text(encoding="utf-8")
     finally:
         _stop(proc)
+
+
+def test_status_reply_can_use_ids_from_shell_output(tmp_path: Path, python_exe: str) -> None:
+    left, right = _repo(tmp_path, "left"), _repo(tmp_path, "right")
+    for repo, name, target in ((left, "right", right), (right, "left", left)):
+        payload(mdf(python_exe, "integrate", "init", "--repo", str(repo)))
+        payload(mdf(python_exe, "integrate", "peer", "--repo", str(repo),
+                    "--name", name, "--target", str(target)))
+    left_poll, right_poll = _poll_proc(python_exe, left), _poll_proc(python_exe, right)
+    try:
+        _next_wait(left_poll)
+        _next_wait(right_poll)
+        sent = mdf(python_exe, "integrate", "send", "--repo", str(left), "--to", "right",
+                   "--body", "状态询问：本侧在测接口；请确认当前工作")
+        assert sent.returncode == 0
+        request_id = re.search(r"\bid=([^\s]+)", sent.stdout).group(1)
+        received = _next_received(right_poll)
+        assert f"id={request_id}" in received
+        reply = mdf(python_exe, "integrate", "send", "--repo", str(right), "--to", "left",
+                    "--reply-to", request_id, "--body", "状态回复：本侧服务已就绪")
+        assert reply.returncode == 0
+        assert f"reply_to={request_id}" in _next_received(left_poll)
+        assert left_poll.poll() is None and right_poll.poll() is None
+    finally:
+        _stop(left_poll)
+        _stop(right_poll)
 
 
 def test_poll_timeout_exits_after_waiting(tmp_path: Path, python_exe: str) -> None:

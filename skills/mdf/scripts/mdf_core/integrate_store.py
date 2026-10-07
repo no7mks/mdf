@@ -54,7 +54,9 @@ def format_channel_entry(
     source = party((message or {}).get("from"))
     dest = str((message or {}).get("to") or "本侧")
     kind = str((message or {}).get("kind") or "")
-    header = f"{at}  {label}  {source} -> {dest}  {kind}\n"
+    message_id = str((message or {}).get("id") or "")
+    reply_to = str((message or {}).get("reply_to") or "-")
+    header = f"{at}  {label}  {source} -> {dest}  {kind}  id={message_id} reply_to={reply_to}\n"
     body = (message or {}).get("body")
     if isinstance(body, dict):
         text = "\n".join(

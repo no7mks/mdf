@@ -126,8 +126,9 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   - `$mdf fix` 与 release/hotfix 上的直接修复均须含 ID。
   - 只改对象或记录的提交不计入。
   - 列出：`git log --fixed-strings --grep=<完整 Bug ID> --format=%H HEAD -- . ':(exclude)docs' ':(exclude)changes'`。
-  - 端点：左为最早修复提交的父提交，右为最新修复提交；本 intent 已有未提交修复时右端点取工作区。
-  - `git diff` 只含修复提交改过的非 `docs/`、非 `changes/` 路径与复现用例文件。
+  - 按修复提交逐个运行 `git show <commit> -- <范围路径>`；不把最早到最新的整段区间当作修复 diff。
+  - 提交说明只定位候选；逐块确认属于该 Bug。merge 或混合提交须定位实际修复块，不把无关增量夹入。
+  - 本 intent 已有未提交修复时，另审本轮工作区 diff；范围仅含非 `docs/`、非 `changes/` 修复与复现路径。
   - 范围为空或不唯一时停止询问，不改用整分支 diff。
 - 读取必要上下文，不能只看提交标题。
 - 主 Agent 裁定、修复实现；修复后回到步骤 2 重跑该 Bug 的复现用例，再审新 diff。

@@ -17,10 +17,10 @@
 │ 2 Select                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── close-out 已完成 ────────→ 5 Report
-                 ├──── collab-mode 尚待接手 ────→ [交接并结束]
-                 ├──── 可并行阶段 ──────────────→ 4 Parallel
-                 ├──── 证据冲突或阻塞 ──────────→ [保留现场并报告]
+                 ├──── close-out 已完成 ────────────────→ 5 Report
+                 ├──── collab-mode 联调未完且待接手 ────→ [交接并结束]
+                 ├──── 可并行阶段 ──────────────────────→ 4 Parallel
+                 ├──── 证据冲突或阻塞 ──────────────────→ [保留现场并报告]
                  │
                  ▼ 单个待办阶段
 ┌──────────────────────────────────┐
@@ -259,7 +259,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
 | release 缺 integrate checklist 项或正文未写工作线 | 停止；须有 integrate 项且工作线四选一 |
-| release collab-mode 尚待接手 | 按 `collab-mode.md` 交接并结束；保留未完成进度与 Goal |
+| release collab-mode 联调未完成且尚待接手 | 按 `collab-mode.md` 交接并结束；保留未完成进度与 Goal |
 | release integrate 未勾 | 执行 `$mdf integrate`；同 worktree / collab-mode 不开通道；不联调不得留未勾 |
 | `needs_design: yes` 且 design 未勾 | 在 owner 委托 `references/design.md` |
 | roster ≥1、未完成路数 ≥2 且前置满足 | 并行委托 write-tests / implement |

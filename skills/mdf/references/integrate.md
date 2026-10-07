@@ -276,7 +276,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
   - `ack` 必须带 `--reply-to`。
 - `integrate poll --repo "$REPO_ROOT"`：常驻。stdout 只打可读行。
   - 一启动就打印「等待」，之后约每 1 分钟再打一次，并向已登记对端发 `heartbeat`。
-  - 取出一条未交出的 inbox 消息时打印「收到」：时间、谁发给谁、kind，正文单独成行。
+  - 取出 inbox 消息时打印「收到」：时间、谁发给谁、kind、id 与 reply_to，正文单独成行。
   - 收到消息、步骤结束、收口完成都不是停止理由；仅用户明确停止会话时才停止 poll，不传 `--timeout`。
 - `integrate send` 的 stdout 同样打印「发出」行，正文单独成行。
 - `--timeout` 与 `--wait` 仅测试用：到期打印「超时」；`--wait` 改等待/心跳间隔。
@@ -349,7 +349,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
   - 该用例 pass 后，提交这一轮用例和修复。无改动不造空提交。
 - 不能当场修好：先按「补覆盖」处理，记录 bug，再提交。
   - 本侧缺陷走 `$mdf bug create`，用户确认 open 才创建。
-    先 `send` 告知对端本侧在等用户，等待确认期间不 poll。确认后把结论 `send` 给对端。
+    先 `send` 告知本侧在等用户；等待期间仍读取后台 poll 并响应状态询问，确认后 `send` 结论。
   - 缺陷在对端则发 `bug-request`，对端按同一规则处理。
   - 用户明确暂缓，或嵌套的 `$mdf bug create` 停止（如 manifest 未就绪、用户取消）时：
     - 不创建 bug，仍提交已有用例，并 `send` 告知对端未建 bug 及原因。

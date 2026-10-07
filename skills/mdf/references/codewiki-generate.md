@@ -64,9 +64,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 约束 | 核对 Git 根并执行 runtime 工具检查 | 目标根、八工具可用 | 2 | 停止 |
 | 2 | Check output | 约束 | 核对 Wiki 目录不存在或为空 | 目录检查结果 | 3 | standard 则要求 update；非标列出项并停止 |
-| 3 | Analyze | 脚本 | MCP 分析，保存模块树并读取处理顺序 | 模块树、处理顺序 | 4 | 走 recovery.md |
+| 3 | Analyze | 脚本 | MCP 分析，保存模块树并读取处理顺序 | 模块树、处理顺序 | 4 | 走 codewiki-recovery.md |
 | 4 | Write modules | 脚本 | 按 leaf 到父页生成模块页并核图 | 页面、链接、图校验 | 5 | 可修则 4；否则 recovery |
-| 5 | Close session | 脚本 | 写 overview，关闭前验收通过才关闭会话 | 有效 metadata | 6 | 走 recovery.md |
+| 5 | Close session | 脚本 | 写 overview，关闭前验收通过才关闭会话 | 有效 metadata | 6 | 走 codewiki-recovery.md |
 | 6 | Verify output | 约束 | 验收后复核提交 | 内容、diff、提交 | 报告并结束 | 仅提交失败停止；验收失败走 recovery |
 
 ## 术语与数据结构

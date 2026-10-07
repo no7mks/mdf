@@ -56,7 +56,10 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
 | 3 | Audit | 约束 | 委托同 scope 的 fact audit；按变更验证 | 审阅、验证 | 通过或仅结构则 4 | 其他未通过或验证失败则停 |
-| 4 | Refine structure | 约束 | 改结构并提交 | 结构 diff、提交 | 未超次改写回 3；无 finding 结束 | 超次或无法改写则停 |
+| 4 | Refine structure | 约束 | 修结构；人工成功后自勾 | diff、提交 | 可重审3；无 finding 结束 | 超次或无法改则停 |
+
+人工 feature 的本步成功后，当前执行者将 objectives 的 fact update 项自勾 `[x]` 并提交。
+提交或勾选失败保留现场，返回未完成；不要求调用方代勾，不影响普通交付后续 fact audit 账目。
 
 ## 术语与数据结构
 

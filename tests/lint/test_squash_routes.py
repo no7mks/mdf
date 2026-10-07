@@ -25,8 +25,9 @@ def test_squash_plans_and_closeout_dry_run_before_heuristic():
     assert "地板取 dry-run 计划" in finish or "计划中的地板" in contract
     assert "[委托 squash 后继续本步]" in finish
     assert "dry-run 建议且用户确认执行" in finish
-    assert "公开 `$mdf squash` 负责" in contract or "公开 `$mdf squash` 承担" in contract
-    assert "dry-run 计划" in contract
+    assert "references/squash.md" in contract
+    assert "公开 `$mdf squash` 负责" in squash or "公开 `$mdf squash` 承担" in squash
+    assert "dry-run 计划" in squash
     assert "$mdf squash" in workflow("help")
     assert "[--dry-run]" in workflow("help")
     converge = workflow("converge")

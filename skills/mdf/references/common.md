@@ -1,11 +1,25 @@
 # MDF 公共意图规则
 
+树形：not-tree。调用事件与当前证据决定适用约束，不重新执行调用方的业务阶段。
+
+## 工作流（唯一执行契约）
+
+| # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Resolve context | 约束 | 确认调用方、当前步骤与适用事件 | 调用上下文与事件 | 2 | 缺上下文则返回缺项，不猜测 |
+| 2 | Apply rules | 约束 | 核对适用规则、前置证据与边界 | 命令、产物与检查记录 | 3 | 不符或缺证据则返回失败 |
+| 3 | Return | 约束 | 返回检查结论，继续调用方当前步骤 | 可追溯结论与缺项 | 返回调用方 | 缺项返回失败，不推进业务阶段 |
+
+## 术语与数据结构
+
+适用事件包括：CLI、目标根、工作区、写入、反馈、日志、提交或可选判断事件。仅读取条款不触发其中描述的其他 intent。
+
 由调用方读取；这些规则按事件持续适用，不是依次执行的阶段。
 进入 intent、收到反馈、调用 CLI、写入失败或提交时应用对应规则；
 返回调用方不解除其他适用约束，完成后继续调用方当前步骤。
 upgrade 不读取本文件。
 
-## 工具
+### 工具
 
 需要确定性操作时使用 `python3 "$MDF_ROOT/scripts/mdf.py"`，语义判断留给 intent。
 
@@ -20,11 +34,11 @@ upgrade 不读取本文件。
   - 其他 findings 与各操作的 clean 要求仍按原规则处理。
   - `validate full` 与 fact audit 仍严格检查 stale，不因此放宽验收。
 
-## Jev 可选加速
+### Jev 可选加速
 
 <a id="s-jev"></a>
 
-### 角色
+#### 角色
 
 - MCP tool：`choice` / `noul` / `score` / `run`，只加速「选项已知」的定型判断。
 - 无 Jev 时主 Agent 路径与未引入前完全一致。
@@ -32,7 +46,7 @@ upgrade 不读取本文件。
 - ❌ 不是硬依赖，不是 gate。
 - ❌ 不替代用户确认、clarify、生成或确定性 CLI。
 
-### 文档与执行顺序
+#### 文档与执行顺序
 
 1. 先按该步骤完整主 Agent 规则准备材料并写清分支。
 2. 仅当本步声明「可选加速」、会话未记 `jev=unavailable`、且 tool 列表含上列
@@ -42,7 +56,7 @@ upgrade 不读取本文件。
 3. 采信 → 落入该步**已有**分支；不采信 / 无 tool → 仍走上文主路径。
 4. 各 intent 只写死本题的 tool、state、选项与阈值；协议以本节为准。
 
-### 会话可用性
+#### 会话可用性
 
 | 情况 | 当步 | 本会话后续 |
 | --- | --- | --- |
@@ -58,7 +72,7 @@ upgrade 不读取本文件。
 - `noul`：yes ≥ 0.8，no ≤ 0.2；中间带走主 Agent。
 - intent 可写更严阈值，不得更松除非写明。
 
-### 首次不可用提示
+#### 首次不可用提示
 
 每会话至多一行。第一次因「无 tool」或「认证失败」记 `jev=unavailable` 时，
 在当步输出中恰好加一行：
@@ -69,7 +83,7 @@ upgrade 不读取本文件。
 - 同一会话后续步骤 ❌ 不再重复该行。
 - 非认证失败、低置信度、未声明可选加速的步骤：不发此提示。
 
-### 宿主
+#### 宿主
 
 - 安装见上游或已安装 Skill 对应仓库 README「Jev 可选加速」。
 - 形态：stdio `jev-mcp`（如 `jev-cli`）；密钥用
@@ -78,7 +92,7 @@ upgrade 不读取本文件。
 - 密钥不进目标仓、不进 Skill 模板；缺配置即无 tool，走主路径。
 - 与 CodeWiki 相反：CodeWiki 缺 MCP 须停；Jev 缺了跳过加速。
 
-## 目标根
+### 目标根
 
 <a id="s-root"></a>
 
@@ -98,7 +112,7 @@ upgrade 不读取本文件。
   - integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
   - sync 解析 Git 根且不要求 manifest ready，规则见 `references/sync.md`。
 
-## 工作区横幅
+### 工作区横幅
 
 <a id="s-banner"></a>
 
@@ -109,6 +123,7 @@ upgrade 不读取本文件。
 - `<logo_emoji>`：当前目标项目 `.mdf/manifest.yaml` 的顶层 `logo`；
   manifest 不存在、字段缺省、`null` 或空字符串时用 `📍`。
 - `<main-repo-name>`：主仓库目录名（`git-common-dir` 的父目录名）。
+  - 非 Git 工作根取该工作目录名；空目录与 Git 化前也使用同一规则，不等待仓库建立。
 - 工作根：本会话当前绑定的目标 worktree 绝对路径；未绑定则
   `git rev-parse --show-toplevel`，非 Git 时用当前工作目录。
 - `<worktree-path>`：工作根为 Git 主 worktree 时显示字面量 `git 主工作区`；
@@ -134,7 +149,7 @@ upgrade 不读取本文件。
 - ❌ 不得在回复开头打印。
 - 对任何 agent 都生效。help、clarify、upgrade 也必须在结尾打印；规则见 `SKILL.md`。
 
-## 切换工作区
+### 切换工作区
 
 <a id="s-switch"></a>
 
@@ -169,7 +184,7 @@ upgrade 不读取本文件。
 不拆除已建 worktree 与分支。进入或绑定成功且 worktree 或 branch 已变化时，
 按「工作区横幅」打印切换三行；结尾横幅必须反映当前绑定。
 
-## 入口
+### 入口
 
 <a id="s2"></a>
 
@@ -218,7 +233,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 开分支、合并、版本收口及 CLI 明确要求 clean 的具体操作，
 在执行前检查；不通过自动提交全部改动清场。只读与预览不整理、暂存或提交已有改动。
 
-## 反馈
+### 反馈
 
 <a id="s3"></a>
 
@@ -228,7 +243,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 验收：用户反馈已被本步吸收，或明确无反馈。
 异常与交接：边界不明则报告并停止；澄清后重做调用方当前步骤。
 
-## 失败
+### 失败
 
 <a id="s4"></a>
 
@@ -237,7 +252,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 验收：失败现场、findings 与等待状态已报告。
 异常与交接：本条即失败汇；不自行回滚，除非当前 intent 另有恢复规则。
 
-## 测试失败工作流
+### 测试失败工作流
 
 converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）：
 
@@ -247,7 +262,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 4. 有 side effect 的 flaky 例外（须记录依据）。
 5. 相关单用例都绿后，才继续该轮 verify。
 
-## 日志与报告
+### 日志与报告
 
 <a id="logs"></a>
 
@@ -284,7 +299,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
   - 判定成败以原命令的退出码为准，不以截断命令的退出码为准。
 - Core 每次运行删除 `.mdf/logs/` 与 `.mdf/reports/` 中 7 天前的条目。
 
-## 交接
+### 交接
 
 <a id="s5"></a>
 
@@ -337,7 +352,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 验收：提交范围、staged diff 与 Conventional Commit 可追溯，或明确无改动。
 异常与交接：提交失败保留现场；只读、预览不产生提交。
 
-## 语言
+### 语言
 
 <a id="s6"></a>
 
@@ -349,7 +364,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 
 - MDF 生成或管理的文档按 `references/doc-structure.md` 的 ASD-STE100 写作约定编写并人工复核。
 
-## 按需读取
+### 按需读取
 
 按操作需要读取：`references/repository-contract.md` 定义仓库目录、`manifest` 与 `基线`；
 `references/object-contract.md` 定义 Proposal、Bug 与 Change 的 schema 和不变量。

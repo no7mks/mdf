@@ -104,7 +104,7 @@ owner 另开第二个。
 - 缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
 - policy/suite 可修正时由该 subagent 内部留在步骤 3。
 - `--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
-- subagent 只写 design.md、policy、共用代码底座、可选 design 配置快照与本阶段提交；
+- subagent 只写 design.md、policy、共用代码底座、既有 objectives 的本阶段勾选、可选快照与提交；
   不代 start 补建缺失的 objectives。
 
 结束后当前 Agent 核对 objectives 的 design 项已勾、底座已进同一基线提交；
@@ -124,7 +124,8 @@ owner 另开第二个。
 
 - `protected_paths` 列全项目实际的测试、fixture、快照、测试发现、覆盖率和告警配置路径，
   包括 named suite。
-  - manifest `verification` 由 Core 保护。
+  - 必须列入 `.mdf/modules.yaml`；命令/预算进入 fingerprint 不代替 roster-join 的审批保护。
+    roster-join 按 protected_paths 保护测试配置，不假定 Core 自动加入全部验证文件。
   - 多 module 列出各 `<module>/tests/` 及各 module 的测试配置，不要只抄仓库根 `tests/`。
 - `suites` 列出本交付改动涉及的每个功能块的 named suite，按功能块而非本次 feature 命名。
   - 已在 `docs/system/testing/` 文档化，或仅在出现新功能块时写明由 write-tests 新增其文档。

@@ -10,32 +10,8 @@ disable-model-invocation: true
 
 仅接受显式 `$mdf <intent>` 调用。裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
-不在回复开头打印工作区横幅。单行格式固定：
-
-`<logo_emoji> <main-repo-name>@<worktree-path>`
-
-- `<logo_emoji>`：当前目标项目 `.mdf/manifest.yaml` 的顶层 `logo`；
-  manifest 不存在、字段缺省、`null` 或空字符串时用 `📍`。
-- `<main-repo-name>`：主仓库目录名（`git-common-dir` 的父目录名）。
-- 工作根：本会话当前绑定的目标 worktree 绝对路径；未绑定则
-  `git rev-parse --show-toplevel`，非 Git 时用当前工作目录。
-- `<worktree-path>`：工作根为 Git 主 worktree 时显示字面量 `git 主工作区`；
-  其他 worktree 显示相对于主仓库同级 `<main-repo-name>-worktrees/` 的路径，
-  用 `/` 连接并保留完整层级；非 Git 时显示工作根绝对路径。
-- 进入或重新绑定目标后，横幅必须用新路径与新项目 logo，不得沿用上一处绑定。
-- 相对上一处横幅，worktree 变化时立刻连续打印恰好三行（硬换行）：
-  1. 旧横幅全文
-  2. 仅 `⬇️`（前后无空格、无其它字符）
-  3. 新横幅全文
-  - 实际输出为裸三行硬换行，不包代码围栏；样例见 `common.md`「工作区横幅」。
-  - ❌ 禁止把 `⬇️` 与旧/新横幅写在同一行。
-  - ❌ 禁止在这三行之间插入空行或其它文字。
-  - 含仅改绝对路径绑定、未调用 `move_agent_to_root` 的情况。
-- 没有上一处横幅时不打印切换三行。
-- 本轮输出结束、等待用户回复时，最后一行必须是当前横幅。
-  - 切换后的横幅已是最后一行时，不再重复。
-- ❌ 不得在回复开头打印。
-- 对任何 agent、任何 intent（含 help、clarify、upgrade）都生效。
+横幅只按 `references/common.md` 的 `s-banner` 条款计算与输出，所有 intent（含 help/clarify/upgrade）均适用。
+仅读取横幅条款，不执行 common 的其他规则或重新进入业务 workflow。
 
 ## 选择树
 

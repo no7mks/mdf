@@ -204,7 +204,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf intake`
   - 用法：`$mdf intake`
   - 用途：将外部想法或临时来源分诊为 Bug 和/或多个 Proposal。
-  - 说明：在 planning 工作区写入；必填事实未确认时不写入对象。
+  - 说明：Proposal 在 planning 写入；Bug 按当前交付或 develop 归属写入。事实未确认不写对象。
 - `$mdf jot`
   - 用法：`$mdf jot`
   - 用途：追加一条未分诊的随手记录到 `docs/JOTS.md`。
@@ -294,7 +294,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf converge`
   - 用途：roster-join（如有）并持续修复到所需 suite 通过。
   - 说明：本 intent 派恰好 1 个 owner subagent 执行合流、验证与记录；
-    测改批准回主会话，不计入 roster。修到 lint/build/quick/smoke 与本交付 named suite 通过；不要求 release。
+    测改批准回主会话，不计入 roster。按 verify smart 验收；branch 验证在 code-review 之后独立执行。
 - `$mdf fix <bug-id>`
   - 用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
   - 用途：澄清、确认 failing test、修复并验证一个 open Bug，标为 `fixed`。
@@ -314,8 +314,10 @@ $mdf clarify 要不要把缓存放到 Redis
   - 人工 feature 的 `$mdf verify smoke` 执行 branch scope，并勾选 verify smoke。
   - 用途：module 级验证；converge/开发用 smart，主链在 code-review 后跑 branch；
     named 按 `--suites` 跑指定 suite。
+  - 参数：arg 与 `--scope` 互斥；`--suites` 仅供 named；`--module` / `--paths` / `--test` 仅供 smart。
+    没有 arg 或 scope 时要求补充，不默认选择；verify named 必须指定 `--suites`。
   - 说明：branch 写 `verification-report.json`（feature/bugfix/hotfix→smoke，
-    release→release；不含 commit）；smart/named 不落盘；真 named 命令来自
+    release→release；不含 commit）；smart/named 不写 branch 报告，运行日志与 JUnit 仍落盘；named 命令来自
     testing 文档 frontmatter。
 - `$mdf code-review`
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
@@ -352,11 +354,11 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf codewiki generate` / `$mdf codewiki update`
   - 用法：`$mdf codewiki generate` 或 `$mdf codewiki update`
   - 用途：新建或增量更新 `docs/repowiki/` 结构 Wiki。
-  - 说明：update 无结构变化时可报告无更新。
+  - 说明：update 无代码类变化时可报告无更新。
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
   - 用途：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块并提交（不 push），随后重读。
-  - 说明：仅不符契约才建议 `$mdf migrate`。
+  - 说明：不符当前契约，或 history 显示文档契约变化时建议 `$mdf migrate`。
 - `$mdf to <target>`
   - 用法：`$mdf to plan|develop|deploy|<分支>`
   - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。

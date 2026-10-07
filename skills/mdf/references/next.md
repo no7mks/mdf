@@ -86,7 +86,8 @@
 - 四种 kind 的交付分支均读 `references/delivery-contract.md`，通过
   `delivery status` 查看身份、阶段记录和 worktree 路径。
   - 按下一 intent 切到对应已有 worktree，缺树则停止。
-- 按原阶段要求检查证据/gate 是否有效；不能仅凭文件存在或历史 passed 判断阶段完成。
+- 按原阶段要求检查证据是否支持当前工作；gate 只读作配置或并行上下文，不作进度关口。
+  不能仅凭文件存在或历史 passed 判断阶段完成。
 - 不能仅凭 tree CLI 的 in_progress 或当前 checkout 缺少材料断言没有在途流程。
 
 委托与候选：
@@ -106,6 +107,9 @@
 - `ask`、单候选、证据冲突或未采信走主 Agent / 询问。
 - ❌ 不发明未列出的阶段。
 
+本次正在执行的 next 不作为候选再次委托；上次 next 的协调记录只用于恢复其已锁定的原 workflow。
+无法恢复唯一原流程时按证据不足报告，不递归调用 next 来重新判定。
+
 ### 续办与交接
 
 完整读取所选 intent 及其要求的公共引用，以其编号工作流、前置条件和失败恢复规则为准。
@@ -122,7 +126,8 @@
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；
     ❌ 不因 roster `0,0` 强行进入 owner 开发或 converge。
   - release：checklist 须含 integrate；未勾则先 `$mdf integrate`；工作线正文四选一。
-    - collab-mode 尚待接手时按 [交接契约](collab-mode.md) 报告本仓材料并结束；已接手则操作两端。
+    - collab-mode 的 integrate 未勾且尚待接手时，按 [交接契约](collab-mode.md) 报告本仓材料并结束。
+      已接手则操作两端；integrate 已勾时按本仓剩余步骤续办，不重做交接。
     - 跨 worktree 需要且通道未打开时先 `$mdf integrate`，续办已有通道不重复 init/poll。
     - 双端验收且确认不再改代码后才委托 code-review；integrate 须已勾。
   - 开发未完成时（对应 checklist 项仍为 `[ ]`）：
