@@ -1,6 +1,6 @@
 # verify
 
-按 scope 运行验证；smart/branch 要求交付分支，named 不要求。
+按 scope 运行验证；branch 要求交付分支，smart/named 不要求。
 
 - **smart**：开发与 converge 使用（lint+build+quick + 改动测试/选题）。
 - **branch**：独立主链 intent（在 code-review 之后）；失败则**现场修到绿**。
@@ -78,6 +78,8 @@
 ### 范围与 module
 
 - 读 `.mdf/modules.yaml`；smart 的 module 集合不得为空，缺失则停止。
+- smart：当前 checkout 须为 branch；无需 `delivery.json`、`objectives.md` 或交付 slug。
+  - 非交付 branch 的结果 `kind: unsupported`；Git、detached HEAD、版本命名或配置错误仍停止。
 - named：从 suite shortcut 或 `--suites` 取得 suite 名；五固定入口由 modules 解析，
   真 named 按其 testing 文档 frontmatter 解析。名称未知、文档或命令缺失则停止。
 - smart：`--paths` 命中 sourceset（非 ignore）并与 `--module` 合并。
@@ -89,7 +91,14 @@
 
 **smart**
 
-1. 收集涉及 module 的 named suite 列表与本分支相对 start_commit 的测试改动。
+选题范围按交付上下文确定；临时 branch 的起点 commit 由调用方记录。
+
+| 上下文 | 选题范围 |
+| --- | --- |
+| 有交付上下文 | 相对 `delivery.json.start_commit` 的测试改动 |
+| 无交付上下文 | 显式 `--paths` / `--module` 与已确认范围；独立修复引用 Bug 所需回归证据 |
+
+1. 收集涉及 module 的 named suite 列表与上述范围内的测试改动。
 2. 打开相关 `docs/system/testing/<suite>.md`。
 3. Jev（或主 Agent）决定跑哪些 test/testcase；经 `--test` 传入。
 4. 默认不整份跑 named suite。

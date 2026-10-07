@@ -130,6 +130,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   3. 随后对涉及 module 跑 smart（含 quick suite），须退出 0。
      - CLI：`verify --scope smart --repo "$REPO_ROOT"`。
      - 用 `--paths` / `--module` 圈定涉及 module。
+     - 不要求交付分支或交付材料；选题按本次修复路径与 Bug 所需回归证据。
      - 成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
      - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
      - 不把进度行当结果，不为查看输出而重跑。

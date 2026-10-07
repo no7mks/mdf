@@ -195,11 +195,11 @@ def command_verify(args) -> None:
             "branch 不接受 --module / --paths / --test",
             code="invalid_verify_scope",
         )
-    branch, kind, slug = _delivery_slug(repo)
     if scope == "branch":
+        branch, kind, slug = _delivery_slug(repo)
         _verify_branch(repo, branch, kind, slug)
     elif scope == "smart":
-        _verify_smart(repo, branch, kind, slug, args)
+        _verify_smart(repo, args)
     else:
         raise MDFError(
             "verify --scope 须为 smart、branch 或 named",
@@ -265,7 +265,14 @@ def _verify_branch(repo, branch, kind, slug) -> None:
     emit({"ok": True, "operation": "verify-branch-run", "result": result})
 
 
-def _verify_smart(repo, branch, kind, slug, args) -> None:
+def _verify_smart(repo, args) -> None:
+    branch = current_branch(repo)
+    kind = branch.partition("/")[0]
+    # smart 无需 slug；release/hotfix 的稳定 SemVer 命名约束仍生效。
+    if kind in {"release", "hotfix"}:
+        kind = branch_details(branch)["kind"]
+    elif kind not in {"feature", "bugfix"} or "/" not in branch:
+        kind = "unsupported"
     modules = list(args.module or [])
     if args.paths:
         config = load_modules(repo)
