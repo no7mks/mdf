@@ -184,6 +184,8 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 要求 Git 根，不要求 manifest 或 clean worktree，不创建提交。
 这些子命令只用于跨 worktree 消息模式；同 worktree 与 collab-mode 不调用它们。
 
+- Agent 使用其支持的后台 Shell 启动 poll 与 listen，保留会话句柄并读取同一后台 Shell 的输出。
+
 | 子命令 | 行为 |
 | --- | --- |
 | `init` | 创建 `.integration/inbox/` 与 session token，并在 `.gitignore` 写入 `.integration/` |
