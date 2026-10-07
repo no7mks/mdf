@@ -202,5 +202,6 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
   - 一个进程只 poll 本侧 `--repo` 的 inbox；不得同时 poll 对端。
   - `--timeout` / `--wait` 仅测试：到期打印「超时」；`--wait` 改等待/心跳间隔。
 - `courtesy` / `ack` / `heartbeat` 可空正文；`ack` 必须带 `--reply-to`。
+- 自动 heartbeat 后，Agent 通过 `send` 执行 [双方状态确认](../../../skills/mdf/references/integration-heartbeat.md)。
 - `bug-request` 需要 `--observed`、`--expected`、`--repro`、`--impact`。
 - 监听不创建 Bug，也不解释 `send` 正文。

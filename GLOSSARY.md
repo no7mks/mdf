@@ -244,7 +244,8 @@ collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
 - 另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
 - 消息种类为 `ping`、`courtesy`、`ack`、`heartbeat`、`send`、`bug-request`、`end`。
   - 对端就绪后先发 `courtesy`，必须收到指向它的 `ack`；未 ack 不得继续。
-  - poll 每等待 1 分钟向对端发 `heartbeat`，双方互发，让对方知道本侧在等。
+  - poll 每等待 1 分钟向对端发 `heartbeat`；Agent 每轮按 [状态确认](skills/mdf/references/integration-heartbeat.md)
+    对齐双方当前工作、等待依赖与下一步，避免互等。
 - 通道打开后 poll 常驻直到收口或用户停止。
   - 一个 agent 只 poll 本侧 inbox，不得再启动对端的 poll。
   - 双方用通道沟通，不要只 poll 干等。

@@ -58,6 +58,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         "repository-contract.md", "object-contract.md", "codewiki-contract.md",
         "delivery-contract.md", "common.md", "doc-structure.md",
         "collab-mode.md",  # integrate 的专用契约，不是独立 intent。
+        "integration-heartbeat.md",  # 通道各阶段共用的状态确认契约。
         "finish.md",  # alias stub → close-out.md
     }
     workflows = [p for p in documents if p.name not in nonprocedural]

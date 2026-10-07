@@ -366,7 +366,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：按工作线联调，强制 Goal；collab-mode 由接手 Agent 直接操作前后端 worktree。
-  - 说明：跨 worktree 消息模式先 courtesy 等 ack；每分钟 heartbeat；只改本仓、只 poll 本侧。
+  - 说明：跨 worktree 先 courtesy 等 ack；每轮 heartbeat 确认双方工作与等待；只改本仓、只 poll 本侧。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

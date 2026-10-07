@@ -107,7 +107,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 | 3 | Address peer | 约束 | 对端、ping、courtesy 等到 ack | peers、ack | 4 | 未就绪或未 ack 留 3；否则停 |
 | 4 | Assign roles | 约束 | 定角色 | 角色或只传 | 已确认则 5；只传则 6 | 不明或告知失败留 4；无法处理或用户停止则停 |
 | 5 | Agree plan | 约束 | 确认计划并准备数据 | 计划与就绪 | 同仓 7；否则 6 | 失败留 5；无法处理或用户停止则停 |
-| 6 | Transfer | 约束 | 从后台 poll 读取下一条「收到」 | 「收到」行 | 7 | 非「收到」忽略并续读；用户停止则停 |
+| 6 | Transfer | 约束 | 从后台 poll 读取下一条「收到」 | 「收到」行 | 7 | 其他输出按通道规则处理；用户停止则停 |
 | 7 | Dispatch | 约束 | 执行计划/处理消息 | 结果 | 跨仓非收口 6；同仓/收口 8；只传 end 结束 | 无法处理停；提交失败留 7 |
 | 8 | Close | 约束 | 提交并送达测试报告 | 发送结果或报告 | 结束 | 提交失败、发送失败或未取到报告留 8；用户停止则停 |
 
@@ -163,11 +163,10 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 - 本侧还能推进就做并 `send` 进展或结论。
 - 只能等对端时，先 `send` 写明在等什么，再读 poll。
-- 等待对端信息时，必须向用户输出「正在等待：<具体内容>」。
-  - 间隔为 15、30、45、60 秒，之后每 60 秒一次；60 秒为上限。
-    不得只盯 poll 的 `waiting`。
-- poll 每等待 1 分钟向已登记对端发 `heartbeat`，让对方知道本侧在等。
-  发送失败不停止 poll。`waiting` 仍只表示本侧 inbox 空，不能代替业务 `send`。
+- 等待对端时，按 15、30、45、60 秒，之后每 60 秒向用户报告「正在等待：<具体内容>」。
+  - 60 秒为上限；`waiting` 只表示 inbox 空，不能代替双方状态确认。
+- poll 每等待 1 分钟向已登记对端发 `heartbeat`；发送失败不停止 poll。
+- 每轮发出或收到 heartbeat 必须执行 [状态确认](integration-heartbeat.md)，双方明确下一步。
 - ❌ 不要只 poll 干等，也不用通道外聊天代替。
 
 验收：`.gitignore` 含 `.integration/`，session 含 token，且 poll 在后台运行。
@@ -222,7 +221,8 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 | 消息 | 处理 |
 | --- | --- |
-| `ping` / `courtesy` / `ack` / `heartbeat` | courtesy 立刻 ack；heartbeat 留下；然后留在 4 |
+| `ping` / `courtesy` / `ack` | courtesy 立刻 ack；然后留在 4 |
+| `heartbeat` 或状态 `send` | 执行 heartbeat 状态确认，不作为角色确认；留在 4 |
 | 正文为 `relay-only` 的 `send` | 当即走「只传」进 6，不再转发 |
 | 未确认前的每条其它 `send` | 是对方的角色回复或告知，按下方规则判定；仍未确认则留在 4 |
 | `bug-request`、`end`，或缺种类、正文无法读取 | 是「无法处理」，停止 |
@@ -249,7 +249,8 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 | 消息 | 处理 |
 | --- | --- |
 | 计划疑问、计划正文、就绪回复 | 在本步处理 |
-| `ping` / `courtesy` / `ack` / `heartbeat` | courtesy 立刻 ack；heartbeat 留下；然后留在 5 |
+| `ping` / `courtesy` / `ack` | courtesy 立刻 ack；然后留在 5 |
+| `heartbeat` 或状态 `send` | 执行 heartbeat 状态确认，不作为计划确认；留在 5 |
 | 其它种类 | 不修复、不提交、不视为收口完成，用 `send` 说明计划未就绪，然后留在 5 |
 | 缺种类，或正文无法读取 | 是「无法处理」，停止 |
 
@@ -276,9 +277,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 - `integrate poll --repo "$REPO_ROOT"`：常驻。stdout 只打可读行。
   - 一启动就打印「等待」，之后约每 1 分钟再打一次，并向已登记对端发 `heartbeat`。
   - 取出一条未交出的 inbox 消息时打印「收到」：时间、谁发给谁、kind，正文单独成行。
-  - 不因消息退出。Agent 不得主动停止 poll。「等待」、取出消息、处理完毕、步骤结束、
-    收口完成、「只传」收到 `end`，都不是停止理由。
-  - 仅用户明确停止整个 integrate 会话时才停掉 poll。不传 `--timeout`。
+  - 收到消息、步骤结束、收口完成都不是停止理由；仅用户明确停止会话时才停止 poll，不传 `--timeout`。
 - `integrate send` 的 stdout 同样打印「发出」行，正文单独成行。
 - `--timeout` 与 `--wait` 仅测试用：到期打印「超时」；`--wait` 改等待/心跳间隔。
 - `integrate listen`：只把 POST 原子写入本机 inbox 并返回已写入。
@@ -302,7 +301,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 本步只通过已有后台 Shell 会话句柄读取 poll 的 stdout，不另起 poll；退出按步骤 2 重启。
 
 - 📌 只有步骤 6 取到的「收到」行必须进入 7，不得跳过 7 去处理下一条。
-- poll 的 `waiting`、非「收到」行与心跳忽略并续读，不进 7、不停。
+- 发出的 heartbeat 先执行状态确认；其余非「收到」行（含 `waiting`）忽略并续读，不进 7、不停。
 - 用户明确停止整个会话时，才停止 poll 并停掉本侧 listen。
 
 验收：已从 poll 读到一条「收到」。异常与交接：用户明确停止则停止。
@@ -318,7 +317,8 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 | kind | 处理 |
 | --- | --- |
-| `ping` / `courtesy` / `ack` / `heartbeat` | ping 记 token；courtesy 立刻 ack；heartbeat 留下。非收口 |
+| `ping` / `courtesy` / `ack` | ping 记 token；courtesy 立刻 ack。非收口 |
+| `heartbeat` 或状态 `send` | 执行 heartbeat 状态确认；非收口 |
 | `send` | 按正文处理。测试问题按下方修复规则，去向由该规则决定。其它 send 是非收口 |
 | `bug-request` | 不写 `docs/bugs/`。展示四个字段后走 `$mdf bug create`，再按修复规则提交 |
 | `end` | 「只传」时结束流程，保留 poll/listen；否则按下方收口判定，listen 继续运行 |
@@ -375,7 +375,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 - 提交完成后，发送一条 `send` 测试报告，正文写明计划条目、热修复、
   未当场修好的缺陷和结论。
-- 确认 `end` 之后、这条报告之前，主导方不再发送别的消息。
+- 确认 `end` 后、报告前，除 heartbeat 状态确认外，主导方不再发送别的消息。
 - 发送非零则留在 8。发送成功后，主导方已满足报告条件，不停止 poll。
 
 被动方：
@@ -384,7 +384,7 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 - 开始等报告时 `send` 一次在等报告，之后读 poll，不要只盯「等待」。
 - 测试报告是 `send`，正文须同时写明计划条目、热修复、未当场修好的缺陷和结论。
 - 未取到这份报告时留在 8。取到后已满足报告条件，不停止 poll。
-- 本步 poll 到的其它消息不进入 7，留在 8 继续 poll。
+- 本步的 heartbeat / 状态 send 执行状态确认；其余消息留在 8，不进入 7。
 
 双方（含同 worktree）在本侧报告条件满足后：
 
