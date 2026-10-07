@@ -274,6 +274,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - roster 默认：feature=min-tdd；release=solo+3 partition reviewer；其他=solo。
     - release 开分支前确认发布目标（工作线、联调、`has_dev`；checklist 含 integrate；
       不实施新 PRP；无开发则预勾 owner 开发/converge）。
+    - collab-mode 在 start 完成本仓准备后交接，由另一 workspace 的接手 Agent 调度两端。
     - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
@@ -364,8 +365,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf sync`；展示关系图，确认后先拉后推三大 trunk，多余分支只报告；禁止 force-push。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
-  - 用途：同 worktree 保留角色与验收；跨 worktree 才收发消息。强制 Goal，先 courtesy 等 ack。
-  - 说明：每分钟 heartbeat；只改本仓、只 poll 本侧。
+  - 用途：按工作线联调，强制 Goal；collab-mode 由接手 Agent 直接操作前后端 worktree。
+  - 说明：跨 worktree 消息模式先 courtesy 等 ack；每分钟 heartbeat；只改本仓、只 poll 本侧。
 - `$mdf help`
   - 用法：`$mdf help` 或 `$mdf help <intent>`
   - 用途：展示意图目录或单条用法要点。

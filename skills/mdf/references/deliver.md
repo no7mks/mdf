@@ -17,9 +17,10 @@
 │ 2 Select                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── close-out 已完成 ────→ 5 Report
-                 ├──── 可并行阶段 ──────────→ 4 Parallel
-                 ├──── 证据冲突或阻塞 ──────→ [保留现场并报告]
+                 ├──── close-out 已完成 ────────→ 5 Report
+                 ├──── collab-mode 尚待接手 ────→ [交接并结束]
+                 ├──── 可并行阶段 ──────────────→ 4 Parallel
+                 ├──── 证据冲突或阻塞 ──────────→ [保留现场并报告]
                  │
                  ▼ 单个待办阶段
 ┌──────────────────────────────────┐
@@ -80,7 +81,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 锁定→2；start 委托成功→1 | start 失败交接；须问；死硬停 |
-| 2 | Select | 约束 | 按选择表选剩余步骤 | 产物、执行者、待办 | 完成 5；并行 4；其他 3 | 冲突或阻塞则保留现场并报告 |
+| 2 | Select | 约束 | 按选择表选剩余步骤 | 进度、执行者 | 完成5；交接结束；并行4；其他3 | 冲突或阻塞则保留现场并报告 |
 | 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成→2；AP 非 yolo 关口→6 | 失败/非关口待确认→原流程交接 |
 | 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路提交与勾选意向 | 2 | 保留各路现场并报告 |
 | 5 | Report | 约束 | 核对 finish 实际结果，完成 Goal 并报告 | 合并、清理、适用 tag 与推送 | 结束 | 报告实际状态 |
@@ -128,7 +129,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 - 已由 target 或用户指定 kind 与 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。
 - 默认模式询问用户选择；`--auto-pilot` 由主 Agent 按仓库证据与对话上下文选定唯一目标。
 - 不调用初始化或规划流程，不发明 release/hotfix 版本。
-- start 成功后回到 1；start 失败或停止则按其交接结束，不回 1。
+- start 成功后回到 1；collab-mode 尚待接手由步骤 2 交接；start 失败或停止则按其交接结束，不回 1。
 
 已有交付与 start 返回后：
 
@@ -257,8 +258,9 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
-| release 缺 integrate checklist 项或正文未写工作线 | 停止；须有 integrate 项且工作线三选一 |
-| release integrate 未勾 | 执行 `$mdf integrate`（同 worktree 不开通道；跨 worktree 开通道）；不联调不得留未勾 |
+| release 缺 integrate checklist 项或正文未写工作线 | 停止；须有 integrate 项且工作线四选一 |
+| release collab-mode 尚待接手 | 按 `collab-mode.md` 交接并结束；保留未完成进度与 Goal |
+| release integrate 未勾 | 执行 `$mdf integrate`；同 worktree / collab-mode 不开通道；不联调不得留未勾 |
 | `needs_design: yes` 且 design 未勾 | 在 owner 委托 `references/design.md` |
 | roster ≥1、未完成路数 ≥2 且前置满足 | 并行委托 write-tests / implement |
 | roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话 |
@@ -266,7 +268,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | objectives 的 owner 开发项未勾 | owner 按 objectives 完成开发（`has_dev: no` 时该项须已由 start 预勾） |
 | owner 开发（或等价开发项）已勾且 converge 未勾 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
-| release 联调且尚未确认无更多代码修改 | 通道内双方确认冻结；不进入审查 |
+| release 联调且尚未确认无更多代码修改 | 按所选模式确认两端冻结；collab-mode 由接手 Agent 核实；不进入审查 |
 | converge 已勾（或无未勾 converge 项）、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
 | code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |
 | verify branch 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |

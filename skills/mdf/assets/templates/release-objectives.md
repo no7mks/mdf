@@ -12,7 +12,7 @@
 跳过项由 start 写入时即勾为 `[x]`（不靠缺席表示跳过）。
 
 - [ ] 确认工作线与范围（start）
-- [ ] integrate（无联调工作线：start 写入时已勾；同/跨 worktree：由 `$mdf integrate` 自勾）
+- [ ] integrate（无联调工作线：start 写入时已勾；其余模式：由 `$mdf integrate` 自勾）
 - [ ] design（仅 needs_design: yes；由 `$mdf design` 自勾）
 - [ ] 完成预发布工作（owner；无预发布事务时 start 写入时已勾）
 - [ ] owner 开发（has_dev: no：start 写入时已勾；has_dev: yes：owner 完成后自勾）

@@ -121,7 +121,8 @@
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；
     ❌ 不因 roster `0,0` 强行进入 owner 开发或 converge。
-  - release：checklist 须含 integrate；未勾则先 `$mdf integrate`；工作线正文三选一。
+  - release：checklist 须含 integrate；未勾则先 `$mdf integrate`；工作线正文四选一。
+    - collab-mode 尚待接手时按 [交接契约](collab-mode.md) 报告本仓材料并结束；已接手则操作两端。
     - 跨 worktree 需要且通道未打开时先 `$mdf integrate`，续办已有通道不重复 init/poll。
     - 双端验收且确认不再改代码后才委托 code-review；integrate 须已勾。
   - 开发未完成时（对应 checklist 项仍为 `[ ]`）：

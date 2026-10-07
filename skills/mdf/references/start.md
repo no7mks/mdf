@@ -41,10 +41,11 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 未切到 ─────────────────────→ [留在 5 等待]
+                 ├──── collab-mode 已交接 ─────────→ [结束]
                  ├──── 已切到且 release 需联调 ────→ 6 Open integrate
                  └──── 已切到 ─────────────────────→ [结束]
 
-仅步骤 5「release 需联调」进入，不是步骤 4 的后续。
+步骤 5 先处理 collab-mode 交接；其余 release 需联调才进入 6，不是步骤 4 的后续。
 
 ┌──────────────────────────────────┐
 │ 6 Open integrate                 │
@@ -73,7 +74,7 @@
 | 2 | Clarify objectives | 约束 | 写/确认 objectives checklist（含大步骤） | 确认目标文件 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 展示 member、strategy 与 models 并确认 | 用户明确确认 | 4 | 拒绝停止；未决留 3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
-| 5 | Switch worktree | 约束 | 切到 owner worktree | cwd、分支 | 需联调则 6；其他结束 | 留在 5 等待 |
+| 5 | Switch worktree | 约束 | 切到 owner；交接 | 路径、交接 | 同/跨→6；collab 交接结束；其他结束 | 留在 5 等待 |
 | 6 | Open integrate | 约束 | 立即执行 `$mdf integrate` | Goal；跨 worktree 另有通道与 poll | 结束 | 按 integrate 交接 |
 
 ## 术语与数据结构
@@ -139,11 +140,13 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - checklist **必须含** integrate、owner 开发、converge 项；跳过项在写入临时文件时
     即勾 `[x]`（不联调 → integrate；`has_dev: no` → owner 开发与 converge；无预发布
     事务 → 预发布工作）。不得靠缺席表示跳过。
-  - 工作线三选一；只写入已选定的那一条；不罗列未选路径；不写「本版选定…」；📌 必须写明三种之一：
+  - 工作线四选一；只写入已选定的那一条；不罗列未选路径；不写「本版选定…」；必须写明四种之一：
     - 不联调：不执行 integrate intent（checklist 项已勾）。
     - 同 worktree：执行 integrate，不打开消息通道。
     - 跨 worktree：先开通道；写本侧可碰范围；只改本仓；
       不得改、操作、启动或终止对端。
+    - collab-mode：由接手 Agent 直接调度前后端 worktree；本 Agent 完成本仓 start 后交接。
+      交接规则见 [collab-mode](collab-mode.md)；本步只确认本仓范围与已知的对端信息。
   - 主链收口前为 verify branch → fact audit → close-out（不内嵌在 close-out）。
   - ❌ 不得实施新 PRP。
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
@@ -278,12 +281,14 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - 向用户给出目标绝对路径与分支名。
 - Cursor 未进入则留在 5，重复切换；其他宿主绑定绝对路径后即通过。
 - 不拆除已建 worktree 与分支。
-- 已切到后看 objectives：release 且为同 worktree 或跨 worktree 则进入 6，不得先结束。
+- 已切到后看 objectives，release 的 collab-mode 先按 [交接契约](collab-mode.md) 输出本仓材料并结束。
+  - deliver 内部委托时返回调用方并说明待接手，不进入 6、不接管另一仓的 start 或联调。
+- release 且为同 worktree 或跨 worktree 则进入 6，不得先结束。
 - 其他 kind，或不联调的 release：
   - 独立调用结束，由用户手动触发 design 或通过 next 委托。
   - deliver 内部委托时返回调用方。
 
-验收：已切到 owner；release 需联调则进入 6，否则结束或返回。
+验收：已切到 owner；collab-mode 已交接；同/跨 worktree 联调进入 6，否则结束或返回。
 
 异常与交接：未切到则留在 5。
 

@@ -57,6 +57,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     nonprocedural = {
         "repository-contract.md", "object-contract.md", "codewiki-contract.md",
         "delivery-contract.md", "common.md", "doc-structure.md",
+        "collab-mode.md",  # integrate 的专用契约，不是独立 intent。
         "finish.md",  # alias stub → close-out.md
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
@@ -346,6 +347,9 @@ def test_common_banner_and_non_cursor_use_bound_worktrees():
 
 def test_integrate_forces_goal_and_never_stops_poll():
     text = workflow("integrate")
+    mode = next(line for line in text.splitlines() if line.startswith("| collab-mode |"))
+    assert mode.split("|")[2].strip() == "不打开"
+    assert (skill_dir("mdf") / "references/collab-mode.md").is_file()
     assert "同 worktree（同仓）" in text
     assert "跨 worktree（跨仓）" in text
     assert "不 init、不 poll、不 listen、不 send" in text

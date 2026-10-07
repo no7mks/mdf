@@ -17,13 +17,13 @@
     - `no`：start 写入时即将 owner 开发、converge（及无事务时的预发布工作）勾为
       `[x]`；不跑这些 intent。
     - `yes`：保留未勾，走 owner 开发 → converge。
-  - checklist **必须含** integrate 项；不联调由 start 写入时勾 `[x]`；同/跨
-    worktree 由 `$mdf integrate` 收口自勾。deliver/next **只读该勾选**。
-  - 该分支不得实施新 PRP。工作线三选一，只写选定的一条。
+  - checklist **必须含** integrate 项；不联调由 start 写入时勾 `[x]`；其余模式由
+    `$mdf integrate` 收口自勾。deliver/next **只读该勾选**。
+  - 该分支不得实施新 PRP。工作线四选一，只写选定的一条。
   - 不联调不执行 integrate intent。同 worktree 执行 integrate，不打开消息通道。
   - 跨 worktree 切到 worktree 后先开通道。只改本仓，不得改、操作、启动或终止对端。
-  - 两种联调都强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
-  - 两端验收且确认不再改代码后才允许 code-review（且 integrate 项须已 `[x]`）。
+  - collab-mode：start 完成本仓准备后交接，由接手 Agent 操作两端；见 [专用契约](collab-mode.md)。
+  - 三种联调强制 Goal；Goal 完成前用户没让停就持续推进；双端验收且确认冻结、integrate 已勾才允许 code-review。
 - start 后四种工作分支均须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
   - bugfix / hotfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
   - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。

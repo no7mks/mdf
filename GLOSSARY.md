@@ -222,14 +222,23 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 - **converge**（收敛）：核对 objectives 前置已勾，跑 smart，修到达成后自勾。
   - 「全绿」相对该 suite，不等于 `.mdf/modules.yaml` 里每一条命令。
 
+## Collab-mode
+
+release 的第四种工作线，由接手 Agent 在可访问两端的 workspace 中调度前后端 worktree。
+
+- start Agent 准备本仓 release 分支与交接材料，完成后交接。
+- 接手 Agent 可以修改两端代码、测试与配置，并启停两端服务和依赖。
+- 不打开消息通道；两端验收、修复与收口见 [契约](skills/mdf/references/collab-mode.md)。
+
 ## 联调通道
 
-`$mdf integrate` 服务两种联调。不联调不进入。
+`$mdf integrate` 服务同 worktree、跨 worktree 与 collab-mode 三种联调。不联调不进入。
 
 同 worktree（同仓）保留角色、计划、验收、修复与收口，不打开消息通道。
-跨 worktree（跨仓）才使用下面的通道。
+collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
+跨 worktree（跨仓）的消息模式才使用下面的通道。
 
-通道是 worktree 内由 `.gitignore` 忽略的 `.integration/` 目录，只用于跨 worktree。
+通道是 worktree 内由 `.gitignore` 忽略的 `.integration/` 目录，只用于跨 worktree 消息模式。
 
 - 本机对端直接写入其 `inbox/`。
 - 另一台机器上的对端通过可选 HTTP 监听把请求落成同一 inbox 文件。
@@ -240,7 +249,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
   - 一个 agent 只 poll 本侧 inbox，不得再启动对端的 poll。
   - 双方用通道沟通，不要只 poll 干等。
 - release 的 objectives 必须写明是否走联调通道；工作线只写选中的一条。
-  - 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
+  - 跨 worktree 消息模式每侧只改本仓；可启动本侧依赖；不得改、操作、启动或终止对端。
   - 需要时切到 worktree 后先打开通道。Goal 完成前，用户没让你停，永远不许停下来。
   - 双端验收且确认不再改代码后才允许 code-review。
   - fact audit（必要时 fact update）在 verify branch 之后、close-out 之前执行。

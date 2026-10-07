@@ -141,7 +141,7 @@ close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（�
 - release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
   - 审查基线仍为上一正式发布。
   - 📌 integrate 项须已 `[x]`；未勾停止，提示先 `$mdf integrate`（或不联调应由 start 预勾）。
-  - 📌 同 worktree 或跨 worktree 联调时，进入 2 前须双端验收通过，且已确认此后不再改代码。
+  - 📌 联调时（含 collab-mode），进入 2 前须双端验收通过，且已确认此后不再改代码。
     未双端验收通过则不派审查。
 - hotfix/bugfix 读取 `objectives.md` checklist 与对应 Bug。
 - bugfix 的 `suites.json` 在后续 verify branch 前关联；本步不强制。

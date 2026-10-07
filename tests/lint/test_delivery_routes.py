@@ -73,7 +73,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[3][5] == "5"
     assert table[4][1] == "Switch worktree"
     assert table[4][2] == "约束"
-    assert table[4][5] == "需联调则 6；其他结束"
+    assert table[4][5] == "同/跨→6；collab 交接结束；其他结束"
     assert table[4][6] == "留在 5 等待"
     assert table[5][1] == "Open integrate"
     assert table[5][5] == "结束"
@@ -115,6 +115,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert re.search(r"5 Switch worktree", diagram)
     assert re.search(r"6 Open integrate", diagram)
     assert re.search(r"已切到且 release 需联调", diagram)
+    assert re.search(r"collab-mode 已交接 ─+→ \[结束\]", diagram)
 
 def test_start_switches_agent_to_owner_worktree():
     text = workflow("start")
@@ -305,6 +306,8 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "`$mdf verify --scope smart`" in review or "verify --scope smart" in review
     deliver = workflow("deliver")
     assert "外层协调者" in deliver
+    assert "交接结束" in rows(deliver)[1][5]
+    assert re.search(r"collab-mode 尚待接手 ─+→ \[交接并结束\]", deliver)
     assert "先测后审" not in deliver
     assert "| release integrate 未勾 |" in deliver
     assert "| release 缺 integrate checklist 项或正文未写工作线 |" in deliver

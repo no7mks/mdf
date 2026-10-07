@@ -1,17 +1,18 @@
 # Integrate
 
-release 联调三选一，objectives 正文只写选定的一种；checklist **必须含** integrate 项。
-不联调：start 写入时勾掉该项，不进入本 intent。同/跨 worktree：本 intent 收口自勾。
+release 联调四选一，objectives 正文只写选定的一种；checklist **必须含** integrate 项。
+不联调：start 写入时勾掉该项，不进入本 intent。其余模式由本 intent 收口自勾。
 
 | 场景 | 消息通道 | 其余步骤 |
 | --- | --- | --- |
 | 不联调 | 不进入本 intent | 不执行 |
 | 同 worktree（同仓） | 不打开 | 角色、计划、验收、修复与收口仍执行 |
 | 跨 worktree（跨仓） | 两个 worktree 之间收发 | 全部执行 |
+| collab-mode | 不打开 | 接手 Agent 直接操作两端 worktree，按专用契约执行 |
 
 同 worktree 不 init、不 poll、不 listen、不 send。步骤 2 建 Goal 后进 4，到步骤 8 收口。
 跨 worktree 写 inbox 并 poll 到用户停止；只 poll 本侧。不得改、操作、启动或终止对端。只传没有步骤 8。
-`waiting`、取消息、非收口、收口完成，都不是停止 poll 的理由。从步骤 2 起强制 Goal。
+collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于同/跨 worktree。
 
 ## 决策树
 ```text
