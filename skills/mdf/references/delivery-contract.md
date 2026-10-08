@@ -83,7 +83,7 @@
 5. converge（无对应未勾项则跳过）
 6. code-review
 7. verify branch
-8. fact audit（必要时 fact update 后重审）
+8. fact audit（必要时 fact update 后重审）；进入前执行可选 pre-gitflow-finish hook
 9. close-out
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
@@ -97,6 +97,8 @@
 - **verify branch / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
   - verify 默认 suite：feature/bugfix/hotfix → smoke；release → release；失败现场修到绿。
   - fact：verify branch 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
+  - 进入 fact 前按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md) 执行可选 hook。
+    仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。

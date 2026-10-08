@@ -228,6 +228,22 @@ Agent 先尝试解决并验证，无法处理才询问用户；解决后提交�
 
 ❌ 不操作多余分支，不 rebase，不 force-push，不删除远端或本地分支。
 
+## `pre-gitflow-finish`
+
+```bash
+python3 skills/mdf/scripts/mdf.py pre-gitflow-finish --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py pre-gitflow-finish --repo /path/to/repository --after <before_head>
+```
+
+- 在 owner 交付分支、manifest ready、clean 时执行；位置在 branch 验证后、fact 前。
+- 详见 [hook 契约](../../../skills/mdf/references/hooks/pre-gitflow-finish.md)。
+- JSON 含 `before_head`、`hook`；rule 返回 `hook.status: pending`，交给 Agent 执行。
+- command 完成（含失败）后返回 `changed_paths` 与 `needs_recheck`；失败不令 CLI 非零退出。
+- `--after` 只比较原 commit 到当前实际改动，不执行 hook，不要求 clean；供 rule 执行后核对。
+- 仅普通 Markdown 文档改动可直接进入 fact；其他改动由 Agent 补 code-review 与 branch 验证。
+- CLI 不创建提交或执行补审补测；主链 Agent 保存执行记录，续办不重跑已执行 hook。
+- `finish-gitflow` 不触发此 hook；独立 fact 维护与 migrate 不触发。
+
 ## `finish-gitflow`
 
 ```bash

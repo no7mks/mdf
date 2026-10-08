@@ -271,12 +271,15 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | release 联调且尚未确认无更多代码修改 | 按所选模式确认两端冻结；collab-mode 由接手 Agent 核实；不进入审查 |
 | converge 已勾（或无未勾 converge 项）、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
 | code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |
-| verify branch 已勾、fact audit 未勾 | 委托 fact-audit；必要时 fact-update 后重审 |
+| verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
+| verify branch 已勾、fact audit 未勾 | 核 hook 已执行或未配置；委托 fact-audit；必要时 fact-update 后重审 |
 | fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |
 | close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
 
 剩余工作与失败处理：
 
+- fact 前的 hook 读取 [pre-gitflow-finish](hooks/pre-gitflow-finish.md)；失败仅汇报，
+  非文档改动退勾后回到本表补审补测；已执行的 hook 不因补测或 fact 重审而重跑。
 - release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - 步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。

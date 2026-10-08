@@ -243,8 +243,8 @@ ASD-STE100 写作约定。CLI `fact-audit` 对结构硬限制报 `prose.*` findi
 
 ## Manifest
 
-可选 [hooks](hooks/post-gitflow-start.md)。`.mdf/manifest.yaml` 是控制面；可选顶层 `logo` 为横幅 emoji 字符串，缺省、`null`
-或空字符串时用 `📍`；直接编辑配置，init 保留已配置值。
+可选 [start hook](hooks/post-gitflow-start.md) 与 [finish hook](hooks/pre-gitflow-finish.md)。
+Manifest 控制面可选 `logo`：横幅 emoji 字符串；缺省、`null` 或空字符串用 `📍`，init 保留配置。
 
 - `schema_version` 必须为 `3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased` 不是版本线值。
 - 八项`基线`键为 `glossary`、`user_guide`、`system_boundary`、`architecture`；

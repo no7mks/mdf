@@ -10,6 +10,7 @@ versioning:
 implementation_roots:
   - "{{MDF_REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
 # 可选 hooks 配置见 references/hooks/post-gitflow-start.md。
+# fact 前的 hook 见 references/hooks/pre-gitflow-finish.md。
 baselines:
   glossary:
     status: "{{MDF_DOCUMENTED_OR_NOT_APPLICABLE}}"

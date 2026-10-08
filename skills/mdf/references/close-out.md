@@ -96,8 +96,8 @@
 
 - 读取 `references/common.md`、`references/repository-contract.md`：
   - 另读 `references/object-contract.md` 与 `references/delivery-contract.md`。
-- 入口前置：主链须已完成 verify branch（有效 `verification-report.json`）与 fact audit；
-  本 intent 不再内嵌二者。
+- 入口前置：主链 verify branch、fact audit 已完成；配置 pre-gitflow-finish 时须有执行及补验记录。
+  本 intent 不再内嵌二者；缺 hook 记录交接主链，不在本 intent 或 `finish-gitflow` 内补跑。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
 - 步骤 2 可选 squash：先内部执行 `references/squash.md` 的 dry-run，确认执行后再
   内部执行完整 `references/squash.md`。

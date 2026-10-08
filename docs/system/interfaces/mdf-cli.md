@@ -86,6 +86,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |
+| `pre-gitflow-finish` | fact 前执行 hook 或检查其改动 | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | 替换已安装 Skill | [仓库写入命令](mdf-cli-write.md) |
 | `integrate` | 联调 inbox 与可选 HTTP | [交付阶段与验证](mdf-cli-delivery.md) |
 

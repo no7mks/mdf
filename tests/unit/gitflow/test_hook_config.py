@@ -17,7 +17,10 @@ from mdf_core.yamlutil import parse_yaml
     {"post-gitflow-start": {"type": "rule", "path": "../rule.md"}},
     {"post-gitflow-start": {"type": "rule", "path": ""}},
 ])
-def test_invalid_hooks(hooks):
+@pytest.mark.parametrize("name", ["post-gitflow-start", "pre-gitflow-finish"])
+def test_invalid_hooks(hooks, name):
+    if isinstance(hooks, dict) and "post-gitflow-start" in hooks:
+        hooks = {name: hooks["post-gitflow-start"]}
     with pytest.raises(MDFError, match="hook"):
         validate_hooks({"hooks": hooks})
 
@@ -39,7 +42,10 @@ def test_missing_hook_file_is_reported_without_raising(tmp_path, capsys, hook_ty
 
 def test_manifest_render_preserves_hooks():
     from mdf_core.constants import BASELINES
-    hooks = {"post-gitflow-start": {"type": "rule", "path": "rules/start.md"}}
+    hooks = {
+        "post-gitflow-start": {"type": "rule", "path": "rules/start.md"},
+        "pre-gitflow-finish": {"type": "command", "path": "scripts/finish.sh"},
+    }
     baselines = {name: {"status": "not_applicable", "reason": "测试"} for name in BASELINES}
     manifest = parse_yaml(render_manifest(baselines, None, ["src"], hooks=hooks))
     assert manifest["hooks"] == hooks

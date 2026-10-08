@@ -60,6 +60,8 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 - verify smoke 执行 feature 的 branch 验证（lint/build/quick/smoke），
   写入 `verification-report.json`；通过后自勾 verify smoke。
 - fact update 直接对齐当前事实，沿用其内部审阅与验证，通过后自勾 fact update。
+  - 进入前按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md) 执行可选 hook；仅文档继续，
+    其他改动先补 code-review 与 verify smoke；失败仅汇报，续办不重跑。
 - close-out 核对上述前置项及报告；不要求 design、converge 或独立 fact audit 项。
   - Change 的 `proposals: []`；无 PRP 状态更新。
   - 沿用 feature 的 no-ff 合入 develop、源分支删除及 worktree 保留规则。
@@ -80,7 +82,7 @@ objectives 六项须与模板同序且没有缺项；不符则报告具体差异
 | --- | --- | --- |
 | code-review | `references/code-review.md` | 1 人审查终稿、勾选与提交 |
 | verify smoke | `references/verify.md`，branch scope | 通过的 branch 报告、勾选与提交 |
-| fact update | `references/fact-update.md` | 事实同步、内部审阅通过、勾选与提交 |
+| fact update | 先可选 hook，再 `references/fact-update.md` | 适用补审补测、事实同步、内部审阅、勾选与提交 |
 | close-out | `references/close-out.md` | Change、实际 Gitflow 结果 |
 
 步骤 3 完整读取所选 intent 后执行；不同时委托多个阶段。

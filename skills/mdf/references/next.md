@@ -121,6 +121,8 @@
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
   - 主线后半：code-review → verify branch → fact audit → close-out。
+    进入 fact 前按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md) 执行可选 hook；
+    仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
   - 无对应未勾项则跳过。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；

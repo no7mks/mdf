@@ -61,6 +61,8 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/repository-contract.md`。
+主链调用方进入本 intent 前须按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md)
+执行可选 hook 与必要补审补测；本只读 intent 不执行 hook，fact update 内部委托也不重复触发。
 
 按 `common.md`「执行进度」与下方「逐项进度」播报；fact update 委托时同时说明审阅轮次。
 

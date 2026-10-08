@@ -262,6 +262,12 @@ def build_parser() -> argparse.ArgumentParser:
     finish.add_argument("--source")
     finish.set_defaults(func=command_finish_gitflow)
 
+    from .finish_hook import command_pre_gitflow_finish
+    finish_hook = subparsers.add_parser("pre-gitflow-finish")
+    finish_hook.add_argument("--repo", required=True)
+    finish_hook.add_argument("--after")
+    finish_hook.set_defaults(func=command_pre_gitflow_finish)
+
     upgrade = subparsers.add_parser("upgrade")
     upgrade.add_argument("--repo", required=True)
     upgrade.add_argument("--source", default=DEFAULT_SKILL_SOURCE)

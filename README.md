@@ -99,6 +99,8 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
 - converge 做 smart 验收；verify branch 为独立阶段。
+- 可选 `pre-gitflow-finish` hook 在 fact 前执行；仅文档改动继续，其他改动先补审补测。
+  - 支持 command / rule，失败仅汇报；配置见 [契约](skills/mdf/references/hooks/pre-gitflow-finish.md)。
 - 一个 feature 对应一个 PRP；`needs_design: yes` 时 design 提交共用底座。
 - start 始终独立 worktree。
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
