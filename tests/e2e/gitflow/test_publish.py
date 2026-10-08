@@ -6,7 +6,10 @@ from support_upgrade import *  # noqa: F403
 
 
 @pytest.mark.parametrize("after_push", [False, True])
-def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, monkeypatch, after_push):
+@pytest.mark.parametrize("remote_develop_changed", [False, True])
+def test_publish_resumes_without_remerging_or_retagging(
+    python_exe, tmp_path, monkeypatch, after_push, remote_develop_changed,
+):
     repo, remote = start_repo(tmp_path)
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
@@ -35,6 +38,13 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
             gitflow.command_finish_gitflow(SimpleNamespace(repo=str(work), source=None))
     source = source_head(work)
     before = {ref: git(repo, "rev-parse", ref).stdout for ref in ("master", "develop", "v1.2.1")}
+    if remote_develop_changed:
+        other = tmp_path / "other"
+        git(tmp_path, "clone", "--branch", "develop", str(remote), str(other))
+        (other / "remote-development.txt").write_text("远端后续开发\n")
+        commit(other)
+        git(other, "push", "origin", "develop")
+    remote_develop = git(remote, "rev-parse", "develop").stdout
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     assert done["pushed"] is True
     assert done["retained_worktree"] == str(work)
@@ -46,6 +56,7 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
     for ref, head in before.items():
         assert git(repo, "rev-parse", ref).stdout == head
     assert git(remote, "rev-parse", "master").stdout == before["master"]
+    assert git(remote, "rev-parse", "develop").stdout == remote_develop
     assert git(repo, "cat-file", "-t", "v1.2.1").stdout.strip() == "tag"
     contents = git(
         repo, "tag", "-l", "--format=%(contents)", "v1.2.1"
@@ -55,6 +66,7 @@ def test_publish_resumes_without_remerging_or_retagging(python_exe, tmp_path, mo
     # 从主 worktree 恢复不会删除已经 detached 的工作区或重复创建提交/tag。
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/1.2.1"))
     assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
+    assert git(remote, "rev-parse", "develop").stdout == remote_develop
     assert work.is_dir()
     assert source_head(work) == source
     git(repo, "worktree", "remove", str(work))
@@ -92,14 +104,17 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     merged = git(repo, "rev-parse", "develop").stdout.strip()
     if push_develop:
         git(repo, "push", "origin", "develop")
+    remote_develop = git(remote, "rev-parse", "develop").stdout.strip()
     assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))["pushed"] is True
     assert git(repo, "rev-parse", "develop").stdout.strip() == merged
-    assert git(remote, "rev-parse", "develop").stdout.strip() == merged
+    assert git(remote, "rev-parse", "develop").stdout.strip() == remote_develop
     assert json.loads(path.read_text())["before"]["develop"] == before
 
 
 @pytest.mark.parametrize("kind", ["release", "hotfix"])
-@pytest.mark.parametrize("advance,pushed", [("develop", True), ("develop", False), ("master", True)])
+@pytest.mark.parametrize("advance,pushed", [
+    ("develop", True), ("develop", False), ("master", True), ("master", False),
+])
 def test_publish_resume_after_dirty_worktree_and_branch_advance(
     python_exe, tmp_path, monkeypatch, kind, advance, pushed,
 ):
@@ -140,8 +155,9 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
     advanced = source_head(repo)
     if pushed:
         git(repo, "push", "origin", advance)
+    remote_develop = git(remote, "rev-parse", "develop").stdout.strip()
     result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
-    if advance == "master" or not pushed:
+    if advance == "master":
         assert "publish_state_changed" in result.stderr
         assert json.loads(path.read_text())["before"][advance] == state["before"][advance]
         assert git(remote, "rev-parse", advance).stdout.strip() == (
@@ -153,8 +169,9 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
     assert git(repo, "show", "-s", "--format=%P", "develop").stdout.split() == [
         advanced, state["merged"]["master"]]
     assert state["pushed"] is True
-    for ref in ("master", "develop", "refs/tags/v1.2.1"):
+    for ref in ("master", "refs/tags/v1.2.1"):
         assert git(remote, "rev-parse", ref).stdout == git(repo, "rev-parse", ref).stdout
+    assert git(remote, "rev-parse", "develop").stdout.strip() == remote_develop
     assert work.is_dir()
     assert not git(work, "branch", "--show-current").stdout.strip()
     assert not git(repo, "for-each-ref", f"refs/heads/{kind}/1.2.1").stdout

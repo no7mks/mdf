@@ -23,8 +23,7 @@ def publish(repo, source, version):
     if state is None:
         if head.returncode:
             raise MDFError("发布源分支不存在", code="missing_branch")
-        for target in ("master", "develop"):
-            _synced(repo, target)
+        _synced(repo, "master")
         remote_tag = _git(repo, "ls-remote", "--tags", "origin", f"refs/tags/{tag}").stdout
         if _exists(repo, f"refs/tags/{tag}") or remote_tag.strip():
             raise MDFError("版本 tag 已存在", code="tag_exists")
@@ -43,9 +42,9 @@ def publish(repo, source, version):
         incoming = state["head"] if target == "master" else state["merged"]["master"]
         before = state["before"][target]
         current = _git(repo, "rev-parse", target).stdout.strip()
-        remote = _git(repo, "rev-parse", f"origin/{target}").stdout.strip()
+        remote = _git(repo, "rev-parse", "origin/master").stdout.strip() if target == "master" else None
         recorded = state["merged"].get(target)
-        if target == "develop" and recorded is None and current != before and current == remote:
+        if target == "develop" and recorded is None and current != before:
             parents = _git(repo, "show", "-s", "--format=%P", current).stdout.split()
             # 精确匹配的未记录合并仍走恢复；正常开发进度成为新的合并基线。
             if parents != [before, incoming]:
@@ -53,7 +52,7 @@ def publish(repo, source, version):
                 state["before"][target] = before
                 write_json(path, state)
         if current == before and recorded is None:
-            if remote != before:
+            if target == "master" and remote != before:
                 raise MDFError("远端分支已变化", code="publish_state_changed")
             occupant = worktree_map(primary).get(target)
             # 目标没有 checkout 时在主 worktree 合并，保留源 worktree 的分支身份。
@@ -64,9 +63,9 @@ def publish(repo, source, version):
         elif recorded is None:
             # 合并成功但写记录前中断：只接受精确的双亲合并提交。
             parents = _git(repo, "show", "-s", "--format=%P", current).stdout.split()
-            if parents != [before, incoming] or remote not in (before, current):
+            if parents != [before, incoming] or (target == "master" and remote not in (before, current)):
                 raise MDFError("未记录的分支变化，不能自动恢复", code="publish_state_changed")
-        elif current != recorded or remote not in (before, recorded):
+        elif current != recorded or (target == "master" and remote not in (before, recorded)):
             raise MDFError("发布分支被其他操作改变", code="publish_state_changed")
         state["merged"][target] = current
         write_json(path, state)
@@ -105,17 +104,16 @@ def publish(repo, source, version):
                 )
 
     remote_refs = dict(line.split()[::-1] for line in _git(
-        repo, "ls-remote", "origin", "refs/heads/master", "refs/heads/develop",
+        repo, "ls-remote", "origin", "refs/heads/master",
         f"refs/tags/{tag}").stdout.splitlines())
     tag_object = _git(repo, "rev-parse", f"refs/tags/{tag}").stdout.strip()
-    expected = {"refs/heads/master": state["merged"]["master"],
-                "refs/heads/develop": state["merged"]["develop"], f"refs/tags/{tag}": tag_object}
+    expected = {"refs/heads/master": state["merged"]["master"], f"refs/tags/{tag}": tag_object}
     if remote_refs != expected:
         if (remote_refs.get(f"refs/tags/{tag}") not in (None, tag_object)
-                or any(remote_refs.get(f"refs/heads/{target}") not in
-                       (state["before"][target], state["merged"][target]) for target in ("master", "develop"))):
+                or remote_refs.get("refs/heads/master") not in
+                (state["before"]["master"], state["merged"]["master"])):
             raise MDFError("远端发布状态有冲突", code="publish_state_changed")
-        _git(primary, "push", "--atomic", "origin", "master", "develop", f"refs/tags/{tag}")
+        _git(primary, "push", "--atomic", "origin", "master", f"refs/tags/{tag}")
     state["pushed"] = True
     write_json(path, state)
     return state

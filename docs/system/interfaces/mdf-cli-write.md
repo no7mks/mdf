@@ -279,10 +279,10 @@ feature/bugfix：
 
 release/hotfix：
 
-1. 要求 origin，先 `fetch --prune`，并要求本地 `master` 与 `develop` 与远端完全一致
-   （不要求源分支有 upstream）。
+1. 要求 origin，先 `fetch --prune`，并要求本地 `master` 与远端完全一致
+   （不要求源分支有 upstream）；`develop` 只要求本地 worktree clean，不核对远端。
 2. 先同样合并到 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。
-3. 最后原子推送 `master`、`develop` 和 tag，删除本地源分支。
+3. 最后原子推送 `master` 和 tag，删除本地源分支；`develop` 仅在本地合回，不推送。
    - 不推送、不删除远端 `release/*`/`hotfix/*`。
 
 通用：

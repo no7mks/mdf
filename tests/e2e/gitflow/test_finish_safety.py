@@ -91,3 +91,33 @@ def test_publish_checks_dirty_develop_before_changing_master(python_exe, tmp_pat
     assert git(remote, "show-ref").stdout == remote_before
     from mdf_core.publish import state_path
     assert not state_path(work, f"{kind}/1.2.1").exists()
+
+
+@pytest.mark.parametrize("kind", ["release", "hotfix"])
+@pytest.mark.parametrize("develop_state", ["ahead", "behind", "diverged", "missing_remote"])
+def test_publish_merges_develop_locally_without_remote_requirement(
+    python_exe, tmp_path, kind, develop_state,
+):
+    repo, remote, work = start_finishable(python_exe, tmp_path, kind)
+    if develop_state in {"behind", "diverged"}:
+        git(repo, "checkout", "-b", "remote-side", "develop")
+        (repo / "remote-development.txt").write_text("远端开发\n")
+        commit(repo)
+        git(repo, "push", "origin", "HEAD:develop")
+        git(repo, "checkout", "develop")
+    if develop_state in {"ahead", "diverged"}:
+        (repo / "local-development.txt").write_text("本地开发\n")
+        commit(repo)
+    if develop_state == "missing_remote":
+        git(remote, "update-ref", "-d", "refs/heads/develop")
+    local_develop = git(repo, "rev-parse", "develop").stdout.strip()
+    remote_develop = git(remote, "for-each-ref", "refs/heads/develop").stdout
+    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert result["pushed"] is True
+    master = git(repo, "rev-parse", "master").stdout.strip()
+    assert git(repo, "show", "-s", "--format=%P", "develop").stdout.split() == [
+        local_develop, master,
+    ]
+    assert git(remote, "for-each-ref", "refs/heads/develop").stdout == remote_develop
+    for ref in ("master", "refs/tags/v1.2.1"):
+        assert git(remote, "rev-parse", ref).stdout == git(repo, "rev-parse", ref).stdout
