@@ -26,6 +26,36 @@ def test_modules_required_while_ready(
     assert "modules.missing" in ready.stdout
 
 
+@pytest.mark.parametrize("state", ["ready", "invalid"])
+def test_activation_targeted_checks_state_without_git_history(
+    python_exe, tmp_path, monkeypatch, state,
+):
+    repo = copy_fixture(tmp_path)
+    manifest = repo / ".mdf/manifest.yaml"
+    replace(manifest, "state: ready", "state: initializing")
+    init_git(repo)
+    baseline = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    assert baseline.returncode == 2
+    assert {item["code"] for item in json.loads(baseline.stdout)["findings"]} == {
+        "manifest.initializing",
+    }
+    replace(manifest, "state: initializing", f"state: {state}")
+    from mdf_core.gitutil import GitPathIndex
+
+    def unexpected_history(*args):
+        pytest.fail("仅启用状态变更不应重查 Git history")
+
+    monkeypatch.setattr(GitPathIndex, "last_commit", unexpected_history)
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "targeted")
+    data = json.loads(result.stdout)
+    if state == "ready":
+        assert_ok(result)
+        assert data["findings"] == []
+    else:
+        assert result.returncode == 2
+        assert "manifest.state" in {item["code"] for item in data["findings"]}
+
+
 def test_init_requires_a_non_empty_verification_command(
     python_exe: str, tmp_path: Path
 ):

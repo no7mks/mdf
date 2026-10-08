@@ -52,7 +52,9 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 ```
 
 `--scope` 可为 `targeted`（默认）或 `full`。两者都校验 MDF 确定性契约；
-`full` 额外执行全量检查。存在 finding 时仍输出完整 JSON 结果，
+`full` 额外检查 evidence 与 generated 的 Git 跟踪、脏状态和提交先后。
+`targeted` 仍检查配置、布局、记录、事实页格式与 evidence 路径。
+存在 finding 时仍输出完整 JSON 结果，
 但以状态码 `2` 失败。
 
 stderr 报告 scope 与契约检查阶段；检查结束不代表没有 finding。

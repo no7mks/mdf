@@ -90,7 +90,7 @@
 | 4 | Save baseline | 约束 | init 后完成材料并提交，保持 initializing | 阶段提交、diff | 返回调用方 | 保留现场并报告 |
 | 5 | Validate | 约束 | 按调用方审阅并全量校验 | 按 state 允许的 finding（s5） | 返回调用方 | 可修则 5；两轮后停 |
 | 6 | Confirm activation | 约束 | 展示结果与方案并确认启用 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
-| 7 | Enable | 约束 | 写 ready，全量校验、提交后核验 | 零 finding、就绪提交 | 8 | 事实变化返回调用方；其他保留现场停止 |
+| 7 | Enable | 约束 | 核对增量，启用并提交 | 有效全量结果、增量校验、提交 | 8 | 事实变化返回调用方；其他保留现场停止 |
 | 8 | Prepare branches | 约束 | 按确认方案核对并补齐 master/develop | 本地分支及关系 | 返回调用方完成 | 保留现场并报告 |
 
 ## 术语与数据结构
@@ -232,6 +232,8 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 即 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT" --scope full`。
 
 - bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
+- migrate 的同次 fact audit 已执行 full validation，且后续项目内容未变时，复用其结果，
+  不在本段再次运行；核对仓库、scope、提交与工作区 diff，并检查完整 findings。
 - `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；
   已是 ready 时须零 finding。
 - 其他 finding 修正、提交后重验；同一项两轮后无法继续。
@@ -245,8 +247,22 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 
 <a id="s7"></a>
 
-- 将 manifest 改为 ready，执行 full validation，零 finding 后提交就绪结果；提交后再次核验。
+- 先对照步骤 5 的已验内容，核对提交及 staged、unstaged、untracked 项目改动。
+  不按文件数、行数或「只是 flag」判断结果是否有效。
+  同次全量结果缺失、不符合步骤 5 的允许项或无法核对时，先返回 5 取得所需结果。
+- 同次启用增量仅含以下内容时，复用步骤 5 的 full validation 与事实审阅：
+  - `.mdf/manifest.yaml` 的 `state: initializing → ready`。
+  - Change 等收口记录中对本次启用状态的说明，不包含新的事实、承诺或配置变更。
+  - 这些改动不构成事实变化，不重新调用 fact update 或 fact audit，不重复请求事实确认。
+- 写 ready 后运行一次 `validate --repo "$REPO_ROOT" --scope targeted`，零 finding 后提交。
+  - targeted 仍检查 ready 状态、配置、布局、记录与 evidence 路径，不重查 Git history。
+  - 它只补验上述启用增量，不能替代步骤 5 的 full validation。
+- 提交后核对实际 commit diff、manifest 的 ready 值及工作区改动与预期一致。
+  没有新增变化时直接进入 8，不再次运行 doctor、validate 或事实审阅。
+- 配置、布局或其他材料有新增变化时补做 full validation；不因确定性校验而自动重做事实审阅。
 - 事实发生变化时返回调用方（由其重入 5 补审补验），且步骤 5 按当前 `manifest.state` 验收。
+  - 可观察契约、实现、测试、事实页、evidence 或生成源/生成器变化影响对应事实结论。
+    说明具体变化及失效原因；复用只限本次初始化，不跨调用缓存。
 - 其他失败保留现场并报告，不宣称已完成。
 
 <a id="s8"></a>

@@ -265,7 +265,7 @@
 - 步骤 5 的阶段提交就是审阅基线。本步不再另做一次提交。
 - 比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`。
 - 内部委托 `fact audit` 执行`全量审阅`（`--scope full`），审的是已提交内容。
-- 按 `initialization.md` 段 5 执行 full validation。
+- 按 `initialization.md` 段 5 核对 full validation；同次 fact audit 已校验且内容未变时复用结果。
 - 审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 
 验收：事实复核、diff 与 full validation；仅允许 `manifest.initializing` finding。
@@ -284,12 +284,14 @@
 **就绪**
 
 1. 按 `initialization.md` 的公共完成规则展示当前事实复核、八项基线、验证命令和分支方案。
-2. 取得用户明确“结束初始化并启用正常工作流”确认后改 ready，校验、提交并核对本地 master/develop。
+2. 取得用户明确“结束初始化并启用正常工作流”确认后，按 initialization 段 7 收口。
+   核对增量、改 ready、校验并提交，再核对本地 master/develop。
 
-验收：事实审阅有效、full validation 零 finding、就绪结果已提交、本地分支可用。
+验收：事实审阅与 full validation 仍有效，启用增量校验零 finding、就绪结果已提交、本地分支可用。
 
 异常与交接：
 
 - 事实发生变化则返回 6 补审，不复用过期结论。
+  仅修改 manifest.state 与本次启用记录不触发补审，沿用 initialization 段 7 的结果复用规则。
 - 用户未确认启用则保持 initializing 并结束，不写 ready。
 - 其他失败保留现场并报告，未通过不得宣称完成。
