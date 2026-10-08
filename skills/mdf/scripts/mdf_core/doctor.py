@@ -2,6 +2,7 @@ from pathlib import Path
 
 from .errors import Finding, add_finding
 from .paths import managed_symlinks
+from .progress import progress
 from .validate_changes import validate_changes
 from .validate_evidence import validate_agents_block, validate_evidence
 from .validate_jots import validate_jots
@@ -17,7 +18,8 @@ from .validate_release import validate_changelog, validate_release_history
 def collect_uninitialized_findings(repo: Path) -> list[Finding]:
     """无 manifest 时仍检查布局，使退休目录能在分流前被看见。"""
     findings: list[Finding] = []
-    validate_layout(repo, findings)
+    with progress("检查 1/1：未初始化布局"):
+        validate_layout(repo, findings)
     return findings
 
 
@@ -27,33 +29,38 @@ def collect_findings(
     full: bool,
 ) -> list[Finding]:
     findings: list[Finding] = []
-    for path in managed_symlinks(repo):
-        add_finding(
+    with progress("检查 1/5：配置、布局与 Agent 控制面"):
+        for path in managed_symlinks(repo):
+            add_finding(
+                findings,
+                "path.symlink",
+                "MDF-managed paths must not be symbolic links",
+                path.relative_to(repo).as_posix(),
+            )
+        manifest = validate_manifest(repo, findings)
+        validate_modules(repo, findings)
+        validate_layout(repo, findings)
+        validate_agents_block(repo, findings)
+    with progress("检查 2/5：Jot、Proposal 与 Bug"):
+        validate_jots(repo, findings)
+        for path in iter_object_files(repo, "proposal"):
+            validate_object(repo, path, "proposal", findings)
+        for path in iter_object_files(repo, "bug"):
+            validate_object(repo, path, "bug", findings)
+    with progress("检查 3/5：链接、Change 与 ADR"):
+        validate_links(repo, findings)
+        validate_changes(repo, findings)
+        validate_adrs(repo, findings)
+        validate_record_references(repo, findings)
+    with progress("检查 4/5：发布历史"):
+        validate_changelog(repo, findings)
+        validate_release_history(repo, manifest, findings)
+    with progress("检查 5/5：事实文档与 evidence"):
+        validate_evidence(
+            repo,
             findings,
-            "path.symlink",
-            "MDF-managed paths must not be symbolic links",
-            path.relative_to(repo).as_posix(),
+            check_staleness=full,
         )
-    manifest = validate_manifest(repo, findings)
-    validate_modules(repo, findings)
-    validate_layout(repo, findings)
-    validate_agents_block(repo, findings)
-    validate_jots(repo, findings)
-    for path in iter_object_files(repo, "proposal"):
-        validate_object(repo, path, "proposal", findings)
-    for path in iter_object_files(repo, "bug"):
-        validate_object(repo, path, "bug", findings)
-    validate_links(repo, findings)
-    validate_changes(repo, findings)
-    validate_adrs(repo, findings)
-    validate_record_references(repo, findings)
-    validate_changelog(repo, findings)
-    validate_release_history(repo, manifest, findings)
-    validate_evidence(
-        repo,
-        findings,
-        check_staleness=full,
-    )
     if manifest and manifest.get("state") != "ready":
         add_finding(
             findings,

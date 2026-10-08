@@ -144,8 +144,10 @@ close-out 可在**第一次把目标主线合入交付分支**之前建议整理
 地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
 
 - **交付地板**（能允许的最早点；有 converge 时 = converge 起点）：
-  - roster ≥1：`git log -1 --format=%H -- changes/unreleased/<slug>/gates/roster-join.json`
-    定位该文件的 commit。它须为该文件在本分支首次引入的 commit；角色 worktree 须已清理；不得早于它。
+  - roster ≥1：定位 roster-join 文件在本分支首次引入的 commit。
+    命令：`git log --diff-filter=A --format=%H <start_commit>..HEAD --
+    changes/unreleased/<slug>/gates/roster-join.json`。
+    核对候选 diff 与合流记录；缺失或不唯一则不可压。角色 worktree 须已清理；不得早于该提交。
   - roster `0,0` 且 objectives checklist **含**开发完成项（owner 开发，或
     `needs_design: yes` 下的 write-tests / implement；含 start 跳过预勾）：
     - 在 `start_commit..HEAD` 上找**最晚**一次使**该**项变为 `[x]` 的 commit。

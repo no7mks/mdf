@@ -11,6 +11,7 @@ from .overview_modules import (
     project_entry_link_findings,
 )
 from .paths import path_stays_in_repo, relative
+from .progress import progress, report_progress
 from .modules import MODULES_PATH, load_modules
 from .validate_evidence import fact_documents, frontmatter_evidence
 from .constants import SIZE_AGENTS_FILE
@@ -213,100 +214,108 @@ def audit_payload(
     document_paths: list[str],
     base: str | None = None,
 ) -> tuple[dict[str, Any], int]:
-    findings = doctor.collect_findings(repo, full=True)
-    from .paths import load_manifest
-    roots = implementation_roots(repo, load_manifest(repo), [])
-    facts = set(fact_documents(repo))
-    all_sources = _tracked_files(repo, roots)
-    resolved_base: str | None = None
-    sized: list[Path]
-    if scope == "full":
-        if implementation_paths or document_paths or base is not None:
-            add_finding(
-                findings, "audit.scope", "full audit accepts no explicit paths"
-            )
-        sources, documents = all_sources, sorted(facts)
-        sized = sizable_documents(repo)
-    elif scope == "branch":
-        if implementation_paths or document_paths:
-            add_finding(
-                findings, "audit.scope", "branch audit accepts no explicit paths"
-            )
-        resolved_base = _resolve_base(repo, base, findings)
-        changed = _changed_paths(repo, resolved_base) if resolved_base else []
-        sources, documents = _branch_scope(repo, all_sources, facts, changed)
-        sized = documents + [
-            path for path in changed
-            if path not in facts and size_role(relative(repo, path)) is not None
-        ]
-    else:
-        if not implementation_paths and not document_paths:
-            add_finding(
-                findings, "audit.scope", "paths audit requires explicit paths"
-            )
-        if base is not None:
-            add_finding(findings, "audit.scope", "--base only applies to branch scope")
-        sources, documents = _scope_paths(
-            repo,
-            implementation_paths,
-            document_paths,
-            roots,
-            facts,
-            findings,
-        )
-        sized = documents
-    findings.extend(size_findings(repo, sized))
-    findings.extend(structure_findings(repo, sized))
-    findings.extend(overview_core_module_findings(repo, documents))
-    findings.extend(project_entry_link_findings(repo, sized))
-    ignored = _ignored_paths(repo, all_sources, findings)
-    mappings: list[dict[str, Any]] = []
-    covered: set[Path] = set()
-    for document in documents:
-        try:
-            metadata, _ = read_frontmatter(document)
-        except MDFError:
-            evidence: list[str] = []
-        else:
-            evidence = frontmatter_evidence(metadata)
-        resolved = []
-        for raw in evidence:
-            candidate = (repo / raw).resolve()
-            if candidate in sources:
-                covered.add(candidate)
-            resolved.append(raw)
-        mappings.append(
-            {"document": relative(repo, document), "evidence": resolved}
-        )
-    warnings = [
-        Finding(
-            "audit.uncovered", "implementation file has no fact evidence",
-            relative(repo, path), "warning",
-        )
-        for path in sources
-        if path not in covered
-        and path not in ignored
-        and path.name not in NON_BEHAVIORAL_NAMES
-    ]
-    agents = repo / "AGENTS.md"
-    if (
-        (scope == "full" or agents in sized)
-        and agents.is_file()
-        and not agents.is_symlink()
-        and agents.resolve() not in ignored
-    ):
-        count = len(agents.read_text(encoding="utf-8").splitlines())
-        _, limit = SIZE_AGENTS_FILE
-        if count > limit:
-            warnings.append(
-                Finding(
-                    "agents.size",
-                    f"AGENTS.md 整份 {count} 行，超过 {limit}；"
-                    "可下沉到 PROJECT.md 或写入 modules.yaml ignore",
-                    "AGENTS.md",
-                    "warning",
+    with progress("fact-audit 1/4：全量契约校验"):
+        findings = doctor.collect_findings(repo, full=True)
+    with progress("fact-audit 2/4：解析范围"):
+        from .paths import load_manifest
+        roots = implementation_roots(repo, load_manifest(repo), [])
+        facts = set(fact_documents(repo))
+        all_sources = _tracked_files(repo, roots)
+        resolved_base: str | None = None
+        sized: list[Path]
+        if scope == "full":
+            if implementation_paths or document_paths or base is not None:
+                add_finding(
+                    findings, "audit.scope", "full audit accepts no explicit paths"
                 )
+            sources, documents = all_sources, sorted(facts)
+            sized = sizable_documents(repo)
+        elif scope == "branch":
+            if implementation_paths or document_paths:
+                add_finding(
+                    findings, "audit.scope", "branch audit accepts no explicit paths"
+                )
+            resolved_base = _resolve_base(repo, base, findings)
+            changed = _changed_paths(repo, resolved_base) if resolved_base else []
+            sources, documents = _branch_scope(repo, all_sources, facts, changed)
+            sized = documents + [
+                path for path in changed
+                if path not in facts and size_role(relative(repo, path)) is not None
+            ]
+        else:
+            if not implementation_paths and not document_paths:
+                add_finding(
+                    findings, "audit.scope", "paths audit requires explicit paths"
+                )
+            if base is not None:
+                add_finding(findings, "audit.scope", "--base only applies to branch scope")
+            sources, documents = _scope_paths(
+                repo,
+                implementation_paths,
+                document_paths,
+                roots,
+                facts,
+                findings,
             )
+            sized = documents
+    report_progress(
+        "fact-audit 范围",
+        f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
+    )
+    with progress("fact-audit 3/4：检查文档结构"):
+        findings.extend(size_findings(repo, sized))
+        findings.extend(structure_findings(repo, sized))
+        findings.extend(overview_core_module_findings(repo, documents))
+        findings.extend(project_entry_link_findings(repo, sized))
+    with progress("fact-audit 4/4：映射 evidence 与覆盖"):
+        ignored = _ignored_paths(repo, all_sources, findings)
+        mappings: list[dict[str, Any]] = []
+        covered: set[Path] = set()
+        for document in documents:
+            try:
+                metadata, _ = read_frontmatter(document)
+            except MDFError:
+                evidence: list[str] = []
+            else:
+                evidence = frontmatter_evidence(metadata)
+            resolved = []
+            for raw in evidence:
+                candidate = (repo / raw).resolve()
+                if candidate in sources:
+                    covered.add(candidate)
+                resolved.append(raw)
+            mappings.append(
+                {"document": relative(repo, document), "evidence": resolved}
+            )
+        warnings = [
+            Finding(
+                "audit.uncovered", "implementation file has no fact evidence",
+                relative(repo, path), "warning",
+            )
+            for path in sources
+            if path not in covered
+            and path not in ignored
+            and path.name not in NON_BEHAVIORAL_NAMES
+        ]
+        agents = repo / "AGENTS.md"
+        if (
+            (scope == "full" or agents in sized)
+            and agents.is_file()
+            and not agents.is_symlink()
+            and agents.resolve() not in ignored
+        ):
+            count = len(agents.read_text(encoding="utf-8").splitlines())
+            _, limit = SIZE_AGENTS_FILE
+            if count > limit:
+                warnings.append(
+                    Finding(
+                        "agents.size",
+                        f"AGENTS.md 整份 {count} 行，超过 {limit}；"
+                        "可下沉到 PROJECT.md 或写入 modules.yaml ignore",
+                        "AGENTS.md",
+                        "warning",
+                    )
+                )
     payload = {
         "ok": not findings,
         "operation": "audit",

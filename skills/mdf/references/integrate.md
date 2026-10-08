@@ -85,16 +85,18 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 │ 8 Close                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 提交失败 ──────→ 8 Close
-                 ├──── 发送失败 ──────→ 8 Close
-                 ├──── 未取到报告 ────→ 8 Close
-                 ├──── 用户停止 ──────→ [停止]
+                 ├──── release 验收或冻结缺项 ────→ 7 Dispatch
+                 ├──── 提交失败 ──────────────────→ 8 Close
+                 ├──── 发送失败 ──────────────────→ 8 Close
+                 ├──── 未取到报告 ────────────────→ 8 Close
+                 ├──── 用户停止 ──────────────────→ [停止]
                  │
                  ▼ 已完成
                  [结束]
 ```
 
 ## 工作流（唯一执行契约）
+
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 完整读取 `references/common.md`。修复时读取 `references/delivery-contract.md`「补覆盖」。
 不要求 manifest ready，不要求 clean worktree。
@@ -109,14 +111,13 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 | 5 | Agree plan | 约束 | 确认计划并准备数据 | 计划与就绪 | 同仓 7；否则 6 | 失败留 5；无法处理或用户停止则停 |
 | 6 | Transfer | 约束 | 从后台 poll 读取下一条「收到」 | 「收到」行 | 7 | 其他输出按通道规则处理；用户停止则停 |
 | 7 | Dispatch | 约束 | 执行计划/处理消息 | 结果 | 跨仓非收口 6；同仓/收口 8；只传 end 结束 | 无法处理停；提交失败留 7 |
-| 8 | Close | 约束 | 提交并送达测试报告 | 发送结果或报告 | 结束 | 提交失败、发送失败或未取到报告留 8；用户停止则停 |
+| 8 | Close | 约束 | 提交并送达报告，核验收冻结 | 报告、验收冻结 | 结束 | release 缺项回7；其余失败留8；用户停止则停 |
 
 ## 术语与数据结构
 
 ### 入口
 
 **根** <a id="s1"></a>
-
 `integrate` 各动作都带 `--repo`。用 `git rev-parse --show-toplevel` 核对这个目录。
 不读取 manifest，不运行 doctor。不要求 shell 当前目录就是该根。
 
@@ -125,7 +126,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 异常与交接：不是 Git 根则停止。
 
 **通道** <a id="s2"></a>
-
 - 跨 worktree：缺少 `.integration/session.yaml` 时运行 `integrate init --repo "$REPO_ROOT"`。
   - 它创建 inbox，写入本侧 token，并在仓库根 `.gitignore` 加入 `.integration/`。
   - 该行可以提交；目录内容不提交。
@@ -175,7 +175,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 ### 对端与角色
 **对端** <a id="s3"></a>
-
 - `integrate peer --repo "$REPO_ROOT" --name <name> --target <target>`；`--target` 每次都必填。
 - target 为绝对路径、`http://host:port`，或本仓 `git worktree list` 能解析的分支名。
 - HTTP 默认不启用。
@@ -199,7 +198,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 异常与交接：地址、token 未就绪或未收到 ack 时留在 3。前台占住或用户明确停止则停止。
 
 **角色** <a id="s4"></a>
-
 「只传」指用户明确只要传消息，或 poll 到正文为 `relay-only` 的 `send`。
 
 - 它优先于「不明」和角色告知。
@@ -236,7 +234,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 ### 计划
 **计划** <a id="s5"></a>
-
 主导方写成可执行条目，先给本侧用户确认，再用 `send` 发给被动方。
 
 - 同 worktree：用户确认计划即就绪，不 send，进入 7。
@@ -267,7 +264,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 ### 传输
 
 **传输** <a id="s6"></a>
-
 命令：
 
 - `integrate send --repo "$REPO_ROOT" --to <name>`：
@@ -299,7 +295,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 - 此后发往该 HTTP 对端的非 ping 请求带这个 token。
 
 本步只通过已有后台 Shell 会话句柄读取 poll 的 stdout，不另起 poll；退出按步骤 2 重启。
-
 - 📌 只有步骤 6 取到的「收到」行必须进入 7，不得跳过 7 去处理下一条。
 - 发出的 heartbeat 先执行状态确认；其余非「收到」行（含 `waiting`）忽略并续读，不进 7、不停。
 - 用户明确停止整个会话时，才停止 poll 并停掉本侧 listen。
@@ -309,11 +304,12 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 ### 分派
 
 **分派** <a id="s7"></a>
-
 步骤 6 送来的消息先原样交给当前 agent，再处理。只有非收口才回到 6。
 收口完成进入 8。主导方自己发出的 `end` 不是收口完成。
 
 - 同 worktree：不读消息、不 send。在本树执行计划并适用下方修复规则；缺陷留在本仓。做完进入 8。
+- release 计划执行先按本侧 `needs_design`、roster 与 objectives 委托未完成的 design、开发及 converge。
+  对端自行完成其阶段；本侧阶段完成后才做最终验收与冻结。后续开发改动使旧验收与冻结失效，须重做。
 
 | kind | 处理 |
 | --- | --- |
@@ -331,6 +327,9 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 `end` 收口判定（非「只传」）：
 
+- release 联调的「计划已完成」须同时有本端与对端验收通过证据，以及双方确认不再改代码的消息。
+  - 本端结果、对端报告及冻结确认均保留正文和消息 ID；状态询问/回复不代替这些证据。
+  - 任一缺失或验收失败视为计划未完成，留在 6–7 推进计划，不发结束请求或结束回复。
 - 无 `--reply-to` 的 `end` 是结束请求，只由主导方在本步发出。
 - 计划条目都做完后，主导方发出该请求，然后走非收口回到 6 等待回复。
 - 被动方收到结束请求：
@@ -364,7 +363,6 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 ### 收口
 
 **收口** <a id="s8"></a>
-
 先提交尚未提交的本轮改动。无改动视为这一步的提交已完成。
 
 - 同 worktree：把测试报告交给用户，不 send；随后按下方勾选并完成 Goal。
@@ -388,6 +386,8 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 双方（含同 worktree）在本侧报告条件满足后：
 
+- release 另核对验收与冻结证据：跨 worktree 按步骤 7 的双端守卫；
+  同 worktree 须计划验收通过并确认无更多代码修改，缺项回 7，不勾 integrate。
 - release 交付将 `objectives.md` 的 integrate 项改为 `[x]` 并提交，已勾则不再改。
 - 独立调用无交付 objectives 时，仅报告本侧收口结果。
 - 上述提交成功或无需提交后，才把 Goal 置 complete。❌ 不以 Goal 单独代替该勾选。

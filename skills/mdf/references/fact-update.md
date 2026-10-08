@@ -51,6 +51,9 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 读取 `references/common.md` 与 `references/repository-contract.md`；
 步骤 3 读取并内部执行 `references/fact-audit.md`。
 
+按 `common.md`「执行进度」播报阶段；scope 确定后报告实现与文档范围，
+对齐期间报告已处理与剩余页面，结构重审注明第几轮及剩余 finding。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |

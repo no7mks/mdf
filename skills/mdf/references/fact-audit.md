@@ -62,6 +62,9 @@
 
 完整读取 `references/common.md` 与 `references/repository-contract.md`。
 
+按 `common.md`「执行进度」播报阶段；CLI 返回后报告 scope 与范围数量，
+事实、覆盖与 warning 审阅期间报告已复核与剩余项，等待确认时说明审阅结论。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve scope | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、范围、state | 2 | 停止 |

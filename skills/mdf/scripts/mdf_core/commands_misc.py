@@ -22,6 +22,7 @@ from .gitutil import (
     require_git_root,
 )
 from .proposals import next_prp_id
+from .progress import progress
 from .init_repo import init_files, parse_baselines, write_files
 from .gitflow import require_master_default
 from .moves import (
@@ -54,53 +55,56 @@ def command_info(_: argparse.Namespace) -> None:
 
 
 def command_doctor(args: argparse.Namespace) -> None:
-    repo = repo_path(args.repo)
-    root = git_root(repo)
-    initialized = manifest_path(repo).is_file()
-    if initialized:
-        findings = doctor.collect_findings(repo, full=True)
-    else:
-        findings = doctor.collect_uninitialized_findings(repo)
-    branch: dict[str, Any] | None = None
-    branch_error: str | None = None
-    if root == repo:
-        try:
-            branch = branch_details(current_branch(repo))
-        except MDFError as exc:
-            branch_error = str(exc)
-            findings.append(
-                Finding(
-                    "branch.invalid",
-                    branch_error,
-                    severity="error",
+    with progress("doctor 1/3：识别仓库"):
+        repo = repo_path(args.repo)
+        root = git_root(repo)
+        initialized = manifest_path(repo).is_file()
+    with progress("doctor 2/3：检查 MDF 契约"):
+        if initialized:
+            findings = doctor.collect_findings(repo, full=True)
+        else:
+            findings = doctor.collect_uninitialized_findings(repo)
+    with progress("doctor 3/3：汇总 Git 与初始化状态"):
+        branch: dict[str, Any] | None = None
+        branch_error: str | None = None
+        if root == repo:
+            try:
+                branch = branch_details(current_branch(repo))
+            except MDFError as exc:
+                branch_error = str(exc)
+                findings.append(
+                    Finding(
+                        "branch.invalid",
+                        branch_error,
+                        severity="error",
+                    )
+                )
+        payload = {
+            "ok": True,
+            "operation": "doctor",
+            "repo": str(repo),
+            "git_root": str(root) if root else None,
+            "is_git_root": root == repo,
+            "clean": git_is_clean(repo) if root == repo else None,
+            "branch": branch,
+            "branch_error": branch_error,
+            "initialized": initialized,
+            "state": None,
+            "normal_workflows_allowed": False,
+            "findings": serialize_findings(findings),
+        }
+        if initialized:
+            try:
+                payload["state"] = load_manifest(repo).get("state")
+            except MDFError:
+                payload["state"] = "invalid"
+            payload["normal_workflows_allowed"] = (
+                payload["state"] == "ready"
+                and not any(
+                    finding.code not in {"evidence.stale", "generated.stale"}
+                    for finding in findings
                 )
             )
-    payload = {
-        "ok": True,
-        "operation": "doctor",
-        "repo": str(repo),
-        "git_root": str(root) if root else None,
-        "is_git_root": root == repo,
-        "clean": git_is_clean(repo) if root == repo else None,
-        "branch": branch,
-        "branch_error": branch_error,
-        "initialized": initialized,
-        "state": None,
-        "normal_workflows_allowed": False,
-        "findings": serialize_findings(findings),
-    }
-    if initialized:
-        try:
-            payload["state"] = load_manifest(repo).get("state")
-        except MDFError:
-            payload["state"] = "invalid"
-        payload["normal_workflows_allowed"] = (
-            payload["state"] == "ready"
-            and not any(
-                finding.code not in {"evidence.stale", "generated.stale"}
-                for finding in findings
-            )
-        )
     emit(payload)
 
 
@@ -212,7 +216,8 @@ def command_init(args: argparse.Namespace) -> None:
 
 
 def validation_payload(repo: Path, scope: str) -> tuple[dict[str, Any], int]:
-    findings = doctor.collect_findings(repo, full=scope == "full")
+    with progress(f"validate：{scope} 契约校验"):
+        findings = doctor.collect_findings(repo, full=scope == "full")
     payload = {
         "ok": not findings,
         "operation": "validate",

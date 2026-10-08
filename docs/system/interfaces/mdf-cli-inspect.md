@@ -37,6 +37,9 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 
 schema 与 `layout.migrate` 指向 `$mdf migrate`。
 
+stderr 依次报告仓库识别、MDF 契约检查与状态汇总；契约检查细分为配置与布局、
+工作对象、链接与记录、发布历史、事实与 evidence。未初始化时只检查布局。
+
 ## `validate`
 
 ```bash
@@ -48,6 +51,8 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 `full` 额外执行全量检查。存在 finding 时仍输出完整 JSON 结果，
 但以状态码 `2` 失败。
 
+stderr 报告 scope 与契约检查阶段；检查结束不代表没有 finding。
+
 ## `fact-audit`
 
 ```bash
@@ -57,6 +62,9 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 `--scope` 可为 `full`（默认）、`branch` 或 `paths`。
 
 全量审计遍历 manifest 的 `implementation_roots` 与全部当前事实文档。
+
+stderr 依次报告全量契约校验、范围解析、文档结构检查、evidence 与覆盖映射；
+范围解析后报告 scope、实现文件数与事实文档数。
 
 - 输出实现范围、文档—`evidence` 映射、ignore 匹配、warnings 和 findings。
 - 未被 evidence 覆盖的实现文件是 warning，不会令命令失败。

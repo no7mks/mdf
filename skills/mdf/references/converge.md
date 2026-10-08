@@ -96,14 +96,16 @@ qa/dev ≥1 时的续办与清理：
 `needs_design: no`：无角色可合；确认 owner 干净且开发改动已提交；objectives 的
 owner 开发项已勾。❌ 不因 roster `0,0` 在无 owner 开发项或该项已预勾时仍要求「开发」。
 
-本步完成后的 owner HEAD 即 close-out 可选 squash 的**交付地板**下界（见
-`squash.md`「可选历史整理」）；本 intent **不**询问、执行或委托
+close-out 可选 squash 的**交付地板**按 `squash.md`「可选历史整理」计算。
+有角色时取 roster-join 首次引入提交。`0,0` 时取对应开发项完成提交或 start_commit。
+不以 Join 或 Accept 的当前 HEAD 代替该证据；本 intent **不**询问、执行或委托
 `$mdf squash`。
 
 ### Accept（前置勾选 + smart）
 
-1. 核对 `objectives.md`：converge **之前**的依赖项须为 `[x]`（design / 开发相关项按
-   `needs_design` 与 roster）；未勾则继续开发/勾选，不得虚构完成。
+1. 核对 `objectives.md`：适用的 design / 开发依赖项须为 `[x]`，按 `needs_design` 与 roster 判断。
+   release 联调内部委托时，integrate 的最终收口不是本步前置；不按清单位置要求它先勾选。
+   未完成的开发依赖继续开发/勾选，不得虚构完成。
 2. 运行 `$mdf verify --scope smart`（涉及 module 的 lint+build+quick +
    本分支相对 start_commit 新增/改动的测试；可加 Agent/Jev 选题）。
 3. ❌ 不得用 verify branch（smoke/release）冒充本步。
