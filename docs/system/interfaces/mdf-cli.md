@@ -20,6 +20,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   - 业务规则拒绝时 stderr 最后一行为 JSON 错误，并以非零状态退出。
   - `doctor`、`validate`、`fact-audit` 向 stderr 实时输出检查阶段与阶段用时。
     「检查结束」仅表示阶段执行完毕，是否通过仍以 JSON findings 为准。
+    事实与 evidence 检查还显示已检查数量、总数及当前路径；generated 显示当前检查项。
   - 长验证（`verify`、`release-closeout`）期间 stderr 可含进度行与子进程原文。
   - 解析失败时取 stderr 最后一行 JSON；失败细节也可读落盘证据中的
     `stdout_tail` / `stderr_tail`。

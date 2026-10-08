@@ -29,3 +29,42 @@ def test_progress_preserves_exception_and_reports_interruption(capsys):
     stderr = capsys.readouterr().err
     assert "中断，用时" in stderr
     assert "检查结束" not in stderr
+
+
+def test_item_progress_counts_only_completed_work(monkeypatch, capsys):
+    load_core_module()
+    from mdf_core import progress
+
+    ticks = iter([10.0, 10.0, 12.0, 15.0])
+    monkeypatch.setattr(progress.time, "monotonic", lambda: next(ticks))
+    items = progress.progress_items("evidence", ["src/a.py", "src/b.py"])
+    assert next(items) == "src/a.py"
+    assert capsys.readouterr().err == (
+        "[evidence] 已检查 0/2，当前 src/a.py，用时 0.0s\n"
+    )
+    assert next(items) == "src/b.py"
+    assert capsys.readouterr().err == (
+        "[evidence] 已检查 1/2，当前 src/b.py，用时 2.0s\n"
+    )
+    assert list(items) == []
+    assert capsys.readouterr().err == "[evidence] 已检查 2/2，用时 5.0s\n"
+
+
+def test_item_progress_does_not_report_completion_on_failure(capsys):
+    load_core_module()
+    from mdf_core.progress import progress_items
+
+    with pytest.raises(RuntimeError):
+        for _ in progress_items("事实文档", ["docs/a.md"]):
+            raise RuntimeError("检查失败")
+    stderr = capsys.readouterr().err
+    assert "已检查 0/1，当前 docs/a.md" in stderr
+    assert "已检查 1/1" not in stderr
+
+
+def test_item_progress_handles_empty_scope(capsys):
+    load_core_module()
+    from mdf_core.progress import progress_items
+
+    assert list(progress_items("事实文档", [])) == []
+    assert "已检查 0/0" in capsys.readouterr().err

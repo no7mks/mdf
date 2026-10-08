@@ -14,6 +14,7 @@ from .constants import (
 from .errors import Finding, MDFError, add_finding
 from .gitutil import GitPathIndex, commit_is_after
 from .paths import path_stays_in_repo, relative
+from .progress import progress, progress_items, report_progress
 from .yamlutil import read_frontmatter
 
 
@@ -72,9 +73,10 @@ def validate_evidence(
     check_staleness: bool,
 ) -> None:
     index = GitPathIndex(repo)
-    documents = list(fact_documents(repo))
-    fact_paths = {doc.resolve() for doc in documents}
-    for doc in documents:
+    with progress("事实文档：扫描文档"):
+        documents = list(fact_documents(repo))
+        fact_paths = {doc.resolve() for doc in documents}
+    for doc in progress_items("事实文档", documents, lambda path: relative(repo, path)):
         rel = relative(repo, doc)
         try:
             metadata, body = read_frontmatter(doc)
@@ -136,7 +138,7 @@ def validate_evidence(
                 rel,
             )
         doc_commit = index.last_commit(doc) if check_staleness else None
-        for evidence_path in evidence:
+        for evidence_path in progress_items(f"evidence：{rel}", evidence):
             raw_candidate = Path(evidence_path)
             candidate = (repo / raw_candidate).resolve()
             if raw_candidate.is_absolute():
@@ -207,6 +209,7 @@ def validate_evidence(
             generator = generated.get("generator")
             source_path: Path | None = None
             generator_path: Path | None = None
+            report_progress(f"generated：{rel}", f"检查 source：{source}")
             if not isinstance(source, str) or not source.strip():
                 add_finding(
                     findings,
@@ -243,6 +246,7 @@ def validate_evidence(
                         f"Generated source is not tracked by Git: {source}",
                         rel,
                     )
+            report_progress(f"generated：{rel}", f"检查 generator：{generator}")
             if not isinstance(generator, str) or not generator.strip():
                 add_finding(
                     findings,
@@ -294,6 +298,10 @@ def validate_evidence(
                 ):
                     if generated_path is None:
                         continue
+                    report_progress(
+                        f"generated：{rel}",
+                        f"检查 {label} Git history：{relative(repo, generated_path)}",
+                    )
                     generated_commit = index.last_commit(generated_path)
                     if (
                         index.dirty(generated_path)

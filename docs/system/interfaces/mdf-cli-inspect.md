@@ -40,6 +40,10 @@ schema 与 `layout.migrate` 指向 `$mdf migrate`。
 stderr 依次报告仓库识别、MDF 契约检查与状态汇总；契约检查细分为配置与布局、
 工作对象、链接与记录、发布历史、事实与 evidence。未初始化时只检查布局。
 
+事实与 evidence 阶段先报告文档扫描，再逐项报告已检查数量、总数、当前路径与用时。
+文档与每页 evidence 分别计数；当前项完成后才增加已检查数。
+generated 另报告 source、generator 及其 Git history 检查位置。
+
 ## `validate`
 
 ```bash

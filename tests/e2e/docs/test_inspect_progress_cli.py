@@ -14,6 +14,8 @@ def test_inspect_progress_keeps_json_and_is_logged(command, python_exe, tmp_path
     assert len(result.stdout.splitlines()) == 1
     assert "开始" in result.stderr and "检查结束，用时" in result.stderr
     assert "检查 5/5：事实文档与 evidence" in result.stderr
+    assert "[事实文档] 已检查 0/" in result.stderr
+    assert "[evidence：docs/system/interfaces/api.md] 已检查 1/1" in result.stderr
     log = next((repo / ".mdf/logs").glob(f"*-{command}"))
     assert (log / "stderr.log").read_text() == result.stderr
     assert json.loads((log / "stdout.log").read_text()) == data
@@ -66,18 +68,24 @@ def test_doctor_failure_keeps_error_json_last(python_exe, tmp_path, monkeypatch)
 
 def test_doctor_progress_arrives_before_check_finishes(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
+    (repo / "src/blocked.py").write_text("# evidence\n")
+    doc = repo / "docs/system/interfaces/api.md"
+    doc.write_text(doc.read_text().replace(
+        "  - path: src/service.py", "  - path: src/service.py\n  - path: src/blocked.py",
+    ))
     init_git(repo)
     scripts = str(skill_dir("mdf") / "scripts")
     probe = f"""
 import sys
 sys.path.insert(0, {scripts!r})
-from mdf_core import doctor
+from mdf_core.gitutil import GitPathIndex
 from mdf_core.cli import main
-original = doctor.validate_evidence
-def wait_for_input(*args, **kwargs):
-    sys.stdin.readline()
-    return original(*args, **kwargs)
-doctor.validate_evidence = wait_for_input
+original = GitPathIndex.last_commit
+def wait_for_input(self, path):
+    if path.name == "blocked.py":
+        sys.stdin.readline()
+    return original(self, path)
+GitPathIndex.last_commit = wait_for_input
 sys.exit(main(["doctor", "--repo", sys.argv[1]]))
 """
     proc = subprocess.Popen(
@@ -85,7 +93,9 @@ sys.exit(main(["doctor", "--repo", sys.argv[1]]))
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     received = b""
-    marker = "[检查 5/5：事实文档与 evidence] 开始\n".encode()
+    marker = (
+        "[evidence：docs/system/interfaces/api.md] 已检查 1/2，当前 src/blocked.py"
+    ).encode()
     try:
         deadline = time.monotonic() + 10
         while marker not in received:
@@ -101,6 +111,7 @@ sys.exit(main(["doctor", "--repo", sys.argv[1]]))
         stdout, stderr = proc.communicate(input=b"\n", timeout=10)
         assert proc.returncode == 0, (received + stderr).decode()
         assert json.loads(stdout)["operation"] == "doctor"
+        assert "[evidence：docs/system/interfaces/api.md] 已检查 2/2" in stderr.decode()
     finally:
         if proc.poll() is None:
             proc.kill()
