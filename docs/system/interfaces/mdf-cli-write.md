@@ -241,7 +241,8 @@ python3 skills/mdf/scripts/mdf.py pre-gitflow-finish --repo /path/to/repository 
 - command 完成（含失败）后返回 `changed_paths` 与 `needs_recheck`；失败不令 CLI 非零退出。
 - `--after` 只比较原 commit 到当前实际改动，不执行 hook，不要求 clean；供 rule 执行后核对。
 - 仅普通 Markdown 文档改动可直接进入 fact；其他改动由 Agent 补 code-review 与 branch 验证。
-- CLI 不创建提交或执行补审补测；主链 Agent 保存执行记录，续办不重跑已执行 hook。
+- CLI 不创建提交或执行补审补测；主链 Agent 汇报结果，续办按上下文或 CLI 日志确认已执行，不重跑 hook。
+- 不要求新建 Markdown 执行记录；没有实际改动时不制造文档或提交。
 - `finish-gitflow` 不触发此 hook；独立 fact 维护与 migrate 不触发。
 
 ## `finish-gitflow`

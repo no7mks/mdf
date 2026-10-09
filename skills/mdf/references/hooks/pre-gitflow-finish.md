@@ -23,10 +23,10 @@ hooks:
 - deliver、next 或用户手动推进交付时，由当前 Agent 在进入 fact 阶段前承办。
   - 独立文档维护、独立 fact audit、migrate 不触发；fact update 内部 Audit 不重复触发。
   - 主链调用方须先执行本节，再进入 fact intent；fact intent 的只读、写入边界保持适用。
-- 每次交付只执行一次；续办先读同目录的 `pre-gitflow-finish.md` 执行记录。
+- 每次交付只执行一次；续办从会话上下文、CLI 日志或已有执行证据确认是否执行。
   - 已执行（含失败）则不重跑，继续尚未勾选的补审、验证或 fact。
-  - 执行中断、记录不明时读 CLI 日志；无法确定是否已执行时停止询问，不自动重试。
-  - 执行记录是 report，非 stage gate；不新增 objectives 项或统一 workflow 状态文件。
+  - 执行中断、状态不明时读 CLI 日志；无法确定是否已执行时停止询问，不自动重试。
+  - 不要求新建执行记录文档，不以缺少该文档阻断交付；不新增 objectives 项或统一 workflow 状态文件。
 
 ## 执行与实际改动
 
@@ -52,7 +52,8 @@ hooks:
 
    | 改动 | 后续处理 |
    | --- | --- |
-   | 无改动或仅文档 | 复核并提交 hook 文档，直接进入 fact |
+   | 无改动 | 直接进入 fact |
+   | 仅文档 | 复核并提交实际文档改动，直接进入 fact |
    | 其他改动 | 退勾 code-review、verify branch（人工为 verify smoke）及 fact；补审补测后进入 fact |
 
    - 文档路径为根目录、`docs/` 或 `changes/` 内的普通 `.md` 文件；不能有执行权限或符号链接。
@@ -60,10 +61,9 @@ hooks:
    - Agent 另核内容确属文档；混入实现、测试或验证配置时同样按其他改动处理。
    - 失败留下的部分改动同样核对；❌ 不因失败忽略 diff，也不回滚、自动重试。
    - 本 hook 不得切换分支或改写既有历史；现场或改动无法核对时保留现场并停止。
-5. Agent 写 `changes/unreleased/<slug>/pre-gitflow-finish.md` 执行记录。与 hook 改动、退勾一起提交。
-   - 记录执行结果、原 `before_head`、路径清单、补审补测要求及 CLI 日志路径。
-   - rule 另记执行证据。
-   - 路径以 code 文本记录，不写会因版本归档而失效的本地链接。
+5. Agent 汇报执行结果、原 `before_head`、路径清单、补审补测要求及 CLI 日志路径。
+   - rule 按通用日志契约保留执行证据；无需另写 Markdown 执行记录。
+   - 有 hook 改动或 objectives 退勾时，复核后提交实际改动；无改动不制造提交。
    - 非文档改动按 code-review 的增量新一轮补审。左端点为原 `before_head`，人数用冻结 roster。
    - 主链补审通过后重跑 verify branch（人工为 verify smoke），通过后才进入 fact。
    - 独立推进交付时依同一顺序承办；next 可先交接补审，由后续调用完成补测与 fact。

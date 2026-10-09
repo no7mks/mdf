@@ -102,7 +102,8 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
   - 完整上轮：应派份数报告已齐（或已有终稿）、已采纳与未解决问题清单齐全。
   - 操作左端点不从终稿读 hash：close-out 集成用集成前 HEAD（当场记录）；其它增量用
     终稿落盘提交 `git log -1 --format=%H -- <code-review.md>`；无法判定则走首轮。
-    pre-gitflow-finish 补审用其执行记录的原 `before_head`，人数仍为冻结 roster.reviewers。
+    pre-gitflow-finish 补审用其执行时返回的原 `before_head`，可从上下文或 CLI 日志恢复。
+    人数仍为冻结 roster.reviewers。
   - 重新固定 review_head 为当前 HEAD，进入 2。
   - ❌ 不得从 start_commit 重扫已审区间（走首轮时除外）。
   - 上轮残缺（缺份数、缺问题清单）时不得假装增量，停止并要求补记录。
