@@ -66,7 +66,7 @@
 
 | 调用 | 待美化文档 |
 | --- | --- |
-| `--scope full` | 全部带角色文档（`docs/JOTS.md` 除外） |
+| `--scope full` | 全部带角色的 Markdown（`docs/JOTS.md` 除外） |
 | `--scope branch`（默认） | 当前分支相对起点改动过的带角色文档 |
 | `<path>...` 或 `--scope paths <path>...` | 所列仓库内 Markdown 文件 |
 
@@ -83,6 +83,7 @@
   - 清单为空时报告「无待美化文档」并结束，不调用 `prose-check`。
 - 步骤 1 拒绝不允许的路径：`docs/JOTS.md`、`docs/repowiki/**`、非 Markdown 或仓库外路径。
   - 显式列出这类路径时停止并报告，不静默跳过。
+  - full 与 branch 自动清单只选 Markdown；ready PRP 的 HTML 不进入本 intent。
 - 写入分支遵守 `common.md` 的写入规则。
   - ❌ 不在 master 上直接改写。
   - 与当前交付相关的文档在该交付分支改写；其余在 develop 或 planning 按公共规则处理。
@@ -97,8 +98,8 @@
 
 - 运行 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT"`，记录基线 finding code。
 - 运行 `python3 "$MDF_ROOT/scripts/mdf.py" prose-check --repo "$REPO_ROOT"`。
-  - `full` 不附加 `--path`。
-  - 其他范围逐个附加 `--path`。清单为空时不调用，禁止退化成全库检查。
+  - 所有 scope 都按步骤 1 的 Markdown 清单逐个附加 `--path`，不使用 CLI 默认全库范围。
+  - 清单为空时不调用，禁止退化成全库检查。
 - ⚠️ 两个命令有 finding 或违例时退出码为 2：
   - 退出码 2 且输出可解析的 JSON payload，表示有 finding 或违例，按 payload 继续。
   - 只有无输出或输出不可解析才算失败。

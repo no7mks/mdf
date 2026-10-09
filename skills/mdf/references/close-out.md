@@ -216,7 +216,7 @@
 - ❌ 本 intent 不内嵌、不委托 verify branch / smart / named，也不内嵌 fact update /
   fact audit；不做 commit 对齐审判。bug close（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
-- 四种 kind 及人工 feature 按 `html-materials.md` 写入、检查并提交详细 `delivery-summary.html`。
+- 四种 kind 及人工 feature 按 `html-materials.md` 填总结正文，按 delivery-contract「总结生成」固化并提交。
 - 按分支准备材料：
   - feature：在 `changes/unreleased/<slug>/` 补齐 CHANGE.md；普通交付对应唯一 PRP，人工交付 `proposals: []`。
     - 与 objectives、design、可选 gates/ 同级；材料不搬迁。
@@ -338,7 +338,7 @@
 ### 提交与 Gitflow
 **交接** <a id="s9"></a>
 - 由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续。
-- Gitflow 前按 `html-materials.md` 核对总结覆盖最终结果；补齐缺项并提交后才继续。
+- Gitflow 前核对总结覆盖最终结果；补齐本轮收口的实际结果，再按「总结生成」固化、检查并提交。
 - 按分支：
   - feature/bugfix 不 push，核对 objectives 与所需 report 已交后进入本地 Gitflow 合并。
   - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。

@@ -1,5 +1,7 @@
 from pathlib import Path
 import html
+import re
+from html.parser import HTMLParser
 from typing import Iterable
 from urllib.parse import unquote
 
@@ -9,18 +11,33 @@ from .paths import path_stays_in_repo, relative
 
 
 EXTERNAL_LINK_PREFIXES = ("http://", "https://", "mailto:", "data:")
+HTML_ATTRIBUTE_RE = re.compile(r'''\s+([:\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))''')
+
+
+class HTMLLinks(HTMLParser):
+    """只从真实 tag 的 href/src 取链接，保留原字符串中的精确位置。"""
+
+    def __init__(self, text):
+        super().__init__(convert_charrefs=True)
+        self.line_starts = [0, *[match.end() for match in re.finditer("\n", text)]]
+        self.spans = []
+        self.feed(text)
+
+    def handle_starttag(self, tag, attrs):
+        row, column = self.getpos()
+        offset = self.line_starts[row - 1] + column
+        for match in HTML_ATTRIBUTE_RE.finditer(self.get_starttag_text()):
+            if match.group(1).lower() not in {"href", "src"}:
+                continue
+            group = next(index for index in (2, 3, 4) if match.group(index) is not None)
+            self.spans.append((offset + match.start(group), offset + match.end(group),
+                               html.unescape(match.group(group))))
 
 
 def document_link_spans(path: Path, text: str):
     """返回 href/src 或 Markdown link 的原始位置与解码 target。"""
     if path.suffix == ".html":
-        from .html_documents import LINK_RE
-        import re
-        ignored = [match.span() for match in re.finditer(
-            r"<!--.*?-->|<style\b[^>]*>.*?</style>", text, re.DOTALL | re.IGNORECASE)]
-        return [(match.start(2), match.end(2), html.unescape(match.group(2)))
-                for match in LINK_RE.finditer(text)
-                if not any(start <= match.start() < end for start, end in ignored)]
+        return HTMLLinks(text).spans
     return [(match.start(1), match.end(1), match.group(1))
             for match in ALL_MARKDOWN_LINK_RE.finditer(text)]
 
@@ -81,7 +98,9 @@ def managed_markdown(repo: Path) -> Iterable[Path]:
                 path
                 for path in root.rglob("*")
                 if path.is_file()
-                and path.suffix in {".md", ".html"}
+                and (path.suffix == ".md" or (path.suffix == ".html" and (
+                    root.name == "docs" and path.relative_to(root).parts[0] == "proposals"
+                    or root.name == "changes" and path.name == "delivery-summary.html")))
                 and not path.name.endswith(".review.html")
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)

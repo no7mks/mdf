@@ -69,6 +69,26 @@
 - 搬迁时 CLI 改写仍有效的相对路径。
 - delivery.json 与可选 gate 快照内路径一律仓库相对。
 - fingerprint 规范化用仓库相对或 `@delivery/`，不是第二种 href 写法。
+### 总结生成
+
+close-out 用固定脚本生成总结外框、目录及样式，不现场拼装生成器。
+
+- 按 `html-materials.md` 和总结正文模板写出完整 HTML 正文文件；不是 Markdown 或完整文档外框。
+  - 七个必填章节均须有内容和唯一 `id`；链接相对最终总结位置，清除模板槽。
+  - 源码与原始日志引用放在 `pre` / `code` 中并正确 escape，引用中的字面 marker 保留。
+- 在 owner 运行以下命令；允许未提交的本次材料，不要求先获得 clean：
+
+```bash
+python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <正文HTML文件>
+```
+
+- 脚本按当前 kind 选择 unreleased 目录；已收口 release/hotfix 使用版本根。
+  - 已开始 Gitflow 发布时停止，不改写源提交；读取已有归档总结继续核对。
+- 退出 0 后回读 JSON `path`，打开实际 HTML，核对详细内容与证据，再提交。
+  - 静态校验不替代语义审阅；不得把未执行的 merge、tag、push 写成成功。
+- 非零时读 JSON 错误与 `log`，保留原总结；正文可修则原地修正后重试，否则停止并报告。
+  - 汇总阶段之后新增的对象 outcomes、收口结果与偏差，在 Gitflow 前用同一命令补齐。
+
 ### 阶段与执行责任
 
 四种 kind **共用**主线。不按 branch kind 另写交付状态机。

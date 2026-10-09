@@ -187,6 +187,8 @@ def replacement_plan(
                 suffix_start = min((index for index in (raw.find("#"), raw.find("?"))
                                     if index >= 0), default=len(raw))
                 new_raw = html.escape(rewritten + raw[suffix_start:], quote=True)
+                if original[link_start - 1:link_start] not in {'"', "'"} and any(c.isspace() for c in new_raw):
+                    new_raw = '"' + new_raw + '"'
             else:
                 new_raw = rewrite_link_raw(raw, rewritten)
             if new_raw != raw:

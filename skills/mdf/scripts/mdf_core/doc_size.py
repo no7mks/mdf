@@ -83,7 +83,8 @@ def sizable_documents(repo: Path) -> list[Path]:
             path
             for path in docs.rglob("*")
             if path.is_file()
-            and path.suffix in {".md", ".html"}
+            and (path.suffix == ".md" or (path.suffix == ".html"
+                 and path.relative_to(docs).parts[0] == "proposals"))
             and not path.name.endswith(".review.html")
             and not path.is_symlink()
             and path_stays_in_repo(repo, path)

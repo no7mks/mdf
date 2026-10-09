@@ -45,6 +45,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过 ──────────────────────→ [结束]
+                 ├──── 确认稿已变 ────────────────→ 5 Confirm
                  ├──── 校验失败 ──────────────────→ [保留 draft，停止]
                  └──── 写回、提交或 land 失败 ────→ [报告实际状态，停止]
 ```
@@ -57,6 +58,7 @@
 
 - `references/common.md` 与 `references/repository-contract.md`。
 - `references/object-contract.md` 与 `references/html-materials.md`。
+
 步骤 4 读取并内部执行 `references/clarify.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -66,7 +68,7 @@
 | 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
 | 4 | Clarify | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
 | 5 | Confirm | 约束 | 展示详细 HTML 并确认 | HTML、用户确认 | 6 | 保留 draft，停止 |
-| 6 | Validate and ready | 脚本 | 校验、转 HTML、提交、land | ready、land | 结束 | 校验失败留 draft；其后报状态 |
+| 6 | Validate and ready | 脚本 | 校验、转 HTML、提交、land | ready、land | 结束 | 稿变回 5；校验停；其后报状态 |
 
 ## 术语与数据结构
 
@@ -187,6 +189,7 @@ prp-format ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed
 异常与交接：
 
 - `targeted validation` 失败：保持 `draft` 与现场并停止。
+- `preview_changed`：保持 draft，回步骤 5 重新生成、检查 HTML 并取得本稿确认。
 - 写回 `ready`、回读、提交或 `planning land` 失败：保留现场并停止。
   - 报告对象实际状态：是否已写 `ready`、是否已提交、是否已合入 develop。
   - 不得声称已 ready 或已合入。

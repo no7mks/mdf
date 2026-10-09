@@ -63,7 +63,7 @@ def ignored_dir(path):
 
 def prune(root, days=RETENTION_DAYS):
     root = Path(root)
-    if not root.is_dir():
+    if root.is_symlink() or not root.is_dir():
         return
     limit = time.time() - days * 86400
     for entry in root.iterdir():
@@ -106,10 +106,14 @@ def _log_root(argv):
     if hint and Path(hint).is_dir():
         repo = Path(hint).resolve()
         main = _main_repo(repo)
-        prune(repo / REPORTS)
-        if (main / ".mdf").is_dir():
-            prune(main / LOGS)
-            return ignored_dir(main / LOGS)
+        metadata = repo / ".mdf"
+        if metadata.is_dir() and not metadata.is_symlink():
+            prune(repo / REPORTS)
+        main_metadata = main / ".mdf"
+        logs = main / LOGS
+        if main_metadata.is_dir() and not main_metadata.is_symlink() and not logs.is_symlink():
+            prune(logs)
+            return ignored_dir(logs)
     fallback = os.environ.get(FALLBACK_ENV) or str(Path.home() / ".mdf" / "logs")
     prune(fallback)
     return ignored_dir(fallback)

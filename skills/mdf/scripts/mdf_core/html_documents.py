@@ -9,7 +9,6 @@ from .errors import MDFError
 
 METADATA_OPEN = "<!-- MDF:METADATA\n"
 METADATA_CLOSE = "\n-->"
-LINK_RE = re.compile(r'''\b(?:href|src)\s*=\s*(["'])(.*?)\1''', re.IGNORECASE)
 
 
 class DocumentParser(HTMLParser):
@@ -29,6 +28,7 @@ class DocumentParser(HTMLParser):
         self.cells = 0
         self.pre = False
         self.suppressed = []
+        self.list_depth = 0
 
     def handle_starttag(self, tag, attrs):
         values = dict(attrs)
@@ -46,7 +46,11 @@ class DocumentParser(HTMLParser):
             self.parts.append("\n\n" + "#" * int(tag[1]) + " ")
             self.heading = []
             self.heading_id = values.get("id") if tag == "h2" else None
-        elif tag in {"p", "ul", "ol", "section", "pre"}:
+        elif tag in {"ul", "ol"}:
+            self.list_depth += 1
+            if self.list_depth == 1:
+                self.parts.append("\n")
+        elif tag in {"p", "section", "pre"}:
             self.parts.append("\n\n")
         elif tag == "li":
             raw_indent = values.get("data-indent", "0")
@@ -103,13 +107,21 @@ class DocumentParser(HTMLParser):
             self.parts.append(" |")
         elif tag == "thead":
             self.parts.append("\n|" + " --- |" * self.cells)
-        elif tag in {"p", "li", "table"}:
+        elif tag in {"ul", "ol"}:
+            self.list_depth -= 1
+            if self.list_depth == 0:
+                self.parts.append("\n\n")
+        elif tag in {"p", "table"}:
             self.parts.append("\n")
         elif tag == "main":
             self.active = False
 
     def handle_data(self, data):
         if self.active and not self.hidden:
+            if self.list_depth and not self.pre and not data.strip():
+                return
+            if self.list_depth and not self.pre:
+                data = re.sub(r"[\r\n]+\s*", " ", data)
             self.parts.append(data)
             if self.heading is not None:
                 self.heading.append(data)
