@@ -54,6 +54,9 @@ def size_role(rel: str) -> tuple[str, int] | None:
 def role_text(path: Path, rel: str) -> str:
     """该文档受 MDF 约束的文本；AGENTS.md 只取托管区块。"""
     text = path.read_text(encoding="utf-8")
+    if path.suffix == ".html":
+        from .html_documents import visible_text
+        text = visible_text(text)
     if rel == "AGENTS.md":
         start = text.find(MDF_BLOCK_START)
         end = text.find(MDF_BLOCK_END)
@@ -78,8 +81,10 @@ def sizable_documents(repo: Path) -> list[Path]:
     if docs.is_dir() and not docs.is_symlink():
         found.update(
             path
-            for path in docs.rglob("*.md")
+            for path in docs.rglob("*")
             if path.is_file()
+            and path.suffix in {".md", ".html"}
+            and not path.name.endswith(".review.html")
             and not path.is_symlink()
             and path_stays_in_repo(repo, path)
         )
@@ -131,7 +136,7 @@ def command_prose_check(args) -> None:
         for raw in args.path:
             path = (repo / raw).resolve()
             if (Path(raw).is_absolute() or not path_stays_in_repo(repo, path)
-                    or not path.is_file() or path.suffix != ".md"):
+                    or not path.is_file() or path.suffix not in {".md", ".html"}):
                 raise MDFError(f"--path 必须是仓库内的 Markdown 文件: {raw}", code="invalid_path")
             paths.append(path)
     else:

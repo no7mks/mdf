@@ -130,7 +130,7 @@ _OBJECT_SLUG = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 _ADR_SLUG = rf"(?=[a-z0-9-]*[a-z]){_OBJECT_SLUG}"
 OBJECT_FILE_RE = re.compile(
     rf"^((?:prp-{_PRP_ID_BODY}|bug-{_SHORT_ID_BODY}))-"
-    rf"({_OBJECT_SLUG})\.md$"
+    rf"({_OBJECT_SLUG})\.(?:md|html)$"
 )
 ADR_FILE_RE = re.compile(rf"^({_ADR_SLUG})\.md$")
 JOT_ID_RE = re.compile(rf"^jot-{_SHORT_ID_BODY}$")

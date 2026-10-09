@@ -175,6 +175,14 @@ def build_parser() -> argparse.ArgumentParser:
     split.add_argument("--dry-run", action="store_true")
     split.set_defaults(func=command_split)
 
+    from .prp_format import command_prp_format
+    prp_format = subparsers.add_parser("prp-format")
+    prp_format.add_argument("action", choices=("preview", "ready", "draft"))
+    prp_format.add_argument("--repo", required=True)
+    prp_format.add_argument("--proposal", required=True)
+    prp_format.add_argument("--confirmed", action="store_true")
+    prp_format.set_defaults(func=command_prp_format)
+
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",

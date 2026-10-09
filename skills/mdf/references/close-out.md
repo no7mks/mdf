@@ -107,7 +107,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 核授权、doctor、branch；只读检查现场 | ready、分支、现场 | 2 | 停止并报告 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
-| 3 | Prepare materials | 约束 | 核对已有 branch/fact；整理材料 | branch 验证证据、fact、Change | 4 | 保留现场，停止 |
+| 3 | Prepare materials | 约束 | 整理 Change 与 HTML 总结 | branch/fact、材料 | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
@@ -216,6 +216,7 @@
 - ❌ 本 intent 不内嵌、不委托 verify branch / smart / named，也不内嵌 fact update /
   fact audit；不做 commit 对齐审判。bug close（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
+- 四种 kind 及人工 feature 按 `html-materials.md` 写入、检查并提交详细 `delivery-summary.html`。
 - 按分支准备材料：
   - feature：在 `changes/unreleased/<slug>/` 补齐 CHANGE.md；普通交付对应唯一 PRP，人工交付 `proposals: []`。
     - 与 objectives、design、可选 gates/ 同级；材料不搬迁。
@@ -335,10 +336,9 @@
     不为查看原因再运行 doctor。
 
 ### 提交与 Gitflow
-
 **交接** <a id="s9"></a>
-
 - 由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续。
+- Gitflow 前按 `html-materials.md` 核对总结覆盖最终结果；补齐缺项并提交后才继续。
 - 按分支：
   - feature/bugfix 不 push，核对 objectives 与所需 report 已交后进入本地 Gitflow 合并。
   - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。

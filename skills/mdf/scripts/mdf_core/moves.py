@@ -1,4 +1,5 @@
 import os
+import html
 import shutil
 from pathlib import Path
 from typing import Any, Callable
@@ -11,6 +12,8 @@ from .validate_links import (
     is_external_link,
     resolve_local_link,
     split_link_target,
+    document_link_spans,
+    document_link_target,
 )
 
 
@@ -128,7 +131,7 @@ def replacement_plan(
     rewrite_inside_filter: Callable[[Path], bool] | None = None,
 ) -> dict[Path, str]:
     replacements: dict[Path, str] = {}
-    text_extensions = {".md", ".yaml", ".yml"}
+    text_extensions = {".md", ".html", ".yaml", ".yml"}
     for path in repo.rglob("*"):
         if (
             not path.is_file()
@@ -154,11 +157,10 @@ def replacement_plan(
             continue
         fenced = fenced_code_spans(original)
         edits: list[tuple[int, int, str]] = []
-        for match in ALL_MARKDOWN_LINK_RE.finditer(original):
-            if any(start <= match.start() < end for start, end in fenced):
+        for link_start, link_end, raw in document_link_spans(path, original):
+            if path.suffix != ".html" and any(start <= link_start < end for start, end in fenced):
                 continue
-            raw = match.group(1)
-            target = split_link_target(raw)
+            target = document_link_target(path, raw)
             if not target or is_external_link(target):
                 continue
             absolute = resolve_local_link(path, target)
@@ -181,9 +183,14 @@ def replacement_plan(
             rewritten = os.path.relpath(
                 destination, source_after_move.parent
             ).replace(os.sep, "/")
-            new_raw = rewrite_link_raw(raw, rewritten)
+            if path.suffix == ".html":
+                suffix_start = min((index for index in (raw.find("#"), raw.find("?"))
+                                    if index >= 0), default=len(raw))
+                new_raw = html.escape(rewritten + raw[suffix_start:], quote=True)
+            else:
+                new_raw = rewrite_link_raw(raw, rewritten)
             if new_raw != raw:
-                edits.append((match.start(1), match.end(1), new_raw))
+                edits.append((link_start, link_end, new_raw))
         if edits:
             chunks: list[str] = []
             cursor = 0
@@ -252,7 +259,7 @@ def apply_moves_and_rewrites(
 
 
 def managed_delivery_markdown(path: Path) -> bool:
-    if path.name == "code-review.md":
+    if path.name in {"code-review.md", "delivery-summary.html"}:
         return True
     return (path.name in {"objectives.md", "design.md"}
             and (path.parent / "delivery.json").is_file())
@@ -265,12 +272,14 @@ def opaque_links_survive_move(
 ) -> list[str]:
     broken: list[str] = []
     moves = {source: destination}
-    for path in sorted(source.rglob("*.md")):
+    for path in sorted(source.rglob("*")):
+        if not path.is_file() or path.suffix not in {".md", ".html"}:
+            continue
         if path.name == "CHANGE.md" or managed_delivery_markdown(path) or path.is_symlink():
             continue
         text = path.read_text(encoding="utf-8")
-        for raw in ALL_MARKDOWN_LINK_RE.findall(text):
-            target = split_link_target(raw)
+        for _, _, raw in document_link_spans(path, text):
+            target = document_link_target(path, raw)
             if not target or is_external_link(target):
                 continue
             absolute = resolve_local_link(path, target)

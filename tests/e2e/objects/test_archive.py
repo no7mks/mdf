@@ -126,8 +126,9 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
         ),
     )
     proposal.write_text(
-        proposal.read_text(encoding="utf-8")
-        + f'\n[Known bug](../bugs/{BUG_NAME}#impact "Regression context")\n',
+        proposal.read_text(encoding="utf-8").replace(
+            "</main>", f'<p><a href="../bugs/{BUG_NAME}#impact" '
+            'title="Regression context">Known bug</a></p></main>'),
         encoding="utf-8",
     )
     init_git(repo)
@@ -162,8 +163,9 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     assert not proposal.exists()
     archived_text = archived.read_text(encoding="utf-8")
     assert (
-        f'../../../bugs/{BUG_NAME}#impact "Regression context"' in archived_text
+        f'href="../../../bugs/{BUG_NAME}#impact"' in archived_text
     )
+    assert 'title="Regression context"' in archived_text
 
     reference = (
         repo / "docs" / "user-guide" / "README.md"

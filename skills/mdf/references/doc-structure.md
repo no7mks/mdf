@@ -2,6 +2,8 @@
 
 本规则适用于 MDF 生成或管理的全部 Markdown，修复方向是结构化，不是压缩措辞或删减信息。
 
+- PRP 与交付总结的 HTML 可见正文同样遵循写作原则与内容形态；格式见 [HTML 工作材料](html-materials.md)。
+
 - 目标仓库：根文档、`docs/**`、`changes/**` 与 `AGENTS.md` 托管区块。
   - `docs/JOTS.md` 免结构限制；MDF 新写或改写的说明性文本仍采用下方写作原则。
 - MDF 自身：Skill、intent、模板、`docs/` 与根文档。

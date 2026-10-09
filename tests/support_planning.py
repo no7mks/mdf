@@ -4,7 +4,7 @@ from mdf_test_support import *  # noqa: F403
 
 
 def add_prp(repo, identifier, deps=(), status="ready", milestone=None, slug=None):
-    template = (repo / "docs/proposals" / PRP_NAME).read_text()
+    template = proposal_markdown(repo / "docs/proposals" / PRP_NAME)
     depends_on = json.dumps(list(deps), ensure_ascii=False)
     text = template.replace("prp-001", identifier).replace(
         "depends_on: []", f"depends_on: {depends_on}"
@@ -18,6 +18,7 @@ def add_prp(repo, identifier, deps=(), status="ready", milestone=None, slug=None
         )
     if slug is None:
         slug = f"item-{identifier.split('-', 1)[1].lower()}"
-    path = repo / "docs/proposals" / f"{identifier}-{slug}.md"
-    path.write_text(text)
+    suffix = ".md" if status == "draft" else ".html"
+    path = repo / "docs/proposals" / f"{identifier}-{slug}{suffix}"
+    path.write_text(text if suffix == ".md" else proposal_html(text))
     return path

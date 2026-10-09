@@ -121,7 +121,7 @@ def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path)
 
 
 def split_spec(repo):
-    body = (repo / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
+    body = proposal_markdown(repo / "docs/proposals" / PRP_NAME).split("---", 2)[2]
     return {"source": "prp-001", "rationale": "用户确认两项共同覆盖验收，下游仅依赖第一项",
             "children": [
                 {
@@ -155,7 +155,7 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     payload(mdf(python_exe, *args))
     assert 'status: "replaced"' in (work / "docs/proposals" / PRP_NAME).read_text()
     assert 'depends_on: ["prp-003"]' in (
-        work / "docs/proposals/prp-005-item-005.md"
+        work / "docs/proposals/prp-005-item-005.html"
     ).read_text()
     assert 'status: "draft"' in (
         work / "docs/proposals/prp-003-part-003.md"
@@ -220,7 +220,7 @@ def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(py
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     add_prp(repo, "prp-003", ["prp-001"])
     # add_prp copies its source; explicitly keep the dependent ready.
-    replace(repo / "docs/proposals/prp-003-item-003.md", "status: implemented", "status: ready")
+    replace(repo / "docs/proposals/prp-003-item-003.html", "status: implemented", "status: ready")
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     assert [node["id"] for node in data["trees"]] == ["prp-003"]
@@ -251,7 +251,7 @@ def test_milestone_dependency_blocks_tree_until_members_are_implemented(
     assert roots["prp-002"]["children"] == []
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     replace(
-        repo / "docs/proposals/prp-002-item-002.md",
+        repo / "docs/proposals/prp-002-item-002.html",
         "status: ready",
         "status: implemented",
     )
@@ -264,7 +264,7 @@ def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_pat
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-002", status="rejected", milestone="阶段一")
     replace(
-        repo / "docs/proposals/prp-002-item-002.md",
+        repo / "docs/proposals/prp-002-item-002.html",
         "status: rejected",
         "status: rejected\nreject-reason: wont-do",
     )

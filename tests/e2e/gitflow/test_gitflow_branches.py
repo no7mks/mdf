@@ -249,7 +249,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
 def _add_ready_prp(repo: Path, identifier: str, slug: str) -> None:
     template = (repo / "docs/proposals" / PRP_NAME).read_text()
     text = template.replace("prp-001", identifier)
-    (repo / "docs/proposals" / f"{identifier}-{slug}.md").write_text(text)
+    (repo / "docs/proposals" / f"{identifier}-{slug}.html").write_text(text)
 
 
 def test_start_from_delivery_branch_creates_worktree_and_finish_detaches_it(

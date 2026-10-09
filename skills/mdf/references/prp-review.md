@@ -53,8 +53,10 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-完整读取 `references/common.md`、`references/repository-contract.md` 与
-`references/object-contract.md`。
+完整读取以下契约：
+
+- `references/common.md` 与 `references/repository-contract.md`。
+- `references/object-contract.md` 与 `references/html-materials.md`。
 步骤 4 读取并内部执行 `references/clarify.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -63,8 +65,8 @@
 | 2 | Select proposal | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
 | 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
 | 4 | Clarify | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
-| 5 | Confirm | 约束 | 展示 draft、事实、排除范围与 diff 并确认 | 用户明确确认 | 6 | 保留 draft，停止 |
-| 6 | Validate and ready | 脚本 | 校验后写 ready、提交并 land | 回读状态、land | 结束 | 校验失败留 draft；其后报状态 |
+| 5 | Confirm | 约束 | 展示详细 HTML 并确认 | HTML、用户确认 | 6 | 保留 draft，停止 |
+| 6 | Validate and ready | 脚本 | 校验、转 HTML、提交、land | ready、land | 结束 | 校验失败留 draft；其后报状态 |
 
 ## 术语与数据结构
 
@@ -116,7 +118,7 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 | --- | --- |
 | 已开工 | 报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP |
 | `list` 因记录损坏失败或目标不在输出中 | 同样在写入前停止，报告缺失证据 |
-| 仅 active draft/ready 且已确认未开工 | 继续；此时若为 `ready` 才写成 `draft` |
+| 仅 active draft/ready 且已确认未开工 | 继续；ready 用 `prp-format draft` 转为 Markdown draft |
 
 取消、暂停、未确认或 validation 失败均保持 `draft`，不恢复 ready；写回后失败按步骤 6 报告实际状态。
 
@@ -131,6 +133,9 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 先查仓库证据，使用内部 clarify intent 澄清 Problem、Desired Outcome、 Scope 与可验证 Acceptance Criteria。
 
 验收：完整 draft。
+
+- 按 `html-materials.md` 补齐事实依据、约束、依赖、设计取舍、风险与逐条验收方法。
+- 详细内容先写入 Markdown draft；HTML 由该稿生成，不在 preview 中单独维护另一份正文。
 
 异常与交接：保持 draft 并停止。
 
@@ -148,7 +153,12 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 
 **确认**
 
-展示 draft、确认事实、排除范围和既有对象 diff。
+按 `html-materials.md` 生成并检查详细 HTML，展示实际文件供用户确认。
+
+1. 运行 `prp-format preview --repo "$REPO_ROOT" --proposal <完整 PRP ID>`。
+2. 打开返回的 `.review.html`，检查全部正文、表格和证据链接。
+3. 向用户展示 HTML 文件，明确确认事实、排除范围、取舍、验收方法与既有对象 diff。
+4. 取得对该 HTML 内容的明确确认；改稿后重新生成、检查并确认，不沿用旧稿确认。
 
 验收：用户明确确认。
 
@@ -161,10 +171,18 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 
 **就绪**
 
-先在 `draft` 状态运行 `targeted validation`，通过后转为 `ready`。
+- 先在 `draft` 状态运行 `targeted validation`。
+- 通过后执行以下命令，把已确认内容写成唯一 ready `.html`。
+
+```bash
+prp-format ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed
+```
+
+- 删除对应 Markdown 与临时 preview，并改写仓内引用。
+
 回读确认状态为 `ready` 后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 
-验收：validation 通过；写回后回读对象，确认状态为 `ready`。
+验收：validation 通过；回读 HTML 对象确认 `ready`，对应 Markdown 已不存在，引用仍有效。
 
 异常与交接：
 

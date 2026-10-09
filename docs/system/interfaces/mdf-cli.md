@@ -77,6 +77,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `list` | 对象清单 | [只读命令](mdf-cli-inspect.md) |
 | `tree` | draft/ready 混态依赖视图 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `prp-split` | 未开工 PRP 拆分 | [交付阶段与验证](mdf-cli-delivery.md) |
+| `prp-format` | review HTML 与 PRP 格式转换 | [仓库写入命令](mdf-cli-write.md) |
 | `delivery` | 交付辅助（配置快照/并行；非进度关口） | [交付阶段与验证](mdf-cli-delivery.md) |
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `bug close` | 验收后的 Bug 关闭写入 | [仓库写入命令](mdf-cli-write.md) |
@@ -105,6 +106,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `init`、`bootstrap`、`migrate` | `doctor`、`init` 与 `validate` |
 | `tree` | 只读 `tree` CLI，展示 draft/ready 混态依赖视图 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `intake`、`prp create`、`prp review` 与 `prp split` | `doctor`、`planning`、`list` 与 `make-id` |
+| `prp review` | 另用 `prp-format` 生成 HTML、确认后转 ready 或回 draft |
 | `bug create` | `doctor`、`list` 与 `make-id` | [交付阶段与验证](mdf-cli-delivery.md) |
 | `jot` | `make-jot-id`；`jot promote` 另用 `list` 查重 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `archive` | `list` 与 `archive` | [仓库写入命令](mdf-cli-write.md) |

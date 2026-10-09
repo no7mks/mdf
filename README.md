@@ -62,7 +62,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
 | `$mdf bug create` | 按已确认的内容手动创建一个 open Bug |
 | `$mdf prp create` | 按已确认的内容手动创建一个 draft Proposal |
-| `$mdf prp review` | 修订单个 active Proposal，并通过验证后转为 ready |
+| `$mdf prp review` | 修订单个 active Proposal，详细 HTML 经用户确认后保存为唯一 ready HTML |
 | `$mdf archive` | 归档终态 Proposal 及 closed/rejected Bug |
 | `$mdf prp split` | 拆分未开工 PRP，并完整改写依赖 |
 | `$mdf design` | 确认设计、测试策略和共享代码底座 |
@@ -172,6 +172,8 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 - 初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
 - 材料自 start 起位于 `changes/unreleased/<slug>/`。
   - CHANGE.md 在同级目录于交付完成时补齐，再随版本归档。
+  - Gitflow 前留存详细 HTML 设计与开发总结，记录完整交付过程、决策、偏差与证据。
+    格式见 [HTML 工作材料](skills/mdf/references/html-materials.md)。
 
 ### 契约与初始化
 

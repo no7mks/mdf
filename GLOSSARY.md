@@ -197,6 +197,9 @@ fact audit 对文档结构的语义审阅：
 draft 为待评审，ready 为可交付，implemented 为已验收合入 develop，released 为已发布。
 rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由拆分出的 PRP 承接。
 
+- draft 使用 Markdown；ready 起正文只保存为 HTML，评审定稿前展示详细 HTML 并取得用户确认。
+- 格式与交付 HTML 总结见 [HTML 工作材料](skills/mdf/references/html-materials.md)。
+
 ## Milestone 与 MVP
 
 Milestone（里程碑）表示用户定义的阶段目标；PRP 的可选 `milestone` 属性记录阶段归属。

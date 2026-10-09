@@ -57,12 +57,14 @@
     `needs_design: yes` 时另有 design.md。
   - close-out 在同一目录补齐 CHANGE.md，不搬迁；发布后随目录进入
     `changes/<version>/<slug>/`。
+  - Gitflow 前补齐详细 `delivery-summary.html`；格式与内容见 [HTML 工作材料](html-materials.md)。
 - release 材料位于 `changes/unreleased/<semver>/`：start 写入 objectives.md 与 delivery.json。
+  - HTML 总结随收口材料进入 `changes/<semver>/`，不建 child Change。
 - 代码、测试、fixture 留在项目原位置，大日志不要求提交。
 
 路径写法：
 
-- objectives/design 是受管可搬迁 Markdown。
+- objectives/design 是受管可搬迁 Markdown；`delivery-summary.html` 是受管可搬迁 HTML。
 - 仓内 Markdown 本地链接只相对当前文件（`./`、`../` 或同级文件名）；前导 `/` 是站点根，不是仓根。
 - 搬迁时 CLI 改写仍有效的相对路径。
 - delivery.json 与可选 gate 快照内路径一律仓库相对。

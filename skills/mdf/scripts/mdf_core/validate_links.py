@@ -1,4 +1,5 @@
 from pathlib import Path
+import html
 from typing import Iterable
 from urllib.parse import unquote
 
@@ -8,6 +9,20 @@ from .paths import path_stays_in_repo, relative
 
 
 EXTERNAL_LINK_PREFIXES = ("http://", "https://", "mailto:", "data:")
+
+
+def document_link_spans(path: Path, text: str):
+    """返回 href/src 或 Markdown link 的原始位置与解码 target。"""
+    if path.suffix == ".html":
+        from .html_documents import LINK_RE
+        import re
+        ignored = [match.span() for match in re.finditer(
+            r"<!--.*?-->|<style\b[^>]*>.*?</style>", text, re.DOTALL | re.IGNORECASE)]
+        return [(match.start(2), match.end(2), html.unescape(match.group(2)))
+                for match in LINK_RE.finditer(text)
+                if not any(start <= match.start() < end for start, end in ignored)]
+    return [(match.start(1), match.end(1), match.group(1))
+            for match in ALL_MARKDOWN_LINK_RE.finditer(text)]
 
 
 def is_external_link(target: str) -> bool:
@@ -64,8 +79,10 @@ def managed_markdown(repo: Path) -> Iterable[Path]:
         elif root.is_dir():
             found.update(
                 path
-                for path in root.rglob("*.md")
+                for path in root.rglob("*")
                 if path.is_file()
+                and path.suffix in {".md", ".html"}
+                and not path.name.endswith(".review.html")
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             )
@@ -82,6 +99,10 @@ def split_link_target(raw: str) -> str:
     return unquote(target.split("#", 1)[0].split("?", 1)[0])
 
 
+def document_link_target(path: Path, raw: str) -> str:
+    return split_link_target(f"<{raw}>" if path.suffix == ".html" else raw)
+
+
 def collect_local_link_findings(
     repo: Path, path: Path, findings: list[Finding]
 ) -> None:
@@ -89,8 +110,8 @@ def collect_local_link_findings(
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return
-    for raw in ALL_MARKDOWN_LINK_RE.findall(text):
-        target = split_link_target(raw)
+    for _, _, raw in document_link_spans(path, text):
+        target = document_link_target(path, raw)
         if not target:
             if raw and not raw.strip():
                 add_finding(

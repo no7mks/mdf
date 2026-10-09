@@ -80,6 +80,27 @@ python3 skills/mdf/scripts/mdf.py archive --repo /path/to/repository \
 canonical 链接重写。`--dry-run` 仅返回计划；正常运行会应用移动与重写，随后再次
 full validate。后校验失败时保留现场，供人工检查。
 
+## `prp-format`
+
+本命令在 planning 工作区转换未开工 active PRP；不代替 Agent 取得用户确认。
+
+```bash
+python3 skills/mdf/scripts/mdf.py prp-format preview --repo /path/to/repository --proposal prp-001
+python3 skills/mdf/scripts/mdf.py prp-format ready --repo /path/to/repository --proposal prp-001 --confirmed
+python3 skills/mdf/scripts/mdf.py prp-format draft --repo /path/to/repository --proposal prp-001
+```
+
+| action | 输入 | 结果 |
+| --- | --- | --- |
+| `preview` | Markdown draft | 生成同目录 `<stem>.review.html`，不修改对象状态 |
+| `ready` | draft、对应 preview、`--confirmed` | 保存唯一 ready HTML，删除 Markdown 与 preview，改写引用 |
+| `draft` | 未开工 ready HTML | 转回 Markdown draft，删除 HTML 并改写引用 |
+
+- 要求 Git 根、planning、manifest ready、有效对象及依赖；不要求 clean，不提交。
+- preview 必须与当前 draft 一致；缺失或稿件变化以 `preview_changed` 失败。
+- 转换校验失败时恢复本次改写；其他异常保留现场并报告实际状态。
+- HTML 存储格式、详细内容与展示检查见 [HTML 工作材料](../../../skills/mdf/references/html-materials.md)。
+
 ## `release-closeout`
 
 ```bash
@@ -267,6 +288,7 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
    - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
    - 否则执行 1 人增量新一轮 code-review 与所需 suite。
 3. 再核对本轮 1 份审查、主 Agent 复核与验证记录。
+4. 写入、检查并提交完整的 `delivery-summary.html`；内容与位置按 HTML 工作材料契约。
 
 非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
 

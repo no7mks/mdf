@@ -19,7 +19,7 @@ from _support import run
 from conftest import skill_dir
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mdf" / "valid_repo"
-PRP_NAME = "prp-001-service-health.md"
+PRP_NAME = "prp-001-service-health.html"
 BUG_NAME = "bug-CD34-unreleased-timeout.md"
 BUG_ID = "bug-CD34"
 PRP_ID = "prp-001"
@@ -118,6 +118,23 @@ def copy_fixture(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     shutil.copytree(FIXTURE, repo, ignore=shutil.ignore_patterns("__pycache__"))
     return repo
+
+
+def proposal_markdown(path: Path) -> str:
+    from mdf_core.yamlutil import read_frontmatter, frontmatter_span
+    _, body = read_frontmatter(path)
+    text = path.read_text()
+    start, end, _ = frontmatter_span(text)
+    return "---\n" + text[start:end] + "\n---\n\n" + body
+
+
+def proposal_html(text: str) -> str:
+    from mdf_core.html_documents import render_html
+    from mdf_core.yamlutil import frontmatter_span, parse_yaml
+    start, end, body_start = frontmatter_span(text)
+    rendered = render_html(parse_yaml(text[start:end]), text[body_start:])
+    a, b, _ = frontmatter_span(rendered)
+    return rendered[:a] + text[start:end] + rendered[b:]
 
 
 def git(repo: Path, *args: str):

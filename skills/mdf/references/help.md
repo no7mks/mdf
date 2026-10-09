@@ -83,7 +83,7 @@
 - `$mdf jot promote`：提升一条 Jot 为 Proposal 或 Bug
 - `$mdf bug create`：按已确认内容手动创建 open Bug
 - `$mdf prp create`：按已确认内容手动创建 draft Proposal
-- `$mdf prp review`：修订单个 active Proposal，验证后转为 ready
+- `$mdf prp review`：修订 PRP，详细 HTML 经用户确认后转为唯一 ready HTML
 - `$mdf prp split`：拆分未开工 PRP，并完整改写依赖
 - `$mdf tree [--depth N]`：按 milestone 分组画出 draft/ready PRP 依赖树；也可
   `$mdf prp tree` 或 `$mdf next?`
@@ -225,7 +225,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：一次只创建一个对象；须在 planning 工作区创建并合入 develop；随后需 `$mdf prp review`。
 - `$mdf prp review`
   - 用法：`$mdf prp review`
-  - 用途：修订单个 active Proposal，验证后转为 ready。
+  - 用途：修订单个 active Proposal，详细 HTML 经用户确认后保存为唯一 ready HTML。
   - 说明：在 planning 工作区修订；终态或 archive 中的 Proposal 拒绝修改。
 - `$mdf prp split`
   - 用法：`$mdf prp split`

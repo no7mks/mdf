@@ -1,5 +1,6 @@
 """先在临时副本校验完整拆分，再一次写入；写入故障恢复原文件。"""
 import json
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -9,6 +10,7 @@ from .gitutil import ensure_clean, repo_path, require_planning, require_git_root
 from .paths import ensure_safe_managed_paths, load_manifest
 from .proposals import check_proposals, started
 from .constants import OBJECT_FILE_RE
+from .html_documents import update_metadata, markdown_body
 
 
 def render(meta, body):
@@ -41,7 +43,7 @@ def split_plan(repo, spec):
         name = child["filename"]
         match = OBJECT_FILE_RE.fullmatch(name) if isinstance(name, str) else None
         identifier = child["id"]
-        if (not match or not isinstance(identifier, str)
+        if (not match or not name.endswith(".md") or not isinstance(identifier, str)
                 or match.group(1) != identifier or not identifier.startswith("prp-")
                 or identifier in objects or identifier in ids or not isinstance(child["body"], str)):
             raise MDFError("子 PRP 身份无效或冲突", code="invalid_split")
@@ -67,9 +69,14 @@ def split_plan(repo, spec):
         other_meta = dict(other_meta)
         other_meta["depends_on"] = list(dict.fromkeys(
             [dep for dep in other_meta["depends_on"] if dep != source] + replacements))
-        changed[other_path] = render(other_meta, other_body)
+        changed[other_path] = (update_metadata(other_path.read_text(), other_meta)
+                               if other_path.suffix == ".html" else render(other_meta, other_body))
     meta = {**meta, "status": "replaced", "replaced_by": ids}
-    changed[path] = render(meta, body + "\n\n## 拆分依据\n\n" + spec["rationale"])
+    rationale = "\n\n## 拆分依据\n\n" + spec["rationale"]
+    changed[path] = (re.sub(r"</main>", lambda _: markdown_body(rationale) + "\n</main>",
+                          update_metadata(path.read_text(), meta), count=1, flags=re.IGNORECASE)
+        if path.suffix == ".html"
+        else render(meta, body + rationale))
     with tempfile.TemporaryDirectory(prefix="mdf-split-") as tmp:
         stage = Path(tmp).resolve()
         for directory in ("docs/proposals", "docs/bugs", "changes", "docs/context/adr"):

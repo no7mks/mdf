@@ -26,13 +26,13 @@ def test_ready_object_sections_must_be_filled(python_exe: str, tmp_path: Path):
     proposal = repo / "docs/proposals" / PRP_NAME
     replace(
         proposal,
-        "## 期望结果\n\n调用方能取得稳定的健康状态。",
-        "## 期望结果\n\n",
+        "<p>调用方能取得稳定的健康状态。</p>",
+        "<p></p>",
     )
     replace(
         proposal,
-        "### 不包含\n\n- 不提供远程监控。",
-        "### 范围外\n\n- 不提供远程监控。",
+        "<h3>不包含</h3>",
+        "<h3>范围外</h3>",
     )
     init_git(repo)
 
@@ -168,7 +168,7 @@ def test_validation_allows_archived_slug_reuse(
     repo = copy_fixture(tmp_path)
     source = repo / "docs/proposals" / PRP_NAME
     archived = (
-        repo / "docs/proposals" / "archive" / "1.2" / "prp-003-service-health.md"
+        repo / "docs/proposals" / "archive" / "1.2" / "prp-003-service-health.html"
     )
     archived.parent.mkdir(parents=True)
     archived.write_text(

@@ -16,7 +16,7 @@ def write_proposal(
 ) -> Path:
     source = repo / "docs/proposals" / PRP_NAME
     text = (
-        source.read_text(encoding="utf-8")
+        proposal_markdown(source)
         .replace(PRP_ID, identifier)
         .replace("status: ready", "status: draft")
         .replace("depends_on: []", f"depends_on: {depends_on}")

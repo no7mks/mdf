@@ -21,7 +21,7 @@ def test_list_filters_by_type_status_milestone_and_severity(python_exe, tmp_path
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-003", ["prp-001"], status="draft", milestone="阶段一")
     add_prp(repo, "prp-004", status="rejected")
-    replace(repo / "docs/proposals/prp-004-item-004.md", "status: rejected",
+    replace(repo / "docs/proposals/prp-004-item-004.html", "status: rejected",
             "status: rejected\nreject-reason: wont-do")
     add_bug(repo, "bug-EF56", status="fixed", severity="trivial")
     init_git(repo)
