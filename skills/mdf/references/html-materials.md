@@ -28,7 +28,9 @@ PRP 的可见 HTML 正文是唯一正文，metadata 使用 YAML comment。
 
 - draft：`docs/proposals/prp-<序号>-<slug>.md`，使用原有 YAML frontmatter。
 - review：同目录 `<stem>.review.html`，由当前 draft 生成，尚不构成对象或 ready。
-- ready / implemented / released：同目录 `<stem>.html`；不保留对应 Markdown 副本。
+- 本次 review 确认并转为 ready：同目录 `<stem>.html`；不保留对应 Markdown 副本。
+- 已有 ready / implemented / released PRP 保留原格式，含 archive 中的 PRP。
+  - doctor / validate 不按状态追溯 HTML 格式要求，不要求批量转换或补写过去的评审材料。
 - rejected / replaced 保留裁定时的原格式；archive 保留扩展名。
 - HTML metadata 位于 doctype 后，格式如下；只放对象字段，不嵌入 Markdown 正文。
 
@@ -51,7 +53,7 @@ depends_on: []
   - 同时改写仓内指向原 Markdown 的链接；失败报告实际状态，不声称 ready。
 - 未开工 ready PRP 再次 review 时运行 `prp-format draft --repo <root> --proposal <id>`。
   - 回到 Markdown draft 并改写引用，再修改、生成 HTML 和取得确认。
-- 后续交付只更新 HTML metadata；split 保留原 HTML 正文并追加拆分依据。
+- 后续交付只更新 metadata 并保留正文与格式；split 保留原正文并追加拆分依据。
 
 ## 设计与开发总结
 

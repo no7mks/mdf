@@ -83,11 +83,9 @@ def validate_object(
         )
     status = metadata.get("status")
     if expected_type == "proposal":
-        expected_suffix = ".html" if status in {"ready", "implemented", "released"} else None
-        if status == "draft":
-            expected_suffix = ".md"
-        if expected_suffix and path.suffix != expected_suffix:
-            add_finding(findings, "proposal.format", f"{status} PRP 必须使用 {expected_suffix}", rel)
+        # HTML 由 review 定稿时生成，不按当前状态追溯已有 PRP 的格式。
+        if status == "draft" and path.suffix != ".md":
+            add_finding(findings, "proposal.format", "draft PRP 必须使用 .md", rel)
     elif path.suffix != ".md":
         add_finding(findings, "object.filename", "Bug 必须使用 Markdown", rel)
     allowed_statuses = (

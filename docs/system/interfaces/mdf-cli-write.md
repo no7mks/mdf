@@ -94,7 +94,7 @@ python3 skills/mdf/scripts/mdf.py prp-format draft --repo /path/to/repository --
 | --- | --- | --- |
 | `preview` | Markdown draft | 生成同目录 `<stem>.review.html`，不修改对象状态 |
 | `ready` | draft、对应 preview、`--confirmed` | 保存唯一 ready HTML，删除 Markdown 与 preview，改写引用 |
-| `draft` | 未开工 ready HTML | 转回 Markdown draft，删除 HTML 并改写引用 |
+| `draft` | 未开工 ready PRP | HTML 转回 Markdown 并改写引用；Markdown 原位改为 draft |
 
 - 要求 Git 根、planning、manifest ready、有效对象及依赖；不要求 clean，不提交。
 - preview 必须与当前 draft 一致；缺失或稿件变化以 `preview_changed` 失败。

@@ -46,7 +46,7 @@
     │   └── research/
     ├── repowiki/             # 可选；CodeWiki 受管生成物
     ├── proposals/
-    │   ├── prp-<序号>-<slug>.md|html  # draft 用 md；ready 起用 html
+    │   ├── prp-<序号>-<slug>.md|html  # draft 用 md；评审定稿生成 html；已有材料保留格式
     │   └── archive/<major.minor>/
     └── bugs/
         ├── bug-<4 位字符>-<slug>.md

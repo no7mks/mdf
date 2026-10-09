@@ -5,8 +5,9 @@
 
 ## Proposal
 
-draft Proposal 使用 Markdown + YAML frontmatter；ready 起使用唯一 HTML 与 YAML metadata comment。
-字段为 id、type: proposal、status、depends_on；格式见 [HTML 工作材料](html-materials.md)。
+Proposal 字段为 id、type: proposal、status、depends_on。
+Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
+评审输出与已有材料的格式边界见 [HTML 工作材料](html-materials.md)。
 
 ### milestone
 

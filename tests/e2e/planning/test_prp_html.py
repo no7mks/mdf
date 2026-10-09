@@ -63,10 +63,64 @@ def test_changed_draft_requires_new_html_confirmation(python_exe, tmp_path):
     assert "draft" in draft.read_text()
 
 
-def test_ready_markdown_and_duplicate_html_are_rejected(python_exe, tmp_path):
+def test_duplicate_markdown_and_html_are_rejected(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     path = repo / "docs/proposals" / PRP_NAME
     path.with_suffix(".md").write_text(proposal_markdown(path))
     init_git(repo)
     result = mdf(python_exe, "validate", "--repo", str(repo))
-    assert "proposal.format" in result.stdout and "object.id_duplicate" in result.stdout
+    assert "object.id_duplicate" in result.stdout
+
+
+def markdown_repo(tmp_path, status="ready", archived=False):
+    repo = copy_fixture(tmp_path)
+    source = repo / "docs/proposals" / PRP_NAME
+    target = source.with_suffix(".md")
+    text = proposal_markdown(source).replace("status: ready", f"status: {status}")
+    if status == "released":
+        text = text.replace("status: released", "status: released\nreleased_in: 1.2.0")
+    if archived:
+        target = target.parent / "archive/1.2" / target.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text)
+    source.unlink()
+    replace(repo / "docs/user-guide/README.md", PRP_NAME,
+            target.relative_to(repo / "docs/proposals").as_posix())
+    init_git(repo)
+    return repo, target
+
+
+@pytest.mark.parametrize("status,archived", [
+    ("ready", False), ("implemented", False), ("released", False), ("released", True),
+])
+def test_existing_markdown_proposals_validate_without_conversion(python_exe, tmp_path, status, archived):
+    repo, path = markdown_repo(tmp_path, status, archived)
+    before = {item: item.read_bytes() for item in (repo / "docs").rglob("*") if item.is_file()}
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["findings"] == []
+    assert data["normal_workflows_allowed"] is True
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert path.is_file() and not path.with_suffix(".html").exists()
+    assert before == {item: item.read_bytes() for item in (repo / "docs").rglob("*") if item.is_file()}
+
+
+def test_existing_markdown_still_requires_valid_content(python_exe, tmp_path):
+    repo, path = markdown_repo(tmp_path)
+    replace(path, "## 验收标准", "## 其他内容")
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert "object.section" in {item["code"] for item in data["findings"]}
+    assert data["normal_workflows_allowed"] is False
+
+
+def test_existing_ready_markdown_can_be_reviewed_into_html(python_exe, tmp_path):
+    repo, _ = markdown_repo(tmp_path)
+    checkout_develop(repo)
+    work = planning_worktree(python_exe, repo)
+    draft = work / "docs/proposals" / Path(PRP_NAME).with_suffix(".md")
+    payload(format_prp(python_exe, work, "draft"))
+    data = payload(mdf(python_exe, "list", "--repo", str(work), "--type", "proposal"))
+    assert data["objects"][0]["status"] == "draft"
+    payload(format_prp(python_exe, work, "preview"))
+    payload(format_prp(python_exe, work, "ready", "--confirmed"))
+    assert not draft.exists() and draft.with_suffix(".html").is_file()
+    assert_ok(mdf(python_exe, "validate", "--repo", str(work)))
