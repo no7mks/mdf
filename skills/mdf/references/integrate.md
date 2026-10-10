@@ -12,7 +12,7 @@ release 联调四选一，objectives 正文只写选定的一种；checklist **�
 
 同 worktree 不 init、不 poll、不 listen、不 send。步骤 2 建 Goal 后进 4，到步骤 8 收口。
 跨 worktree 写 inbox 并 poll 到用户停止；只 poll 本侧。不得改、操作、启动或终止对端。只传没有步骤 8。
-collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于同/跨 worktree。
+collab-mode 在步骤 1 委托 [专用契约](collab-mode.md) 并返回；步骤 2–8 只用于同/跨 worktree。
 
 ## 决策树
 ```text
@@ -20,9 +20,10 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 │ 1 Check root                     │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 不是 Git 根 ────→ [停止]
+                 ├──── 不是 Git 根 ─────────────→ [停止]
+                 ├──── 根通过且 collab-mode ────→ [执行专用契约并返回]
                  │
-                 ▼ 通过
+                 ▼ 根通过且同/跨 worktree
 ┌──────────────────────────────────┐
 │ 2 Open channel                   │
 └────────────────┬─────────────────┘
@@ -97,14 +98,13 @@ collab-mode 读取 [专用契约](collab-mode.md)；下文编号流程只用于�
 
 ## 工作流（唯一执行契约）
 
-表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 完整读取 `references/common.md`。修复时读取 `references/delivery-contract.md`「补覆盖」。
 不要求 manifest ready，不要求 clean worktree。
 从步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check root | 脚本 | 用 `--repo` 解析绝对 Git 根 | Git 根 | 2 | 不是 Git 根则停止 |
+| 1 | Check root | 脚本 | 核 Git 根；collab 委托专用契约 | Git 根、委托结果 | collab 返回；其余 2 | 不是 Git 根则停止 |
 | 2 | Open channel | 脚本 | 跨仓开通道；同仓只建 Goal | Goal；跨仓另有 poll | 同仓 4；否则 3 | 写入失败或前台占住则停 |
 | 3 | Address peer | 约束 | 对端、ping、courtesy 等到 ack | peers、ack | 4 | 未就绪或未 ack 留 3；否则停 |
 | 4 | Assign roles | 约束 | 定角色 | 角色或只传 | 已确认则 5；只传则 6 | 不明或告知失败留 4；无法处理或用户停止则停 |

@@ -51,10 +51,10 @@
 │ 6 Enable workflows               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 事实变化 ────→ 5 Check materials
-                 ├──── 未确认 ──────→ [保持 initializing，结束]
-                 ├──── 其他失败 ────→ [保留现场并报告]
-                 └──── 通过 ────────→ [结束]
+                 ├──── 需补验或事实变化 ────→ 5 Check materials
+                 ├──── 未确认 ──────────────→ [保持 initializing，结束]
+                 ├──── 其他失败 ────────────→ [保留现场并报告]
+                 └──── 通过 ────────────────→ [结束]
 ```
 
 ## 工作流（唯一执行契约）
@@ -71,7 +71,7 @@
 | 3 | Confirm plan | 约束 | 调用 initialization #3；确认去处、Git、基线和验证 | 用户确认的起步方案 | 4 | 留在 3 |
 | 4 | Initialize | 约束 | 调用 initialization #2+#4：Git、init、整理 | Git 基线、MDF 产物 | 5 | 保留现场并报告 |
 | 5 | Check materials | 约束 | initialization #5 | initializing finding | 6 | 事实提示 migrate 并停；可修 5；两轮后停 |
-| 6 | Enable workflows | 约束 | initialization #6-8 | 就绪提交、本地分支 | 结束 | 事实变化 5；未确认则结束；否则停 |
+| 6 | Enable workflows | 约束 | initialization #6-8 | 就绪提交、本地分支 | 结束 | 补验/事实变 5；未确认结束；否则停 |
 
 ## 术语与数据结构
 
@@ -103,3 +103,4 @@
 - 无法继续时保留现场并报告阻塞。
 
 步骤 6 未确认启用时保持 initializing 并结束，不写 ready。
+initialization 返回需补验或事实变化时，回步骤 5；保留有效确认，只补缺失或失效的检查。

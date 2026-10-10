@@ -30,6 +30,7 @@
 │ 4 Clarify                        │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 需补稿 ───────→ 4 Clarify
                  ├──── 失败/缺失 ────→ [保留 draft，停止]
                  │
                  ▼ 通过
@@ -66,7 +67,7 @@
 | 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | Select proposal | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
 | 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
-| 4 | Clarify | 约束 | 查仓库证据，内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 保留 draft，停止 |
+| 4 | Clarify | 约束 | 查证并内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 需补稿留 4；其余保留 draft，停止 |
 | 5 | Confirm | 约束 | 展示详细 HTML 并确认 | HTML、用户确认 | 6 | 保留 draft，停止 |
 | 6 | Validate and ready | 脚本 | 校验、转 HTML、提交、land | ready、land | 结束 | 稿变回 5；校验停；其后报状态 |
 
@@ -139,7 +140,7 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 - 按 `html-materials.md` 补齐事实依据、约束、依赖、设计取舍、风险与逐条验收方法。
 - 详细内容先写入 Markdown draft；HTML 由该稿生成，不在 preview 中单独维护另一份正文。
 
-异常与交接：保持 draft 并停止。
+异常与交接：需要补稿时留在 4；其他失败保持 draft 并停止。
 
 可选加速（见 `common.md`「Jev 可选加速」）：
 
@@ -149,7 +150,8 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 - state：draft 与证据摘要。
 - 采信「可确认」仅用于整理展示材料。
 - ❌ 不替代步骤 5 用户确认，不得因 Jev 直接写 `ready`。
-- 低分或未采信继续主路径确认 / 回澄清。
+- 需补稿时留在步骤 4；完整 draft 才进入步骤 5。
+  未采信时由主 Agent 按同一条件裁定。
 
 <a id="s5"></a>
 

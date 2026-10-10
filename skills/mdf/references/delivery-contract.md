@@ -231,7 +231,7 @@ Git 约束：
 | --- | --- | --- |
 | code-review | `…/code-review.md` 无 commit 终稿 | code-review |
 | verify branch | `…/verification-report.json`（及可选 `verification-report.md`） | verify branch |
-| fact | 材料目录内 confirmation / 会话确认记录 | fact audit（经 update 委托时同） |
+| fact | 材料目录内 confirmation / 会话确认记录 | 调用方（audit 只返回确认） |
 | 测试框架报告 | `.mdf/reports/` 等 | verify |
 
 close-out 只查上表是否已交且声称通过；不复验对不对。

@@ -174,7 +174,7 @@
   - 全部路径都在 `docs/` 下，且与本交付文档无交集时跳过：
     - 不启动 code-review；沿用已有 code-review 终稿与主链 `verification-report.json`
       （须存在且 `all_passed: true`；否则按下方停止）。
-    - 在 `code-review.md` 追加跳过说明（merge commit、路径清单；仍不得写入 commit
+    - 在 `code-review.md` 追加跳过说明（集成操作、路径清单；仍不得写入 commit
       hash）。
   - 本交付文档 = 当前对象文件，以及本分支自 start_commit 到集成前 HEAD 改过的 `docs/` 路径。
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
@@ -254,7 +254,7 @@
 - report 缺失或未声称通过时：停止并交接；由主链补跑对应 intent（verify /
   fact / code-review），不在本 intent 内嵌、不做过期审判。
 - 集成后需补审时从 `code-review.md` 步骤 1 执行（有有效终稿则增量，否则首轮）。
-- 不回退本流程步骤编号。
+- 本步发现前置失效时停止交接，不在 close-out 内补跑主链阶段。
 - 其他失败走本步骤的失败去向。
 - ❌ 不在本步重新委托 fact audit / fact update；仅确认主链前置已满足。
 - 验收：各分支 `code-review.md` 结论可用；objectives 前置已勾；主链 fact 确认已提交。

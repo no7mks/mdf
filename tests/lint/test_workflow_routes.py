@@ -183,8 +183,8 @@ def test_planning_intents_use_shared_planning_workspace():
 
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")
-    assert rows(shared)[6][6] == "事实变化返回调用方；其他保留现场停止"
-    assert rows(workflow("migrate"))[6][6] == "事实变化 6；未确认则结束；否则停"
+    assert rows(shared)[6][6] == "全量无效返回补验；事实变化重审；其他停"
+    assert rows(workflow("migrate"))[6][6] == "补验或事实变化 6；未确认则结束；否则停"
     assert "bootstrap 不调用 fact audit" in shared
     assert "用户明确“结束初始化并启用正常工作流”确认" in shared
 

@@ -60,9 +60,10 @@
 
 **展示**
 
-入口横幅之后，只输出本文件「目录」或「主题」正文。保留原分组、标题、列表与示例，
+先输出本文件「目录」或「主题」正文。保留原分组、标题、列表与示例，
 不得改写成另一套表，不得补充未写入的命令。主题命中时只输出该条目，
 并附一行 `完整目录：$mdf help`。
+正文结束后按根 SKILL.md 的横幅规则输出当前横幅，作为最后一行。
 
 验收：输出与本文件对应正文一致。
 
@@ -104,7 +105,7 @@
   code-review 后跑 branch；named 用 `--suites`
 - `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
-  主链在 verify branch 之后、必要时于 fact audit 前调用
+  普通主链在 verify branch 之后，fact audit 未通过时调用，完成后重审
 - `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify branch / fact）
 - `$mdf squash [--dry-run]`：定地板与切段并 soft-reset；dry-run 只给建议
 

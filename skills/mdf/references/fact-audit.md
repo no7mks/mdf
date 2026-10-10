@@ -192,6 +192,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
     指向的 `docs/system/` 主题叶。
   - 根 `README.md` 不写最短可运行路径、不写维护者入口；
     `user_guide` 非 `not_applicable` 时链到 `docs/user-guide/README.md`。
+    - `user_guide` 为 `not_applicable` 时，按仓库契约允许链到 `PROJECT.md` 或 `docs/system/`。
+      该入口例外不允许复述事实页契约。
   - `PROJECT.md` 入口指向由 CLI 报 `project.entry_links`。
   - `AGENTS.md` 托管块必须项目无关；托管块外写栈、配置或行为契约记 warning
     `agents.project_content`，不是语义 finding。
