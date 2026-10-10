@@ -13,6 +13,11 @@ disable-model-invocation: true
 横幅只按 `references/common.md` 的 `s-banner` 条款计算与输出，所有 intent（含 help/clarify/upgrade）均适用。
 仅读取横幅条款，不执行 common 的其他规则或重新进入业务 workflow。
 
+## 文档结构与写作规则
+
+新建或改写文档时，读取本 Skill 目录下的 [文档结构与写作规则](references/doc-structure.md)，
+按规则执行并人工复核。仅查阅规则不触发 MDF workflow，也不要求运行 CLI。
+
 ## 选择树
 
 ```text

@@ -14,7 +14,7 @@
   - 点名具体 ID 或事实页链接到工作上下文、ADR、Proposal、Bug 时再读取；ADR 记录理由。
   - CodeWiki 用于按需搜索符号，由 CodeWiki 管理。
 - 新建或改写文档时，尽量遵循 ASD-STE100 的写作原则；按
-  [文档结构与写作规则]($MDF_ROOT/references/doc-structure.md) 执行并人工复核。
+  MDF Skill 中的文档结构与写作规则执行并人工复核。
 - 执行的每条命令都要留下完整日志或报告。
   - 优先使用工具自己的日志与报告体系。
   - 工具没有落盘能力时，用 Core `run`：
