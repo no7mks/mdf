@@ -1,6 +1,6 @@
 """按加载角色检查文档体积。
 
-角色由仓库相对路径决定；行数为物理行。AGENTS.md 只计 MDF 托管区块。
+角色由仓库相对路径决定；行数为物理行，HTML 不限行数。AGENTS.md 只计 MDF 托管区块。
 """
 
 from pathlib import Path
@@ -99,7 +99,7 @@ def size_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
     for path in sorted(set(paths)):
         rel = relative(repo, path)
         role = size_role(rel)
-        if role is None or not path.is_file():
+        if path.suffix == ".html" or role is None or not path.is_file():
             continue
         name, limit = role
         count = line_count(path, rel)

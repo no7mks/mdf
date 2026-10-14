@@ -126,8 +126,8 @@
 | 根 `README.md` | 200 |
 | `user-guide/`、`system/` 主题叶 | 450 |
 | `context/adr/<slug>.md` | 300 |
-| Proposal、Bug、`JOTS.md` | 500 |
-| `GLOSSARY.md`、`changes/` 材料 | 不检查 |
+| Markdown Proposal、Bug、`JOTS.md` | 500 |
+| HTML、`GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
 - 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
 - 超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。

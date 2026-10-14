@@ -199,6 +199,33 @@ def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):
     assert [item["code"] for item in data["warnings"]] == ["agents.size"]
 
 
+@pytest.mark.parametrize("scope", ["full", "branch"])
+def test_html_proposals_have_no_line_limit(python_exe, tmp_path, scope):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    proposal = repo / "docs/proposals" / PRP_NAME
+    proposal.write_text(
+        proposal.read_text().replace(
+            "</main>", "<ul>\n" + "<li>验收细节。</li>\n" * 510 + "</ul>\n</main>"
+        ),
+        encoding="utf-8",
+    )
+    extra = ["--base", base] if scope == "branch" else []
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
+    assert_ok(result)
+    assert payload(result)["findings"] == []
+
+    # 免除行数限制后仍须检查可见正文结构。
+    proposal.write_text(
+        proposal.read_text().replace("</main>", "<p>" + "说明" * 61 + "。</p></main>"),
+        encoding="utf-8",
+    )
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
+    assert result.returncode == 2
+    assert _codes(result) == ["prose.sentence"]
+
+
 def test_agents_size_warning_can_be_ignored(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     agents = repo / "AGENTS.md"

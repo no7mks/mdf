@@ -87,8 +87,9 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | 根 `README.md` | 200 |
 | `docs/user-guide/`、`docs/system/` 主题叶 | 450 |
 | `docs/context/adr/` | 300 |
-| Proposal、Bug、`docs/JOTS.md` | 500 |
+| Markdown Proposal、Bug、`docs/JOTS.md` | 500 |
 
+- HTML 不检查行数上限，可见正文仍执行结构检查。
 - 整份 `AGENTS.md` 超过 200 行另发 warning `agents.size`。
   - `.mdf/modules.yaml` 可写 `pattern: AGENTS.md` 记住后不再提示。
 - `full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。
