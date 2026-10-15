@@ -37,6 +37,7 @@
 ## 工作流（唯一执行契约）
 
 adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次只完成一个账本项。
+已锁定 adhoc 的 retained worktree 先用 adhoc-status 核验；completed 只报告结果，不重新 start。
 人工 feature 先执行 `references/manual-feature.md` 的续办工作流，替代普通主线选型。
 一次仅推进一个所选阶段；人工工作未勾则交接用户。
 

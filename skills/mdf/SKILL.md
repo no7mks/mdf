@@ -118,7 +118,8 @@ disable-model-invocation: true
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
   - start 的 `--name` 仅用于人工 feature；已有交付直接按 delivery.json 续办。
 - `$mdf adhoc [<工作描述>]` 直接生成 slug 与五项 objectives，在独立 worktree 完成临时工作。
-  - 不接受额外 `--` 参数；已有 adhoc 可由 next 单步续办或 deliver 持续推进。
+  - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
+  - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - start、design、deliver、code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
@@ -134,7 +135,7 @@ disable-model-invocation: true
 intent 只由显式调用选择：
 
 - ❌ 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
-  - 例外：显式 next 按 `references/next.md` 续办，或 deliver 按 `references/deliver.md` 持续交付。
+  - 例外：显式 next、deliver 或 adhoc 按各自已定义范围内部委托，不扩大当前目标。
 - 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托从 start 起的剩余交付阶段直到 close-out。

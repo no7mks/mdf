@@ -89,7 +89,7 @@
 
 ## 工作流（唯一执行契约）
 
-adhoc 仅执行 `references/adhoc.md` 的「Close-out 专用条款」，不进入本页普通收口主线。
+adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主线。
 人工 feature 先读取 `references/manual-feature.md`；其余按下文集成与 Gitflow 规则收口。
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。

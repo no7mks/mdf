@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .adhoc import completion, merged_commit, prepare, validate_start
 from .errors import MDFError, emit
 from .gitutil import (
     add_linked_worktree,
@@ -28,7 +29,7 @@ from .roster import (
     write_roster_config,
 )
 from .textutil import slugify, stable_semver
-from .delivery_state import read_objectives as _read_objectives
+from .delivery_state import parse_has_dev, parse_needs_design, read_objectives as _read_objectives
 
 
 ORIGIN = "origin"
@@ -139,6 +140,7 @@ def _require_version(version: str | None) -> str:
 
 
 def command_start(args) -> None:
+    validate_start(args)
     repo = repo_path(args.repo)
     require_git_root(repo)
     ensure_clean(repo)
@@ -157,7 +159,6 @@ def command_start(args) -> None:
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     elif adhoc:
-        from .adhoc import prepare
         suffix, objectives = prepare(args)
         _unreleased_collision(repo, base, suffix)
     elif args.kind == "feature":
@@ -203,7 +204,6 @@ def command_start(args) -> None:
         review_strategy=args.review_strategy,
         models=models_from_args(args),
     )
-    from .delivery_state import parse_has_dev, parse_needs_design
     if manual and (roster["qa"], roster["dev"], roster["reviewers"]) != (0, 0, 1):
         raise MDFError("人工 feature 的 roster 固定为 0,0,1", code="invalid_manual")
     needs_design = False if manual or adhoc else parse_needs_design(objectives)
@@ -249,8 +249,8 @@ def command_start(args) -> None:
             target.mkdir(parents=True)
             identity = {
                 "branch": branch, "roster": roster, "slug": folder,
-                "start_commit": start_commit,
-                "needs_design": needs_design,
+                "start_commit": start_commit, "needs_design": needs_design,
+                **({"work": args.work.strip()} if adhoc else {}),
             }
             if manual:
                 identity["manual"] = True
@@ -349,7 +349,6 @@ def command_finish_gitflow(args) -> None:
         from .manual import feature_completion
         complete_feature, finish_roster = feature_completion(repo, source)
     elif kind == "adhoc":
-        from .adhoc import completion
         finish_roster = completion(repo, source)
     else:
         finish_roster = resolve_roster(repo, source, kind)
@@ -373,7 +372,8 @@ def command_finish_gitflow(args) -> None:
         return merge_at
 
     if kind in {"feature", "bugfix", "adhoc"}:
-        merge_into("develop", source, complete_feature)
+        if kind != "adhoc" or not merged_commit(repo, _git(repo, "rev-parse", source).stdout.strip()):
+            merge_into("develop", source, complete_feature)
     else:
         from .publish import publish as publish_release
         publish_release(repo, source, details["version"])
@@ -381,7 +381,7 @@ def command_finish_gitflow(args) -> None:
     source_wt = remaining.get(source)
     retained = source_wt or (repo if repo != primary else None)
     if retained is not None:
-        _git(retained, "checkout", "--detach")
+        _git(retained, "checkout", "--detach", *([source] if kind == "adhoc" else []))
     if _exists(primary, f"refs/heads/{source}"):
         _git(primary, "branch", "-D", source)
     tag = f"v{details['version']}" if publish else None

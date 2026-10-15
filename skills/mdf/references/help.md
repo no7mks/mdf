@@ -282,7 +282,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - collab-mode 在 start 完成本仓准备后交接，由另一 workspace 的接手 Agent 调度两端。
     - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
 - `$mdf adhoc [<工作描述>]`
-  - 用法：`$mdf adhoc 更新配置说明`；省略描述时使用已明确的对话范围。
+  - 用法：`$mdf adhoc 更新配置说明`；省略描述时从已有 adhoc 的 work 或已明确对话恢复。
   - 用途：在独立 worktree 连续完成临时小工作；slug 与五项 objectives 直接生成。
   - 顺序：工作 → code-review → verify smart → fact audit/update → close-out。
   - 说明：固定 roster `0,0,1`，不绑定 PRP；本地 no-ff 合入 develop，保留 detached worktree。

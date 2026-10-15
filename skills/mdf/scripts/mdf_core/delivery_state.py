@@ -79,8 +79,8 @@ def write_json(path, value):
     temp.replace(path)
 
 
-def locate(repo, slug=None):
-    owner = owner_branch(current_branch(repo))
+def locate(repo, slug=None, *, owner=None):
+    owner = owner if owner is not None else owner_branch(current_branch(repo))
     if slug is None:
         slug = unreleased_slug(branch_details(owner))
     root = safe(repo, repo / "changes" / "unreleased" / slug)
@@ -99,6 +99,9 @@ def locate(repo, slug=None):
         raise MDFError("起点必须为完整 commit hash", code="invalid_delivery")
     if git(repo, "merge-base", "--is-ancestor", base, "HEAD", check=False).returncode:
         raise MDFError("当前分支不包含交付起点", code="invalid_delivery")
+    if owner.startswith("adhoc/"):
+        from .adhoc import require_identity
+        require_identity(data)
     return root, data
 
 

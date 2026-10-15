@@ -14,6 +14,14 @@ def test_adhoc_initial_and_completed_objectives():
         require_objectives(text.replace("[ ]", "[x]", 1), starting=True)
 
 
+def test_adhoc_progress_is_a_completed_prefix():
+    text = objectives()
+    assert require_objectives(text) == "工作"
+    assert require_objectives(text.replace("[ ]", "[x]", 1)) == "code-review"
+    with pytest.raises(MDFError, match="顺序完成"):
+        require_objectives(text.replace("- [ ] verify smart", "- [x] verify smart"))
+
+
 @pytest.mark.parametrize("old,new", [
     ("- [ ] 工作\n", ""),
     ("verify smart", "verify branch"),

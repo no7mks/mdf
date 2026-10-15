@@ -137,6 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
     start.add_argument("--name")
+    start.add_argument("--work")
     start.add_argument("--manual", action="store_true")
     start.add_argument("--proposal")
     start.add_argument("--bug")
@@ -149,6 +150,12 @@ def build_parser() -> argparse.ArgumentParser:
     add_named_roster_argument(start)
     add_strategy_arguments(start)
     start.set_defaults(func=command_start)
+
+    from .adhoc import command_status as command_adhoc_status
+    adhoc_status = subparsers.add_parser("adhoc-status")
+    adhoc_status.add_argument("--repo", required=True)
+    adhoc_status.add_argument("--slug")
+    adhoc_status.set_defaults(func=command_adhoc_status)
 
     from .list_objects import command_list
     from .tree_view import command_tree

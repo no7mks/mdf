@@ -55,15 +55,15 @@
 │ 6 Confirm closeout               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 未决 ────────────────────────→ 6 Confirm closeout
-                 ├──── 拒绝 ────────────────────────→ [保留现场并停止]
-                 ├──── 确认 ────────────────────────→ [委托 close-out 步骤 10，完成后回 2]
-                 └──── finish 10 停止或部分失败 ────→ [按其恢复规则交接并报告]
+                 ├──── 未决 ─────────────────────→ 6 Confirm closeout
+                 ├──── 拒绝 ─────────────────────→ [保留现场并停止]
+                 ├──── 确认 ─────────────────────→ [续办 finish，完成后回 2]
+                 └──── finish 停止或部分失败 ────→ [按其恢复规则交接并报告]
 ```
 
 ## 工作流（唯一执行契约）
 
-已有 adhoc 在步骤 2–3 按 `references/adhoc.md` 的续办条款选型和执行，不走普通选择表。
+已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
 尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
 人工工作未勾时交接用户，所有模式均不得代勾。
@@ -86,7 +86,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 | 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成→2；AP 非 yolo 关口→6 | 失败/非关口待确认→原流程交接 |
 | 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路提交与勾选意向 | 2 | 保留各路现场并报告 |
 | 5 | Report | 约束 | 核对 finish 实际结果，完成 Goal 并报告 | 合并、清理、适用 tag 与推送 | 结束 | 报告实际状态 |
-| 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 close-out 10 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
+| 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 finish 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
 
 ## 术语与数据结构
 
@@ -113,7 +113,8 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
   - 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
 - `--auto-pilot` 与 `--yolo` 按下方策略把这些决定改为主 Agent 自裁定。
 
-步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
+步骤 1 已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
+其余情况解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
 1. 先由当前 feature/qa/dev、bugfix、hotfix、release 或 adhoc 分支推导在途交付。
    - 任一 kind 的 qa/dev 角色分支归属其 owner；使用 `delivery status` 返回的 `worktrees.owner.path`。
@@ -220,7 +221,7 @@ Gitflow 前的预定确认：close-out 步骤 9 通过、即将调用 `finish-gi
   以及 release/hotfix 的 tag 与推送。
 - 该确认只在步骤 6 进行；未决留在步骤 6。
 - 取得明确确认后才委托 close-out 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
-  - adhoc 改从其「Close-out 专用条款」的 finish 调用续办，完成后回步骤 2。
+  - adhoc 改从 `references/adhoc-close-out.md` 的步骤 5 续办，重核确认后完成并回 2。
 - 此关口不是死硬阻塞，是 auto-pilot 的 Gitflow 前用户确认。
 - `--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
 - 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。

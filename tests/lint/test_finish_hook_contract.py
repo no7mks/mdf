@@ -15,7 +15,10 @@ def test_finish_hook_routes_before_fact_and_never_inside_gitflow():
     assert "退勾 code-review、验证及 fact" in hook
     assert "不新增 objectives 项" in hook
     assert "独立文档维护、独立 fact audit、migrate 不触发" in hook
-    for name in ("deliver", "next", "manual-feature", "adhoc", "fact-update", "fact-audit"):
+    for name in ("deliver", "next", "manual-feature", "fact-update", "fact-audit"):
         assert "hooks/pre-gitflow-finish.md" in (root / f"{name}.md").read_text(), name
+    adhoc = (root / "adhoc.md").read_text()
+    assert "pre-gitflow-finish --repo <owner>" in adhoc
+    assert "--after <before_head>" in adhoc
     closeout = (root / "close-out.md").read_text()
     assert "不在本 intent 或 `finish-gitflow` 内补跑" in closeout
