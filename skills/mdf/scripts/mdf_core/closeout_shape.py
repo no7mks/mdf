@@ -128,7 +128,7 @@ def validate_closeout_shape(
     if mode == "release":
         if not slugs:
             raise MDFError(
-                "release 模式至少需要一个 unreleased feature/bugfix Change",
+                "release 模式至少需要一个 unreleased feature/bugfix/adhoc Change",
                 code="invalid_closeout_spec",
             )
     else:

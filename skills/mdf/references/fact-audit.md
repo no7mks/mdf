@@ -300,6 +300,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
     `changes/unreleased/<slug>/fact-audit.md`（**report**，非 gate）。
   - 普通主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
   - 人工 feature 经 fact update 委托时，只返回确认记录，由 fact update 完成后勾其自身项。
+  - adhoc 只返回确认记录，由 adhoc 保存 report 并勾 fact audit/update。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。

@@ -35,6 +35,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "codewiki generate",
         "codewiki update",
         "start",
+        "adhoc [<工作描述>]",
         "jot",
         "jot promote",
         "bug create",

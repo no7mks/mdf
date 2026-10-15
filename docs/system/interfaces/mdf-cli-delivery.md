@@ -12,6 +12,9 @@
   - 缺 PRP、依赖阻塞或已开工时拒绝。
 - release start 要求 `--version <semver> --objectives-file <文件>`。
   - 确认的发布目标写入 `changes/unreleased/<semver>/`，不 push。
+- adhoc start 使用 `--kind adhoc --name <名称>`，CLI 规范化 slug 并直接生成五项 objectives。
+  - 不接受 PRP、Bug、版本、`--manual` 或 `--objectives-file`；固定 roster `0,0,1`、`needs_design: false`。
+  - 创建 `adhoc/<slug>` 与同级独立 worktree；finish no-ff 合入 develop，不改 PRP、不 push。
 
 ### `delivery`
 
@@ -118,6 +121,8 @@
 - 须至少一个 `--module` 或可由 `--paths` 推断的 module。
 - 跑涉及 module 的 lint、build、quick；可选 `--test` 追加点名命令。
 - 不写 `verification-report.json`；stdout 返回结果 JSON。
+- adhoc 例外：smart 成败均保存 `verification-report.json`，scope 仍为 smart。
+  - 只跑涉及 module 的 lint/build/quick 与选题，不要求 smoke 或 branch scope。
 
 **named**
 

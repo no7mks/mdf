@@ -19,7 +19,8 @@ hooks:
 
 - 普通交付：code-review → verify branch → 本 hook → fact audit（必要时 fact update）→ close-out。
 - 人工 feature：code-review → verify smoke → 本 hook → fact update → close-out。
-- 四种 kind 共用；在 owner 上执行，不在 qa/dev 或最终 `finish-gitflow` 内执行。
+- adhoc：code-review → verify smart → 本 hook → fact audit/update → close-out。
+- 五种 kind 共用；在 owner 上执行，不在 qa/dev 或最终 `finish-gitflow` 内执行。
 - deliver、next 或用户手动推进交付时，由当前 Agent 在进入 fact 阶段前承办。
   - 独立文档维护、独立 fact audit、migrate 不触发；fact update 内部 Audit 不重复触发。
   - 主链调用方须先执行本节，再进入 fact intent；fact intent 的只读、写入边界保持适用。
@@ -30,7 +31,7 @@ hooks:
 
 ## 执行与实际改动
 
-1. 确认主链审查、branch 验证已勾，复核并提交相关改动；要求 owner clean、无未结束的 merge。
+1. 确认审查及验证已勾；adhoc 为 verify smart，其余为 branch；提交后要求 owner clean、无未结束 merge。
 2. 未配置时直接进入 fact；已配置且未执行时运行：
 
    ```bash
@@ -54,7 +55,7 @@ hooks:
    | --- | --- |
    | 无改动 | 直接进入 fact |
    | 仅文档 | 复核并提交实际文档改动，直接进入 fact |
-   | 其他改动 | 退勾 code-review、verify branch（人工为 verify smoke）及 fact；补审补测后进入 fact |
+   | 其他改动 | 退勾 code-review、验证及 fact；adhoc 补 smart，人工补 smoke，其余补 branch |
 
    - 文档路径为根目录、`docs/` 或 `changes/` 内的普通 `.md` 文件；不能有执行权限或符号链接。
    - 覆盖已提交、staged、未暂存、新增、删除和 rename 两端；其他路径保守要求补审补测。
@@ -65,7 +66,7 @@ hooks:
    - rule 按通用日志契约保留执行证据；无需另写 Markdown 执行记录。
    - 有 hook 改动或 objectives 退勾时，复核后提交实际改动；无改动不制造提交。
    - 非文档改动按 code-review 的增量新一轮补审。左端点为原 `before_head`，人数用冻结 roster。
-   - 主链补审通过后重跑 verify branch（人工为 verify smoke），通过后才进入 fact。
+   - 补审后 adhoc 重跑 verify smart，人工重跑 verify smoke，其余重跑 verify branch，通过后进入 fact。
    - 独立推进交付时依同一顺序承办；next 可先交接补审，由后续调用完成补测与 fact。
 
 ## 失败与日志

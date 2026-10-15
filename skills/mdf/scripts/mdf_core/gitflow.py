@@ -28,6 +28,7 @@ from .roster import (
     write_roster_config,
 )
 from .textutil import slugify, stable_semver
+from .delivery_state import read_objectives as _read_objectives
 
 
 ORIGIN = "origin"
@@ -112,7 +113,7 @@ def require_master_default(repo: Path) -> None:
 
 
 def _target(kind: str) -> str:
-    return "develop" if kind in {"feature", "bugfix", "release"} else "master"
+    return "develop" if kind in {"feature", "bugfix", "release", "adhoc"} else "master"
 
 
 def _discard(repo: Path, created: list[tuple[str, Path]]) -> None:
@@ -120,16 +121,6 @@ def _discard(repo: Path, created: list[tuple[str, Path]]) -> None:
     for branch, path in reversed(created):
         _git(primary, "worktree", "remove", "--force", str(path), check=False)
         _git(primary, "branch", "-D", branch, check=False)
-
-
-def _read_objectives(path: str | None) -> str:
-    if not path:
-        raise MDFError("需要 --objectives-file", code="missing_objectives")
-    text = Path(path).read_text(encoding="utf-8")
-    from .constants import MARKER_RE
-    if not text.strip() or MARKER_RE.search(text):
-        raise MDFError("objectives 不能为空", code="missing_objectives")
-    return text
 
 
 def _unreleased_collision(repo: Path, base: str, folder: str) -> None:
@@ -156,7 +147,7 @@ def command_start(args) -> None:
         raise MDFError(f"Branch {base} must exist", code="missing_branch")
     _require_base_covers_origin(repo, base)
     objectives = None
-    manual = getattr(args, "manual", False)
+    manual, adhoc = getattr(args, "manual", False), args.kind == "adhoc"
     if manual:
         if args.kind != "feature" or args.proposal or args.bug or args.version:
             raise MDFError("--manual 仅用于无 PRP 的 feature", code="invalid_manual")
@@ -164,6 +155,10 @@ def command_start(args) -> None:
             raise MDFError("人工 feature 需要确认的 kebab-case --name", code="invalid_slug")
         suffix = args.name
         objectives = _read_objectives(args.objectives_file)
+        _unreleased_collision(repo, base, suffix)
+    elif adhoc:
+        from .adhoc import prepare
+        suffix, objectives = prepare(args)
         _unreleased_collision(repo, base, suffix)
     elif args.kind == "feature":
         if args.name:
@@ -211,7 +206,7 @@ def command_start(args) -> None:
     from .delivery_state import parse_has_dev, parse_needs_design
     if manual and (roster["qa"], roster["dev"], roster["reviewers"]) != (0, 0, 1):
         raise MDFError("人工 feature 的 roster 固定为 0,0,1", code="invalid_manual")
-    needs_design = False if manual else parse_needs_design(objectives)
+    needs_design = False if manual or adhoc else parse_needs_design(objectives)
     if manual:
         from .manual import require_manual_objectives
         require_manual_objectives(objectives, starting=True)
@@ -272,7 +267,9 @@ def command_start(args) -> None:
                 dest.write_text(objectives, encoding="utf-8")
             write_json(target / "delivery.json", identity)
             _git(work, "add", "--", str(target.relative_to(work)))
-            if args.kind == "feature":
+            if adhoc:
+                message = f"docs(delivery): 建立 {suffix} 临时任务"
+            elif args.kind == "feature":
                 message = f"docs(delivery): 确认 {suffix if manual else args.proposal} 交付目标"
             elif args.kind == "release":
                 message = f"docs(delivery): 确认 {args.version} 发布目标"
@@ -342,7 +339,7 @@ def command_finish_gitflow(args) -> None:
                        code="unsupported_branch")
     kind = details["kind"]
     publish = kind in {"release", "hotfix"}
-    targets = ["develop"] if kind in {"feature", "bugfix"} else ["master", "develop"]
+    targets = ["develop"] if kind in {"feature", "bugfix", "adhoc"} else ["master", "develop"]
     if args.source and not publish:
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
     if not publish and not _exists(repo, "refs/heads/develop"):
@@ -351,6 +348,9 @@ def command_finish_gitflow(args) -> None:
     if kind == "feature":
         from .manual import feature_completion
         complete_feature, finish_roster = feature_completion(repo, source)
+    elif kind == "adhoc":
+        from .adhoc import completion
+        finish_roster = completion(repo, source)
     else:
         finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)
@@ -372,7 +372,7 @@ def command_finish_gitflow(args) -> None:
         _merge(merge_at, incoming, target, hook)
         return merge_at
 
-    if kind in {"feature", "bugfix"}:
+    if kind in {"feature", "bugfix", "adhoc"}:
         merge_into("develop", source, complete_feature)
     else:
         from .publish import publish as publish_release

@@ -151,6 +151,15 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 - design 的 Baseline 与 converge 各由对应 intent 启动恰好 1 个 owner subagent。
   - 不计入 roster，不可配人数。
 
+## Adhoc
+
+一次临时的小工作，可涉及代码、测试、文档或配置；由 `$mdf adhoc` 启动。
+
+- Agent 自行选相关 slug，从 develop 建立 `adhoc/<slug>` 与独立 worktree，不绑定 PRP。
+- objectives 直接生成为五项：工作、code-review、verify smart、fact audit/update、close-out。
+- roster 固定 `0,0,1`，`needs_design: false`；工作可由 Agent 完成并勾选。
+- smart 成败均写 verification-report.json；本地 no-ff 合入 develop 后保留 detached worktree。
+
 ## Auto-pilot
 
 `$mdf deliver --auto-pilot` 的持续交付模式：

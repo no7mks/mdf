@@ -63,6 +63,7 @@
 
 ## 工作流（唯一执行契约）
 
+已有 adhoc 在步骤 2–3 按 `references/adhoc.md` 的续办条款选型和执行，不走普通选择表。
 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
 尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
 人工工作未勾时交接用户，所有模式均不得代勾。
@@ -100,7 +101,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 完成范围：
 
-- feature/bugfix 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
+- feature/bugfix/adhoc 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 finish 完成条件冲突时说明并询问，不能声称完成。
@@ -114,7 +115,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 步骤 1 解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
-1. 先由当前 feature/qa/dev、bugfix、hotfix 或 release 分支推导在途交付；结果即下文「当前已锁定」的交付。
+1. 先由当前 feature/qa/dev、bugfix、hotfix、release 或 adhoc 分支推导在途交付。
    - 任一 kind 的 qa/dev 角色分支归属其 owner；使用 `delivery status` 返回的 `worktrees.owner.path`。
    - 其他分支使用 `git worktree list --porcelain` 中完整分支名对应的已有路径。
 2. 再解析本次调用的 target（见下）；有唯一对象时按下文 target 规则锁定或停止。
@@ -219,6 +220,7 @@ Gitflow 前的预定确认：close-out 步骤 9 通过、即将调用 `finish-gi
   以及 release/hotfix 的 tag 与推送。
 - 该确认只在步骤 6 进行；未决留在步骤 6。
 - 取得明确确认后才委托 close-out 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
+  - adhoc 改从其「Close-out 专用条款」的 finish 调用续办，完成后回步骤 2。
 - 此关口不是死硬阻塞，是 auto-pilot 的 Gitflow 前用户确认。
 - `--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
 - 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。

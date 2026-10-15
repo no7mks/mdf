@@ -140,7 +140,7 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
   --kind feature --proposal prp-001 --objectives-file /tmp/objectives.md
 ```
 
-`--kind` 为 `feature`、`bugfix`、`release` 或 `hotfix`：
+`--kind` 为 `feature`、`bugfix`、`release`、`hotfix` 或 `adhoc`：
 
 | kind | 必需参数 | 禁止 | 基线 |
 | --- | --- | --- | --- |
@@ -148,6 +148,7 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 | `bugfix` | `--bug <Bug ID>`；分支名为 `bugfix/<Bug ID>` | `--name` | 本地 `develop` |
 | `release` | 稳定 SemVer 的 `--version` 与 `--objectives-file` | — | 本地 `develop` |
 | `hotfix` | 稳定 SemVer 的 `--version` | `--objectives-file` | 本地 `master` |
+| `adhoc` | `--name <名称>`；自动生成五项 objectives | PRP、Bug、版本、manual、objectives 文件 | 本地 `develop` |
 
 命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
 有 origin 时用 `ls-remote` 核对基线。远程提交必须已在本地，本地可以更新。
@@ -169,6 +170,7 @@ roster 参数：
   - feature 默认 `min-tdd`（`1,1,2`）。
   - release 默认 `solo` 但 reviewers 为 3、review 为 `partition`。
   - bugfix 与 hotfix 默认 `solo`（`0,0,1`）。
+  - adhoc 固定 `solo`（`0,0,1`），不接受其他人数或 named roster。
 - 省略时按 kind 展开；再叠 `--qa` / `--dev` / `--reviewers` 与策略细项。
   - 一侧为 0 另一侧 ≥1 时把 0 抬成 1。
 - `--qa-strategy` / `--dev-strategy` 默认 `best-of-n`，可选 `partition`。
@@ -275,29 +277,30 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 要求当前分支为支持的 Gitflow 交付分支、worktree clean。
 
 - 在 fetch、合并或发布记录写入前，一次性只读检查源与全部目标 worktree。
-  feature/bugfix 检查 develop；release/hotfix 检查 master、develop；未占用目标按实际合并目录检查。
+  feature/bugfix/adhoc 检查 develop；release/hotfix 检查 master、develop。
 - 任一工作区有未提交改动或 `MERGE_HEAD` 等未结束操作即以 `dirty_worktree` 停止。
   即使冲突已解决、已 add 或 diff 为空也保留现场；不为 clean 自动 abort、reset、stash 或 Commit。
 - 无关分支的脏状态不阻断 finish，也不被整理。
 
 外层 close-out / finish intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
 
-1. 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），
+1. 先在交付分支集成 develop（feature/bugfix/adhoc）或 master（release/hotfix），
    由 Agent 自动尝试解决集成冲突。
 2. 集成产生新提交后：
    - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
    - 否则执行 1 人增量新一轮 code-review 与所需 suite。
 3. 再核对本轮 1 份审查、主 Agent 复核与验证记录。
-4. 写入、检查并提交完整的 `delivery-summary.html`；内容与位置按 HTML 工作材料契约。
+4. 写入、检查并提交 `delivery-summary.html`；adhoc 的总结直接写入 Change。
 
 非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
 
-feature/bugfix：
+feature/bugfix/adhoc：
 
 - 不 fetch、不 push。
 - 以 `--no-ff --no-commit` 合并到本地 `develop`，再以
   `chore(gitflow): 合并 <source> 到 <target>` 提交。
   - feature 的 implemented 转换包含在该 merge commit。
+  - adhoc 要求五项清单完成，Change 为 adhoc 且 `proposals: []`；不修改 PRP。
 - 角色分支或 worktree 仍在则失败。
 
 release/hotfix：

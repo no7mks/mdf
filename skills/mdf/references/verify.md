@@ -48,6 +48,7 @@
 
 ## 工作流（唯一执行契约）
 
+adhoc 的主链执行 smart；Core 成败均保存 smart report，通过后自勾 verify smart。
 人工 feature 的 objectives 项名为 verify smoke；执行 branch scope，沿用 feature
 的 lint/build/quick/smoke 和 branch 报告要求，通过后自勾 verify smoke。
 在该交付上 `$mdf verify smoke` 也按此 branch 主链解释，不走 named shortcut。
@@ -138,7 +139,8 @@
   - ❌ 未绿轮不得勾选 verify branch，不得把失败摘要当成通过证据。
 - 主链完成条件：本 intent 内 branch 已绿并勾选提交。
   - ❌ 不以相对下游 intent 的过期审判或 commit 对齐作为本步通行证。
-- smart/named：不写 branch 证据，不勾选 objectives；通过读 stdout，失败读 stderr JSON。
-  本步无额外落盘义务；失败报告失败，不宣称通过。
+- adhoc smart：成败均保存 `verification-report.json`；主链前置为工作与 code-review 已勾。
+  通过后自勾 verify smart 并提交；其他 smart/named 不写 branch 证据、不勾选。
+  通过读 stdout，失败读 stderr JSON；失败不宣称通过。
 - quick 复现结论只在 branch 已绿写入 `verification-report.md` 时一并记录。
   - 不写 `code-review.md`（审查轮次的 quick 复现仍由 code-review 自记）。

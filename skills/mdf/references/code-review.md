@@ -63,7 +63,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
-- 步骤 1 支持 feature、bugfix、hotfix、release；cwd 为 qa/dev 时切回 owner。
+- 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
 - 先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
 - 审查人数取冻结 roster.reviewers：
   - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
@@ -71,7 +71,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
   - finish 集成产生的不可跳过增量新一轮为 1，不改冻结 roster。
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
-  - feature 用 delivery.json 的 slug，bugfix 用 Bug ID 的 kebab-case，
+  - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
     release/hotfix 用该分支的稳定 SemVer，不用 slugify。
   - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
     commit 终稿。branch 验证证据是主链 `verification-report.json`，不写
@@ -113,7 +113,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 
 | 分支 | 固定基线 |
 | --- | --- |
-| feature | delivery.json 的 start_commit |
+| feature、adhoc | delivery.json 的 start_commit |
 | bugfix、hotfix | start 保存的 `branch.<完整分支名>.mdf-start-commit` |
 | release | 上一正式发布版本的 master commit/tag，解析为完整 commit hash |
 
@@ -141,6 +141,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 各分支前置条件：
 
 - 人工 feature：仅要求用户显式勾选人工工作，不要求 converge；使用 1 个 reviewer。
+- adhoc：工作项已勾即可，不要求 converge；使用 1 个 reviewer。
 - 其他交付进度只认 `objectives.md`：converge 项须已 `[x]`（含 start 对 `has_dev: no` 的预勾）；
   未勾停止，提示先 `$mdf converge`。
   - `needs_design: yes` 时可读 design.md 作审查上下文；不以 design/converge gate 文件为通行证。
@@ -215,7 +216,8 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 - 修复权限：
   - 允许自主修复实现，或依据已确认目标/设计纠正、补充、删除错误或重复测试，记录依据。
   - ❌ 不得削弱验收或验证门槛；目标/契约变更须用户确认。
-- 核对 design policy `suites` 或 `suites.json` 覆盖本轮改动涉及的全部功能块，缺漏按问题提出。
+- adhoc 按 smart 选题核对覆盖；其余核对 design policy `suites` 或 `suites.json` 覆盖本轮功能块。
+  缺漏按问题提出。
 - 审查测试时核对 `delivery-contract.md`「失败语义」：
   - 无运行时 skip、提前返回或 xfail。
   - 入口配置能让 warning、skip 与空选择非零退出。

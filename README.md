@@ -57,6 +57,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf deliver [<target>] [--auto-pilot] [--yolo]` | 持续推进到 close-out；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
+| `$mdf adhoc [<工作描述>]` | 自动生成五项 objectives，在临时 worktree 完成小工作并收口 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
@@ -107,7 +108,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 ### code-review 与 roster
 
-code-review 支持 feature、bugfix、hotfix 和 release。
+code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
 - 后续增量只审相对操作左端点以来的改动，并复核上轮问题；裁定收口时洗成无
@@ -252,3 +253,13 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 - `$mdf start --manual`：无需 PRP，先经 clarify 询问并确认 slug，按 feature 建立 worktree。
 - roster 固定 `0,0,1`；允许 Agent 介入，人工工作必须由用户显式勾选。
 - 主线：`start → 人工工作 → code-review → verify smoke → fact update → close-out`。
+
+### Adhoc 入口
+
+`$mdf adhoc <工作描述>` 从 develop 创建 `adhoc/<slug>` 与独立临时 worktree。
+
+- slug 由 Agent 自定；直接生成五项 objectives，不另确认目标文本或 roster，不绑定 PRP。
+- 主线：`工作 → code-review → verify smart → fact audit/update → close-out`。
+- 工作可由 Agent 完成并勾选；code-review 使用 1 个 reviewer，smart 成败均留存 report。
+- close-out no-ff 合入本地 develop，删除源分支，保留 detached worktree；不 push。
+- `$mdf next` 单步续办；已有 adhoc 上的 `$mdf deliver` 持续推进剩余阶段。

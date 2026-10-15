@@ -116,7 +116,7 @@ def require_planning(repo: Path) -> None:
 
 
 def branch_details(name: str) -> dict[str, Any]:
-    match = re.fullmatch(r"(feature|bugfix)/(.+)", name)
+    match = re.fullmatch(r"(feature|bugfix|adhoc)/(.+)", name)
     if match:
         return {
             "name": name,
@@ -159,7 +159,7 @@ def unreleased_slug(details: dict[str, Any]) -> str:
                 code="bad_release_branch",
             )
         return version
-    if kind in {"feature", "bugfix"}:
+    if kind in {"feature", "bugfix", "adhoc"}:
         slug = details.get("slug")
         if not isinstance(slug, str) or not slug:
             raise MDFError("交付 slug 缺失", code="unsupported_branch")

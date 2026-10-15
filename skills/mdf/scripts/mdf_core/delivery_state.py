@@ -13,6 +13,17 @@ from .verification import repo_verification
 STAGES = ("design", "write-tests", "implement", "converge")
 
 
+def read_objectives(path: str | None) -> str:
+    from .constants import MARKER_RE
+
+    if not path:
+        raise MDFError("需要 --objectives-file", code="missing_objectives")
+    text = Path(path).read_text(encoding="utf-8")
+    if not text.strip() or MARKER_RE.search(text):
+        raise MDFError("objectives 不能为空", code="missing_objectives")
+    return text
+
+
 def _parse_yes_no_field(text: str, name: str, missing_code: str) -> bool:
     """从 objectives 解析 `name: yes|no`（可带列表前缀）。"""
     import re

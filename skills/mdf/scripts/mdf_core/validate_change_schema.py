@@ -33,7 +33,7 @@ def validate_change_file(
         add_finding(
             findings,
             "change.kind",
-            "CHANGE requires change_kind feature, bugfix, release, or hotfix",
+            "CHANGE requires change_kind feature, bugfix, release, hotfix, or adhoc",
             rel,
         )
     source_branch = metadata.get("source_branch")
@@ -59,7 +59,7 @@ def validate_change_file(
             add_finding(findings, "change.source_branch", str(exc), rel)
         else:
             expected_kinds = (
-                {"release", "hotfix"} if root else {"feature", "bugfix"}
+                {"release", "hotfix"} if root else {"feature", "bugfix", "adhoc"}
             )
             if (
                 not details["supported"]
@@ -136,6 +136,8 @@ def validate_change_file(
                 f"{key} must be a list",
                 rel,
             )
+    if change_kind == "adhoc" and metadata.get("proposals") != []:
+        add_finding(findings, "change.proposals", "adhoc Change 的 proposals 必须为空列表", rel)
     if "bugs" in metadata:
         add_finding(
             findings,

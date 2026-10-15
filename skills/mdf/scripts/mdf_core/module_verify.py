@@ -271,7 +271,7 @@ def _verify_smart(repo, args) -> None:
     # smart 无需 slug；release/hotfix 的稳定 SemVer 命名约束仍生效。
     if kind in {"release", "hotfix"}:
         kind = branch_details(branch)["kind"]
-    elif kind not in {"feature", "bugfix"} or "/" not in branch:
+    elif kind not in {"feature", "bugfix", "adhoc"} or "/" not in branch:
         kind = "unsupported"
     modules = list(args.module or [])
     if args.paths:
@@ -354,6 +354,8 @@ def _verify_smart(repo, args) -> None:
             "paths": list(args.paths or []),
         },
     }
+    if kind == "adhoc":
+        write_json(evidence_file(repo, unreleased_slug(branch_details(branch))), result)
     if not all_passed:
         raise MDFError(
             "smart 验证失败",

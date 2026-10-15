@@ -12,6 +12,7 @@ def core():
 @pytest.mark.parametrize(("name", "kind", "slug", "version"), [
     ("feature/Service_Health", "feature", "service-health", None),
     ("bugfix/bug-CD34", "bugfix", "bug-cd34", None),
+    ("adhoc/Update_README", "adhoc", "update-readme", None),
     ("release/1.3.0", "release", "1-3-0", "1.3.0"),
     ("hotfix/1.2.1", "hotfix", "1-2-1", "1.2.1"),
 ])

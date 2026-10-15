@@ -133,7 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--repo", required=True)
     start.add_argument(
         "--kind",
-        choices=("feature", "bugfix", "release", "hotfix"),
+        choices=("feature", "bugfix", "release", "hotfix", "adhoc"),
         required=True,
     )
     start.add_argument("--name")

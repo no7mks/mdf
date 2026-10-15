@@ -91,10 +91,11 @@
 - `$mdf clarify <议题>`：压力测试计划、决策或想法
 
 #### 交付
-- `$mdf next [--depth N]`：续办在途（四种 kind 共用主线）；无在途时委托 tree
+- `$mdf next [--depth N]`：续办在途；adhoc 使用五项账本，无在途时委托 tree
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 close-out；可并行阶段强制 subagent 分别执行
 - `$mdf start`（可带 `--manual`）：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
+- `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按五项 objectives 完成工作并本地收口
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
@@ -143,6 +144,7 @@ $mdf deliver bug-CD34 --auto-pilot
 $mdf deliver --auto-pilot
 $mdf deliver --yolo
 $mdf start
+$mdf adhoc 更新配置说明
 $mdf jot
 $mdf jot promote
 $mdf intake
@@ -184,7 +186,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 起步：`bootstrap`、`init`、`init migrate`、`migrate`
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
-- 交付：`next`、`deliver`、`start`、`design`、`write-tests`、`implement`、`converge`；
+- 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`；
   `fix`、`bug close`、`verify`、`code-review`、`fact update`、`fact audit`、`close-out`/`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
@@ -244,7 +246,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf next` 或 `$mdf next --depth N`
   - 用途：续办在途流程；无在途时委托 tree。
   - 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
-    四种 kind 交付分支续办当前交付主线。`$mdf next?` 见 tree。
+    普通四种 kind 续办交付主线；adhoc 使用五项账本。`$mdf next?` 见 tree。
 - `$mdf deliver [<target>] [--auto-pilot] [--yolo]`
   - 用法：`$mdf deliver`、`$mdf deliver <target>`。
     可带 `--manual`、`--auto-pilot` 或 `--yolo`。
@@ -252,7 +254,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：
     - target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。无 target 时锁定并续办
       当前在途交付；target 冲突或命中已 in_progress 的 Proposal 时停止。
-    - 支持 feature/bugfix/hotfix/release；roster ≥1 且两路可并行时强制分别使用
+    - 支持 feature/bugfix/hotfix/release/adhoc；roster ≥1 且两路可并行时强制分别使用
       qa/dev worktree 的 subagent。
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
     - 默认遇到需用户决定或外部阻塞时暂停。
@@ -279,6 +281,11 @@ $mdf clarify 要不要把缓存放到 Redis
       不实施新 PRP；无开发则预勾 owner 开发/converge）。
     - collab-mode 在 start 完成本仓准备后交接，由另一 workspace 的接手 Agent 调度两端。
     - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
+- `$mdf adhoc [<工作描述>]`
+  - 用法：`$mdf adhoc 更新配置说明`；省略描述时使用已明确的对话范围。
+  - 用途：在独立 worktree 连续完成临时小工作；slug 与五项 objectives 直接生成。
+  - 顺序：工作 → code-review → verify smart → fact audit/update → close-out。
+  - 说明：固定 roster `0,0,1`，不绑定 PRP；本地 no-ff 合入 develop，保留 detached worktree。
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
   - 用途：确认设计、测试策略和共享代码底座。

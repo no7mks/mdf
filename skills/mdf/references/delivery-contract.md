@@ -17,6 +17,7 @@
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
 `$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。规则持续适用。
 人工 feature 先读取并执行 [专用契约](manual-feature.md)，优先于下文普通主线。
+adhoc 先读取 [专用契约](adhoc.md)，使用其五项账本、smart report 与本地收口规则。
 ### 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。
@@ -230,7 +231,7 @@ Git 约束：
 | Report | 典型路径 | 谁写 |
 | --- | --- | --- |
 | code-review | `…/code-review.md` 无 commit 终稿 | code-review |
-| verify branch | `…/verification-report.json`（及可选 `verification-report.md`） | verify branch |
+| verify branch / adhoc smart | `…/verification-report.json`（及可选 `verification-report.md`） | verify |
 | fact | 材料目录内 confirmation / 会话确认记录 | 调用方（audit 只返回确认） |
 | 测试框架报告 | `.mdf/reports/` 等 | verify |
 

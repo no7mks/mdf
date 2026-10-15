@@ -59,6 +59,7 @@ Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
 - 分支命名：
   - 绑定 PRP 的 feature 分支与 `changes/unreleased/<slug>/` 使用 PRP 文件名 slug。
   - 人工 feature 不绑定 PRP；slug 在 start clarify 时由用户确认，Change 使用 `proposals: []`。
+  - adhoc 不绑定 PRP；Agent 自行选 slug，Change 使用 `proposals: []`。
   - bugfix 的分支为 `bugfix/<bug-id>`，使用该 Bug 的完整 ID，不使用文件名 slug。
 
 ### 关联与正文
@@ -126,8 +127,8 @@ duplicate_of: bug-<canonical>
 - CHANGE.md 是完成后的 Change 记录：
 
 ```yaml
-change_kind: feature | bugfix
-source_branch: feature/<slug> | bugfix/<bug-id> | develop
+change_kind: feature | bugfix | adhoc
+source_branch: feature/<slug> | bugfix/<bug-id> | adhoc/<slug> | develop
 proposals: [prp-...]
 fixed: [bug-...]
 closed: [bug-...]
@@ -141,7 +142,7 @@ evidence:
   artifacts: []
 ```
 
-- `source_branch: feature/<slug>` / `bugfix/<bug-id>`：经 finish 交付；
+- `source_branch: feature/<slug>` / `bugfix/<bug-id>` / `adhoc/<slug>`：独立分支交付；
   目录 slug 必须与分支后缀的 kebab 形式对齐。
 - `source_branch: develop`：无独立交付分支的直合 Change；目录自选 kebab slug，
   不与分支名对齐；不经 finish，只由后续 release 作 child 聚合。

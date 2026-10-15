@@ -136,12 +136,12 @@
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。
 
-- 进行中的 feature 目录有交付身份即可存在，不必先有 CHANGE.md。
+- 进行中的 feature/adhoc 目录有交付身份即可存在，不必先有 CHANGE.md。
 - release 的 `changes/unreleased/<semver>/` 自 start 起即可存在（objectives.md 与 delivery.json）。
   - hotfix 仅 roster ≥1 时写入 delivery.json。
 - code-review 终稿写在对应 `changes/unreleased/<slug>/code-review.md`（无 commit
   hash；进行中草稿同路径，收口时覆盖）：
-  - feature/bugfix 用交付 kebab-case slug；release/hotfix 用该分支稳定 SemVer。
+  - feature/bugfix/adhoc 用交付 kebab-case slug；release/hotfix 用该分支稳定 SemVer。
 - 📌 每个稳定版本目录始终只有一个根 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量 metadata。

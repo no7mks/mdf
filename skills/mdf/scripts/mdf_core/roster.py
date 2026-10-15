@@ -33,6 +33,7 @@ KIND_ROSTER = {
     "bugfix": "solo",
     "release": "solo",
     "hotfix": "solo",
+    "adhoc": "solo",
 }
 # 未点名 roster 时按 kind 覆盖默认组合；release 审查面最大，默认 3 人分片审查。
 KIND_DEFAULTS = {

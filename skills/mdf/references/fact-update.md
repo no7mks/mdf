@@ -128,10 +128,10 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 支持用户独立调用；也由主链在 fact audit 后委托。
 
 - 独立调用不要求交付分支或阶段记录，不触发交付。
-  - 可在当前工作相关的 feature、bugfix、release 或 hotfix 分支同步事实。
+  - 可在当前工作相关的 feature、bugfix、release、hotfix 或 adhoc 分支同步事实。
   - 在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
   - 无关的独立维护在 develop 完成，不在 master 写入。
-- 主链调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix 为
+- 主链调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix/adhoc 为
   start_commit，release 为上一正式发布。
 
 验收：doctor 结果、调用方类型、scope、事实与实现范围。
