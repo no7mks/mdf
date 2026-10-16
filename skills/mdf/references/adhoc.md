@@ -121,7 +121,7 @@ objectives 的五项必须同序、完整，已勾项形成连续前缀；工作
 - `$mdf next` 在已启动 adhoc 上仅执行本页步骤 3–4 的一个账本项，然后返回。
   - 不新建 adhoc，不升级为连续执行。
 - `$mdf deliver` 在已有 adhoc 上以本表替代普通选择表，每次完成一项返回其 Select。
-  - 保留 deliver 原有模式、确认及完成核验规则；无 target 时不凭空新建 adhoc。
+  - 每次只委托 until 边界内的当前 intent，decision 与完成核验遵守 deliver；无 target 时不凭空新建 adhoc。
 - 直调在当前项完成或须补前置时回 3；next / deliver 委托则返回调用方，不在本页继续循环。
   - next 本次报告完成项或返工项后结束；deliver 回自己的 Select，依账本再选下一项。
 - 清单全勾仍须核对 finish 实际成功；仍在 adhoc 分支或上次 finish 失败时继续 close-out。

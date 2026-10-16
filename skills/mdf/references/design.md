@@ -68,7 +68,7 @@
 - `needs_design: no` 或人工 feature 不进入本 intent，不添加 design 清单项。
 - design 已勾或 design.md 已存在时（如 release/hotfix 经 target 记入新 Bug），步骤 2 确认修订。
   - 步骤 3 原地修订 objectives 与 design 并重新勾选/提交。
-  - `--auto-pilot` 自裁定。
+  - deliver 委托按其 confidence 策略裁定。
 
 结束前必须把 write-tests 与 implement 后续都会依赖的共享代码底座写入仓库，
 使两路从同一提交继续：
@@ -103,7 +103,7 @@ owner 另开第二个。
 - 不得要求重新 clarify，不得把未确认内容当作已确认。
 - 缺确认则停止该 subagent 并回步骤 2，不在 subagent 内 grilling。
 - policy/suite 可修正时由该 subagent 内部留在步骤 3。
-- `--auto-pilot` / `--yolo` 只约束步骤 2；步骤 3 不再向用户提问。
+- deliver 的 confidence 策略适用于步骤 2 与步骤 3 的新 decision；已确认的共同理解直接复用。
 - subagent 只写 design.md、policy、共用代码底座、既有 objectives 的本阶段勾选、可选快照与提交；
   不代 start 补建缺失的 objectives。
 

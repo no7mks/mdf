@@ -72,7 +72,7 @@ CLI：`python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`
 同一 subagent：
   - Join（步骤 2）待批准：确认后带 `--test-approval` 重试 2。
   - Accept（步骤 3）待批准：主会话确认后 resume 回 3。
-- `--auto-pilot` / `--yolo` 由 subagent 自裁定并记录批准，不回主会话提问。
+- deliver 委托时 subagent 按其 confidence 策略裁定并记录批准；低 confidence 回主会话请求用户确认。
 
 ### 范围与前置条件
 

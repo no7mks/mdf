@@ -64,6 +64,7 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/delivery-contract.md`。
+deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前核 until，decision 按该策略处理。
 步骤 2：feature/release 内部执行 `references/clarify.md`；bugfix/hotfix 写精简 checklist，
 可不走 grilling。对照 `assets/templates/objectives.md` 或 `release-objectives.md`。
 步骤 6 读取并执行 `references/integrate.md`。
@@ -116,7 +117,7 @@
 **澄清**
 
 人工 feature 先执行内部 clarify，议题为工作范围、验收与 slug。
-必须先询问用户，再依据回答给 slug 建议并确认；auto-pilot / yolo 不代答。
+独立调用必须先询问用户，再依据回答给 slug 建议并确认；deliver 委托按其 confidence 策略裁定。
 采用 `manual-objectives.md`，start 已勾，其余五项未勾，不添加 design / converge。
 `needs_design: false` 由 CLI 写入 delivery.json，objectives 不要求该字段。
 下列普通交付的 needs_design、PRP 与阶段要求不适用于人工 feature。
@@ -127,7 +128,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - 📌 必须明确并写入 `needs_design: yes` 或 `needs_design: no`（objectives 与随后
   `delivery.json`）。deliver/next 只读该字段。
   - `roster ≥1` 必须为 yes；选 no 则须把 roster 收成 `0,0`。
-  - `--auto-pilot` / `--yolo` 委托时由主 Agent 按证据自裁定。
+  - deliver 委托时由主 Agent 按其 confidence 策略裁定。
 - feature：
   - 对照 ready PRP 与 `assets/templates/objectives.md`。
   - 使用内部 clarify intent，议题固定为「本次 feature 交付的目标、非目标、约束、
@@ -200,8 +201,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - qa/dev 改动与已确认 needs_design 冲突时回步骤 2，仅重确认受影响内容并更新临时 objectives。
   不用未更新的旧文件进入 start CLI；此前未变的目标、slug 与其他确认直接复用。
 - 📌 必须取得明确确认才进入创建；不得把沉默当作同意。
-- 由 `$mdf deliver --auto-pilot` 或 `--yolo` 委托时本步按已给参数与上述默认值自裁定，
-  不向用户提问。
+- 由 deliver 委托时，本步按已给参数与上述默认值、其 confidence 策略裁定。
 
 验收：用户明确确认将冻结的 roster。
 
@@ -245,7 +245,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，
   第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`；`0,0` 只建 owner。
 - 成功 JSON 含 `worktree`（owner）、冻结后的 `roster` 与 `roles.qa` / `roles.dev` 列表。
-- CLI 成功后按 [post-gitflow-start](hooks/post-gitflow-start.md) 执行 hook。
+- CLI 成功后按 [post-gitflow-start](post-gitflow-start.md) 执行 hook。
   - command 已由 CLI 执行，Agent 汇报前后说明与结果。
   - JSON 的 `hook.status: pending` 表示 rule；切到 owner 后读取并执行规则，
     执行前说明名称、path 与 cwd，执行后汇报成功或失败；失败不影响 start。
@@ -303,6 +303,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 切到 owner 后立即执行，不得先做其他预发布工作。
 
 - 完整读取并执行 `references/integrate.md`。
+- deliver 的 until 排除 integrate 时在委托前返回截止点与当前 resume 位置，不打开通道或启动 poll。
 - 同 worktree 不打开消息通道。跨 worktree 从其步骤 2 打开通道。
 - 从其步骤 2 起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
 - 跨 worktree 等待对端按 15、30、45、60 秒输出正在等什么，不得只盯 `waiting`。

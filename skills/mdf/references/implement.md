@@ -85,7 +85,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_R
 - 只修改实现；只使用 design 基线已提交的共享代码底座。
   - 发现缺失时停止并提示 `$mdf design`，不得本路自行创建底座。
 - 测试争议：在交接中记录争议的测试、断言与理由，以未决返回调用方，不改断言或配置绕过验证。
-  - deliver 委托时由主 Agent 裁定（默认询问用户，`--auto-pilot` 自裁定）；独立调用询问用户。
+  - deliver 委托时由主 Agent 按其 confidence 策略裁定；独立调用询问用户。
 
 ### 自检与交接证据
 

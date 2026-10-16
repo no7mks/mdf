@@ -44,8 +44,8 @@
 │ 5 Authorize                      │
 └────────────────┬─────────────────┘
                  │
-                 ├──── AP 非 yolo 未确认 ────→ [返回 deliver 6]
-                 ├──── 确认后现场已变化 ─────→ 4 Recheck
+                 ├──── deliver 裁定待确认 ────→ [返回 deliver 6]
+                 ├──── 确认后现场已变化 ──────→ 4 Recheck
                  │
                  ▼ 无关口或有效确认
 ┌──────────────────────────────────┐
@@ -74,7 +74,7 @@
 | 2 | Integrate | 约束 | 核现场，必要时集成 develop | 端点、diff | 3 | 补审交接；现场未决停 |
 | 3 | Materials | 约束 | 补齐 Change、validation、提交 | Change、validation | 4 | 材料可修 3；其余保留现场 |
 | 4 | Recheck | 约束 | 重核前置与两端，勾 close-out | report、账本、tip | 5 | 主线前进 2；缺项交接；其余停 |
-| 5 | Authorize | 约束 | 沿用调用模式与已确认端点 | 调用方、模式、确认 | 6 | AP 未确认返回 deliver 6；现场变 4 |
+| 5 | Authorize | 约束 | 核调用授权、裁定与端点 | 调用方、裁定、确认 | 6 | 低 confidence 返回 deliver 6；现场变 4 |
 | 6 | Finish | 脚本 | 运行 finish-gitflow | 退出 0、实际 Git 结果 | 7 | 保留现场并报告 |
 | 7 | Report | 脚本 | adhoc-status 核实际完成并交接 | completed、merge_commit、路径 | 返回调用方 | 报告实际状态 |
 
@@ -127,7 +127,8 @@
   - 已合并仅待清理时，重核 merge_commit 仍在 develop 第一父链；不将新 develop 合回已交付源。
   - 清理续办须有已提交的规范 Change；缺损时报告状态不一致并停止，不新增源提交。
   - close-out 尚未勾时改为 `[x]` 并提交；已勾不重复提交，记录两端 tip，全勾不代表 finish 完成。
-- 仅 deliver auto-pilot 非 yolo 在步骤 5 返回 deliver 6 等待确认；其他模式沿用已有实际收口授权。
+- deliver 委托先核 until 允许进入 close-out；步骤 5 的 Gitflow decision 按其 confidence 策略裁定。
+  - 低 confidence 返回 deliver 6 等待确认；yolo 无 confidence 限制；其他调用沿用实际收口授权。
   - 确认后从本流程 5 续办，重核端点；现场变化回 4，不基于过时确认直接 finish。
   - 拒绝则保留现场，未决仍返回等待；不绕过关口或再次执行已完成的阶段。
 - 步骤 6 运行 `mdf.py finish-gitflow --repo <owner>`；失败先读 CLI 日志并报告已完成操作。
@@ -136,4 +137,5 @@
   - 核对 no-ff 合入本地 develop、源分支已删、owner 保留且 detached 在交付 tip。
   - 不 fetch、不 push、不打 tag；不删除 `.mdf/`、`docs/` 或保留的工作区。
   - deliver 返回其完成核验；直调返回 adhoc Select；独立 finish 报告实际结果后结束。
-- 只有用户明确要求删除工作区时才按公共清理规则删除；保留目录不影响交付完成。
+- 独立调用只有用户明确要求才删除工作区；deliver 委托按其 confidence 策略与公共清理规则裁定。
+  保留目录不影响交付完成。

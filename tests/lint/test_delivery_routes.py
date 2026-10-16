@@ -45,7 +45,7 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     table = rows(text)
     assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
     assert table[7][5] == "9"
-    assert "无关口 10" in table[8][5] and "deliver 6" in table[8][5]
+    assert "裁定有效 10" in table[8][5] and "deliver 6" in table[8][5]
     assert "feature/bugfix 回 2" in table[8][6]
     assert "其余停" in table[8][6]
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
@@ -382,8 +382,8 @@ def test_design_and_converge_launch_one_owner_subagent():
         "不对同一",
         "需测试修改批准时 subagent 停止并交出未决",
         "resume\n同一 subagent",
-        "--auto-pilot` / `--yolo` 由 subagent 自裁定并记录批准",
-        "不回主会话提问",
+        "subagent 按其 confidence 策略裁定并记录批准",
+        "低 confidence 回主会话请求用户确认",
         "不以 `delivery record/check --stage converge` 为完成条件",
         "主会话确认后 resume 回 3",
     ):
@@ -435,7 +435,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "references/squash.md" in contract
     squash = workflow("squash")
     assert "git merge --squash" in squash
-    assert "擅自改写历史" in squash
+    assert "是否 squash 与执行计划的确认均按其 confidence 策略裁定" in squash
     assert "是否建议（可选启发式）" in squash
     assert "不可 squash" in squash
     assert "dry-run 建议且用户确认执行" in finish
@@ -492,4 +492,5 @@ def test_deliver_tracks_delivery_with_goal():
     assert "每次 deliver 会话只创建一次" in deliver
     assert "续办时不重建" in deliver
     assert "核对 finish 实际成功后才置 complete" in deliver
-    assert "完成 Goal 并报告" in deliver
+    assert "仅本次创建或同范围复用的 Goal" in deliver
+    assert "已有其他或更大范围的 active Goal 时不覆盖、不提前完成" in deliver

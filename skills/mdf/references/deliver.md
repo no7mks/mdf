@@ -9,7 +9,8 @@
                  │
                  ├──── 尚未 start 且委托成功 ─────→ 1 Resolve
                  ├──── start 失败 ────────────────→ [按 start 交接]
-                 ├──── 须询问 ────────────────────→ [询问]
+                 ├──── 已到 until start ──────────→ 5 Report
+                 ├──── decision 待确认 ───────────→ 6 Confirm decision
                  ├──── 不可恢复错误或死硬阻塞 ────→ [停止并报告]
                  │
                  ▼ 唯一交付目标
@@ -17,19 +18,21 @@
 │ 2 Select                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── close-out 已完成 ────────────────→ 5 Report
-                 ├──── collab-mode 联调未完且待接手 ────→ [交接并结束]
-                 ├──── 可并行阶段 ──────────────────────→ 4 Parallel
-                 ├──── 证据冲突或阻塞 ──────────────────→ [保留现场并报告]
+                 ├──── 已到 until 或 close-out 已完成 ────→ 5 Report
+                 ├──── collab-mode 联调未完且待接手 ──────→ [交接并结束]
+                 ├──── 可并行阶段 ────────────────────────→ 4 Parallel
+                 ├──── 证据冲突或阻塞 ────────────────────→ [保留现场并报告]
+                 ├──── decision 待确认 ───────────────────→ 6 Confirm decision
                  │
                  ▼ 单个待办阶段
 ┌──────────────────────────────────┐
 │ 3 Execute                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 阶段完成 ──────────────────────────────→ 2 Select
-                 ├──── auto-pilot 非 yolo 的 Gitflow 关口 ────→ 6 Confirm closeout
-                 └──── 失败或非该关口的待确认 ────────────────→ [按原流程交接]
+                 ├──── 阶段完成 ───────────────────→ 2 Select
+                 ├──── 内部委托到 until ───────────→ 5 Report
+                 ├──── 非 yolo decision 待确认 ────→ 6 Confirm decision
+                 └──── 失败或外部阻塞 ─────────────→ [按原流程交接]
 
 仅步骤 2「可并行阶段」进入，不是步骤 3 的后续。
 
@@ -37,28 +40,31 @@
 │ 4 Parallel                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 全部交接通过 ────→ 2 Select
-                 └──── 失败或待确认 ────→ [保留各路现场并报告]
+                 ├──── 全部交接通过 ───────→ 2 Select
+                 ├──── 任一路到 until ─────→ 5 Report
+                 ├──── decision 待确认 ────→ 6 Confirm decision
+                 └──── 失败或外部阻塞 ─────→ [保留各路现场并报告]
 
-仅步骤 2「close-out 已完成」进入，不是步骤 4 的后续。
+到 until（含内部返回）或 close-out 已完成时进入步骤 5，不是步骤 4 的后续。
 
 ┌──────────────────────────────────┐
 │ 5 Report                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 完成证据有效 ────→ [结束]
-                 └──── 证据不足 ────────→ [报告实际状态]
+                 ├──── 完成证据有效 ────────────→ [结束]
+                 ├──── 清理 decision 待确认 ────→ 6 Confirm decision
+                 └──── 证据不足 ────────────────→ [报告实际状态]
 
-仅步骤 3「auto-pilot 非 yolo 的 Gitflow 关口」进入，不是步骤 5 的后续。
+步骤 1–5 中低 confidence 的 decision 均进入步骤 6；不是步骤 5 的后续。
 
 ┌──────────────────────────────────┐
-│ 6 Confirm closeout               │
+│ 6 Confirm decision               │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 未决 ─────────────────────→ 6 Confirm closeout
-                 ├──── 拒绝 ─────────────────────→ [保留现场并停止]
-                 ├──── 确认 ─────────────────────→ [续办 finish，完成后回 2]
-                 └──── finish 停止或部分失败 ────→ [按其恢复规则交接并报告]
+                 ├──── 未决 ────────→ 6 Confirm decision
+                 ├──── 拒绝 ────────→ [按原 intent 拒绝去向返回或停止]
+                 ├──── 确认 ────────→ [返回原 decision 继续]
+                 └──── 修改方案 ────→ [重新评估 decision]
 ```
 
 ## 工作流（唯一执行契约）
@@ -67,11 +73,10 @@
 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
 尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
 人工工作未勾时交接用户，所有模式均不得代勾。
-已勾后，经本表步骤 3 执行该续办工作流的步骤 3，完成后回 Select；收口确认仍走步骤 6。
+已勾后，经本表步骤 3 执行该续办工作流的步骤 3，完成后回 Select；先核 until 边界。
 
-
-读取 `references/common.md` 与 `references/delivery-contract.md`。
-步骤 4、5 由步骤 2 进入，不是步骤 3 的后续。步骤 6 由步骤 3 的 Gitflow 关口进入。框序受编号约束仍按 1–6 绘制。
+读取 `references/common.md`、`references/delivery-contract.md` 与 `references/deliver-policy.md`。
+步骤 4 只由 Select 分派；到截止点或实际收口进入 5；任一步的低 confidence decision 均进入 6。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 审查阶段读取 `references/code-review.md`；fact 阶段读取 fact-audit，须修复时另读 fact-update。
 
@@ -81,27 +86,27 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve | 约束 | 锁定交付与 owner | 目标、分支、路径 | 锁定→2；start 委托成功→1 | start 失败交接；须问；死硬停 |
-| 2 | Select | 约束 | 按选择表选剩余步骤 | 进度、执行者 | 完成5；交接结束；并行4；其他3 | 冲突或阻塞则保留现场并报告 |
-| 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成→2；AP 非 yolo 关口→6 | 失败/非关口待确认→原流程交接 |
-| 4 | Parallel | Subagent | 分派独立阶段，核对路径并等待交接 | 各路提交与勾选意向 | 2 | 保留各路现场并报告 |
-| 5 | Report | 约束 | 核对 finish 实际结果，完成 Goal 并报告 | 合并、清理、适用 tag 与推送 | 结束 | 报告实际状态 |
-| 6 | Confirm closeout | 约束 | 确认收口 | 答复 | 续办 finish 后回 2 | 拒绝停；未决留 6；finish 失败按其恢复交接 |
+| 1 | Resolve | 约束 | 解析策略并锁定 owner | 参数、目标、路径 | 锁定2；截止5；start 返回1 | 低分6；失败交接；死硬停 |
+| 2 | Select | 约束 | 先核 until，再选步骤 | 进度、截止点 | 截止或完成5；交接结束；并行4；其他3 | 低分6；其余保留现场 |
+| 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成2；截止5 | 低分6；其余按原流程交接 |
+| 4 | Parallel | Subagent | 分派、核路径并等待交接 | 各路提交与勾选意向 | 交接2；截止5 | 低分6；其余保留现场 |
+| 5 | Report | 约束 | 核对范围、Goal 与收尾清理 | 截止证据或实际 Git 结果 | 结束 | 清理低分6；缺证据报告实际状态 |
+| 6 | Confirm decision | 约束 | 展示方案与评分 | 答复、返回位置 | 确认返回；修改重评 | 拒绝按原流程；未决留 6 |
 
 ## 术语与数据结构
 
 ### 目标与持续授权
 
-调用 `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 授权从当前状态连续执行本次交付
-剩余工作直到 close-out 完成。
+调用 `$mdf deliver [<target>] [--until <intent>] [--yolo]` 授权连续推进本次交付。
+默认自动裁定所有 decision，直到指定 intent 之前；无截止点时直到 close-out 完成。
 
-- 授权含尚未完成的 start，以及原流程要求的本地提交、并行委托、集成与 finish 的 Gitflow 操作。
-- target 是唯一位置参数，不是 `--` option；`--auto-pilot` 与 `--yolo` 可在其前或后。
+- 授权含截止点之前尚未完成的 start、本地提交、并行委托与集成；允许进入 close-out 时含 Gitflow 操作。
+- target 是唯一位置参数，不是 `--` option；option 可在其前或后，option 的值不算 target。
 - target 与这些 option 都省略时仍是 deliver。
 
 完成范围：
 
-- feature/bugfix/adhoc 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
+- 无截止点时，feature/bugfix/adhoc 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 finish 完成条件冲突时说明并询问，不能声称完成。
@@ -109,11 +114,15 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 确认与暂停：
 
 - 已有有效确认继续适用。
-- 默认模式：设计确认、测试修改批准、目标变更和外部条件仍按原流程处理。
-  - 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
-- `--auto-pilot` 与 `--yolo` 按下方策略把这些决定改为主 Agent 自裁定。
+- 所有 decision 按下方 confidence 策略处理，包括目标选择、clarify、设计、roster、测试修改批准与目标调整。
+- 低 confidence 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
+- 步骤 6 保存原步骤、内部 intent/subagent、具体 decision 与端点；答复只授权该 decision。
+  - 回复后先核现场；端点、方案或范围已变化则重新评分，不复用过时确认。
+  - 只拒绝 squash 等可选操作时按原 intent 跳过；拒绝本次交付才保留现场并停止。
+- 截止点是本次调用的正常完成边界，不是等待确认；不得自动越过或自动续办被排除的 intent。
 
-步骤 1 已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
+步骤 1 先解析策略参数并只读判定路径，核对该路径的 until 合法性；随后才能委托 start 或写入。
+已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
 其余情况解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
 1. 先由当前 feature/qa/dev、bugfix、hotfix、release 或 adhoc 分支推导在途交付。
@@ -123,15 +132,16 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 3. 无 target 时优先锁定用户在对话中指定的交付，否则沿用当前已锁定的交付。
 
 - 从其他目录进入时，只有上下文明确唯一交付目标才可切到它。
-  - 多个候选必须询问，不按最近目录猜测。
-  - `--auto-pilot` 下多个在途交付仍无法唯一锁定时属死硬阻塞。
+  - 多个候选按 confidence 策略选择，不按最近目录猜测；证据仍无法锁定唯一交付则停止并报告。
 
 尚未存在本次交付时委托 `references/start.md`：
 
+- 委托前先核 until；until start 直接进入 5，只报告解析结果，不创建 worktree。
 - 已由 target 或用户指定 kind 与 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。
-- 默认模式询问用户选择；`--auto-pilot` 由主 Agent 按仓库证据与对话上下文选定唯一目标。
+- 主 Agent 按仓库证据与对话上下文选定唯一目标，按 confidence 策略裁定。
 - 不调用初始化或规划流程，不发明 release/hotfix 版本。
 - start 成功后回到 1；collab-mode 尚待接手由步骤 2 交接；start 失败或停止则按其交接结束，不回 1。
+  - start 内部到 until 时直接进入 5，不重复委托 start；已完成的启动产物如实保留。
 
 已有交付与 start 返回后：
 
@@ -143,7 +153,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 位置参数至多一个；第二个及以后的非 option token 停止并询问。
 
-已知 option 为 `--manual`、`--auto-pilot`、`--yolo` 与下表各项。
+已知 option 为 `--manual`、`--until`、`--stop-at`、`--yolo` 与下表各项。
 除这些外，以 `--` 开头的 token 不是 target，视为未知调用参数并停止。
 
 | option | 取值 |
@@ -172,76 +182,35 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
      此时不 start、不改绑，将该 Bug 记入本次剩余开发工作。
    - 唯一命中 Bug 的其他情况 → bugfix，将该 Bug ID 交给 start。
 
-- 零命中、跨类型或多对象命中时询问，不猜测。
-- `--auto-pilot` 对 target 分不清就询问，不自裁定。
+- 零命中、跨类型或多对象命中时按 confidence 策略裁定；关键事实缺失时停止，不猜测。
 - 完整 ID 形态合法但 `list` 无此对象时报告缺失并停止。
 - target 与当前已锁定的另一交付冲突时报告错误并停止，不改绑。
 
-### auto-pilot
+### 截止点与自动裁定
 
-启用条件：
-
-- 仅 `$mdf deliver --auto-pilot` 或 `$mdf deliver --yolo` 启用；默认 `$mdf deliver` 不启用。
-- `--yolo` 隐含本策略；下文写 `--auto-pilot` 处对 `--yolo` 同样适用，除非写明例外。
-
-委托子 intent 时把本策略作为外层约束：
-
-- 原文中的询问、确认、批准与选择改由主 Agent 依据仓库证据、已确认目标和本次范围自行裁定。
-  - 收尾后的工作区删除确认除外，所有模式都须由用户明确答复。
-  - 在摘要或 objectives 交接说明中写明依据，不向用户提问、不等待确认。
-- 内部 clarify 不轮询用户；主 Agent 形成共同理解并写入确认文本。
-  - 人工 feature 的 slug 须先询问用户再建议并确认，人工工作须由用户显式勾选；
-    这两项不由 auto-pilot / yolo 自裁定。
-- converge 的 `--test-approval` 记录该裁定与理由。
-- ❌ 不得削弱验收或把未实现目标判为完成。
-
-死硬阻塞才停止：
-
-- CLI/Git/工具不可恢复失败。
-- 无可启动目标（未指定人工 feature，且无合格 ready PRP、无合格 open Bug，
-  也未指定合法 release/hotfix 版本）。
-- 已有交付缺少 worktree。
-- 用户明确只读或禁止提交/推送且与完成条件冲突。
-- 必须切换 worktree 但宿主无法由 Agent 完成。
-- 凭据、origin 一致性等仓库外条件缺失。
-- 同一失败连续三轮无进展。
-- 不改写用户明确禁止的范围就无法继续。
-
-target 分不清就询问，不列入自裁定。除此之外不因“想听用户意见”而暂停。
-
-| 情形 | 处理 |
-| --- | --- |
-| 默认模式出现多个候选，或任何模式下 target 分不清 | 须询问 |
-| auto-pilot 能凭仓库证据与对话上下文定出唯一目标 | 不询问，裁定后走通过 |
-| 多个在途交付无法唯一锁定，以及其他死硬条件 | 走死硬阻塞 |
-
-Gitflow 前的预定确认：close-out 步骤 9 通过、即将调用 `finish-gitflow` 之前。
-
-- 展示将合入的目标主线、将删除的源分支与将保留的 detached worktree，
-  以及 release/hotfix 的 tag 与推送。
-- 该确认只在步骤 6 进行；未决留在步骤 6。
-- 取得明确确认后才委托 close-out 从步骤 10 续办；拒绝则保留现场并停止，不合并、不删 worktree。
-  - adhoc 改从 `references/adhoc-close-out.md` 的步骤 5 续办，重核确认后完成并回 2。
-- 此关口不是死硬阻塞，是 auto-pilot 的 Gitflow 前用户确认。
-- `--yolo` 跳过此关口：步骤 9 通过后直接执行步骤 10，不展示、不等待确认。
-- 独立 `$mdf finish` 与默认 `$mdf deliver` 不增加该关口。
+入口先读取 `references/deliver-policy.md`，解析 until / stop-at / yolo，再执行任何委托。
+在每次内部委托、并行分派和 decision 前应用同一策略；传入当前事件、调用栈与有效截止点。
+Jev 可选加速与 confidence 的输入、阈值、fallback 和确认返回均由该策略规定。
 
 ### Goal
 
 Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoal）。
 宿主没有该设施时跳过本节全部 Goal 操作，改在步骤 5 的最终报告中说明进度与完成判据。
 
-步骤 1 锁定一次交付及 owner worktree，创建 Goal；
-objective 写明交付标识与完成判据（close-out 实际完成）。
-每次 deliver 会话只创建一次；阻塞或暂停时保持 active，不代用户暂停，续办时不重建。
-已有同一交付的 Goal 时复用；内部委托传入该 Goal，子 intent 不得提前将它置 complete。
-Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
-步骤 5 核对 finish 实际成功后才置 complete；证据不足或部分失败时保持 active 并报告实际状态。
+- 锁定交付与 owner 后，为本次调用创建 Goal；until start 不创建 owner 或交付 Goal。
+- objective 写明交付标识、有效 until 与完成判据；含父 intent 内部被截止的实际子步骤。
+- 每次 deliver 会话只创建一次；同范围续办时不重建。已有同一交付、同一范围的未完成 Goal 时复用。
+- 已有其他或更大范围的 active Goal 时不覆盖、不提前完成、不另建冲突 Goal；只报告本次范围进度。
+- 内部委托传入该 Goal，子 intent 不得提前将它置 complete；暂停或阻塞时保持 active。
+- 仅本次创建或同范围复用的 Goal 可在步骤 5 置 complete：核验允许工作已完成且未越过截止点。
+  无截止点时核对 finish 实际成功后才置 complete；证据不足或部分失败时保持 active。
+- 到 until 仅表示本次范围完成，不声称交付已收口，也不勾选因内部截止而未完成的父 intent。
 
 ### 从当前证据选择剩余工作
 
 步骤 2 结合 `objectives.md` 勾选、`delivery.json` 身份、对话确认、未完成子步骤、
 产物、Git 历史及执行者状态判断。按下表自上而下命中即停止，不并行套用多行。
+先应用 until 截止点，再查表；任何表内委托、回退或重试都不得越过截止点。
 
 - **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
   - report（code-review.md / verification-report.json / fact-audit.md）只证明做过与声称结果。
@@ -249,14 +218,7 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 - 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
 - 已有执行者先接续并等待，不另起第二个 Agent 操作同一角色 worktree。
 
-可选加速（见 `common.md`「Jev 可选加速」）：
-
-- 对照下表前，仅当状态语义仍歧义且 tool 可用时。
-- 调用：`choice`；state = 交付摘要与 objectives 勾选。
-- 选项键取下表「当前状态」短标签，或 `ask`。
-- objectives 勾选已明确时 ❌ 不调。
-- 采信后落入表中同一「后续处理」；`ask` 或未采信走主 Agent。
-- 不扩大授权、不跳过用户确认。
+选型含语义 decision 时按上方 confidence 策略评分；objectives 已明确的确定性选型直接查表。
 
 | 当前状态 | 后续处理 |
 | --- | --- |
@@ -275,23 +237,26 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 | converge 已勾（或无未勾 converge 项）、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
 | code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
-| verify branch 已勾、fact audit 未勾 | 核 hook 已执行或未配置；委托 fact-audit；必要时 fact-update 后重审 |
-| fact 已勾、close-out 未勾 | 在 owner 委托 `references/close-out.md` |
+| verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
+| fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
+| fact 已勾、close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
 | close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
 
 剩余工作与失败处理：
 
-- fact 前的 hook 读取 [pre-gitflow-finish](hooks/pre-gitflow-finish.md)；失败仅汇报，
+- fact 前的 hook 读取 [pre-gitflow-finish](pre-gitflow-finish.md)；失败仅汇报，
   非文档改动退勾后回到本表补审补测；已执行的 hook 不因补测或 fact 重审而重跑。
 - release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
+- 内部委托到 until 时逐层返回截止点与未完成子步骤，直接进入 5；不把截止当作失败或自动重试。
+- fact audit 的可修 finding 交回 Select；外部阻塞、缺证据或低 confidence 待确认不擅自启动 fact update。
 - 步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。
 
 ### 并行委托与 worktree 身份
 
 并行阶段读取 `references/write-tests.md` 与 `references/implement.md`。
 
-步骤 4：所有当前可并行且互不依赖的 intent 必须分别交给 subagent，不由主 Agent 串行代做。
+步骤 4：所有在 until 边界内、当前可并行且互不依赖的 intent 必须分别交给 subagent，不由主 Agent 串行代做。
 
 - roster ≥1 时并行组合为全部 qa 的 write-tests 与全部 dev 的 implement。
   - 须已确认并提交同一 design 与共享底座。
@@ -347,6 +312,10 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
 等待：
 
 - 主 Agent 等待所有已派阶段完成或明确阻塞，不在任一路仍运行时执行 converge 或删除角色 worktree。
+- 任一路到 until 时，先等其他已派写入者完成或暂停到可交接点，再进入 Report；不跨界续办。
+- 子 intent 的低 confidence decision 返回主 Agent 的步骤 6；保留其任务与精确 resume 位置。
+  - 无依赖的其他路可继续；共用设计、目标或测试契约的 decision 未决时，先暂停受影响的写入者。
+  - 用户确认后 resume 同一 subagent，不创建第二个执行者，也不由主 Agent 代写。
 - 一条失败时保留另一条已完成产物；如需修改共同设计，先暂停所有仍在写入的执行者。
 
 交接：
@@ -357,18 +326,22 @@ Goal 只表达交付进行中或已完成，不替代各阶段证据与报告。
   - ❌ 不以 gate 文件是否存在判定阶段完成。
 - 失败保留现场，不以 subagent 的“完成”摘要替代检查；全部交接通过后返回 2 进入 converge。
   - owner 在进入 converge 前确认 write-tests / implement 已在 objectives 勾选。
-- implement 以未决交回测试争议时由主 Agent 裁定（默认询问用户，auto-pilot 自裁定），
+- implement 以未决交回测试争议时由主 Agent 按 confidence 策略裁定，
   按裁定续办对应路；改测试按 `delivery-contract.md`「修改与提交权限」取得批准。
 - 合并、测试修改批准、worktree 清理均委托 converge 原流程，不手工 cherry-pick 或删除角色来冒充集成。
 
-收口：单阶段结束、审查通过、版本材料写入或提交成功均不等于 deliver 完成。
+完成判定：到 until 与交付实际收口分别核验，单阶段结束不能代替其余范围的完成证据。
 
-- 步骤 5 必须取得 finish 的实际成功结果（close-out）。
+- 到 until 时核对允许操作的证据与仍在运行的执行者，报告已完成阶段、截止点与剩余工作。
+  - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
+  - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
+- 无截止点时，步骤 5 必须取得 finish 的实际成功结果（close-out）。
   - 按分支核对合并、源分支删除、owner 工作区保留且 detached，以及 release/hotfix 的 tag 和推送。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
 - 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。
-- 核验、Goal 与报告完成后，按 `references/close-out.md`「工作区清理」询问是否删除 owner 工作区。
-  - 所有模式都须明确确认；拒绝或未决时保留，不影响 deliver 完成。
-  - 确认删除时将删除命令作为最后一次 tool call，并说明本对话不要再继续。
+- 仅在实际 close-out 完成且核验、Goal 与报告完成后，按 confidence 策略决定是否删除保留的 owner 工作区。
+  - 拒绝或未决时保留，不影响交付完成；到 until 时不清理尚在交付中的 owner。
+  - 自动裁定或用户确认删除后，按 `references/close-out.md` 将删除命令作为最后一次 tool call，
+    并说明本对话不要再继续。
 - 上下文恢复时用上述现有产物与实际 Git 状态重新核验，不依赖未落地的内存完成标志。

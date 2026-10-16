@@ -46,11 +46,13 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 
 人工 feature 在 verify smoke 完成后直接调用本 intent，沿用内部 Audit 步骤。
 全部完成后自勾 objectives 的 fact update 并提交；不新增独立 fact audit 步骤。
-主链调用方进入本 intent 前须按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md)
+主链调用方进入本 intent 前须按 [pre-gitflow-finish](pre-gitflow-finish.md)
 执行可选 hook 与必要补审补测；独立文档维护不触发，内部 Audit 不重复执行。
 
 读取 `references/common.md` 与 `references/repository-contract.md`；
 步骤 3 读取并内部执行 `references/fact-audit.md`。
+deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 until 则逐层返回截止点与未完成步骤。
+已提交的合法事实改动保留，不进入 Audit、不自勾 fact update，也不把截止当作失败重试。
 
 按 `common.md`「执行进度」与下方「逐项进度」播报；内部 Audit 沿用 fact audit 的逐项播报。
 
