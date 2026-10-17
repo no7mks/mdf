@@ -315,7 +315,7 @@ release/hotfix：
 
 - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
 - JSON 含 `retained_worktree`（保留路径，无则为 null）与 `primary_worktree`（主路径）。
-- Agent 完成核验与报告后询问是否删除工作区；所有模式都须用户明确确认。
+- Agent 完成核验与报告后决定是否删除工作区；独立调用须用户确认，deliver 委托按其 confidence 策略裁定。
   - 确认后直接从主 worktree 执行 `git worktree remove`，并说明本对话不要再继续。
   - 不新增清理脚本；拒绝或未决则保留，不影响交付完成。
 - ⚠️ 本次新产生的 merge 冲突才会 abort，不会推送或删除分支；Git 拒绝开始合并时保留现场。

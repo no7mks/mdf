@@ -102,6 +102,7 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 - 答复不明 → 留在本步再问；拒绝 → 结束，不改写。
 - 修改段界或 message 后须再确认；❌ 不得在未确认下进入执行。
 - close-out 委托：用户已对 dry-run 建议确认「执行」时，本步可直接采信该确认。
+- deliver 委托时上述计划确认遵守其 confidence 策略；自动裁定与用户确认均须记录依据。
 
 ### 执行
 
@@ -135,7 +136,7 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 close-out 可在**第一次把目标主线合入交付分支**之前建议整理本地历史。
 集成方向：feature/bugfix←develop，release/hotfix←master。非强制；用户拒绝则跳过。
-`--auto-pilot` / `--yolo` **不得**擅自改写历史。
+deliver 委托时，是否 squash 与执行计划的确认均按其 confidence 策略裁定。
 
 **职责**：调用方决定是否激活（启发式 + 用户确认）。公开 `$mdf squash` 负责地板、
 切段定型、message、确认后执行；可用 `--dry-run` 只产出建议。

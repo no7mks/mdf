@@ -101,7 +101,7 @@ collab-mode 由一个接手 Agent 同时操作前后端项目的 release worktre
 - 接手 Agent 在自己的 workspace 中访问两端，直接调度代码、测试、配置、服务与依赖。
 - 本模式不 init、不 poll、不 listen、不 send，不使用 `.integration/` 消息通道。
 - 两端各自保留 delivery 身份、objectives、roster、提交与报告，不新增跨仓状态文件或 CLI。
-- 本模式只改变联调的操作责任；后续 next / deliver 与 auto-pilot / yolo 沿用原授权和确认规则。
+- 本模式只改变联调的操作责任；next 沿用原授权，deliver 遵守其 until 边界与 confidence 策略。
 
 ### 交接与接管
 

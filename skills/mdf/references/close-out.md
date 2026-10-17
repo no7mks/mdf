@@ -71,12 +71,12 @@
 │ 9 Hand off                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 主线前进，feature/bugfix ───────→ 2 Integrate and review
-                 ├──── 主线前进，release/hotfix ───────→ [报告并停止]
-                 ├──── 交付条件未通过 ─────────────────→ [报告并停止]
-                 ├──── auto-pilot 非 yolo 且须确认 ────→ [返回 deliver 步骤 6]
+                 ├──── 主线前进，feature/bugfix ────→ 2 Integrate and review
+                 ├──── 主线前进，release/hotfix ────→ [报告并停止]
+                 ├──── 交付条件未通过 ──────────────→ [报告并停止]
+                 ├──── deliver decision 待确认 ─────→ [返回 deliver 步骤 6]
                  │
-                 ▼ 通过且无关口（含独立 finish / 默认 deliver / yolo）
+                 ▼ 通过且裁定有效
 ┌──────────────────────────────────┐
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
@@ -99,8 +99,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - 入口前置：主链 verify branch、fact audit 已完成；配置 hook 时确认已执行及必要补审补测已完成。
   hook 尚未执行或状态不明时交接主链，不在本 intent 或 `finish-gitflow` 内补跑；不要求独立执行记录文档。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
-- 步骤 2 可选 squash：先内部执行 `references/squash.md` 的 dry-run，确认执行后再
-  内部执行完整 `references/squash.md`。
+- 步骤 2 可选 squash：先执行 `references/squash.md` 的 dry-run，确认后再执行完整流程。
 - 步骤 7 有 fixed 或需重验的 closed Bug 时读取并内部执行 `references/bug-close.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -113,7 +112,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 | 6 | Check hotfix | 约束 | 校验 hotfix 结果 JSON 的字段与非空要求 | 有效 JSON | 7 | 停止 |
 | 7 | Prepare closures | 约束 | bug close 关闭 fixed；准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
-| 9 | Hand off | 约束 | 提交、核现场 | clean | 无关口 10；AP 非 yolo→deliver 6 | 主线前进 feature/bugfix 回 2；其余停 |
+| 9 | Hand off | 约束 | 提交、核现场 | clean | 裁定有效 10；低分→deliver 6 | 主线前进 feature/bugfix 回 2；其余停 |
 | 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构
@@ -154,9 +153,9 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - dry-run 不可压或失败 → 跳过。
   - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）决定是否向
     用户展示该建议；未达信号也可展示。
-  - 用户确认执行后，再内部执行完整 `references/squash.md`（可复用同会话计划）。
-  - 拒绝展示、拒绝执行或未确认 → 跳过。
-  - ❌ `--auto-pilot` / `--yolo` 不得擅自 squash；禁止 rebase / `merge --squash`。
+  - 独立调用由用户确认；deliver 委托按 confidence 策略确认后执行 `references/squash.md`，可复用计划。
+  - 拒绝则跳过；独立调用未确认也跳过；deliver 低 confidence 待确认时暂停，不擅自执行。
+  - deliver 的 squash decision 同样评分；yolo 自裁定。禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
   - feature/bugfix 使用本地 develop，不 fetch、不 push。
@@ -357,10 +356,11 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 **合并** <a id="s10"></a>
 
 - 执行关口：
-  - 由 `$mdf deliver --auto-pilot` 委托时，未带 `--yolo` 且步骤 9 通过；Goal 不能代替用户要求 close-out：
-    - 必须返回 deliver 步骤 6，待其取得确认后才执行本步骤；不得自行调用 `finish-gitflow`。
-  - 由 `$mdf deliver --yolo` 委托时步骤 9 通过后直接执行本步骤，不返回确认。
-  - 独立 `$mdf close-out`（`$mdf finish` 同义） 与默认 `$mdf deliver` 不增加该关口。
+  - deliver 委托前须确认其 until 允许进入 close-out；默认 deliver 不进入本 intent。
+  - deliver 委托时，Gitflow 按其 confidence 策略裁定；低 confidence 返回 deliver 步骤 6。
+    展示主线、源分支删除、保留目录与适用的 tag/push；有效确认前不得调用 `finish-gitflow`。
+  - yolo 无 confidence 限制；无截止点阻断且步骤 9 通过后直接执行本步骤。
+  - 独立 `$mdf close-out`（`$mdf finish` 同义）沿用调用授权，不增加 deliver 的评分或截止点。
 - 调用 `finish-gitflow --repo "$REPO_ROOT"`：
   - feature/bugfix 不 fetch、不 push；no-ff 合并到本地 develop；角色分支仍在则失败。
   - release/hotfix 要求 origin；首次调用 fetch 后要求本地 master 与远端一致。
@@ -379,10 +379,10 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - 先核验、完成所有收尾并报告；删除工作区不是 close-out 完成条件。
 - deliver 委托时先返回，由其步骤 5 完成核验、Goal 与报告后执行本节。
 - `retained_worktree` 为 null 或指向主 worktree 时不删除主工作区。
-- 否则展示绝对路径，询问是否删除；所有模式（含 `--auto-pilot`、`--yolo`）都须明确答复。
+- 否则展示绝对路径；独立调用询问是否删除，deliver 委托按其 confidence 策略裁定。
   - 说明：删除后本对话不要再继续，后续工作在主 worktree 开新对话。
   - 拒绝或未决则保留，不影响交付完成。
-- 确认后直接执行 `git -C <主路径> worktree remove <保留路径>`，不引入另一个脚本。
+- 自动裁定或用户确认后直接执行 `git -C <主路径> worktree remove <保留路径>`，不引入另一个脚本。
   - 从主 worktree 启动，作为最后一次 tool call；成功后只报告删除结果并结束本对话。
   - 不加 `--force`；失败则保留现场并报告，不重跑 finish。
 

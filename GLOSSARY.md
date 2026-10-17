@@ -160,20 +160,20 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 - roster 固定 `0,0,1`，`needs_design: false`；工作可由 Agent 完成并勾选。
 - smart 成败均写 verification-report.json；本地 no-ff 合入 develop 后保留 detached worktree。
 
-## Auto-pilot
+## Deliver、until 与 confidence
 
-`$mdf deliver --auto-pilot` 的持续交付模式：
+`$mdf deliver` 默认自动裁定当前交付的所有 decision，默认在 close-out 之前结束。
 
-- 主 Agent 自行裁定原需用户确认的步骤。
-- 仅在 close-out 的 Gitflow 收口（合入目标主线并删除源分支）前停住确认。
-- 不可恢复的死硬阻塞仍停止。
+- `--until <intent>`：exclusive 截止点，不执行该 intent；`--stop-at` 是别名。
+- confidence：AI 对一项 decision 的置信度，范围 `[0,1]`；默认由 Jev 评分，无 Jev 时由主 Agent 评分。
+  - ≥ 0.8 自动确认；< 0.8 或无法评分时请求用户确认。
+  - 包括 manual slug、squash、Gitflow 与收尾 worktree 删除的决定；人工工作不由 Agent 代勾。
+- 完整边界与执行规则见 [deliver](skills/mdf/references/deliver.md)。
 
 ## Yolo
 
-`$mdf deliver --yolo`：启用 auto-pilot，并跳过 close-out 的 Gitflow 收口确认。
-不可恢复的死硬阻塞仍停止。
-
-finish 保留 detached worktree；收尾后删除工作区仍须用户明确确认，不由 auto-pilot/yolo 代答。
+`$mdf deliver --yolo`：无默认 until、无 confidence 限制；显式 until 仍生效。
+不可恢复的死硬阻塞仍停止，既有验收要求不变。
 
 ## ADR
 

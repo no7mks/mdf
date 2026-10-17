@@ -61,7 +61,7 @@
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
 完整读取 `references/common.md` 与 `references/repository-contract.md`。
-主链调用方进入本 intent 前须按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md)
+主链调用方进入本 intent 前须按 [pre-gitflow-finish](pre-gitflow-finish.md)
 执行可选 hook 与必要补审补测；本只读 intent 不执行 hook，fact update 内部委托也不重复触发。
 
 按 `common.md`「执行进度」与下方「逐项进度」播报；fact update 委托时同时说明审阅轮次。
@@ -291,11 +291,11 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 返回审阅类型、两类范围、映射、warnings、复核文档、语义/validation findings 与未触及理由。
 
-验收：会话摘要和用户当场确认。
+验收：会话摘要和有效确认；deliver 委托按其 confidence 策略裁定，其余调用由用户当场确认。
 
 - 确认单独提问，只问本次审阅结论是否确认，不与 Bug 分诊、收口、补验等其他决定放在同一问。
 - 用户答复其他议题不视为确认。
-- 本流程只向调用方返回确认原话与时间，不落盘。
+- 本流程只返回确认记录与时间，不落盘；用户确认记录原话，deliver 自动确认记录评分、来源与依据。
   - 有材料目录的调用方写入并提交确认记录；主链（含经 fact update 委托）写
     `changes/unreleased/<slug>/fact-audit.md`（**report**，非 gate）。
   - 普通主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
@@ -311,7 +311,7 @@ validation 已由步骤 6 判定通过，本步不再复核。
 - 无未确认 warning。
 - 无其他 CLI finding（如 `modules.invalid`、`audit.scope`）。
 
-该确认不跨调用复用。
+该确认不跨审阅调用复用；deliver 的同一未变 decision 待答复后 resume 不算新审阅调用。
 
 异常与交接：存在其他 finding、未确认 warning 或未取得用户确认时：
 

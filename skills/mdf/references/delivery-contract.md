@@ -120,7 +120,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 - **verify branch / code-review / fact**：独立 intent；落盘均为 **report**（非 gate）。
   - verify 默认 suite：feature/bugfix/hotfix → smoke；release → release；失败现场修到绿。
   - fact：verify branch 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
-  - 进入 fact 前按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md) 执行可选 hook。
+  - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook。
     仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
@@ -135,10 +135,11 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 #### 触发与协调
 
 - 用户手动触发主线 intent，或显式调用 next 委托下一阶段。
-- 显式 deliver 按 `references/deliver.md` 串联剩余真实 intent 到 close-out。
+- 显式 deliver 按 `references/deliver.md` 串联截止点之前的剩余真实 intent。
   - 可并行阶段按 roster 分别委托 subagent。
-  - `--auto-pilot` 由主 Agent 自裁定，仅在 Gitflow 收口前确认。
-  - `--yolo` 跳过该确认。
+  - 默认自动裁定 decision，confidence 低于 0.8 请求用户确认；默认用 Jev 评分，无 Jev 时主 Agent 评分。
+  - 默认 `--until close-out`（exclusive），`--stop-at` 为别名；yolo 无默认截止点、无 confidence 限制。
+  - 显式 until 对 yolo 仍生效；子 intent 的确认与批准统一遵守 deliver 的 confidence 策略。
 - design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，不计入 roster。
 - deliver 步骤 4 只覆盖可并行的 qa/dev。
 - 不新增独立 Owner 调度服务或统一状态协议。
@@ -377,10 +378,10 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 - implement 不自主修改测试；按「补覆盖」补 reproduce 用例除外。
 - 按「补覆盖」把 reproduce 用例放入 quick 或 smoke 属于授权，不另走测试修改批准。
 - converge 修改测试、预期、fixture、跳过规则或任何验证门槛，需用户明确批准并记录理由。
-  - `--auto-pilot` / `--yolo` 由 converge 执行者自裁定并记录。
+  - deliver 委托时由 converge 执行者按其 confidence 策略裁定并记录。
 - code-review 可以依据既定目标和设计自主修复实现与测试；降低验收、改变目标/契约仍需用户确认。
 - 非 feature 分支变更 modules.yaml 套件入口或新增 named suite：默认模式需用户确认；
-  `--auto-pilot` / `--yolo` 由主 Agent 自裁定并记录依据。
+  deliver 委托时由主 Agent 按其 confidence 策略裁定并记录依据。
 - 架构优化可以建议；超出当前目标不直接实施。
 - 修复后在当前 intent 原地重验。
 

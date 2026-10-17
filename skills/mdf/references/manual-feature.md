@@ -47,20 +47,20 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 `$mdf start --manual` 按 feature 处理，不绑定 PRP；`delivery.json` 写入 `manual: true`。
 本页规定人工 feature 的主线；普通交付的 design、开发与 converge 规则不适用。
 
-- start 通过 clarify 与用户确认工作范围及 slug。
-  先询问，再给 slug 建议并取得确认。
+- start 通过 clarify 确认工作范围及 slug；独立调用先询问再建议，deliver 按其 confidence 策略裁定。
 - 从 develop 创建 `feature/<slug>` 与独立 owner worktree；roster 固定为 `0,0,1`。
 - objectives 使用 `assets/templates/manual-objectives.md`。
   - 顺序：start → 人工工作 → code-review → verify smoke → fact update → close-out。
 - start 自勾 start；人工工作仅由用户显式勾选，Agent 不得代勾。
   - 用户可要求 Agent 介入实现与测试；介入不代表人工工作已完成。
-  - next / deliver 在人工工作未勾时交接给用户；auto-pilot / yolo 同样不得代勾或越过。
+  - next / deliver 在人工工作未勾时交接给用户；所有模式同样不得代勾或越过。
   - 用户显式勾选后，由 next 单步续办或 deliver 串联剩余阶段。
 - code-review 用 1 个 reviewer；前置为人工工作已勾，不要求 converge。
 - verify smoke 执行 feature 的 branch 验证（lint/build/quick/smoke），
   写入 `verification-report.json`；通过后自勾 verify smoke。
 - fact update 直接对齐当前事实，沿用其内部审阅与验证，通过后自勾 fact update。
-  - 进入前按 [pre-gitflow-finish](hooks/pre-gitflow-finish.md) 执行可选 hook；仅文档继续，
+  - deliver 的 until 排除内部 fact audit 时，fact update 返回截止点与未完成步骤，不代勾 fact update。
+  - 进入前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；仅文档继续，
     其他改动先补 code-review 与 verify smoke；失败仅汇报，续办不重跑。
 - close-out 核对上述前置项及报告；不要求 design、converge 或独立 fact audit 项。
   - Change 的 `proposals: []`；无 PRP 状态更新。
@@ -87,5 +87,5 @@ objectives 六项须与模板同序且没有缺项；不符则报告具体差异
 
 步骤 3 完整读取所选 intent 后执行；不同时委托多个阶段。
 next 完成一个阶段后结束；deliver 返回 Select，继续选下一阶段。
-close-out 触及 auto-pilot 的 Gitflow 确认时，返回 deliver 步骤 6；不得越过确认。
+deliver 委托时先核 until 截止点；只执行边界内的当前 intent，各项 decision 按其 confidence 策略裁定。
 没有剩余清单项时，调用方仍须核验实际合并结果，不凭清单全勾宣称交付完成。

@@ -29,6 +29,11 @@ upgrade 不读取本文件。
 验收：CLI 调用、产物检查与 intent 判断各自可追溯。非零退出或产物缺失走该步失败去向。
 「异常」仅指禁止用 CLI 模拟语义判断；此时停止，不另走失败去向。
 
+- 存在 deliver 外层上下文时，读取并继承 `references/deliver-policy.md`，不新开 deliver 工作流。
+  - 每次委托（含嵌套 intent / subagent）前检查 until；被排除就逐层返回截止点，不继续子流程。
+  - 每项新 decision 按同一 confidence 策略处理；低分交回外层步骤 6，确认后 resume 原位置。
+  - CLI 内部操作不是独立 intent；不把一次已授权的确定性命令拆开来模拟新的截止点。
+
 - intent 要求正常流程可用时，以 `doctor` 的 `normal_workflows_allowed` 为准。
   - `evidence.stale`、`generated.stale` 只报告，不单独阻断正常流程。
   - 其他 findings 与各操作的 clean 要求仍按原规则处理。
@@ -52,10 +57,11 @@ upgrade 不读取本文件。
 #### 角色
 
 - MCP tool：`choice` / `noul` / `score` / `run`，只加速「选项已知」的定型判断。
-- 无 Jev 时主 Agent 路径与未引入前完全一致。
-- 不停止、不多一轮判断、不阻塞流程。
+- 无 Jev 时主 Agent 路径与未引入前完全一致；deliver 的 decision 仍由主 Agent 评分并遵守 confidence 阈值。
+- Jev 缺失本身不阻塞流程；deliver fallback 评分仍低于阈值时按其策略请求用户确认。
 - ❌ 不是硬依赖，不是 gate。
-- ❌ 不替代用户确认、clarify、生成或确定性 CLI。
+- ❌ 不替代生成或确定性 CLI；普通 intent 不替代用户确认或 clarify。
+  deliver 的 decision 评分与确认边界以 `references/deliver.md`「自动裁定与 confidence」为准。
 
 #### 文档与执行顺序
 
@@ -74,7 +80,7 @@ upgrade 不读取本文件。
 | 无上列 tool | 主 Agent；见下方首次提示 | 记 `jev=unavailable`，不再调用 |
 | 认证失败（缺 key / 401 等） | 主 Agent；见下方首次提示 | 粘性 `unavailable` |
 | 非认证失败或结果畸形 | 主 Agent | 不粘性禁用 |
-| 低置信度（低于该步阈值） | 不采信，主 Agent | 不禁用 |
+| 低置信度（低于该步阈值） | 普通判断交主 Agent；非 yolo 的 deliver decision 请求用户确认 | 不禁用 |
 | 合法结果且达阈值 | 仅已枚举定型分支 | 保持可用 |
 
 默认阈值：

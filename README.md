@@ -55,7 +55,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf deliver [<target>] [--auto-pilot] [--yolo]` | 持续推进到 close-out；可并行分派 subagent |
+| `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 自动推进到截止 intent 之前；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf adhoc [<工作描述>]` | 自动生成五项 objectives，在临时 worktree 完成小工作并收口 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
@@ -92,7 +92,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 主线 intent 由用户手动触发。
 
 - `$mdf next`：单步续办。
-- `$mdf deliver`：从 start 持续到 close-out。
+- `$mdf deliver`：自动推进，默认停在 close-out 之前。
 
 统一骨架：
 
@@ -139,13 +139,14 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不计入 roster。
 - deliver 尚未 start 时先委托 start。
 - 可传位置参数 target（PRP 或 Bug ID，自动分辨）。
-- 需要用户决定时暂停。
-- 自裁定模式：
-  - `--auto-pilot` 由 Agent 自裁定，仅在合入目标主线并删除源分支前确认。
-  - `--yolo` 同等自裁定且跳过该确认。
-  - 死硬阻塞仍停止。
-  - finish 保留 detached worktree；Agent 收尾后另行询问是否删除，所有模式都须明确确认。
-    确认删除后结束本对话，后续工作在主 worktree 开新对话。
+- 自动裁定与截止点：
+  - 默认所有 decision 由 AI 计算 confidence，优先用 Jev；不可用时主 Agent 评分。
+  - confidence ≥ 0.8 自动确认，低于 0.8 请求用户确认；不降低验收要求。
+  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认 `--until close-out`。
+  - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
+  - manual slug、squash 与收尾 worktree 删除等 decision 也适用；人工工作仍须用户完成并勾选。
+  - finish 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。
+    后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。
 - release 从 develop 开分支前确认发布目标。
   - 工作线四选一；目标里只写选中的那条。不实施新 PRP。
   - 不联调：`start → [design?] → 开发 → converge → code-review → verify branch →

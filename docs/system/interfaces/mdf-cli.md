@@ -97,7 +97,8 @@ deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 close-
 
 - deliver 负责从尚未 start 起持续委托、并行 subagent 的 worktree 身份核验与结果交接。
 - design 的 Baseline 与 converge 的 owner subagent 由各 intent 启动，CLI 不介入。
-- 位置参数 target 与 `--auto-pilot`、`--yolo` 由 intent 解释，不是 CLI 参数。
+- 位置参数 target 与 `--until`（别名 `--stop-at`）、`--yolo` 由 intent 解释，不是 CLI 参数。
+  默认自动裁定、confidence < 0.8 请求确认、默认停在 close-out 之前；细则见 deliver 契约。
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后调用：
 

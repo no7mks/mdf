@@ -92,7 +92,7 @@
 
 #### 交付
 - `$mdf next [--depth N]`：续办在途；adhoc 使用五项账本，无在途时委托 tree
-- `$mdf deliver [<target>] [--auto-pilot] [--yolo]`：从 start 起持续推进到 close-out；可并行阶段强制 subagent 分别执行
+- `$mdf deliver [<target>] [--until <intent>] [--yolo]`：自动推进到截止 intent 之前；可并行阶段强制 subagent 分别执行
 - `$mdf start`（可带 `--manual`）：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按五项 objectives 完成工作并本地收口
@@ -140,9 +140,10 @@ $mdf prp tree
 $mdf tree --depth 2
 $mdf deliver
 $mdf deliver prp-001
-$mdf deliver bug-CD34 --auto-pilot
-$mdf deliver --auto-pilot
+$mdf deliver bug-CD34 --until code-review
+$mdf deliver --stop-at close-out
 $mdf deliver --yolo
+$mdf deliver --yolo --until close-out
 $mdf start
 $mdf adhoc 更新配置说明
 $mdf jot
@@ -247,25 +248,27 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：续办在途流程；无在途时委托 tree。
   - 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
     普通四种 kind 续办交付主线；adhoc 使用五项账本。`$mdf next?` 见 tree。
-- `$mdf deliver [<target>] [--auto-pilot] [--yolo]`
+- `$mdf deliver [<target>] [--until <intent>] [--yolo]`
   - 用法：`$mdf deliver`、`$mdf deliver <target>`。
-    可带 `--manual`、`--auto-pilot` 或 `--yolo`。
-  - 用途：锁定当前一次交付，必要时先 start，持续运行到 close-out 完成。
+    可带 `--manual`、`--until <intent>`（别名 `--stop-at`）或 `--yolo`。
+  - 用途：锁定当前一次交付，必要时先 start，自动运行到截止 intent 之前。
   - 说明：
-    - target 为位置参数，自动分辨 PRP 或 Bug；分不清则询问。无 target 时锁定并续办
+    - target 为位置参数，自动分辨 PRP 或 Bug，按 confidence 策略选择。无 target 时锁定并续办
       当前在途交付；target 冲突或命中已 in_progress 的 Proposal 时停止。
     - 支持 feature/bugfix/hotfix/release/adhoc；roster ≥1 且两路可并行时强制分别使用
       qa/dev worktree 的 subagent。
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
-    - 默认遇到需用户决定或外部阻塞时暂停。
-    - `--auto-pilot` 由 Agent 自裁定，仅在 Gitflow 收口（合入目标主线并删除源分支）前确认；
-      `--yolo` 同等自裁定且跳过该确认；死硬阻塞仍停止。
+    - 默认所有 decision 由 AI 评分，优先用 Jev，无 Jev 时主 Agent 评分。
+      confidence ≥ 0.8 自动确认，< 0.8 请求用户确认。
+    - 默认 `--until close-out`，exclusive，不执行 close-out；`--stop-at` 为别名。
+    - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
     - `--roster` 可转交给 start，仅尚未 start 时有效。
     - strategy / models 可转交给 start、design、code-review：
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
-    - 包含 close-out 的合并及适用的 tag、发版推送。
-    - finish 保留 detached worktree；收尾后询问是否删除，所有模式都须明确确认。
+    - 允许进入 close-out 时包含其合并及适用的 tag、发版推送，不另加固定 Gitflow 确认。
+    - manual slug、squash 与收尾删除工作区同样按 confidence 策略裁定，人工工作仍须用户显式勾选。
+    - finish 保留 detached worktree；收尾决定是否删除。
       删除后本对话不要再继续，后续工作在主 worktree 开新对话。
 - `$mdf start`
   - 用法：`$mdf start` 或 `$mdf start --manual`；可带 `--roster`、`--*-strategy`、`--*-model`

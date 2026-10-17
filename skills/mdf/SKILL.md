@@ -35,47 +35,47 @@ disable-model-invocation: true
 │ 3 Dispatch                       │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 边界不明 ──────────────────────────────────────→ 3 Dispatch
-                 ├──── 材料缺失 ──────────────────────────────────────→ [停止并报告]
+                 ├──── 边界不明 ──────────────────────────────────────────→ 3 Dispatch
+                 ├──── 材料缺失 ──────────────────────────────────────────→ [停止并报告]
                  │
-                 ├──── bootstrap ─────────────────────────────────────→ references/bootstrap.md
-                 ├──── init migrate / migrate ────────────────────────→ references/migrate.md
-                 ├──── init ──────────────────────────────────────────→ references/init.md
-                 ├──── intake ────────────────────────────────────────→ references/intake.md
-                 ├──── tree [--depth N] ──────────────────────────────→ references/tree.md
-                 ├──── prp tree ──────────────────────────────────────→ references/tree.md
-                 ├──── next? / next？ ────────────────────────────────→ references/tree.md
-                 ├──── next [--depth N] ──────────────────────────────→ references/next.md
-                 ├──── deliver [<target>] [--auto-pilot] [--yolo] ────→ references/deliver.md
-                 ├──── start ─────────────────────────────────────────→ references/start.md
-                 ├──── adhoc [<工作描述>] ────────────────────────────→ references/adhoc.md
-                 ├──── design ────────────────────────────────────────→ references/design.md
-                 ├──── write-tests ───────────────────────────────────→ references/write-tests.md
-                 ├──── implement ─────────────────────────────────────→ references/implement.md
-                 ├──── converge ──────────────────────────────────────→ references/converge.md
-                 ├──── fix <bug-id> [--yolo] ─────────────────────────→ references/fix.md
-                 ├──── bug close <bug-id> --fixed-in <version> ───────→ references/bug-close.md
-                 ├──── code-review ───────────────────────────────────→ references/code-review.md
-                 ├──── verify ────────────────────────────────────────→ references/verify.md
-                 ├──── fact update ───────────────────────────────────→ references/fact-update.md
-                 ├──── fact audit ────────────────────────────────────→ references/fact-audit.md
-                 ├──── prp split ─────────────────────────────────────→ references/prp-split.md
-                 ├──── close-out / finish ────────────────────────────→ references/close-out.md
-                 ├──── squash [--dry-run] ────────────────────────────→ references/squash.md
-                 ├──── prettify ──────────────────────────────────────→ references/prettify.md
-                 ├──── clarify <议题> ────────────────────────────────→ references/clarify.md
-                 ├──── bug create ────────────────────────────────────→ references/bug-create.md
-                 ├──── prp create ────────────────────────────────────→ references/prp-create.md
-                 ├──── prp review ────────────────────────────────────→ references/prp-review.md
-                 ├──── archive ───────────────────────────────────────→ references/archive.md
-                 ├──── codewiki generate ─────────────────────────────→ references/codewiki-generate.md
-                 ├──── codewiki update ───────────────────────────────→ references/codewiki-update.md
-                 ├──── jot / jot promote ─────────────────────────────→ references/jot.md
-                 ├──── help / help <intent> ──────────────────────────→ references/help.md
-                 ├──── upgrade ───────────────────────────────────────→ references/upgrade.md
-                 ├──── to <target> ───────────────────────────────────→ references/to.md
-                 ├──── sync ──────────────────────────────────────────→ references/sync.md
-                 └──── integrate ─────────────────────────────────────→ references/integrate.md
+                 ├──── bootstrap ─────────────────────────────────────────→ references/bootstrap.md
+                 ├──── init migrate / migrate ────────────────────────────→ references/migrate.md
+                 ├──── init ──────────────────────────────────────────────→ references/init.md
+                 ├──── intake ────────────────────────────────────────────→ references/intake.md
+                 ├──── tree [--depth N] ──────────────────────────────────→ references/tree.md
+                 ├──── prp tree ──────────────────────────────────────────→ references/tree.md
+                 ├──── next? / next？ ────────────────────────────────────→ references/tree.md
+                 ├──── next [--depth N] ──────────────────────────────────→ references/next.md
+                 ├──── deliver [<target>] [--until <intent>] [--yolo] ────→ references/deliver.md
+                 ├──── start ─────────────────────────────────────────────→ references/start.md
+                 ├──── adhoc [<工作描述>] ────────────────────────────────→ references/adhoc.md
+                 ├──── design ────────────────────────────────────────────→ references/design.md
+                 ├──── write-tests ───────────────────────────────────────→ references/write-tests.md
+                 ├──── implement ─────────────────────────────────────────→ references/implement.md
+                 ├──── converge ──────────────────────────────────────────→ references/converge.md
+                 ├──── fix <bug-id> [--yolo] ─────────────────────────────→ references/fix.md
+                 ├──── bug close <bug-id> --fixed-in <version> ───────────→ references/bug-close.md
+                 ├──── code-review ───────────────────────────────────────→ references/code-review.md
+                 ├──── verify ────────────────────────────────────────────→ references/verify.md
+                 ├──── fact update ───────────────────────────────────────→ references/fact-update.md
+                 ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
+                 ├──── prp split ─────────────────────────────────────────→ references/prp-split.md
+                 ├──── close-out / finish ────────────────────────────────→ references/close-out.md
+                 ├──── squash [--dry-run] ────────────────────────────────→ references/squash.md
+                 ├──── prettify ──────────────────────────────────────────→ references/prettify.md
+                 ├──── clarify <议题> ────────────────────────────────────→ references/clarify.md
+                 ├──── bug create ────────────────────────────────────────→ references/bug-create.md
+                 ├──── prp create ────────────────────────────────────────→ references/prp-create.md
+                 ├──── prp review ────────────────────────────────────────→ references/prp-review.md
+                 ├──── archive ───────────────────────────────────────────→ references/archive.md
+                 ├──── codewiki generate ─────────────────────────────────→ references/codewiki-generate.md
+                 ├──── codewiki update ───────────────────────────────────→ references/codewiki-update.md
+                 ├──── jot / jot promote ─────────────────────────────────→ references/jot.md
+                 ├──── help / help <intent> ──────────────────────────────→ references/help.md
+                 ├──── upgrade ───────────────────────────────────────────→ references/upgrade.md
+                 ├──── to <target> ───────────────────────────────────────→ references/to.md
+                 ├──── sync ──────────────────────────────────────────────→ references/sync.md
+                 └──── integrate ─────────────────────────────────────────→ references/integrate.md
 ```
 
 ## 工作流（唯一执行契约）
@@ -105,8 +105,10 @@ disable-model-invocation: true
   - `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，
     不得当未知调用送 help。
   - `$mdf next` 无问号时执行 `references/next.md`。
-- `$mdf deliver [<target>] [--auto-pilot] [--yolo]` 仍是 deliver，不是独立 intent。
-  - `--auto-pilot` 与 `--yolo` 可在 target 前或后；target 由 deliver 解析。
+- `$mdf deliver [<target>] [--until <intent>] [--yolo]` 仍是 deliver，不是独立 intent。
+  - option 可在 target 前或后；`--stop-at` 是 `--until` 的别名，值不算 target。
+  - 默认自动裁定 decision，confidence < 0.8 请求用户确认；默认 `--until close-out`，不执行该 intent。
+  - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效。详见 deliver。
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
   - `--yolo` 仅自动确认内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
 - `$mdf bug close <bug-id> --fixed-in <version>`：ID 与稳定 SemVer 必填；
@@ -138,7 +140,7 @@ intent 只由显式调用选择：
   - 例外：显式 next、deliver 或 adhoc 按各自已定义范围内部委托，不扩大当前目标。
 - 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
-- deliver 可内部委托从 start 起的剩余交付阶段直到 close-out。
+- deliver 可内部委托截止点之前从 start 起的剩余交付阶段；yolo 无默认截止点。
 - adhoc 可内部委托其五项清单的剩余阶段直到 close-out。
 - `$mdf close-out` 与 `$mdf finish` 同义，均执行 `references/close-out.md`。
 - `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
