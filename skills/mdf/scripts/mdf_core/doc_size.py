@@ -107,7 +107,8 @@ def size_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
             findings.append(
                 Finding(
                     "size.hard",
-                    f"{name} 文档 {count} 行，超过限制 {limit}；须拆页或下沉",
+                    f"{name} 文档 {count} 行，超过限制 {limit}；须拆页或下沉，"
+                    f"每个结果最多 {limit * 7 // 10} 行",
                     rel,
                 )
             )

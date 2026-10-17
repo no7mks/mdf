@@ -184,6 +184,7 @@ def test_audit_enforces_size_limits_by_role(
     assert result.returncode == 2
     hits = [item for item in data["findings"] if item["code"] == "size.hard"]
     assert [item["path"] for item in hits] == [relative_path]
+    assert f"每个结果最多 {(lines - 1) * 7 // 10} 行" in hits[0]["message"]
     assert not any(item["code"] == "size.soft" for item in data["warnings"])
 
 
@@ -196,7 +197,7 @@ def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):
 
     data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo)))
     assert data["finding_count"] == 0
-    assert [item["code"] for item in data["warnings"]] == ["agents.size"]
+    assert data["warnings"] == []
 
 
 @pytest.mark.parametrize("scope", ["full", "branch"])
@@ -218,7 +219,7 @@ def test_html_proposals_have_no_line_limit(python_exe, tmp_path, scope):
 
     # 免除行数限制后仍须检查可见正文结构。
     proposal.write_text(
-        proposal.read_text().replace("</main>", "<p>" + "说明" * 61 + "。</p></main>"),
+        proposal.read_text().replace("</main>", "<p>" + "说明" * 101 + "。</p></main>"),
         encoding="utf-8",
     )
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
@@ -226,7 +227,7 @@ def test_html_proposals_have_no_line_limit(python_exe, tmp_path, scope):
     assert _codes(result) == ["prose.sentence"]
 
 
-def test_agents_size_warning_can_be_ignored(python_exe: str, tmp_path: Path):
+def test_agents_ignore_rule_remains_available(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     agents = repo / "AGENTS.md"
     text = agents.read_text(encoding="utf-8")

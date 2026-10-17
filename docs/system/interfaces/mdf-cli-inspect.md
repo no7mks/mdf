@@ -89,9 +89,12 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | `docs/context/adr/` | 300 |
 | Markdown Proposal、Bug、`docs/JOTS.md` | 500 |
 
+- 超限必须拆分，每个结果不超过对应硬限制的 70%，整数向下取整；审查复核拆分结果。
+- 源代码与测试源代码单文件超过 1000 行报 `code.size`，拆分后每个最多 700 行。
+  - `full` 检查全仓已跟踪代码；`branch` 检查改动代码；`paths` 检查指定实现路径中的代码。
+  - 扩展名集合见 `mdf_core/code_size.py`；配置、数据、文档与 lockfile 不计。
 - HTML 不检查行数上限，可见正文仍执行结构检查。
-- 整份 `AGENTS.md` 超过 200 行另发 warning `agents.size`。
-  - `.mdf/modules.yaml` 可写 `pattern: AGENTS.md` 记住后不再提示。
+- `AGENTS.md` 只检查 MDF 托管块，不对整份文件另设行数 warning。
 - `full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。
 
 同一检查面还按 `skills/mdf/references/doc-structure.md` 报结构硬限制（`docs/JOTS.md` 除外，
@@ -100,7 +103,7 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | code | 触发条件 |
 | --- | --- |
 | `prose.block` | 连续散文超过 6 行 |
-| `prose.sentence` | 单句显示宽度超过 120 |
+| `prose.sentence` | 单句显示宽度超过 200（中文算 2 个） |
 | `prose.list_item` | 单个列表项超过 4 行 |
 | `prose.section` | 一个标题下散文合计超过 15 行 |
 | `prose.emoji` | 出现 ⚠️ ✅ ❌ 💡 📌 📂 📍 ⬇️ 以外的 emoji |

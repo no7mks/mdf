@@ -6,16 +6,16 @@ from pathlib import Path
 from _support import REPO_ROOT
 
 
-MAX_LINE_WIDTH = 120
+MAX_LINE_WIDTH = 180
 
 
 MAX_FILE_LINES = 500
 
 
-TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml", ".yml"}
+TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml", ".yml", ".html"}
 
 
-TEXT_ROOTS = (".agents", "skills", "tests", "internal")
+TEXT_ROOTS = (".agents", "skills", "tests", "internal", "docs")
 
 
 ROOT_TEXT_FILES = (
@@ -48,25 +48,13 @@ def file_measurement(path: Path) -> tuple[int, list[tuple[int, int]]]:
     widths = [
         (number, display_width(line))
         for number, line in enumerate(lines, start=1)
-        if len(line) > MAX_LINE_WIDTH
+        if display_width(line) > MAX_LINE_WIDTH
     ]
     return len(lines), widths
 
 
 def display_width(text: str) -> int:
-    """返回显示宽度；全角和宽字符（包括中文）按两个字符计。"""
-    return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1
-               for char in text)
-
-
-def has_split_exception(path: Path) -> bool:
-    """检查文件开头是否说明了超过行数上限仍不拆分的理由。"""
-    header = "\n".join(
-        path.read_text(encoding="utf-8").splitlines()[:20]
-    )
-    return "不拆分" in header and any(
-        word in header for word in ("理由", "原因", "因为")
-    )
+    return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in text)
 
 
 def describe(path: Path, line_count: int, widths: list[tuple[int, int]]) -> str:
@@ -84,13 +72,16 @@ def test_file_limits():
     failures: list[str] = []
     for path in checked_files():
         line_count, widths = file_measurement(path)
-        over_line_limit = (
-            line_count > MAX_FILE_LINES and not has_split_exception(path)
-        )
+        limit = 1000 if path.suffix in {".py", ".sh"} else MAX_FILE_LINES
+        over_line_limit = path.suffix != ".html" and line_count > limit
         if over_line_limit or widths:
             failures.append(describe(path, line_count, widths))
     assert not failures, "File limits exceeded:\n" + "\n".join(failures)
 
 
-def test_display_width_counts_chinese_as_two_characters():
-    assert display_width("MDF 中文") == 8
+def test_line_length_counts_display_width(tmp_path):
+    path = tmp_path / "text.md"
+    path.write_text("中" * 90 + "\n" + "a" * 180 + "\n", encoding="utf-8")
+    assert file_measurement(path) == (2, [])
+    path.write_text("中" * 90 + "a" + "\n" + "a" * 181 + "\n", encoding="utf-8")
+    assert file_measurement(path) == (2, [(1, 181), (2, 181)])

@@ -147,9 +147,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 - 独立调用省略时传 `--scope branch`。裸 CLI 省略时仍为 `full`，本流程不使用该默认。
 - `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 `merge-base develop HEAD`。
-- `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，实现根下已跟踪文件传
+- `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，实现根下已跟踪文件或已跟踪源代码（含测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
-- CLI 按 `repository-contract.md` 的体积表检查 `size.hard`。
+- CLI 按 `repository-contract.md` 的体积表检查 `size.hard`，源代码与测试源代码超 1000 行报 `code.size`。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，
   不合则 `overview.core_modules` finding：
   - 五行必须是配置、可观测性、错误、鉴权、限制与恢复。
@@ -221,7 +221,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   - 不做拆页 refine。`docs/repowiki/` 不审、不改。
 - `docs/system/testing/<suite>.md` 的入口命令行：整段是命令，或以 `# ` 开头写文字；二者不得混排。
 - 文档结构：按 `references/doc-structure.md`。
-  - 硬限制由 CLI 报 `prose.*`；人工审软限制与内容形态，大段文字改为列表、表格或图。
+  - 硬限制由 CLI 报 `prose.*`；人工审超限后的 70% 拆分结果与内容形态，大段文字改为列表、表格或图。
   - 按同一规则人工复核 ASD-STE100 写作原则，记录措辞改进建议；CLI 不验证标准符合性。
 
 可选加速（见 `common.md`「Jev 可选加速」）：
@@ -251,15 +251,15 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 #### 警告
 
-- 逐条审阅 CLI warning（`audit.uncovered`、`agents.size`）以及步骤 3 记下的
+- 逐条审阅 CLI warning（`audit.uncovered`）以及步骤 3 记下的
   `agents.project_content`。
 - `.mdf/modules.yaml` 某 module 的 `ignore` 已覆盖 `AGENTS.md` 时，
-  不再确认 `agents.size` 与 `agents.project_content`。
+  不再确认 `agents.project_content`。
 
 验收：
 
 - 未被 evidence 引用且未被 ignorelist 覆盖的实现文件。
-- 未忽略的 `agents.size` / `agents.project_content`。
+- 未忽略的 `agents.project_content`。
 - 逐条处置记录。
 
 异常与交接：列入会话摘要后继续 6。

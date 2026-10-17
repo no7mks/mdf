@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from . import doctor
+from .code_size import code_size_findings, is_source
 from .doc_size import sizable_documents, size_findings, size_role, structure_findings
 from .errors import Finding, MDFError, add_finding, emit, serialize_findings
 from .gitutil import git_path_tracked, repo_path, require_git_root, run
@@ -14,7 +15,6 @@ from .paths import path_stays_in_repo, relative
 from .progress import progress, report_progress
 from .modules import MODULES_PATH, load_modules
 from .validate_evidence import fact_documents, frontmatter_evidence
-from .constants import SIZE_AGENTS_FILE
 from .validate_manifest import implementation_roots
 from .yamlutil import read_frontmatter
 
@@ -82,7 +82,7 @@ def _scope_paths(
             path.is_file()
             and not path.is_symlink()
             and git_path_tracked(repo, path)
-            and any(root in path.parents for root in roots)
+            and (any(root in path.parents for root in roots) or is_source(path))
         ):
             implementation.append(path)
         else:
@@ -230,6 +230,7 @@ def audit_payload(
                 )
             sources, documents = all_sources, sorted(facts)
             sized = sizable_documents(repo)
+            code_paths = _tracked_files(repo, [repo])
         elif scope == "branch":
             if implementation_paths or document_paths:
                 add_finding(
@@ -237,6 +238,7 @@ def audit_payload(
                 )
             resolved_base = _resolve_base(repo, base, findings)
             changed = _changed_paths(repo, resolved_base) if resolved_base else []
+            code_paths = [path for path in changed if git_path_tracked(repo, path)]
             sources, documents = _branch_scope(repo, all_sources, facts, changed)
             sized = documents + [
                 path for path in changed
@@ -258,11 +260,13 @@ def audit_payload(
                 findings,
             )
             sized = documents
+            code_paths = sources
     report_progress(
         "fact-audit 范围",
         f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
     )
     with progress("fact-audit 3/4：检查文档结构"):
+        findings.extend(code_size_findings(repo, code_paths))
         findings.extend(size_findings(repo, sized))
         findings.extend(structure_findings(repo, sized))
         findings.extend(overview_core_module_findings(repo, documents))
@@ -297,25 +301,6 @@ def audit_payload(
             and path not in ignored
             and path.name not in NON_BEHAVIORAL_NAMES
         ]
-        agents = repo / "AGENTS.md"
-        if (
-            (scope == "full" or agents in sized)
-            and agents.is_file()
-            and not agents.is_symlink()
-            and agents.resolve() not in ignored
-        ):
-            count = len(agents.read_text(encoding="utf-8").splitlines())
-            _, limit = SIZE_AGENTS_FILE
-            if count > limit:
-                warnings.append(
-                    Finding(
-                        "agents.size",
-                        f"AGENTS.md 整份 {count} 行，超过 {limit}；"
-                        "可下沉到 PROJECT.md 或写入 modules.yaml ignore",
-                        "AGENTS.md",
-                        "warning",
-                    )
-                )
     payload = {
         "ok": not findings,
         "operation": "audit",

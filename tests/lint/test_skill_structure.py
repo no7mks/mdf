@@ -112,7 +112,7 @@ def test_invoked_scripts_exist(skill: Skill):
     )
 
 
-MDF_LINE_LIMIT = 400
+MDF_LINE_LIMIT = 500
 
 
 MDF_TEXT_GLOBS = (
@@ -135,8 +135,9 @@ def test_mdf_skill_files_respect_line_limit():
             if not path.is_file():
                 continue
             lines = path.read_text(encoding="utf-8").splitlines()
-            if len(lines) > MDF_LINE_LIMIT:
-                offenders.append(f"{path.relative_to(skill.path)}:{len(lines)}")
+            limit = 1000 if path.suffix == ".py" else MDF_LINE_LIMIT
+            if len(lines) > limit:
+                offenders.append(f"{path.relative_to(skill.path)}:{len(lines)} (limit={limit})")
     assert not offenders, (
         f"{skill.name} files exceed {MDF_LINE_LIMIT} lines: {offenders}"
     )

@@ -91,7 +91,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
         for target in re.findall(r"references/[a-z-]+\.md", text):
             assert (root / target).is_file(), (path, target)
         assert all(
-            sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in line) <= 120
+            sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in line) <= 180
             for line in text.splitlines()
         ), path
 

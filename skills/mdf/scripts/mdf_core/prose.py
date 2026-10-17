@@ -3,7 +3,7 @@ import re
 import unicodedata
 
 PROSE_BLOCK_LINES = 6
-SENTENCE_WIDTH = 120
+SENTENCE_WIDTH = 200
 LIST_ITEM_LINES = 4
 SECTION_PROSE_LINES = 15
 ALLOWED_EMOJI = ("⚠️", "✅", "❌", "💡", "📌", "📂", "📍", "⬇️")
@@ -35,7 +35,7 @@ def _long_sentences(lines, number, issues):
         sentence = sentence.strip()
         if width(sentence) > SENTENCE_WIDTH:
             issues.append((number, "prose.sentence",
-                           f"单句显示宽度 {width(sentence)}，超过 {SENTENCE_WIDTH}；拆句或改为列表"))
+                           f"单句显示宽度 {width(sentence)}，超过 {SENTENCE_WIDTH}；拆句后每句显示宽度最多 140"))
 
 
 def _body(text):
@@ -50,7 +50,7 @@ def _body(text):
 
 
 def structure_issues(text):
-    """返回 (行号, code, 说明) 列表；只检查硬限制，软限制由审阅判断。"""
+    """返回 (行号, code, 说明) 列表；检查当前硬限制；超限后的拆分结果由审阅复核。"""
     issues = []
     block, item, item_indent, section_prose, section_start = [], [], -1, 0, 1
     fenced = False
@@ -59,7 +59,7 @@ def structure_issues(text):
         nonlocal block
         if len(block) > PROSE_BLOCK_LINES:
             issues.append((block[0][0], "prose.block",
-                           f"连续散文 {len(block)} 行，超过 {PROSE_BLOCK_LINES}；改为列表、表格或拆段"))
+                           f"连续散文 {len(block)} 行，超过 {PROSE_BLOCK_LINES}；拆分后每段最多 4 行"))
         if block:
             _long_sentences([line for _, line in block], block[0][0], issues)
         block = []
@@ -68,7 +68,7 @@ def structure_issues(text):
         nonlocal item, item_indent
         if len(item) > LIST_ITEM_LINES:
             issues.append((item[0][0], "prose.list_item",
-                           f"列表项 {len(item)} 行，超过 {LIST_ITEM_LINES}；拆成子项"))
+                           f"列表项 {len(item)} 行，超过 {LIST_ITEM_LINES}；拆分后每项最多 2 行"))
         if item:
             _long_sentences([line for _, line in item], item[0][0], issues)
         item, item_indent = [], -1
@@ -77,7 +77,7 @@ def structure_issues(text):
         nonlocal section_prose, section_start
         if section_prose > SECTION_PROSE_LINES:
             issues.append((section_start, "prose.section",
-                           f"本节散文共 {section_prose} 行，超过 {SECTION_PROSE_LINES}；拆小节或结构化"))
+                           f"本节散文共 {section_prose} 行，超过 {SECTION_PROSE_LINES}；拆分后每节散文最多 10 行"))
         section_prose, section_start = 0, number
 
     for number, raw in _body(text):

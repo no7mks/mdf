@@ -381,10 +381,15 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 `references/object-contract.md` 定义 Proposal、Bug 与 Change 的 schema 和不变量。
 intent 声明读取的契约或模板缺失时停止并报告，不猜测内容。
 
+- 写入源代码或测试源代码前，读取 `repository-contract.md` 的体积条款；修改后实测物理行数。
+  - 超限项须保留改写前大小与硬限制，逐个核对拆分结果不超过对应硬限制的 70%。
+  - 未满足时留在当前步骤修复；无法拆分则报告缺项，不勾选完成。
+
 | 材料 | 位置 | 读取条件 |
 | --- | --- | --- |
 | 意图 | `references/` | 读取显式调用命中的流程及其声明委托的内部流程 |
 | 公共契约 | `references/` | 按 intent 指定读取目录、对象或 CodeWiki 契约 |
 | 模板 | `assets/` | intent 要求写入仓库产出物时读取对应模板 |
+| 代码体积 | `references/repository-contract.md` | 写入源代码或测试源代码前读取体积条款 |
 | 文档结构与写作 | `references/doc-structure.md` | 写入或改写任何 Markdown 产出物前读取 |
 | 确定性 CLI | `scripts/` | intent 要求确定性操作时调用 |

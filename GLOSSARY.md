@@ -199,7 +199,7 @@ fact audit 对文档结构的语义审阅：
 - 审阅项：入口不过载、路由页只路由、唯一归属、主题拆页、读者分离、
   ADR 不复述当前结构、overview 核心模块表。
 - 行数硬限制由 CLI 检查（`size.hard`）。
-- 整份 `AGENTS.md` 超过 200 行为 warning `agents.size`。
+- `AGENTS.md` 的行数硬限制只检查 MDF 托管块，不检查整份文件。
 
 ## Proposal 状态
 

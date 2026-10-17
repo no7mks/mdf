@@ -130,9 +130,13 @@
 | HTML、`GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
 - 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
-- 超出限制的修复是拆页或下沉到主题叶，不是压缩措辞。
-- 整份 `AGENTS.md`（含非托管正文）超过 200 行是 CLI warning `agents.size`，不是 `size.hard`。
-  - 写入某 module 的 `ignore`（`pattern: AGENTS.md`）后不再提示。
+- 超出限制必须拆页或下沉到主题叶，每个结果不得超过其角色硬限制的 70%，整数向下取整。
+  - 上限 100 / 200 / 450 / 300 / 500 行分别对应拆分后 70 / 140 / 315 / 210 / 350 行。
+  - 不得用压缩措辞或删除空行代替拆分；审查按改写前内容复核结果。
+- 源代码与测试源代码单文件不得超过 1000 行；超限必须拆分，每个结果最多 700 行。
+  - `fact-audit` 按 scope 检查已跟踪的源代码与测试源代码，超限报 `code.size` finding。
+  - 不对配置、数据、文档或 lockfile 应用代码行数限制；代码类型按 `code_size.py` 的扩展名识别。
+- `AGENTS.md` 只检查 MDF 托管块的 100 行硬限制，不对整份文件另设行数 warning。
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。
 
@@ -287,7 +291,7 @@ budgets:
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
   - 可选 `ignore` 与 `named`。
 - **ignore**：`pattern` + `reason`；命中路径不触发 verify，也不产生 uncovered /
-  `agents.size` 类提示（`pattern: AGENTS.md` 可记住 AGENTS 警告）。
+  `agents.project_content` 类提示（`pattern: AGENTS.md` 可记住 AGENTS 警告）。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
 - repo 级同名入口默认按 module 名排序**串行展开**执行（plan id 为
   `<entry>:<module>`）；可选顶层 `verification` 覆写子集为单命令（id 为

@@ -27,7 +27,7 @@ def test_long_prose_block_and_section():
 
 
 def test_long_sentence_spans_wrapped_lines_but_links_count_only_text():
-    long = "这是一句非常长的说明" * 7
+    long = "这是一句非常长的说明" * 21
     assert codes(f"{long[:30]}\n{long[30:]}。\n") == [(1, "prose.sentence")]
     link = "见[文档](" + "a/" * 80 + "x.md)。\n"
     assert codes(link) == []
@@ -37,3 +37,14 @@ def test_long_list_item_and_disallowed_emoji():
     item = "- 第一行\n  第二行\n  第三行\n  第四行\n  第五行\n"
     assert codes(item) == [(1, "prose.list_item")]
     assert codes("- 🚀 发射\n") == [(1, "prose.emoji")]
+
+
+@pytest.mark.parametrize("body", ["中" * 99, "a" * 198, "Ａ" * 99])
+def test_sentence_limit_counts_display_width_at_boundary(body):
+    assert codes(body + "。") == []
+    assert codes(body + "a。") == [(1, "prose.sentence")]
+
+
+def test_sentence_limit_requires_splitting_instead_of_line_wrapping():
+    assert codes("中" * 100 + "\n" + "中" * 100 + "。") == [(1, "prose.sentence")]
+    assert codes("中" * 69 + "。" + "中" * 31 + "。") == []

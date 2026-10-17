@@ -192,7 +192,6 @@ RETIRED_TESTING_HANDBOOK = "docs/testing.md"
 SIZE_ROUTER = ("router", 100)
 SIZE_README = ("readme", 200)
 SIZE_PROJECT = ("project", 100)
-SIZE_AGENTS_FILE = ("agents-file", 200)
 SIZE_FACT = ("fact", 450)
 SIZE_ADR = ("adr", 300)
 SIZE_WORK_ITEM = ("work-item", 500)

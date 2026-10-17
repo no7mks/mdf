@@ -279,7 +279,7 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
     assert "须含 `docs/system/overview.md`、`docs/README.md` 与" in contract
     assert "`docs/system/testing/`" in contract
     assert "`layout.testing`" in contract
-    assert "`agents.size`" in contract
+    assert "只检查 MDF 托管块的 100 行硬限制" in contract
     assert "托管区块必须项目无关" in contract
     assert "按维护者角色工作" in contract
     agents_block = (skill / "assets" / "templates" / "agents-managed-block.md").read_text(
