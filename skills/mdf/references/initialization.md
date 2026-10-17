@@ -201,6 +201,7 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 更新与保留规则：
 
 - 更新时核对并保留未要求改变的配置，不依赖 CLI 默认值覆盖现有设置。
+  - 保留 manifest 的 `rules`；配置与文件约束见 [项目阶段 rule 契约](project-rules.md)。
 - 已有根文档和 AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范围，不覆盖重建。
 - 创建项目 `AGENTS.md` 时仅写标题与 MDF 托管区块；已有非托管内容仅以目标仓库实际文件为准。
 - ❌ 不得将用户级、父目录或会话中继承的指令复制为项目规则，除非用户明确要求。

@@ -43,13 +43,14 @@
 
 读取 `references/common.md` 与 `references/delivery-contract.md`；
 涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
+读取 [项目阶段 rule 契约](project-rules.md)，本阶段按 merge 后规则执行，冲突时 project 优先。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（不内嵌 fact）。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 核范围、前置与续办 | 基线、报告、检查 | 仅漏勾则 4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
+| 1 | Check | 约束 | 核范围、前置、项目 rule 与续办 | 基线、报告、rule 原文与指纹 | 仅漏勾则 4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
 | 2 | Review | Subagent | 按 roster.reviewers 启动独立 subagent 覆盖本轮 | N 份完整审查 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 汇总裁定、修复并复核 | 发现、裁定、修复依据 | 4 | 保留现场并报告 |
 | 4 | Record | 脚本 | 按需 smart；裁定收口则洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 结束 | 可修则 3；否则停 |
@@ -58,6 +59,19 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 旧终稿或目标主线已包含都不代替此轮；进行中草稿只存范围和审查证据，进度仍看 objectives。
 
 ## 术语与数据结构
+
+### 项目 rule 的阶段接入
+
+步骤 1 切回 owner 并核对 ready 与范围后，以 `--stage code-review` 加载项目 rule，再判定续办。
+
+- 本步在修复续办、无新改动和仅漏勾等快速出口前执行；规则变化不能沿用旧通过结论。
+- 每次分派前核对 rule，每份任务在固定 opening 后完整携带 MDF rule 与 project rule 原文。
+- reviewer 报告、进行中草稿与终稿记录来源、内容指纹；主 Agent 按相同规则裁定与修复。
+- 已配置时验收每份报告的 rule 来源与指纹，缺失或不一致不得视为完整报告。
+  - 未配置时以无项目 rule 核对，无需内容指纹。
+- 步骤 4 与无新改动出口验收前重新加载核对，变化先停止说明并等待确认。
+- 规则变化确认后走首轮：从固定交付基线审到新 review_head，使用冻结 roster.reviewers。
+  - 不复用旧报告，不沿用原增量范围或修复窗；旧问题清单仍传入作复核上下文。
 
 ### 范围与前置条件
 
@@ -263,8 +277,9 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 1. 合并各轮/各份进行中材料，覆盖写入一份
    `changes/unreleased/<slug>/code-review.md` **终稿**（**report**，非 gate）。
 2. 终稿须含：结论（声称通过）、已采纳与未解决清单（未解决须为空）、各轮要点与
-   裁定摘要、smart、quick 复现；路径与证据指针用仓库相对路径，不用 hash。
-3. ❌ 终稿不得出现任何 commit hash（含 base_commit / review_head / final_head /
+   裁定摘要、smart、quick 复现；路径与证据指针用仓库相对路径，不用 commit hash。
+3. rule 内容指纹须明确标注，不属于 commit hash；终稿保留该证据。
+   ❌ 终稿不得出现任何 commit hash（含 base_commit / review_head / final_head /
    左端点 tip、完整或缩写 SHA）。
 4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
 5. 提交终稿，将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。

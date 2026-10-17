@@ -60,6 +60,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | --- | --- | --- |
 | `info` | 版本信息 | [只读命令](mdf-cli-inspect.md) |
 | `run` | 代跑任意命令并落盘 | [只读命令](mdf-cli-inspect.md) |
+| `project-rules` | 项目阶段 rule 原文加载 | [只读命令](mdf-cli-inspect.md) |
 | `doctor` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
 | `prepare-git` | 非 Git 目录初始化为 master | [仓库写入命令](mdf-cli-write.md) |
 | `merge-no-ff` | 在当前分支 no-ff 合并指定提交 | [仓库写入命令](mdf-cli-write.md) |

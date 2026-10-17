@@ -12,6 +12,20 @@ python3 skills/mdf/scripts/mdf.py info
 输出 `tool_version`、`protocol_version` 和 `schema_version`。当前三者都必须为
 数字 `3`；intent 以此拒绝错误或不兼容的 CLI。
 
+## `project-rules`
+
+```bash
+python3 skills/mdf/scripts/mdf.py project-rules --repo /path/to/repository --stage design
+```
+
+只读加载 manifest 中所选阶段的 rule，不执行文件；`--stage` 必填，只接受 design 或 code-review。
+
+- 要求 Git 根和 manifest，不额外要求 ready 或 clean。
+- 输出 `stage`、`project_rule`；未配置为 null，否则含 `path`、完整 `content` 与 `sha256`。
+- 配置或文件无效时以 `invalid_rules` 非零退出；doctor / validate 同类 finding 为 `manifest.rules`。
+- 配置、文件约束和 Agent merge 契约见
+  [项目阶段 rule 契约](../../../skills/mdf/references/project-rules.md)。
+
 ## `doctor`
 
 ```bash

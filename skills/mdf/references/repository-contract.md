@@ -248,6 +248,9 @@ ASD-STE100 写作约定。CLI `fact-audit` 对结构硬限制报 `prose.*` findi
 ## Manifest
 
 可选 [start hook](hooks/post-gitflow-start.md) 与 [finish hook](hooks/pre-gitflow-finish.md)。
+可选 `rules.design` 与 `rules.code-review` 指向项目 rule 文件；只接受 rule，不接受 command。
+加载、project 优先的 merge、完整分派与续办证据见 [项目阶段 rule 契约](project-rules.md)。
+
 Manifest 控制面可选 `logo`：横幅 emoji 字符串；缺省、`null` 或空字符串用 `📍`，init 保留配置。
 
 - `schema_version` 必须为 `3`；`versioning.latest_release` 只能是稳定 SemVer 或 `null`，`unreleased` 不是版本线值。

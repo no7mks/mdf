@@ -31,6 +31,7 @@
 
 读取 `references/delivery-contract.md`、`references/common.md`；
 涉及 PRP 时读取 `references/object-contract.md`。
+读取 [项目阶段 rule 契约](project-rules.md)，本阶段按 merge 后规则执行，冲突时 project 优先。
 
 - CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py" delivery <action> --repo "$REPO_ROOT"`。
 - 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
@@ -41,11 +42,20 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 确认 start 记录与 kind 依据 | start 记录、kind 依据、适用的 objectives | 2 | 停止并报告 |
+| 1 | Check | 约束 | 确认 start、kind 并加载核对项目 rule | start、kind、objectives、rule 原文与指纹 | 2 | 停止并报告 |
 | 2 | Clarify | 约束 | 委托 clarify，确认设计、测试策略及双方共用代码底座 | 用户确认的设计与底座方案 | 3 | 停止并报告 |
 | 3 | Baseline | Subagent | 写设计、底座并提交基线 | design、底座、勾选、提交 | 结束 | 缺确认回 2；可修正则 3；否则停 |
 
 ## 术语与数据结构
+
+### 项目 rule 的阶段接入
+
+步骤 1 完成 start 与 kind 检查后，以 `--stage design` 加载项目 rule，成功后才进入步骤 2。
+
+- 步骤 2 的 Clarify 使用 merge 后规则，确认稿包含 rule 来源与内容指纹。
+- 步骤 3 分派前再核对规则，向 owner subagent 完整传递适用 MDF rule 与 project rule 原文。
+- subagent 将来源与内容指纹写入 design.md；主 Agent 验收前重新加载核对。
+- 规则变更按项目阶段 rule 契约停止；确认后回步骤 2，不沿用旧方案或旧 Baseline 通过结论。
 
 ### 范围与前置条件
 

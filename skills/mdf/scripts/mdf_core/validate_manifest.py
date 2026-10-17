@@ -113,6 +113,17 @@ def validate_manifest(
         validate_hooks(manifest)
     except MDFError as exc:
         add_finding(findings, "manifest.hooks", str(exc), ".mdf/manifest.yaml")
+    from .project_rules import load_project_rule, validate_rules
+    try:
+        rules = validate_rules(manifest)
+    except MDFError as exc:
+        add_finding(findings, "manifest.rules", str(exc), ".mdf/manifest.yaml")
+    else:
+        for stage in rules:
+            try:
+                load_project_rule(repo, manifest, stage)
+            except MDFError as exc:
+                add_finding(findings, "manifest.rules", str(exc), ".mdf/manifest.yaml")
     implementation_roots(repo, manifest, findings)
     if manifest.get("state") not in ("initializing", "ready"):
         add_finding(

@@ -42,6 +42,12 @@ def build_parser() -> argparse.ArgumentParser:
     info = subparsers.add_parser("info")
     info.set_defaults(func=command_info)
 
+    from .project_rules import STAGES as RULE_STAGES, command_project_rules
+    rules = subparsers.add_parser("project-rules")
+    rules.add_argument("--repo", required=True)
+    rules.add_argument("--stage", choices=RULE_STAGES, required=True)
+    rules.set_defaults(func=command_project_rules)
+
     doctor = subparsers.add_parser("doctor")
     doctor.add_argument("--repo", required=True)
     doctor.set_defaults(func=command_doctor)
