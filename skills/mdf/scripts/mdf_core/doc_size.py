@@ -130,6 +130,7 @@ def command_prose_check(args) -> None:
     """列出结构硬限制违例：默认检查全部带角色文档，--path 指定任意仓库内 Markdown。"""
     from .errors import MDFError, emit
     from .gitutil import repo_path, require_git_root
+    from .modules import MODULES_PATH, load_modules
 
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -144,12 +145,16 @@ def command_prose_check(args) -> None:
     else:
         paths = [path for path in sizable_documents(repo)
                  if relative(repo, path) != "docs/JOTS.md"]
+    config = load_modules(repo) if (repo / MODULES_PATH).exists() else None
+    ignored = sorted({relative(repo, path) for path in paths
+                      if config and config.is_ignored(relative(repo, path))})
+    paths = [path for path in paths if relative(repo, path) not in ignored]
     issues = [
         {"path": relative(repo, path), "line": number, "code": code, "message": message}
         for path in sorted(set(paths))
         for number, code, message in structure_issues(role_text(path, relative(repo, path)))
     ]
     emit({"ok": not issues, "operation": "prose-check", "checked": len(set(paths)),
-          "issue_count": len(issues), "issues": issues})
+          "issue_count": len(issues), "issues": issues, "ignored": ignored})
     if issues:
         raise SystemExit(2)

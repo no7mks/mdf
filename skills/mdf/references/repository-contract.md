@@ -293,8 +293,11 @@ budgets:
 - 每个 module 必须声明 `sourceset`、`lint`、`build`、以及
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
   - 可选 `ignore` 与 `named`。
-- **ignore**：`pattern` + `reason`；命中路径不触发 verify，也不产生 uncovered /
-  `agents.project_content` 类提示（`pattern: AGENTS.md` 可记住 AGENTS 警告）。
+- **ignore**：`pattern` + `reason`；项目可排除源代码、测试源代码与文档，不要求位于实现根内。
+  - 命中路径不触发 verify，也不产生 uncovered / `agents.project_content` 类提示。
+  - `fact-audit` 与 `prose-check` 跳过命中文件的 `code.size`、`size.hard` 与 `prose.*` 检查。
+  - 命中文件不受长度与 70% 拆分要求约束；审阅不得再按这些规则要求拆分，报告匹配路径与理由。
+  - `fact-audit` 的 `ignored` 保留命中路径、pattern 与 reason；未匹配的已跟踪文件仍正常检查。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
 - repo 级同名入口默认按 module 名排序**串行展开**执行（plan id 为
   `<entry>:<module>`）；可选顶层 `verification` 覆写子集为单命令（id 为

@@ -150,6 +150,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，实现根下已跟踪文件或已跟踪源代码（含测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
 - CLI 按 `repository-contract.md` 的体积表检查 `size.hard`，源代码与测试源代码超 1000 行报 `code.size`。
+  - 命中 module `ignore` 的文件跳过 `code.size`、`size.hard` 与 `prose.*`，`ignored` 保留路径与理由。
+  - 人工审阅沿用该排除，不再以长度或 70% 拆分要求阻断这些文件。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，
   不合则 `overview.core_modules` finding：
   - 五行必须是配置、可观测性、错误、鉴权、限制与恢复。

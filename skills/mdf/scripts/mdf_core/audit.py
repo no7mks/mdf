@@ -194,7 +194,7 @@ def _ignored_paths(
                 add_finding(
                     findings,
                     "audit.ignore_empty",
-                    "ignore pattern matches no tracked implementation file",
+                    "ignore pattern matches no tracked repository file",
                     f"{module.name}:{rule.pattern}",
                 )
                 continue
@@ -220,7 +220,10 @@ def audit_payload(
         from .paths import load_manifest
         roots = implementation_roots(repo, load_manifest(repo), [])
         facts = set(fact_documents(repo))
-        all_sources = _tracked_files(repo, roots)
+        all_tracked = _tracked_files(repo, [repo])
+        all_sources = [path for path in all_tracked
+                       if any(path == root or root in path.parents for root in roots)]
+        ignored = _ignored_paths(repo, all_tracked, findings)
         resolved_base: str | None = None
         sized: list[Path]
         if scope == "full":
@@ -230,7 +233,7 @@ def audit_payload(
                 )
             sources, documents = all_sources, sorted(facts)
             sized = sizable_documents(repo)
-            code_paths = _tracked_files(repo, [repo])
+            code_paths = all_tracked
         elif scope == "branch":
             if implementation_paths or document_paths:
                 add_finding(
@@ -266,13 +269,13 @@ def audit_payload(
         f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
     )
     with progress("fact-audit 3/4：检查文档结构"):
-        findings.extend(code_size_findings(repo, code_paths))
-        findings.extend(size_findings(repo, sized))
-        findings.extend(structure_findings(repo, sized))
+        limited_documents = [path for path in sized if path not in ignored]
+        findings.extend(code_size_findings(repo, [path for path in code_paths if path not in ignored]))
+        findings.extend(size_findings(repo, limited_documents))
+        findings.extend(structure_findings(repo, limited_documents))
         findings.extend(overview_core_module_findings(repo, documents))
         findings.extend(project_entry_link_findings(repo, sized))
     with progress("fact-audit 4/4：映射 evidence 与覆盖"):
-        ignored = _ignored_paths(repo, all_sources, findings)
         mappings: list[dict[str, Any]] = []
         covered: set[Path] = set()
         for document in documents:
@@ -301,6 +304,7 @@ def audit_payload(
             and path not in ignored
             and path.name not in NON_BEHAVIORAL_NAMES
         ]
+    checked_paths = set(sources + code_paths + sized)
     payload = {
         "ok": not findings,
         "operation": "audit",
@@ -317,7 +321,7 @@ def audit_payload(
                 "reason": rule["reason"],
             }
             for path, rule in sorted(ignored.items())
-            if path in sources or relative(repo, path) == "AGENTS.md"
+            if path in checked_paths or relative(repo, path) == "AGENTS.md"
         ],
         "warning_count": len(warnings),
         "warnings": serialize_findings(warnings),

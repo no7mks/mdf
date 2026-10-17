@@ -41,6 +41,7 @@ MDF 的适用方式见 [文档结构规则](skills/mdf/references/doc-structure.
 
 `.mdf/modules.yaml` 中的交付单元：含 `sourceset`、`ignore`、分套件命令与可选 `named`
 suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提示。
+源代码、测试源代码与文档均可通过 module ignore 排除长度及结构硬限制，不再要求超限拆分。
 
 ## `$mdf verify`
 
