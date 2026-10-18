@@ -5,7 +5,7 @@ from mdf_test_support import *  # noqa: F403
 
 def test_codewiki_runtime_checks_existing_environment_without_installing(tmp_path, monkeypatch):
     load_core_module()
-    from mdf_core import codewiki_runtime
+    from mdf_core.integrations import codewiki_runtime
     root = tmp_path / "codewiki"
     (root / "codewiki").mkdir(parents=True)
     (root / "pyproject.toml").write_text("[project]\nname = 'test'\n")

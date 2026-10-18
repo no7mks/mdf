@@ -43,6 +43,11 @@ MDF 的适用方式见 [文档结构规则](skills/mdf/references/doc-structure.
 suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提示。
 源代码、测试源代码与文档均可通过 module ignore 排除长度及结构硬限制，不再要求超限拆分。
 
+## Package
+
+按目录组织的直属源文件集合，子目录独立计数；实现和测试分别统计，每类最多 50 个。
+超过即为大 package，按设计职责拆分后每个结果每类最多 35 个；module ignore 命中文件不计。
+
 ## `$mdf verify`
 
 `verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named suite 名解析。

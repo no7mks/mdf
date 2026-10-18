@@ -29,8 +29,8 @@ def test_merge_preserves_existing_merge(tmp_path, resolution):
     merge_head = (repo / ".git/MERGE_HEAD").read_bytes()
     head = git(repo, "rev-parse", "HEAD").stdout
     load_core_module()
-    from mdf_core.errors import MDFError
-    from mdf_core.gitflow import _merge
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.workspace.gitflow import _merge
 
     with pytest.raises(MDFError) as caught:
         _merge(repo, "incoming", "develop")
@@ -46,8 +46,8 @@ def test_merge_does_not_abort_when_git_refuses_to_start(tmp_path, monkeypatch):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     load_core_module()
-    from mdf_core import gitflow
-    from mdf_core.errors import MDFError
+    from mdf_core.workspace import gitflow
+    from mdf_core.foundation.errors import MDFError
     original = gitflow._git
     commands = []
 

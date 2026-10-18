@@ -121,7 +121,7 @@ def copy_fixture(tmp_path: Path) -> Path:
 
 
 def proposal_markdown(path: Path) -> str:
-    from mdf_core.yamlutil import read_frontmatter, frontmatter_span
+    from mdf_core.foundation.yamlutil import read_frontmatter, frontmatter_span
     _, body = read_frontmatter(path)
     text = path.read_text()
     start, end, _ = frontmatter_span(text)
@@ -129,8 +129,8 @@ def proposal_markdown(path: Path) -> str:
 
 
 def proposal_html(text: str) -> str:
-    from mdf_core.html_documents import render_html
-    from mdf_core.yamlutil import frontmatter_span, parse_yaml
+    from mdf_core.documents.html_documents import render_html
+    from mdf_core.foundation.yamlutil import frontmatter_span, parse_yaml
     start, end, body_start = frontmatter_span(text)
     rendered = render_html(parse_yaml(text[start:end]), text[body_start:])
     a, b, _ = frontmatter_span(rendered)
@@ -174,17 +174,14 @@ def load_core_module():
     if scripts_str not in sys.path:
         sys.path.insert(0, scripts_str)
     # mdf_core 是正常 package；白盒 monkeypatch 必须打到符号的
-    # 定义模块（如 "mdf_core.doctor.collect_findings"），因为消费模块
+    # 定义模块（如 "mdf_core.inspection.doctor.collect_findings"），因为消费模块
     # 对可 patch 的函数一律使用 `模块.函数()` 限定访问。
-    from mdf_core import (
-        commands_misc,
-        doctor,
-        errors,
-        gitutil,
-        init_repo,
-        moves,
-    )
-    from mdf_core import closeout_objects, closeout_shape, closeout_stage
+    from mdf_core import commands_misc
+    from mdf_core.inspection import doctor
+    from mdf_core.foundation import errors
+    from mdf_core.workspace import gitutil, init_repo
+    from mdf_core.documents import moves
+    from mdf_core.lifecycle import closeout_objects, closeout_shape, closeout_stage
 
     return SimpleNamespace(
         os=os,

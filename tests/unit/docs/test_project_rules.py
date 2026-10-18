@@ -6,13 +6,13 @@ import json
 import pytest
 
 from mdf_core.cli import main
-from mdf_core.constants import BASELINES
-from mdf_core.errors import MDFError
-from mdf_core.gitutil import run
-from mdf_core.init_repo import init_files, render_manifest
-from mdf_core.project_rules import load_project_rule, validate_rules
-from mdf_core.validate_manifest import validate_manifest
-from mdf_core.yamlutil import parse_yaml
+from mdf_core.foundation.constants import BASELINES
+from mdf_core.foundation.errors import MDFError
+from mdf_core.workspace.gitutil import run
+from mdf_core.workspace.init_repo import init_files, render_manifest
+from mdf_core.workspace.project_rules import load_project_rule, validate_rules
+from mdf_core.inspection.validate_manifest import validate_manifest
+from mdf_core.foundation.yamlutil import parse_yaml
 
 
 @pytest.fixture

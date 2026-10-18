@@ -109,7 +109,11 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 - 未排除文件超限必须拆分，每个结果不超过对应硬限制的 70%，整数向下取整；审查复核拆分结果。
 - 源代码与测试源代码单文件超过 1000 行报 `code.size`，拆分后每个最多 700 行。
   - `full` 检查全仓已跟踪代码；`branch` 检查改动代码；`paths` 检查指定实现路径中的代码。
-  - 扩展名集合见 `mdf_core/code_size.py`；配置、数据、文档与 lockfile 不计。
+  - 扩展名集合见 `mdf_core/inspection/code_size.py`；配置、数据、文档与 lockfile 不计。
+- package 对目录直属实现、测试源文件分别计数；超过 50 报 `package.size`，按设计职责拆分后每类最多 35。
+  - 子目录独立计数；`__init__.py` 计入，配置、数据、文档与 ignore 命中文件不计。
+  - full 检查全部 package；branch/paths 检查触及 package 的全部现存成员，含未改动文件。
+  - 测试命名规则见 `mdf_core/inspection/code_size.py`，同目录的实现与测试也不相加。
 - HTML 不检查行数上限，可见正文仍执行结构检查。
 - `AGENTS.md` 只检查 MDF 托管块，不对整份文件另设行数 warning。
 - `full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。

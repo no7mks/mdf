@@ -40,8 +40,8 @@ def write_changelog_release(
     repo: Path, version: str, *, date: str = "2026-07-30"
 ) -> None:
     load_core_module()
-    from mdf_core.closeout_render import update_changelog_text
-    from mdf_core.constants import CHANGELOG_CATEGORIES
+    from mdf_core.lifecycle.closeout_render import update_changelog_text
+    from mdf_core.foundation.constants import CHANGELOG_CATEGORIES
 
     notes = {name: [] for name in CHANGELOG_CATEGORIES}
     notes["Fixed"] = ["测试发布条目"]

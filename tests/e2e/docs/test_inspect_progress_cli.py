@@ -52,8 +52,8 @@ def test_doctor_failure_keeps_error_json_last(python_exe, tmp_path, monkeypatch)
     repo = copy_fixture(tmp_path)
     init_git(repo)
     load_core_module()
-    from mdf_core import doctor
-    from mdf_core.errors import MDFError
+    from mdf_core.inspection import doctor
+    from mdf_core.foundation.errors import MDFError
 
     def fail(*args, **kwargs):
         raise MDFError("检查无法继续", code="inspection_failed")
@@ -78,7 +78,7 @@ def test_doctor_progress_arrives_before_check_finishes(python_exe, tmp_path):
     probe = f"""
 import sys
 sys.path.insert(0, {scripts!r})
-from mdf_core.gitutil import GitPathIndex
+from mdf_core.workspace.gitutil import GitPathIndex
 from mdf_core.cli import main
 original = GitPathIndex.last_commit
 def wait_for_input(self, path):

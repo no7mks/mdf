@@ -42,7 +42,7 @@ def test_upgrade_default_source_is_mars_mdf() -> None:
     scripts = str((skill_dir("mdf") / "scripts").resolve())
     if scripts not in sys.path:
         sys.path.insert(0, scripts)
-    from mdf_core.upgrade import DEFAULT_SKILL_SOURCE
+    from mdf_core.workspace.upgrade import DEFAULT_SKILL_SOURCE
 
     assert DEFAULT_SKILL_SOURCE == "http://10.1.5.65:8929/mars/mdf"
 

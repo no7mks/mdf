@@ -1,7 +1,7 @@
 """Adhoc 独立工作区、smart 证据与本地收口。"""
 from mdf_test_support import *  # noqa: F403
 from support_delivery import local_repo, commit
-from mdf_core.adhoc import STEPS
+from mdf_core.lifecycle.adhoc import STEPS
 
 
 def start_adhoc(python_exe, tmp_path, *extra):
@@ -81,7 +81,7 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     commit(work)
     write_change(root, proposals="[prp-001]")
     commit(work)
-    from mdf_core.validate_changes import validate_changes
+    from mdf_core.inspection.validate_changes import validate_changes
     findings = []
     validate_changes(work, findings)
     assert any(item.code == "change.proposals" for item in findings)

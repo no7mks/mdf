@@ -21,8 +21,8 @@ def test_publish_resumes_without_remerging_or_retagging(
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()
-    from mdf_core import gitflow
-    from mdf_core.errors import MDFError
+    from mdf_core.workspace import gitflow
+    from mdf_core.foundation.errors import MDFError
     original = gitflow._git
 
     def fail_push(repo, *args, **kwargs):
@@ -86,8 +86,9 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()
-    from mdf_core import gitflow, publish
-    from mdf_core.errors import MDFError
+    from mdf_core.workspace import gitflow
+    from mdf_core.lifecycle import publish
+    from mdf_core.foundation.errors import MDFError
     original = publish.write_json
 
     def fail_record(path, state):
@@ -132,8 +133,8 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
     load_core_module()
-    from mdf_core import gitflow
-    from mdf_core.publish import state_path
+    from mdf_core.workspace import gitflow
+    from mdf_core.lifecycle.publish import state_path
     path = state_path(work, f"{kind}/1.2.1")
     dirty = repo / "dirty.txt"
     original_fetch = gitflow._fetch

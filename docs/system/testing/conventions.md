@@ -63,7 +63,7 @@
 
 | suite | 含 `tests/unit/<suite>` | 覆盖 |
 | --- | --- | --- |
-| delivery | 是 | delivery、roster、verification、verify_run、test_reports、project_verify、worktree_check |
+| delivery | 是 | delivery、roster、verification、verify_run、reports、project_verify、worktree_check |
 | gitflow | 是 | gitflow、publish、git_ops、gitutil、merge-no-ff |
 | closeout | 是 | closeout_*、commands_release、semver、validate_release |
 | planning | 否 | planning、prp_split、tree_view、list_objects、proposals |

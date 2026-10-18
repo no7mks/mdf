@@ -9,7 +9,7 @@ from mdf_test_support import *  # noqa: F403
 
 def test_prune_removes_entries_older_than_seven_days(tmp_path):
     load_core_module()
-    from mdf_core.run_logs import ignored_dir, prune
+    from mdf_core.execution.run_logs import ignored_dir, prune
     root = ignored_dir(tmp_path / "logs")
     old_dir, new_dir, old_file = root / "old", root / "new", root / "old.log"
     old_dir.mkdir()
@@ -26,7 +26,7 @@ def test_prune_removes_entries_older_than_seven_days(tmp_path):
 
 def test_strip_control_removes_csi_and_splits_cr():
     load_core_module()
-    from mdf_core.run_logs import strip_control
+    from mdf_core.execution.run_logs import strip_control
 
     assert strip_control("\x1b[31mred\x1b[0m") == "red"
     assert strip_control("ab\rcd") == "ab\ncd"

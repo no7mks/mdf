@@ -6,7 +6,7 @@ from mdf_test_support import *  # noqa: F403
 
 def test_parse_modules_expands_plan_per_module():
     load_core_module()
-    from mdf_core.modules import parse_modules
+    from mdf_core.execution.modules import parse_modules
 
     config = parse_modules(
         {
@@ -52,7 +52,7 @@ def test_parse_modules_expands_plan_per_module():
 
 def test_repo_verification_override_keeps_other_entries_expanded():
     load_core_module()
-    from mdf_core.modules import parse_modules
+    from mdf_core.execution.modules import parse_modules
 
     config = parse_modules(
         {
@@ -91,8 +91,8 @@ def test_repo_verification_override_keeps_other_entries_expanded():
 
 def test_invalid_verification_override_keys():
     load_core_module()
-    from mdf_core.errors import MDFError
-    from mdf_core.modules import parse_modules
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.execution.modules import parse_modules
 
     with pytest.raises(MDFError) as error:
         parse_modules(

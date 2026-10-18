@@ -6,7 +6,7 @@ from mdf_test_support import *  # noqa: F403
 
 def core():
     load_core_module()
-    from mdf_core.integrate_store import format_channel_entry
+    from mdf_core.integrations.integrate_store import format_channel_entry
 
     return format_channel_entry
 

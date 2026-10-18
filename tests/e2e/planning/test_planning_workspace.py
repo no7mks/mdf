@@ -126,7 +126,7 @@ def test_git_is_clean_treats_sequencer_heads_as_dirty(python_exe, tmp_path):
     assert not git(repo, "status", "--porcelain").stdout.strip()
     assert has_merge_head(repo)
     load_core_module()
-    from mdf_core.gitutil import git_directory, git_is_clean
+    from mdf_core.workspace.gitutil import git_directory, git_is_clean
 
     assert git_is_clean(repo) is False
     doctor = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
@@ -193,8 +193,8 @@ def test_merge_reports_unfinished_merge_not_conflict(python_exe, tmp_path):
     git(work, "merge", "--no-ff", "--no-commit", "develop")
     assert has_merge_head(work)
     load_core_module()
-    from mdf_core.errors import MDFError
-    from mdf_core.planning import merge_branch
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.workspace.planning import merge_branch
 
     with pytest.raises(MDFError) as caught:
         merge_branch(work, "develop")

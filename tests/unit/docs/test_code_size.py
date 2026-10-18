@@ -5,7 +5,7 @@ from mdf_test_support import *  # noqa: F403
 @pytest.mark.parametrize("name", ["src/main.py", "tests/main.test.ts", "src/View.vue"])
 def test_code_size_boundary(tmp_path, name):
     load_core_module()
-    from mdf_core.code_size import code_size_findings
+    from mdf_core.inspection.code_size import code_size_findings
     path = tmp_path / name
     path.parent.mkdir(parents=True)
     path.write_text("pass\n" * 1000, encoding="utf-8")
@@ -19,7 +19,7 @@ def test_code_size_boundary(tmp_path, name):
 @pytest.mark.parametrize("name", ["config.yaml", "data.json", "README.md", "page.html", "uv.lock"])
 def test_non_code_is_not_limited(tmp_path, name):
     load_core_module()
-    from mdf_core.code_size import code_size_findings
+    from mdf_core.inspection.code_size import code_size_findings
     path = tmp_path / name
     path.write_text("data\n" * 1001, encoding="utf-8")
     assert code_size_findings(tmp_path, [path]) == []

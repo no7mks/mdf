@@ -4,8 +4,8 @@ from mdf_test_support import *  # noqa: F403
 
 def test_html_evidence_links_survive_move_with_spaces_and_entities(tmp_path):
     load_core_module()
-    from mdf_core.moves import replacement_plan, apply_moves_and_rewrites
-    from mdf_core.validate_links import collect_local_link_findings
+    from mdf_core.documents.moves import replacement_plan, apply_moves_and_rewrites
+    from mdf_core.inspection.validate_links import collect_local_link_findings
     repo = tmp_path / "repo"
     source = repo / "changes/unreleased/1.3.0/delivery-summary.html"
     source.parent.mkdir(parents=True)

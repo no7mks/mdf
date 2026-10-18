@@ -1,7 +1,7 @@
 """Adhoc 五步账本不接受缺项、越序或虚报完成。"""
 import pytest
-from mdf_core.adhoc import objectives, require_objectives
-from mdf_core.errors import MDFError
+from mdf_core.lifecycle.adhoc import objectives, require_objectives
+from mdf_core.foundation.errors import MDFError
 
 
 def test_adhoc_initial_and_completed_objectives():

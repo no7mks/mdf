@@ -6,8 +6,8 @@ from mdf_test_support import *  # noqa: F403
 
 def core():
     load_core_module()
-    from mdf_core import semver, textutil
-    from mdf_core.errors import MDFError
+    from mdf_core.foundation import semver, textutil
+    from mdf_core.foundation.errors import MDFError
     return semver, textutil, MDFError
 
 

@@ -4,7 +4,7 @@ from mdf_test_support import *  # noqa: F403
 
 def test_progress_flushes_start_before_work(monkeypatch):
     load_core_module()
-    from mdf_core.progress import progress
+    from mdf_core.foundation.progress import progress
 
     class Stream(io.StringIO):
         def flush(self):
@@ -20,7 +20,7 @@ def test_progress_flushes_start_before_work(monkeypatch):
 
 def test_progress_preserves_exception_and_reports_interruption(capsys):
     core = load_core_module()
-    from mdf_core.progress import progress
+    from mdf_core.foundation.progress import progress
     error = core.MDFError("检查失败")
     with pytest.raises(core.MDFError) as caught:
         with progress("检查"):
@@ -33,7 +33,7 @@ def test_progress_preserves_exception_and_reports_interruption(capsys):
 
 def test_item_progress_counts_only_completed_work(monkeypatch, capsys):
     load_core_module()
-    from mdf_core import progress
+    from mdf_core.foundation import progress
 
     ticks = iter([10.0, 10.0, 12.0, 15.0])
     monkeypatch.setattr(progress.time, "monotonic", lambda: next(ticks))
@@ -52,7 +52,7 @@ def test_item_progress_counts_only_completed_work(monkeypatch, capsys):
 
 def test_item_progress_does_not_report_completion_on_failure(capsys):
     load_core_module()
-    from mdf_core.progress import progress_items
+    from mdf_core.foundation.progress import progress_items
 
     with pytest.raises(RuntimeError):
         for _ in progress_items("事实文档", ["docs/a.md"]):
@@ -64,7 +64,7 @@ def test_item_progress_does_not_report_completion_on_failure(capsys):
 
 def test_item_progress_handles_empty_scope(capsys):
     load_core_module()
-    from mdf_core.progress import progress_items
+    from mdf_core.foundation.progress import progress_items
 
     assert list(progress_items("事实文档", [])) == []
     assert "已检查 0/0" in capsys.readouterr().err

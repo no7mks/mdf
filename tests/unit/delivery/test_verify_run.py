@@ -15,8 +15,8 @@ def py_c(code: str) -> str:
 
 def run_captured(repo, command, **kwargs):
     load_core_module()
-    from mdf_core.errors import MDFError
-    from mdf_core.verify_run import run_verify_command
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.execution.verify_run import run_verify_command
 
     buf = io.StringIO()
     with contextlib.redirect_stderr(buf):
@@ -31,7 +31,7 @@ def run_captured(repo, command, **kwargs):
 
 def test_progress_label_uses_first_line_and_truncates():
     load_core_module()
-    from mdf_core.verify_run import _progress_label
+    from mdf_core.execution.verify_run import _progress_label
 
     assert _progress_label("alpha\nbeta") == "alpha"
     assert _progress_label("x" * 200) == "x" * 80
@@ -92,8 +92,8 @@ def test_utf8_chunks_are_not_replaced(tmp_path):
 
 def test_batch_fail_fast_skips_later_commands(tmp_path):
     load_core_module()
-    from mdf_core.errors import MDFError
-    from mdf_core.verify_run import run_verify_commands
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.execution.verify_run import run_verify_commands
 
     buf = io.StringIO()
     with contextlib.redirect_stderr(buf):
@@ -133,7 +133,7 @@ def test_timeout_includes_partial_tail_and_returns_promptly(tmp_path):
 
 def test_heartbeat_when_child_is_silent(tmp_path, monkeypatch):
     load_core_module()
-    from mdf_core import verify_run
+    from mdf_core.execution import verify_run
 
     monkeypatch.setattr(verify_run, "HEARTBEAT_SECONDS", 0.1)
     command = py_c("import time; time.sleep(0.45)")

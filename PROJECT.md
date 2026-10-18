@@ -42,11 +42,16 @@ MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
 - Skill、脚本、测试及其手写文本只设硬限制，字符按显示宽度计，中文及其他全角、宽字符算 2 个：
   - 单行最多 180 字符。
   - 源代码、测试源代码单文件最多 1000 行；其他手写文本最多 500 行。
+  - package 按目录直属文件计数，实现与测试分开；每类最多 50 个，超限按设计职责拆至每类最多 35 个。
   - HTML 不受文件行数限制。
+- 文件拆分遵守 `skills/mdf/references/repository-contract.md` 的职责与结构规则。
+  - 代码从职责、依赖方向与适用的设计模式确定边界；文档从主题、读者与信息结构确定边界。
+  - 不得按行数机械切成 `part1`、`part2`，也不得仅改名掩盖机械切分。
+  - 合理设计允许迁移入口，不强求在原位置保留 facade；同步更新调用方、测试与文档引用。
 - 超限必须拆分，拆分后的每个结果不得超过对应硬限制的 70%，整数向下取整。
   - 单行拆分后最多 126 字符；代码文件拆分后每个最多 700 行；其他文本最多 350 行。
   - 不允许用删除空行、压缩内容或声明不拆分理由来规避拆分。
-- lint 检查当前硬限制；审查按修改前内容复核超限后的拆分结果。
+- lint 检查当前硬限制（含 package 文件数）；审查按修改前内容复核超限后的拆分结果。
 
 ## 文档结构
 
@@ -71,6 +76,7 @@ MDF 自身的 Markdown 与目标仓库文档共用一套结构规则，定义见
 
 - [README.md](README.md)：面向使用者的项目入口。
 - [GLOSSARY.md](GLOSSARY.md)：MDF 领域术语。
+- [Core 职责边界](docs/system/architecture/core.md)：源码 package 划分与依赖入口。
 - [docs/system/interfaces/mdf-cli.md](docs/system/interfaces/mdf-cli.md)：本仓库
   `mdf.py` 的调用约定与命令总表，分页记录参数与实际副作用；不随 Skill 安装。
 - [docs/system/testing/conventions.md](docs/system/testing/conventions.md)：测试层级、

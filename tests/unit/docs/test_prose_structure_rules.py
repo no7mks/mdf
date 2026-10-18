@@ -4,7 +4,7 @@ from mdf_test_support import *  # noqa: F403
 
 def codes(text):
     load_core_module()
-    from mdf_core.prose import structure_issues
+    from mdf_core.inspection.prose import structure_issues
     return [(number, code) for number, code, _ in structure_issues(text)]
 
 

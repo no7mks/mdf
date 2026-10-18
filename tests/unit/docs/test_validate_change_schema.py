@@ -12,7 +12,7 @@ CHANGE_BODY = (
 
 def _validate():
     load_core_module()
-    from mdf_core.validate_change_schema import validate_change_file
+    from mdf_core.inspection.validate_change_schema import validate_change_file
 
     return validate_change_file
 

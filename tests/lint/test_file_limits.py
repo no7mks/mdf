@@ -85,3 +85,11 @@ def test_line_length_counts_display_width(tmp_path):
     assert file_measurement(path) == (2, [])
     path.write_text("中" * 90 + "a" + "\n" + "a" * 181 + "\n", encoding="utf-8")
     assert file_measurement(path) == (2, [(1, 181), (2, 181)])
+
+
+def test_package_limits():
+    from mdf_test_support import load_core_module
+    load_core_module()
+    from mdf_core.inspection.code_size import package_size_findings
+    failures = package_size_findings(REPO_ROOT, checked_files())
+    assert not failures, "\n".join(f"{item.path}: {item.message}" for item in failures)

@@ -5,7 +5,7 @@ from mdf_test_support import *  # noqa: F403
 
 def test_marker_re_matches_mdf_slots_not_product_macros():
     load_core_module()
-    from mdf_core.constants import MARKER_RE
+    from mdf_core.foundation.constants import MARKER_RE
 
     for text in (
         "{{MDF_EVIDENCE_PATH}}",

@@ -21,7 +21,7 @@ def baseline():
 
 def test_markdown_meets_structure_limits_or_is_in_baseline():
     load_core_module()
-    from mdf_core.prose import structure_issues
+    from mdf_core.inspection.prose import structure_issues
     exempt = baseline()
     failing, cleared = [], []
     for path in documents():

@@ -29,7 +29,7 @@ def test_archive_post_validation_failure_leaves_worktree(
             core.Finding("injected.failure", "forced post-validation failure")
         ]
 
-    monkeypatch.setattr("mdf_core.doctor.collect_findings", fake_findings)
+    monkeypatch.setattr("mdf_core.inspection.doctor.collect_findings", fake_findings)
     args = SimpleNamespace(repo=str(repo), epoch="1.2", dry_run=False)
     with pytest.raises(core.MDFError) as caught:
         core.command_archive(args)

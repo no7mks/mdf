@@ -17,10 +17,8 @@ def frozen(qa, dev, reviewers, **extra):
 
 def test_freeze_roster_defaults_and_coercion():
     load_core_module()
-    from mdf_core.errors import MDFError
-    from mdf_core.roster import (
-        freeze_roster, merge_branches, role_branch, require_roster,
-    )
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.lifecycle.roster import freeze_roster, merge_branches, role_branch, require_roster
     assert freeze_roster("feature") == frozen(1, 1, 2)
     assert freeze_roster("bugfix") == frozen(0, 0, 1)
     assert freeze_roster("release") == frozen(0, 0, 3, review_strategy="partition")

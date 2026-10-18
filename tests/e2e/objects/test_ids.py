@@ -163,7 +163,7 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
     python_exe: str, tmp_path: Path
 ):
     load_core_module()
-    from mdf_core.constants import JOT_ID_RE, OBJECT_ID_RE, PRP_ID_RE
+    from mdf_core.foundation.constants import JOT_ID_RE, OBJECT_ID_RE, PRP_ID_RE
 
     assert OBJECT_ID_RE.fullmatch("prp-001")
     assert OBJECT_ID_RE.fullmatch("prp-1000")

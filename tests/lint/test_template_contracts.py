@@ -38,7 +38,7 @@ def test_release_objectives_keep_only_the_selected_work_line():
 
 def test_template_slots_use_mdf_prefix():
     load_core_module()
-    from mdf_core.constants import MARKER_RE
+    from mdf_core.foundation.constants import MARKER_RE
 
     slot = re.compile(r"\{\{[^{}\n]+\}\}")
     leftover: list[tuple[str, str]] = []

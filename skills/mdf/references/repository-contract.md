@@ -130,12 +130,28 @@
 | HTML、`GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
 - 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
+- 文件拆分先确定设计边界，再验收体积；70% 是拆分后的上限，不作为切割位置。
+  - 源代码按职责、模块边界与依赖方向分析，采用适合问题的设计模式；每个结果职责单一、接口清晰。
+  - 测试源代码按被测行为、依赖与 fixture 边界组织；不为套用模式引入无必要的抽象。
+  - 文档按角色、主题、读者与任务组织，主题叶保持唯一归属，路由页只保留入口与链接。
+  - 文件名表达实际职责或主题；不得机械切成 `part1`、`part2`，仅改名也不能替代结构拆分。
+  - 合理设计允许迁移入口与调整导出，不强求在原文件或路径保留 facade、re-export 或转发壳。
+  - 原文件位置本身不构成兼容性要求；是否保留入口依据明确的对外契约与设计，不因路径变化自动新增兼容层。
+  - 迁移入口须同步更新调用方、import、导出、测试、文档与链接，验收设计依据及引用完整性。
+  - 验收须说明各结果的职责或主题、边界依据及依赖或导航关系；仅行数达标不能通过。
 - 超出限制必须拆页或下沉到主题叶，每个结果不得超过其角色硬限制的 70%，整数向下取整。
   - 上限 100 / 200 / 450 / 300 / 500 行分别对应拆分后 70 / 140 / 315 / 210 / 350 行。
   - 不得用压缩措辞或删除空行代替拆分；审查按改写前内容复核结果。
 - 源代码与测试源代码单文件不得超过 1000 行；超限必须拆分，每个结果最多 700 行。
   - `fact-audit` 按 scope 检查已跟踪的源代码与测试源代码，超限报 `code.size` finding。
   - 不对配置、数据、文档或 lockfile 应用代码行数限制；代码类型按 `code_size.py` 的扩展名识别。
+- package 按目录统计直属源文件，实现文件与测试文件分开计数，子 package 独立计数。
+  - 每类最多 50 个文件；超过即为大 package，须按职责、依赖与设计模式拆分，每个结果同类最多 35 个。
+  - 只统计已跟踪源代码，含 `__init__.py`；配置、数据与文档不计，module `ignore` 命中文件排除。
+  - 测试按 `test/`、`tests/`、`__tests__/` 目录，或 `test_*`、`*_test`、`*Test`、`*Tests`、`.test.`、`.spec.` 文件名识别。
+  - 同目录混放实现和测试时两类不相加；`src` 与 `tests` 分别统计，不合并到共同父目录。
+  - `fact-audit` 超限报 `package.size`；full 检查全部 package，branch/paths 对触及 package 统计全部现存成员。
+  - 不得机械切成 `part1`、`part2` 或空壳子包；入口可按合理设计迁移，并同步调用方与文档引用。
 - `AGENTS.md` 只检查 MDF 托管块的 100 行硬限制，不对整份文件另设行数 warning。
 
 `changes/unreleased/` 保存未版本化的子 Change 及其交付材料。
@@ -295,7 +311,7 @@ budgets:
   - 可选 `ignore` 与 `named`。
 - **ignore**：`pattern` + `reason`；项目可排除源代码、测试源代码与文档，不要求位于实现根内。
   - 命中路径不触发 verify，也不产生 uncovered / `agents.project_content` 类提示。
-  - `fact-audit` 与 `prose-check` 跳过命中文件的 `code.size`、`size.hard` 与 `prose.*` 检查。
+  - `fact-audit` 与 `prose-check` 跳过命中文件的 `code.size`、`size.hard` 与 `prose.*` 检查；package 计数排除命中文件。
   - 命中文件不受长度与 70% 拆分要求约束；审阅不得再按这些规则要求拆分，报告匹配路径与理由。
   - `fact-audit` 的 `ignored` 保留命中路径、pattern 与 reason；未匹配的已跟踪文件仍正常检查。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
@@ -317,7 +333,7 @@ budgets:
 
 ## YAML 子集
 
-Core 用内置解析器（`scripts/mdf_core/yamlutil.py`）解析 `manifest` 与全部 MDF 文档 frontmatter，
+Core 用内置解析器（`scripts/mdf_core/foundation/yamlutil.py`）解析 `manifest` 与全部 MDF 文档 frontmatter，
 不依赖 PyYAML。只支持以下子集，写法不要超出：
 
 - 空格缩进的映射与 `- ` 列表；缩进含 tab 报 `invalid_yaml`。

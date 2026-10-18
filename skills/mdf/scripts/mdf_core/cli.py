@@ -3,7 +3,7 @@ import json
 import sys
 import traceback
 
-from .commands_misc import (
+from mdf_core.commands_misc import (
     command_archive,
     command_branch,
     command_doctor,
@@ -14,13 +14,13 @@ from .commands_misc import (
     command_semver,
     command_validate,
 )
-from .audit import command_audit
-from .doc_size import command_prose_check
-from .commands_release import command_release_closeout
-from .errors import MDFError
-from .run_logs import RunLog, command_run
-from .gitflow import command_finish_gitflow, command_start
-from .upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
+from mdf_core.inspection.audit import command_audit
+from mdf_core.inspection.doc_size import command_prose_check
+from mdf_core.lifecycle.commands_release import command_release_closeout
+from mdf_core.foundation.errors import MDFError
+from mdf_core.execution.run_logs import RunLog, command_run
+from mdf_core.workspace.gitflow import command_finish_gitflow, command_start
+from mdf_core.workspace.upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    from .bug_close import command_bug_close
+    from mdf_core.documents.bug_close import command_bug_close
 
     bug = subparsers.add_parser("bug")
     bug_actions = bug.add_subparsers(dest="action", required=True)
@@ -42,7 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
     info = subparsers.add_parser("info")
     info.set_defaults(func=command_info)
 
-    from .project_rules import STAGES as RULE_STAGES, command_project_rules
+    from mdf_core.workspace.project_rules import STAGES as RULE_STAGES, command_project_rules
     rules = subparsers.add_parser("project-rules")
     rules.add_argument("--repo", required=True)
     rules.add_argument("--stage", choices=RULE_STAGES, required=True)
@@ -52,7 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--repo", required=True)
     doctor.set_defaults(func=command_doctor)
 
-    from .git_ops import command_merge_no_ff, command_prepare_git
+    from mdf_core.workspace.git_ops import command_merge_no_ff, command_prepare_git
 
     prepare_git = subparsers.add_parser("prepare-git")
     prepare_git.add_argument("--repo", required=True)
@@ -152,22 +152,22 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--qa", type=int)
     start.add_argument("--dev", type=int)
     start.add_argument("--reviewers", type=int)
-    from .roster import add_named_roster_argument, add_strategy_arguments
+    from mdf_core.lifecycle.roster import add_named_roster_argument, add_strategy_arguments
     add_named_roster_argument(start)
     add_strategy_arguments(start)
     start.set_defaults(func=command_start)
 
-    from .adhoc import command_status as command_adhoc_status
+    from mdf_core.lifecycle.adhoc import command_status as command_adhoc_status
     adhoc_status = subparsers.add_parser("adhoc-status")
     adhoc_status.add_argument("--repo", required=True)
     adhoc_status.add_argument("--slug")
     adhoc_status.set_defaults(func=command_adhoc_status)
 
-    from .list_objects import command_list
-    from .tree_view import command_tree
-    from .prp_split import command_split
-    from .delivery import command_delivery
-    from .delivery_state import STAGES
+    from mdf_core.documents.list_objects import command_list
+    from mdf_core.documents.tree_view import command_tree
+    from mdf_core.documents.prp_split import command_split
+    from mdf_core.lifecycle.delivery import command_delivery
+    from mdf_core.lifecycle.delivery_state import STAGES
 
     tree_parser = subparsers.add_parser("tree")
     tree_parser.add_argument("--repo", required=True)
@@ -188,7 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     split.add_argument("--dry-run", action="store_true")
     split.set_defaults(func=command_split)
 
-    from .prp_format import command_prp_format
+    from mdf_core.documents.prp_format import command_prp_format
     prp_format = subparsers.add_parser("prp-format")
     prp_format.add_argument("action", choices=("preview", "ready", "draft"))
     prp_format.add_argument("--repo", required=True)
@@ -211,30 +211,30 @@ def build_parser() -> argparse.ArgumentParser:
     add_strategy_arguments(delivery)
     delivery.set_defaults(func=command_delivery)
 
-    from .planning import command_planning
+    from mdf_core.workspace.planning import command_planning
     planning = subparsers.add_parser("planning")
     planning.add_argument("action", choices=("ensure", "land"))
     planning.add_argument("--repo", required=True)
     planning.set_defaults(func=command_planning)
 
-    from .to_target import command_to
+    from mdf_core.workspace.to_target import command_to
     to_cmd = subparsers.add_parser("to")
     to_cmd.add_argument("--repo", required=True)
     to_cmd.add_argument("--target", required=True)
     to_cmd.set_defaults(func=command_to)
 
-    from .sync import command_sync
+    from mdf_core.workspace.sync import command_sync
     sync_cmd = subparsers.add_parser("sync")
     sync_cmd.add_argument("--repo", required=True)
     sync_cmd.add_argument("--confirm")
     sync_cmd.set_defaults(func=command_sync)
 
-    from .codewiki_runtime import command_codewiki_runtime
+    from mdf_core.integrations.codewiki_runtime import command_codewiki_runtime
     runtime = subparsers.add_parser("codewiki-runtime")
     runtime.add_argument("--directory", default="~/.local/share/codewiki")
     runtime.set_defaults(func=command_codewiki_runtime)
 
-    from .worktree_check import command_worktree_check
+    from mdf_core.workspace.worktree_check import command_worktree_check
     worktree = subparsers.add_parser("worktree-check")
     worktree.add_argument("--repo", required=True)
     worktree.add_argument("--owner", required=True)
@@ -245,7 +245,7 @@ def build_parser() -> argparse.ArgumentParser:
     worktree.add_argument("--handoff", action="store_true")
     worktree.set_defaults(func=command_worktree_check)
 
-    from .module_verify import command_verify
+    from mdf_core.execution.module_verify import command_verify
 
     verify = subparsers.add_parser("verify")
     verify.add_argument("target", nargs="?", help="scope 或 named suite 名")
@@ -283,7 +283,7 @@ def build_parser() -> argparse.ArgumentParser:
     finish.add_argument("--source")
     finish.set_defaults(func=command_finish_gitflow)
 
-    from .finish_hook import command_pre_gitflow_finish
+    from mdf_core.workspace.finish_hook import command_pre_gitflow_finish
     finish_hook = subparsers.add_parser("pre-gitflow-finish")
     finish_hook.add_argument("--repo", required=True)
     finish_hook.add_argument("--after")
@@ -302,7 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("command", nargs=argparse.REMAINDER)
     run.set_defaults(func=command_run)
 
-    from .integrate import command_integrate
+    from mdf_core.integrations.integrate import command_integrate
 
     integrate = subparsers.add_parser("integrate")
     integrate.add_argument(

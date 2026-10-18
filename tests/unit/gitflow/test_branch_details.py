@@ -4,8 +4,8 @@ from mdf_test_support import *  # noqa: F403
 
 def core():
     load_core_module()
-    from mdf_core import gitutil
-    from mdf_core.errors import MDFError
+    from mdf_core.workspace import gitutil
+    from mdf_core.foundation.errors import MDFError
     return gitutil, MDFError
 
 

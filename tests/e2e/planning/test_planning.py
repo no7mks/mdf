@@ -309,7 +309,7 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
     spec.write_text(json.dumps(split_spec(repo)))
     work = planning_worktree(python_exe, repo).resolve()
     load_core_module()
-    from mdf_core.prp_split import command_split
+    from mdf_core.documents.prp_split import command_split
     original = Path.write_text
     target = work / "docs/proposals/prp-004-part-004.md"
 

@@ -8,16 +8,22 @@ import traceback
 from pathlib import Path
 
 from mdf_core.cli import _failure
-from mdf_core.constants import MARKER_RE
-from mdf_core.errors import MDFError, emit
-from mdf_core.gitutil import (
-    branch_details, current_branch, git_in_progress_head, repo_path, require_git_root, run, unreleased_slug,
+from mdf_core.foundation.constants import MARKER_RE
+from mdf_core.foundation.errors import MDFError, emit
+from mdf_core.workspace.gitutil import (
+    branch_details,
+    current_branch,
+    git_in_progress_head,
+    repo_path,
+    require_git_root,
+    run,
+    unreleased_slug,
 )
-from mdf_core.html_documents import DocumentParser, render_document, visible_text
-from mdf_core.paths import ensure_safe_managed_paths, load_manifest, relative
-from mdf_core.run_logs import RunLog
-from mdf_core.validate_links import require_existing_local_links
-from mdf_core.yamlutil import read_frontmatter
+from mdf_core.documents.html_documents import DocumentParser, render_document, visible_text
+from mdf_core.foundation.paths import ensure_safe_managed_paths, load_manifest, relative
+from mdf_core.execution.run_logs import RunLog
+from mdf_core.inspection.validate_links import require_existing_local_links
+from mdf_core.foundation.yamlutil import read_frontmatter
 
 SECTIONS = ("交付范围与结果", "完整交付过程", "设计决策与取舍", "开发与测试实现",
             "偏差与范围变化", "审查与验证证据", "交付与后续事项")

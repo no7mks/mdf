@@ -11,8 +11,8 @@ _ID_DIGITS = set("23456789")
 
 def test_new_short_id_includes_a_letter_and_a_digit():
     load_core_module()
-    from mdf_core.constants import OBJECT_ID_RE
-    from mdf_core.textutil import new_short_id
+    from mdf_core.foundation.constants import OBJECT_ID_RE
+    from mdf_core.foundation.textutil import new_short_id
 
     for _ in range(200):
         value = new_short_id()
@@ -25,8 +25,8 @@ def test_new_short_id_includes_a_letter_and_a_digit():
 
 def test_format_prp_id_uses_three_digits_until_1000():
     load_core_module()
-    from mdf_core.constants import PRP_ID_RE
-    from mdf_core.textutil import format_prp_id
+    from mdf_core.foundation.constants import PRP_ID_RE
+    from mdf_core.foundation.textutil import format_prp_id
 
     assert format_prp_id(1) == "prp-001"
     assert format_prp_id(99) == "prp-099"

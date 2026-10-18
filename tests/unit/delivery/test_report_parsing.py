@@ -13,7 +13,7 @@ PYTEST_STYLE = """<?xml version="1.0"?>
 
 def summarize_dir(tmp_path, files):
     load_core_module()
-    from mdf_core.test_reports import summarize
+    from mdf_core.execution.reports import summarize
     report = tmp_path / ".mdf/reports/run"
     report.mkdir(parents=True)
     for name, text in files.items():
@@ -56,7 +56,7 @@ def test_falls_back_to_suite_name_across_nested_suites(tmp_path):
 ])
 def test_report_failures(tmp_path, files, code):
     load_core_module()
-    from mdf_core.errors import MDFError
+    from mdf_core.foundation.errors import MDFError
     with pytest.raises(MDFError) as error:
         summarize_dir(tmp_path, files)
     assert error.value.code == code

@@ -1,7 +1,7 @@
 """人工工作账本的起点与收口检查。"""
 import pytest
-from mdf_core.errors import MDFError
-from mdf_core.manual import STEPS, require_manual_objectives
+from mdf_core.foundation.errors import MDFError
+from mdf_core.lifecycle.manual import STEPS, require_manual_objectives
 
 
 def checklist(marks):

@@ -12,7 +12,7 @@ import pytest
 from _support import REPO_ROOT, Skill, discover_skills
 
 sys.path.insert(0, str(REPO_ROOT / "skills" / "mdf" / "scripts"))
-from mdf_core.run_logs import prune  # noqa: E402
+from mdf_core.execution.run_logs import prune  # noqa: E402
 
 # Make the venv interpreter that runs pytest the one the tests shell out to.
 PYTHON = sys.executable

@@ -40,7 +40,7 @@ def test_activation_targeted_checks_state_without_git_history(
         "manifest.initializing",
     }
     replace(manifest, "state: initializing", f"state: {state}")
-    from mdf_core.gitutil import GitPathIndex
+    from mdf_core.workspace.gitutil import GitPathIndex
 
     def unexpected_history(*args):
         pytest.fail("仅启用状态变更不应重查 Git history")

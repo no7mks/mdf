@@ -2,16 +2,12 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from . import doctor
-from .archive import archive_plan
-from .constants import (
-    PROTOCOL_VERSION,
-    SCHEMA_VERSION,
-    TOOL_VERSION,
-)
-from .digests import text_diff
-from .errors import Finding, MDFError, emit, serialize_findings
-from .gitutil import (
+from mdf_core.inspection import doctor
+from mdf_core.documents.archive import archive_plan
+from mdf_core.foundation.constants import PROTOCOL_VERSION, SCHEMA_VERSION, TOOL_VERSION
+from mdf_core.foundation.digests import text_diff
+from mdf_core.foundation.errors import Finding, MDFError, emit, serialize_findings
+from mdf_core.workspace.gitutil import (
     branch_details,
     current_branch,
     ensure_clean,
@@ -21,25 +17,20 @@ from .gitutil import (
     require_planning,
     require_git_root,
 )
-from .proposals import next_prp_id
-from .progress import progress
-from .init_repo import init_files, parse_baselines, write_files
-from .gitflow import require_master_default
-from .moves import (
-    apply_moves_and_rewrites,
-    describe_moves,
-    describe_rewrites,
-    replacement_plan,
-)
-from .paths import (
+from mdf_core.documents.proposals import next_prp_id
+from mdf_core.foundation.progress import progress
+from mdf_core.workspace.init_repo import init_files, parse_baselines, write_files
+from mdf_core.workspace.gitflow import require_master_default
+from mdf_core.documents.moves import apply_moves_and_rewrites, describe_moves, describe_rewrites, replacement_plan
+from mdf_core.foundation.paths import (
     ensure_safe_managed_paths,
     load_manifest,
     manifest_path,
     path_stays_in_repo,
     relative,
 )
-from .semver import bump_kind, required_bump
-from .textutil import is_object_id_slug, new_short_id, slugify, stable_semver
+from mdf_core.foundation.semver import bump_kind, required_bump
+from mdf_core.foundation.textutil import is_object_id_slug, new_short_id, slugify, stable_semver
 
 
 def command_info(_: argparse.Namespace) -> None:
@@ -114,7 +105,7 @@ def command_init(args: argparse.Namespace) -> None:
     require_master_default(repo)
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)
-    from .verification import ENTRIES, parse_budgets, validate_verification
+    from mdf_core.execution.verification import ENTRIES, parse_budgets, validate_verification
     raw_verification = {name: getattr(args, name) for name in ENTRIES}
     budgets = parse_budgets(args.budget)
     if budgets:
@@ -239,7 +230,7 @@ def command_validate(args: argparse.Namespace) -> None:
 
 
 def command_make_id(args: argparse.Namespace) -> None:
-    from .textutil import format_prp_id
+    from mdf_core.foundation.textutil import format_prp_id
     slugs = [slugify(value) for value in args.slug]
     if len(set(slugs)) != len(slugs) or any(is_object_id_slug(value) for value in slugs):
         raise MDFError("slug 不得重复或与对象 ID 同形", code="slug_is_id")

@@ -9,7 +9,7 @@ def start_finishable(python_exe, tmp_path, kind):
     git(repo, "checkout", "develop")
     git(repo, "worktree", "add", str(tmp_path / "deploy"), "master")
     if kind == "feature":
-        from mdf_core.manual import STEPS
+        from mdf_core.lifecycle.manual import STEPS
         obj = tmp_path / "manual.md"
         obj.write_text("# 目标\n\n" + "".join(
             f"- [{'x' if name == 'start' else ' '}] {name}\n" for name in STEPS
@@ -89,7 +89,7 @@ def test_publish_checks_dirty_develop_before_changing_master(python_exe, tmp_pat
     assert result.returncode != 0 and "dirty_worktree" in result.stderr
     assert snapshot(repo) == before
     assert git(remote, "show-ref").stdout == remote_before
-    from mdf_core.publish import state_path
+    from mdf_core.lifecycle.publish import state_path
     assert not state_path(work, f"{kind}/1.2.1").exists()
 
 

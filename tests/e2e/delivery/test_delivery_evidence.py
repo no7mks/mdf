@@ -59,9 +59,9 @@ def test_roster_join_resumes_after_first_role_was_removed(python_exe, tmp_path, 
         payload(record(python_exe, path, stage))
         commit(path)
     load_core_module()
-    from mdf_core import delivery_git
-    from mdf_core.delivery_state import locate
-    from mdf_core.errors import MDFError
+    from mdf_core.lifecycle import delivery_git
+    from mdf_core.lifecycle.delivery_state import locate
+    from mdf_core.foundation.errors import MDFError
     original = delivery_git.git
 
     def fail_cleanup(repo, *args, **kwargs):

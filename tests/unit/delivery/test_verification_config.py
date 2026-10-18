@@ -6,8 +6,8 @@ ENTRIES = {"lint": "l", "build": "b", "quick": "q", "smoke": "s", "release": "r"
 
 def core():
     load_core_module()
-    from mdf_core import verification
-    from mdf_core.errors import MDFError
+    from mdf_core.execution import verification
+    from mdf_core.foundation.errors import MDFError
     return verification, MDFError
 
 

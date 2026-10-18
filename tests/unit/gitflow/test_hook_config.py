@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from mdf_core.errors import MDFError
-from mdf_core.hooks import post_gitflow_start, validate_hooks
-from mdf_core.init_repo import render_manifest
-from mdf_core.yamlutil import parse_yaml
+from mdf_core.foundation.errors import MDFError
+from mdf_core.workspace.hooks import post_gitflow_start, validate_hooks
+from mdf_core.workspace.init_repo import render_manifest
+from mdf_core.foundation.yamlutil import parse_yaml
 
 
 @pytest.mark.parametrize("hooks", [
@@ -41,7 +41,7 @@ def test_missing_hook_file_is_reported_without_raising(tmp_path, capsys, hook_ty
 
 
 def test_manifest_render_preserves_hooks():
-    from mdf_core.constants import BASELINES
+    from mdf_core.foundation.constants import BASELINES
     hooks = {
         "post-gitflow-start": {"type": "rule", "path": "rules/start.md"},
         "pre-gitflow-finish": {"type": "command", "path": "scripts/finish.sh"},

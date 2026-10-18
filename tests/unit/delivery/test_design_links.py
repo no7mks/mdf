@@ -4,7 +4,7 @@ from mdf_test_support import *  # noqa: F403
 
 def test_canonical_local_link_missing_is_not_delivery_internal(tmp_path: Path):
     load_core_module()
-    from mdf_core.validate_links import canonical_local_link
+    from mdf_core.inspection.validate_links import canonical_local_link
 
     repo = copy_fixture(tmp_path)
     root = repo / "changes/unreleased/service-health"
