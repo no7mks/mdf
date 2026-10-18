@@ -130,7 +130,8 @@
 | HTML、`GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
 - 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
-- 文件拆分先确定设计边界，再验收体积；70% 是拆分后的上限，不作为切割位置。
+- 文件拆分先确定设计边界，再验收体积；默认 70% 是拆分后的上限，不作为切割位置。
+  - 源代码与 package 可用 module `size_limits` override；文档角色上限及其 70% 拆分要求不受该配置影响。
   - 源代码按职责、模块边界与依赖方向分析，采用适合问题的设计模式；每个结果职责单一、接口清晰。
   - 测试源代码按被测行为、依赖与 fixture 边界组织；不为套用模式引入无必要的抽象。
   - 文档按角色、主题、读者与任务组织，主题叶保持唯一归属，路由页只保留入口与链接。
@@ -142,11 +143,13 @@
 - 超出限制必须拆页或下沉到主题叶，每个结果不得超过其角色硬限制的 70%，整数向下取整。
   - 上限 100 / 200 / 450 / 300 / 500 行分别对应拆分后 70 / 140 / 315 / 210 / 350 行。
   - 不得用压缩措辞或删除空行代替拆分；审查按改写前内容复核结果。
-- 源代码与测试源代码单文件不得超过 1000 行；超限必须拆分，每个结果最多 700 行。
+- 源代码与测试源代码单文件默认最多 1000 行；超限必须拆分，默认每个结果最多 700 行。
+  - 实际使用所有适用 module 的 `max_file_lines` 与 `split_percent`，未配置字段沿用默认值。
   - `fact-audit` 按 scope 检查已跟踪的源代码与测试源代码，超限报 `code.size` finding。
   - 不对配置、数据、文档或 lockfile 应用代码行数限制；代码类型按 `code_size.py` 的扩展名识别。
 - package 按目录统计直属源文件，实现文件与测试文件分开计数，子 package 独立计数。
-  - 每类最多 50 个文件；超过即为大 package，须按职责、依赖与设计模式拆分，每个结果同类最多 35 个。
+  - 每类默认最多 50 个文件；超限按职责、依赖与设计模式拆分，默认每个结果同类最多 35 个。
+  - 实际使用适用 module 的 `max_package_files` 与 `split_percent`，逐项满足全部配置。
   - 只统计已跟踪源代码，含 `__init__.py`；配置、数据与文档不计，module `ignore` 命中文件排除。
   - 测试按 `test/`、`tests/`、`__tests__/` 目录，或 `test_*`、`*_test`、`*Test`、`*Tests`、`.test.`、`.spec.` 文件名识别。
   - 同目录混放实现和测试时两类不相加；`src` 与 `tests` 分别统计，不合并到共同父目录。
@@ -308,7 +311,7 @@ budgets:
 
 - 每个 module 必须声明 `sourceset`、`lint`、`build`、以及
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
-  - 可选 `ignore` 与 `named`。
+  - 可选 `ignore`、`named` 与 `size_limits`。
 - **ignore**：`pattern` + `reason`；项目可排除源代码、测试源代码与文档，不要求位于实现根内。
   - 命中路径不触发 verify，也不产生 uncovered / `agents.project_content` 类提示。
   - `fact-audit` 与 `prose-check` 跳过命中文件的 `code.size`、`size.hard` 与 `prose.*` 检查；package 计数排除命中文件。
@@ -330,6 +333,34 @@ budgets:
 
 - 未被 `evidence` 引用且未被 ignore 的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
   - 锁文件、`.gitignore` 与版本钉等不承载行为的文件不产生该 warning。
+
+### Module 规模 override
+
+每个 module 可选 `size_limits`，仅覆盖源代码和 package；匹配范围由该 module 的 `sourceset` 决定。
+
+```yaml
+size_limits:
+  max_file_lines: 1200
+  max_package_files: 60
+  split_percent: 70
+```
+
+| 字段 | 默认值 | 要求 |
+| --- | --- | --- |
+| `max_file_lines` | 1000 | 正整数，源代码及测试源代码的单文件行数硬上限 |
+| `max_package_files` | 50 | 正整数，package 直属实现/测试文件数分别使用的硬上限 |
+| `split_percent` | 70 | 整数 1–100，两个拆分目标向下取整后均须至少为 1 |
+
+- 缺省或空 mapping 按字段继承默认值；null、未知键、布尔值、字符串、浮点数与非法数值均拒绝。
+- 拆分目标为 `floor(对应硬上限 × split_percent / 100)`；上例为 840 行、42 文件。
+- 同一文件命中多个 module 时，各配置分别检查；不按配置顺序覆盖，不把不同 module 的值拼成一套策略。
+  - 只有某配置超限才产生该配置的 finding，报告标明 module、硬上限及其拆分目标。
+  - 超限拆分须满足所有触发配置的目标；迁移后的文件和 package 还须满足新位置的适用硬限制。
+- package 仍按完整目录的同类成员总数检查，使用这些成员命中的全部 module 配置。
+  - 未归属任何 module 的文件使用默认策略；package 有未归属成员时默认策略也参与该组检查。
+  - 已匹配 module 未写某字段时仍使用其默认值；实现与测试各自确定适用配置，不相加。
+  - 测试目录需要 override 时也须纳入 `sourceset`，不从 suite 的 `tests` glob 推断归属。
+- module `ignore` 优先；文档上限、文档拆分比例与 `prose.*` 不受 `size_limits` 影响。
 
 ## YAML 子集
 

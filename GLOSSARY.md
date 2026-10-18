@@ -45,8 +45,9 @@ suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提�
 
 ## Package
 
-按目录组织的直属源文件集合，子目录独立计数；实现和测试分别统计，每类最多 50 个。
-超过即为大 package，按设计职责拆分后每个结果每类最多 35 个；module ignore 命中文件不计。
+按目录组织的直属源文件集合，子目录独立计数；实现和测试分别统计，默认每类最多 50 个。
+超限按设计职责拆分，默认每个结果每类最多 35 个；module ignore 命中文件不计。
+module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置共同生效；文档规则不受影响。
 
 ## `$mdf verify`
 

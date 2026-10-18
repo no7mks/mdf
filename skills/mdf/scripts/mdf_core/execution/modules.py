@@ -29,6 +29,16 @@ class IgnoreRule:
 
 
 @dataclass(frozen=True)
+class SizeLimits:
+    max_file_lines: int = 1000
+    max_package_files: int = 50
+    split_percent: int = 70
+
+    def target(self, limit: int) -> int:
+        return limit * self.split_percent // 100
+
+
+@dataclass(frozen=True)
 class Module:
     name: str
     sourceset: tuple[str, ...]
@@ -39,6 +49,7 @@ class Module:
     smoke: SuiteEntry
     release: SuiteEntry
     named: tuple[str, ...]
+    size_limits: SizeLimits = field(default_factory=SizeLimits)
 
     def suite(self, name: str) -> SuiteEntry:
         if name == "quick":
@@ -104,6 +115,18 @@ class ModulesConfig:
             if path_ignored(rel, module):
                 return True
         return False
+
+    def size_policies(self, paths: list[str]) -> list[tuple[str, SizeLimits]]:
+        policies: dict[str, SizeLimits] = {}
+        for path in paths:
+            matched = False
+            for name, module in self.modules.items():
+                if any(match(path, pattern) for pattern in module.sourceset):
+                    policies[name] = module.size_limits
+                    matched = True
+            if not matched:
+                policies[""] = SizeLimits()
+        return sorted(policies.items())
 
     def all_ignore_rules(self) -> list[tuple[str, IgnoreRule]]:
         rules: list[tuple[str, IgnoreRule]] = []
@@ -241,6 +264,7 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         "smoke",
         "release",
         "named",
+        "size_limits",
     }
     extra = set(body) - allowed
     if extra:
@@ -279,7 +303,22 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         smoke=smoke,
         release=release,
         named=tuple(named),
+        size_limits=_parse_size_limits(name, body.get("size_limits", {})),
     )
+
+
+def _parse_size_limits(name: str, raw: Any) -> SizeLimits:
+    label = f"module {name}.size_limits"
+    fields = {"max_file_lines", "max_package_files", "split_percent"}
+    if not isinstance(raw, dict) or set(raw) - fields:
+        raise MDFError(f"{label} 必须是仅含 {sorted(fields)} 的 mapping", code="modules_invalid")
+    if any(type(value) is not int or value <= 0 for value in raw.values()):
+        raise MDFError(f"{label} 各字段必须是正整数", code="modules_invalid")
+    limits = SizeLimits(**raw)
+    if limits.split_percent > 100 or min(limits.target(limits.max_file_lines),
+                                          limits.target(limits.max_package_files)) < 1:
+        raise MDFError(f"{label} split_percent 须在 1–100，且拆分目标至少为 1", code="modules_invalid")
+    return limits
 
 
 def _parse_ignore(name: str, raw: Any) -> list[IgnoreRule]:

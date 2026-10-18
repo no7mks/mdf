@@ -107,10 +107,14 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
   - 命中后跳过 `code.size`、`size.hard` 与 `prose.*`，免除长度与 70% 拆分要求。
   - `ignored` 返回命中路径、`ignore_path` 与 `reason`；未匹配文件仍正常检查。
 - 未排除文件超限必须拆分，每个结果不超过对应硬限制的 70%，整数向下取整；审查复核拆分结果。
-- 源代码与测试源代码单文件超过 1000 行报 `code.size`，拆分后每个最多 700 行。
+- 源代码与测试源代码单文件默认超过 1000 行报 `code.size`，默认拆分后每个最多 700 行。
+  - module `size_limits` 可 override 行数、package 文件数及拆分比例；缺省字段为 1000/50/70。
+  - 同一对象满足全部适用 module 配置，finding 标明触发 module、硬上限及其拆分目标。
   - `full` 检查全仓已跟踪代码；`branch` 检查改动代码；`paths` 检查指定实现路径中的代码。
   - 扩展名集合见 `mdf_core/inspection/code_size.py`；配置、数据、文档与 lockfile 不计。
-- package 对目录直属实现、测试源文件分别计数；超过 50 报 `package.size`，按设计职责拆分后每类最多 35。
+- package 对目录直属实现、测试源文件分别计数；默认超过 50 报 `package.size`，默认拆分后每类最多 35。
+  - 始终统计完整同类成员总数，按成员匹配的全部 module 配置检查；有未归属成员时默认策略也参与。
+  - 文档角色上限、70% 拆分要求及 `prose.*` 不受 module `size_limits` 影响。
   - 子目录独立计数；`__init__.py` 计入，配置、数据、文档与 ignore 命中文件不计。
   - full 检查全部 package；branch/paths 检查触及 package 的全部现存成员，含未改动文件。
   - 测试命名规则见 `mdf_core/inspection/code_size.py`，同目录的实现与测试也不相加。

@@ -149,9 +149,10 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 `merge-base develop HEAD`。
 - `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，实现根下已跟踪文件或已跟踪源代码（含测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
-- CLI 按 `repository-contract.md` 的体积表检查 `size.hard`，源代码与测试源代码超 1000 行报 `code.size`。
+- CLI 按 `repository-contract.md` 的体积表检查 `size.hard`；源代码按适用 module 的行数上限报 `code.size`。
   - 命中 module `ignore` 的文件跳过 `code.size`、`size.hard` 与 `prose.*`，`ignored` 保留路径与理由。
-  - package 计数也排除 ignore；直属实现/测试源文件分别超过 50 报 `package.size`，拆分后各结果每类最多 35。
+  - package 排除 ignore；完整同类成员数按所有适用 module 上限检查，超限报 `package.size`。
+  - `size_limits` 缺省为 1000/50/70；报告标明触发 module、上限及拆分目标，文档规则不受影响。
   - branch/paths 仅由未排除源文件触发 package 检查；修改或删除被 ignore 的文件不扩大范围。
   - 人工审阅沿用该排除，不再以长度或 70% 拆分要求阻断这些文件。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，

@@ -26,5 +26,6 @@
 - 已迁移模块不在根目录保留 facade 或 re-export；测试的 import 与 monkeypatch 指向实际定义。
 - 模板读取从 Skill 根的 `assets/templates/` 定位；不依赖调用方 cwd。
 - package 大小按 [仓库契约](../../../skills/mdf/references/repository-contract.md) 检查。
-  - 实现与测试分别计数，每类最多 50；超限按设计职责拆分后各结果每类最多 35。
+  - 实现与测试分别计数，默认每类最多 50；超限默认拆至各结果每类最多 35。
+  - module `size_limits` 可 override 源代码及 package 的上限与比例，所有适用配置共同生效。
   - 子 package 独立计数，module ignore 命中的源文件排除。
