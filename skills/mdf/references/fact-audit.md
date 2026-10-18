@@ -152,6 +152,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - CLI 按 `repository-contract.md` 的体积表检查 `size.hard`，源代码与测试源代码超 1000 行报 `code.size`。
   - 命中 module `ignore` 的文件跳过 `code.size`、`size.hard` 与 `prose.*`，`ignored` 保留路径与理由。
   - package 计数也排除 ignore；直属实现/测试源文件分别超过 50 报 `package.size`，拆分后各结果每类最多 35。
+  - branch/paths 仅由未排除源文件触发 package 检查；修改或删除被 ignore 的文件不扩大范围。
   - 人工审阅沿用该排除，不再以长度或 70% 拆分要求阻断这些文件。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，
   不合则 `overview.core_modules` finding：

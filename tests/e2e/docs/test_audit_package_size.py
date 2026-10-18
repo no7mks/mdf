@@ -45,3 +45,37 @@ def test_branch_audit_checks_package_after_deleting_a_member(python_exe, tmp_pat
     assert result.returncode == 2
     assert [(item["code"], item["path"]) for item in json.loads(result.stdout)["findings"]] == [
         ("package.size", "src/large")]
+
+
+@pytest.mark.parametrize("scope", ["branch", "paths"])
+@pytest.mark.parametrize("deleted", [False, True])
+@pytest.mark.parametrize("overlap", [False, True])
+def test_ignored_member_does_not_trigger_package_check(python_exe, tmp_path, scope, deleted, overlap):
+    repo = copy_fixture(tmp_path)
+    directory = repo / "src/large"
+    directory.mkdir()
+    for index in range(51):
+        (directory / f"unit_{index}.py").write_text("pass\n")
+    for name in ["generated_one.py", "generated_two.py"]:
+        (directory / name).write_text("pass\n")
+    modules = repo / ".mdf/modules.yaml"
+    rules = "    ignore:\n      - pattern: src/large/generated_*.py\n        reason: 生成文件\n"
+    if overlap:
+        rules += "      - pattern: src/large/generated_two.py\n        reason: 单个生成文件\n"
+    modules.write_text(modules.read_text().replace("    ignore: []\n", rules))
+    init_git(repo)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    name = "src/large/generated_one.py"
+    if deleted:
+        (repo / name).unlink()
+        git(repo, "add", "--all")
+        if scope == "paths":
+            name = "src/large/generated_two.py"
+    else:
+        (repo / name).write_text("pass  # touched\n")
+    extra = ["--base", base] if scope == "branch" else ["--implementation-path", name]
+    assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra))
+    full = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "full")
+    assert full.returncode == 2
+    assert [(item["code"], item["path"]) for item in json.loads(full.stdout)["findings"]] == [
+        ("package.size", "src/large")]

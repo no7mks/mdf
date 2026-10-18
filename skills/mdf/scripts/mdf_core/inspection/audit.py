@@ -10,7 +10,7 @@ from mdf_core.workspace.gitutil import git_path_tracked, repo_path, require_git_
 from mdf_core.inspection.overview_modules import overview_core_module_findings, project_entry_link_findings
 from mdf_core.foundation.paths import path_stays_in_repo, relative
 from mdf_core.foundation.progress import progress, report_progress
-from mdf_core.execution.modules import MODULES_PATH, load_modules
+from mdf_core.execution.modules import MODULES_PATH, load_modules, match
 from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
 from mdf_core.inspection.validate_manifest import implementation_roots
 from mdf_core.foundation.yamlutil import read_frontmatter
@@ -161,15 +161,15 @@ def _branch_scope(
 
 def _ignored_paths(
     repo: Path, sources: list[Path], findings: list[Finding]
-) -> dict[Path, dict[str, str]]:
-    """按 `.mdf/modules.yaml` 各 module 的 ignore.pattern 匹配。"""
+) -> tuple[dict[Path, dict[str, str]], set[str]]:
+    """返回命中记录与完整 pattern 集，删除路径仍按全部规则判定范围。"""
     from mdf_core.execution.modules import match as _match
 
     try:
         config = load_modules(repo)
     except MDFError as exc:
         add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
-        return {}
+        return {}, set()
     result: dict[Path, dict[str, str]] = {}
     agents = (repo / "AGENTS.md").resolve()
     for module in config.modules.values():
@@ -201,7 +201,7 @@ def _ignored_paths(
                     "reason": rule.reason,
                     "module": module.name,
                 }
-    return result
+    return result, {rule.pattern for _, rule in config.all_ignore_rules()}
 
 
 def audit_payload(
@@ -220,7 +220,7 @@ def audit_payload(
         all_tracked = _tracked_files(repo, [repo])
         all_sources = [path for path in all_tracked
                        if any(path == root or root in path.parents for root in roots)]
-        ignored = _ignored_paths(repo, all_tracked, findings)
+        ignored, ignored_patterns = _ignored_paths(repo, all_tracked, findings)
         resolved_base: str | None = None
         sized: list[Path]
         if scope == "full":
@@ -269,7 +269,10 @@ def audit_payload(
         limited_documents = [path for path in sized if path not in ignored]
         findings.extend(code_size_findings(repo, [path for path in code_paths if path not in ignored]))
         package_scope = None if scope == "full" else changed if scope == "branch" else code_paths
-        touched_packages = None if package_scope is None else {path.parent for path in package_scope if is_source(path)}
+        touched_packages = None if package_scope is None else {
+            path.parent for path in package_scope if is_source(path)
+            and not any(match(relative(repo, path), pattern) for pattern in ignored_patterns)
+        }
         package_paths = [path for path in all_tracked if is_source(path)
                          and (touched_packages is None or path.parent in touched_packages)]
         findings.extend(package_size_findings(repo, [path for path in package_paths if path not in ignored]))
