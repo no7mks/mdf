@@ -93,6 +93,18 @@ def test_validation_rejects_symlink_in_managed_docs(
     assert "path.symlink" in result.stdout
 
 
+@pytest.mark.parametrize("name", ["logs", "reports"])
+def test_validation_ignores_symlinks_inside_local_artifacts(python_exe, tmp_path, name):
+    from mdf_core.execution.run_logs import ignored_dir
+
+    repo = copy_fixture(tmp_path)
+    root = ignored_dir(repo / ".mdf" / name)
+    (root / "escape").symlink_to(tmp_path / "outside")
+    init_git(repo)
+
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+
 @pytest.mark.parametrize("record", [".mdf/manifest.yaml", "CHANGELOG.md"])
 def test_release_records_cannot_be_evidence(python_exe, tmp_path, record):
     repo = copy_fixture(tmp_path)

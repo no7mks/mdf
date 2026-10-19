@@ -32,6 +32,24 @@ def test_strip_control_removes_csi_and_splits_cr():
     assert strip_control("ab\rcd") == "ab\ncd"
 
 
+@pytest.mark.parametrize("name", [".mdf", ".mdf/reports", ".mdf/reports/.gitignore"])
+def test_report_creation_rejects_symlink_at_write_target(tmp_path, name):
+    from mdf_core.execution.reports import new_report_dir
+    from mdf_core.foundation.errors import MDFError
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / name
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(outside if link.name != ".gitignore" else outside / "ignore")
+
+    with pytest.raises(MDFError) as error:
+        new_report_dir(tmp_path, "quick")
+
+    assert error.value.code == "managed_symlink"
+    assert list(outside.iterdir()) == []
+
+
 def test_run_logs_command_and_sets_report_dir(tmp_path, python_exe):
     (tmp_path / ".mdf").mkdir()
     probe = (

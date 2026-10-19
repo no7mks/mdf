@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -19,14 +20,19 @@ def path_stays_in_repo(repo: Path, path: Path) -> bool:
 
 
 def managed_symlinks(repo: Path) -> list[Path]:
+    """检查托管路径；本地日志与报告只检查目录本身，不递归扫描产物。"""
     found: set[Path] = set()
+    local_artifacts = {repo / ".mdf" / name for name in ("logs", "reports")}
     for name in MANAGED_ROOTS:
         root = repo / name
         if root.is_symlink():
             found.add(root)
             continue
         if root.is_dir() and path_stays_in_repo(repo, root):
-            found.update(path for path in root.rglob("*") if path.is_symlink())
+            for directory, dirs, files in os.walk(root):
+                parent = Path(directory)
+                found.update(parent / name for name in (*dirs, *files) if (parent / name).is_symlink())
+                dirs[:] = [name for name in dirs if parent / name not in local_artifacts]
     return sorted(found)
 
 

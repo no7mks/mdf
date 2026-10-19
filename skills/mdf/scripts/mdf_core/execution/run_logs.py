@@ -54,8 +54,10 @@ def unique_dir(root, name):
 def ignored_dir(path):
     """建目录并在其中放 `*` 的 .gitignore，使内容不进 Git、不影响 clean 与指纹。"""
     path = Path(path)
-    path.mkdir(parents=True, exist_ok=True)
     ignore = path / ".gitignore"
+    if path.parent.is_symlink() or path.is_symlink() or ignore.is_symlink():
+        raise MDFError(f"日志与报告目录及 .gitignore 不允许 symbolic link: {path}", code="managed_symlink")
+    path.mkdir(parents=True, exist_ok=True)
     if not ignore.is_file():
         ignore.write_text("*\n")
     return path
