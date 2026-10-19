@@ -115,6 +115,9 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
   commit 的 `code-review.md` 终稿。
 - 默认每人全范围（replicate），也可切片审查（partition）。
 - 主 Agent 汇总裁定、修复并复核。
+- reviewer 可在 owner 的独占 test 文件中构建并运行 failing test，证明疑似行为缺陷，交回 test 与失败证据。
+  - 主 Agent 将有效的临时 tests 整理到合适的现有或新建 suite，验证修复前失败、修复后通过。
+  - 无法构建 failing test 的 finding 保留并降一级处理，不因缺少 test 判为无效。
 - 前三种分支从固定起点审查，release 从上一正式发布版本审查。
 - qa/dev 默认 best-of-n，也可在 design 按 partition 分工。
 - `$mdf start` / `deliver` 可带 `--roster`（solo / min-tdd / competing-pair / coop-pair）。

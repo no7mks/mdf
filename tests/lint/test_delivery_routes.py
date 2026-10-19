@@ -342,7 +342,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     assert table[1][5] == "3"
     assert table[3][6] == "可修则 3；否则停"
     for rule in (
-        "不安排分工", "不共享其他审查者结论", "subagent 只读审查",
+        "不安排分工", "不共享其他审查者结论", "subagent 可在 owner 编写复现 test",
         "全部审查结果返回前不修改", "以证据裁定，不按票数决定",
         "不强制再次启动审查 subagent", "不足本轮应派人数", "无法补齐则停止",
     ):

@@ -268,9 +268,11 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   worktree、禁止切到 owner、禁止要求用户切换；禁止 `move_agent_to_root`。
   - roster `0,0` 不走步骤 4。
 - 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
+  - code-review 的 reviewer 可按其契约并行写入各自独占的 test 文件，implementation 仍冻结。
 - design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner subagent。
   - 主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
-- code-review 内部按 roster.reviewers 启动独立 subagent 只读审查，按其契约执行，主 Agent 汇总修复。
+- code-review 内部按 roster.reviewers 启动独立 subagent 审查，按其契约执行，主 Agent 汇总修复。
+  - 实现只读；reviewer 在 owner 获分配的独占 test 文件中构建并运行复现 test，交回 test 与失败证据。
 - 分派时只把该 intent 在 roster.models 中的值写入对应任务，按口语描述现场解析（可多个模型）。
   - 没有该键则该路不提模型或 effort。
   - 不得把其他 intent 的模型写入本路任务。
@@ -288,7 +290,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | --- | --- | --- |
 | write-tests | `worktrees.qa` 项的 path/branch（index 1 如 `qa/feature/<slug>`） | 测试、配置及阶段证据 |
 | implement | `worktrees.dev` 项的 path/branch（index 1 如 `dev/feature/<slug>`） | 实现及阶段证据 |
-| code-review 的审查者 | owner 的同一绝对路径与固定 review_head | 只读，不建立角色 worktree |
+| code-review 的审查者 | owner 的同一绝对路径与固定 review_head | 实现只读；可写独占 test 文件与报告，不建立角色 worktree |
 
 主 Agent 分派前和 subagent 首次操作时都运行内部 CLI：
 
@@ -296,7 +298,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
 - 角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>`
   再检查共同基线与 fingerprint。
-- 审查者使用 `--role owner --expected-head <review_head>`，只读验证，不合并或写入。
+- 审查者使用 `--role owner --expected-head <review_head>`，不合并或提交；只写获分配的 test 文件与报告，详见 code-review 契约。
 
 路径约束：
 
@@ -305,7 +307,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 仅 Cursor 主 Agent 可按 `common.md` 调用 `move_agent_to_root`；其他宿主与
   subagent 一律绝对路径绑定，横幅随绑定的 worktree 更新。
 - 不能绑定并验证指定路径时停止，不在默认目录开工。
-- 审查者验证 owner 与 review_head，不合并或写入。
+- 审查者验证 owner 与 review_head；实现只读，复现 test 的写入与运行按 code-review 契约执行。
 
 ### 等待、交接与收口
 
