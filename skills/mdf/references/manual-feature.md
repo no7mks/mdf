@@ -36,7 +36,7 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check delivery | 脚本 | 运行 delivery status；核对身份与六项清单 | 身份、roster、objectives | 2 | 停止并报告 |
+| 1 | Check delivery | 脚本 | 运行 delivery status；核对身份与七项清单 | 身份、roster、objectives | 2 | 停止并报告 |
 | 2 | Select step | 约束 | 检查人工工作并选型 | 勾选、前置 | 阶段 3；无剩余返回 | 人工未勾交接；不符停止 |
 | 3 | Delegate | 约束 | 按阶段表执行一个原 intent 并交接 | 原 intent 产物与勾选 | 返回调用方 | 按原 intent 交接 |
 
@@ -50,14 +50,14 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 - start 通过 clarify 确认工作范围及 slug；独立调用先询问再建议，deliver 按其 confidence 策略裁定。
 - 从 develop 创建 `feature/<slug>` 与独立 owner worktree；roster 固定为 `0,0,1`。
 - objectives 使用 `assets/templates/manual-objectives.md`。
-  - 顺序：start → 人工工作 → code-review → verify smoke → fact update → close-out。
+  - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → close-out。
 - start 自勾 start；人工工作仅由用户显式勾选，Agent 不得代勾。
   - 用户可要求 Agent 介入实现与测试；介入不代表人工工作已完成。
   - next / deliver 在人工工作未勾时交接给用户；所有模式同样不得代勾或越过。
   - 用户显式勾选后，由 next 单步续办或 deliver 串联剩余阶段。
 - code-review 用 1 个 reviewer；前置为人工工作已勾，不要求 converge。
 - verify smoke 执行 feature 的 branch 验证（lint/build/quick/smoke），
-  写入 `verification-report.json`；通过后自勾 verify smoke。
+  写入 `verification-report.json`；通过且必要增量复审完成后自勾 verify smoke。
 - fact update 直接对齐当前事实，沿用其内部审阅与验证，通过后自勾 fact update。
   - deliver 的 until 排除内部 fact audit 时，fact update 返回截止点与未完成步骤，不代勾 fact update。
   - 进入前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；仅文档继续，
@@ -72,7 +72,7 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 
 - `manual: true`、`feature/<slug>` 与 `needs_design: false`。
 - 无 proposal，roster 为 `0,0,1`。
-objectives 六项须与模板同序且没有缺项；不符则报告具体差异并停止。
+objectives 七项须与模板同序且没有缺项；不符则报告具体差异并停止。
 
 步骤 2 先核对 start 已勾；未勾或人工工作勾选来源不明时停止并询问。
 人工工作未勾时返回用户交接，不委托开发，也不自动勾选。
@@ -80,8 +80,9 @@ objectives 六项须与模板同序且没有缺项；不符则报告具体差异
 
 | 清单项 | 委托 intent | 完成证据 |
 | --- | --- | --- |
+| lint | `references/lint.md` | 全部 module lint 通过、勾选与提交 |
 | code-review | `references/code-review.md` | 1 人审查终稿、勾选与提交 |
-| verify smoke | `references/verify.md`，branch scope | 通过的 branch 报告、勾选与提交 |
+| verify smoke | `references/verify.md`，branch scope | 通过的 branch 报告、必要增量复审、勾选与提交 |
 | fact update | 先可选 hook，再 `references/fact-update.md` | 适用补审补测、事实同步、内部审阅、勾选与提交 |
 | close-out | `references/close-out.md` | Change、实际 Gitflow 结果 |
 

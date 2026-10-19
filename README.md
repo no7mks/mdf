@@ -57,7 +57,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 自动推进到截止 intent 之前；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
-| `$mdf adhoc [<工作描述>]` | 自动生成五项 objectives，在临时 worktree 完成小工作并收口 |
+| `$mdf adhoc [<工作描述>]` | 自动生成六项 objectives，在临时 worktree 完成小工作并收口 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
@@ -73,6 +73,7 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 | `$mdf fix <bug-id> [--yolo]` | 先确认 failing test，再修复并标为 `fixed` |
 | `$mdf bug close <bug-id> --fixed-in <version>` | 验证与审查已 `fixed` 的 Bug，通过后关闭并写入版本 |
 | `$mdf verify [arg]` | module 级验证；开发用 smart，closeout 前用 branch |
+| `$mdf lint` | 运行统一 lint：代码规模与项目工具检查 |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
 | `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify branch / fact 已在主链完成） |
@@ -96,10 +97,11 @@ MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
 
 统一骨架：
 
-`start → [design?] → 开发 → converge → code-review → verify branch → fact → close-out`
+`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact → close-out`
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
-- converge 做 smart 验收；verify branch 为独立阶段。
+- converge 做 smart 验收；实际执行的 feature/release converge 另验可选 coverage。
+- lint 为独立工具检查阶段；主链 verify 修绿改代码后，做 1 人增量 code-review，必要时重跑原验证范围。
 - 可选 `pre-gitflow-finish` hook 在 fact 前执行；仅文档改动继续，其他改动先补审补测。
   - 支持 command / rule，失败仅汇报；配置见 [契约](skills/mdf/references/hooks/pre-gitflow-finish.md)。
 - 一个 feature 对应一个 PRP；`needs_design: yes` 时 design 提交共用底座。
@@ -115,8 +117,8 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
   commit 的 `code-review.md` 终稿。
 - 默认每人全范围（replicate），也可切片审查（partition）。
 - 主 Agent 汇总裁定、修复并复核。
-- reviewer 可在 owner 的独占 test 文件中构建并运行 failing test，证明疑似行为缺陷，交回 test 与失败证据。
-  - 主 Agent 将有效的临时 tests 整理到合适的现有或新建 suite，验证修复前失败、修复后通过。
+- reviewer 严格只读，返回静态证据；main Agent 汇总去重后构建并运行 failing test。
+  - main Agent 将有效复现纳入合适的现有或新建 suite，验证修复前失败、修复后通过。
   - 无法构建 failing test 的 finding 保留并降一级处理，不因缺少 test 判为无效。
 - 前三种分支从固定起点审查，release 从上一正式发布版本审查。
 - qa/dev 默认 best-of-n，也可在 design 按 partition 分工。
@@ -152,7 +154,7 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
     后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。
 - release 从 develop 开分支前确认发布目标。
   - 工作线四选一；目标里只写选中的那条。不实施新 PRP。
-  - 不联调：`start → [design?] → 开发 → converge → code-review → verify branch →
+  - 不联调：`start → [design?] → 开发 → converge → lint → code-review → verify branch →
     fact audit → close-out`。开发/converge 用 smart；branch 验证与 fact 在 code-review 之后。
   - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
   - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
@@ -256,14 +258,14 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 
 - `$mdf start --manual`：无需 PRP，先经 clarify 询问并确认 slug，按 feature 建立 worktree。
 - roster 固定 `0,0,1`；允许 Agent 介入，人工工作必须由用户显式勾选。
-- 主线：`start → 人工工作 → code-review → verify smoke → fact update → close-out`。
+- 主线：`start → 人工工作 → lint → code-review → verify smoke → fact update → close-out`。
 
 ### Adhoc 入口
 
 `$mdf adhoc <工作描述>` 从 develop 创建 `adhoc/<slug>` 与独立临时 worktree。
 
-- slug 由 Agent 自定；直接生成五项 objectives，不另确认目标文本或 roster，不绑定 PRP。
-- 主线：`工作 → code-review → verify smart → fact audit/update → close-out`。
+- slug 由 Agent 自定；直接生成六项 objectives，不另确认目标文本或 roster，不绑定 PRP。
+- 主线：`工作 → lint → code-review → verify smart → fact audit/update → close-out`。
 - 工作可由 Agent 完成并勾选；code-review 使用 1 个 reviewer，smart 成败均留存 report。
 - close-out no-ff 合入本地 develop，删除源分支，保留 detached worktree；不 push。
 - `$mdf next` 单步续办；已有 adhoc 上的 `$mdf deliver` 持续推进剩余阶段。

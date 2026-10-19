@@ -1,4 +1,4 @@
-"""Adhoc 五步账本不接受缺项、越序或虚报完成。"""
+"""Adhoc 六步账本不接受缺项、越序或虚报完成。"""
 import pytest
 from mdf_core.lifecycle.adhoc import objectives, require_objectives
 from mdf_core.foundation.errors import MDFError
@@ -17,7 +17,7 @@ def test_adhoc_initial_and_completed_objectives():
 def test_adhoc_progress_is_a_completed_prefix():
     text = objectives()
     assert require_objectives(text) == "工作"
-    assert require_objectives(text.replace("[ ]", "[x]", 1)) == "code-review"
+    assert require_objectives(text.replace("[ ]", "[x]", 1)) == "lint"
     with pytest.raises(MDFError, match="顺序完成"):
         require_objectives(text.replace("- [ ] verify smart", "- [x] verify smart"))
 
@@ -26,7 +26,7 @@ def test_adhoc_progress_is_a_completed_prefix():
     ("- [ ] 工作\n", ""),
     ("verify smart", "verify branch"),
     ("fact audit/update", "fact update"),
-    ("- [ ] 工作\n- [ ] code-review", "- [ ] code-review\n- [ ] 工作"),
+    ("- [ ] 工作\n- [ ] lint", "- [ ] lint\n- [ ] 工作"),
 ])
 def test_adhoc_rejects_changed_or_reordered_steps(old, new):
     with pytest.raises(MDFError, match="固定顺序"):

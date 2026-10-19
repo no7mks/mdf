@@ -59,7 +59,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
             "project-rules.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 50
+    assert len(workflows) == 51
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")

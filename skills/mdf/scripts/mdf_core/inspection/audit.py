@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from mdf_core.inspection import doctor
-from mdf_core.inspection.code_size import code_size_findings, is_source, package_size_findings
+from mdf_core.inspection.code_size import is_source
 from mdf_core.inspection.doc_size import sizable_documents, size_findings, size_role, structure_findings
 from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, serialize_findings
 from mdf_core.workspace.gitutil import git_path_tracked, repo_path, require_git_root, run
@@ -267,15 +267,6 @@ def audit_payload(
     )
     with progress("fact-audit 3/4：检查文档结构"):
         limited_documents = [path for path in sized if path not in ignored]
-        findings.extend(code_size_findings(repo, code_paths, config=size_config))
-        package_scope = None if scope == "full" else changed if scope == "branch" else code_paths
-        touched_packages = None if package_scope is None else {
-            path.parent for path in package_scope if is_source(path)
-            and not any(match(relative(repo, path), pattern) for pattern in ignored_patterns)
-        }
-        package_paths = [path for path in all_tracked if is_source(path)
-                         and (touched_packages is None or path.parent in touched_packages)]
-        findings.extend(package_size_findings(repo, package_paths, config=size_config))
         findings.extend(size_findings(repo, limited_documents))
         findings.extend(structure_findings(repo, limited_documents))
         findings.extend(overview_core_module_findings(repo, documents))
@@ -309,7 +300,7 @@ def audit_payload(
             and path not in ignored
             and path.name not in NON_BEHAVIORAL_NAMES
         ]
-    checked_paths = set(sources + code_paths + sized + package_paths)
+    checked_paths = set(sources + code_paths + sized)
     payload = {
         "ok": not findings,
         "operation": "audit",

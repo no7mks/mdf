@@ -59,7 +59,7 @@
 - 新工作描述取自本次参数或已明确的对话上下文；既有工作从 `delivery.json.work` 恢复。
   - 描述写实际工作与已有约束、验收，不只写 slug；无需再次确认。
   - 当前未完工作与新描述不一致时询问归属，不覆盖原目标。
-- 显式 adhoc 授权完成五项步骤及必要本地提交、集成和收口。
+- 显式 adhoc 授权完成六项步骤及必要本地提交、集成和收口。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更、测试门槛批准及 fact 的确认仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
@@ -79,7 +79,7 @@
   - 固定 roster `0,0,1`，`needs_design: false`；不建立 qa/dev 角色树。
 - CLI 写入并提交 `changes/unreleased/<slug>/delivery.json` 与 `objectives.md`。
   - delivery 的 `work` 保存实际工作描述；跨会话续办及 code-review 均以此为准。
-  - 账本直接使用 `assets/templates/adhoc-objectives.md`，初始五项均未勾。
+  - 账本直接使用 `assets/templates/adhoc-objectives.md`，初始六项均未勾。
   - 不要求 design、converge、人工工作确认或额外的 start checklist 项。
 - start 返回的 command hook 已由 Core 执行。pending rule 由 Agent 在返回的 cwd 读取 path 并执行。
   - 使用返回的 new_worktree、old_worktree 上下文；执行前后记录名称、路径、cwd、结果及日志。
@@ -93,7 +93,7 @@
 
 - 运行 `mdf.py adhoc-status --repo <owner> [--slug <已知slug>]`，回读 `result`。
   - 活跃分支可省略 slug；detached 时必须显式传入，不从目录名或其他任务猜测。
-  - `delivery` 含 work、roster、start_commit；`next_step` 来自原有五项账本。
+  - `delivery` 含 work、roster、start_commit；`next_step` 来自原有六项账本。
   - CLI 拒绝缺失工作描述、非 solo、绑定对象、design 或越序勾选，具体差异报告后停止。
 - `completed: true` 须同时满足：
   - 账本全勾，源分支已删除。
@@ -103,15 +103,16 @@
   - 账本全勾但仍在源分支时，next_step 仍为 close-out；不据此声称完成。
 - 状态只读原有材料与 Git，不创建 gate 或新的 workflow 状态文件。
 
-### 五项账本与续办
+### 六项账本与续办
 
 本节用唯一 checklist 决定下一项工作。
 
-objectives 的五项必须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
+objectives 的六项必须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
 
 | 清单项 | 执行与完成证据 |
 | --- | --- |
 | 工作 | owner 完成本次范围，核对成果与必要测试，提交并自勾 |
+| lint | 委托 `references/lint.md`；全部 module 工具报告与自勾 |
 | code-review | 委托 `references/code-review.md`；1 人独立审查，终稿与自勾 |
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
 | fact audit/update | 按下节审阅，必要时更新；fact 确认、自勾与提交 |
@@ -131,12 +132,12 @@ objectives 的五项必须同序、完整，已勾项形成连续前缀；工作
 
 本节规定两项验收的范围、报告与返工规则。
 
-- verify smart 前工作与 code-review 均须已勾。按 `references/verify.md` 执行 smart。
+- verify smart 前工作、lint 与 code-review 均须已勾。按 `references/verify.md` 执行 smart。
   - 相对 start_commit 收集改动，选择涉及 module 与测试；纯文档等无法映射 module 时使用全部 module。
   - 不改用 branch 或 smoke；CLI 成败均保存 `verification-report.json`，`scope: smart`。
-  - 通过后自勾 verify smart 并提交；失败读取报告，可修复则按下条返工，外部阻塞则交接。
+  - 通过且必要增量复审完成后自勾 verify smart 并提交；失败读取报告，可修复则按下条返工，外部阻塞则交接。
   - 验证期间改动实现、测试或验证配置时，退勾 code-review 及后续项。
-    返回该项补审后再验。
+    由 verify 的主链小 loop 在修绿后做 1 人增量复审；必要时再验。
   - code-review 内部 smart 不勾主链 verify smart；审查后仍须执行独立的本项。
 - fact audit/update 在 verify smart 已勾后执行。
   - 可选 hook 每次交付只执行一次，失败也不重跑。执行状态不明时先读 CLI 日志，仍不明则询问。

@@ -109,7 +109,7 @@
 - 只在增量全部为非本交付 docs 路径时跳过补审补测，并在终稿追加无 hash 的跳过说明。
   - 本交付 docs 为 start_commit 到集成前 HEAD 已改过的 docs 路径；路径不明不可跳过。
   - 其余增量退勾 code-review 及后续项。草稿保存集成前左端点，提交后交接 code-review。
-  - 增量 review 为 1 人；由外层按五项账本完成补审、smart 与 fact 后再续办本流程。
+  - 增量 review 为 1 人；由外层按六项账本完成补审、smart 与 fact 后再续办本流程。
 - 用 `assets/templates/change.md` 补齐同目录 CHANGE.md。
   记录实际结果、outcomes、事实更新与证据。
   - `change_kind: adhoc`、`source_branch: adhoc/<slug>`、`proposals: []`。

@@ -220,6 +220,11 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 
 选型含语义 decision 时按上方 confidence 策略评分；objectives 已明确的确定性选型直接查表。
 
+- Execute 已打开 verify 小 loop 时，先恢复其原 scope/选题与待修绿/待复审状态，完成后才返回 Select。
+- 不因 code-review 退勾提前选择该 intent；原 verify 负责先修绿再派 1 人增量审查。
+- 恢复使用已有调用栈、objectives 续办备注或草稿，不新增 gate；无法恢复原范围时停止报告。
+
+
 | 当前状态 | 后续处理 |
 | --- | --- |
 | start 未完成 | 续办 start，锁定其返回路径 |
@@ -234,7 +239,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | owner 开发（或等价开发项）已勾且 converge 未勾 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
 | release 联调且尚未确认无更多代码修改 | 按所选模式确认两端冻结；collab-mode 由接手 Agent 核实；不进入审查 |
-| converge 已勾（或无未勾 converge 项）、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
+| converge 已勾（或无未勾 converge 项）、lint 未勾 | owner 委托 `references/lint.md` |
+| lint 已勾、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
 | code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
@@ -248,6 +254,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   非文档改动退勾后回到本表补审补测；已执行的 hook 不因补测或 fact 重审而重跑。
 - release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
+- close-out 返回「待主链外续办」时结束该调用栈并返回 Select；保留已齐审查与修复窗。
+  - 在 close-out 外恢复 code-review、原验证与 fact 后再续办收口，不在 close-out 内绕跑 verify。
+
 - 内部委托到 until 时逐层返回截止点与未完成子步骤，直接进入 5；不把截止当作失败或自动重试。
 - fact audit 的可修 finding 交回 Select；外部阻塞、缺证据或低 confidence 待确认不擅自启动 fact update。
 - 步骤失败时遵守原流程的恢复和停止条件，不无限重试无进展的失败。
@@ -268,11 +277,11 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   worktree、禁止切到 owner、禁止要求用户切换；禁止 `move_agent_to_root`。
   - roster `0,0` 不走步骤 4。
 - 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
-  - code-review 的 reviewer 可按其契约并行写入各自独占的 test 文件，implementation 仍冻结。
+  - code-review 的 reviewer 严格只读，通过会话返回独立报告；全部齐全后 main Agent 才核实、修复。
 - design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner subagent。
   - 主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
-- code-review 内部按 roster.reviewers 启动独立 subagent 审查，按其契约执行，主 Agent 汇总修复。
-  - 实现只读；reviewer 在 owner 获分配的独占 test 文件中构建并运行复现 test，交回 test 与失败证据。
+- code-review 内部按其契约的本轮应派人数启动独立 subagent 审查，按其契约执行，主 Agent 汇总修复。
+  - reviewer 不写文件、不运行 tests；main Agent 核实 finding 并构建 failing test。
 - 分派时只把该 intent 在 roster.models 中的值写入对应任务，按口语描述现场解析（可多个模型）。
   - 没有该键则该路不提模型或 effort。
   - 不得把其他 intent 的模型写入本路任务。
@@ -290,15 +299,15 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | --- | --- | --- |
 | write-tests | `worktrees.qa` 项的 path/branch（index 1 如 `qa/feature/<slug>`） | 测试、配置及阶段证据 |
 | implement | `worktrees.dev` 项的 path/branch（index 1 如 `dev/feature/<slug>`） | 实现及阶段证据 |
-| code-review 的审查者 | owner 的同一绝对路径与固定 review_head | 实现只读；可写独占 test 文件与报告，不建立角色 worktree |
+| code-review 的审查者 | owner 的同一绝对路径与固定 review_head | 严格只读；不运行 tests，由 main Agent 落盘报告，不建立角色 worktree |
 
-主 Agent 分派前和 subagent 首次操作时都运行内部 CLI：
+主 Agent 分派前，以及 qa/dev 首次操作时运行内部 CLI：
 
 - `worktree-check --repo <角色绝对路径> --owner <owner绝对路径> --role <qa|dev> [--index N]`。
 - 脚本核对 Git 根、完整分支名、worktree 清单绑定与 Git common dir；不匹配则停止，不写入。
 - 角色依原 intent no-ff merge owner 后，追加 `--design-commit <固定设计提交>`
   再检查共同基线与 fingerprint。
-- 审查者使用 `--role owner --expected-head <review_head>`，不合并或提交；只写获分配的 test 文件与报告，详见 code-review 契约。
+- main Agent 替审查者核对 `--role owner --expected-head <review_head>`；reviewer 仅接收只读任务。
 
 路径约束：
 
@@ -307,7 +316,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 仅 Cursor 主 Agent 可按 `common.md` 调用 `move_agent_to_root`；其他宿主与
   subagent 一律绝对路径绑定，横幅随绑定的 worktree 更新。
 - 不能绑定并验证指定路径时停止，不在默认目录开工。
-- 审查者验证 owner 与 review_head；实现只读，复现 test 的写入与运行按 code-review 契约执行。
+- main Agent 验证 reviewer 的 owner 与 review_head；reviewer 严格只读，main Agent 负责复现与报告落盘。
 
 ### 等待、交接与收口
 

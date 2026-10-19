@@ -95,6 +95,10 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 委托与候选：
 
 - 同一流程的内部委托先续办未完成的子步骤，再返回调用方。
+- 已有 verify 小 loop 时，恢复其原 scope/选题、左端点和待修绿/待复审状态，再续办 verify。
+  - code-review 退勾是该 loop 的内部返工；先修绿再派增量审查，不按首个退勾项提前重开审查。
+  - 只从已有调用栈、objectives 续办备注或草稿恢复父 intent，不把草稿当作进度 gate；范围缺失则停止报告。
+
 - 多个独立候选且上下文未指定当前目标时，列出候选并询问用户选择。
 - 证据冲突或不足时说明缺项，不猜测流程、初始化类型或阶段，
   也不把无法判定当作无在途而委托 tree。
@@ -122,7 +126,7 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
-  - 主线后半：code-review → verify branch → fact audit → close-out。
+  - 主线后半：lint → code-review → verify branch → fact audit → close-out。
     进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
   - 无对应未勾项则跳过。

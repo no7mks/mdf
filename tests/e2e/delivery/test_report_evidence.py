@@ -3,6 +3,29 @@ from mdf_test_support import *  # noqa: F403
 from support_delivery import *  # noqa: F403
 
 
+def test_adhoc_child_smart_can_overwrite_parent_selection_and_needs_original_rerun(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    git(repo, "checkout", "-b", "adhoc/report-probe")
+    args = ("verify", "smart", "--module", "default", "--repo", str(repo))
+    path = repo / "changes/unreleased/report-probe/verification-report.json"
+    assert_ok(mdf(python_exe, *args, "--test", "true"))
+    parent_commands = [item["command"] for item in json.loads(path.read_text())["results"]]
+    assert_ok(mdf(python_exe, *args))
+    child = json.loads(path.read_text())
+    assert child["all_passed"] is True
+    assert [item["command"] for item in child["results"]] != parent_commands
+    assert_ok(mdf(python_exe, *args, "--test", "true"))
+    restored = json.loads(path.read_text())
+    assert restored["all_passed"] is True
+    assert [item["command"] for item in restored["results"]] == parent_commands
+    patch_module_command(repo, "lint", lambda command: "true && true")
+    assert_ok(mdf(python_exe, *args, "--test", "true"))
+    updated = json.loads(path.read_text())
+    assert updated["all_passed"] is True
+    assert [item["command"] for item in updated["results"]] != parent_commands
+
+
 def _register_billing(repo: Path, command: str = SUITE_OK) -> None:
     modules = repo / ".mdf/modules.yaml"
     text = modules.read_text(encoding="utf-8")
@@ -29,7 +52,8 @@ def test_verify_records_suite_reports_and_rejects_skipped(python_exe, tmp_path):
     assert evidence["scope"] == "branch"
     assert "level" not in evidence
     reports = {item["id"]: item.get("report") for item in evidence["results"]}
-    assert reports["lint:default"] is None and reports["build:default"] is None
+    assert reports["lint:default"]["all_passed"] is True
+    assert reports["build:default"] is None
     assert reports["quick:default"]["suite"] == "quick"
     assert reports["smoke:default"]["tests"] == 1
     assert (repo / reports["smoke:default"]["path"] / "r.xml").is_file()

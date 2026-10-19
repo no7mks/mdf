@@ -17,7 +17,7 @@
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
 `$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。规则持续适用。
 人工 feature 先读取并执行 [专用契约](manual-feature.md)，优先于下文普通主线。
-adhoc 先读取 [专用契约](adhoc.md)，使用其五项账本、smart report 与本地收口规则。
+adhoc 先读取 [专用契约](adhoc.md)，使用其六项账本、smart report 与本地收口规则。
 ### 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。
@@ -104,10 +104,11 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 3. 可选 design
 4. write-tests / implement，或 owner 开发（无对应未勾项则跳过）
 5. converge（无对应未勾项则跳过）
-6. code-review
-7. verify branch
-8. fact audit（必要时 fact update 后重审）；进入前执行可选 pre-gitflow-finish hook
-9. close-out
+6. lint
+7. code-review
+8. verify branch
+9. fact audit（必要时 fact update 后重审）；进入前执行可选 pre-gitflow-finish hook
+10. close-out
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。
@@ -131,7 +132,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 - 开发迭代只用 `$mdf verify --scope smart`；branch 只用于交付验收。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` / `$mdf bug close` 不走交付主线，也不由 deliver 内部委托。
-- code-review 份数取冻结的 roster.reviewers；close-out 增量新一轮为 1。
+- code-review 份数取冻结的 roster.reviewers；close-out 与主链 verify 修绿的增量新一轮为 1。
 #### 触发与协调
 
 - 用户手动触发主线 intent，或显式调用 next 委托下一阶段。
@@ -337,7 +338,7 @@ converge（smart）与 verify branch **共用**：
 | release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | 仅 release 的 verify branch |
 | named | 某一功能块的 test case；一 suite 一文档 | 无 | smart 选题，不默认整 suite |
 
-- 验证入口仅 lint/build/quick/smoke/release；其他保留名称不得用作 named suite。
+- 验证入口为 lint/build/quick/smoke/release 与可选 coverage；保留名称不得用作 named suite。
 - lint 与 build 同 quick 一样必跑：smart 只跑涉及 module；branch 跑全部 module。
 - 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**。
 
@@ -387,3 +388,13 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 
 fact update / fact audit 可独立运行；交付主链在 verify branch 之后、close-out 之前委托。
 无 fact stage gate；进度靠 objectives 自勾。独立调用不能因此自动进入 close-out 或其他交付阶段。
+
+
+### Lint 与复审检查点
+
+本节定义工具检查与主链修复后的进度约束。
+
+- 所有交付在 code-review 前增加 lint checklist 项；具体执行见 references/lint.md。
+- 主链 verify 修绿后改了业务内容时，内部委托 1 人增量 code-review；完成后才勾验证项。
+- 增量审查修复后重跑原验证范围；内部 smart 不递归开启 loop。具体范围与续办见 references/verify.md。
+- reviewer 严格只读；main Agent 收齐报告后核实、复现、修复并落盘证据。

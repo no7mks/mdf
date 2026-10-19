@@ -4,7 +4,7 @@ from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
 
-STEPS = ("工作", "code-review", "verify smart", "fact audit/update", "close-out")
+STEPS = ("工作", "lint", "code-review", "verify smart", "fact audit/update", "close-out")
 
 
 def validate_start(args):
@@ -38,10 +38,10 @@ def prepare(args):
 def require_objectives(text, *, starting=False, finishing=False):
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
     if tuple(name for _, name in items) != STEPS:
-        raise MDFError("adhoc 必须按固定顺序填写五项步骤", code="invalid_adhoc_objectives")
+        raise MDFError("adhoc 必须按固定顺序填写六项步骤", code="invalid_adhoc_objectives")
     checked = [mark == "x" for mark, _ in items]
     if starting and any(checked):
-        raise MDFError("adhoc 启动时五项步骤均须未勾选", code="invalid_adhoc_objectives")
+        raise MDFError("adhoc 启动时六项步骤均须未勾选", code="invalid_adhoc_objectives")
     if any(checked[index] and not checked[index - 1] for index in range(1, len(checked))):
         raise MDFError("adhoc 步骤须顺序完成，返工须退勾后续项", code="invalid_adhoc_objectives")
     if finishing and not all(checked):

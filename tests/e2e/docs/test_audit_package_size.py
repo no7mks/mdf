@@ -1,4 +1,4 @@
-"""fact-audit 对触及 package 检查完整成员，并遵守 module ignore。"""
+"""fact-audit 不再检查 package 规模，ignore 报告只包含事实审计范围。"""
 from mdf_test_support import *  # noqa: F403
 
 
@@ -19,16 +19,16 @@ def test_audit_package_scope_and_ignore(python_exe, tmp_path, scope, folder):
         extra = ["--implementation-path", name]
     args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     result = mdf(python_exe, *args)
-    assert result.returncode == 2
+    assert result.returncode == 0
     findings = json.loads(result.stdout)["findings"]
-    assert [(item["code"], item["path"]) for item in findings] == [("package.size", folder)]
-    assert "51" in findings[0]["message"] and "35" in findings[0]["message"]
+    assert not findings
     modules = repo / ".mdf/modules.yaml"
     modules.write_text(modules.read_text().replace("    ignore: []\n",
         f"    ignore:\n      - pattern: {folder}/unit_50.py\n        reason: 生成文件\n"))
     data = payload(mdf(python_exe, *args))
-    assert data["ignored"] == [{"path": f"{folder}/unit_50.py",
-                               "ignore_path": f"{folder}/unit_50.py", "reason": "生成文件"}]
+    expected = ([{"path": f"{folder}/unit_50.py",
+                  "ignore_path": f"{folder}/unit_50.py", "reason": "生成文件"}] if scope == "full" else [])
+    assert data["ignored"] == expected
 
 
 def test_branch_audit_checks_package_after_deleting_a_member(python_exe, tmp_path):
@@ -42,9 +42,8 @@ def test_branch_audit_checks_package_after_deleting_a_member(python_exe, tmp_pat
     (directory / "unit_51.py").unlink()
     git(repo, "add", "--all")
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch", "--base", base)
-    assert result.returncode == 2
-    assert [(item["code"], item["path"]) for item in json.loads(result.stdout)["findings"]] == [
-        ("package.size", "src/large")]
+    assert result.returncode == 0
+    assert not json.loads(result.stdout)["findings"]
 
 
 @pytest.mark.parametrize("scope", ["branch", "paths"])
@@ -76,6 +75,5 @@ def test_ignored_member_does_not_trigger_package_check(python_exe, tmp_path, sco
     extra = ["--base", base] if scope == "branch" else ["--implementation-path", name]
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra))
     full = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "full")
-    assert full.returncode == 2
-    assert [(item["code"], item["path"]) for item in json.loads(full.stdout)["findings"]] == [
-        ("package.size", "src/large")]
+    assert full.returncode == 0
+    assert not json.loads(full.stdout)["findings"]

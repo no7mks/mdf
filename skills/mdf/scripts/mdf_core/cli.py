@@ -256,7 +256,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     verify.add_argument(
         "--suites",
-        help="named 范围：逗号分隔的 suite 名（五固定或 named）",
+        help="named 范围：逗号分隔的 suite 名（固定入口、可选 coverage 或 named）",
     )
     verify.add_argument(
         "--module",

@@ -42,6 +42,7 @@ def write_release_objectives(
         "- [x] 完成预发布工作\n"
         "- [x] owner 开发（has_dev: no）\n"
         "- [x] converge（has_dev: no）\n"
+        "- [ ] lint\n"
         "- [ ] code-review\n"
         "- [ ] verify branch\n"
         "- [ ] fact audit\n"

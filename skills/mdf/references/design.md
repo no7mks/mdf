@@ -128,7 +128,7 @@ owner 另开第二个。
 | 返回 | 条件 |
 | --- | --- |
 | `invalid_policy` | 字段不符 |
-| `invalid_delivery_suite` | suite 名无效或占用 lint/build/quick/smoke/release/full |
+| `invalid_delivery_suite` | suite 名无效或占用固定入口/其他保留名称（含 coverage） |
 
 两者均停止并修正 policy 后重试。
 

@@ -148,7 +148,7 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 | `bugfix` | `--bug <Bug ID>`；分支名为 `bugfix/<Bug ID>` | `--name` | 本地 `develop` |
 | `release` | 稳定 SemVer 的 `--version` 与 `--objectives-file` | — | 本地 `develop` |
 | `hotfix` | 稳定 SemVer 的 `--version` | `--objectives-file` | 本地 `master` |
-| `adhoc` | `--name <名称>`；自动生成五项 objectives | PRP、Bug、版本、manual、objectives 文件 | 本地 `develop` |
+| `adhoc` | `--name <名称>`；自动生成六项 objectives | PRP、Bug、版本、manual、objectives 文件 | 本地 `develop` |
 
 命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
 有 origin 时用 `ls-remote` 核对基线。远程提交必须已在本地，本地可以更新。
@@ -300,7 +300,7 @@ feature/bugfix/adhoc：
 - 以 `--no-ff --no-commit` 合并到本地 `develop`，再以
   `chore(gitflow): 合并 <source> 到 <target>` 提交。
   - feature 的 implemented 转换包含在该 merge commit。
-  - adhoc 要求五项清单完成，Change 为 adhoc 且 `proposals: []`；不修改 PRP。
+  - adhoc 要求六项清单完成，Change 为 adhoc 且 `proposals: []`；不修改 PRP。
 - 角色分支或 worktree 仍在则失败。
 
 release/hotfix：
@@ -360,7 +360,7 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 
 - `--manual` 仅支持 feature，与 `--proposal`、`--bug`、`--version` 互斥。
 - `--name` 为已确认的 kebab-case slug；roster 固定 `0,0,1`。
-- objectives 六项依次为 start、人工工作、code-review、verify smoke、fact update、close-out。
+- objectives 七项依次为 start、人工工作、lint、code-review、verify smoke、fact update、close-out。
   start 时仅 start 已勾；人工工作由用户显式勾选。
 - 创建 owner worktree，写入 `manual: true` 与 `needs_design: false`，不写 proposal。
 - finish-gitflow 要求清单全部完成，Change 不引用 PRP；合入 develop 不更新 PRP。

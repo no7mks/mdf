@@ -20,6 +20,7 @@ from mdf_core.foundation.paths import load_manifest
 from mdf_core.execution.project_verify import associated_suites, run_targets
 from mdf_core.execution.verification import (
     ENTRIES,
+    ALL_ENTRIES,
     NAME_RE,
     RESERVED,
     STEPS,
@@ -80,10 +81,12 @@ def entry_parallel(repo: Path, entry: str) -> bool:
 
 def resolve_named_suite(repo: Path, name: str) -> tuple[list[dict[str, Any]], bool]:
     """解析单个 suite 名为 targets + parallel。"""
-    if name in ENTRIES:
+    if name in ALL_ENTRIES:
         from mdf_core.execution.verification import repo_verification
 
         targets = repo_verification(repo)._items_for_entry(name)
+        if name == "lint":
+            targets = [{**item, "lint_modules": None} for item in targets]
         return targets, entry_parallel(repo, name)
     if (
         not isinstance(name, str)
@@ -217,6 +220,8 @@ def _run_entry_groups(repo: Path, kind: str | None = None) -> list[dict[str, Any
     groups: list[tuple[list[dict[str, Any]], bool]] = []
     for entry in names:
         items = verification._items_for_entry(entry)
+        if entry == "lint":
+            items = [{**item, "lint_modules": None} for item in items]
         groups.append((items, entry_parallel(repo, entry)))
     grand_total = sum(len(items) for items, _ in groups)
     results: list[dict[str, Any]] = []
@@ -388,6 +393,8 @@ def _verify_named(repo, args) -> None:
         "results": results,
         "all_passed": all_passed,
     }
+    if names == ["coverage"]:
+        result["configured"] = bool(results)
     if not all_passed:
         raise MDFError(
             "named suite 失败",

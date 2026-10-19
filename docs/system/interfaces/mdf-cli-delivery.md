@@ -12,7 +12,7 @@
   - 缺 PRP、依赖阻塞或已开工时拒绝。
 - release start 要求 `--version <semver> --objectives-file <文件>`。
   - 确认的发布目标写入 `changes/unreleased/<semver>/`，不 push。
-- adhoc start 使用 `--kind adhoc --name <名称>`，CLI 规范化 slug 并直接生成五项 objectives。
+- adhoc start 使用 `--kind adhoc --name <名称>`，CLI 规范化 slug 并直接生成六项 objectives。
   - 不接受 PRP、Bug、版本、`--manual` 或 `--objectives-file`；固定 roster `0,0,1`、`needs_design: false`。
   - 创建 `adhoc/<slug>` 与同级独立 worktree；finish no-ff 合入 develop，不改 PRP、不 push。
 
@@ -85,7 +85,7 @@
   - 调用：`worktree-check --repo <角色路径> --owner <owner路径> --role <owner|qa|dev> [--index N]`。
   - `--design-commit <hash>` 另核验共同设计。
   - `--handoff` 要求 clean 与有效阶段指纹。
-  - 审查者用 `--expected-head <hash>` 固定只读对象。
+  - main Agent 替审查者用 `--expected-head <hash>` 固定只读对象。
 
 ### `verify`
 
@@ -126,9 +126,9 @@
 
 **named**
 
-- 需要 `--suites <名>[,<名>…]`（五固定或 `module.named` 中的真 named）。
+- 需要 `--suites <名>[,<名>…]`（五个必选入口、可选 coverage 或 `module.named` 中的真 named）。
 - 不要求交付分支；不写 `verification-report.json`。
-- 五固定：命令来自 `.mdf/modules.yaml`（override 或按 module 展开）。
+- 固定入口与可选 coverage：命令来自 `.mdf/modules.yaml`（override 或按 module 展开）。
 - 真 named：命令来自 `docs/system/testing/<name>.md` frontmatter 的
   `commands`（或简写 `command`）；可选 `parallel: true`（>5 报错）。
 - suite 之间按 `--suites` 顺序串行；suite 内可并行。
@@ -210,3 +210,11 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 - 自动 heartbeat 后，Agent 通过 `send` 执行 [双方状态确认](../../../skills/mdf/references/integration-heartbeat.md)。
 - `bug-request` 需要 `--observed`、`--expected`、`--repro`、`--impact`。
 - 监听不创建 Bug，也不解释 `send` 正文。
+
+
+## 可选 coverage
+
+`verify coverage` 调用可选 coverage 入口，配置与统一 JSON 报告见 Skill 的 repository-contract。
+
+- 支持 module 定义与 repo 级完整覆写；未配置返回 configured: false。
+- 代码规模检查统一进入 lint；所有 lint 路径保存工具 summary 与完整输出。

@@ -1,10 +1,10 @@
-"""fact-audit 在各 scope 检查代码行数，包括实现根外的测试代码。"""
+"""fact-audit 各 scope 不再检查代码行数，仍保留范围内的 ignore 依据。"""
 from mdf_test_support import *  # noqa: F403
 
 
 @pytest.mark.parametrize("scope", ["full", "branch", "paths"])
 @pytest.mark.parametrize("name", ["src/large.py", "tests/test_large.py"])
-def test_audit_rejects_oversized_code(python_exe, tmp_path, scope, name):
+def test_audit_leaves_code_size_to_lint(python_exe, tmp_path, scope, name):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
@@ -16,10 +16,9 @@ def test_audit_rejects_oversized_code(python_exe, tmp_path, scope, name):
     if scope == "paths":
         extra = ["--implementation-path", name]
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
-    assert result.returncode == 2
+    assert result.returncode == 0
     findings = json.loads(result.stdout)["findings"]
-    assert [(item["code"], item["path"]) for item in findings] == [("code.size", name)]
-    assert "700 行" in findings[0]["message"]
+    assert not findings
 
     path.write_text("pass\n" * 700, encoding="utf-8")
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra))
@@ -48,9 +47,9 @@ def test_module_ignore_exempts_code_size_only_for_matched_files(python_exe, tmp_
         extra = ["--implementation-path", name, "--implementation-path", "src/other.py"]
     args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     result = mdf(python_exe, *args)
-    assert result.returncode == 2
+    assert result.returncode == 0
     data = json.loads(result.stdout)
-    assert [(item["code"], item["path"]) for item in data["findings"]] == [("code.size", "src/other.py")]
+    assert not data["findings"]
     assert data["ignored"] == [{"path": name, "ignore_path": pattern, "reason": "保留生成文件"}]
     other.write_text("pass\n" * 700)
     assert_ok(mdf(python_exe, *args))

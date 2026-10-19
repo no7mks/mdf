@@ -53,6 +53,7 @@ disable-model-invocation: true
                  ├──── write-tests ───────────────────────────────────────→ references/write-tests.md
                  ├──── implement ─────────────────────────────────────────→ references/implement.md
                  ├──── converge ──────────────────────────────────────────→ references/converge.md
+                 ├──── lint ──────────────────────────────────────────────→ references/lint.md
                  ├──── fix <bug-id> [--yolo] ─────────────────────────────→ references/fix.md
                  ├──── bug close <bug-id> --fixed-in <version> ───────────→ references/bug-close.md
                  ├──── code-review ───────────────────────────────────────→ references/code-review.md
@@ -119,7 +120,7 @@ disable-model-invocation: true
   `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
   - start 的 `--name` 仅用于人工 feature；已有交付直接按 delivery.json 续办。
-- `$mdf adhoc [<工作描述>]` 直接生成 slug 与五项 objectives，在独立 worktree 完成临时工作。
+- `$mdf adhoc [<工作描述>]` 直接生成 slug 与六项 objectives，在独立 worktree 完成临时工作。
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
@@ -138,10 +139,11 @@ intent 只由显式调用选择：
 
 - ❌ 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
   - 例外：显式 next、deliver 或 adhoc 按各自已定义范围内部委托，不扩大当前目标。
+- 各 intent 仅在其编号工作流明示的条件下内部委托；主链 verify 的增量 code-review 与审查内部 smart 按各自契约执行。
 - 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托截止点之前从 start 起的剩余交付阶段；yolo 无默认截止点。
-- adhoc 可内部委托其五项清单的剩余阶段直到 close-out。
+- adhoc 可内部委托其六项清单的剩余阶段直到 close-out。
 - `$mdf close-out` 与 `$mdf finish` 同义，均执行 `references/close-out.md`。
 - `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
 - 其他入口仍按显式调用路由。

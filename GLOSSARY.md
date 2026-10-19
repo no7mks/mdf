@@ -287,3 +287,8 @@ collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
 - 项目内的选用与失败标准由 `docs/system/testing/` 与设计约定。
 - Code smell 指提示维护性或设计问题的代码特征。
   - 由 code-review 判断是否需要在当前范围修复。
+
+
+## Coverage
+
+代码覆盖测量。coverage 是可选验证入口；target 是某个 metric 的最低百分比，covered/total 是命中数与总数。

@@ -7,8 +7,9 @@ from mdf_core.foundation.errors import MDFError
 STEPS = ("lint", "build")
 SUITES = ("quick", "smoke", "release")
 ENTRIES = (*STEPS, *SUITES)
+ALL_ENTRIES = (*ENTRIES, "coverage")
 # full 是全部 test case 的概念，没有入口；保留其名不给 named suite。
-RESERVED = (*ENTRIES, "full")
+RESERVED = (*ALL_ENTRIES, "full")
 DEFAULT_BUDGETS = {"quick": 30, "smoke": 300}
 NAME_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 MIGRATE_HINT = "；用 $mdf migrate 收敛到当前契约"
@@ -19,8 +20,8 @@ class Verification:
 
     def __init__(
         self,
-        module_commands: dict[str, dict[str, str]],
-        overrides: dict[str, str],
+        module_commands: dict[str, dict[str, str | dict]],
+        overrides: dict[str, str | dict],
         budgets: dict[str, int],
     ):
         self.module_commands = module_commands
@@ -39,6 +40,13 @@ class Verification:
 
     def _items_for_entry(self, entry: str) -> list[dict]:
         budget = self.budget(entry)
+        if entry == "coverage":
+            entries = [(None, self.overrides[entry])] if entry in self.overrides else [
+                (name, commands[entry]) for name, commands in sorted(self.module_commands.items()) if entry in commands
+            ]
+            return [{"id": f"coverage:{name}" if name else "coverage", "entry": entry,
+                     "command": config["command"], "coverage_targets": config["targets"],
+                     "budget": None, **({"module": name} if name else {})} for name, config in entries]
         if entry in self.overrides:
             return [
                 {
@@ -113,7 +121,7 @@ def parse_suite_names(raw):
             or name in seen
         ):
             raise MDFError(
-                "named suite 名称无效、重复或占用 lint/build/quick/smoke/release/full",
+                "named suite 名称无效、重复或占用 lint/build/quick/smoke/release/coverage/full",
                 code="invalid_delivery_suite",
             )
         seen.append(name)
@@ -124,12 +132,12 @@ def validate_verification(raw):
     """完整五集命令视图（初始化 CLI 等）；全部视为 repo 覆写，不展开 module。"""
     if (
         not isinstance(raw, dict)
-        or set(raw) - {*ENTRIES, "budgets"}
+        or set(raw) - {*ENTRIES, "coverage", "budgets"}
         or set(ENTRIES) - set(raw)
     ):
         raise MDFError(
             "verification 必须且只能声明 lint、build、quick、smoke、release "
-            "与可选 budgets" + MIGRATE_HINT,
+            "与可选 coverage、budgets" + MIGRATE_HINT,
             code="invalid_verification",
         )
     overrides = {}
@@ -141,6 +149,9 @@ def validate_verification(raw):
                 code="invalid_verification",
             )
         overrides[name] = value.strip()
+    if "coverage" in raw:
+        from mdf_core.execution.coverage import parse_coverage
+        overrides["coverage"] = parse_coverage(raw["coverage"], "verification.coverage")
     budgets = raw.get("budgets", {})
     if (
         not isinstance(budgets, dict)

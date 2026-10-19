@@ -118,7 +118,7 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 
 人工 feature 先执行内部 clarify，议题为工作范围、验收与 slug。
 独立调用必须先询问用户，再依据回答给 slug 建议并确认；deliver 委托按其 confidence 策略裁定。
-采用 `manual-objectives.md`，start 已勾，其余五项未勾，不添加 design / converge。
+采用 `manual-objectives.md`，start 已勾，其余六项未勾，不添加 design / converge。
 `needs_design: false` 由 CLI 写入 delivery.json，objectives 不要求该字段。
 下列普通交付的 needs_design、PRP 与阶段要求不适用于人工 feature。
 
@@ -154,7 +154,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
-  - 精简 checklist 至少含：修复/范围、converge、code-review、verify branch、
+  - 精简 checklist 至少含：修复/范围、converge、lint、code-review、verify branch、
     fact audit、close-out；并含 `needs_design`。
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。

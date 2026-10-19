@@ -28,9 +28,9 @@
 | 交付路径 | 可用截止点与调用关系 |
 | --- | --- |
 | 普通交付前段 | start（联调时内部 integrate）→ design → write-tests / implement → converge |
-| 普通交付后段 | code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out |
-| 人工 feature | start → code-review → verify → fact update（内部 fact audit）→ close-out |
-| 已有 adhoc | 工作 → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out |
+| 普通交付后段 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out |
+| 人工 feature | start → lint → code-review → verify → fact update（内部 fact audit）→ close-out |
+| 已有 adhoc | 工作 → lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out |
 | 条件性子 intent | clarify（start/design）；squash（普通 close-out）；bug close（release/hotfix close-out） |
 
 - 只读解析目标时确定路径；不适用该路径的 intent 报参数错误，不悄悄忽略，不先执行 start。

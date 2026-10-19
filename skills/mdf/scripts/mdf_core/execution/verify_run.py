@@ -188,6 +188,9 @@ def run_verify_command(
     timeout: float | None = None,
     entry: str | None = None,
     junit: bool = False,
+    lint_checks: bool = False,
+    lint_modules: list[str] | None = None,
+    coverage_targets: dict | None = None,
 ) -> dict[str, Any]:
     """entry 非空时在 .mdf/reports/<时间戳>-<entry>/ 保存完整输出；junit 时另校验报告。"""
     env = None
@@ -251,6 +254,19 @@ def run_verify_command(
     if run_dir is not None and junit:
         try:
             result["report"] = summarize(repo, run_dir, entry)
+        except MDFError as exc:
+            report_error = exc
+            result["report"] = exc.details
+    if run_dir is not None and (lint_checks or coverage_targets is not None):
+        try:
+            if lint_checks:
+                from mdf_core.execution.lint import summarize_lint
+                result["report"] = summarize_lint(repo, run_dir, lint_modules,
+                                                  command_passed=exit_code == 0 and not timed_out)
+            else:
+                from mdf_core.execution.coverage import summarize_coverage
+                result["report"] = summarize_coverage(run_dir, coverage_targets,
+                                                      command_passed=exit_code == 0 and not timed_out)
         except MDFError as exc:
             report_error = exc
             result["report"] = exc.details

@@ -71,7 +71,7 @@
 
 ### 目录
 
-主线：`start → [design?] → work → converge → code-review → verify branch → fact audit → close-out`
+主线：`start → [design?] → work → converge → lint → code-review → verify branch → fact audit → close-out`
 
 #### 起步
 - `$mdf bootstrap`：为全新或几乎全新的项目建立 MDF 起点
@@ -91,11 +91,11 @@
 - `$mdf clarify <议题>`：压力测试计划、决策或想法
 
 #### 交付
-- `$mdf next [--depth N]`：续办在途；adhoc 使用五项账本，无在途时委托 tree
+- `$mdf next [--depth N]`：续办在途；adhoc 使用六项账本，无在途时委托 tree
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]`：自动推进到截止 intent 之前；可并行阶段强制 subagent 分别执行
 - `$mdf start`（可带 `--manual`）：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
-- `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按五项 objectives 完成工作并本地收口
+- `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按六项 objectives 完成工作并本地收口
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
@@ -104,6 +104,7 @@
 - `$mdf bug close <bug-id> --fixed-in <version>`：验证与审查 fixed Bug，通过后关闭并写入版本
 - `$mdf verify [arg]`：module 级验证；converge 用 smart，主链在
   code-review 后跑 branch；named 用 `--suites`
+- `$mdf lint`：运行统一 lint，检查代码规模与项目工具规则
 - `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   普通主链在 verify branch 之后，fact audit 未通过时调用，完成后重审
@@ -187,8 +188,8 @@ $mdf clarify 要不要把缓存放到 Redis
 - 起步：`bootstrap`、`init`、`init migrate`、`migrate`
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
-- 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`；
-  `fix`、`bug close`、`verify`、`code-review`、`fact update`、`fact audit`、`close-out`/`finish`
+- 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
+  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`close-out`/`finish`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -247,7 +248,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf next` 或 `$mdf next --depth N`
   - 用途：续办在途流程；无在途时委托 tree。
   - 说明：深度省略时默认 3，仅在委托 tree 时生效；一次只续办一个所选 intent。
-    普通四种 kind 续办交付主线；adhoc 使用五项账本。`$mdf next?` 见 tree。
+    普通四种 kind 续办交付主线；adhoc 使用六项账本。`$mdf next?` 见 tree。
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]`
   - 用法：`$mdf deliver`、`$mdf deliver <target>`。
     可带 `--manual`、`--until <intent>`（别名 `--stop-at`）或 `--yolo`。
@@ -273,7 +274,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf start`
   - 用法：`$mdf start` 或 `$mdf start --manual`；可带 `--roster`、`--*-strategy`、`--*-model`
   - 人工 feature：无 PRP，先经 clarify 询问，再建议并确认 slug；固定 roster `0,0,1`。
-    - 顺序：start → 人工工作 → code-review → verify smoke → fact update → close-out。
+    - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → close-out。
     - 人工工作仅由用户显式勾选，允许 Agent 介入。
   - 用途：按 Gitflow 创建本地交付分支。
   - 说明：
@@ -286,8 +287,8 @@ $mdf clarify 要不要把缓存放到 Redis
     - bugfix/hotfix 均写 objectives checklist（roster `0,0` 由 start 写入）。
 - `$mdf adhoc [<工作描述>]`
   - 用法：`$mdf adhoc 更新配置说明`；省略描述时从已有 adhoc 的 work 或已明确对话恢复。
-  - 用途：在独立 worktree 连续完成临时小工作；slug 与五项 objectives 直接生成。
-  - 顺序：工作 → code-review → verify smart → fact audit/update → close-out。
+  - 用途：在独立 worktree 连续完成临时小工作；slug 与六项 objectives 直接生成。
+  - 顺序：工作 → lint → code-review → verify smart → fact audit/update → close-out。
   - 说明：固定 roster `0,0,1`，不绑定 PRP；本地 no-ff 合入 develop，保留 detached worktree。
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
@@ -308,6 +309,11 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：roster-join（如有）并持续修复到所需 suite 通过。
   - 说明：本 intent 派恰好 1 个 owner subagent 执行合流、验证与记录；
     测改批准回主会话，不计入 roster。按 verify smart 验收；branch 验证在 code-review 之后独立执行。
+    feature/release 实际 converge 另验已配 coverage；沿用既有 converge 跳过规则。
+- `$mdf lint`
+  - 用法：`$mdf lint`
+  - 用途：运行全部 module 的代码规模检查和项目 lint command；文档长度留在 fact audit。
+  - 说明：主链在 converge/工作完成后执行，通过后自勾 lint；项目自行选择和配置 jscpd 等扫描器。
 - `$mdf fix <bug-id>`
   - 用法：`$mdf fix <bug-id>` 或 `$mdf fix <bug-id> --yolo`
   - 用途：澄清、确认 failing test、修复并验证一个 open Bug，标为 `fixed`。
@@ -326,7 +332,7 @@ $mdf clarify 要不要把缓存放到 Redis
     [--module|--paths|--test ...]`
   - 人工 feature 的 `$mdf verify smoke` 执行 branch scope，并勾选 verify smoke。
   - 用途：module 级验证；converge/开发用 smart，主链在 code-review 后跑 branch；
-    named 按 `--suites` 跑指定 suite。
+    named 按 `--suites` 跑指定 suite；`$mdf verify coverage` 运行可选的多 metric target 检查。
   - 参数：arg 与 `--scope` 互斥；`--suites` 仅供 named；`--module` / `--paths` / `--test` 仅供 smart。
     没有 arg 或 scope 时要求补充，不默认选择；verify named 必须指定 `--suites`。
   - 说明：branch 写 `verification-report.json`（feature/bugfix/hotfix→smoke，
@@ -336,8 +342,9 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
   - 说明：进行中可记 tip；裁定收口后覆盖为无 commit 的 `code-review.md` 终稿（非
-    gate）。主链在 converge 后、verify branch 前。进度只认 objectives 自勾。
+    gate）。主链在 lint 后、verify branch 前。进度只认 objectives 自勾。
     首轮按 roster.reviewers；后续增量并复核。默认 replicate；partition 按切片派工。
+    reviewer 严格只读；main Agent 负责核实与 failing test；verify 修绿改代码后做 1 人增量复审。
 - `$mdf fact update`
   - 用法：`$mdf fact update [<path>...] [--scope branch|full|paths]`
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。

@@ -105,7 +105,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 核授权、doctor、branch；只读检查现场 | ready、分支、现场 | 2 | 停止并报告 |
-| 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 冲突询问；否则停止 |
+| 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 待外部续办则交接；冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 整理 Change 与 HTML 总结 | branch/fact、材料 | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
 | 5 | Prepare closeout | 约束 | 只读核对 child Change、日期及热修复输入 | 完整收口输入 | release 7；hotfix 6 | 停止 |
@@ -186,7 +186,10 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
     - feature：普通交付的 converge 项须已勾；人工交付的人工工作须已由用户勾选。
     - owner 已汇总上轮采纳/未解清单；不得把上轮多份原文交给本轮唯一 reviewer 去合并。
     - 以集成后的 HEAD 执行增量新一轮；左端点为已记录的集成前 HEAD，重新固定 review_head。
-    - 本轮应派人数为 1，不改 roster；覆盖增量并复核上轮问题，修复与 smart 后洗成无 commit 终稿。
+    - 本轮应派人数为 1，不改 roster；覆盖增量并复核上轮问题。
+    - 子审查修复需要 smart 时，保留草稿、提交本轮修复并停止交接；由主链外恢复原修复窗，不在本调用内跑 verify。
+    - 待主链外审查、所需验证及 fact 完成后续办；无修复、无需 smart 的子审查可直接写终稿。
+
     - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
     - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
       人数仍为 roster.reviewers。
@@ -242,8 +245,8 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
   - `verification-report.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
   - fact 确认记录存在。
-  - objectives：普通交付勾 converge、code-review、verify branch、fact audit 及开发依赖。
-    人工交付勾人工工作、code-review、verify smoke、fact update。
+  - objectives：普通交付勾 converge、lint、code-review、verify branch、fact audit 及开发依赖。
+    人工交付勾人工工作、lint、code-review、verify smoke、fact update。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
 - 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
   - 用 `git log -1 --format=%H -- …/code-review.md` 定位终稿落盘提交。

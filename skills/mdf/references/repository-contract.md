@@ -145,7 +145,7 @@
   - 不得用压缩措辞或删除空行代替拆分；审查按改写前内容复核结果。
 - 源代码与测试源代码单文件默认最多 1000 行；超限必须拆分，默认每个结果最多 700 行。
   - 实际使用所有适用 module 的 `max_file_lines` 与 `split_percent`，未配置字段沿用默认值。
-  - `fact-audit` 按 scope 检查已跟踪的源代码与测试源代码，超限报 `code.size` finding。
+  - 统一 lint 检查已跟踪的源代码与测试源代码，超限报 `code.size` finding。
   - 不对配置、数据、文档或 lockfile 应用代码行数限制；代码类型按 `code_size.py` 的扩展名识别。
 - package 按目录统计直属源文件，实现文件与测试文件分开计数，子 package 独立计数。
   - 每类默认最多 50 个文件；超限按职责、依赖与设计模式拆分，默认每个结果同类最多 35 个。
@@ -153,7 +153,7 @@
   - 只统计已跟踪源代码，含 `__init__.py`；配置、数据与文档不计，module `ignore` 命中文件排除。
   - 测试按 `test/`、`tests/`、`__tests__/` 目录，或 `test_*`、`*_test`、`*Test`、`*Tests`、`.test.`、`.spec.` 文件名识别。
   - 同目录混放实现和测试时两类不相加；`src` 与 `tests` 分别统计，不合并到共同父目录。
-  - `fact-audit` 超限报 `package.size`；full 检查全部 package，branch/paths 对触及 package 统计全部现存成员。
+  - 统一 lint 超限报 `package.size`；全部 module 检查全部 package，smart 对选中 module 触及的 package 统计完整成员。
   - 不得机械切成 `part1`、`part2` 或空壳子包；入口可按合理设计迁移，并同步调用方与文档引用。
 - `AGENTS.md` 只检查 MDF 托管块的 100 行硬限制，不对整份文件另设行数 warning。
 
@@ -314,10 +314,10 @@ budgets:
 
 - 每个 module 必须声明 `sourceset`、`lint`、`build`、以及
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
-  - 可选 `ignore`、`named` 与 `size_limits`。
+  - 可选 `ignore`、`named`、`size_limits` 与 `coverage`。
 - **ignore**：`pattern` + `reason`；项目可排除源代码、测试源代码与文档，不要求位于实现根内。
   - 命中路径不触发 verify，也不产生 uncovered / `agents.project_content` 类提示。
-  - `fact-audit` 与 `prose-check` 跳过命中文件的 `code.size`、`size.hard` 与 `prose.*` 检查；package 计数排除命中文件。
+  - lint 跳过命中文件的代码规模检查，package 计数排除命中文件；fact audit 与 prose-check 跳过其文档规模与结构检查。
   - 命中文件不受长度与 70% 拆分要求约束；审阅不得再按这些规则要求拆分，报告匹配路径与理由。
   - `fact-audit` 的 `ignored` 保留命中路径、pattern 与 reason；未匹配的已跟踪文件仍正常检查。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
@@ -458,3 +458,36 @@ generated:
 
 根 `CHANGELOG.md` 只列稳定版本，不含 Unreleased 章节。版本目录的根 `CHANGE.md`
 记录该版本的结果、outcome、found-in 转换、SemVer 和审阅结果；CHANGELOG 只做读者索引。
+
+
+## 可选 coverage 入口
+
+本节定义与 lint/build 同级的 coverage 配置和项目报告接口。
+
+```yaml
+modules:
+  app:
+    coverage:
+      command: scripts/coverage.sh
+      targets:
+        lines: 85
+        branches: 75
+```
+
+- coverage 可省略；配置后必须完整提供 command 与非空 targets，metric 名由项目声明。
+- 每个 target 是 0–100 的有限数，不接受布尔值；MDF 按原始比例比较，不四舍五入抬过阈值。
+- 顶层 verification.coverage 可用同一完整定义覆写全部 module；整项替换，只执行一次。
+- command 在本次 `$MDF_REPORT_DIR/coverage.json` 写入统一报告，不读取旧运行目录。
+
+```json
+{"metrics":{"lines":{"covered":85,"total":100},"branches":{"covered":3,"total":4}}}
+```
+
+- 每个配置 metric 都须有整数 covered/total，满足 0 <= covered <= total 且 total > 0。
+- 命令失败、缺报告、缺 metric、非法计数、零 total 或任一 target 未达标均失败。
+- MDF 写入 summary.json，包含实际比例、target、各 metric 结果或报告错误；完整 stdout/stderr 同目录保存。
+- coverage 不套用 JUnit 解析，不加入 quick/smoke/release 的成员集合，也不计入 quick 的预算。
+- `$mdf verify coverage` 可显式执行；未配置时返回 configured: false，不生成虚假的测量结果。
+- 自动执行仅属于 feature/release 的实际 converge：smart 通过后执行，未达标不勾 converge。
+- release 的 has_dev: no 仍跳过 converge 与 coverage；其他流程可显式调用。
+- coverage 是保留入口名，不得用作 module 名或普通 named suite 名。

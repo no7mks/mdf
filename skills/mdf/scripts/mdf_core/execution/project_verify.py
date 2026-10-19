@@ -55,6 +55,9 @@ def _run_one(repo, item, index, total):
             timeout=item.get("budget"),
             entry=entry,
             junit=entry in SUITES or item.get("junit", False),
+            lint_checks=entry == "lint",
+            lint_modules=item.get("lint_modules", [item["module"]] if "module" in item else None),
+            coverage_targets=item.get("coverage_targets"),
         )
         return {**item, **detail, "passed": True}
     except MDFError as exc:

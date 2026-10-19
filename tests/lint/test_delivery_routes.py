@@ -18,7 +18,7 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "增量新一轮" in text
     assert "已齐审查且无新改动" in text
     assert "非本交付 `docs/` 不是新的交付改动" in text
-    assert "finish 集成增量轮为 1" in text
+    assert "finish 集成增量轮与主链 verify 修绿轮为 1" in text
     assert "不得把上轮多份独立报告交给本轮" in text
     assert "git diff <操作左端点> <review_head>" in text
     assert "仍解决 / 复开 / 不适用" in text
@@ -278,7 +278,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "补覆盖" in contract
     assert "补覆盖按" in workflow("integrate")
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
-    assert "验证入口仅 lint/build/quick/smoke/release" in contract
+    assert "验证入口为 lint/build/quick/smoke/release 与可选 coverage" in contract
     assert "非 feature 分支变更 modules.yaml 套件入口或新增 named suite：默认模式需用户确认" in contract
     repo_contract = workflow("repository-contract")
     assert "验证命令**不在** manifest；写在 `.mdf/modules.yaml`" in repo_contract
@@ -338,12 +338,12 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     text = workflow("code-review")
     table = rows(text)
     assert table[1][2] == "Subagent"
-    assert "按 roster.reviewers 启动独立 subagent" in table[1][3]
+    assert "按本轮应派人数启动严格只读 subagent" in table[1][3]
     assert table[1][5] == "3"
-    assert table[3][6] == "可修则 3；否则停"
+    assert table[3][6] == "close-out 需 smart 返回待续办；可修则 3；否则停"
     for rule in (
-        "不安排分工", "不共享其他审查者结论", "subagent 可在 owner 编写复现 test",
-        "全部审查结果返回前不修改", "以证据裁定，不按票数决定",
+        "不安排分工", "不共享其他审查者结论", "reviewer 严格只读",
+        "报告齐全前不修改", "以证据裁定，不按票数决定",
         "不强制再次启动审查 subagent", "不足本轮应派人数", "无法补齐则停止",
     ):
         assert rule in text
@@ -442,7 +442,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "推导出必须空转的 owner 开发" in contract
     assert "has_dev" in contract
     verify = workflow("verify")
-    assert "成败都进 4" in verify
+    assert rows(verify)[2][5] == "4"
     assert "未绿且可修 → 回 3" in verify or "未绿可修→3" in verify
     assert "未绿轮不写" in verify or "未绿轮不得勾选" in verify
     assert "integrate 未勾" in workflow("deliver")

@@ -7,6 +7,7 @@
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
+                 ├──── 来源 verify 且待修绿 ────→ [返回原 verify；独立调用报告待续办]
                  ├──── 已齐审查且修复续办 ──────→ 3 Repair
                  ├──── 已齐审查但勾选未完成 ────→ 4 Record
                  ├──── 已齐审查且无新改动 ──────→ [结束]
@@ -33,8 +34,9 @@
 │ 4 Record                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── smart 失败且可修 ────→ 3 Repair
-                 ├──── 其他失败或缺失 ──────→ [停止并报告]
+                 ├──── close-out 委托且需 smart ────→ [交接主链外续办修复窗]
+                 ├──── smart 失败且可修 ────────────→ 3 Repair
+                 ├──── 其他失败或缺失 ──────────────→ [停止并报告]
                  │
                  ▼ 通过
                  [结束]
@@ -42,21 +44,24 @@
 
 ## 工作流（唯一执行契约）
 
-读取 `references/common.md` 与 `references/delivery-contract.md`；
-涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
-读取 [项目阶段 rule 契约](project-rules.md)，本阶段按 merge 后规则执行，冲突时 project 优先。
-CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
-独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
-close-out 内部委托时完成后返回 close-out，继续材料与 Gitflow（不内嵌 fact）。
+按以下边界读取并执行本阶段。
+
+- 读取 `references/common.md` 与 `references/delivery-contract.md`；涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
+- 读取 [项目阶段 rule 契约](project-rules.md)，本阶段按 merge 后规则执行，冲突时 project 优先。
+- CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
+- 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
+- close-out 内部委托时返回 close-out；需要 smart 时返回待主链外续办，不在该调用内补验或 fact。
+- 主链 verify 内部委托时返回原 verify 的步骤 5；不接管父阶段的 branch/smart 勾选。
+- 覆盖终稿时不得删除 objectives 中父 verify 的非 checklist 续办备注。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 核范围、前置、项目 rule 与续办 | 基线、报告、rule 原文与指纹 | 仅漏勾则 4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
-| 2 | Review | Subagent | 按 roster.reviewers 启动独立 subagent 覆盖本轮，尝试 test 复现 | N 份审查、test 证据或限制说明 | 3 | 停止并报告 |
+| 1 | Check | 约束 | 核范围、前置、项目 rule 与续办 | 基线、报告、rule 原文与指纹、体积数据 | verify 待修绿返回父；仅漏勾则 4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
+| 2 | Review | Subagent | 按本轮应派人数启动严格只读 subagent 覆盖本轮 | N 份静态审查、范围与证据 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 裁定、修复、整理 tests 并复核 | 裁定、修复与 suite 验证，无阻断项 | 4 | 可修则留在 3；否则保留现场并报告 |
-| 4 | Record | 脚本 | 按需 smart；裁定收口则洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 结束 | 可修则 3；否则停 |
+| 4 | Record | 约束 | 按需 smart；裁定收口则洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 结束 | close-out 需 smart 返回待续办；可修则 3；否则停 |
 
-close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时，按该范围开启增量新一轮。
+close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左端点时，按该范围开启增量新一轮。
 旧终稿或目标主线已包含都不代替此轮；进行中草稿只存范围和审查证据，进度仍看 objectives。
 
 ## 术语与数据结构
@@ -76,15 +81,16 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 
 ### 范围与前置条件
 
+进入步骤 2 前，objectives 的 lint 项须已勾选并提交；增量轮核对最近验证中的 lint 结果。
+
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
 - 先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
-  - 本轮 reviewer 写入的复现 test 留待步骤 3 裁定，不在 Check 提交，不因此重置 review_head。
 - 审查人数取冻结 roster.reviewers：
   - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
   - 本轮应派人数默认同 roster.reviewers。
-  - finish 集成产生的不可跳过增量新一轮为 1，不改冻结 roster。
+  - finish 集成或主链 verify 修绿产生的增量新一轮为 1，不改冻结 roster。
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
   - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
@@ -96,6 +102,11 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 
 步骤 1 按已有记录判定本轮走向：
 
+- 主链 verify 交接优先识别：已有有效上轮终稿与汇总清单，且传入了修复前左端点时，按 1 人增量处理。
+  - 来源 verify 的草稿仍待修绿时，返回原 verify 修绿；不得提前派审查。
+  - 草稿已待复审时固定 review_head；不能因存在新草稿误判为无首轮记录。
+  - 未齐报告只补齐同一范围；无有效上轮时补完整首轮，不以 1 人替代冻结 roster。
+
 - 首轮：无记录或仅有不完整草稿时走首轮；首次审查才固定当前 HEAD 为
   review_head（写入进行中草稿或仅会话/派发参数，供本轮操作）。
   - 首轮未齐时进入 2 补齐。报告未齐前不改审查对象。
@@ -104,23 +115,24 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 - 修复窗：本轮应派报告已齐，且修复终点尚未与当前代码指纹对齐。
   - 窗内只修复已记录问题，保留原 review_head，不覆盖原报告。
   - 直接进入 3。不开增量新一轮，不重派 subagent；不提前跑 verify branch。
-  - 本轮若改了实现/测试/验证配置：步骤 4 跑 smart；失败且可修时只回 3。
+  - 本轮若改了实现/测试/验证配置：步骤 4 按调用方边界处理 smart；失败且可修时只回 3。
 - 修复窗在本轮修复已提交、且（若本轮改过实现、测试或验证配置）smart 已通过时关闭。
   - 此后改实现、测试或验证配置才可进入增量新一轮。
-  - 主链 verify branch 的修绿改动不打开本修复窗（由 verify 自行架构审视）。
+  - 主链 verify 修绿改动由 verify 记录原左端点，开启 1 人增量新一轮，不复用旧修复窗。
 - 无新改动：已有声称通过的终稿（或本轮已可收口）、无待修问题，且相对操作左端点到
   HEAD 没有新的交付改动时，核对后结束。
   - 不进入 2。
   - 此出口另须 objectives 的 code-review 已勾且已提交；仅漏勾或未提交则进 4 补齐。
   - 记录文件、纯事实、收口文档、以及非本交付 `docs/` 不是新的交付改动。
 - 增量新一轮：修复窗已关闭（或终稿已在），且其后改了实现、测试或验证配置时进入
-  （含 close-out 集成后的不可跳过增量；不含主链 verify branch 修绿）。
+  （含 close-out 集成以及主链 verify 修绿后的增量）。
   - 完整上轮：应派份数报告已齐（或已有终稿）、已采纳与未解决问题清单齐全。
   - 操作左端点不从终稿读 hash：close-out 集成用集成前 HEAD（当场记录）；其它增量用
     终稿落盘提交 `git log -1 --format=%H -- <code-review.md>`；无法判定则走首轮。
     pre-gitflow-finish 补审用其执行时返回的原 `before_head`，可从上下文或 CLI 日志恢复。
-    人数仍为冻结 roster.reviewers。
+    主链 verify 修绿轮人数为 1；其他普通增量仍为冻结 roster.reviewers。
   - 重新固定 review_head 为当前 HEAD，进入 2。
+  - 主链 verify 传入其修复前左端点；从已有草稿续办，不从新终稿提交倒推修复前范围。
   - ❌ 不得从 start_commit 重扫已审区间（走首轮时除外）。
   - 上轮残缺（缺份数、缺问题清单）时不得假装增量，停止并要求补记录。
     无记录走首轮。
@@ -178,17 +190,18 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 
 > 以最严苛的白盒测试专家视角审查实现代码和测试用例，主动挑战实现逻辑与测试的充分性，
 > 寻找隐藏缺陷和覆盖盲区。以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
-> 对疑似行为缺陷，亲自尝试构建并运行 failing test；无法复现时说明尝试、限制及其他证据，交主 Agent 降级裁定。
+> 严格只读 worktree，不写文件、不运行 tests；返回位置、触发条件、影响、静态证据和建议优先级，由主 Agent 核实。
 
 派发：
 
-- 步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；finish 集成增量轮为 1。
+- 步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；finish 集成增量轮与主链 verify 修绿轮为 1。
 - `review_strategy` 默认 `replicate`：
   - 各审查者收到相同的交付 base_commit、本轮左端点、review_head、工作目录、目标、验收、
     适用设计材料与相关当前事实页。
   - 均覆盖本轮范围检查正确性、验收覆盖、测试质量、code smell、架构合理性及非必要复杂度。
   - 不安排分工，不按文件、模块或领域拆分，不共享其他审查者结论。
-- `partition` 时 owner 按 design 已有切片或本步切开的范围派工，每人只审自己那片；
+- 本轮只有 1 人时覆盖整个本轮 diff，不受冻结 partition 切片限制；仍核对相关旧 finding。
+- 多人 `partition` 时 owner 按 design 已有切片或本步切开的范围派工，每人只审自己那片；
   仍不共享其他审查者结论。
 - 覆盖冻结值与模型：
   - 调用可带 `--review-strategy` / `--code-review-model` 覆盖冻结值，派工前运行 `delivery roster` 写入。
@@ -199,36 +212,42 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
   - finish 集成增量轮（1 人）只使用该已汇总清单，
     不得把上轮多份独立报告交给本轮 reviewer 自行合并。
 - 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
-- 每份任务均包含 `repository-contract.md` 的体积与 ignore 条款；涉及文档时另含 `doc-structure.md`。
+- 每份任务均包含 `repository-contract.md` 的体积与 ignore 条款以及 lint 工具报告；涉及文档时另含 `doc-structure.md`。
   - 先核对 `.mdf/modules.yaml`；命中 module `ignore` 的文件报告排除依据，不提出长度或拆分问题。
-  - 按 `sourceset` 核对全部适用 module 的 `size_limits`；各字段默认 1000/50/70，未归属文件用默认策略。
+  - 读取 lint 报告，按 `sourceset` 核对全部适用 module 的 `size_limits`；各字段默认 1000/50/70，未归属文件用默认策略。
   - 单文件行数与触及 package 的完整同类成员数分别满足各配置；package 实现/测试不相加。
   - 源代码/package 超限按各触发配置的 `split_percent` 向下取整验收；文档仍按角色上限及 70%。
   - 文件拆分按职责、依赖与适用设计模式审代码，按角色、主题、读者与导航审文档。
     不得把 `part1`、`part2` 或仅改名的机械切分验收为通过。
   - 合理设计可迁移入口；不得仅因入口改变或未在原位置保留 facade、re-export、转发壳而提出问题。
     核对设计依据、明确的对外契约，以及调用方、测试、文档和链接是否同步更新。
-- 📌 主 Agent 在全部审查结果返回前不修改审查对象；subagent 可在 owner 编写复现 test，不修改实现或提交。
-  - 分派时为每个 reviewer 指定独占的新增 test 文件和报告路径；原有 tests、共享 fixture 与测试配置留待步骤 3 修改。
-  - reviewer 不建立角色 worktree，不读取其他 reviewer 的 test 或报告；显式选择自己的用例，并隔离运行数据与资源。
-  - 无法隔离运行资源时由主 Agent 排定 test 执行顺序；各 reviewer 仍独立审查，不共享结论。
-- review_head 与原审查文件在步骤 2 保持不变；临时 test 仅作为本轮证据，不改变原审查范围。
-  - 报告列出写入路径；主 Agent 对照分配路径与 worktree diff 核对，发现越界改动则停止，保留现场并说明差异。
+- 📌 reviewer 严格只读，不修改实现、tests、配置或报告，不运行 tests，不建立角色 worktree。
+  - main Agent 在派发前核对 owner 与 review_head，完整传入规则与范围；reviewer 不调用会落盘日志的 MDF CLI。
+  - reviewer 通过会话返回报告；main Agent 负责各份独立报告落盘，报告齐全前不修改审查对象。
+  - main Agent 对照 HEAD 与 worktree diff 核对只读边界；发现越界改动则停止，保留现场并说明差异。
+- 本轮进度由 main Agent 记录，不以 reviewer 写文件作为报告完成条件。
+- main Agent 分派前用只读 measure_code.py 准备本轮范围的文件/package 实测数据；修复后由 main Agent 重测。
+  - 仅读取 references/lint.md 的「审查只读测量」条款，不重新执行 lint 工作流。
+  - 初审使用 --ref <review_head>；修改前使用 --ref <本轮左端点>，需原触发策略时显式传 --policy-ref <策略快照>。
+  - 修复后使用 --ref <已提交修复终点 HEAD>，不覆盖本轮固定 review_head。
+
+  - 数据通过任务原文或已有工具日志交给 reviewer，不让 reviewer 执行脚本、运行 tests 或写入报告。
+
 
 ### 缺陷复现
 
-本节要求 reviewer 尝试用 failing test 证明 finding，并说明无法复现时的证据与处理级别。
+全部独立报告齐全后，由 main Agent 汇总去重，构建并运行 failing test，再裁定 finding。
 
-- 步骤 2 从目标、验收、设计或当前事实页确定预期行为，构建最小的自动化复现 test，优先放在 quick 层。
+- 步骤 3 由 main Agent 从目标、验收、设计或当前事实页确定预期行为，构建最小的自动化复现 test，优先放在 quick 层。
   - test 断言正确行为；不得断言错误行为、使用无条件失败或 mock 掉被审查逻辑来制造失败。
   - 复用已有 failing test 时也须亲自运行并核对失败原因，不要求重复编写同一用例。
-- 报告记录 test 路径或原文、运行命令、退出码、完整报告路径，以及预期与实际结果；未运行时不得编造执行结果。
+- main Agent 的核实记录包含 test 路径或原文、运行命令、退出码、完整报告路径，以及预期与实际结果；未运行时不得编造执行结果。
 
 | 复现结果 | 证据与去向 |
 | --- | --- |
 | 因所指行为缺陷失败 | 附失败报告，进入步骤 3 裁定与修复。 |
 | test 通过 | 说明未复现；已有证据排除 finding 时建议不采纳，否则保留证据交步骤 3 降级裁定。 |
-| test 或环境错误 | 在步骤 2 修正复现方法；无法继续则记录尝试、限制及其他证据，交步骤 3 降级裁定。 |
+| test 或环境错误 | 由 main Agent 在步骤 3 修正复现方法；无法继续则记录尝试、限制及其他证据，交步骤 3 降级裁定。 |
 | 无法构建 test | 说明原因与其他证据，交步骤 3 降级裁定；不得仅报告猜测。 |
 
 - 步骤 3 汇总去重后按合并证据裁定，无有效 failing test 的 finding 按既有优先级降低一级，最低级仍保留。
@@ -252,22 +271,23 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
   review_head）、已完成的审查范围及未完成项；无未完成项时明确写无。
 - 增量轮次须有上轮问题复核表，逐项写明仍解决 / 复开 / 不适用。
 - 发现问题时列出问题位置、触发条件、影响与证据；无问题时明确说明未发现问题。
-- reviewer 为 finding 附建议原级别、复现结果及证据；无法复现时说明限制与其他证据，非行为问题注明证据类型。
-  - 降级记录由主 Agent 在步骤 3 补入草稿与终稿，不要求 reviewer 提前产出主 Agent 的裁定。
-- 体积复核列出未排除的触及代码文件实测行数；发生超限拆分时，列出原大小、硬限制与各结果大小。
-  - 文件与 package 拆分另须说明边界依据、各结果职责、主题及依赖关系；只满足数字上限仍是未解决问题。
-  - package 复核列出原实现/测试文件数、各结果两类计数、适用 module、上限、比例与 ignore 依据。
-    子 package 独立计数；目录迁移后另核新位置的适用硬限制。
-  - 入口迁移列出新入口及调用、导出和引用更新的验证结果，不把保留旧 facade 作为固定验收条件。
-  - 未发生超限拆分时明确写无；缺少实测或拆分证据即未完成项，不能验收为完整报告。
+- reviewer 为 finding 附建议原级别和静态证据；行为复现与降级记录由 main Agent 在步骤 3 补入草稿与终稿。
+  - reviewer 没有 failing test 不影响报告完整性，也不提前触发降级。
+- 代码规模以 lint 及只读测量数据为证据；reviewer 审查拆分职责、依赖及设计合理性，不重复手工计数。
+  - lint 未通过时不得开始本轮审查；工具硬限制不得以 LLM 判断豁免。
+  - 原超限拆分须保留触发时工具报告中的目标；修复后通过 --file-target/--package-target 传入所有原触发目标。
+  - 适用结果须有 within_required_split_targets: true，且满足新位置硬限制；不能用迁入较宽松 module 后的目标替代原目标。
+
+  - 只对本轮确属超限拆分结果的路径验该标记；未发生拆分的文件不能仅因超过拆分目标被要求改写。
+  - 缺少适用结果的数据时由 main Agent 补测；无法取得证据则未完成，不把缺数据或空列表当通过。
+
 
 报告验收：
 
 - 主 Agent 核对每份报告与派发的左端点、review_head 和本轮范围一致，且无未完成项，
   才验收为完整报告。
-- 未尝试复现且未说明无法构建原因，或缺少其他证据时，退回 reviewer 补齐；无法补齐则报告未完成。
-  - 已说明限制并提供其他证据的 finding 进入步骤 3 降级裁定。
-  - 不得仅因缺少 failing test 将 finding 判为无效、将报告列为未完成或阻断收口。
+- reviewer 提供位置、触发条件、影响、静态证据和建议优先级即可完成 finding 报告。
+  - 证据或范围不足时退回补齐；复现是 main Agent 的职责，不能据此将 reviewer 报告列为未完成。
 - 范围声明缺失、端点不一致或存在未完成项时，要求补齐或重新独立审查；无法补齐则停止。
 - 不足本轮应派人数、启动失败、结果缺失或未覆盖本轮范围时，补齐独立审查；
   无法补齐则停止，不记录通过。
@@ -290,7 +310,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 - 修复权限：
   - 允许自主修复实现，或依据已确认目标/设计纠正、补充、删除错误或重复测试，记录依据。
   - ❌ 不得削弱验收或验证门槛；目标/契约变更须用户确认。
-- 主 Agent 在修复前按被测行为、依赖与 fixture 边界整理 reviewer 的临时 tests，归入合适的现有 suite，必要时新建 suite。
+- main Agent 在修复前按被测行为、依赖与 fixture 边界构建复现 tests，归入合适的现有 suite，必要时新建 suite。
   - 有效 test 纳入正式 regression tests；重复或错误 test 可合并、纠正或删除，逐项记录依据，完成临时文件整理。
   - 按既有授权边界同步成员选择、入口配置与 named suite 文档。
   - 移动或合并 test 时保留原缺陷断言与复现能力，记录 finding、正式 test、所属 suite 与执行报告的对应关系。
@@ -307,7 +327,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
   - 混合依赖的 test case 按问题提出，可依既定目标自主拆分，不得改成 skip。
 - 更好的架构可以建议，超出目标不直接实施。
 - 修复后由主 Agent 复核问题是否解决及是否引入回归，不强制再次启动审查 subagent。
-  - 本步触及的代码与超限拆分按步骤 2 的体积规则实测，将结果补入复核记录。
+  - 本步触及的代码与超限拆分读取 lint 与只读测量结果，核对目标标记并复核拆分职责。
 - 同一范围内的修复、复核及 smart 循环留在步骤 3–4，不重新执行本轮多人审查。
   - 这是修复窗。报告已齐时不提前跑 verify branch、不开增量新一轮。
 - 需要用户决定、外部条件或无法继续时报告阻塞，不记录通过的结果。
@@ -317,8 +337,18 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 步骤 4：按是否改动实现、测试或验证配置决定是否跑 smart；裁定本 intent 可收口时洗成终稿。
 
 - 本步不跑 verify branch（留给主链下一 intent）；也不写 `gates/code-review.json`。
-- 本轮改动了实现/测试/验证配置：跑 `$mdf verify --scope smart`；失败回 3 修。
-  - 未改实现/测试/验证配置：跳过 smart。
+- close-out 委托且本轮修复需要 smart 时，保留草稿与修复窗，返回「待主链外续办」；不运行 verify，不洗终稿、不勾选。
+  - close-out 交接后，由 next/deliver 或独立 code-review 在主链外恢复本轮步骤 3–4；不重派已齐 reviewer。
+  - 主链外完成 smart 与终稿后，再由原主链完成所需验证与 fact；旧通过报告不代替本轮结果。
+
+本轮 smart 按以下互斥条件处理，不越过调用方边界。
+
+| 调用与改动 | 处理 |
+| --- | --- |
+| close-out 委托且本轮修复改了实现/测试/验证配置 | 返回待主链外续办，保留修复窗，不洗终稿 |
+| 其他调用且本轮改了实现/测试/验证配置 | 跑 `$mdf verify --scope smart`；失败回 3 修 |
+| 本轮未改实现/测试/验证配置 | 跳过 smart |
+
 - close-out 集成后的增量审查仍按下方「close-out 核对」；branch 验证证据由主链
   `verification-report.json` 负责，不在本步伪造。
 - ❌ 不能用仅检查文档结构的全量 validation 代替业务验证。
@@ -352,7 +382,7 @@ close-out 已将 code-review 退回 `[ ]` 且传入或保存集成左端点时�
 - ❌ 不运行 `delivery record --stage code-review`；不以 gate 文件为进度。
 - 语义审查由 Agent 负责；CLI 不推理各份结论。
 - 首轮未写清已采纳/未解决问题清单时，第二轮不得增量，停止并要求补记录。
-- 主链随后的 verify branch 若为修绿改了代码：不强制回到本 intent；由 verify 自行架构审视。
+- 主链 verify 修绿改了代码：内部委托本 intent 做 1 人增量审查，完成后返回 verify；范围与复跑规则见 verify。
 - 勾选后又改实现/测试/验证配置：终稿作废，重新进入本 intent（增量或首轮），再出新终稿。
 
 close-out 核对：
@@ -361,11 +391,10 @@ close-out 核对：
 - 不使实现审查过期、也不强制重开审查的改动（事实仍须另审）：
   - 记录文件自身、纯事实、收口文档。
   - close-out 集成引入的非本交付 `docs/` 改动。
-  - 主链 verify branch 为修绿所做的改动（已在 verify 内自行架构审视）。
 - close-out 集成 develop/master 产生新提交后：
   - 仅非本交付 `docs/` 增量不新开审查；按 close-out 契约追加跳过说明。
   - 其他集成增量一律作为增量新一轮从 1 开始，左端点为集成前 HEAD（当场记录）。
-    - 以集成后的 HEAD 重做 1 份本轮范围审查与按需 smart；不复用集成前终稿当增量差。
+    - 以集成后的 HEAD 重做 1 份本轮范围审查；需 smart 时按上方边界交接，不复用集成前终稿当增量差。
     - 本轮完成后再次洗成无 commit 终稿并勾选。
   - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，人数仍为
     roster.reviewers。

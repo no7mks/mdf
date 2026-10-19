@@ -59,7 +59,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     assert [(item["command"], item["exit_code"]) for item in results] == [
         ("true", 0), ("true", 0), (SUITE_OK, 0), (SUITE_OK, 0),
     ]
-    assert "report" not in results[0]
+    assert results[0]["report"]["all_passed"] is True
     release_item = next(
         item for item in results if item.get("report", {}).get("suite") == "release"
     )

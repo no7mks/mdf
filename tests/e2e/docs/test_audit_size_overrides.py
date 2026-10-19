@@ -3,7 +3,7 @@ from mdf_test_support import *  # noqa: F403
 
 
 @pytest.mark.parametrize("scope", ["full", "branch", "paths"])
-def test_audit_uses_module_size_overrides(python_exe, tmp_path, scope):
+def test_audit_keeps_code_size_limits_out_of_document_checks(python_exe, tmp_path, scope):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
@@ -28,11 +28,8 @@ def test_audit_uses_module_size_overrides(python_exe, tmp_path, scope):
         (package / f"unit_{index}.py").write_text("pass\n")
     git(repo, "add", "--all")
     result = mdf(python_exe, *args)
-    assert result.returncode == 2
-    findings = json.loads(result.stdout)["findings"]
-    assert [item["code"] for item in findings] == ["code.size", "package.size"]
-    assert "module default" in findings[0]["message"] and "720 行" in findings[0]["message"]
-    assert "module default" in findings[1]["message"] and "36 个" in findings[1]["message"]
+    assert result.returncode == 0
+    assert not json.loads(result.stdout)["findings"]
 
 
 def test_module_split_percent_does_not_override_document_rules(python_exe, tmp_path):

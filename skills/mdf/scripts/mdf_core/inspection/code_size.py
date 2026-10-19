@@ -1,4 +1,4 @@
-"""源代码与测试源代码的文件行数硬限制，不检查配置、数据或文档。"""
+"""源代码与测试源码规模的测量及硬限制；配置、数据与文档不参与代码计数。"""
 from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
@@ -80,3 +80,30 @@ def package_size_findings(repo: Path, paths: Iterable[Path], *,
                     relative(repo, package),
                 ))
     return findings
+
+
+def code_size_measurements(line_counts: dict[str, int], all_paths: list[str],
+                           config: ModulesConfig) -> dict:
+    """只返回工具实测与两类阈值；拆分目标是否适用由审查上下文确定。"""
+    eligible = {name for name in all_paths if is_source(Path(name)) and not config.is_ignored(name)}
+    selected = {name: count for name, count in line_counts.items() if name in eligible}
+
+    def record(path, module, value, limit, limits, **extra):
+        target = limits.target(limit)
+        return {"path": path, "module": module, "value": value, "limit": limit,
+                "split_target": target, "within_limit": value <= limit,
+                "within_split_target": value <= target, **extra}
+
+    files = [record(name, module, count, limits.max_file_lines, limits)
+             for name, count in sorted(selected.items())
+             for module, limits in config.size_policies([name])]
+    touched = {Path(name).parent for name in selected}
+    groups = defaultdict(list)
+    for name in sorted(eligible):
+        if Path(name).parent in touched:
+            groups[Path(name).parent, is_test_source(Path(name))].append(name)
+    packages = [record(package.as_posix(), module, len(members), limits.max_package_files,
+                       limits, tests=tests)
+                for (package, tests), members in sorted(groups.items())
+                for module, limits in config.size_policies(members)]
+    return {"files": files, "packages": packages}

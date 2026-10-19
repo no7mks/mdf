@@ -6,6 +6,7 @@
 
 - [x] start
 - [ ] 人工工作
+- [ ] lint
 - [ ] code-review
 - [ ] verify smoke
 - [ ] fact update

@@ -50,6 +50,7 @@ class Module:
     release: SuiteEntry
     named: tuple[str, ...]
     size_limits: SizeLimits = field(default_factory=SizeLimits)
+    coverage: dict | None = None
 
     def suite(self, name: str) -> SuiteEntry:
         if name == "quick":
@@ -72,7 +73,7 @@ class Module:
 class ModulesConfig:
     modules: dict[str, Module] = field(default_factory=dict)
     budgets: dict[str, int] = field(default_factory=dict)
-    overrides: dict[str, str] = field(default_factory=dict)
+    overrides: dict[str, str | dict] = field(default_factory=dict)
 
     def names(self) -> list[str]:
         return sorted(self.modules)
@@ -95,6 +96,9 @@ class ModulesConfig:
             name: {entry: self.modules[name].command(entry) for entry in ENTRIES}
             for name in self.names()
         }
+        for name, module in self.modules.items():
+            if module.coverage is not None:
+                module_commands[name]["coverage"] = module.coverage
         budgets = dict(DEFAULT_BUDGETS)
         budgets.update(self.budgets)
         return Verification(module_commands, dict(self.overrides), budgets)
@@ -191,7 +195,7 @@ def parse_modules(raw: Any) -> ModulesConfig:
     return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides)
 
 
-def _parse_overrides(raw: Any) -> dict[str, str]:
+def _parse_overrides(raw: Any) -> dict[str, str | dict]:
     """顶层 verification：可只覆写五集中的若干项；空 mapping / 缺省 = 无覆写。"""
     if raw is None or raw == {}:
         return {}
@@ -200,14 +204,18 @@ def _parse_overrides(raw: Any) -> dict[str, str]:
             "verification 必须是 mapping",
             code="modules_invalid",
         )
-    extra = set(raw) - set(ENTRIES)
+    extra = set(raw) - {*ENTRIES, "coverage"}
     if extra:
         raise MDFError(
             f"verification 含未知键: {sorted(extra)}",
             code="modules_invalid",
         )
-    overrides: dict[str, str] = {}
+    overrides: dict[str, str | dict] = {}
     for name, value in raw.items():
+        if name == "coverage":
+            from mdf_core.execution.coverage import parse_coverage
+            overrides[name] = parse_coverage(value, "verification.coverage")
+            continue
         overrides[name] = _nonempty_command(
             value, f"verification.{name}"
         )
@@ -265,6 +273,7 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         "release",
         "named",
         "size_limits",
+        "coverage",
     }
     extra = set(body) - allowed
     if extra:
@@ -304,7 +313,14 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         release=release,
         named=tuple(named),
         size_limits=_parse_size_limits(name, body.get("size_limits", {})),
+        coverage=_module_coverage(name, body),
     )
+
+
+def _module_coverage(name, body):
+    from mdf_core.execution.coverage import parse_coverage
+
+    return parse_coverage(body["coverage"], f"module {name}.coverage") if "coverage" in body else None
 
 
 def _parse_size_limits(name: str, raw: Any) -> SizeLimits:
