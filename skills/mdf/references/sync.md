@@ -97,6 +97,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT"
   分叉图标出共同祖先。`refs/heads/<branch>` 为 local，`refs/remotes/origin/<branch>` 为 remote。
 - 按下表解释关系，并列出三大 trunk 的操作计划；其他分支只报告。
 
+有 PR mode 时先应用 [PR Close-out](pr-close-out.md) 的同步限制，再展示允许执行的计划：
+
+- 当前 checkout 或远端 master/develop 的 manifest 启用 PR mode 时，master/develop 分叉不得自动合并。
+- 本地领先的 master/develop 增量须由 CLI 证明合规；无法证明时报告阻塞，不承诺 push。
+- 以下表格的 diverged 合并只适用于未被上述规则禁止的分支；用户确认不覆盖 PR mode 限制。
+
 | relation | local / remote 关系 | 三大 trunk 计划与 conflict 风险 |
 | --- | --- | --- |
 | equal | tip 相同 | noop |
@@ -131,6 +137,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMA
 - 执行前再次 fetch；任一绑定项变化，CLI 以 `sync_plan_changed` 返回新预览。
   - 回步骤 2 展示新图与计划，再按步骤 3 核对授权；不得只换 token 自动重试。
 - 占用任一 trunk 的 worktree 必须干净；缺占用者时主 worktree 须干净。
+- CLI 返回 `pr_required` 时保留现场并停止，报告其审计结果；不得绕过 CLI 手工 merge 或 push。
 - 按序全部 pull：remote 已是祖先则 noop；可 fast-forward 则 ff；已分叉则 no-ff merge。
   - merge 与 push 使用完整 ref；全部 pull 成功后才原子 push 三者，不顺带推送 tag。
   - 禁止 rebase、force-push、删分支。

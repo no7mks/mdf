@@ -311,10 +311,12 @@ validation 已由步骤 6 判定通过，本步不再复核。
 - 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
 - 无未确认 warning。
 - 无其他 CLI finding（如 `modules.invalid`、`audit.scope`）。
+- 范围内应复核的事实、实现覆盖与 warning 已全部复核；明确按契约排除的项不计入应复核范围。
+  尚有未触及项时只报告已完成范围与缺项，按未通过返回，不以未触及理由替代复核证据。
 
 该确认不跨审阅调用复用；deliver 的同一未变 decision 待答复后 resume 不算新审阅调用。
 
-异常与交接：存在其他 finding、未确认 warning 或未取得用户确认时：
+异常与交接：存在其他 finding、未确认 warning、应复核但未触及的项，或未取得用户确认时：
 
 - 报告审阅未通过、阻断原因与待确认项，不得称审阅通过。
 - 独立调用报告后结束。

@@ -95,7 +95,7 @@
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]`：自动推进到截止 intent 之前；可并行阶段强制 subagent 分别执行
 - `$mdf start`（可带 `--manual`）：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
-- `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按六项 objectives 完成工作并本地收口
+- `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按六项 objectives 完成工作并按配置收口
 - `$mdf design`：确认设计、测试策略和共享代码底座
 - `$mdf write-tests`：按目标编写可执行测试；不要求全绿
 - `$mdf implement`：按已确认设计实现
@@ -289,7 +289,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf adhoc 更新配置说明`；省略描述时从已有 adhoc 的 work 或已明确对话恢复。
   - 用途：在独立 worktree 连续完成临时小工作；slug 与六项 objectives 直接生成。
   - 顺序：工作 → lint → code-review → verify smart → fact audit/update → close-out。
-  - 说明：固定 roster `0,0,1`，不绑定 PRP；本地 no-ff 合入 develop，保留 detached worktree。
+  - 说明：固定 roster `0,0,1`，不绑定 PRP；local 模式本地 no-ff 合入 develop，保留 detached worktree。
+    PR mode 提交 PR/MR，实际合并并完成清理后才完成交付。
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数
   - 用途：确认设计、测试策略和共享代码底座。
@@ -355,6 +356,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 bug close。合入目标
     主线前先 squash dry-run，再按启发式决定是否展示；确认后完整执行。
+    PR mode 提交或续办 PR/MR；等待平台合并或回合时不宣称完成。
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`
   - 用途：定地板、定型切段、写 message；确认后 soft-reset 多段整理。
@@ -385,6 +387,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：`plan` 进 planning；`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
 - `$mdf sync`
   - 用法：`$mdf sync`；展示关系图，确认后先拉后推三大 trunk，多余分支只报告；禁止 force-push。
+  - PR mode：master/develop 分叉或本地领先增量无法证明合规时停止，确认不绕过该限制。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：按工作线联调，强制 Goal；collab-mode 由接手 Agent 直接操作前后端 worktree。

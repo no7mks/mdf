@@ -194,5 +194,5 @@ prp-format ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed
 - `preview_changed`：保持 draft，回步骤 5 重新生成、检查 HTML 并取得本稿确认。
 - 写回 `ready`、回读、提交或 `planning land` 失败：保留现场并停止。
   - 报告对象实际状态：是否已写 `ready`、是否已提交、是否已合入 develop。
-  - 不得声称已 ready 或已合入。
+  - 只报告已经核实的状态；未核实 ready 或 land 成功时不得声称对应步骤完成，不宣称整体完成。
 - 不得关闭对象或填写 `released_in`。

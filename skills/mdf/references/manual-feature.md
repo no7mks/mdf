@@ -64,7 +64,8 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
     其他改动先补 code-review 与 verify smoke；失败仅汇报，续办不重跑。
 - close-out 核对上述前置项及报告；不要求 design、converge 或独立 fact audit 项。
   - Change 的 `proposals: []`；无 PRP 状态更新。
-  - 沿用 feature 的 no-ff 合入 develop、源分支删除及 worktree 保留规则。
+  - local 模式沿用 feature 的 no-ff 合入 develop、源分支删除及 worktree 保留规则。
+    PR mode 由 close-out 委托 PR Close-out，等待平台合并时不宣称完成。
 
 ### 续办与验收
 

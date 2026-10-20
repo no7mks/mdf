@@ -218,7 +218,7 @@ models 取值：
 
 Git 约束：
 
-- 本地工作分支不推送。
+- 开发阶段的本地工作分支不推送；PR mode 的 close-out 按 [PR Close-out](pr-close-out.md) 推送交付源分支。
 - 禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 ### 进度与 Report
 

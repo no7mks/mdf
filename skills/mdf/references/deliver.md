@@ -109,7 +109,8 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 完成范围：
 
-- 无截止点时，feature/bugfix/adhoc 完成本地 develop 合并；release/hotfix 包含 finish 规定的 tag 与发版推送。
+- 无截止点时，local 模式的 feature/bugfix/adhoc 完成本地 develop 合并；
+  PR mode 核对远端目标合并与清理。release/hotfix 包含 finish 规定的 tag 与发版推送。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 finish 完成条件冲突时说明并询问，不能声称完成。

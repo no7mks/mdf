@@ -7,7 +7,9 @@
 │ 1 Check entry                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── adhoc ───────────────→ [委托 Adhoc Close-out 并返回]
+                 ├──── PR mode 已有记录 ────→ [委托 PR Close-out 恢复并返回]
+                 ├──── 失败/缺失 ───────────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -81,10 +83,11 @@
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ──────────────────→ [核验、报告并询问工作区清理]
-                 ├──── 失败且用户决定继续 ────→ 10 Finish Gitflow
-                 ├──── 失败且未决 ────────────→ 10 Finish Gitflow
-                 └──── 失败且用户停止 ────────→ [报告现场并停止]
+                 ├──── PR mode ─────────────────────→ [委托 PR Close-out 并返回其实际状态]
+                 ├──── local 通过 ──────────────────→ [核验、报告并询问工作区清理]
+                 ├──── local 失败且用户决定继续 ────→ 10 Finish Gitflow
+                 ├──── local 失败且未决 ────────────→ 10 Finish Gitflow
+                 └──── local 失败且用户停止 ────────→ [报告现场并停止]
 ```
 
 ## 工作流（唯一执行契约）
@@ -107,7 +110,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 核授权、doctor、branch；只读检查现场 | ready、分支、现场 | 2 | 停止并报告 |
+| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc/PR 恢复返回；其余 2 | 停止并报告 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 待外部续办则交接；冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 整理 Change 与 HTML 总结 | branch/fact、材料 | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
@@ -116,7 +119,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 | 7 | Prepare closures | 约束 | bug close 关闭 fixed；准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | Hand off | 约束 | 提交、核现场 | clean | 裁定有效 10；低分→deliver 6 | 主线前进 feature/bugfix 回 2；其余停 |
-| 10 | Finish Gitflow | 脚本 | 运行 finish-gitflow 并按 kind 核 Git 结果 | Git 结果 | 结束 | 继续或未决则 10；停止则停 |
+| 10 | Finish Gitflow | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | 返回实际结果 | PR 按子流程；local 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构
 
@@ -126,6 +129,11 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - 本 intent 执行实际收口，不提供预览模式。
   - 用户明确要求仅预览或只读时，说明此入口不支持并停止。
   - ❌ 不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
+- 核授权后先解析目标 Git 根、交付身份与 manifest.closeout，再按以下顺序分流：
+  - adhoc 委托 `references/adhoc-close-out.md`，返回其实际结果，不继续普通主线。
+  - PR mode 且已有该 source 的操作记录时，委托 `pr-close-out.md` 恢复后返回。
+    source 须来自已锁定交付或用户输入，不能从 detached 路径猜测；恢复不要求原源分支仍存在。
+  - 其余首次调用继续下列 doctor、branch 与现场检查。委托前仍应用外层 until 和 decision 策略。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
 - 写入前只读检查目标 worktree；有未提交改动或 `MERGE_HEAD` 即停止并报告路径与状态。
   - feature/bugfix 检查 develop；release/hotfix 检查 master、develop；未 checkout 时查实际合并目录。

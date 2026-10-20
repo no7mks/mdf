@@ -75,7 +75,8 @@
   - ❌ `<path>...` 与 `--scope full` 或 `--scope branch` 同用时停止询问。
   - ❌ `--scope paths` 未列路径时停止询问。
 - `--scope branch` 的起点同 `fact-audit.md` 的 branch 规则：
-  - 交付分支取 `delivery.json` 的 `start_commit`。
+  - release 取上一正式发布的 commit/tag；首次发布无上一版本时停止确认初始基线。
+  - 其他交付分支取 `delivery.json` 的 `start_commit`。
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`，再没有则取 `git merge-base develop HEAD`。
   - 取不到起点时停止并报告。
   - 用 `git diff --name-only <base>`（含未提交改动）与 `git ls-files --others --exclude-standard` 列出改动。

@@ -222,7 +222,8 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   - 调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
     按「切换工作区」规则切过去，重新解析目标根。
   - 提交后运行 `planning land --repo "$REPO_ROOT"`，在占用 develop 的
-    worktree（须 clean）上合入；可 fast-forward 时用 ff，已分叉时 no-ff。
+    worktree（须 clean）上合入；local 模式可 fast-forward 时用 ff，已分叉时 no-ff。
+    PR mode 按 [PR Close-out](pr-close-out.md) 的文档白名单核对，并使用 no-ff。
   - 新建 Proposal 的 ID 在该工作区按当前 checkout 的 `docs/proposals/` 最大序号加一分配；
     合入 develop 后才对 `$mdf start` 可见。
 - 与当前交付分支工作无关、且不属于规划工作区的文档在 develop 更新；独立记录和公共
@@ -340,11 +341,12 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
   `master` / `develop` / `planning` 执行 merge 与 push；
   不授权删分支或 force-push。
 - ❌ 禁止 rebase，不擅自改写已有历史；异名分支使用 no-ff。
-  - `develop` 与 `planning` 互相同步允许 fast-forward；已分叉仍 no-ff。
+  - local 模式的 `develop` 与 `planning` 互相同步允许 fast-forward；已分叉仍 no-ff。
+    PR mode 的例外与禁止项按 [PR Close-out](pr-close-out.md) 核对。
 - 阶段基线和集成要求见 `references/delivery-contract.md`。
 - 规划 intent 在本次规划提交后运行 `planning land --repo "$REPO_ROOT"`，
   把 `planning` 合入占用 develop 的 worktree。
-  - 可 fast-forward 时用 ff；已分叉时 no-ff。
+  - local 模式可 fast-forward 时用 ff；已分叉时 no-ff；PR mode 始终 no-ff。
   - 无新提交则该命令为 no-op。
   - develop 占用者 dirty 时停止并报告，不改 checkout。
 

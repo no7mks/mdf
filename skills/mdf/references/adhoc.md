@@ -1,6 +1,6 @@
 # Adhoc
 
-`$mdf adhoc [<工作描述>]` 在临时 worktree 中连续完成一次小工作，直到本地收口。
+`$mdf adhoc [<工作描述>]` 在临时 worktree 中连续完成一次小工作，直到按配置收口。
 
 ## 决策树
 
@@ -60,6 +60,7 @@
   - 描述写实际工作与已有约束、验收，不只写 slug；无需再次确认。
   - 当前未完工作与新描述不一致时询问归属，不覆盖原目标。
 - 显式 adhoc 授权完成六项步骤及必要本地提交、集成和收口。
+  - PR mode 的提交、等待与续办由 adhoc-close-out 委托 PR Close-out；等待平台合并不算完成。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更、测试门槛批准及 fact 的确认仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。

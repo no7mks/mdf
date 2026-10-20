@@ -9,10 +9,11 @@
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 已实际收口 ──────→ 7 Report
-                 ├──── 已合并待清理 ────→ 4 Recheck
-                 ├──── 缺前置步骤 ──────→ [交接对应账本项]
-                 ├──── 身份不符 ────────→ [停止并报告]
+                 ├──── PR mode 已有记录 ────→ [委托 PR Close-out 恢复并返回]
+                 ├──── 已实际收口 ──────────→ 7 Report
+                 ├──── 已合并待清理 ────────→ 4 Recheck
+                 ├──── 缺前置步骤 ──────────→ [交接对应账本项]
+                 ├──── 身份不符 ────────────→ [停止并报告]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -52,9 +53,10 @@
 │ 6 Finish                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败或结果不明 ────→ [保留现场并报告]
+                 ├──── PR mode ─────────────→ [委托 PR Close-out 并返回其实际状态]
+                 ├──── local 失败或不明 ────→ [保留现场并报告]
                  │
-                 ▼ finish 成功
+                 ▼ local finish 成功
 ┌──────────────────────────────────┐
 │ 7 Report                         │
 └────────────────┬─────────────────┘
@@ -73,12 +75,12 @@ waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与�
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 脚本 | 核身份、ready、账本与 report | status、doctor | 完成 7；已合并 4；其余 2 | 缺前置交接；不符停 |
+| 1 | Check | 脚本 | 核模式与恢复记录，再核身份及账本 | 记录或 status、doctor | PR 恢复返回；完成 7；已合并 4；其余 2 | 缺前置交接；不符停 |
 | 2 | Integrate | 约束 | 核现场，必要时集成 develop | 端点、diff | 3 | 补审交接；现场未决停 |
 | 3 | Materials | 约束 | 补齐 Change、validation、提交 | Change、validation | 4 | 材料可修 3；其余保留现场 |
 | 4 | Recheck | 约束 | 重核前置与两端，勾 close-out | report、账本、tip | 5 | 主线前进 2；缺项交接；其余停 |
 | 5 | Authorize | 约束 | 核调用授权、裁定与端点 | 调用方、裁定、确认 | 6 | 低 confidence 返回 deliver 6；现场变 4 |
-| 6 | Finish | 脚本 | 运行 finish-gitflow | 退出 0、实际 Git 结果 | 7 | 保留现场并报告 |
+| 6 | Finish | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 返回实际结果；local 7 | 按子流程或保留现场并报告 |
 | 7 | Report | 脚本 | adhoc-status 核实际完成并交接 | completed、merge_commit、路径 | 返回调用方 | 报告实际状态 |
 
 ## 术语与数据结构
@@ -87,6 +89,8 @@ waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与�
 
 本节核对已有工作，不在 close-out 内补做工作、verify 或 fact。
 
+- PR mode 且已锁定 source 的操作记录存在时，先委托 `pr-close-out.md` 恢复后返回，不再走本页首次准备。
+  - 恢复仍遵守外层 until 与 decision 策略；source 不明时停止，不从 detached 目录猜测。
 - 运行 `mdf.py adhoc-status --repo <owner> --slug <已知slug>`；completed 时直接到 7。
 - 未 completed 但 merge_commit 已存在时，直接到 4。只续办清理，不改材料或重做集成。
 - 未完成时运行 doctor，要求 ready；核对工作、code-review、verify smart、fact audit/update 已勾。
