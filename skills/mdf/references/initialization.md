@@ -210,6 +210,8 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 - `docs/README.md` 已存在时保留原文，仅按确认范围补充入口。
 - 工作目录由 CLI 预建 `.gitkeep` 占位，文档入口直接列出各目录链接，
   不添加空目录状态或建目录提示。
+- Agent 在仓库根 `.gitignore` 中补齐 `/.mdf/tmp/`，保留已有规则；不预建临时目录。
+  - 临时工作文件的用途、布局与清理见 [临时工作目录](temporary-work.md)。
 
 <a id="s4"></a>
 
