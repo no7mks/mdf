@@ -131,3 +131,50 @@ def test_feature_source_branch_accepts_matching_slug(tmp_path: Path):
     findings = _findings_for(repo, path, expected_slug="service-health")
 
     assert findings == []
+
+
+@pytest.mark.parametrize("source_branch,slug", [
+    ("develop", "small-correction"),
+    ("adhoc/small-correction", "small-correction"),
+])
+def test_fix_change_accepts_lightweight_sources(tmp_path: Path, source_branch, slug):
+    path = tmp_path / "changes/unreleased" / slug / "CHANGE.md"
+    _write_change(path, change_kind="fix", source_branch=source_branch)
+
+    assert _findings_for(tmp_path, path, expected_slug=slug) == []
+
+
+@pytest.mark.parametrize("source_branch,code", [
+    ("feature/small-correction", "change.kind"),
+    ("bugfix/small-correction", "change.kind"),
+    ("fix/small-correction", "change.source_branch"),
+    ("master", "change.source_branch"),
+])
+def test_fix_change_rejects_other_sources(tmp_path: Path, source_branch, code):
+    path = tmp_path / "changes/unreleased/small-correction/CHANGE.md"
+    _write_change(path, change_kind="fix", source_branch=source_branch)
+
+    findings = _findings_for(tmp_path, path, expected_slug="small-correction")
+
+    assert any(item.code == code for item in findings)
+
+
+def test_adhoc_fix_preserves_slug_and_proposal_constraints(tmp_path: Path):
+    path = tmp_path / "changes/unreleased/other-slug/CHANGE.md"
+    _write_change(path, change_kind="fix", source_branch="adhoc/small-correction")
+    path.write_text(path.read_text().replace("proposals: []", "proposals: [prp-001]"))
+
+    findings = _findings_for(tmp_path, path, expected_slug="other-slug")
+
+    assert {"change.slug", "change.proposals"} <= {item.code for item in findings}
+
+
+@pytest.mark.parametrize("source_branch", ["release/1.2.0", "hotfix/1.2.0"])
+def test_fix_cannot_be_a_version_root(tmp_path: Path, source_branch):
+    path = tmp_path / "changes/1.2.0/CHANGE.md"
+    _write_change(path, change_kind="fix", source_branch=source_branch)
+    findings = []
+
+    _validate()(tmp_path, path, findings, expected_slug="1.2.0", root=True)
+
+    assert any(item.code == "change.kind" for item in findings)

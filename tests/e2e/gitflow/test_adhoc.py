@@ -12,9 +12,9 @@ def start_adhoc(python_exe, tmp_path, *extra):
     return repo, result
 
 
-def write_change(root, *, proposals="[]"):
+def write_change(root, *, proposals="[]", change_kind="adhoc"):
     (root / "CHANGE.md").write_text(
-        "---\nchange_kind: adhoc\nsource_branch: adhoc/update-readme\n"
+        f"---\nchange_kind: {change_kind}\nsource_branch: adhoc/update-readme\n"
         f"proposals: {proposals}\nfixed: []\nclosed: []\ndeferred: []\nadrs: []\n"
         "release_notes: none\nbreaking: false\nevidence:\n"
         "  tests: []\n  commands: [\"true\"]\n  artifacts: []\n---\n\n"
@@ -66,12 +66,13 @@ def test_adhoc_rejects_invalid_input_without_creating_worktree(python_exe, tmp_p
     assert len(git(repo, "worktree", "list", "--porcelain").stdout.split("worktree ")) == 2
 
 
-def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_path):
+@pytest.mark.parametrize("change_kind", ["adhoc", "fix"])
+def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_path, change_kind):
     repo, result = start_adhoc(python_exe, tmp_path)
     work = Path(payload(result)["worktree"])
     root = work / "changes/unreleased/update-readme"
     before = git(repo, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
-    write_change(root)
+    write_change(root, change_kind=change_kind)
     commit(work)
     failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
     assert failed.returncode != 0 and "adhoc_work_pending" in failed.stderr
@@ -79,7 +80,7 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     objectives = root / "objectives.md"
     objectives.write_text(objectives.read_text().replace("[ ]", "[x]"))
     commit(work)
-    write_change(root, proposals="[prp-001]")
+    write_change(root, proposals="[prp-001]", change_kind=change_kind)
     commit(work)
     from mdf_core.inspection.validate_changes import validate_changes
     findings = []
@@ -87,7 +88,7 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     assert any(item.code == "change.proposals" for item in findings)
     failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
     assert failed.returncode != 0 and "invalid_change" in failed.stderr
-    write_change(root)
+    write_change(root, change_kind=change_kind)
     commit(work)
     source = git(work, "rev-parse", "HEAD").stdout.strip()
     status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]

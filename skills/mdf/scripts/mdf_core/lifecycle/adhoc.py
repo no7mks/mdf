@@ -129,7 +129,7 @@ def completion(repo, source):
     if not change.is_file():
         raise MDFError("finish 前必须补齐 Change", code="missing_change")
     meta, _ = read_frontmatter(change)
-    if (meta.get("change_kind") != "adhoc" or meta.get("proposals") != []
+    if (meta.get("change_kind") not in {"adhoc", "fix"} or meta.get("proposals") != []
             or meta.get("source_branch") != source):
         raise MDFError("adhoc 的 Change 必须对应源分支且不引用 PRP", code="invalid_change")
     return data["roster"]

@@ -112,7 +112,8 @@
   - 增量 review 为 1 人；由外层按六项账本完成补审、smart 与 fact 后再续办本流程。
 - 用 `assets/templates/change.md` 补齐同目录 CHANGE.md。
   记录实际结果、outcomes、事实更新与证据。
-  - `change_kind: adhoc`、`source_branch: adhoc/<slug>`、`proposals: []`。
+  - `change_kind: adhoc` 或 `fix`、`source_branch: adhoc/<slug>`、`proposals: []`。
+  - 小范围修正可选 fix，分支与交付步骤仍按 adhoc 执行。
   - 总结直接写入 Change；不要求 design 或 delivery-summary.html，不修改 PRP 或创建版本目录。
 - 运行 `mdf.py validate --repo <owner> --scope targeted`。
   回读 findings 并核对 diff 后提交。

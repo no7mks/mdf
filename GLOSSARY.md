@@ -158,6 +158,11 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 - design 的 Baseline 与 converge 各由对应 intent 启动恰好 1 个 owner subagent。
   - 不计入 roster，不可配人数。
 
+## Fix
+
+Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更轻，不要求先建 Bug 或 Proposal。
+只用于 `source_branch: develop` 或 `adhoc/<slug>`；后者沿用 adhoc 流程与空 proposals 要求。
+
 ## Adhoc
 
 一次临时的小工作，可涉及代码、测试、文档或配置；由 `$mdf adhoc` 启动。

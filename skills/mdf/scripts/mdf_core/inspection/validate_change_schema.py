@@ -29,7 +29,7 @@ def validate_change_file(
         add_finding(
             findings,
             "change.kind",
-            "CHANGE requires change_kind feature, bugfix, release, hotfix, or adhoc",
+            "CHANGE requires change_kind feature, bugfix, fix, release, hotfix, or adhoc",
             rel,
         )
     source_branch = metadata.get("source_branch")
@@ -41,11 +41,11 @@ def validate_change_file(
             rel,
         )
     elif not root and source_branch == "develop":
-        if change_kind not in {"feature", "bugfix"}:
+        if change_kind not in {"feature", "bugfix", "fix"}:
             add_finding(
                 findings,
                 "change.kind",
-                "develop-sourced CHANGE requires change_kind feature or bugfix",
+                "develop-sourced CHANGE requires change_kind feature, bugfix, or fix",
                 rel,
             )
     else:
@@ -67,7 +67,9 @@ def validate_change_file(
                     "CHANGE source_branch does not match its directory role",
                     rel,
                 )
-            elif change_kind != details["kind"]:
+            elif change_kind != details["kind"] and not (
+                details["kind"] == "adhoc" and change_kind == "fix"
+            ):
                 add_finding(
                     findings,
                     "change.kind",
@@ -132,7 +134,8 @@ def validate_change_file(
                 f"{key} must be a list",
                 rel,
             )
-    if change_kind == "adhoc" and metadata.get("proposals") != []:
+    if (change_kind == "adhoc" or (isinstance(source_branch, str)
+                                  and source_branch.startswith("adhoc/"))) and metadata.get("proposals") != []:
         add_finding(findings, "change.proposals", "adhoc Change 的 proposals 必须为空列表", rel)
     if "bugs" in metadata:
         add_finding(
