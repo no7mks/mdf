@@ -9,6 +9,10 @@ versioning:
   latest_release: {{MDF_QUOTED_STABLE_SEMVER_OR_BARE_NULL}}
 implementation_roots:
   - "{{MDF_REPOSITORY_RELATIVE_IMPLEMENTATION_ROOT}}"
+# 可选 PR/MR 收口；省略为 local。provider 为 github 或 gitlab。
+# closeout:
+#   mode: pr
+#   provider: github
 # 可选 hooks 配置见 references/hooks/post-gitflow-start.md。
 # fact 前的 hook 见 references/hooks/pre-gitflow-finish.md。
 # 可选项目 rule：与 MDF rule merge，冲突时 project 优先；仅 rule，不支持 command。

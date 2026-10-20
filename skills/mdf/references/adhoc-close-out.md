@@ -65,6 +65,9 @@
 
 ## 工作流（唯一执行契约）
 
+PR mode 同样使用本页前置与材料，Finish/Report 改按 [PR Close-out](pr-close-out.md) 提交和续办。
+waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与清理，不用本地 detached 推断远端完成。
+
 读取 [common](common.md)、[delivery-contract](delivery-contract.md) 与 [adhoc](adhoc.md) 的条款。
 仅读身份、账本与调用方规则，不重新执行这些文件的工作流。
 

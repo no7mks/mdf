@@ -69,6 +69,9 @@
 
 ## 工作流（唯一执行契约）
 
+PR mode close-out 返回 completed=false 时报告等待平台合并或待回合，不声明交付/Goal 完成。
+用户合并后从 close-out 续办；恢复细则见 [PR Close-out](pr-close-out.md)。
+
 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
 尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。

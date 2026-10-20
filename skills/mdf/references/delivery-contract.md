@@ -124,6 +124,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook。
     仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
 - **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
+  - PR mode 的提交与恢复见 [PR Close-out](pr-close-out.md)；创建 PR/MR 不代表完成。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。
     bug close 不算 verify 族，release/hotfix 收口步骤可委托。

@@ -131,7 +131,12 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 
 ### finish 与 deliver
 
+项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
+finish 提交 PR/MR，用户或项目 CI 合并后再次 finish 续办。完整规则见
+[PR Close-out](skills/mdf/references/pr-close-out.md)，外部审查见 [CI 接入](skills/mdf/references/ci-review.md)。
+
 finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
+以下本地合并与发布行为适用于默认 local 模式。
 
 - 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。
   不自动 abort、reset、stash 或 Commit 他人的工作；无关脏分支不阻断。

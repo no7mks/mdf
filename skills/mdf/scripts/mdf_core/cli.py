@@ -113,6 +113,28 @@ def build_parser() -> argparse.ArgumentParser:
     branch.add_argument("--name")
     branch.set_defaults(func=command_branch)
 
+    from mdf_core.inspection.push_audit import command_audit_push
+    audit_push = subparsers.add_parser("audit-push")
+    for name in ("repo", "branch", "before", "after"):
+        audit_push.add_argument(f"--{name}", required=True)
+    audit_push.add_argument("--evidence-file")
+    audit_push.add_argument("--collect-evidence", action="store_true")
+    audit_push.set_defaults(func=command_audit_push)
+
+    from mdf_core.reviewing.context import command_context
+    review_context = subparsers.add_parser("review-context")
+    for name in ("repo", "source", "head", "policy-ref"):
+        review_context.add_argument(f"--{name}", required=True)
+    review_context.add_argument("--review-base")
+    review_context.add_argument("--previous-report")
+    review_context.set_defaults(func=command_context)
+
+    from mdf_core.reviewing.report import command_report_check
+    report_check = subparsers.add_parser("review-report-check")
+    report_check.add_argument("--context-file", required=True)
+    report_check.add_argument("--report-file", required=True)
+    report_check.set_defaults(func=command_report_check)
+
     semver = subparsers.add_parser("semver-check")
     semver.add_argument("--previous", required=True)
     semver.add_argument("--candidate", required=True)

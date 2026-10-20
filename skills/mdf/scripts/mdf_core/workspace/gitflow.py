@@ -314,6 +314,8 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
     ensure_clean(repo)
     if current_branch(repo) != target:
         _git(repo, "checkout", target)
+    from mdf_core.workspace.merge_policy import require_merge
+    require_merge(repo, source, target)
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
         if result.returncode != 1:
@@ -341,6 +343,12 @@ def command_finish_gitflow(args) -> None:
     if not details["supported"]:
         raise MDFError("finish requires a Gitflow delivery branch",
                        code="unsupported_branch")
+    from mdf_core.workspace.merge_policy import configured
+    settings = configured(repo)
+    if settings["mode"] == "pr":
+        from mdf_core.lifecycle.pull_finish import finish
+        finish(repo, source, settings)
+        return
     kind = details["kind"]
     publish = kind in {"release", "hotfix"}
     targets = ["develop"] if kind in {"feature", "bugfix", "adhoc"} else ["master", "develop"]

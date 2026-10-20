@@ -17,7 +17,7 @@ def require_manual_objectives(text, *, starting=False, finishing=False):
         raise MDFError("人工 feature 尚有未完成步骤", code="manual_work_pending")
 
 
-def feature_completion(repo, source):
+def feature_completion(repo, source, *, allow_candidate=False):
     """验证 feature Change，返回合入时的 PRP 更新与 roster。"""
     from mdf_core.lifecycle.delivery_state import locate, require_finish, git
     from mdf_core.documents.proposals import records
@@ -38,7 +38,8 @@ def feature_completion(repo, source):
     if meta.get("proposals") != [data["proposal"]] or meta.get("source_branch") != source:
         raise MDFError("Change 必须对应本 feature 的唯一 PRP", code="invalid_change")
     path, proposal, _ = records(repo)[data["proposal"]]
-    if proposal["status"] != "ready":
+    candidate = allow_candidate and proposal["status"] == "implemented"
+    if proposal["status"] != "ready" and not candidate:
         raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
     proposal_rel = path.relative_to(repo)
 

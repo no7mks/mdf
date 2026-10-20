@@ -81,6 +81,7 @@ def render_manifest(
     logo: str | None = None,
     hooks: dict | None = None,
     rules: dict | None = None,
+    closeout: dict | None = None,
 ) -> str:
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
@@ -118,6 +119,12 @@ def render_manifest(
         lines.append("rules:" if rules else "rules: {}")
         for stage, path in rules.items():
             lines.append(f"  {stage}: {yaml_quote(path)}")
+    if closeout is not None:
+        from mdf_core.workspace.merge_policy import config
+        entry = config({"closeout": closeout})
+        lines.extend(["closeout:", f"  mode: {entry['mode']}"])
+        if "provider" in entry:
+            lines.append(f"  provider: {entry['provider']}")
     return "\n".join(lines) + "\n"
 
 
@@ -165,6 +172,8 @@ def init_files(
     manifest = load_manifest(repo) if manifest_path(repo).is_file() else {}
     from mdf_core.workspace.project_rules import validate_rules
     validate_rules(manifest)
+    from mdf_core.workspace.merge_policy import config
+    config(manifest)
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
@@ -173,6 +182,7 @@ def init_files(
             logo=manifest.get("logo"),
             hooks=manifest.get("hooks"),
             rules=manifest.get("rules"),
+            closeout=manifest.get("closeout"),
         )
     }
     modules = repo / ".mdf" / "modules.yaml"

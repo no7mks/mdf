@@ -89,6 +89,9 @@
 
 ## 工作流（唯一执行契约）
 
+先检查 manifest.closeout。PR mode 读取 [PR Close-out](pr-close-out.md)：首次调用仍完成本页材料前置，
+步骤 10 改为 PR/MR 提交；已有操作记录则优先续办，不重复收口。completed=false 不表示交付完成。
+
 adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主线。
 人工 feature 先读取 `references/manual-feature.md`；其余按下文集成与 Gitflow 规则收口。
 
@@ -233,7 +236,8 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
 - 对象状态：
   - feature/bugfix 不建版本目录。
-  - 普通 feature 的 PRP 在成功合入 develop 的 merge commit 中转换为 implemented。
+  - local 模式的普通 feature PRP 在成功合入 develop 的 merge commit 中转换为 implemented。
+    PR mode 在源分支准备候选状态，随 PR/MR 合入 develop 后生效。
     bugfix 的对象状态按既有契约处理。
   - release/hotfix 按后续收口步骤管理版本与对象。
 - 验收：事实一致性、所需 report 已交、规范 Change 和链接检查。
@@ -357,6 +361,8 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - 验收：必要提交、当前证据、源与全部目标 worktree clean；有脏状态或已有 merge 即停止，不处理无关改动。
 
 **合并** <a id="s10"></a>
+
+- PR mode 使用 [PR Close-out](pr-close-out.md) 的提交、等待和恢复规则，以下 Gitflow 合并/push 仅适用于 local。
 
 - 执行关口：
   - deliver 委托前须确认其 until 允许进入 close-out；默认 deliver 不进入本 intent。

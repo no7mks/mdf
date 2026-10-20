@@ -47,7 +47,9 @@ def merge_branch(repo: Path, source: str) -> bool:
         )
     if _is_ancestor(repo, source, "HEAD"):
         return False
-    if _is_ancestor(repo, "HEAD", source):
+    from mdf_core.workspace.merge_policy import configured, require_merge
+    require_merge(repo, source, current_branch(repo))
+    if _is_ancestor(repo, "HEAD", source) and configured(repo)["mode"] != "pr":
         _git(repo, "merge", "--ff-only", source)
         return True
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)

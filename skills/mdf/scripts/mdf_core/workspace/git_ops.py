@@ -53,6 +53,8 @@ def command_merge_no_ff(args) -> None:
     require_git_root(repo)
     ensure_clean(repo)
     source = args.commit
+    from mdf_core.workspace.merge_policy import require_merge
+    require_merge(repo, source, current_branch(repo))
     verified = run(
         ["git", "rev-parse", "--verify", source],
         cwd=repo,

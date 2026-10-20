@@ -44,6 +44,9 @@
 
 ## 工作流（唯一执行契约）
 
+独立审查共用 [Review 协议](reviewer-protocol.md)；CI 仅做外部复核，修复和终稿仍按本 intent。
+外部报告须核对固定范围、rule、冻结份数和覆盖；不符时仅作补充，不凭 CI pass 自动勾选。
+
 按以下边界读取并执行本阶段。
 
 - 读取 `references/common.md` 与 `references/delivery-contract.md`；涉及 PRP 或 Bug 时读取 `references/object-contract.md`。

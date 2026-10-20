@@ -191,6 +191,27 @@ def command_sync(args) -> None:
             "分支关系或同步目标已变化；重新展示图并请用户确认", code="sync_plan_changed", details=preview,
         )
 
+    from mdf_core.workspace.merge_policy import configured
+    from mdf_core.inspection.push_audit import audit
+    protected = any(
+        not _git(primary, "cat-file", "-e", f"refs/remotes/origin/{branch}:.mdf/manifest.yaml", check=False).returncode
+        and configured(primary, f"refs/remotes/origin/{branch}")["mode"] == "pr"
+        for branch in ("master", "develop")
+    )
+    if protected or configured(primary)["mode"] == "pr":
+        for branch in ("master", "develop"):
+            info = preview["branches"][branch]
+            if info["relation"] == "diverged":
+                raise MDFError(f"PR mode 不自动合并分叉的 {branch}", code="pr_required")
+            if info["relation"] != "ahead":
+                continue
+            # 只把平台已确认的合并作为例外证据，不按 message 推断来源。
+            evidence = {"sources": {name: _sha(primary, f"refs/heads/{name}")
+                                    for name in ("master", "planning")}, "pull_requests": []}
+            report = audit(primary, branch, info["remote"], info["local"], evidence, source_prefix="refs/heads")
+            if report["verdict"] != "pass":
+                raise MDFError("PR mode 拒绝推送未证明合规的 trunk 增量", code="pr_required", details=report)
+
     trees = worktree_map(primary)
     need_primary = False
     for branch in TRUNKS:

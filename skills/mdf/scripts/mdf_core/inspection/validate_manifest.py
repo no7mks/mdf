@@ -109,6 +109,11 @@ def validate_manifest(
             ".mdf/manifest.yaml",
         )
     from mdf_core.workspace.hooks import validate_hooks
+    from mdf_core.workspace.merge_policy import config
+    try:
+        config(manifest)
+    except MDFError as exc:
+        add_finding(findings, "manifest.closeout", str(exc), ".mdf/manifest.yaml")
     try:
         validate_hooks(manifest)
     except MDFError as exc:

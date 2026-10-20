@@ -56,10 +56,10 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     # 按文件职责识别范围，避免缺少执行表的流程从检查中消失。
     nonprocedural = {
             "repository-contract.md", "object-contract.md", "doc-structure.md", "html-materials.md",
-            "project-rules.md",
+            "project-rules.md", "reviewer-protocol.md", "ci-review.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 51
+    assert len(workflows) == 52
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
