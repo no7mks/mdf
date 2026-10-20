@@ -8,7 +8,8 @@ disable-model-invocation: true
 
 # Mars Development Flow
 
-仅接受显式 `$mdf <intent>` 调用。裸 `$mdf` 与 `$mdf help` 显示帮助目录。
+调用示例写作 `$mdf <intent>`；Cursor 使用 `/mdf`，Codex 使用 `$mdf`。
+裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
 横幅只按 `references/common.md` 的 `s-banner` 条款计算与输出，所有 intent（含 help/clarify/upgrade）均适用。
 仅读取横幅条款，不执行 common 的其他规则或重新进入业务 workflow。
@@ -23,7 +24,7 @@ disable-model-invocation: true
                  ├──── 裸调用、未知 intent ────────────→ [帮助并结束]
                  ├──── 已知 intent 带未知 -- token ────→ [停止询问]
                  │
-                 ▼ 有效显式调用
+                 ▼ 已确定 intent
 ┌──────────────────────────────────┐
 │ 2 Check CLI                      │
 └────────────────┬─────────────────┘
@@ -85,7 +86,7 @@ disable-model-invocation: true
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Accept call | 约束 | 只接受选择树所列显式 intent | 有效显式调用 | 2 | 裸或未知则帮助；带未知 -- 则停止询问 |
+| 1 | Accept call | 约束 | 解析用户指定的 intent | 选择树所列 intent | 2 | 裸或未知则帮助；带未知 -- 则停止询问 |
 | 2 | Check CLI | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 3 | 3 | 停止 |
 | 3 | Dispatch | 约束 | 先核目标根再按选择树执行 | 目标根或豁免、流程结果 | 按选择树返回 | 不明回 3；缺材料停止并报告 |
 
@@ -99,8 +100,11 @@ disable-model-invocation: true
 
 ### 调用与工具
 
-只接受选择树所列的显式调用。先判 intent：裸调用或未知 intent 按 help 执行；
-已知 intent 带未知 `--` token 才停止询问。
+认可宿主的手动 Skill invocation，无需消息正文包含 `$mdf`。
+
+- 按用户指定的 intent 路由；未指定或未知 intent 按 help 执行。
+- 同一任务的澄清、确认与续办沿用已确认的 intent 与范围，无需重复命令。
+- 已知 intent 带未知 `--` token 时停止询问。
 
 - `next [--depth N]` 与 `tree [--depth N]` 的深度可省略。
   - `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，
@@ -135,23 +139,21 @@ disable-model-invocation: true
 - `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 - `$mdf to <target>` 仍是 to；空目标由该 intent 列出已知目标后停止。
 
-intent 只由显式调用选择：
+内部委托遵循各 workflow 的边界：
 
-- ❌ 不得因缺文档、代码/测试状态或对话上下文隐式选择 intent。
-  - 例外：显式 next、deliver 或 adhoc 按各自已定义范围内部委托，不扩大当前目标。
+- 不因缺文档或代码/测试状态自行增加 intent 或扩大当前目标。
 - 各 intent 仅在其编号工作流明示的条件下内部委托；主链 verify 的增量 code-review 与审查内部 smart 按各自契约执行。
-- 显式 init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
+- init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托截止点之前从 start 起的剩余交付阶段；yolo 无默认截止点。
 - adhoc 可内部委托其六项清单的剩余阶段直到 close-out。
 - `$mdf close-out` 与 `$mdf finish` 同义，均执行 `references/close-out.md`。
 - `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
-- 其他入口仍按显式调用路由。
 
 帮助与 CLI：
 
 - **帮助**：裸调用、未知调用读取并执行 `references/help.md`。
-  - `$mdf help` 为显式调用，经 CLI 检查后同样执行该流程。
+  - help intent 经 CLI 检查后同样执行该流程。
   - 不读取其他 intent、不检查仓库、不写入。
 - **MDF_ROOT**：本文件所在目录的绝对路径。
   - 确认 `scripts/mdf.py` 后运行 `python3 "$MDF_ROOT/scripts/mdf.py" info`；

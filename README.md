@@ -42,7 +42,8 @@ jev auth test --provider openrouter
 
 ## 使用
 
-MDF 只发布一个 Skill。安装后显式调用 `$mdf <command>`：
+MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$mdf <command>`，Cursor 使用 `/mdf <command>`。
+下表统一使用 `$mdf` 示例；同一任务的澄清、确认与续办无需重复命令。
 
 | 命令 | 用途 |
 | --- | --- |

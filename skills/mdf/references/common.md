@@ -388,7 +388,7 @@ intent 声明读取的契约或模板缺失时停止并报告，不猜测内容�
 
 | 材料 | 位置 | 读取条件 |
 | --- | --- | --- |
-| 意图 | `references/` | 读取显式调用命中的流程及其声明委托的内部流程 |
+| 意图 | `references/` | 读取已确认 intent 的流程及其声明委托的内部流程 |
 | 公共契约 | `references/` | 按 intent 指定读取目录、对象或 CodeWiki 契约 |
 | 模板 | `assets/` | intent 要求写入仓库产出物时读取对应模板 |
 | 代码体积 | `references/repository-contract.md` | 写入源代码或测试源代码前读取体积条款 |

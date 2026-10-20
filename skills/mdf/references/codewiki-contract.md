@@ -34,7 +34,7 @@
 本节规定运行时检查、workspace 残余与受管文件的写入边界。
 
 - 生成和更新入口读取 `references/codewiki-runtime.md` 检查工具。
-  - 工具缺失时按该流程配置，启用后须重新显式调用。
+  - 工具缺失时按该流程配置；用户启用后续办时重新检查八工具。
 - 失败或需要新基线时读取 `references/codewiki-recovery.md`。
 - 安装目录和 IDE 配置不属于目标仓库产出。
 - 成功结束时，当前 session workspace 必须清理。
