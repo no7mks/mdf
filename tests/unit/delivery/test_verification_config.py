@@ -51,6 +51,23 @@ def test_required_suites_by_branch_kind():
     assert not verification.suites_cover(["quick"], ["quick", "smoke"])
 
 
+@pytest.mark.parametrize("recorded, required, expected", [
+    (["release"], ["quick", "smoke", "release"], True),
+    (["quick", "release"], ["quick", "smoke"], True),
+    (["smoke"], ["quick", "smoke"], True),
+    (["quick"], ["smoke"], False),
+    (["quick", "smoke"], ["release"], False),
+    (["release"], ["delivery"], False),
+    (["delivery"], ["quick"], False),
+    (["release", "delivery"], ["smoke", "delivery"], True),
+    (["delivery"], ["delivery"], True),
+    ([], ["quick"], False),
+])
+def test_suite_coverage_respects_inclusion_and_named_membership(recorded, required, expected):
+    verification, _ = core()
+    assert verification.suites_cover(recorded, required) is expected
+
+
 @pytest.mark.parametrize("names", [[], ["full"], ["release"], ["Billing"], ["a", "a"], "a"])
 def test_named_suite_names_reject_reserved_and_malformed(names):
     verification, MDFError = core()

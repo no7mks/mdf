@@ -104,7 +104,12 @@ def recorded_suites(record):
 
 
 def suites_cover(recorded, required):
-    return set(recorded) >= set(required)
+    """按 quick ⊆ smoke ⊆ release 判断覆盖；named suite 只按名称匹配。"""
+    covered = set(recorded)
+    for index, suite in enumerate(SUITES):
+        if suite in covered:
+            covered.update(SUITES[:index])
+    return covered >= set(required)
 
 
 def parse_suite_names(raw):
