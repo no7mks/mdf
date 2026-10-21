@@ -126,8 +126,8 @@
 | 根 `README.md` | 200 |
 | `user-guide/`、`system/` 主题叶 | 450 |
 | `context/adr/<slug>.md` | 300 |
-| Markdown Proposal、Bug、`JOTS.md` | 500 |
-| HTML、`GLOSSARY.md`、`changes/` 材料 | 不检查 |
+| Bug | 500 |
+| Proposal、`JOTS.md`、HTML、`GLOSSARY.md`、`changes/` 材料 | 不检查 |
 
 - 路由页指 `docs/README.md`、`user-guide/README.md`、`system/overview.md` 与切面 `index.md`。
 - 文件拆分先确定设计边界，再验收体积；默认 70% 是拆分后的上限，不作为切割位置。

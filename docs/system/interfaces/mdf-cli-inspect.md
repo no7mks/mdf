@@ -101,7 +101,8 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | 根 `README.md` | 200 |
 | `docs/user-guide/`、`docs/system/` 主题叶 | 450 |
 | `docs/context/adr/` | 300 |
-| Markdown Proposal、Bug、`docs/JOTS.md` | 500 |
+| Bug | 500 |
+| Proposal、`docs/JOTS.md` | 不限 |
 
 - module `ignore` 对源代码、测试源代码和文档均生效，可匹配实现根外的已跟踪文件。
   - 命中后跳过 `code.size`、`size.hard` 与 `prose.*`，免除长度与 70% 拆分要求。
@@ -118,7 +119,7 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
   - 子目录独立计数；`__init__.py` 计入，配置、数据、文档与 ignore 命中文件不计。
   - full 检查全部 package；branch/paths 检查触及 package 的全部现存成员，含未改动文件。
   - 测试命名规则见 `mdf_core/inspection/code_size.py`，同目录的实现与测试也不相加。
-- HTML 不检查行数上限，可见正文仍执行结构检查。
+- Proposal、`docs/JOTS.md` 与 HTML 不检查行数上限；Proposal 的正文仍执行结构检查。
 - `AGENTS.md` 只检查 MDF 托管块，不对整份文件另设行数 warning。
 - `full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。
 

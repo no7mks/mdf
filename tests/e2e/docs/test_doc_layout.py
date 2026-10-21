@@ -152,7 +152,7 @@ def test_adrs_live_under_context(python_exe: str, tmp_path: Path):
         ("docs/user-guide/topic.md", 451),
         ("PROJECT.md", 101),
         ("docs/context/adr/use-sqlite.md", 301),
-        ("docs/proposals/prp-0001-service-health.md", 501),
+        (f"docs/bugs/{BUG_NAME}", 501),
     ],
 )
 def test_audit_enforces_size_limits_by_role(
@@ -186,6 +186,54 @@ def test_audit_enforces_size_limits_by_role(
     assert [item["path"] for item in hits] == [relative_path]
     assert f"每个结果最多 {(lines - 1) * 7 // 10} 行" in hits[0]["message"]
     assert not any(item["code"] == "size.soft" for item in data["warnings"])
+
+
+@pytest.mark.parametrize("scope", ["full", "branch"])
+@pytest.mark.parametrize("relative_path", [
+    "docs/proposals/prp-0002-health-details.md",
+    "docs/proposals/archive/1.0/prp-0002-health-details.md",
+    "docs/JOTS.md",
+])
+def test_markdown_proposals_and_jots_have_no_line_limit(
+    python_exe, tmp_path, scope, relative_path
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    path = repo / relative_path
+    if relative_path.startswith("docs/proposals/"):
+        proposal = repo / "docs/proposals" / PRP_NAME
+        text = proposal_markdown(proposal).replace("prp-0001", "prp-0002")
+        status = "rejected\nreject-reason: obsolete" if "/archive/" in relative_path else "draft"
+        text = text.replace("status: ready", f"status: {status}")
+    else:
+        text = path.read_text() + "\n<!-- jot: jot-0001 -->\n## 验收细节\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text += "\n" + "- 验收细节。\n" * 510
+    if relative_path == "docs/JOTS.md":
+        text += "<!-- /jot -->\n"
+    path.write_text(text, encoding="utf-8")
+    git(repo, "add", "--all")
+    extra = ["--base", base] if scope == "branch" else []
+    args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
+    data = payload(mdf(python_exe, *args))
+    assert data["findings"] == []
+
+    # PRP 仍检查正文结构，JOTS 继续免结构限制。
+    sentence = "\n" + "说明" * 101 + "。\n"
+    text = path.read_text()
+    if relative_path == "docs/JOTS.md":
+        text = text.replace("<!-- /jot -->", sentence + "<!-- /jot -->")
+    else:
+        text += sentence
+    path.write_text(text, encoding="utf-8")
+    result = mdf(python_exe, *args)
+    if relative_path.startswith("docs/proposals/"):
+        assert result.returncode == 2
+        assert _codes(result) == ["prose.sentence"]
+    else:
+        assert_ok(result)
+        assert payload(result)["findings"] == []
 
 
 def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):

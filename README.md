@@ -229,6 +229,7 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 - 当前事实必须可由证据验证，且不得混写未来计划。
 - 一条可观察契约只住一页，其他页只链接。
 - 文档按角色有行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
+  - PRP 与 `docs/JOTS.md` 不设文件行数上限。
 - fact update / fact audit 的 `--scope`：
   - 默认 `branch`（起点以来实现改动该碰的事实页）；release 的 `branch` 基线为上一正式发布。
   - `full` 整理知识面全树。
