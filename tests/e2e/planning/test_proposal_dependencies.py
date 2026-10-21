@@ -38,11 +38,13 @@ def validation_codes(python_exe: str, repo: Path) -> set[str]:
     return {item["code"] for item in json.loads(result.stdout)["findings"]}
 
 
+@pytest.mark.parametrize("identifier", [DEPENDENCY_ID, "prp-002", "prp-10000"])
 def test_proposal_accepts_direct_active_proposal_dependency(
-    python_exe: str, tmp_path: Path
+    python_exe: str, tmp_path: Path, identifier: str
 ):
     repo = copy_fixture(tmp_path)
-    write_proposal(repo, DEPENDENCY_ID, "health-client", f"[{PRP_ID}]")
+    write_proposal(repo, identifier, "health-client")
+    replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []", f"depends_on: [{identifier}]")
     init_git(repo)
 
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))

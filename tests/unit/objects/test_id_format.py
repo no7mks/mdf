@@ -4,7 +4,7 @@ from mdf_test_support import *  # noqa: F403
 
 
 @pytest.mark.parametrize("identifier", [
-    "prp-0000", "prp-0101", "prp-01A2", "prp-012A", "prp-99Z9", "prp-9999",
+    "prp-001", "prp-099", "prp-999", "prp-10000", "prp-0000", "prp-0101", "prp-01A2", "prp-012A", "prp-99Z9", "prp-9999",
 ])
 def test_prp_format_accepts_current_ids(identifier):
     load_core_module()
@@ -19,7 +19,7 @@ def test_prp_format_accepts_current_ids(identifier):
 
 
 @pytest.mark.parametrize("body", [
-    "001", "00001", "1", "A123", "1A23", "12AB", "12I3", "123O", "12a3", "１２３４",
+    "000", "01", "00001", "1", "A123", "1A23", "12AB", "12I3", "123O", "12a3", "１２３４",
 ])
 def test_prp_format_rejects_invalid_ids(body):
     load_core_module()
@@ -46,7 +46,9 @@ def test_prp_generator_obeys_format():
     from mdf_core.foundation.textutil import new_prp_id
 
     for _ in range(200):
-        assert PRP_ID_RE.fullmatch(new_prp_id())
+        identifier = new_prp_id()
+        assert len(identifier) == 8
+        assert PRP_ID_RE.fullmatch(identifier)
 
 
 def test_prp_allocation_avoids_active_archive_and_batch_collisions(tmp_path, monkeypatch):

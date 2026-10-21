@@ -38,7 +38,7 @@ def new_prp_ids(repo: Path, count: int) -> list[str]:
         if match and PRP_ID_RE.fullmatch(match.group(1)):
             used.add(match.group(1))
     # 100 个数字前缀 ×（100 个纯数字后缀 + 2 × 24 × 10 个单字母后缀）。
-    if len(used) + count > 58000:
+    if sum(len(identifier) == 8 for identifier in used) + count > 58000:
         raise MDFError("PRP ID 空间不足", code="prp_id_exhausted")
     identifiers = []
     while len(identifiers) < count:
