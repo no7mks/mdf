@@ -1,5 +1,6 @@
 """检查命令实时输出进度，stdout 与错误仍可按 JSON 解析。"""
 import select
+import re
 import time
 
 from mdf_test_support import *  # noqa: F403
@@ -13,13 +14,37 @@ def test_inspect_progress_keeps_json_and_is_logged(command, python_exe, tmp_path
     data = payload(result)
     assert len(result.stdout.splitlines()) == 1
     assert "开始" in result.stderr and "检查结束，用时" in result.stderr
-    assert "检查 5/5：事实文档与 evidence" in result.stderr
+    assert "契约：事实文档与 evidence" in result.stderr
     assert "[事实文档] 已检查 0/" in result.stderr
     assert "[evidence：docs/system/interfaces/api.md] 已检查 1/1" in result.stderr
+    total, stage = {"doctor": (3, 2), "validate": (1, 1), "fact-audit": (4, 1)}[command]
+    assert f"[{command}] 全局共 {total} 个阶段：" in result.stderr.splitlines()[0]
+    evidence_lines = [line for line in result.stderr.splitlines() if "[evidence：" in line]
+    assert evidence_lines
+    assert all(f"[全局 {command} 阶段 {stage}/{total}，" in line for line in evidence_lines)
+    assert f"已完成 {total}/{total}" in result.stderr.splitlines()[-1]
+    assert "文档汇总 1 组" in result.stderr
+    snapshots = re.findall(r"共 (\d+) 组｜完成 (\d+)｜运行 (\d+)｜待开始 (\d+)｜中断 (\d+)｜跳过 (\d+)", result.stderr)
+    assert snapshots
+    for snapshot in snapshots:
+        count, *states = map(int, snapshot)
+        assert count == sum(states)
+    count, done, running, pending, interrupted, skipped = map(int, snapshots[-1])
+    evidence_groups = {line.split("[evidence：")[1].split("]")[0] for line in evidence_lines}
+    assert count == len(evidence_groups) + (3 if command == "fact-audit" else 2)
+    assert done == count and running == pending == interrupted == skipped == 0
+    assert "后续分组待扫描" not in result.stderr.splitlines()[-2]
+    for path in evidence_groups:
+        numbers = {re.search(r"\[组 (\d+)\]", line).group(1) for line in evidence_lines
+                   if f"[evidence：{path}]" in line}
+        assert len(numbers) == 1
     log = next((repo / ".mdf/logs").glob(f"*-{command}"))
     assert (log / "stderr.log").read_text() == result.stderr
     assert json.loads((log / "stdout.log").read_text()) == data
     if command == "fact-audit":
+        assert f"共 {count} 组｜完成 {count - 1}｜运行 0｜待开始 1" in result.stderr
+        assert "[组 3] [文档结构检查] 已检查 0/4" in result.stderr
+        assert "[组 3] [文档结构检查] 已检查 4/4" in result.stderr
         assert (
             f"scope=full，实现 {len(data['implementation_paths'])} 份，"
             f"文档 {len(data['document_paths'])} 份"
@@ -31,8 +56,8 @@ def test_uninitialized_doctor_reports_layout_progress(python_exe, tmp_path):
     repo.mkdir()
     result = mdf(python_exe, "doctor", "--repo", str(repo))
     assert payload(result)["initialized"] is False
-    assert "检查 1/1：未初始化布局" in result.stderr
-    assert "检查 5/5" not in result.stderr
+    assert "契约：未初始化布局" in result.stderr
+    assert "共 2 组｜完成 1｜运行 0｜待开始 0｜中断 0｜跳过 1" in result.stderr
     assert "doctor 3/3" in result.stderr
 
 

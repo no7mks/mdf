@@ -2,7 +2,9 @@ from pathlib import Path
 
 from mdf_core.foundation.errors import Finding, add_finding
 from mdf_core.foundation.paths import managed_symlinks
-from mdf_core.foundation.progress import progress
+from mdf_core.foundation.progress import (
+    progress, register_progress_groups, report_count, report_progress, skip_progress_group,
+)
 from mdf_core.inspection.parallel import collect_parallel
 from mdf_core.inspection.validate_changes import validate_changes
 from mdf_core.inspection.validate_evidence import validate_agents_block, validate_evidence
@@ -19,8 +21,13 @@ from mdf_core.inspection.validate_release import validate_changelog, validate_re
 def collect_uninitialized_findings(repo: Path) -> list[Finding]:
     """无 manifest 时仍检查布局，使退休目录能在分流前被看见。"""
     findings: list[Finding] = []
-    with progress("检查 1/1：未初始化布局"):
+    register_progress_groups([], reason="未初始化，仅检查布局")
+    skip_progress_group("事实文档", "未初始化，无事实文档检查")
+    report_progress("契约检查计划", "共 1 个检查组：未初始化布局")
+    report_count("契约检查", 0, 1)
+    with progress("契约：未初始化布局"):
         validate_layout(repo, findings)
+    report_count("契约检查", 1, 1)
     return findings
 
 
@@ -30,7 +37,13 @@ def collect_findings(
     full: bool,
 ) -> list[Finding]:
     findings: list[Finding] = []
-    with progress("检查 1/5：配置、布局与 Agent 控制面"):
+    report_progress(
+        "契约检查计划",
+        "共 5 个检查组：配置、布局与 Agent 控制面；Jot、Proposal 与 Bug；"
+        "链接、Change 与 ADR；发布历史；事实文档与 evidence（逐页计数组数量待扫描）",
+    )
+    report_count("契约检查", 0, 5)
+    with progress("契约：配置、布局与 Agent 控制面"):
         for path in managed_symlinks(repo):
             add_finding(
                 findings,
@@ -42,6 +55,7 @@ def collect_findings(
         validate_modules(repo, findings)
         validate_layout(repo, findings)
         validate_agents_block(repo, findings)
+    report_count("契约检查", 1, 5)
 
     def objects() -> list[Finding]:
         result: list[Finding] = []
@@ -72,11 +86,11 @@ def collect_findings(
         return result
 
     findings.extend(collect_parallel([
-        ("检查 2/5：Jot、Proposal 与 Bug", objects),
-        ("检查 3/5：链接、Change 与 ADR", records),
-        ("检查 4/5：发布历史", releases),
-        ("检查 5/5：事实文档与 evidence", evidence),
-    ]))
+        ("契约：Jot、Proposal 与 Bug", objects),
+        ("契约：链接、Change 与 ADR", records),
+        ("契约：发布历史", releases),
+        ("契约：事实文档与 evidence", evidence),
+    ], label="契约检查", completed_before=1))
     if manifest and manifest.get("state") != "ready":
         add_finding(
             findings,

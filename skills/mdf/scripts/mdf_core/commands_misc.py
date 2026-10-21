@@ -18,7 +18,7 @@ from mdf_core.workspace.gitutil import (
     require_git_root,
 )
 from mdf_core.documents.proposals import new_prp_ids
-from mdf_core.foundation.progress import progress
+from mdf_core.foundation.progress import ProgressPlan
 from mdf_core.workspace.init_repo import init_files, parse_baselines, write_files
 from mdf_core.workspace.gitflow import require_master_default
 from mdf_core.documents.moves import apply_moves_and_rewrites, describe_moves, describe_rewrites, replacement_plan
@@ -46,16 +46,18 @@ def command_info(_: argparse.Namespace) -> None:
 
 
 def command_doctor(args: argparse.Namespace) -> None:
-    with progress("doctor 1/3：识别仓库"):
+    plan = ProgressPlan("doctor", ("识别仓库", "检查 MDF 契约", "汇总 Git 与初始化状态"),
+                        groups=("契约检查", "事实文档"))
+    with plan.stage(1):
         repo = repo_path(args.repo)
         root = git_root(repo)
         initialized = manifest_path(repo).is_file()
-    with progress("doctor 2/3：检查 MDF 契约"):
+    with plan.stage(2):
         if initialized:
             findings = doctor.collect_findings(repo, full=True)
         else:
             findings = doctor.collect_uninitialized_findings(repo)
-    with progress("doctor 3/3：汇总 Git 与初始化状态"):
+    with plan.stage(3):
         branch: dict[str, Any] | None = None
         branch_error: str | None = None
         if root == repo:
@@ -207,7 +209,8 @@ def command_init(args: argparse.Namespace) -> None:
 
 
 def validation_payload(repo: Path, scope: str) -> tuple[dict[str, Any], int]:
-    with progress(f"validate：{scope} 契约校验"):
+    plan = ProgressPlan("validate", (f"{scope} 契约校验",), groups=("契约检查", "事实文档"))
+    with plan.stage(1):
         findings = doctor.collect_findings(repo, full=scope == "full")
     payload = {
         "ok": not findings,

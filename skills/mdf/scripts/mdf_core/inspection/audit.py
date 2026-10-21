@@ -10,7 +10,7 @@ from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, ser
 from mdf_core.workspace.gitutil import git_path_tracked, repo_path, require_git_root, run
 from mdf_core.inspection.overview_modules import overview_core_module_findings, project_entry_link_findings
 from mdf_core.foundation.paths import path_stays_in_repo, relative
-from mdf_core.foundation.progress import progress, report_progress
+from mdf_core.foundation.progress import ProgressPlan, report_progress
 from mdf_core.execution.modules import MODULES_PATH, ModulesConfig, load_modules, match
 from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
 from mdf_core.inspection.validate_manifest import implementation_roots
@@ -208,9 +208,11 @@ def audit_payload(
     document_paths: list[str],
     base: str | None = None,
 ) -> tuple[dict[str, Any], int]:
-    with progress("fact-audit 1/4：全量契约校验"):
+    plan = ProgressPlan("fact-audit", ("全量契约校验", "解析范围", "检查文档结构", "映射 evidence 与覆盖"),
+                        groups=("契约检查", "事实文档", "文档结构检查"))
+    with plan.stage(1):
         findings = doctor.collect_findings(repo, full=True)
-    with progress("fact-audit 2/4：解析范围"):
+    with plan.stage(2):
         from mdf_core.foundation.paths import load_manifest
         roots = implementation_roots(repo, load_manifest(repo), [])
         facts = set(fact_documents(repo))
@@ -263,19 +265,19 @@ def audit_payload(
             )
             sized = documents
             code_paths = sources
-    report_progress(
-        "fact-audit 范围",
-        f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
-    )
-    with progress("fact-audit 3/4：检查文档结构"):
+        report_progress(
+            "fact-audit 范围",
+            f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
+        )
+    with plan.stage(3):
         limited_documents = [path for path in sized if path not in ignored]
         findings.extend(collect_parallel([
             ("文档体积", partial(size_findings, repo, limited_documents)),
             ("文档结构", partial(structure_findings, repo, limited_documents)),
             ("核心模块表", partial(overview_core_module_findings, repo, documents)),
             ("项目入口", partial(project_entry_link_findings, repo, sized)),
-        ]))
-    with progress("fact-audit 4/4：映射 evidence 与覆盖"):
+        ], label="文档结构检查"))
+    with plan.stage(4):
         mappings: list[dict[str, Any]] = []
         covered: set[Path] = set()
         for document in documents:

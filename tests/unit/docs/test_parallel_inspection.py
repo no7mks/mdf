@@ -41,6 +41,59 @@ def test_parallel_failure_keeps_exception_and_does_not_report_all_complete(capsy
     assert "已检查 1/1" not in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("nested", [False, True])
+def test_failed_group_is_interrupted_while_other_worker_is_still_running(monkeypatch, nested):
+    from mdf_core.foundation import progress
+    from mdf_core.inspection.parallel import collect_parallel
+
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", stream)
+    slow_started = Event()
+    failure_reported = Event()
+    observed = []
+    error = RuntimeError("evidence 检查失败")
+    original = progress.report_progress
+
+    def report(label, message):
+        original(label, message)
+        if label == "失败页" and message.startswith("中断"):
+            failure_reported.set()
+
+    monkeypatch.setattr(progress, "report_progress", report)
+
+    def fail():
+        assert slow_started.wait(5)
+        items = progress.progress_items("失败 evidence", ["src/a.py"])
+        next(items)
+        raise error
+
+    def slow():
+        progress.report_count("运行 evidence", 0, 2)
+        slow_started.set()
+        assert failure_reported.wait(5)
+        progress.report_count("运行 evidence", 1, 2)
+        observed.append(stream.getvalue().splitlines()[-1])
+        progress.report_count("运行 evidence", 2, 2)
+        return []
+
+    def run():
+        return collect_parallel([("失败页", fail), ("运行页", slow)])
+
+    plan = progress.ProgressPlan("doctor", ("检查",), groups=("失败 evidence", "运行 evidence", "待开始"))
+    with pytest.raises(RuntimeError) as caught:
+        with plan.stage(1):
+            progress.register_progress_groups([], reason="范围已确定")
+            if nested:
+                collect_parallel([("外层检查", run)])
+            else:
+                run()
+    assert caught.value is error
+    assert len(observed) == 1
+    assert "共 3 组｜完成 0｜运行 1｜待开始 1｜中断 1｜跳过 0" in observed[0]
+    assert "运行中：组 2]" in observed[0]
+    assert "已检查 1/2" in observed[0]
+
+
 def test_parallel_empty_checks(capsys):
     from mdf_core.inspection.parallel import collect_parallel
 

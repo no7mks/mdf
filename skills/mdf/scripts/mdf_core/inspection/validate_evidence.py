@@ -15,7 +15,9 @@ from mdf_core.foundation.constants import (
 from mdf_core.foundation.errors import Finding, MDFError, add_finding
 from mdf_core.workspace.gitutil import GitPathIndex, commit_is_after
 from mdf_core.foundation.paths import path_stays_in_repo, relative
-from mdf_core.foundation.progress import progress, progress_items, report_progress
+from mdf_core.foundation.progress import (
+    progress, progress_items, register_progress_groups, report_progress, skip_progress_group,
+)
 from mdf_core.foundation.yamlutil import read_frontmatter
 from mdf_core.inspection.parallel import collect_parallel
 
@@ -78,6 +80,14 @@ def validate_evidence(
     with progress("事实文档：扫描文档"):
         documents = list(fact_documents(repo))
         fact_paths = {doc.resolve() for doc in documents}
+    register_progress_groups(
+        [f"evidence：{relative(repo, doc)}" for doc in documents], reason="文档扫描完成",
+    )
+    report_progress(
+        "事实文档计数计划",
+        f"局部计数组共 {1 + len(documents)} 组：文档汇总 1 组，共 {len(documents)} 页；"
+        f"逐页 evidence {len(documents)} 组，并行执行；各组总量读取对应页面后确定",
+    )
 
     def inspect(doc: Path) -> list[Finding]:
         findings: list[Finding] = []
@@ -86,6 +96,7 @@ def validate_evidence(
             metadata, body = read_frontmatter(doc)
         except MDFError as exc:
             add_finding(findings, "fact.frontmatter", str(exc), rel)
+            skip_progress_group(f"evidence：{rel}", "页面无法解析，总量无法确定")
             return findings
         if metadata.get("doc_type") not in DOC_TYPES:
             add_finding(
