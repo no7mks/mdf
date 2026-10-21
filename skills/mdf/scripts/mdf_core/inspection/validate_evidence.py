@@ -1,4 +1,5 @@
 import os
+from functools import partial
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -16,6 +17,7 @@ from mdf_core.workspace.gitutil import GitPathIndex, commit_is_after
 from mdf_core.foundation.paths import path_stays_in_repo, relative
 from mdf_core.foundation.progress import progress, progress_items, report_progress
 from mdf_core.foundation.yamlutil import read_frontmatter
+from mdf_core.inspection.parallel import collect_parallel
 
 
 def frontmatter_evidence(metadata: dict[str, Any]) -> list[str]:
@@ -76,13 +78,15 @@ def validate_evidence(
     with progress("事实文档：扫描文档"):
         documents = list(fact_documents(repo))
         fact_paths = {doc.resolve() for doc in documents}
-    for doc in progress_items("事实文档", documents, lambda path: relative(repo, path)):
+
+    def inspect(doc: Path) -> list[Finding]:
+        findings: list[Finding] = []
         rel = relative(repo, doc)
         try:
             metadata, body = read_frontmatter(doc)
         except MDFError as exc:
             add_finding(findings, "fact.frontmatter", str(exc), rel)
-            continue
+            return findings
         if metadata.get("doc_type") not in DOC_TYPES:
             add_finding(
                 findings,
@@ -315,6 +319,12 @@ def validate_evidence(
                             f"Generated {label} requires revalidation",
                             rel,
                         )
+
+        return findings
+
+    findings.extend(collect_parallel([
+        (f"事实文档：{relative(repo, doc)}", partial(inspect, doc)) for doc in documents
+    ], label="事实文档"))
 
 
 def validate_agents_block(repo: Path, findings: list[Finding]) -> None:

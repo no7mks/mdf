@@ -3,6 +3,7 @@ from pathlib import Path
 from mdf_core.foundation.errors import Finding, add_finding
 from mdf_core.foundation.paths import managed_symlinks
 from mdf_core.foundation.progress import progress
+from mdf_core.inspection.parallel import collect_parallel
 from mdf_core.inspection.validate_changes import validate_changes
 from mdf_core.inspection.validate_evidence import validate_agents_block, validate_evidence
 from mdf_core.inspection.validate_jots import validate_jots
@@ -41,26 +42,41 @@ def collect_findings(
         validate_modules(repo, findings)
         validate_layout(repo, findings)
         validate_agents_block(repo, findings)
-    with progress("检查 2/5：Jot、Proposal 与 Bug"):
-        validate_jots(repo, findings)
+
+    def objects() -> list[Finding]:
+        result: list[Finding] = []
+        validate_jots(repo, result)
         for path in iter_object_files(repo, "proposal"):
-            validate_object(repo, path, "proposal", findings)
+            validate_object(repo, path, "proposal", result)
         for path in iter_object_files(repo, "bug"):
-            validate_object(repo, path, "bug", findings)
-    with progress("检查 3/5：链接、Change 与 ADR"):
-        validate_links(repo, findings)
-        validate_changes(repo, findings)
-        validate_adrs(repo, findings)
-        validate_record_references(repo, findings)
-    with progress("检查 4/5：发布历史"):
-        validate_changelog(repo, findings)
-        validate_release_history(repo, manifest, findings)
-    with progress("检查 5/5：事实文档与 evidence"):
-        validate_evidence(
-            repo,
-            findings,
-            check_staleness=full,
-        )
+            validate_object(repo, path, "bug", result)
+        return result
+
+    def records() -> list[Finding]:
+        result: list[Finding] = []
+        validate_links(repo, result)
+        validate_changes(repo, result)
+        validate_adrs(repo, result)
+        validate_record_references(repo, result)
+        return result
+
+    def releases() -> list[Finding]:
+        result: list[Finding] = []
+        validate_changelog(repo, result)
+        validate_release_history(repo, manifest, result)
+        return result
+
+    def evidence() -> list[Finding]:
+        result: list[Finding] = []
+        validate_evidence(repo, result, check_staleness=full)
+        return result
+
+    findings.extend(collect_parallel([
+        ("检查 2/5：Jot、Proposal 与 Bug", objects),
+        ("检查 3/5：链接、Change 与 ADR", records),
+        ("检查 4/5：发布历史", releases),
+        ("检查 5/5：事实文档与 evidence", evidence),
+    ]))
     if manifest and manifest.get("state") != "ready":
         add_finding(
             findings,

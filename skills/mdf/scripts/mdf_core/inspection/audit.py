@@ -1,4 +1,5 @@
 import argparse
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from mdf_core.foundation.progress import progress, report_progress
 from mdf_core.execution.modules import MODULES_PATH, ModulesConfig, load_modules, match
 from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
 from mdf_core.inspection.validate_manifest import implementation_roots
+from mdf_core.inspection.parallel import collect_parallel
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 # 不承载行为的被跟踪实现文件：版本钉、锁文件与本地配置。
@@ -267,10 +269,12 @@ def audit_payload(
     )
     with progress("fact-audit 3/4：检查文档结构"):
         limited_documents = [path for path in sized if path not in ignored]
-        findings.extend(size_findings(repo, limited_documents))
-        findings.extend(structure_findings(repo, limited_documents))
-        findings.extend(overview_core_module_findings(repo, documents))
-        findings.extend(project_entry_link_findings(repo, sized))
+        findings.extend(collect_parallel([
+            ("文档体积", partial(size_findings, repo, limited_documents)),
+            ("文档结构", partial(structure_findings, repo, limited_documents)),
+            ("核心模块表", partial(overview_core_module_findings, repo, documents)),
+            ("项目入口", partial(project_entry_link_findings, repo, sized)),
+        ]))
     with progress("fact-audit 4/4：映射 evidence 与覆盖"):
         mappings: list[dict[str, Any]] = []
         covered: set[Path] = set()

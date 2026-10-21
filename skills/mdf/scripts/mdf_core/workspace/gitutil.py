@@ -1,6 +1,7 @@
 import re
 import subprocess
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 from mdf_core.foundation.errors import MDFError
@@ -242,35 +243,42 @@ def _status_paths(raw: str) -> list[str]:
 
 
 class GitPathIndex:
-    """一次性读取跟踪与脏状态，供同一校验内的重复路径查询复用。"""
+    """线程间共享跟踪、脏状态和路径历史；不同路径的历史查询可并行。"""
 
     def __init__(self, repo: Path) -> None:
         self.repo = repo
         self._tracked: set[str] | None = None
         self._dirty: set[str] | None = None
         self._commits: dict[str, str | None] = {}
+        self._lock = Lock()
+        self._commit_locks: dict[str, Any] = {}
 
     def tracked(self, path: Path) -> bool:
-        if self._tracked is None:
-            raw = run(["git", "ls-files", "-z"], cwd=self.repo, check=False)
-            self._tracked = _with_parents(raw.stdout.split("\0"))
-        return relative(self.repo, path) in self._tracked
+        with self._lock:
+            if self._tracked is None:
+                raw = run(["git", "ls-files", "-z"], cwd=self.repo, check=False)
+                self._tracked = _with_parents(raw.stdout.split("\0"))
+            return relative(self.repo, path) in self._tracked
 
     def dirty(self, path: Path) -> bool:
-        if self._dirty is None:
-            raw = run(
-                ["git", "status", "--porcelain", "-z", "--untracked-files=all"],
-                cwd=self.repo,
-                check=False,
-            )
-            self._dirty = _with_parents(_status_paths(raw.stdout))
-        return relative(self.repo, path) in self._dirty
+        with self._lock:
+            if self._dirty is None:
+                raw = run(
+                    ["git", "status", "--porcelain", "-z", "--untracked-files=all"],
+                    cwd=self.repo,
+                    check=False,
+                )
+                self._dirty = _with_parents(_status_paths(raw.stdout))
+            return relative(self.repo, path) in self._dirty
 
     def last_commit(self, path: Path) -> str | None:
         rel = relative(self.repo, path)
-        if rel not in self._commits:
-            self._commits[rel] = git_last_commit(self.repo, path)
-        return self._commits[rel]
+        with self._lock:
+            path_lock = self._commit_locks.setdefault(rel, Lock())
+        with path_lock:
+            if rel not in self._commits:
+                self._commits[rel] = git_last_commit(self.repo, path)
+            return self._commits[rel]
 
 
 def worktree_map(repo: Path) -> dict[str, Path]:

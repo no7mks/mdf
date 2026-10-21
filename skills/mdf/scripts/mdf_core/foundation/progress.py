@@ -2,13 +2,16 @@
 import sys
 import time
 from contextlib import contextmanager
+from threading import Lock
 from typing import Callable, Iterator, Sequence, TypeVar
 
 T = TypeVar("T")
+_OUTPUT_LOCK = Lock()
 
 
 def report_progress(label: str, message: str) -> None:
-    print(f"[{label}] {message}", file=sys.stderr, flush=True)
+    with _OUTPUT_LOCK:
+        print(f"[{label}] {message}", file=sys.stderr, flush=True)
 
 
 def progress_items(
