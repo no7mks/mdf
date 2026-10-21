@@ -16,65 +16,65 @@ def test_tree_mixed_dag_drafts_truncation_and_invalid_dependencies(
     python_exe, tmp_path
 ):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-003", ["prp-001"])
-    add_prp(repo, "prp-004", ["prp-001"])
-    add_prp(repo, "prp-005", ["prp-003", "prp-004"])
-    add_prp(repo, "prp-006", status="draft")
-    add_prp(repo, "prp-007", ["prp-006"])
+    add_prp(repo, "prp-0003", ["prp-0001"])
+    add_prp(repo, "prp-0004", ["prp-0001"])
+    add_prp(repo, "prp-0005", ["prp-0003", "prp-0004"])
+    add_prp(repo, "prp-0006", status="draft")
+    add_prp(repo, "prp-0007", ["prp-0006"])
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     assert data["operation"] == "tree"
     assert "● ready" in data["diagram"]
-    assert "prp-001" in data["diagram"]
-    assert "↩ prp-005" in data["diagram"]
+    assert "prp-0001" in data["diagram"]
+    assert "↩ prp-0005" in data["diagram"]
     assert data["index"] == {
         "groups": [],
         "ungrouped": [
-            index_item("prp-001"),
-            index_item("prp-003", ["prp-001"], ["prp-001"]),
-            index_item("prp-004", ["prp-001"], ["prp-001"]),
-            index_item("prp-005", ["prp-003", "prp-004"], ["prp-003", "prp-004"]),
-            index_item("prp-006", status="draft"),
-            index_item("prp-007", ["prp-006"], ["prp-006"]),
+            index_item("prp-0001"),
+            index_item("prp-0003", ["prp-0001"], ["prp-0001"]),
+            index_item("prp-0004", ["prp-0001"], ["prp-0001"]),
+            index_item("prp-0005", ["prp-0003", "prp-0004"], ["prp-0003", "prp-0004"]),
+            index_item("prp-0006", status="draft"),
+            index_item("prp-0007", ["prp-0006"], ["prp-0006"]),
         ],
     }
     assert data["table"].splitlines()[:2] == [
         "| id | title | status | in_progress | depends_on | blocked_by | milestone |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
-    assert "| prp-001 | Service health | ready | false |  |  |  |" in data["table"]
-    assert "| prp-006 | Service health | draft | false |  |  |  |" in data["table"]
+    assert "| prp-0001 | Service health | ready | false |  |  |  |" in data["table"]
+    assert "| prp-0006 | Service health | draft | false |  |  |  |" in data["table"]
     assert data["table"].endswith("\nhidden:")
     roots = {node["id"]: node for node in data["trees"]}
-    assert set(roots) == {"prp-001", "prp-006"}
-    assert roots["prp-006"]["status"] == "draft"
-    assert [child["id"] for child in roots["prp-006"]["children"]] == ["prp-007"]
-    children = roots["prp-001"]["children"]
+    assert set(roots) == {"prp-0001", "prp-0006"}
+    assert roots["prp-0006"]["status"] == "draft"
+    assert [child["id"] for child in roots["prp-0006"]["children"]] == ["prp-0007"]
+    children = roots["prp-0001"]["children"]
     assert children[1]["children"][0]["reference"] is True
-    assert children[0]["children"][0]["blocked_by"] == ["prp-003", "prp-004"]
+    assert children[0]["children"][0]["blocked_by"] == ["prp-0003", "prp-0004"]
     shallow = payload(mdf(python_exe, "tree", "--repo", str(repo), "--depth", "1"))
-    assert shallow["hidden"] == ["prp-003", "prp-004", "prp-005", "prp-007"]
+    assert shallow["hidden"] == ["prp-0003", "prp-0004", "prp-0005", "prp-0007"]
     assert shallow["table"].endswith(
-        "\nhidden: prp-003, prp-004, prp-005, prp-007"
+        "\nhidden: prp-0003, prp-0004, prp-0005, prp-0007"
     )
     assert mdf(python_exe, "tree", "--repo", str(repo), "--depth", "0").returncode != 0
-    add_prp(repo, "prp-008", ["prp-099"])
+    add_prp(repo, "prp-0008", ["prp-0099"])
     assert "invalid_proposals" in mdf(python_exe, "tree", "--repo", str(repo)).stderr
 
 
 def test_tree_roots_order_depends_on_previous_milestone(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-002", ["阶段一"], status="draft", milestone="阶段二")
-    add_prp(repo, "prp-003", status="draft", milestone="阶段一")
+    add_prp(repo, "prp-0002", ["阶段一"], status="draft", milestone="阶段二")
+    add_prp(repo, "prp-0003", status="draft", milestone="阶段一")
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     assert [node["id"] for node in data["trees"]] == [
-        "prp-001", "prp-003", "prp-002",
+        "prp-0001", "prp-0003", "prp-0002",
     ]
     roots = {node["id"]: node for node in data["trees"]}
-    assert roots["prp-002"]["blocked_by"] == ["阶段一"]
-    assert roots["prp-002"]["milestone"] == "阶段二"
-    assert roots["prp-003"]["milestone"] == "阶段一"
+    assert roots["prp-0002"]["blocked_by"] == ["阶段一"]
+    assert roots["prp-0002"]["milestone"] == "阶段二"
+    assert roots["prp-0003"]["milestone"] == "阶段一"
     assert "[阶段一]" in data["diagram"]
     assert "[阶段二]" in data["diagram"]
     assert "\n↑\n" in data["diagram"] or data["diagram"].splitlines().count("↑") >= 1
@@ -82,10 +82,10 @@ def test_tree_roots_order_depends_on_previous_milestone(python_exe, tmp_path):
 
 def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-002", status="draft", milestone="阶段一")
-    add_prp(repo, "prp-003", ["prp-002"], status="draft", milestone="阶段一")
-    add_prp(repo, "prp-004", ["prp-001"], status="draft", milestone="阶段二")
-    add_prp(repo, "prp-005", ["prp-001"], status="draft")
+    add_prp(repo, "prp-0002", status="draft", milestone="阶段一")
+    add_prp(repo, "prp-0003", ["prp-0002"], status="draft", milestone="阶段一")
+    add_prp(repo, "prp-0004", ["prp-0001"], status="draft", milestone="阶段二")
+    add_prp(repo, "prp-0005", ["prp-0001"], status="draft")
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     assert data["index"] == {
@@ -93,26 +93,26 @@ def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path)
             {
                 "milestone": "阶段一",
                 "items": [
-                    index_item("prp-002", status="draft"),
-                    index_item("prp-003", ["prp-002"], ["prp-002"], "draft"),
+                    index_item("prp-0002", status="draft"),
+                    index_item("prp-0003", ["prp-0002"], ["prp-0002"], "draft"),
                 ],
             },
             {
                 "milestone": "阶段二",
                 "items": [
-                    index_item("prp-004", ["prp-001"], ["prp-001"], "draft"),
+                    index_item("prp-0004", ["prp-0001"], ["prp-0001"], "draft"),
                 ],
             },
         ],
         "ungrouped": [
-            index_item("prp-001"),
-            index_item("prp-005", ["prp-001"], ["prp-001"], "draft"),
+            index_item("prp-0001"),
+            index_item("prp-0005", ["prp-0001"], ["prp-0001"], "draft"),
         ],
     }
     lines = data["table"].splitlines()
-    assert lines[2] == "| prp-001 | Service health | ready | false |  |  |  |"
+    assert lines[2] == "| prp-0001 | Service health | ready | false |  |  |  |"
     assert lines[3] == (
-        "| prp-005 | Service health | draft | false | prp-001 | prp-001 |  |"
+        "| prp-0005 | Service health | draft | false | prp-0001 | prp-0001 |  |"
     )
     assert "| 阶段一 |" in data["table"] and "| 阶段二 |" in data["table"]
     assert lines[4].endswith("| 阶段一 |")
@@ -122,7 +122,7 @@ def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path)
 
 def split_spec(repo):
     body = proposal_markdown(repo / "docs/proposals" / PRP_NAME).split("---", 2)[2]
-    return {"source": "prp-001", "rationale": "用户确认两项共同覆盖验收，下游仅依赖第一项",
+    return {"source": "prp-0001", "rationale": "用户确认两项共同覆盖验收，下游仅依赖第一项",
             "children": [
                 {
                     "id": key,
@@ -130,15 +130,15 @@ def split_spec(repo):
                     "depends_on": [],
                     "body": body,
                 }
-                for key in ("prp-003", "prp-004")
+                for key in ("prp-0003", "prp-0004")
             ],
-            "downstream": {"prp-005": ["prp-003"]}}
+            "downstream": {"prp-0005": ["prp-0003"]}}
 
 
 @pytest.mark.parametrize("milestone", [None, "首次购买"])
 def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, milestone):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-005", ["prp-001"])
+    add_prp(repo, "prp-0005", ["prp-0001"])
     if milestone is not None:
         replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []",
                 f'depends_on: []\nmilestone: "{milestone}"')
@@ -154,13 +154,13 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     assert git(work, "status", "--porcelain").stdout == before
     payload(mdf(python_exe, *args))
     assert 'status: "replaced"' in (work / "docs/proposals" / PRP_NAME).read_text()
-    assert 'depends_on: ["prp-003"]' in (
-        work / "docs/proposals/prp-005-item-005.html"
+    assert 'depends_on: ["prp-0003"]' in (
+        work / "docs/proposals/prp-0005-item-0005.html"
     ).read_text()
     assert 'status: "draft"' in (
-        work / "docs/proposals/prp-003-part-003.md"
+        work / "docs/proposals/prp-0003-part-0003.md"
     ).read_text()
-    for name in (PRP_NAME, "prp-003-part-003.md", "prp-004-part-004.md"):
+    for name in (PRP_NAME, "prp-0003-part-0003.md", "prp-0004-part-0004.md"):
         content = (work / "docs/proposals" / name).read_text()
         if milestone is None:
             assert "milestone:" not in content
@@ -169,7 +169,7 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     assert_ok(mdf(python_exe, "validate", "--repo", str(work)))
 
 
-@pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', '"prp-001"',
+@pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', '"prp-0001"',
                                    "null", '""', '"   "', "[]", "{}", "true", "42"])
 def test_proposal_optional_milestone_validation(python_exe, tmp_path, value):
     repo = copy_fixture(tmp_path)
@@ -188,11 +188,11 @@ def test_proposal_optional_milestone_validation(python_exe, tmp_path, value):
 
 def test_invalid_split_has_no_partial_writes(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-005", ["prp-001"])
+    add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
     checkout_develop(repo)
     spec = split_spec(repo)
-    spec["children"][0]["depends_on"] = ["prp-005"]
+    spec["children"][0]["depends_on"] = ["prp-0005"]
     path = tmp_path / "split.json"
     path.write_text(json.dumps(spec))
     work = planning_worktree(python_exe, repo)
@@ -203,7 +203,7 @@ def test_invalid_split_has_no_partial_writes(python_exe, tmp_path):
 
 def test_split_requires_planning(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-005", ["prp-001"])
+    add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
@@ -218,15 +218,15 @@ def test_split_requires_planning(python_exe, tmp_path):
 def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
-    add_prp(repo, "prp-003", ["prp-001"])
+    add_prp(repo, "prp-0003", ["prp-0001"])
     # add_prp copies its source; explicitly keep the dependent ready.
-    replace(repo / "docs/proposals/prp-003-item-003.html", "status: implemented", "status: ready")
+    replace(repo / "docs/proposals/prp-0003-item-0003.html", "status: implemented", "status: ready")
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
-    assert [node["id"] for node in data["trees"]] == ["prp-003"]
+    assert [node["id"] for node in data["trees"]] == ["prp-0003"]
     source = repo / "docs/proposals" / PRP_NAME
     source.write_text(source.read_text().replace("status: implemented", "status: replaced")
-                      .replace("depends_on: []", "depends_on: []\nreplaced_by: [prp-099, prp-009]"))
+                      .replace("depends_on: []", "depends_on: []\nreplaced_by: [prp-0099, prp-0009]"))
     result = mdf(python_exe, "validate", "--repo", str(repo))
     assert "proposal.replaced_by" in result.stdout
 
@@ -235,8 +235,8 @@ def test_milestone_dependency_blocks_tree_until_members_are_implemented(
     python_exe, tmp_path
 ):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-002", milestone="阶段一")
-    add_prp(repo, "prp-003", ["阶段一"])
+    add_prp(repo, "prp-0002", milestone="阶段一")
+    add_prp(repo, "prp-0003", ["阶段一"])
     replace(
         repo / "docs/proposals" / PRP_NAME,
         "depends_on: []",
@@ -245,30 +245,30 @@ def test_milestone_dependency_blocks_tree_until_members_are_implemented(
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     roots = {node["id"]: node for node in data["trees"]}
-    assert set(roots) == {"prp-001", "prp-002", "prp-003"}
-    assert roots["prp-003"]["blocked_by"] == ["阶段一"]
-    assert roots["prp-001"]["children"] == []
-    assert roots["prp-002"]["children"] == []
+    assert set(roots) == {"prp-0001", "prp-0002", "prp-0003"}
+    assert roots["prp-0003"]["blocked_by"] == ["阶段一"]
+    assert roots["prp-0001"]["children"] == []
+    assert roots["prp-0002"]["children"] == []
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     replace(
-        repo / "docs/proposals/prp-002-item-002.html",
+        repo / "docs/proposals/prp-0002-item-0002.html",
         "status: ready",
         "status: implemented",
     )
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
-    assert [node["id"] for node in data["trees"]] == ["prp-003"]
+    assert [node["id"] for node in data["trees"]] == ["prp-0003"]
     assert data["trees"][0]["blocked_by"] == []
 
 
 def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-002", status="rejected", milestone="阶段一")
+    add_prp(repo, "prp-0002", status="rejected", milestone="阶段一")
     replace(
-        repo / "docs/proposals/prp-002-item-002.html",
+        repo / "docs/proposals/prp-0002-item-0002.html",
         "status: rejected",
         "status: rejected\nreject-reason: wont-do",
     )
-    add_prp(repo, "prp-003", ["阶段一"])
+    add_prp(repo, "prp-0003", ["阶段一"])
     replace(
         repo / "docs/proposals" / PRP_NAME,
         "status: ready\ndepends_on: []",
@@ -276,18 +276,18 @@ def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_pat
     )
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
-    assert [node["id"] for node in data["trees"]] == ["prp-003"]
+    assert [node["id"] for node in data["trees"]] == ["prp-0003"]
     assert data["trees"][0]["blocked_by"] == []
 
 
 def test_split_rejects_branch_record_even_when_current_tree_has_no_changes(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
-    add_prp(repo, "prp-005", ["prp-001"])
+    add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
     git(repo, "checkout", "-b", "feature/started")
     folder = repo / "changes/unreleased/started"
     folder.mkdir(parents=True)
-    (folder / "delivery.json").write_text(json.dumps({"proposal": "prp-001"}))
+    (folder / "delivery.json").write_text(json.dumps({"proposal": "prp-0001"}))
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 记录另一分支开工")
     git(repo, "checkout", "main")
@@ -302,7 +302,7 @@ def test_split_rejects_branch_record_even_when_current_tree_has_no_changes(pytho
 
 def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, monkeypatch):
     repo = copy_fixture(tmp_path).resolve()
-    add_prp(repo, "prp-005", ["prp-001"])
+    add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
     checkout_develop(repo)
     spec = tmp_path / "split.json"
@@ -311,7 +311,7 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
     load_core_module()
     from mdf_core.documents.prp_split import command_split
     original = Path.write_text
-    target = work / "docs/proposals/prp-004-part-004.md"
+    target = work / "docs/proposals/prp-0004-part-0004.md"
 
     def fail_second(path, content, *args, **kwargs):
         if path == target:

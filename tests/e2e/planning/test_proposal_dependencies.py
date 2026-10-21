@@ -4,10 +4,10 @@ import pytest
 from mdf_test_support import *  # noqa: F403
 
 
-PRP_ID = "prp-001"
+PRP_ID = "prp-0001"
 
 
-DEPENDENCY_ID = "prp-002"
+DEPENDENCY_ID = "prp-0002"
 
 
 def write_proposal(
@@ -52,7 +52,7 @@ def test_proposal_accepts_direct_active_proposal_dependency(
     ("dependency", "expected_code"),
     [
         (
-            "prp-003",
+            "prp-0003",
             "object.depends_on_missing",
         ),
         (BUG_ID, "proposal.depends_on_type"),

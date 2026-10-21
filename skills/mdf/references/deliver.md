@@ -173,7 +173,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 按下列顺序自动分辨 Proposal 与 Bug，命中唯一对象即停止：
 
-1. 完整 ID：符合 `prp-<序号>` 则为 Proposal；符合 `bug-<4 位字符>` 则为 Bug。
+1. 完整 ID：符合 `prp-<4 位字符>` 则为 Proposal；符合 `bug-<4 位字符>` 则为 Bug。
 2. 否则运行 `list --repo "$REPO_ROOT"`（proposal 与 bug，不限 status），在返回的 `id` 中精确匹配。
    - 仍无则用去掉 `prp-`/`bug-` 前缀的本体、以及 `path` 文件名中的 slug 各匹配一次。
    - 不匹配 title，不把 jot ID、SemVer 或路径当成功值。

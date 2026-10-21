@@ -49,7 +49,7 @@ def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix'):
     identity = {'provider': 'github', 'host': 'forge.invalid', 'project': 'team/project', 'origin': str(remote)}
     monkeypatch.setattr(pull_finish, 'origin', lambda *_: identity)
     monkeypatch.setattr(pull_finish, 'Forge', lambda *_: platform)
-    arguments = ['--proposal', 'prp-001', '--roster', 'solo'] if kind == 'feature' else ['--version', '1.2.1']
+    arguments = ['--proposal', 'prp-0001', '--roster', 'solo'] if kind == 'feature' else ['--version', '1.2.1']
     obj = write_release_objectives(tmp_path) if kind == 'release' else write_work_objectives(tmp_path)
     result = payload(mdf(python_exe, 'start', '--repo', str(repo), '--kind', kind,
                          '--objectives-file', str(obj), *arguments))
@@ -59,6 +59,6 @@ def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix'):
         (work / 'src/service.py').write_text('fixed = True\n')
     else:
         root = work / 'changes/unreleased/service-health'
-        (root / 'CHANGE.md').write_text('---\nchange_kind: feature\nsource_branch: feature/service-health\nproposals: [prp-001]\n---\n')
+        (root / 'CHANGE.md').write_text('---\nchange_kind: feature\nsource_branch: feature/service-health\nproposals: [prp-0001]\n---\n')
     commit(work)
     return repo, remote, work, platform

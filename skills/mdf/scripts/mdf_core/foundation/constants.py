@@ -122,9 +122,9 @@ BASELINE_DOC_TYPES = {
 }
 STABLE_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 EPOCH_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
-# PRP：001–999 固定三位；1000 起不再补零。Bug/Jot 仍为四位短码。
-_PRP_ID_BODY = r"(?:00[1-9]|0[1-9]\d|[1-9]\d{2,})"
-_SHORT_ID_BODY = r"[A-HJ-NP-Z2-9]{4}"
+# PRP 前两位数字，后两位最多一个字母；Bug/Jot 为四位短码。
+_PRP_ID_BODY = r"[0-9]{2}(?:[0-9][A-HJ-NP-Z0-9]|[A-HJ-NP-Z][0-9])"
+_SHORT_ID_BODY = r"[A-HJ-NP-Z0-9]{4}"
 _OBJECT_SLUG = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 # ADR slug 与对象 slug 同形，但必须含字母，避免纯数字序号冒充主题。
 _ADR_SLUG = rf"(?=[a-z0-9-]*[a-z]){_OBJECT_SLUG}"
@@ -140,7 +140,8 @@ OBJECT_ID_RE = re.compile(
     rf"adr-{_ADR_SLUG})$"
 )
 OBJECT_ID_SLUG_RE = re.compile(
-    rf"^(?:prp-{_PRP_ID_BODY}|bug-[a-hj-np-z2-9]{{4}}|adr-{_OBJECT_SLUG})$"
+    rf"^(?:prp-{_PRP_ID_BODY}|bug-[a-hj-np-z0-9]{{4}}|adr-{_OBJECT_SLUG})$",
+    re.IGNORECASE,
 )
 MDF_BLOCK_START = "<!-- MDF:BEGIN -->"
 MDF_BLOCK_END = "<!-- MDF:END -->"

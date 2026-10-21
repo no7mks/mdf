@@ -5,7 +5,7 @@ from pathlib import Path
 from mdf_core.foundation.constants import OBJECT_FILE_RE, PRP_ID_RE
 from mdf_core.foundation.errors import MDFError, serialize_findings
 from mdf_core.workspace.gitutil import run
-from mdf_core.foundation.textutil import format_prp_id
+from mdf_core.foundation.textutil import new_prp_id
 from mdf_core.inspection.validate_objects import iter_object_files, validate_object
 from mdf_core.inspection.validate_records import unsatisfied_depends_on, validate_record_references
 from mdf_core.foundation.yamlutil import read_frontmatter
@@ -31,13 +31,22 @@ def proposal_slug_on_ref(repo, identifier, ref):
     return found[0]
 
 
-def next_prp_id(repo: Path) -> str:
-    numbers = [0]
+def new_prp_ids(repo: Path, count: int) -> list[str]:
+    used = set()
     for path in iter_object_files(repo, "proposal"):
         match = OBJECT_FILE_RE.fullmatch(path.name)
         if match and PRP_ID_RE.fullmatch(match.group(1)):
-            numbers.append(int(match.group(1).split("-", 1)[1]))
-    return format_prp_id(max(numbers) + 1)
+            used.add(match.group(1))
+    # 100 个数字前缀 ×（100 个纯数字后缀 + 2 × 24 × 10 个单字母后缀）。
+    if len(used) + count > 58000:
+        raise MDFError("PRP ID 空间不足", code="prp_id_exhausted")
+    identifiers = []
+    while len(identifiers) < count:
+        identifier = new_prp_id()
+        if identifier not in used:
+            used.add(identifier)
+            identifiers.append(identifier)
+    return identifiers
 
 
 def records(repo):

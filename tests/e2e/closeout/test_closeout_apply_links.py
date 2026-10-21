@@ -6,7 +6,7 @@ from mdf_test_support import *  # noqa: F403
 def test_release_moves_delivery_materials_and_rewrites_proposal_links(python_exe, tmp_path):
     repo = prepare_release_closeout_repo(tmp_path)
     child = repo / "changes/unreleased/service-health"
-    identity = {"proposal": "prp-001", "slug": "service-health", "start_commit": "a" * 40}
+    identity = {"proposal": "prp-0001", "slug": "service-health", "start_commit": "a" * 40}
     (child / "delivery.json").write_text(json.dumps(identity))
     (child / "objectives.md").write_text(f"# 目标\n\n[需求](../../../docs/proposals/{PRP_NAME})\n")
     (child / "design.md").write_text("# 设计\n\n[实现](../../../src/service.py)\n")

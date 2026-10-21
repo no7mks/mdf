@@ -26,7 +26,7 @@ def test_start_command_hook(python_exe, tmp_path, exit_code, binary_output):
     objectives = tmp_path / "objectives.md"
     objectives.write_text("# 目标\n\n- needs_design: yes\n\n测试 hook。\n")
     response = mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
-                   "--proposal", "prp-001", "--objectives-file", str(objectives))
+                   "--proposal", "prp-0001", "--objectives-file", str(objectives))
     result = payload(response)
     work = Path(result["worktree"])
     assert (work / "hook-result.txt").read_text().splitlines() == [str(work), str(work), str(repo)]
@@ -53,7 +53,7 @@ def test_start_rule_hook_is_handed_to_agent(python_exe, tmp_path):
     objectives = tmp_path / "objectives.md"
     objectives.write_text("# 目标\n\n- needs_design: yes\n\n测试 hook。\n")
     result = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
-                         "--proposal", "prp-001", "--objectives-file", str(objectives)))
+                         "--proposal", "prp-0001", "--objectives-file", str(objectives)))
     assert result["hook"]["status"] == "pending"
     assert result["hook"]["type"] == "rule"
     assert result["hook"]["cwd"] == result["worktree"]

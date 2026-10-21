@@ -47,16 +47,18 @@ Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
 
 ### ID 与 slug
 
-- Proposal ID 为 `prp-` 加自增序号：
-  - 1–999 固定三位并保留前导零（`prp-001`）；1000 起不再补零（`prp-1000`）。
-  - 序号取当前 checkout 的 `docs/proposals/`（含 archive）已有文件名中的最大序号加一。
+- Proposal ID 为 `prp-` 加四位随机字符：
+  - 前两位为数字，后两位为数字或大写字母，最多包含一个字母；字母排除 `I`、`O`。
+  - 数字允许 `0` 至 `9`，包括前导零；例如 `prp-01A2`、`prp-012A`、`prp-0001`。
+  - 生成时避开当前 checkout 的 `docs/proposals/`（含 archive）已有 ID 及本批 ID。
+  - 本地生成不预占 ID；合入后须校验唯一性，跨 checkout 的重复仍须解决。
   - 新建 Proposal 只能在 planning 工作区分配 ID、写入并提交，再合入 develop。
-- Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 2 至 9。
-- 📌 沟通、引用与展示时必须写完整 ID，如 `prp-001`、`bug-C4D5`、`jot-E6F7`、`adr-use-sqlite`。
+- Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 0 至 9。
+- 📌 沟通、引用与展示时必须写完整 ID，如 `prp-0001`、`bug-C4D5`、`jot-E6F7`、`adr-use-sqlite`。
   - ❌ 不得省略类型前缀或只写序号/短码/slug。
-- 文件名 `prp-<序号>-<slug>.md|html` / `bug-<4 位字符>-<slug>.md` 中的 slug 为英文 ASCII kebab-case。
+- 文件名 `prp-<4 位字符>-<slug>.md|html` / `bug-<4 位字符>-<slug>.md` 中的 slug 为英文 ASCII kebab-case。
   - active（非 archive）Proposal 与 Bug 的 slug 必须全局唯一。
-  - slug 不得与对象 ID 同形（如 `prp-001`、`bug-c4d5`、`adr-use-sqlite`）。
+  - slug 不得与对象 ID 同形（如 `prp-0001`、`bug-c4d5`、`adr-use-sqlite`）。
 - 分支命名：
   - 绑定 PRP 的 feature 分支与 `changes/unreleased/<slug>/` 使用 PRP 文件名 slug。
   - 人工 feature 不绑定 PRP；slug 在 start clarify 时由用户确认，Change 使用 `proposals: []`。

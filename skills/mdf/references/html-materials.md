@@ -27,7 +27,7 @@ HTML 是可独立打开的完整文档，正文必须放在唯一的 `<main>` �
 
 PRP 的可见 HTML 正文是唯一正文，metadata 使用 YAML comment。
 
-- draft：`docs/proposals/prp-<序号>-<slug>.md`，使用原有 YAML frontmatter。
+- draft：`docs/proposals/prp-<4 位字符>-<slug>.md`，使用原有 YAML frontmatter。
 - review：同目录 `<stem>.review.html`，由当前 draft 生成，尚不构成对象或 ready。
 - 本次 review 确认并转为 ready：同目录 `<stem>.html`；不保留对应 Markdown 副本。
 - 已有 ready / implemented / released PRP 保留原格式，含 archive 中的 PRP。
@@ -38,7 +38,7 @@ PRP 的可见 HTML 正文是唯一正文，metadata 使用 YAML comment。
 ```html
 <!doctype html>
 <!-- MDF:METADATA
-id: prp-001
+id: prp-0001
 type: proposal
 status: ready
 depends_on: []

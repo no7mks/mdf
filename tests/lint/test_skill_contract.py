@@ -187,7 +187,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
     assert "object-contract.md" in intake
     assert "内部 clarify intent" in intake
     assert "normal_workflows_allowed" in intake
-    assert "按已有最大序号加一生成 ID" in intake
+    assert "随机生成 ID，并避开已有及本批 ID" in intake
     assert "英文 ASCII kebab-case slug" in intake
     assert "一句话、当前聊天上下文或外部文档" in intake
     assert "偏差建 Bug" in intake
@@ -338,7 +338,7 @@ def test_object_ids_must_be_cited_with_type_prefix() -> None:
     )
 
     assert "必须写完整 ID" in object_contract
-    assert "`prp-001`" in object_contract
+    assert "`prp-0001`" in object_contract
     assert "`bug-C4D5`" in object_contract
     assert "`jot-E6F7`" in object_contract
     assert "`adr-use-sqlite`" in object_contract

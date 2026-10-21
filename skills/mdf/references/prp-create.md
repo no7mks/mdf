@@ -146,8 +146,8 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 
 - 为 Proposal 提议并确认英文 ASCII kebab-case slug。
   - 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
-- 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>` 按已有最大序号加一
-  生成 ID 与规范化文件名。
+- 使用 `make-id --type proposal --repo "$REPO_ROOT" --slug <slug>` 生成随机 ID
+  与规范化文件名，避开已有 ID。
   - 以模板写入 `docs/proposals/`，初始状态为 `draft`。
 - 仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
 - 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`。

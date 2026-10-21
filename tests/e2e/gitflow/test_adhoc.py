@@ -49,7 +49,7 @@ def test_adhoc_start_keeps_primary_and_trunks_unchanged(python_exe, tmp_path):
 
 
 @pytest.mark.parametrize("extra,error", [
-    (["--proposal", "prp-001"], "invalid_adhoc"),
+    (["--proposal", "prp-0001"], "invalid_adhoc"),
     (["--bug", BUG_ID], "invalid_adhoc"),
     (["--version", "1.3.0"], "invalid_adhoc"),
     (["--objectives-file", "unused.md"], "invalid_adhoc"),
@@ -80,7 +80,7 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     objectives = root / "objectives.md"
     objectives.write_text(objectives.read_text().replace("[ ]", "[x]"))
     commit(work)
-    write_change(root, proposals="[prp-001]", change_kind=change_kind)
+    write_change(root, proposals="[prp-0001]", change_kind=change_kind)
     commit(work)
     from mdf_core.inspection.validate_changes import validate_changes
     findings = []
@@ -129,7 +129,7 @@ def test_adhoc_smart_persists_success_and_failure_without_smoke(python_exe, tmp_
 
 @pytest.mark.parametrize("patch", [
     {"work": ""}, {"work": None}, {"needs_design": True},
-    {"proposal": "prp-001"}, {"manual": True}, {"slug": "another-task"},
+    {"proposal": "prp-0001"}, {"manual": True}, {"slug": "another-task"},
 ])
 def test_adhoc_status_rejects_changed_identity_without_repairing_it(python_exe, tmp_path, patch):
     _, result = start_adhoc(python_exe, tmp_path)

@@ -152,7 +152,7 @@ def test_adrs_live_under_context(python_exe: str, tmp_path: Path):
         ("docs/user-guide/topic.md", 451),
         ("PROJECT.md", 101),
         ("docs/context/adr/use-sqlite.md", 301),
-        ("docs/proposals/prp-001-service-health.md", 501),
+        ("docs/proposals/prp-0001-service-health.md", 501),
     ],
 )
 def test_audit_enforces_size_limits_by_role(

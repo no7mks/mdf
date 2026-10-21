@@ -19,13 +19,13 @@ from _support import run
 from conftest import skill_dir
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mdf" / "valid_repo"
-PRP_NAME = "prp-001-service-health.html"
+PRP_NAME = "prp-0001-service-health.html"
 BUG_NAME = "bug-CD34-unreleased-timeout.md"
 BUG_ID = "bug-CD34"
-PRP_ID = "prp-001"
-PRP_ID_RE = re.compile(r"^prp-(?:00[1-9]|0[1-9]\d|[1-9]\d{2,})$")
-BUG_ID_RE = re.compile(r"^bug-[A-HJ-NP-Z2-9]{4}$")
-JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z2-9]{4}$")
+PRP_ID = "prp-0001"
+PRP_ID_RE = re.compile(r"^prp-[0-9]{2}(?:[0-9][A-HJ-NP-Z0-9]|[A-HJ-NP-Z][0-9])$")
+BUG_ID_RE = re.compile(r"^bug-[A-HJ-NP-Z0-9]{4}$")
+JOT_ID_RE = re.compile(r"^jot-[A-HJ-NP-Z0-9]{4}$")
 
 
 def write_release_objectives(
@@ -310,7 +310,7 @@ def write_unreleased_change(repo: Path, slug: str) -> None:
             "---\n"
             "change_kind: feature\n"
             f"source_branch: feature/{slug}\n"
-            f"proposals: [prp-001]\n"
+            f"proposals: [prp-0001]\n"
             "fixed: [bug-CD34]\n"
             "closed: []\n"
             "deferred: []\n"
@@ -348,7 +348,7 @@ def write_closeout_spec(path: Path, *, version: str, slug: str) -> None:
                 "release_date": "2026-07-29",
                 "closures": [
                     {
-                        "id": "prp-001",
+                        "id": "prp-0001",
                         "resolution": "released",
                         "released_in": version,
                     },

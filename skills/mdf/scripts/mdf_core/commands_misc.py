@@ -17,7 +17,7 @@ from mdf_core.workspace.gitutil import (
     require_planning,
     require_git_root,
 )
-from mdf_core.documents.proposals import next_prp_id
+from mdf_core.documents.proposals import new_prp_ids
 from mdf_core.foundation.progress import progress
 from mdf_core.workspace.init_repo import init_files, parse_baselines, write_files
 from mdf_core.workspace.gitflow import require_master_default
@@ -230,7 +230,6 @@ def command_validate(args: argparse.Namespace) -> None:
 
 
 def command_make_id(args: argparse.Namespace) -> None:
-    from mdf_core.foundation.textutil import format_prp_id
     slugs = [slugify(value) for value in args.slug]
     if len(set(slugs)) != len(slugs) or any(is_object_id_slug(value) for value in slugs):
         raise MDFError("slug 不得重复或与对象 ID 同形", code="slug_is_id")
@@ -240,8 +239,7 @@ def command_make_id(args: argparse.Namespace) -> None:
         repo = repo_path(args.repo)
         require_git_root(repo)
         require_planning(repo)
-        first = int(next_prp_id(repo).split("-")[1])
-        ids = [format_prp_id(first + offset) for offset in range(len(slugs))]
+        ids = new_prp_ids(repo, len(slugs))
     else:
         ids = [f"bug-{new_short_id()}" for _ in slugs]
     items = [{"type": args.type, "id": identifier, "filename": f"{identifier}-{slug}.md"}

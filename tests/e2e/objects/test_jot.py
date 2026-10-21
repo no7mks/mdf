@@ -13,7 +13,7 @@ def test_jots_allow_free_markdown_in_marked_entries(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    identifier = "jot-GH78"
+    identifier = "jot-GH01"
     (repo / "docs/JOTS.md").write_text(
         "# 随手记录\n\n"
         f"<!-- jot: {identifier} -->\n"

@@ -41,16 +41,18 @@ def is_object_id_slug(value: str) -> bool:
     return OBJECT_ID_SLUG_RE.fullmatch(value) is not None
 
 
-def format_prp_id(number: int) -> str:
-    if number < 1:
-        raise MDFError("PRP 序号必须从 1 起", code="invalid_prp_id")
-    body = f"{number:03d}" if number <= 999 else str(number)
-    return f"prp-{body}"
-
-
 _ID_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
-_ID_DIGITS = "23456789"
+_ID_DIGITS = "0123456789"
 _ID_ALPHABET = _ID_LETTERS + _ID_DIGITS
+
+
+def new_prp_id() -> str:
+    """生成四位随机 PRP ID：前两位数字，后两位最多一个字母。"""
+    while True:
+        suffix = "".join(secrets.choice(_ID_ALPHABET) for _ in range(2))
+        if not suffix.isalpha():
+            prefix = "".join(secrets.choice(_ID_DIGITS) for _ in range(2))
+            return f"prp-{prefix}{suffix}"
 
 
 def new_short_id() -> str:

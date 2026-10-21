@@ -162,7 +162,7 @@ def test_fix_change_rejects_other_sources(tmp_path: Path, source_branch, code):
 def test_adhoc_fix_preserves_slug_and_proposal_constraints(tmp_path: Path):
     path = tmp_path / "changes/unreleased/other-slug/CHANGE.md"
     _write_change(path, change_kind="fix", source_branch="adhoc/small-correction")
-    path.write_text(path.read_text().replace("proposals: []", "proposals: [prp-001]"))
+    path.write_text(path.read_text().replace("proposals: []", "proposals: [prp-0001]"))
 
     findings = _findings_for(tmp_path, path, expected_slug="other-slug")
 

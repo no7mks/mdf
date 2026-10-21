@@ -133,7 +133,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 对照 ready PRP 与 `assets/templates/objectives.md`。
   - 使用内部 clarify intent，议题固定为「本次 feature 交付的目标、非目标、约束、
     是否需要 design，与可验证验收」。
-  - objectives 用 `[prp-001](../../../docs/proposals/<filename>)` 引用 PRP。
+  - objectives 用 `[prp-0001](../../../docs/proposals/<filename>)` 引用 PRP。
   - PRP 不足时停止，提示 `$mdf prp review`。
 - release：
   - 对照 child Change 与 `assets/templates/release-objectives.md`。

@@ -186,7 +186,7 @@ def test_doctor_allows_in_progress_unreleased_delivery_without_change(
             "--kind",
             "feature",
             "--proposal",
-            "prp-001",
+            "prp-0001",
             "--objectives-file",
             str(obj),
         )

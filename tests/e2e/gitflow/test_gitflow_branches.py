@@ -27,7 +27,7 @@ def test_start_allows_local_base_ahead_of_origin(python_exe: str, tmp_path: Path
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     ))
     assert result["base"] == "develop"
     assert result["pushed"] is False
@@ -42,7 +42,7 @@ def test_start_rejects_origin_commits_missing_locally(
     if kind == "feature":
         obj = tmp_path / "objectives.md"
         obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
-        identifier = ["--proposal", "prp-001", "--objectives-file", str(obj)]
+        identifier = ["--proposal", "prp-0001", "--objectives-file", str(obj)]
         branch = "feature/service-health"
     else:
         identifier = [
@@ -70,7 +70,7 @@ def test_start_rejects_diverged_base(python_exe: str, tmp_path: Path):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     failed = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     )
     assert _error(failed)["error"] == "remote_ahead"
 
@@ -82,7 +82,7 @@ def test_start_does_not_require_origin(
     obj = tmp_path / "objectives.md"
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(python_exe, "start", "--repo", str(repo),
-                         "--kind", "feature", "--proposal", "prp-001",
+                         "--kind", "feature", "--proposal", "prp-0001",
                          "--objectives-file", str(obj)))
     work = Path(result["worktree"])
     assert result["pushed"] is False
@@ -118,7 +118,7 @@ def test_start_uses_local_base_without_upstream(
         obj = tmp_path / "objectives.md"
         obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
         identifier = [
-            "--proposal", "prp-001", "--objectives-file", str(obj),
+            "--proposal", "prp-0001", "--objectives-file", str(obj),
         ]
     elif kind == "bugfix":
         identifier = [
@@ -248,7 +248,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
 
 def _add_ready_prp(repo: Path, identifier: str, slug: str) -> None:
     template = (repo / "docs/proposals" / PRP_NAME).read_text()
-    text = template.replace("prp-001", identifier)
+    text = template.replace("prp-0001", identifier)
     (repo / "docs/proposals" / f"{identifier}-{slug}.html").write_text(text)
 
 
@@ -257,13 +257,13 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_detaches_it(
 ):
     repo, _remote = start_repo(tmp_path)
     git(repo, "checkout", "develop")
-    _add_ready_prp(repo, "prp-003", "parallel")
+    _add_ready_prp(repo, "prp-0003", "parallel")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs(prp): 增加可并行提案")
     first = tmp_path / "first.md"
     first.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     first_start = payload(mdf(python_exe, "start", "--repo", str(repo),
-                 "--kind", "feature", "--proposal", "prp-001",
+                 "--kind", "feature", "--proposal", "prp-0001",
                  "--objectives-file", str(first)))
     health = Path(first_start["worktree"])
     assert health != repo
@@ -275,7 +275,7 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_detaches_it(
     second = tmp_path / "second.md"
     second.write_text("# 目标\n\n- needs_design: yes\n\n交付并行接口。\n")
     created = payload(mdf(python_exe, "start", "--repo", str(repo),
-                           "--kind", "feature", "--proposal", "prp-003",
+                           "--kind", "feature", "--proposal", "prp-0003",
                            "--objectives-file", str(second)))
     work = Path(created["worktree"])
     assert created["branch"] == "feature/parallel"
@@ -319,13 +319,13 @@ def test_start_feature_rejects_name_and_derives_slug_from_prp(
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     rejected = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--name", "delivery", "--proposal", "prp-001",
+        "--name", "delivery", "--proposal", "prp-0001",
         "--objectives-file", str(obj),
     )
     assert "unexpected_name" in rejected.stderr
     created = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     ))
     assert created["branch"] == "feature/service-health"
     assert created["roles"]["qa"][0]["branch"] == "qa/feature/service-health"
@@ -344,7 +344,7 @@ def test_start_rewrites_repo_root_style_objectives_links(
     )
     data = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     ))
     work = Path(data["worktree"])
     text = (work / "changes/unreleased/service-health/objectives.md").read_text()
@@ -370,7 +370,7 @@ def test_start_bugfix_uses_bug_id_and_rejects_name(
     assert "missing_bug" in missing.stderr
     wrong = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "bugfix",
-        "--bug", "prp-001", "--objectives-file", str(obj),
+        "--bug", "prp-0001", "--objectives-file", str(obj),
     )
     assert "missing_bug" in wrong.stderr
     created = payload(mdf(

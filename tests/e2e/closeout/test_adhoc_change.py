@@ -10,7 +10,7 @@ def test_release_archives_adhoc_child_and_keeps_its_kind(python_exe, tmp_path):
     root.mkdir()
     text = source.read_text().replace("change_kind: feature", "change_kind: adhoc")
     text = text.replace("source_branch: feature/service-health", "source_branch: adhoc/update-docs")
-    text = text.replace("proposals: [prp-001]", "proposals: []").replace("fixed: [bug-CD34]", "fixed: []")
+    text = text.replace("proposals: [prp-0001]", "proposals: []").replace("fixed: [bug-CD34]", "fixed: []")
     (root / "CHANGE.md").write_text(text)
     commit(repo)
     seed_verify_branch(python_exe, repo)

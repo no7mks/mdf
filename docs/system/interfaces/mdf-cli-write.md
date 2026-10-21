@@ -85,9 +85,9 @@ full validate。后校验失败时保留现场，供人工检查。
 本命令在 planning 工作区转换未开工 active PRP；不代替 Agent 取得用户确认。
 
 ```bash
-python3 skills/mdf/scripts/mdf.py prp-format preview --repo /path/to/repository --proposal prp-001
-python3 skills/mdf/scripts/mdf.py prp-format ready --repo /path/to/repository --proposal prp-001 --confirmed
-python3 skills/mdf/scripts/mdf.py prp-format draft --repo /path/to/repository --proposal prp-001
+python3 skills/mdf/scripts/mdf.py prp-format preview --repo /path/to/repository --proposal prp-0001
+python3 skills/mdf/scripts/mdf.py prp-format ready --repo /path/to/repository --proposal prp-0001 --confirmed
+python3 skills/mdf/scripts/mdf.py prp-format draft --repo /path/to/repository --proposal prp-0001
 ```
 
 | action | 输入 | 结果 |
@@ -137,7 +137,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 ```bash
 python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
-  --kind feature --proposal prp-001 --objectives-file /tmp/objectives.md
+  --kind feature --proposal prp-0001 --objectives-file /tmp/objectives.md
 ```
 
 `--kind` 为 `feature`、`bugfix`、`release`、`hotfix` 或 `adhoc`：

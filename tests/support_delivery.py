@@ -89,7 +89,7 @@ def setup_delivery(python_exe, tmp_path):
         "# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n"
     )
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
-                       "--proposal", "prp-001", "--objectives-file", str(obj)))
+                       "--proposal", "prp-0001", "--objectives-file", str(obj)))
     work = Path(data["worktree"])
     primary = git_primary(work)
     assert work == (

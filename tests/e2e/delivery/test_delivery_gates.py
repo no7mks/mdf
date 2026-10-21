@@ -223,7 +223,7 @@ def test_start_requires_needs_design(python_exe, tmp_path):
     obj.write_text("# 目标\n\n没有 needs_design 字段。\n")
     result = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     )
     assert result.returncode != 0
     assert "missing_needs_design" in result.stderr
@@ -247,7 +247,7 @@ def test_roster_requires_needs_design_yes(python_exe, tmp_path):
     obj.write_text("# 目标\n\n- needs_design: no\n\n实现。\n")
     result = mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     )
     assert result.returncode != 0
     assert "invalid_needs_design" in result.stderr
@@ -261,7 +261,7 @@ def test_record_design_rejects_repo_root_style_links(
     obj.write_text("# 目标\n\n- needs_design: yes\n\n实现健康状态接口。\n")
     data = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
     ))
     work = Path(data["worktree"])
     root = work / "changes/unreleased/service-health"

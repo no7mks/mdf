@@ -134,9 +134,9 @@ def test_validation_rejects_id_shaped_filename_slug(
 ):
     repo = copy_fixture(tmp_path)
     source = repo / "docs/proposals" / PRP_NAME
-    shaped = repo / "docs/proposals" / "prp-003-prp-001.md"
+    shaped = repo / "docs/proposals" / "prp-0003-prp-0001.md"
     shaped.write_text(
-        source.read_text(encoding="utf-8").replace("prp-001", "prp-003"),
+        source.read_text(encoding="utf-8").replace("prp-0001", "prp-0003"),
         encoding="utf-8",
     )
     init_git(repo)
@@ -168,12 +168,12 @@ def test_validation_allows_archived_slug_reuse(
     repo = copy_fixture(tmp_path)
     source = repo / "docs/proposals" / PRP_NAME
     archived = (
-        repo / "docs/proposals" / "archive" / "1.2" / "prp-003-service-health.html"
+        repo / "docs/proposals" / "archive" / "1.2" / "prp-0003-service-health.html"
     )
     archived.parent.mkdir(parents=True)
     archived.write_text(
         source.read_text(encoding="utf-8").replace(
-            "id: prp-001", "id: prp-003"
+            "id: prp-0001", "id: prp-0003"
         ).replace(
             "status: ready\ndepends_on: []",
             "status: released\ndepends_on: []\nreleased_in: 1.2.0",

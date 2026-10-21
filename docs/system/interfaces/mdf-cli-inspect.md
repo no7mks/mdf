@@ -211,13 +211,14 @@ python3 skills/mdf/scripts/mdf.py make-id \
 
 - `--type` 只能是 `proposal` 或 `bug`。
 - `--slug` 必须为 ASCII kebab-case，且不得与对象 ID 同形。
-- Proposal ID 为 `prp-` 加自增序号：1–999 固定三位（`prp-001`），1000 起不再补零（`prp-1000`）。
+- Proposal ID 为 `prp-` 加四位随机字符，前两位为数字，后两位最多一个字母（排除 `I`、`O`）。
   - `make-id --type proposal` 必须提供 `--repo`。
-  - 在 `planning` 上扫描 `docs/proposals/`（含 archive）已有文件名，取最大序号加一。
+  - 数字允许 `0` 至 `9`；在 `planning` 上生成，避开 active、archive 及本批已有 ID。
+  - 只读生成、不预占 ID；跨 checkout 的重复由合入后的唯一性校验发现。
 - Bug 与 Jot 仍为类型前缀加四位字符。
-  - 每一位从大写英文字母（排除 `I`、`O`）与数字 `2` 至 `9` 中选择。
+  - 每一位从大写英文字母（排除 `I`、`O`）与数字 `0` 至 `9` 中选择。
   - 新生成的四位字符至少包含一个字母和一个数字。
-- 完整形式如 `prp-001`、`bug-C4D5`、`jot-E6F7`。
+- 完整形式如 `prp-0001`、`bug-C4D5`、`jot-E6F7`。
   - ❌ 沟通时不得省略前缀或只写序号/短码。
 
 ## `make-jot-id`

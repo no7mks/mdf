@@ -6,7 +6,7 @@ from mdf_test_support import *  # noqa: F403
 def add_prp(repo, identifier, deps=(), status="ready", milestone=None, slug=None):
     template = proposal_markdown(repo / "docs/proposals" / PRP_NAME)
     depends_on = json.dumps(list(deps), ensure_ascii=False)
-    text = template.replace("prp-001", identifier).replace(
+    text = template.replace("prp-0001", identifier).replace(
         "depends_on: []", f"depends_on: {depends_on}"
     )
     text = text.replace("status: ready", f"status: {status}")

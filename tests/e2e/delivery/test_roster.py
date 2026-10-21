@@ -22,7 +22,7 @@ def test_start_feature_zero_roster_has_no_role_trees(python_exe, tmp_path):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "0",
     ))
     assert result["roster"] == frozen(0, 0, 2)
@@ -41,7 +41,7 @@ def test_start_feature_two_devs_creates_indexed_branches(python_exe, tmp_path):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "2",
     ))
     assert result["roster"] == frozen(1, 2, 2)
@@ -70,7 +70,7 @@ def test_start_named_roster_expands_and_overlays(python_exe, tmp_path):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     coop = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
         "--roster", "coop-pair",
     ))
     assert coop["roster"] == frozen(
@@ -85,7 +85,7 @@ def test_start_named_roster_expands_and_overlays(python_exe, tmp_path):
     obj2.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     mixed = payload(mdf(
         python_exe, "start", "--repo", str(repo2), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj2),
+        "--proposal", "prp-0001", "--objectives-file", str(obj2),
         "--roster", "competing-pair", "--qa", "3",
     ))
     assert mixed["roster"] == frozen(3, 2, 3)
@@ -98,7 +98,7 @@ def test_start_freezes_strategy_and_models(python_exe, tmp_path):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     result = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
         "--qa-strategy", "partition", "--dev-strategy", "partition",
         "--review-strategy", "partition",
         "--write-tests-model", "composer",
@@ -123,7 +123,7 @@ def test_write_tests_on_owner_when_roster_zero(python_exe, tmp_path):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
         "--qa", "0", "--dev", "0",
     ))
     work = Path(started["worktree"])
@@ -154,7 +154,7 @@ def test_integrate_two_devs_merges_winner_and_deletes_loser(
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj),
+        "--proposal", "prp-0001", "--objectives-file", str(obj),
         "--qa", "1", "--dev", "2",
     ))
     owner = Path(started["worktree"])
@@ -203,7 +203,7 @@ def _design_feature(python_exe, tmp_path, *start_args):
     obj.write_text("# 目标\n\n- needs_design: yes\n\n交付健康接口。\n")
     started = payload(mdf(
         python_exe, "start", "--repo", str(repo), "--kind", "feature",
-        "--proposal", "prp-001", "--objectives-file", str(obj), *start_args,
+        "--proposal", "prp-0001", "--objectives-file", str(obj), *start_args,
     ))
     owner = Path(started["worktree"])
     root = owner / "changes/unreleased/service-health"

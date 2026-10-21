@@ -49,7 +49,7 @@ def test_manual_feature_start_and_finish_without_changing_prp(python_exe, tmp_pa
 
 
 @pytest.mark.parametrize("extra,error", [
-    (["--proposal", "prp-001"], "invalid_manual"),
+    (["--proposal", "prp-0001"], "invalid_manual"),
     (["--reviewers", "2"], "invalid_manual"),
     (["--roster", "min-tdd"], "invalid_manual"),
     (["--name", "bad/name"], "invalid_slug"),

@@ -54,7 +54,7 @@ def test_deliver_continues_within_scope_and_preserves_evidence():
     assert "$mdf deliver" in help_text
     assert "$mdf deliver --stop-at close-out" in help_text
     assert "$mdf deliver --yolo" in help_text
-    assert "$mdf deliver prp-001" in help_text
+    assert "$mdf deliver prp-0001" in help_text
 
 
 def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():

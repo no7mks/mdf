@@ -202,7 +202,7 @@ findings 后停止。
   2. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`
      （分支 `planning`），重新解析目标根。
   3. 一次调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <a> --slug <b> …`。
-     它为全部新 Proposal 按已有最大序号加一生成 ID。
+     它为全部新 Proposal 随机生成 ID，并避开已有及本批 ID。
      - 多项时从返回的 `items` 取 ID 与 filename；仅一项时取顶层 `id` 与 `filename`。
      - ❌ 不得逐项取 ID 后再写入，也不得先写占位对象。
   4. 把确认清单中的 `new:<slug>` 替换为对应 ID，以模板写入 `docs/proposals/`。

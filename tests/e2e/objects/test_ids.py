@@ -9,7 +9,7 @@ from support_upgrade import *  # noqa: F403
 _ID_LETTERS = set("ABCDEFGHJKLMNPQRSTUVWXYZ")
 
 
-_ID_DIGITS = set("23456789")
+_ID_DIGITS = set("0123456789")
 
 
 def develop_repo(tmp_path: Path) -> Path:
@@ -67,7 +67,7 @@ def test_make_id_proposal_requires_planning(python_exe: str, tmp_path: Path):
 
 def test_make_id_rejects_object_id_slug(python_exe: str):
     result = mdf(
-        python_exe, "make-id", "--type", "proposal", "--slug", "prp-001"
+        python_exe, "make-id", "--type", "proposal", "--slug", "prp-0001"
     )
     assert result.returncode != 0
     assert "slug_is_id" in result.stderr
@@ -78,7 +78,7 @@ def test_make_id_rejects_object_id_slug(python_exe: str):
     assert "slug_is_id" in result.stderr
 
 
-def test_make_id_proposal_increments_from_existing(
+def test_make_id_proposal_avoids_existing(
     python_exe: str, tmp_path: Path
 ):
     repo = develop_repo(tmp_path)
@@ -95,11 +95,12 @@ def test_make_id_proposal_increments_from_existing(
             "mixed-id",
         )
     )
-    assert data["id"] == "prp-002"
-    assert data["filename"] == "prp-002-mixed-id.md"
+    assert PRP_ID_RE.fullmatch(data["id"])
+    assert data["id"] != PRP_ID
+    assert data["filename"] == f"{data['id']}-mixed-id.md"
 
 
-def test_make_id_proposal_starts_at_001_when_empty(
+def test_make_id_proposal_generates_when_empty(
     python_exe: str, tmp_path: Path
 ):
     repo = develop_repo(tmp_path)
@@ -117,35 +118,8 @@ def test_make_id_proposal_starts_at_001_when_empty(
             "first-item",
         )
     )
-    assert data["id"] == "prp-001"
-    assert data["filename"] == "prp-001-first-item.md"
-
-
-def test_make_id_proposal_drops_padding_after_999(
-    python_exe: str, tmp_path: Path
-):
-    repo = copy_fixture(tmp_path)
-    template = (repo / "docs/proposals" / PRP_NAME).read_text()
-    (repo / "docs/proposals" / "prp-999-ceiling.md").write_text(
-        template.replace("prp-001", "prp-999")
-    )
-    init_git(repo)
-    checkout_develop(repo)
-    work = planning_worktree(python_exe, repo)
-    data = payload(
-        mdf(
-            python_exe,
-            "make-id",
-            "--type",
-            "proposal",
-            "--repo",
-            str(work),
-            "--slug",
-            "overflow",
-        )
-    )
-    assert data["id"] == "prp-1000"
-    assert data["filename"] == "prp-1000-overflow.md"
+    assert PRP_ID_RE.fullmatch(data["id"])
+    assert data["filename"] == f"{data['id']}-first-item.md"
 
 
 def test_make_id_bug_output_includes_a_letter_and_a_digit(python_exe: str):
@@ -165,24 +139,24 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
     load_core_module()
     from mdf_core.foundation.constants import JOT_ID_RE, OBJECT_ID_RE, PRP_ID_RE
 
-    assert OBJECT_ID_RE.fullmatch("prp-001")
+    assert OBJECT_ID_RE.fullmatch("prp-0001")
     assert OBJECT_ID_RE.fullmatch("prp-1000")
-    assert OBJECT_ID_RE.fullmatch("bug-2345")
+    assert OBJECT_ID_RE.fullmatch("bug-0101")
     assert OBJECT_ID_RE.fullmatch("adr-use-sqlite")
     assert OBJECT_ID_RE.fullmatch("adr-0001") is None
     assert JOT_ID_RE.fullmatch("jot-AAAA")
-    assert JOT_ID_RE.fullmatch("jot-2222")
+    assert JOT_ID_RE.fullmatch("jot-0101")
     assert PRP_ID_RE.fullmatch("prp-ABCD") is None
     assert OBJECT_ID_RE.fullmatch("prp-ABCD") is None
 
     repo = copy_fixture(tmp_path)
     proposal = (repo / "docs/proposals" / PRP_NAME).read_text()
-    (repo / "docs/proposals" / "prp-010-letters.html").write_text(
-        proposal.replace("prp-001", "prp-010")
+    (repo / "docs/proposals" / "prp-0010-letters.html").write_text(
+        proposal.replace("prp-0001", "prp-0010")
     )
     bug = (repo / "docs/bugs" / BUG_NAME).read_text()
-    (repo / "docs/bugs" / "bug-2345-digits.md").write_text(
-        bug.replace("bug-CD34", "bug-2345")
+    (repo / "docs/bugs" / "bug-0101-digits.md").write_text(
+        bug.replace("bug-CD34", "bug-0101")
     )
     init_git(repo)
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
@@ -199,7 +173,7 @@ def test_make_id_bug_uses_the_type_specific_format_and_normalized_slug(
     assert data["filename"] == f"{data['id']}-audit-ready-42.md"
 
 
-def test_make_id_proposal_uses_sequential_id_and_normalized_slug(
+def test_make_id_proposal_uses_random_id_and_normalized_slug(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -218,8 +192,9 @@ def test_make_id_proposal_uses_sequential_id_and_normalized_slug(
             "  Audit Ready 42!  ",
         )
     )
-    assert data["id"] == "prp-002"
-    assert data["filename"] == "prp-002-audit-ready-42.md"
+    assert PRP_ID_RE.fullmatch(data["id"])
+    assert data["id"] != PRP_ID
+    assert data["filename"] == f"{data['id']}-audit-ready-42.md"
 
 
 def test_new_id_alias_no_longer_exists(python_exe: str):
@@ -237,12 +212,15 @@ def test_batch_prp_ids_do_not_write_or_repeat(python_exe, tmp_path):
     head = source_head(work)
     data = payload(mdf(python_exe, "make-id", "--type", "proposal", "--repo", str(work),
                        "--slug", "part-one", "--slug", "part-two"))
-    assert [item["id"] for item in data["items"]] == ["prp-002", "prp-003"]
-    assert data["items"][1]["filename"] == "prp-003-part-two.md"
+    identifiers = [item["id"] for item in data["items"]]
+    assert len(set(identifiers)) == 2
+    assert PRP_ID not in identifiers
+    assert all(PRP_ID_RE.fullmatch(value) for value in identifiers)
+    assert data["items"][1]["filename"] == f"{identifiers[1]}-part-two.md"
     assert source_head(work) == head
     assert not git(work, "status", "--porcelain").stdout
     body = proposal_markdown(work / "docs/proposals" / PRP_NAME).split("---", 2)[2]
-    spec = {"source": "prp-001", "children": [
+    spec = {"source": "prp-0001", "children": [
         {"id": item["id"], "filename": item["filename"], "depends_on": [], "body": body}
         for item in data["items"]], "downstream": {}, "rationale": "用户确认分成两项"}
     path = tmp_path / "split.json"

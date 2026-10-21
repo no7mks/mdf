@@ -22,10 +22,10 @@ def test_confirmed_html_is_unique_and_rewrites_links_and_can_return_to_draft(pyt
         "   - 采用稳定接口。\n2. 核对实际结果。\n\n"
         "| 方案 | 理由 |\n| --- | --- |\n| 本地 | 离线运行 |\n\n"
         "```python\nprint('<script>')\n```\n\n"
-        "[当前稿](prp-001-service-health.md#约束与取舍)\n"
+        "[当前稿](prp-0001-service-health.md#约束与取舍)\n"
     ))
     link = work / "docs/README.md"
-    link.write_text(link.read_text() + "\n[计划](proposals/prp-001-service-health.md)\n")
+    link.write_text(link.read_text() + "\n[计划](proposals/prp-0001-service-health.md)\n")
     preview = payload(format_prp(python_exe, work, "preview"))
     preview_path = work / preview["path"]
     html = preview_path.read_text()
@@ -38,8 +38,8 @@ def test_confirmed_html_is_unique_and_rewrites_links_and_can_return_to_draft(pyt
     payload(format_prp(python_exe, work, "ready", "--confirmed"))
     target = draft.with_suffix(".html")
     assert target.is_file() and not draft.exists() and not preview_path.exists()
-    assert "proposals/prp-001-service-health.html" in link.read_text()
-    assert 'href="prp-001-service-health.html#约束与取舍"' in target.read_text()
+    assert "proposals/prp-0001-service-health.html" in link.read_text()
+    assert 'href="prp-0001-service-health.html#约束与取舍"' in target.read_text()
     data = payload(mdf(python_exe, "list", "--repo", str(work), "--type", "proposal"))
     assert data["objects"][0]["status"] == "ready"
     assert data["objects"][0]["path"].endswith(".html")
@@ -50,7 +50,7 @@ def test_confirmed_html_is_unique_and_rewrites_links_and_can_return_to_draft(pyt
     assert "## 约束与取舍" in body and "1. 保留 <边界> & 错误语义。" in body
     assert "   - 采用稳定接口。" in body and "| 本地 | 离线运行 |" in body
     assert "print('<script>')" in body
-    assert "proposals/prp-001-service-health.md" in link.read_text()
+    assert "proposals/prp-0001-service-health.md" in link.read_text()
 
 
 def test_changed_draft_requires_new_html_confirmation(python_exe, tmp_path):

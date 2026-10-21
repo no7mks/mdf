@@ -140,7 +140,7 @@ $mdf tree
 $mdf prp tree
 $mdf tree --depth 2
 $mdf deliver
-$mdf deliver prp-001
+$mdf deliver prp-0001
 $mdf deliver bug-CD34 --until code-review
 $mdf deliver --stop-at close-out
 $mdf deliver --yolo
