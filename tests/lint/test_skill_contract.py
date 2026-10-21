@@ -41,7 +41,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "bug create",
         "prp create",
         "prp review",
-        "archive", "close-out", "finish", "squash [--dry-run]",
+        "archive", "close-out", "squash [--dry-run]",
         "fact audit",
         "prettify",
         "fact update",
@@ -61,6 +61,8 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     commands = [command for route in routes for command in route.split(" / ")]
     assert len(commands) == len(expected_commands)
     assert set(commands) == set(expected_commands)
+    for text in (entry, intent("help"), intent("deliver-policy"), intent("delivery-contract")):
+        assert not re.search(r"(?<![\w/-])finish(?![\w/-])", text)
     assert "裸 `$mdf`" in entry
     assert "references/intake.md" in entry
     assert "references/next.md" in entry
@@ -240,7 +242,7 @@ def test_repository_contract_defines_static_core_terms() -> None:
     terms = contract.split("## 固定布局", maxsplit=1)[0]
     assert "`audit`" not in terms
     assert "`init`" not in terms
-    assert "`finish`" not in terms
+    assert "`close-out`" not in terms
     assert "closeout 时执行" not in terms
     assert "`全量审阅`" not in contract
     assert "`范围审阅`" not in contract
@@ -360,7 +362,7 @@ def test_unreleased_layout_allows_in_progress_delivery_without_change() -> None:
     assert "不必先有 CHANGE.md" in contract
     assert "close-out 在同一目录补齐 CHANGE.md" in delivery
     assert "CHANGE.md 出现前即可保存交付身份与材料" in objects
-    assert "finish 时" not in objects
+    assert "close-out 时" not in objects
 
 
 def test_contracts_do_not_duplicate_intent_steps() -> None:
@@ -372,7 +374,7 @@ def test_contracts_do_not_duplicate_intent_steps() -> None:
     assert not (skill / "references" / "intents.md").exists()
     assert "$mdf " not in object_contract
     assert "release-closeout" not in object_contract
-    assert "finish 时" not in object_contract
+    assert "close-out 时" not in object_contract
 
 
 def test_audit_is_reused_without_delivery_logic() -> None:
@@ -402,7 +404,7 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "交付前检查" in close_out
     assert "不内嵌 verify branch" in close_out or "不内嵌、不委托 verify" in close_out
     assert "release 为 `--scope full`" not in close_out
-    assert "finish 的 release 为 `full`" not in audit
+    assert "close-out 的 release 为 `full`" not in audit
     assert "`--base` 为上一正式发布" in audit
     assert "`agents.project_content`" in audit
     assert "核心模块表" in audit

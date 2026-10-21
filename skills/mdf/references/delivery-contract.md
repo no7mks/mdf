@@ -15,7 +15,7 @@
 适用事件包括：身份、主线、roster、底座、并行、补覆盖、验证或历史整理事件。仅读取条款不触发其中描述的其他 intent。
 
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
-`$mdf finish` 同义 close-out。`$mdf integrate` 只读「补覆盖」。规则持续适用。
+`$mdf integrate` 只读「补覆盖」。规则持续适用。
 人工 feature 先读取并执行 [专用契约](manual-feature.md)，优先于下文普通主线。
 adhoc 先读取 [专用契约](adhoc.md)，使用其六项账本、smart report 与本地收口规则。
 ### 身份与材料
@@ -123,7 +123,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
   - fact：verify branch 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook。
     仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
-- **close-out**（`$mdf finish` 同义）：材料与 Gitflow 收口。
+- **close-out**：材料与 Gitflow 收口。
   - PR mode 的提交与恢复见 [PR Close-out](pr-close-out.md)；创建 PR/MR 不代表完成。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。

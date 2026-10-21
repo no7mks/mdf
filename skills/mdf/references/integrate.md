@@ -392,7 +392,7 @@ collab-mode 在步骤 1 委托 [专用契约](collab-mode.md) 并返回；步骤
 - 独立调用无交付 objectives 时，仅报告本侧收口结果。
 - 上述提交成功或无需提交后，才把 Goal 置 complete。❌ 不以 Goal 单独代替该勾选。
 
-❌ 两侧都不执行 `$mdf finish`，等用户明确要求 finish。
+❌ 两侧都不执行 `$mdf close-out`，等用户明确要求 close-out。
 
 验收：主导方持有发送成功的结果；被动方持有取到的报告消息；objectives integrate 已勾。
 

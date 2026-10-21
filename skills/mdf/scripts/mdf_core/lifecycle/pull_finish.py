@@ -124,7 +124,7 @@ def finish(repo, source, settings):
         git(repo, "push", "--no-follow-tags", "origin", f"{state['head']}:refs/heads/{source}")
         if pull is None:
             pull = forge.create(source, target, f"chore(delivery): 合入 {source}",
-                                "MDF 交付；请使用 merge commit。合并后再次执行 $mdf finish 续办。")
+                                "MDF 交付；请使用 merge commit。合并后再次执行 $mdf close-out 续办。")
         else:
             pull = forge.get(pull["id"])
     if pull["source"] != source or pull["target"] != target or pull["head"] != state["head"]:

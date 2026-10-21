@@ -23,7 +23,7 @@
 - 默认 `--until close-out`：完成此前阶段后结束本次调用，不准备 close-out 材料、不执行其集成或 Gitflow。
 - `--yolo` 未显式指定 until 时无截止点；显式 until 仍生效，包括 `--yolo --until close-out`。
 - 缺值、未知 intent、重复指定（含混用两个别名）均停止并说明参数错误；写入或 start 之前完成解析。
-- `finish` 归一为 `close-out`；多词 intent 须作为单个值传入，如 `--until "fact audit"`。
+- 多词 intent 须作为单个值传入，如 `--until "fact audit"`。
 
 | 交付路径 | 可用截止点与调用关系 |
 | --- | --- |

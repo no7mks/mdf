@@ -151,4 +151,4 @@ start Agent 完成本仓步骤 5 后，将以下材料交给用户或接手 Agen
 
 - 从执行联调起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
 - code-review 仍须等待双端验收、冻结与 integrate 勾选，各仓使用自己的审查基线。
-- 每仓随后执行 verify branch → fact audit → close-out；独立 integrate 不自行执行 finish。
+- 每仓随后执行 verify branch → fact audit → close-out；独立 integrate 不自行执行 close-out。

@@ -1,7 +1,7 @@
 # Fix
 
 在当前 checkout 修复单个已有 Bug：澄清、确认有效红灯、修复并验证、标为
-`fixed`。不切分支、不 start、不走交付主线、不 code-review、不 finish。
+`fixed`。不切分支、不 start、不走交付主线、不 code-review、不 close-out。
 
 ## 决策树
 

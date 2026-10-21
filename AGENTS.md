@@ -18,5 +18,5 @@
 - 遵守当前 MDF 契约，不得引入旧版兼容、迁移、识别或运行时分支。
 - 本仓库自身只使用 `master` 一个 Git 分支，直接在 `master` 上开发与提交。
   - ❌ 不创建 `develop`、feature/bugfix/release/hotfix 或其他交付分支。
-  - ❌ 不对本仓执行 `$mdf start` / `$mdf finish` 的 Gitflow。
+  - ❌ 不对本仓执行 `$mdf start` / `$mdf close-out` 的 Gitflow。
 - 未经用户明确要求，不得删除目标仓库的 `.mdf/` 或 `docs/` 产出物。

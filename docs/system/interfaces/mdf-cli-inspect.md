@@ -138,7 +138,7 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 - 实现范围是起点以来改动的实现文件。
 - 文档范围是改动到的事实页与 evidence 引用这些实现的事实页。
 - 结果含 `base`。
-- `--base` 可以是 commit 或 tag；finish release 传入上一正式发布：
+- `--base` 可以是 commit 或 tag；close-out release 传入上一正式发布：
 
 ```bash
 python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \

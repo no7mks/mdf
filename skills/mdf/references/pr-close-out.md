@@ -67,12 +67,12 @@ closeout:
 
 ### 生命周期
 
-本节按平台实际状态推进 finish，不按退出码或 checklist 猜测完成。
+本节按平台实际状态推进 close-out，不按退出码或 checklist 猜测完成。
 
 | 状态 | 操作 |
 | --- | --- |
 | 尚无 PR/MR | `finish-gitflow --repo <owner>` 提交候选状态、push 源提交、创建或查回复用 |
-| open | 返回 waiting_for_merge；保留分支与 worktree，用户合并后再执行 finish |
+| open | 返回 waiting_for_merge；保留分支与 worktree，用户合并后再执行 close-out |
 | 源分支前进 | feature/bugfix/adhoc 先完成受影响的主链检查，再复用 PR/MR；不改写历史 |
 | closed，未 merged | 返回 closed_without_merge；不清理、不宣称完成 |
 | merged | 核 source/target/head、双亲 merge commit、远端第一父链，然后续办 |
@@ -81,7 +81,7 @@ closeout:
 
 - 从主工作区恢复：`finish-gitflow --repo <主路径> --source <原分支>`，支持所有交付 kind。
 - 返回 completed=false 是正常等待；调用方须读取 status，不得因退出 0 就结束 deliver Goal。
-- PR/MR 由用户或项目 CI 合并；finish 不批准或合并平台 PR/MR。
+- PR/MR 由用户或项目 CI 合并；close-out 不批准或合并平台 PR/MR。
 - 已收口 release/hotfix 的源提交前进时报告 publish_state_changed，保留版本目录。
 - 首次 push 或创建结果丢失，重入先查平台，禁止重复创建或覆盖记录。
 - tag、远端、来源或目标不符时停止；不 reset、不覆盖 tag、不清理他人现场。
@@ -107,9 +107,9 @@ closeout:
 
 - 不跟随后来前进的 master HEAD；本地 master/develop 只做同名 ff 同步，分歧时保留现场。
 - tag 已发布、回合未完成时返回 published_pending_backmerge。
-- 冲突保留在返回的 backmerge.worktree；解决、提交后再次 finish，转为回合 PR/MR。
-- 平台拒绝直接 push develop 时创建回合 PR/MR；用户合并后再次 finish。
-- 等待期间 develop 前进，可在回合 worktree 合入、解冲突并追加提交；finish 非 force push 后复用原 PR/MR。
+- 冲突保留在返回的 backmerge.worktree；解决、提交后再次 close-out，转为回合 PR/MR。
+- 平台拒绝直接 push develop 时创建回合 PR/MR；用户合并后再次 close-out。
+- 等待期间 develop 前进，可在回合 worktree 合入、解冲突并追加提交；close-out 非 force push 后复用原 PR/MR。
 - 新 head 必须保留记录的历史和固定 M；改写历史仍停止。回合 PR 可使用同一 CI reviewer。
 - tag push 响应丢失时先核对远端；已存在且符合记录则复用。
 - local 模式继续原子 push master + tag，develop 只在本地回合。

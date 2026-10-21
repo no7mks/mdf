@@ -147,7 +147,7 @@ evidence:
   目录 slug 必须与分支后缀的 kebab 形式对齐，change_kind 与分支类型一致。
   - adhoc 分支也允许 `change_kind: fix`；两种类型均要求 `proposals: []`。
 - `source_branch: develop`：无独立交付分支的直合 Change；目录自选 kebab slug，
-  不与分支名对齐；change_kind 允许 feature、bugfix 或 fix；不经 finish，只由后续 release 作 child 聚合。
+  不与分支名对齐；change_kind 允许 feature、bugfix 或 fix；不经 close-out，只由后续 release 作 child 聚合。
 - `fix` 表示比 feature、bugfix 更轻的小范围修正，可涉及代码、测试、文档或配置，不要求先建 Bug 或 Proposal。
   - 只用于 develop 直合或 adhoc 交付；独立 worktree 使用现有 adhoc 流程。
 - 一个 Bug 只能出现在三个 outcome 列表之一。

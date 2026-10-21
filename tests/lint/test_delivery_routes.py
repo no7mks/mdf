@@ -1,4 +1,4 @@
-"""交付主线 intent（start 至 finish、fix、bug close）的文档路由与约束。"""
+"""交付主线 intent（start 至 close-out、fix、bug close）的文档路由与约束。"""
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 from types import SimpleNamespace
@@ -18,7 +18,7 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "增量新一轮" in text
     assert "已齐审查且无新改动" in text
     assert "非本交付 `docs/` 不是新的交付改动" in text
-    assert "finish 集成增量轮与主链 verify 修绿轮为 1" in text
+    assert "close-out 集成增量轮与主链 verify 修绿轮为 1" in text
     assert "不得把上轮多份独立报告交给本轮" in text
     assert "git diff <操作左端点> <review_head>" in text
     assert "仍解决 / 复开 / 不适用" in text
@@ -159,7 +159,7 @@ def test_fix_is_branch_agnostic_and_stops_at_fixed():
     assert table[3][6] == "未满三轮且下一步明确则 4；否则停"
     assert table[4][5] == "结束"
     for rule in (
-        "不切分支", "不 start", "不走交付主线", "不 code-review", "不 finish",
+        "不切分支", "不 start", "不走交付主线", "不 code-review", "不 close-out",
         "不由 deliver 内部委托", "不读取当前 Gitflow kind",
         "不写 child Change", "不填 `fixed_in`", "不把对象标为 `closed`",
         "`--yolo` 时主 Agent 依据仓库证据与 Bug",
@@ -204,7 +204,7 @@ def test_verify_fix_is_second_verification_before_closeout():
         "不按上一正式发布或 start_commit 做整分支审查",
         "不派 roster.reviewers",
         "可修复实现问题",
-        "finish 内部委托时完成后返回调用方",
+        "close-out 内部委托时完成后返回调用方",
         "不由 deliver 直接委托",
         "bug-close.md",
     ):
@@ -491,6 +491,6 @@ def test_deliver_tracks_delivery_with_goal():
     assert "Goal" in deliver and "完成判据" in deliver
     assert "每次 deliver 会话只创建一次" in deliver
     assert "续办时不重建" in deliver
-    assert "核对 finish 实际成功后才置 complete" in deliver
+    assert "核对 close-out 实际成功后才置 complete" in deliver
     assert "仅本次创建或同范围复用的 Goal" in deliver
     assert "已有其他或更大范围的 active Goal 时不覆盖、不提前完成" in deliver

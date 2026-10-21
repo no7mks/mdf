@@ -108,7 +108,7 @@
 - `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   普通主链在 verify branch 之后，fact audit 未通过时调用，完成后重审
-- `$mdf close-out` / `$mdf finish`：材料与 Gitflow 收口（不含 verify branch / fact）
+- `$mdf close-out`：材料与 Gitflow 收口（不含 verify branch / fact）
 - `$mdf squash [--dry-run]`：定地板与切段并 soft-reset；dry-run 只给建议
 
 #### 维护
@@ -166,7 +166,6 @@ $mdf code-review
 $mdf fact update
 $mdf fact update --scope full
 $mdf close-out
-$mdf finish
 $mdf squash
 $mdf fact audit
 $mdf prettify --scope full
@@ -189,7 +188,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
-  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`close-out`/`finish`
+  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`close-out`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -269,7 +268,7 @@ $mdf clarify 要不要把缓存放到 Redis
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
     - 允许进入 close-out 时包含其合并及适用的 tag、发版推送，不另加固定 Gitflow 确认。
     - manual slug、squash 与收尾删除工作区同样按 confidence 策略裁定，人工工作仍须用户显式勾选。
-    - finish 保留 detached worktree；收尾决定是否删除。
+    - close-out 保留 detached worktree；收尾决定是否删除。
       删除后本对话不要再继续，后续工作在主 worktree 开新对话。
 - `$mdf start`
   - 用法：`$mdf start` 或 `$mdf start --manual`；可带 `--roster`、`--*-strategy`、`--*-model`
@@ -320,7 +319,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：澄清、确认 failing test、修复并验证一个 open Bug，标为 `fixed`。
   - 说明：
     - 修复前必须有针对该 Bug 的有效红灯；没有就先写测试并确认失败。
-    - 不切分支、不 start、不 code-review、不 finish；不标 `closed`。
+    - 不切分支、不 start、不 code-review、不 close-out；不标 `closed`。
     - `--yolo` 自裁定 clarify，不跳过红灯；二次验证走 `$mdf bug close`。
 - `$mdf bug close <bug-id> --fixed-in <version>`
   - 用法：`$mdf bug close <bug-id> --fixed-in <version>`
@@ -351,8 +350,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
   - 说明：独立默认 `branch`；`full` 整理知识面全树。主链只用 branch/paths；
     release `--base` 为上一正式发布。独立调用须 manifest ready。
-- `$mdf close-out` / `$mdf finish`
-  - 用法：`$mdf close-out` 或 `$mdf finish`
+- `$mdf close-out`
+  - 用法：`$mdf close-out`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 bug close。合入目标
     主线前先 squash dry-run，再按启发式决定是否展示；确认后完整执行。

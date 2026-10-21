@@ -2,9 +2,9 @@
 
 本页记录确定性 CLI 的输入与副作用；语义规则见 Skill 的 PR Close-out 和 CI 接入。
 
-## 配置与 finish
+## 配置与 close-out
 
-本节说明可选模式与 finish 返回状态。
+本节说明可选模式与 close-out 返回状态。
 
 - manifest.closeout.mode 为 local/pr，省略为 local；pr 需 provider: github/gitlab。
 - init 保留已有 closeout，doctor 报 manifest.closeout finding；schema_version 仍为 3。

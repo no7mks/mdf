@@ -70,7 +70,7 @@
   - 不在 master 且已跟踪改动干净时，切回 master。
   - gitignore 的文件与未跟踪文件保留，不删除、不提交。
   - 不新建分支。此别名不匹配同名分支。
-  - finish 不拆除这棵树。本树占用 master 时，release/hotfix 在此合入。
+  - close-out 不拆除这棵树。本树占用 master 时，release/hotfix 在此合入。
 - 已有 worktree 复用；已有分支缺树则在 `<repo-name>-worktrees/` 下 `worktree add`。只补已有分支。
 - 以 JSON 的 `worktree` 绝对路径与 `branch` 为准。
 

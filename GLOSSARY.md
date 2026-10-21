@@ -128,7 +128,7 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 - 存放 gitignore 的 deploy config；不提交这些文件。
 - 已跟踪改动干净才从其他分支切回 master。
 - master 不存在，或已被其他 worktree 占用时停止。
-- close-out / finish 不拆除这棵树。
+- close-out 不拆除这棵树。
 
 ## Roster
 

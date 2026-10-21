@@ -1,6 +1,6 @@
 # Adhoc Close-out
 
-仅 adhoc 的 close-out 项或当前 adhoc 上的独立 close-out/finish 执行本子流程。
+仅 adhoc 的 close-out 项或当前 adhoc 上的独立 close-out 执行本子流程。
 
 ## 决策树
 
@@ -56,7 +56,7 @@
                  ├──── PR mode ─────────────→ [委托 PR Close-out 并返回其实际状态]
                  ├──── local 失败或不明 ────→ [保留现场并报告]
                  │
-                 ▼ local finish 成功
+                 ▼ local close-out 成功
 ┌──────────────────────────────────┐
 │ 7 Report                         │
 └────────────────┬─────────────────┘
@@ -134,16 +134,16 @@ waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与�
   - 未合并时，最终 HEAD 须包含当前 develop，否则回 2；已合并时走下条清理核对。
   - 已合并仅待清理时，重核 merge_commit 仍在 develop 第一父链；不将新 develop 合回已交付源。
   - 清理续办须有已提交的规范 Change；缺损时报告状态不一致并停止，不新增源提交。
-  - close-out 尚未勾时改为 `[x]` 并提交；已勾不重复提交，记录两端 tip，全勾不代表 finish 完成。
+  - close-out 尚未勾时改为 `[x]` 并提交；已勾不重复提交，记录两端 tip，全勾不代表 close-out 完成。
 - deliver 委托先核 until 允许进入 close-out；步骤 5 的 Gitflow decision 按其 confidence 策略裁定。
   - 低 confidence 返回 deliver 6 等待确认；yolo 无 confidence 限制；其他调用沿用实际收口授权。
-  - 确认后从本流程 5 续办，重核端点；现场变化回 4，不基于过时确认直接 finish。
+  - 确认后从本流程 5 续办，重核端点；现场变化回 4，不基于过时确认直接 close-out。
   - 拒绝则保留现场，未决仍返回等待；不绕过关口或再次执行已完成的阶段。
 - 步骤 6 运行 `mdf.py finish-gitflow --repo <owner>`；失败先读 CLI 日志并报告已完成操作。
   - 不声称完成，不盲目重放；续办先回 1 核现场，不能证明可继续时询问。
 - 步骤 7 再运行相同 adhoc-status；要求 completed 为 true、merge_commit 非空。
   - 核对 no-ff 合入本地 develop、源分支已删、owner 保留且 detached 在交付 tip。
   - 不 fetch、不 push、不打 tag；不删除 `.mdf/`、`docs/` 或保留的工作区。
-  - deliver 返回其完成核验；直调返回 adhoc Select；独立 finish 报告实际结果后结束。
+  - deliver 返回其完成核验；直调返回 adhoc Select；独立 close-out 报告实际结果后结束。
 - 独立调用只有用户明确要求才删除工作区；deliver 委托按其 confidence 策略与公共清理规则裁定。
   保留目录不影响交付完成。

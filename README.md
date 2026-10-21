@@ -77,7 +77,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf lint` | 运行统一 lint：代码规模与项目工具检查 |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
-| `$mdf close-out` / `$mdf finish` | 材料与 Gitflow 收口（verify branch / fact 已在主链完成） |
+| `$mdf close-out` | 材料与 Gitflow 收口（verify branch / fact 已在主链完成） |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
@@ -129,13 +129,13 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
   - `--write-tests-model`、`--implement-model`、`--code-review-model`；
     值为口语描述，可点名一个或多个模型。
 
-### finish 与 deliver
+### close-out 与 deliver
 
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
-finish 提交 PR/MR，用户或项目 CI 合并后再次 finish 续办。完整规则见
+close-out 提交 PR/MR，用户或项目 CI 合并后再次 close-out 续办。完整规则见
 [PR Close-out](skills/mdf/references/pr-close-out.md)，外部审查见 [CI 接入](skills/mdf/references/ci-review.md)。
 
-finish 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
+close-out 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
 以下本地合并与发布行为适用于默认 local 模式。
 
 - 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。
@@ -143,7 +143,7 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
 - 集成产生新提交后：
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
-- release/hotfix 的 finish 包含 tag 与发版推送。
+- release/hotfix 的 close-out 包含 tag 与发版推送。
   - 仅原子 push master 与 tag；master 合回本地 develop，不检查或推送远端 develop。
 - deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
   - 验证其已有 qa/dev worktree 身份，等待交接后再收敛。
@@ -156,7 +156,7 @@ finish 先在交付分支集成 develop（feature/bugfix）或 master（release/
   - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认 `--until close-out`。
   - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
   - manual slug、squash 与收尾 worktree 删除等 decision 也适用；人工工作仍须用户完成并勾选。
-  - finish 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。
+  - close-out 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。
     后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。
 - release 从 develop 开分支前确认发布目标。
   - 工作线四选一；目标里只写选中的那条。不实施新 PRP。
@@ -230,7 +230,7 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 - fact update / fact audit 的 `--scope`：
   - 默认 `branch`（起点以来实现改动该碰的事实页）；release 的 `branch` 基线为上一正式发布。
   - `full` 整理知识面全树。
-  - finish 只用 `branch`/`paths`。
+  - close-out 只用 `branch`/`paths`。
 
 `docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。
 当一条 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。

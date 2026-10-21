@@ -110,10 +110,10 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 完成范围：
 
 - 无截止点时，local 模式的 feature/bugfix/adhoc 完成本地 develop 合并；
-  PR mode 核对远端目标合并与清理。release/hotfix 包含 finish 规定的 tag 与发版推送。
+  PR mode 核对远端目标合并与清理。release/hotfix 包含 close-out 规定的 tag 与发版推送。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
-  - 与 finish 完成条件冲突时说明并询问，不能声称完成。
+  - 与 close-out 完成条件冲突时说明并询问，不能声称完成。
 
 确认与暂停：
 
@@ -151,7 +151,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 - ❌ 已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout 或临时创建另一套分支绕过。
 - start 返回后使用其 owner 与 roles，再创建 Goal。
-- 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 finish 删除的主 worktree 路径。
+- 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 close-out 删除的主 worktree 路径。
 
 ### target
 
@@ -207,7 +207,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 已有其他或更大范围的 active Goal 时不覆盖、不提前完成、不另建冲突 Goal；只报告本次范围进度。
 - 内部委托传入该 Goal，子 intent 不得提前将它置 complete；暂停或阻塞时保持 active。
 - 仅本次创建或同范围复用的 Goal 可在步骤 5 置 complete：核验允许工作已完成且未越过截止点。
-  无截止点时核对 finish 实际成功后才置 complete；证据不足或部分失败时保持 active。
+  无截止点时核对 close-out 实际成功后才置 complete；证据不足或部分失败时保持 active。
 - 到 until 仅表示本次范围完成，不声称交付已收口，也不勾选因内部截止而未完成的父 intent。
 
 ### 从当前证据选择剩余工作
@@ -280,7 +280,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 步骤 4 的 subagent 按其 intent 用角色绝对路径操作，不切会话根；禁止新建
   worktree、禁止切到 owner、禁止要求用户切换；禁止 `move_agent_to_root`。
   - roster `0,0` 不走步骤 4。
-- 不把有前后依赖的 converge、code-review、fact update、finish 并行；同一可写 worktree 不并发派工。
+- 不把有前后依赖的 converge、code-review、fact update、close-out 并行；同一可写 worktree 不并发派工。
   - code-review 的 reviewer 严格只读，通过会话返回独立报告；全部齐全后 main Agent 才核实、修复。
 - design 与 converge 不走步骤 4；由各 intent 自行启动恰好 1 个 owner subagent。
   - 主 Agent 委托原 intent 后等待其完成，期间不写入 owner。
@@ -350,7 +350,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 到 until 时核对允许操作的证据与仍在运行的执行者，报告已完成阶段、截止点与剩余工作。
   - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
   - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
-- 无截止点时，步骤 5 必须取得 finish 的实际成功结果（close-out）。
+- 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
   - 按分支核对合并、源分支删除、owner 工作区保留且 detached，以及 release/hotfix 的 tag 和推送。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。

@@ -238,7 +238,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
     slug 为 Bug ID 的 kebab-case（小写）。
     - start 已写入的 objectives checklist 保留；不要求 design、唯一 PRP。
       记录实际 Bug outcomes 和证据。
-  - `source_branch: develop` 的直合 Change 不属于本 finish；change_kind 可为 feature、bugfix 或 fix；目录自选 slug，
+  - `source_branch: develop` 的直合 Change 不属于本 close-out；change_kind 可为 feature、bugfix 或 fix；目录自选 slug，
     只作为后续 release 的 child 聚合。
   - release：核对已有 child Change 与 `objectives.md`；材料聚合与版本目录写入留给步骤 8。
   - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
@@ -355,7 +355,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - Gitflow 前核对总结覆盖最终结果；补齐本轮收口的实际结果，再按「总结生成」固化、检查并提交。
 - 按分支：
   - feature/bugfix 不 push，核对 objectives 与所需 report 已交后进入本地 Gitflow 合并。
-  - release/hotfix 仍需已提交收口结果，finish 将发版推送到 origin。
+  - release/hotfix 仍需已提交收口结果，close-out 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：
   **停止并交接**，须在本 intent 外补 verify / code-review 后再续办；
@@ -377,7 +377,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - deliver 委托时，Gitflow 按其 confidence 策略裁定；低 confidence 返回 deliver 步骤 6。
     展示主线、源分支删除、保留目录与适用的 tag/push；有效确认前不得调用 `finish-gitflow`。
   - yolo 无 confidence 限制；无截止点阻断且步骤 9 通过后直接执行本步骤。
-  - 独立 `$mdf close-out`（`$mdf finish` 同义）沿用调用授权，不增加 deliver 的评分或截止点。
+  - 独立 `$mdf close-out` 沿用调用授权，不增加 deliver 的评分或截止点。
 - 调用 `finish-gitflow --repo "$REPO_ROOT"`：
   - feature/bugfix 不 fetch、不 push；no-ff 合并到本地 develop；角色分支仍在则失败。
   - release/hotfix 要求 origin；首次调用 fetch 后要求本地 master 与远端一致。
@@ -401,7 +401,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - 拒绝或未决则保留，不影响交付完成。
 - 自动裁定或用户确认后直接执行 `git -C <主路径> worktree remove <保留路径>`，不引入另一个脚本。
   - 从主 worktree 启动，作为最后一次 tool call；成功后只报告删除结果并结束本对话。
-  - 不加 `--force`；失败则保留现场并报告，不重跑 finish。
+  - 不加 `--force`；失败则保留现场并报告，不重跑 close-out。
 
 release/hotfix 首次发布前，CLI 保存发布进度记录：
 - 位置：Git common dir 的 `mdf/finish/<完整分支名>.json`；含源提交、origin、目标起点与进度。

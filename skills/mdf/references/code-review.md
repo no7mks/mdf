@@ -93,7 +93,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 - 审查人数取冻结 roster.reviewers：
   - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
   - 本轮应派人数默认同 roster.reviewers。
-  - finish 集成或主链 verify 修绿产生的增量新一轮为 1，不改冻结 roster。
+  - close-out 集成或主链 verify 修绿产生的增量新一轮为 1，不改冻结 roster。
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
   - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
@@ -197,7 +197,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 
 派发：
 
-- 步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；finish 集成增量轮与主链 verify 修绿轮为 1。
+- 步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；close-out 集成增量轮与主链 verify 修绿轮为 1。
 - `review_strategy` 默认 `replicate`：
   - 各审查者收到相同的交付 base_commit、本轮左端点、review_head、工作目录、目标、验收、
     适用设计材料与相关当前事实页。
@@ -212,7 +212,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
     可多个模型，可分给本轮多名审查者。没有则不提。
   - ❌ 不得写入其他 intent 的模型。
 - 增量新一轮还必须带上轮已采纳项与未解决项；不能只看新 diff 假装旧问题消失。
-  - finish 集成增量轮（1 人）只使用该已汇总清单，
+  - close-out 集成增量轮（1 人）只使用该已汇总清单，
     不得把上轮多份独立报告交给本轮 reviewer 自行合并。
 - 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
 - 每份任务均包含 `repository-contract.md` 的体积与 ignore 条款以及 lint 工具报告；涉及文档时另含 `doc-structure.md`。

@@ -112,7 +112,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 - 要求 Git 根、clean worktree、`manifest.state: ready` 与 full validation 零 finding。
 - 必须提供 `--release-date`。
-- Core 只验证确定性审计；同次 `$mdf close-out` / `$mdf finish` 的语义审阅与用户确认属于 intent 的职责。
+- Core 只验证确定性审计；同次 `$mdf close-out` 的语义审阅与用户确认属于 intent 的职责。
 
 收口输入：
 
@@ -219,7 +219,7 @@ python3 skills/mdf/scripts/mdf.py to --repo /path/to/repository --target plan
 - `develop` 复用占用 develop 的 worktree，不新建。
 - `deploy` 创建或复用 `<repo-name>-worktrees/deploy`，检出已有 `master`。
   - 已跟踪改动干净才切回 master；gitignore 的文件保留。
-  - master 不存在或已被占用则失败。不新建分支，close-out / finish 不拆除。
+  - master 不存在或已被占用则失败。不新建分支，close-out 不拆除。
 - 已有 worktree 按分支名或目录名复用；已有本地分支缺树则
   `worktree add` 到 `<repo-name>-worktrees/`。
 - ❌ 不创建新分支。
@@ -280,9 +280,9 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
   feature/bugfix/adhoc 检查 develop；release/hotfix 检查 master、develop。
 - 任一工作区有未提交改动或 `MERGE_HEAD` 等未结束操作即以 `dirty_worktree` 停止。
   即使冲突已解决、已 add 或 diff 为空也保留现场；不为 clean 自动 abort、reset、stash 或 Commit。
-- 无关分支的脏状态不阻断 finish，也不被整理。
+- 无关分支的脏状态不阻断 close-out，也不被整理。
 
-外层 close-out / finish intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
+外层 close-out intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
 
 1. 先在交付分支集成 develop（feature/bugfix/adhoc）或 master（release/hotfix），
    由 Agent 自动尝试解决集成冲突。

@@ -14,7 +14,7 @@
   - 确认的发布目标写入 `changes/unreleased/<semver>/`，不 push。
 - adhoc start 使用 `--kind adhoc --name <名称>`，CLI 规范化 slug 并直接生成六项 objectives。
   - 不接受 PRP、Bug、版本、`--manual` 或 `--objectives-file`；固定 roster `0,0,1`、`needs_design: false`。
-  - 创建 `adhoc/<slug>` 与同级独立 worktree；finish no-ff 合入 develop，不改 PRP、不 push。
+  - 创建 `adhoc/<slug>` 与同级独立 worktree；close-out no-ff 合入 develop，不改 PRP、不 push。
   - Change 的 `change_kind` 可用 adhoc 或 fix；fix 表示小范围修正，仍要求 `proposals: []`。
 
 ### `delivery`

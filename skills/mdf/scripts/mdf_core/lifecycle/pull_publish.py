@@ -93,7 +93,7 @@ def publish(repo, state, version, forge, path):
         git(work, "push", "--no-follow-tags", "origin", f"{head}:refs/heads/{record['source']}")
         if pull is None:
             pull = forge.create(record["source"], "develop", f"chore(release): 合回 {version}",
-                                f"固定发布提交：{merged}。请解决回合问题后再次执行 $mdf finish。")
+                                f"固定发布提交：{merged}。请解决回合问题后再次执行 $mdf close-out。")
         else:
             pull = forge.get(pull["id"])
         if pull["head"] != head:

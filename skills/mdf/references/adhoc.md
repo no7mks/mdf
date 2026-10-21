@@ -90,7 +90,7 @@
 
 ### 只读状态与完成证据
 
-本节用固化 CLI 核对当前身份、下一步及 finish 的实际结果。
+本节用固化 CLI 核对当前身份、下一步及 close-out 的实际结果。
 
 - 运行 `mdf.py adhoc-status --repo <owner> [--slug <已知slug>]`，回读 `result`。
   - 活跃分支可省略 slug；detached 时必须显式传入，不从目录名或其他任务猜测。
@@ -126,7 +126,7 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
   - 每次只委托 until 边界内的当前 intent，decision 与完成核验遵守 deliver；无 target 时不凭空新建 adhoc。
 - 直调在当前项完成或须补前置时回 3；next / deliver 委托则返回调用方，不在本页继续循环。
   - next 本次报告完成项或返工项后结束；deliver 回自己的 Select，依账本再选下一项。
-- 清单全勾仍须核对 finish 实际成功；仍在 adhoc 分支或上次 finish 失败时继续 close-out。
+- 清单全勾仍须核对 close-out 实际成功；仍在 adhoc 分支或上次 close-out 失败时继续 close-out。
   - 不凭全勾宣称完成，不因正常 detached 状态重新 start。
 
 ### Smart 与事实

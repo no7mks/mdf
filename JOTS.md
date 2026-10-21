@@ -14,7 +14,7 @@
 
 ### 背景与方向
 
-- 当前 MDF 的 start 负责创建交付分支，finish 负责审计与交付收口，
+- 当前 MDF 的 start 负责创建交付分支，close-out 负责审计与交付收口，
   中间如何组织实现、测试和文档同步尚无专门流程。
 - 曾考虑 Superpowers、OpenSpec、Spec Kit，但完整框架可能过重且与 MDF 重叠。
   用户倾向减少提示词编排，把约束集中到 verification、共享契约和可验证产物。
@@ -39,7 +39,7 @@
 8. 负责角色发起 change review，同时对照 feature 的 start 起点和 objectives。
    这一阶段允许由负责角色修复问题。
 9. 负责角色发起 doc update 工作。
-10. 最后调用 finish intent，沿用 MDF 的交付收口。
+10. 最后调用 close-out intent，沿用 MDF 的交付收口。
 
 ### 讨论中的建议，尚未作为用户确认的决策
 
@@ -75,7 +75,7 @@
 
 ### 后续需要澄清
 
-- 新增哪些 intent，哪些阶段作为内部步骤；与 start、clarify、audit、finish 如何衔接。
+- 新增哪些 intent，哪些阶段作为内部步骤；与 start、clarify、audit、close-out 如何衔接。
 - objectives 与 Proposal/Bug 的边界，目录、文件名、工作标识及归档规则。
 - Owner 的最终命名、权限，以及哪些设计和范围变更必须由用户确认。
 - 共享代码底座的具体范围与验收标准，设计改变时测试和实现如何重新同步。
@@ -83,7 +83,7 @@
 - feature 阶段性红灯如何与 CI 配合；测试验收与最终全绿如何确定性区分。
 - PT 的含义、各类测试适用条件、覆盖率门槛，以及零告警结果的机器判定。
 - hotfix 是否采用同样阶段或缩短路径；本轮详细流程主要以 feature 为例。
-- 文档更新后的验证与 finish 的审计如何衔接，避免遗漏和重复工作。
+- 文档更新后的验证与 close-out 的审计如何衔接，避免遗漏和重复工作。
 
 本条仅保存讨论，不表示上述 intent、目录、角色或流程已经存在或正式获准实施。
 <!-- /jot -->

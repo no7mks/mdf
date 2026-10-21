@@ -39,9 +39,9 @@
 │ 4 Record                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 无需补验且记录完成 ───────→ [结束]
-                 ├──── finish 委托且改了实现 ────→ [返回 finish 4 Recheck]
-                 └──── 失败/缺失 ────────────────→ [停止并报告]
+                 ├──── 无需补验且记录完成 ──────────→ [结束]
+                 ├──── close-out 委托且改了实现 ────→ [返回 close-out 4 Recheck]
+                 └──── 失败/缺失 ───────────────────→ [停止并报告]
 ```
 
 ## 工作流（唯一执行契约）
@@ -49,7 +49,7 @@
 读取 `references/common.md` 与 `references/object-contract.md`。
 复现命令对照 `references/fix.md` 的红灯与回归证据规则。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
-独立调用只推进当前 intent；finish 内部委托时完成后返回调用方。
+独立调用只推进当前 intent；close-out 内部委托时完成后返回调用方。
 不由 deliver 直接委托。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -57,7 +57,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 | 1 | Check | 脚本 | 核对 ready、版本与验收清单 | doctor、list、参数 | 有清单则 2；空清单则结束 | 停止并报告 |
 | 2 | Verify | 约束 | 跑复现用例；失败则修并 smart（quick suite） | 命令、结果、smart | 3 | 可修或获批回 2；否则停 |
 | 3 | Review | 约束 | 只审这次修复的代码并裁定 | 范围 diff、结论 | 4 | 有可修回 2；需决定则停 |
-| 4 | Record | 脚本 | 先判断补验交接；否则写记录并关闭 | 记录、对象、提交 | 无补验则结束；有则返回 finish 4 | 停止 |
+| 4 | Record | 脚本 | 先判断补验交接；否则写记录并关闭 | 记录、对象、提交 | 无补验则结束；有则返回 close-out 4 | 停止 |
 
 ## 术语与数据结构
 
@@ -68,20 +68,20 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - `--fixed-in` 只接受稳定 SemVer；release/hotfix 上须等于分支版本。
 - feature/bugfix 上传入的版本是确定的交付目标，发版时核对实际包含该修复。
 - 不切分支、不 start、不创建 worktree。写入落点按 `common.md`。
-- 运行 `list --repo "$REPO_ROOT" --type bug --status fixed`；finish 内部重验另列 closed。
+- 运行 `list --repo "$REPO_ROOT" --type bug --status fixed`；close-out 内部重验另列 closed。
   不逐篇翻阅 `docs/bugs/`。
 - 待验证清单：
   - 独立调用命中唯一 `fixed` 对象，规则同 `$mdf fix`。`open`、`closed`、`rejected` 停止。
-  - finish 委托时使用调用方传入的待收入 ID 列表与发布版本，不自行扩大清单。
-  - closed 记录有效时由 finish 复用，不进入本流程。
-    finish 仅传记录缺失/过期的 closed Bug，fixed_in 须等于本版；执行 2–3 重验，
+  - close-out 委托时使用调用方传入的待收入 ID 列表与发布版本，不自行扩大清单。
+  - closed 记录有效时由 close-out 复用，不进入本流程。
+    close-out 仅传记录缺失/过期的 closed Bug，fixed_in 须等于本版；执行 2–3 重验，
     4 只更新记录，不重复关闭。
     版本不符或重验失败则停止；不得以 closed 状态代替验收证据。
 - 修复写入前（步骤 2、3）核对分支：master 或 detached HEAD 需修实现时停止交接。
   - develop 与其他非交付分支可按本次修复范围运行 smart；不要求交付材料。
   - 只读复现验证不受此限；不自动切分支或创建 worktree。
-- finish 委托模式：本次步骤 2–3 修改实现、测试或验证配置时，保留状态、提交修复与记录并报告「实现已变更」；
-  finish 回到其步骤 4 报告失效并交接；主链在 close-out 外补验与增量 code-review，
+- close-out 委托模式：本次步骤 2–3 修改实现、测试或验证配置时，保留状态、提交修复与记录并报告「实现已变更」；
+  close-out 回到其步骤 4 报告失效并交接；主链在 close-out 外补验与增量 code-review，
   再续办步骤 7，之后才可收口。
 - ❌ 边界：
   - 只有复现验证与修复审查都通过，才写 `closed` 与 `fixed_in`。
@@ -156,11 +156,11 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 - 有实现/测试/配置修复时先提交修复，再以 git rev-parse HEAD 作为记录 HEAD。
   后续只提交验收记录与对象状态，避免本轮修复提交立即使记录过期。
 - 字段：ID、复现命令与退出状态（或引用的报告路径与 test 名）、结果、审查路径范围、HEAD、结论。
-- 记录须使 finish 能判断「该 ID 在当前 HEAD 上复现用例已通过且审查完成」。
+- 记录须使 close-out 能判断「该 ID 在当前 HEAD 上复现用例已通过且审查完成」。
 - 有效性：记录 HEAD 到当前 HEAD 只改记录文件自身、`docs/` 或 `changes/` 材料（无代码变化）时仍有效；
   其他改动或复现命令变化则过期，须重跑步骤 2–3。
-- 先判断 finish 补验分支；本轮改了实现/测试/验证配置时提交修复与记录，保留 Bug
-  当前状态并返回 finish 4；本轮不调用关闭 CLI，不声称关闭完成。
+- 先判断 close-out 补验分支；本轮改了实现/测试/验证配置时提交修复与记录，保留 Bug
+  当前状态并返回 close-out 4；本轮不调用关闭 CLI，不声称关闭完成。
 - 否则 fixed Bug 调用下方 CLI；内部重验的 closed Bug 仅更新记录。
   再按 common.md 一并提交对象与记录，不夹带无关改动。
 - 无补验交接且 fixed Bug 复现与审查通过后调用 Core CLI：
