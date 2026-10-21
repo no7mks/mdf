@@ -20,6 +20,7 @@
                  ├──── 已收口且证据有效 ──────────────→ 4 Recheck
                  ├──── 集成冲突无法解决 ──────────────→ [停止并询问]
                  ├──── 内部审查失败 ──────────────────→ [停止]
+                 ├──── 需主链外补审补测或 fact ───────→ [交接主链并停止]
                  ├──── 状态不一致 ────────────────────→ [停止]
                  │
                  ▼ 待收口或 feature/bugfix
@@ -169,7 +170,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - deliver 的 squash decision 同样评分；yolo 自裁定。禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
-  - feature/bugfix 使用本地 develop，不 fetch、不 push。
+  - feature/bugfix 使用本地 develop；local 模式不 fetch、不 push，PR mode 的远端操作由 PR Close-out 执行。
   - release/hotfix 使用 master，先 fetch origin 并核对本地 master 与远端一致，不自动覆盖分歧。
 - 集成：
   - 确认 clean，记录目标主线的完整 commit 与当前 HEAD。
@@ -354,7 +355,8 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - 由 Agent 复核并提交本次事实、Change、收口材料与阶段证据，同次继续。
 - Gitflow 前核对总结覆盖最终结果；补齐本轮收口的实际结果，再按「总结生成」固化、检查并提交。
 - 按分支：
-  - feature/bugfix 不 push，核对 objectives 与所需 report 已交后进入本地 Gitflow 合并。
+  - feature/bugfix 核对 objectives 与所需 report 已交；local 模式不 push，进入本地 Gitflow 合并。
+    PR mode 委托 PR Close-out 提交和续办。
   - release/hotfix 仍需已提交收口结果，close-out 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：

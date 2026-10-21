@@ -93,7 +93,7 @@ waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与�
   - 恢复仍遵守外层 until 与 decision 策略；source 不明时停止，不从 detached 目录猜测。
 - 运行 `mdf.py adhoc-status --repo <owner> --slug <已知slug>`；completed 时直接到 7。
 - 未 completed 但 merge_commit 已存在时，直接到 4。只续办清理，不改材料或重做集成。
-- 未完成时运行 doctor，要求 ready；核对工作、code-review、verify smart、fact audit/update 已勾。
+- 未完成时运行 doctor，要求 ready；核对工作、lint、code-review、verify smart、fact audit/update 已勾。
 - 任何退勾或提交前先只读检查 owner clean；有本地改动时保留现场并停止。
 - 只查 report 已交且声称通过，不做 commit 对齐审判。
   - code-review 终稿无 commit hash、无未解决项；fact-audit 已确认。

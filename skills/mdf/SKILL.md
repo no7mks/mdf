@@ -115,7 +115,7 @@ disable-model-invocation: true
   - 默认自动裁定 decision，confidence < 0.8 请求用户确认；默认 `--until close-out`，不执行该 intent。
   - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效。详见 deliver。
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
-  - `--yolo` 仅自动确认内部 clarify，不跳过红灯，不跳过 Gitflow 收口，也不代替测试门槛批准。
+  - `--yolo` 仅自动确认内部 clarify，不跳过红灯或回归验证，也不代替测试门槛批准；fix 不执行 Gitflow 收口。
 - `$mdf bug close <bug-id> --fixed-in <version>`：ID 与稳定 SemVer 必填；
   release/hotfix 上版本须与分支一致，通过验收后关闭 Bug。
 - 人工 feature 的 `$mdf verify smoke` 先按 `references/verify.md` 解析为 branch 主链。
