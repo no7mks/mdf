@@ -57,7 +57,8 @@ def run(args):
     output.mkdir(parents=True, exist_ok=True)
     prior_path = getattr(args, 'previous_report', None)
     previous = read_json(Path(prior_path)) if prior_path else None
-    ctx = context(repo, args.source, args.head, args.policy_ref, getattr(args, 'review_base', None), previous)
+    ctx = context(repo, args.source, args.head, args.policy_ref, getattr(args, 'review_base', None), previous,
+                  source_commit=getattr(args, 'source_commit', None), target_commit=getattr(args, 'target_commit', None))
     if sha(repo, 'HEAD') != ctx['review_head']:
         raise MDFError('CI checkout 必须固定在 review_head', code='review_head_changed')
     original = snapshot(repo)
@@ -102,8 +103,10 @@ def run(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('repo', 'source', 'head', 'policy-ref', 'output-dir'):
+    for name in ('repo', 'source', 'output-dir'):
         parser.add_argument('--' + name, required=True)
+    for name in ('head', 'policy-ref', 'source-commit', 'target-commit'):
+        parser.add_argument('--' + name)
     parser.add_argument('--backend', choices=('codex', 'cursor'), required=True)
     parser.add_argument('--review-base', default=os.environ.get('MDF_REVIEW_BASE') or None)
     parser.add_argument('--previous-report', default=os.environ.get('MDF_PREVIOUS_REPORT') or None)

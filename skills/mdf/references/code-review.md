@@ -82,6 +82,23 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 - 规则变化确认后走首轮：从固定交付基线审到新 review_head，使用冻结 roster.reviewers。
   - 不复用旧报告，不沿用原增量范围或修复窗；旧问题清单仍传入作复核上下文。
 
+### 显式 pre-merge review
+
+调用：`$mdf code-review --source-commit <source> --target-commit <target>`。
+
+- 两个参数须成对提供，解析并固定为完整 commit；允许两端已经分叉，不要求先 merge target。
+- source 是待合入的提交，target 是接收合入的提交；两者都不由当前 HEAD 替代。
+- 首轮取唯一 `merge-base(source, target)` 为 review_base，用 `merge-base→source` 识别本次引入的改动。
+- 同时读取 `merge-base→target` 和 target 的必要代码，检查冲突、接口及行为的合入影响。
+  - 禁止用 `target→source` 的直接 diff 归因；target 独有的变化不得误报为 source 删除。
+  - 无共同祖先或有多个 merge-base 时停止并说明，不任取基线。
+- 此模式优先于下方默认交付基线；delivery_base 仍保留交付起点身份。
+- target 固定为规则来源；分派与收口均核对该 commit 的规则，不从当前 checkout 替换规则。
+- source 不等于 owner HEAD 时只返回固定范围的审查结果，不修改当前 checkout、洗交付终稿或勾 objectives。
+  - 需要修复时交回 source 的 owner；修复提交作为新的 source 开启后续轮。
+- 增量仍从上轮 review_head 到新 source，复核旧问题；target 变化必须重开完整首轮。
+- 未显式传入两端时，继续按下方交付基线与修复流程执行。
+
 ### 范围与前置条件
 
 进入步骤 2 前，objectives 的 lint 项须已勾选并提交；增量轮核对最近验证中的 lint 结果。
@@ -155,7 +172,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
   - 不取 master 合回 develop 的合并提交，也不使用移动的 master/develop HEAD 代替发布基线。
   - 首次发布没有上一版本时，须用户明确确认初始基线。
   - 基线缺失、歧义或对象不可解析时停止询问。
-- 📌 基线必须是当前 HEAD 的祖先。
+- 默认交付基线及增量操作左端点必须是 review_head 的祖先；显式 target 不受此限制。
 - 审查内容：
   - 首轮：`git diff <base_commit> <review_head>`。
   - 增量：`git diff <操作左端点> <review_head>`（操作左端点按上方规则，不读终稿

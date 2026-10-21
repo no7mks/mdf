@@ -39,7 +39,7 @@ def test_ci_runner_keeps_independent_partition_and_owner_boundary(monkeypatch, t
     module, context = load('review'), ctx()
     repo = tmp_path / 'checkout'
     repo.mkdir()
-    monkeypatch.setattr(module, 'context', lambda *args: context)
+    monkeypatch.setattr(module, 'context', lambda *args, **kwargs: context)
     monkeypatch.setattr(module, 'sha', lambda *args: context['review_head'])
     monkeypatch.setattr(module, 'snapshot', lambda *args: ['same', '', ''])
     calls = []
@@ -100,7 +100,7 @@ def test_ci_runner_detects_reviewer_writing_checkout(monkeypatch, tmp_path):
     from support_delivery import local_repo
     module, context = load('review'), ctx()
     repo = local_repo(tmp_path)
-    monkeypatch.setattr(module, 'context', lambda *args: context)
+    monkeypatch.setattr(module, 'context', lambda *args, **kwargs: context)
     monkeypatch.setattr(module, 'sha', lambda *args: context['review_head'])
     def invoke(*args):
         (repo / 'unexpected.txt').write_text('reviewer 越界修改\n')
@@ -118,7 +118,7 @@ def test_ci_runner_refuses_dirty_checkout_before_starting_llm(monkeypatch, tmp_p
     module, context = load('review'), ctx()
     repo = local_repo(tmp_path)
     (repo / 'src/service.py').write_text('uncommitted = True\n')
-    monkeypatch.setattr(module, 'context', lambda *args: context)
+    monkeypatch.setattr(module, 'context', lambda *args, **kwargs: context)
     monkeypatch.setattr(module, 'sha', lambda *args: context['review_head'])
     monkeypatch.setattr(module, 'invoke', lambda *args: pytest.fail('脏 checkout 不得启动 LLM'))
     args = SimpleNamespace(repo=str(repo), source='feature/x', head='HEAD', policy_ref='develop',

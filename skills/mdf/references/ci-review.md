@@ -26,6 +26,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" review-context \
   --policy-ref "$TARGET_SHA" > context-output.json
 ```
 
+- pre-merge review 可将 --head/--policy-ref 替换为成对的 --source-commit/--target-commit，不能混用。
+  - review-context 与 review.py 都支持；source 仍为交付分支身份，不是 source commit。
+  - 显式首轮用唯一 merge-base→source，delivery_base 保留 delivery.json 的起点；release 也适用。
+  - target_diff/target_paths 提供 merge-base→target；不得将 target 独有变化当成 source 删除。
+  - target 未集成不会标记 incomplete；缺材料仍会。无共同祖先或多个 merge-base 时失败。
+  - 增量要求 target 不变；target 变化需完整首轮。
 - CLI 返回 result；报告校验接受该 result 内容保存为 context.json，不接受整个 envelope。
 - source 决定交付目录；release/hotfix 同时识别已归档版本目录。
 - codex/backmerge/<version> 使用 annotated 发布 tag 和首次回合双亲定位固定 base/M，复用 M 中的交付证据与 roster。

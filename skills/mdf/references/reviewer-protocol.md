@@ -18,20 +18,25 @@
 
 | 字段 | 用途 |
 | --- | --- |
-| source、delivery_base | 交付身份与固定起点；release 为上一正式版本 |
+| source、delivery_base | 交付身份与固定起点；默认 release 为上一正式版本 |
 | review_base、review_head | 本轮实际审查范围；增量复核包括上轮问题 |
 | policy_ref、rules_sha256 | 规则版本与内容指纹；不得由被审改动替换 |
+| merge_base、target_paths、target_diff | 两端共同祖先与 target 独有变化；用于合入影响分析 |
 | context_sha256 | 本轮输入身份；每份报告必须一致 |
 | roster、paths | 冻结人数、review strategy 与需覆盖路径 |
 | artifacts、incomplete | 现有交付证据与缺项；缺项不能默认为通过 |
 
 - 同时读取必要上下文，不仅审 diff、标题或文件名。
+- scope=merge 时 source commit 为 review_head，target commit 为 policy_ref；首轮 diff/paths 为 merge-base→source。
+- target_diff/target_paths 为 merge-base→target；结合 target 代码检查冲突、接口与行为影响。
+  - target 无需已集成进 source；不得把 target 独有变化误报为 source 删除。
+  - 增量 diff 只覆盖上轮 review_head→新 source，仍结合完整 target 上下文和旧 findings。
 - 审查正确性、验收覆盖、测试质量、code smell、架构合理性与非必要复杂度。
 - MDF rule 与 project rule 原文均须传入；冲突时 project rule 优先。
 - replicate 每人覆盖全部路径；partition 由 controller 切片，所有报告覆盖并集须完整。
 - 单人覆盖全部范围；同一轮的审查者不共享彼此 findings。
 - `.mdf/modules.yaml` 的 ignore、规模与拆分规则遵循固定策略和测量报告，不手工重复计数。
-- release 不得因 child 已审而跳过上一正式版本以来的变化。
+- 默认 release 不得因 child 已审而跳过上一正式版本以来的变化；显式 scope=merge 按两端范围。
 
 ## Findings 与裁定
 

@@ -402,7 +402,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
     for rule in (
         "delivery.json 的 start_commit", "mdf-start-commit",
         "上一正式发布版本的 master commit/tag", "首次发布没有上一版本",
-        "git diff <base_commit> <review_head>", "基线必须是当前 HEAD 的祖先",
+        "git diff <base_commit> <review_head>", "显式 target 不受此限制",
         "git diff <操作左端点> <review_head>",
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",

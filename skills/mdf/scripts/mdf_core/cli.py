@@ -123,8 +123,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     from mdf_core.reviewing.context import command_context
     review_context = subparsers.add_parser("review-context")
-    for name in ("repo", "source", "head", "policy-ref"):
+    for name in ("repo", "source"):
         review_context.add_argument(f"--{name}", required=True)
+    for name in ("head", "policy-ref", "source-commit", "target-commit"):
+        review_context.add_argument(f"--{name}")
     review_context.add_argument("--review-base")
     review_context.add_argument("--previous-report")
     review_context.set_defaults(func=command_context)
