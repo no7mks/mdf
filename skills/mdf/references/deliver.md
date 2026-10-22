@@ -69,14 +69,17 @@
 
 ## 工作流（唯一执行契约）
 
-PR mode close-out 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
-completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR Close-out](pr-close-out.md)。
+- PR mode close-out 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
+  completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR Close-out](pr-close-out.md)。
 
-已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
-人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
-尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
-人工工作未勾时交接用户，所有模式均不得代勾。
-已勾后，经本表步骤 3 执行该续办工作流的步骤 3，完成后回 Select；先核 until 边界。
+- PR 恢复优先：先核当前 until，再按 [PR Close-out 的恢复路由](pr-close-out.md) 核已锁定 source 的操作记录及返工备注。
+  命中时先恢复父 PR 流程；未命中才进入下方特殊身份或普通选择，不能先要求 owner 当前仍在交付分支。
+
+- 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
+- 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
+- 尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
+- 人工工作未勾时交接用户，所有模式均不得代勾。
+  已勾后，经本表步骤 3 执行该续办工作流的步骤 3，完成后回 Select；先核 until 边界。
 
 读取 `references/common.md`、`references/delivery-contract.md` 与 `references/deliver-policy.md`。
 步骤 4 只由 Select 分派；到截止点或实际收口进入 5；任一步的低 confidence decision 均进入 6。
@@ -126,7 +129,8 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 - 截止点是本次调用的正常完成边界，不是等待确认；不得自动越过或自动续办被排除的 intent。
 
 步骤 1 先解析策略参数并只读判定路径，核对该路径的 until 合法性；随后才能委托 start 或写入。
-已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
+先只读核 PR 恢复记录；已命中者进入步骤 2 的恢复路由，不先运行普通身份检查。
+未命中且已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
 其余情况解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
 1. 先由当前 feature/qa/dev、bugfix、hotfix、release 或 adhoc 分支推导在途交付。
@@ -150,6 +154,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 已有交付与 start 返回后：
 
 - ❌ 已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout 或临时创建另一套分支绕过。
+  - 该限制用于仍需 owner 写入或补验的交付；PR 已合并后的清理、发布或 backmerge 按恢复记录从主路径续办。
 - start 返回后使用其 owner 与 roles，再创建 Goal。
 - 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 close-out 删除的主 worktree 路径。
 
@@ -227,6 +232,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - Execute 已打开 verify 小 loop 时，先恢复其原 scope/选题与待修绿/待复审状态，完成后才返回 Select。
 - 不因 code-review 退勾提前选择该 intent；原 verify 负责先修绿再派 1 人增量审查。
 - 恢复使用已有调用栈、objectives 续办备注或草稿，不新增 gate；无法恢复原范围时停止报告。
+- PR 返工上下文优先于普通选择表；每次仍先核当前 until，再补齐该父流程的未完成子步骤。
+  - 保留原 PR/MR 与返回位置；补审补测完成后恢复 close-out 更新原 PR 并轮询，不重新准备整套发布材料。
+  - 原 source 已删除或 owner detached 的清理恢复从主 worktree 带原 source 续办，不要求缺失的 owner branch。
 
 
 | 当前状态 | 后续处理 |
@@ -352,7 +360,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
   - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
 - 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
-  - 按分支核对合并、源分支删除、owner 工作区保留且 detached，以及 release/hotfix 的 tag 和推送。
+  - 按分支核对合并、源分支删除，以及 release/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
+  - owner 已被外部删除时如实报告，以操作记录与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
 - 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。

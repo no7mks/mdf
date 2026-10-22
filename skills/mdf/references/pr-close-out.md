@@ -42,7 +42,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 核模式、source、origin 与目标现场 | 配置与 Git 状态 | 2 | 保留现场，停止 |
-| 2 | Prepare | 约束 | 首次完成主链前置；恢复核对操作记录 | 材料或恢复记录 | 3 | 交接主链 |
+| 2 | Prepare | 约束 | 首次核前置；恢复核返工与操作记录 | 账本、返工备注、平台事实 | 前置齐3；等待留4 | 未完返工交接主链 |
 | 3 | Finish | 脚本 | 调用 finish-gitflow 提交或续办 | CLI 状态与平台事实 | 4 | 读日志，保留现场 |
 | 4 | Report | 约束 | 核结果；轮询或交回主链修复 | 平台结果、修复与收口证据 | 等待留4；修复后或合并回3；完成返回 | 外部阻塞或未合并报告未完成；缺证据停止 |
 
@@ -64,10 +64,39 @@ closeout:
 - 初次 close-out 仍按主链完成集成、审查、验证、fact 和材料准备；随后委托本页提交。
 - PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入 develop 后生效。
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
-- 已有 Git common dir `mdf/finish/<source>.json` 时先续办本页，不重新执行整套材料准备。
+- 已有 Git common dir `mdf/finish/<source>.json` 时先按下方恢复路由续办，不重新执行整套材料准备。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
+
+### 恢复路由与返工上下文
+
+deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本节，不新增 CLI 或 workflow 状态文件。
+
+1. 先应用当前 until、只读限制与已有有效授权；截止点排除 close-out 时只读报告，不进入返工、push 或轮询。
+2. PR 恢复先于 doctor、branch、delivery status 和 adhoc-status；先只读解析 Git common dir 与已锁定 source 的 finish 记录。
+   - 先锁定当前完整交付分支、既有上下文或用户指定的 source；尚无目标时才核对唯一未完成 PR 操作记录，不改绑已锁定交付。
+   - 核 mode、origin/provider、source、target 与本仓一致；多个候选无唯一依据时澄清，不按时间或目录名猜测。
+   - completed 记录仅用于已明确锁定的原交付；不从历史完成记录自动启动任务。
+3. owner 已 detached 或 source 已删除时，操作记录仍可指向清理、发布或 backmerge 续办。
+   - 使用原 source 与主 worktree；不因 delivery status 不支持 detached 而停止，不重新 start 或重建 owner。
+   - 主 worktree 与记录的 Git common dir 必须一致；不存在 PR 记录时才按原入口的普通规则识别。
+4. Prepare 先只读查询记录中的原 PR/MR；尚无 PR ID 时按记录的 identity/source/target 查回复用，不能猜测或重复创建。
+   - 仅 open 或尚无 PR、仍需候选源提交时，读取原 source worktree 的同一份材料、objectives 与返工备注。
+   - 已 merged 或部分发布时，按记录与实际 Git 直接恢复；owner 目录可不存在，必要已交付材料从固定 merge commit 读取。
+   - 查无 PR 时，前置齐全才到 Finish 复用或创建；创建响应丢失仍先查平台，不重做首次材料准备。
+   - PR/MR 为 open：未完成返工先交回主链；全部完成后才允许更新 PR/MR 或恢复轮询。
+   - 已有「PR close-out 返工」备注时，先恢复其中父 intent、原验证请求和未完成子步骤，不按首个退勾项丢弃父流程。
+   - 备注尚未清理或所需前置项仍未勾时，不直接调用 finish-gitflow，不用旧通过 report 跳过返工。
+   - PR/MR 已 merged 或部分发布时，按实际合并记录续办剩余操作；不修改已交付材料或重新跑交付阶段。
+     新的未合入修复与实际 merged head 不符时报告阻塞，不以重新提交改变本次发布。
+5. open 且修复已提交、前置齐全时，在原 source worktree 执行 `finish-gitflow --repo <owner>` 更新原 PR/MR。
+   - 本地 head 与已确认 head 不同且未完成项已补齐时，先提交候选新 head，不反复处理旧 head 的 review。
+   - 只有已准备且无新提交的等待，或 merged/清理/backmerge 恢复，才从主路径带 `--source <原分支>` 续办。
+   - owner 缺失且仍需修改或提交新 head 时保留现场并报告，不在主 worktree 代写。
+6. 返回 waiting_for_merge 时在当前调用每 120 秒查询新 head 的结果；completed=false 不结束 deliver Goal。
+   - next 选中的是父 close-out：内部返工阶段完成后回同一 PR 流程，不递归调用 next，也不创建 deliver。
+   - 清理已完成但仍需完成记录或报告时，按记录及实际 Git 核验，不要求已删除的 source 继续存在。
 
 ### 生命周期
 
@@ -81,7 +110,7 @@ closeout:
 | closed，未 merged | 返回 closed_without_merge；不清理、不宣称完成 |
 | merged | 核 source/target/head、双亲 merge commit、远端第一父链，然后续办 |
 | 仅部分后续动作成功 | 核对记录与实际状态，只补剩余步骤 |
-| completed | 本地 source 删除、owner detached；保留工作区，按原清理规则交接 |
+| completed | 本地 source 删除；owner 存在时 detached，已外部删除则如实报告；按原清理规则交接 |
 
 - 从主工作区恢复：`finish-gitflow --repo <主路径> --source <原分支>`，支持所有交付 kind。
 - 返回 completed=false 是正常等待；调用方须读取 status，不得因退出 0 就结束 deliver Goal。
@@ -125,13 +154,19 @@ closeout:
 可修问题交回主链外处理，保持当前任务持续推进；独立 close-out 和 deliver 委托均适用。
 
 1. 核对反馈对应当前 PR/MR 与 head；读取完整 review、CI 日志和失败报告，定位问题，不为查看输出重复运行。
-2. 在原 source worktree 修复；记录修复前 HEAD 作为增量审查左端点，按实际影响退勾 objectives。
+2. 修改前先保存「PR close-out 返工」非 checklist 备注，并按实际影响退勾 objectives 的受影响项及后续项，落盘后再修复。
+   - 备注位于本次材料目录的 objectives，记录父 intent 与调用方、原 PR/MR 身份、source/owner/common dir/主路径。
+   - 原调用方为 deliver 时保留其有效 until、yolo 与已有授权依据；新调用有显式边界或用户限制时以本次要求为准。
+   - 同时记录反馈对应的旧 head、修复前左端点、原验证请求（scope/模块/选题或 suite/完整命令）及返回 PR close-out 的位置。
+   - 进度仍只由 checklist 决定；备注只恢复父流程与参数，不另加 gate 或状态协议，不改写人工工作勾选来源。
    - 冲突通过 merge 目标分支解决；不 rebase、不 force push，不覆盖他人现场。
    - CI 暂时故障仅在证据支持时重试；不降低测试、审批或 branch protection 要求。
 3. 结束 close-out 内部调用栈，在主链外按影响恢复 lint、增量 code-review、原验证范围及 fact。
    - code-review 与 verify 可相互退回修复，直到问题解决、所需审查和验证通过；同步材料并提交。
    - 独立 close-out 也由当前 Agent 续办上述阶段，不仅报告待办后结束；deliver 返回 Select 按原阶段推进。
-4. 恢复 close-out，步骤 3 非 force push 合法新提交、复用原 PR/MR；新 head 等待新的 CI/review 后继续每 2 分钟查询。
+4. 全部补审补测与 fact 完成后，复核候选材料、恢复 close-out 候选勾选，在更新 PR/MR 前的材料提交中移除该备注。
+   - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与 finish 记录的差异恢复更新，不重做首次材料准备。
+   - 恢复 close-out，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。
    - 保留 finish 操作记录；不删除或篡改记录以绕过 CLI 核验。
    - release/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
 

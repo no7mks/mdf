@@ -36,6 +36,9 @@
 
 ## 工作流（唯一执行契约）
 
+PR 恢复优先：按 [PR Close-out 的恢复路由](pr-close-out.md) 只读核已锁定 source 的操作记录及返工备注。
+命中时先恢复父 close-out；先应用仍在协调的 deliver 边界，不先调用普通身份检查，不因 detached 或 source 已删除而另选任务。
+
 adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次只完成一个账本项。
 已锁定 adhoc 的 retained worktree 先用 adhoc-status 核验；completed 只报告结果，不重新 start。
 人工 feature 先执行 `references/manual-feature.md` 的续办工作流，替代普通主线选型。
@@ -95,6 +98,9 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 委托与候选：
 
 - 同一流程的内部委托先续办未完成的子步骤，再返回调用方。
+- 已识别 PR close-out 返工时，保留父 intent 与原验证请求，子阶段结束后回到原 PR close-out 更新原 PR 并轮询。
+  - 普通 next 本次选择的是该父 close-out，必要补审补测属于其恢复范围；不把内部阶段结束当成父流程完成。
+  - 不重复已齐 reviewer 或另开 deliver；没有该父上下文的普通交付仍按单步规则。
 - 已有 verify 小 loop 时，恢复其原 scope/选题、左端点和待修绿/待复审状态，再续办 verify。
   - code-review 退勾是该 loop 的内部返工；先修绿再派增量审查，不按首个退勾项提前重开审查。
   - 只从已有调用栈、objectives 续办备注或草稿恢复父 intent，不把草稿当作进度 gate；范围缺失则停止报告。

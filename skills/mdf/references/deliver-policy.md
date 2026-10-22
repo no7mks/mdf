@@ -91,6 +91,7 @@
 - 无可启动目标（未指定人工 feature，且无合格 ready PRP、无合格 open Bug，
   也未指定合法 release/hotfix 版本）。
 - 已有交付缺少 worktree。
+  - 仅指仍需 owner 修改或提交的交付；PR 已合并后的清理、发布或 backmerge 可按原操作记录从主路径恢复。
 - 用户明确只读或禁止提交/推送且与完成条件冲突。
 - 必须切换 worktree 但宿主无法由 Agent 完成。
 - 凭据、origin 一致性等仓库外条件缺失。

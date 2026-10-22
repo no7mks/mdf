@@ -78,8 +78,9 @@ def test_backmerge_worktree_creation_resumes_after_branch_was_created(python_exe
 
 
 @pytest.mark.parametrize('boundary', ['detach', 'delete', 'completed_record'])
-def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path, monkeypatch, boundary):
-    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
+@pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
+def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path, monkeypatch, boundary, kind):
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     platform.merge(1, tmp_path)
     original_git, original_write = pull_finish.git, pull_finish.write_json
@@ -106,6 +107,45 @@ def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path,
     assert done['completed'] and git(remote, 'show-ref').stdout == snapshot
     assert not git(repo, 'for-each-ref', 'refs/heads/' + first['source']).stdout
     assert json.loads(state_path(repo, first['source']).read_text())['completed']
+
+
+@pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
+def test_review_update_uses_owner_then_merged_cleanup_resumes_from_primary(python_exe, tmp_path, monkeypatch, kind):
+    repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
+    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    (work / 'src/service.py').write_text('review_fixed = True\n')
+    commit(work)
+    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    assert failed.returncode != 0 and 'stage_branch' in failed.stderr
+    state = json.loads(state_path(repo, first['source']).read_text())
+    assert state['head'] == first['pull_request']['head'] and 'pending_head' not in state
+    updated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    assert updated['status'] == 'waiting_for_merge' and not updated['completed']
+    assert updated['pull_request']['head'] != first['pull_request']['head']
+    assert updated['pull_request']['id'] == first['pull_request']['id'] and len(platform.pulls) == 1
+    platform.merge(1, tmp_path)
+    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    assert done['completed']
+
+
+@pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
+def test_merged_cleanup_resumes_after_owner_worktree_was_removed(python_exe, tmp_path, monkeypatch, kind):
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
+    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    platform.merge(1, tmp_path)
+    original = pull_finish.cleanup
+    def interrupted(repo_path, state):
+        original(repo_path, state)
+        raise MDFError('模拟完成记录前中断', code='test_interrupted')
+    with monkeypatch.context() as patch:
+        patch.setattr(pull_finish, 'cleanup', interrupted)
+        assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+    assert not json.loads(state_path(repo, first['source']).read_text())['completed']
+    snapshot = git(remote, 'show-ref').stdout
+    git(repo, 'worktree', 'remove', str(work))
+    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    assert done['completed'] and not work.exists()
+    assert git(remote, 'show-ref').stdout == snapshot
 
 
 @pytest.mark.parametrize('recreated', [False, True])

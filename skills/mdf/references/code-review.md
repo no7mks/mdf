@@ -411,6 +411,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
    左端点 tip、完整或缩写 SHA）。
 4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
 5. 提交终稿，将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
+   - 只清理本轮审查草稿；不得删除父 PR close-out 返工备注，完成后按其返回位置交还调用方。
 6. ❌ 报告未齐或仍在修复窗时不得洗稿、不得勾选。
 
 - ❌ 不运行 `delivery record --stage code-review`；不以 gate 文件为进度。

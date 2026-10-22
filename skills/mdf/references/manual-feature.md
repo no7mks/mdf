@@ -29,6 +29,9 @@
 
 ## 工作流（唯一执行契约）
 
+PR 恢复优先：调用方先按 [PR Close-out 的恢复路由](pr-close-out.md) 核原 source 的操作记录与返工备注。
+命中时先恢复父 close-out，不运行下表的 delivery status；没有 PR 恢复时才按人工七项清单续办。
+
 仅 next / deliver 在 `delivery.json` 的 `manual` 为 true 时内部执行本工作流。
 start 与各阶段 intent 只读取下文对应条款，不执行本续办工作流。
 读取 `references/common.md`；当前会话已完整读取则复用。

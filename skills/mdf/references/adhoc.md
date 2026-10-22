@@ -39,6 +39,9 @@
 
 ## 工作流（唯一执行契约）
 
+PR 恢复优先：按 [PR Close-out 的恢复路由](pr-close-out.md) 核原 source 的操作记录与返工备注。
+命中时先恢复父 close-out，不先要求 adhoc-status 通过；无 PR 恢复时才执行下表与六项账本选型。
+
 读取 `references/common.md` 与 `references/delivery-contract.md`；本页专用条款优先于普通交付主线。
 不执行 start 的 clarify、PRP 选择或 roster 确认。
 
