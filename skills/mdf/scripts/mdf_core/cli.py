@@ -303,6 +303,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     verify.set_defaults(func=command_verify)
 
+    pull = subparsers.add_parser("pr")
+    pull.add_argument("--repo", required=True)
+    pull.add_argument("--source")
+    pull.set_defaults(func=command_finish_gitflow, phase="pr")
+
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)
     finish.add_argument("--source")

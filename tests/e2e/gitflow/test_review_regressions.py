@@ -32,7 +32,7 @@ def waiting_backmerge(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
     completed_materials(work)
     squash_pending(work)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
     original = pull_publish.git
     def reject(repo, *args, **kwargs):

@@ -62,6 +62,7 @@ disable-model-invocation: true
                  ├──── fact update ───────────────────────────────────────→ references/fact-update.md
                  ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
                  ├──── prp split ─────────────────────────────────────────→ references/prp-split.md
+                 ├──── pr ────────────────────────────────────────────────→ references/pr.md
                  ├──── close-out ─────────────────────────────────────────→ references/close-out.md
                  ├──── squash [--dry-run] ────────────────────────────────→ references/squash.md
                  ├──── prettify ──────────────────────────────────────────→ references/prettify.md
@@ -112,7 +113,7 @@ disable-model-invocation: true
   - `$mdf next` 无问号时执行 `references/next.md`。
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]` 仍是 deliver，不是独立 intent。
   - option 可在 target 前或后；`--stop-at` 是 `--until` 的别名，值不算 target。
-  - 默认自动裁定 decision，confidence < 0.8 请求用户确认；默认 `--until close-out`，不执行该 intent。
+  - 默认自动裁定 decision，confidence < 0.8 请求用户确认；默认 local 为 `--until close-out`，PR mode 为 `--until pr`，不执行该 intent。
   - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效。详见 deliver。
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
   - `--yolo` 仅自动确认内部 clarify，不跳过红灯或回归验证，也不代替测试门槛批准；fix 不执行 Gitflow 收口。
@@ -148,9 +149,11 @@ disable-model-invocation: true
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托截止点之前从 start 起的剩余交付阶段；yolo 无默认截止点。
 - adhoc 可内部委托其六项清单的剩余阶段直到 close-out。
+- `$mdf pr` 执行 `references/pr.md`，只适用于 PR mode。
+  - 创建/更新 PR、等待 CI/review、修复并持续等待；merged 且核验通过后完成 pr Goal。
 - `$mdf close-out` 执行 `references/close-out.md`。
-  - PR mode 包含提交、当前调用内等待与合并后收口；独立调用和 deliver 委托均不得发完 PR/MR 就结束。
-  - 正常等待按 `references/pr-close-out.md` 持续轮询；deliver 的 until 仍在委托前检查。
+  - local 完成本地收口；PR mode 仅执行 merged 后的发布、backmerge 与清理。
+  - PR mode 的 objectives 在 close-out 前必须有 pr，完整交付在 pr 返回后继续 close-out。
 - `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
 
 帮助与 CLI：

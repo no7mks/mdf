@@ -165,7 +165,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先设 checkout 外的 `
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
   - PR mode 的 release/hotfix 若已准备 `changes/<version>/delivery.json`，本轮使用该版本目录的材料、objectives 和报告。
-    PR/MR 合并前可补审修订；不另建 unreleased 副本。候选流程见 [PR Close-out](pr-close-out.md)。
+    PR/MR 合并前可补审修订；不另建 unreleased 副本。候选流程见 [PR](pr.md)。
   - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
     release/hotfix 用该分支的稳定 SemVer，不用 slugify。
   - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
@@ -451,7 +451,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先设 checkout 外的 `
    左端点 tip、完整或缩写 SHA）。
 4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
 5. 提交终稿，将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
-   - 只清理本轮审查草稿；不得删除父 PR close-out 返工备注，完成后按其返回位置交还调用方。
+   - 只清理本轮审查草稿；不得删除父 PR 返工备注，完成后按其返回位置交还调用方。
 6. ❌ 报告未齐或仍在修复窗时不得洗稿、不得勾选。
 
 - ❌ 不运行 `delivery record --stage code-review`；不以 gate 文件为进度。
@@ -468,7 +468,7 @@ close-out 核对：
   - local close-out 集成引入的非本交付 `docs/` 改动；PR mode 的远端集成不适用此豁免。
 - close-out 集成 develop/master 产生新提交后：
   - local 模式仅非本交付 `docs/` 增量不新开审查；按 close-out 契约追加跳过说明。
-  - PR mode 的每次远端集成都补审补测，按 `pr-close-out.md` 执行，不因仅文档或空 tree diff 跳过。
+  - PR mode 的每次远端集成都补审补测，按 `pr.md` 执行，不因仅文档或空 tree diff 跳过。
   - 其他集成增量一律作为增量新一轮从 1 开始，左端点为集成前 HEAD（当场记录）。
     - 以集成后的 HEAD 重做 1 份本轮范围审查；需 smart 时按上方边界交接，不复用集成前终稿当增量差。
     - 本轮完成后再次洗成无 commit 终稿并勾选。

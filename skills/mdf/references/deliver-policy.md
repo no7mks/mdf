@@ -20,7 +20,9 @@
 本节在任何写入或分派前确定本次调用的执行边界。
 
 - `--until <intent>` 与 `--stop-at <intent>` 是同一个 option；截止点为 exclusive，不执行该 intent。
-- 默认 `--until close-out`：完成此前阶段后结束本次调用，不准备 close-out 材料、不执行其集成或 Gitflow。
+- 默认 local 为 `--until close-out`，PR mode 为 `--until pr`：完成此前阶段后结束本次调用，不准备 close-out 材料、不执行其集成或 Gitflow。
+- PR mode 的默认截止点排除 pr 及 close-out；显式 `--until close-out` 允许 pr 等到 merged 后停止。
+- local 不接受 `--until pr`；pr 不在该路径中。
 - `--yolo` 未显式指定 until 时无截止点；显式 until 仍生效，包括 `--yolo --until close-out`。
 - 缺值、未知 intent、重复指定（含混用两个别名）均停止并说明参数错误；写入或 start 之前完成解析。
 - 多词 intent 须作为单个值传入，如 `--until "fact audit"`。
@@ -28,10 +30,10 @@
 | 交付路径 | 可用截止点与调用关系 |
 | --- | --- |
 | 普通交付前段 | start（联调时内部 integrate）→ design → write-tests / implement → converge |
-| 普通交付后段 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out |
-| 人工 feature | start → lint → code-review → verify → fact update（内部 fact audit）→ close-out |
-| 已有 adhoc | 工作 → lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out |
-| 条件性子 intent | clarify（start/design）；squash（普通 close-out）；bug close（release/hotfix close-out） |
+| 普通交付后段 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ [pr（仅 PR mode）] → close-out |
+| 人工 feature | start → lint → code-review → verify → fact update（内部 fact audit）→ [pr（仅 PR mode）] → close-out |
+| 已有 adhoc | 工作 → lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ [pr（仅 PR mode）] → close-out |
+| 条件性子 intent | clarify（start/design）；squash（local close-out / pr）；bug close（release/hotfix 的 local close-out / pr） |
 
 - 只读解析目标时确定路径；不适用该路径的 intent 报参数错误，不悄悄忽略，不先执行 start。
   - 工作是 adhoc 的账本项，不是 intent；子 intent 按括号中的调用位置判断边界，不另启动调用方。
@@ -78,7 +80,7 @@
 - `--yolo` 无 confidence 限制：不要求评分、不因低 confidence 询问，由主 Agent 自裁定并记录理由。
 - 内部 clarify、manual slug、Gitflow 收口与收尾删除 worktree 的决定均遵守本策略。
   - squash 默认按其契约自主分析执行，不增加逐次计划确认；范围或归属不明仍须澄清。
-  - 不增加固定 Gitflow 确认关口；只有截止点允许进入 close-out 时才评估其 decision。
+  - 不增加固定 Gitflow 确认关口；仅在截止点允许进入对应 pr 或 close-out 时评估该阶段的 decision。
   - 人工实际工作仍须由用户完成并显式勾选，所有模式均不得代勾。
   - converge 的 `--test-approval` 记录该裁定、评分或用户确认与理由。
 - 本策略覆盖子 intent 的询问与确认要求，不覆盖用户明令禁止、关键事实缺失、外部条件与验收要求。

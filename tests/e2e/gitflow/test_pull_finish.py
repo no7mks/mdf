@@ -12,13 +12,13 @@ from support_pull import prepare, squash_pending
 def test_pr_finish_waits_then_resumes_idempotently(python_exe, tmp_path, monkeypatch, kind):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     before = git(remote, 'show-ref').stdout
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert not first['completed'] and first['status'] == 'waiting_for_merge'
     assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == first['source']
     assert git(work, 'branch', '--show-current').stdout.strip()
     assert git(remote, 'rev-parse', 'master').stdout.strip() in before
     assert not git(remote, 'for-each-ref', 'refs/tags/v1.2.1').stdout
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    payload(mdf(python_exe, 'pr', '--repo', str(repo), '--source', first['source']))
     assert len(platform.pulls) == 1
     if kind == 'feature':
         assert 'status: ready' in git(repo, 'show', f'origin/develop:docs/proposals/{PRP_NAME}').stdout
@@ -39,13 +39,13 @@ def test_pr_finish_waits_then_resumes_idempotently(python_exe, tmp_path, monkeyp
 
 def test_closed_pull_and_changed_merge_never_publish(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.pulls[0]['state'] = 'closed'
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    result = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert not result['completed'] and result['status'] == 'closed_without_merge'
     assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == result['source']
     platform.pulls[0].update(state='merged', merge_commit=git(repo, 'rev-parse', 'master').stdout.strip())
-    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+    failed = mdf(python_exe, 'pr', '--repo', str(work))
     assert failed.returncode != 0 and 'invalid_pull_merge' in failed.stderr
     assert not git(remote, 'for-each-ref', 'refs/tags').stdout
 
@@ -58,15 +58,15 @@ def test_creation_response_loss_recovers_same_pull(python_exe, tmp_path, monkeyp
         original(*args)
         raise MDFError('创建响应丢失', code='test_lost')
     monkeypatch.setattr(platform, 'create', lost)
-    assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+    assert mdf(python_exe, 'pr', '--repo', str(work)).returncode != 0
     monkeypatch.setattr(platform, 'create', original)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    result = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert result['status'] == 'waiting_for_merge' and len(platform.pulls) == 1
 
 
 def test_publish_keeps_tag_on_fixed_merge_after_master_advances(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
     other = tmp_path / 'platform-1'
     (other / 'later.txt').write_text('后来的发布\n')
@@ -85,7 +85,7 @@ def test_backmerge_conflict_stays_off_develop_and_resumes_directly(python_exe, t
     commit(repo)
     git(repo, 'push', 'origin', 'develop')
     before = git(remote, 'rev-parse', 'develop').stdout
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['status'] == 'published_pending_backmerge' and not result['completed']
@@ -103,10 +103,10 @@ def test_backmerge_conflict_stays_off_develop_and_resumes_directly(python_exe, t
 
 def test_source_updates_reuse_existing_feature_pull(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, 'feature')
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('fixed_after_review = True\n')
     commit(work)
-    updated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    updated = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert updated['pull_request']['head'] != first['pull_request']['head']
     assert len(platform.pulls) == 1
     platform.merge(1, tmp_path)
@@ -126,7 +126,7 @@ def test_release_candidate_updates_original_pull_and_verification(python_exe, tm
     (root / 'suites.json').write_text(json.dumps({'suites': ['billing']}))
     commit(work)
     squash_pending(work)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('fixed_after_review = True\n')
     commit(work)
     assert locate(work)[0] == root
@@ -138,7 +138,7 @@ def test_release_candidate_updates_original_pull_and_verification(python_exe, tm
     assert not (work / 'changes/unreleased/1.2.1').exists()
     commit(work)
     squash_pending(work)
-    updated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    updated = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert updated['status'] == 'waiting_for_merge'
     assert updated['pull_request']['head'] != first['pull_request']['head']
     assert len(platform.pulls) == 1
@@ -152,9 +152,9 @@ def test_release_candidate_updates_original_pull_and_verification(python_exe, tm
 @pytest.mark.parametrize('kind', ['release', 'hotfix'])
 def test_release_candidate_updates_still_reject_rewritten_history(python_exe, tmp_path, monkeypatch, kind):
     _, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     git(work, 'reset', '--hard', 'HEAD^')
-    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+    failed = mdf(python_exe, 'pr', '--repo', str(work))
     assert failed.returncode != 0 and 'pull_state_changed' in failed.stderr
     assert git(remote, 'rev-parse', first['source']).stdout.strip() == first['pull_request']['head']
     assert len(platform.pulls) == 1
@@ -168,7 +168,7 @@ def test_pull_update_response_loss_keeps_confirmed_and_pending_heads(python_exe,
     from mdf_core.lifecycle import pull_finish
     from mdf_core.lifecycle.publish import state_path
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('review_fix = True\n')
     commit(work)
     candidate = git(work, 'rev-parse', 'HEAD').stdout.strip()
@@ -183,7 +183,7 @@ def test_pull_update_response_loss_keeps_confirmed_and_pending_heads(python_exe,
         return original(repo_path, *args, **kwargs)
     with monkeypatch.context() as patch:
         patch.setattr(pull_finish, 'git', interrupted)
-        failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+        failed = mdf(python_exe, 'pr', '--repo', str(work))
         assert failed.returncode != 0
     state = json.loads(state_path(work, first['source']).read_text())
     assert state['head'] == first['pull_request']['head']
@@ -202,7 +202,7 @@ def test_pull_update_response_loss_keeps_confirmed_and_pending_heads(python_exe,
 @pytest.mark.parametrize('source_action', ['advance', 'dirty'])
 def test_merged_release_checks_source_before_publishing(python_exe, tmp_path, monkeypatch, kind, source_action):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     before = git(remote, 'rev-parse', 'develop').stdout
     (work / 'src/service.py').write_text('late_change = True\n')
@@ -237,7 +237,7 @@ def test_candidate_material_identity_rejects_mismatch_and_duplicate(python_exe, 
 
 def test_dirty_target_stops_before_tag_and_preserves_source(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     (repo / 'dirty.txt').write_text('他人未提交的工作\n')
     failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
@@ -251,7 +251,7 @@ def test_tag_push_response_loss_does_not_retag(python_exe, tmp_path, monkeypatch
     from mdf_core.foundation.errors import MDFError
     from mdf_core.lifecycle import pull_publish
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     original = pull_publish.git
     def lost(repo, *args, **kwargs):
@@ -271,7 +271,7 @@ def test_rejected_develop_push_preserves_pending_without_another_pull(python_exe
     from types import SimpleNamespace
     from mdf_core.lifecycle import pull_publish
     repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     original = pull_publish.git
     def rejected(repo, *args, **kwargs):

@@ -7,9 +7,9 @@
 │ 1 Check entry                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── adhoc ───────────────→ [委托 Adhoc Close-out 并返回]
-                 ├──── PR mode 已有记录 ────→ [委托 PR Close-out 恢复，等待留在子流程]
-                 ├──── 失败/缺失 ───────────→ [停止]
+                 ├──── adhoc ────────→ [委托 Adhoc Close-out 并返回]
+                 ├──── PR mode ──────→ [委托合并后续办]
+                 ├──── 失败/缺失 ────→ [停止]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -84,7 +84,7 @@
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
                  │
-                 ├──── PR mode ─────────────────────→ [委托 PR Close-out，等待留在子流程]
+                 ├──── PR mode ─────────────────────→ [委托合并后续办]
                  ├──── local 通过 ──────────────────→ [核验、报告并询问工作区清理]
                  ├──── local 失败且用户决定继续 ────→ 10 Finish Gitflow
                  ├──── local 失败且未决 ────────────→ 10 Finish Gitflow
@@ -93,14 +93,9 @@
 
 ## 工作流（唯一执行契约）
 
-先检查 manifest.closeout。PR mode 读取 [PR Close-out](pr-close-out.md)：首次调用仍完成本页材料前置，
-步骤 10 改为 PR/MR 提交、当前调用内等待与合并后收口；已有操作记录则优先续办，不重复收口。
-
-先按 [Goal 与持续推进](pr-close-out.md#goal-与持续推进) 绑定 Goal，再执行首次准备或恢复。
-
-- `waiting_for_merge` / `completed=false` 是 CLI 的中间结果，不是本 intent 的返回条件。
-- 当前 Agent 按 PR Close-out 持续轮询；正常等待 review、CI 或合并时，不结束当前调用，也不要求用户再次调用。
-- 仅实际完成并核验通过，或命中 PR Close-out 的停止/交接条件时返回；独立调用和 deliver 委托均适用。
+先核 manifest.closeout。PR mode 直接执行 [合并后续办](pr-close-out.md)，返回实际结果。
+PR 未 merged 时交接 pr，不在 close-out 内创建 PR、轮询 CI 或准备候选材料。
+本页后续编号流程仅用于 local；PR mode 的 pr 可只读取其中材料条款。
 
 adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主线。
 人工 feature 先读取 `references/manual-feature.md`；其余按下文集成与 Gitflow 规则收口。
@@ -117,7 +112,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc或(PR且有记录)委托；其余2 | 停止并报告 |
+| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc或PR委托；其余2 | 停止并报告 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 待外部续办则交接；冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 整理 Change 与 HTML 总结 | branch/fact、材料 | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
@@ -126,7 +121,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 | 7 | Prepare closures | 约束 | bug close 关闭 fixed；准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | Hand off | 约束 | 提交、核现场 | clean | 裁定有效 10；低分→deliver 6 | 主线前进 feature/bugfix 回 2；其余停 |
-| 10 | Finish Gitflow | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 等待留子流程；核验完成返回 | PR 按子流程；local 继续或未决则 10；停止则停 |
+| 10 | Finish Gitflow | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 合并后续办；核验完成返回 | PR 按子流程；local 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构
 
@@ -138,7 +133,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - ❌ 不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
 - 核授权后先解析目标 Git 根、交付身份与 manifest.closeout，再按以下顺序分流：
   - adhoc 委托 `references/adhoc-close-out.md`，返回其实际结果，不继续普通主线。
-  - PR mode 且已有该 source 的操作记录时，委托 `pr-close-out.md` 恢复，正常等待留在子流程。
+  - PR mode 时，委托 `pr-close-out.md` 恢复，只续办合并后操作。
     source 须来自已锁定交付或用户输入，不能从 detached 路径猜测；恢复不要求原源分支仍存在。
   - 其余首次调用继续下列 doctor、branch 与现场检查。委托前仍应用外层 until 和 decision 策略。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
@@ -164,7 +159,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
       核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
   - 版本根提交后有未纳入收口的交付改动、记录缺损或状态不一致时停止，不覆盖版本目录。
 
-PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-out.md#提交前远端集成)。
+PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提交前远端集成)。
 本节的本地目标、跳过判定及已收口后禁止新集成仅适用于 local；PR 候选版本按 PR 返工规则续办。
 
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
@@ -365,7 +360,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
 - Gitflow 前核对总结覆盖最终结果；补齐本轮收口的实际结果，再按「总结生成」固化、检查并提交。
 - 按分支：
   - feature/bugfix 核对 objectives 与所需 report 已交；local 模式不 push，进入本地 Gitflow 合并。
-    PR mode 委托 PR Close-out 提交和续办。
+    PR mode 由 pr 提交，close-out 仅合并后续办。
   - release/hotfix 仍需已提交收口结果，close-out 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：
@@ -374,8 +369,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
-  - PR mode 此勾选是候选材料；PR 已创建或 checklist 全勾均不能代替实际合并与收口核验。
-- PR mode 在提交前按 PR Close-out 再次 fetch 并核对远端 ancestor，缺失则集成、补审补测后重新 close-out。
+  - PR mode 没有 close-out checkbox；pr 只勾自己的候选项，close-out 按实际结果完成。
+- PR mode 的提交前远端集成、补审补测属于 pr，见 [pr](pr.md)。
 - local 模式再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
   - release/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。
@@ -383,7 +378,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
 
 **合并** <a id="s10"></a>
 
-- PR mode 使用 [PR Close-out](pr-close-out.md) 的提交、等待和恢复规则，以下 Gitflow 合并/push 仅适用于 local。
+- PR mode 使用 [合并后续办](pr-close-out.md) 的发布和清理规则，以下 Gitflow 合并/push 仅适用于 local。
   - 已发布 backmerge 的修复补审补测在本调用栈外按该子流程执行，不重开已发布版本的交付阶段。
 
 - 执行关口：

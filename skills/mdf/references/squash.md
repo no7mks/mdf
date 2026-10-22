@@ -99,7 +99,7 @@ squash 按交付目标分析逻辑边界，默认合并同一目标的提交；�
   - 多段执行后无需强行再压成一段；同一 HEAD 的已完成分析可复用，每次动作仍重新检查共享边界。
 - 审查窗未结束时先完成审查，不改写其端点；tree 不变无需仅因 hash 变化重跑测试。
   - squash 后重新固定后续增量审查左端点；不得继续使用已改写的旧 HEAD 作为新的 review 范围。
-  - merge 远端主线后的补审补测仍按 PR Close-out 完整执行，不被 squash 替代。
+  - merge 远端主线后的补审补测仍按 PR 完整执行，不被 squash 替代。
 - 禁止 rebase、merge --squash、force push；使用 soft reset 分段重建可改写的普通提交。
 
 ### 入口与门禁

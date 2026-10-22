@@ -112,7 +112,7 @@ deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 close-
 - deliver 负责从尚未 start 起持续委托、并行 subagent 的 worktree 身份核验与结果交接。
 - design 的 Baseline 与 converge 的 owner subagent 由各 intent 启动，CLI 不介入。
 - 位置参数 target 与 `--until`（别名 `--stop-at`）、`--yolo` 由 intent 解释，不是 CLI 参数。
-  默认自动裁定、confidence < 0.8 请求确认、默认停在 close-out 之前；细则见 deliver 契约。
+  默认自动裁定、confidence < 0.8 请求确认、默认 local 停在 close-out 之前，PR mode 停在 pr 之前；细则见 deliver 契约。
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后调用：
 
@@ -130,6 +130,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
+| `pr` | `pr --repo <repo> [--source <source>]`；merged 后完成，交给 close-out | [PR mode](mdf-cli-review.md) |
 | `close-out` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。

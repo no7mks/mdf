@@ -200,6 +200,22 @@ def command_start(args) -> None:
         suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
+    from mdf_core.workspace.merge_policy import configured
+    pr_mode = configured(repo)["mode"] == "pr"
+    if pr_mode:
+        import re
+        continuation = "- close-out（pr merged 后必须续办；不设 checkbox）"
+        has_pr = re.search(r"(?m)^- \[.\] pr[ \t]*$", objectives)
+        tail = continuation if has_pr else "- [ ] pr\n" + continuation
+        if re.search(r"(?m)^- \[.\] close-out[ \t]*$", objectives):
+            objectives = re.sub(r"(?m)^- \[.\] close-out[ \t]*$", tail, objectives)
+        elif not has_pr:
+            objectives = objectives.rstrip() + "\n" + tail + "\n"
+        elif continuation not in objectives:
+            objectives = objectives.rstrip() + "\n" + continuation + "\n"
+        items = re.findall(r"(?m)^- \[([ x])\] (.+?)[ \t]*$", objectives)
+        if items[-1] != (" ", "pr") or sum(name == "pr" for _, name in items) != 1:
+            raise MDFError("PR mode 的最后一个 checkbox 必须是未勾选的 pr", code="invalid_objectives")
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
         args.kind, args.qa, args.dev, args.reviewers,
@@ -213,7 +229,7 @@ def command_start(args) -> None:
     needs_design = False if manual or adhoc else parse_needs_design(objectives)
     if manual:
         from mdf_core.lifecycle.manual import require_manual_objectives
-        require_manual_objectives(objectives, starting=True)
+        require_manual_objectives(objectives, starting=True, pr_mode=pr_mode)
     if (roster["qa"] >= 1 or roster["dev"] >= 1) and not needs_design:
         raise MDFError(
             "roster ≥1 时 needs_design 必须为 yes",
@@ -347,8 +363,10 @@ def command_finish_gitflow(args) -> None:
     settings = configured(repo)
     if settings["mode"] == "pr":
         from mdf_core.lifecycle.pull_finish import finish
-        finish(repo, source, settings)
+        finish(repo, source, settings, phase=getattr(args, "phase", "close-out"))
         return
+    if getattr(args, "phase", "close-out") == "pr":
+        raise MDFError("pr intent 仅适用于 PR mode", code="invalid_closeout")
     kind = details["kind"]
     publish = kind in {"release", "hotfix"}
     targets = ["develop"] if kind in {"feature", "bugfix", "adhoc"} else ["master", "develop"]

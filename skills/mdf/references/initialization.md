@@ -195,7 +195,7 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
   - suite 语义与预算见 `delivery-contract.md`「验证 suite」。
 - 可选预算覆盖。
 - 可选 `closeout`：未指定且不存在时用 local；已有值默认保留。
-  - 用户要求启用或调整 PR/MR 时，确认 mode 与 provider，并读取 [PR Close-out](pr-close-out.md) 的模式与 Merge 例外。
+  - 用户要求启用或调整 PR/MR 时，确认 mode 与 provider，并读取 [PR](pr.md) 的模式与 [合并后续办](pr-close-out.md) 的 Merge 例外。
   - 仅核配置要求，不执行该子流程；provider 只接受 github/gitlab，不能唯一确定时返回调用方澄清。
 - `implementation_roots`：
   - 实现根可以为空目录。

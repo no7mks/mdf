@@ -31,3 +31,12 @@ def test_adhoc_progress_is_a_completed_prefix():
 def test_adhoc_rejects_changed_or_reordered_steps(old, new):
     with pytest.raises(MDFError, match="固定顺序"):
         require_objectives(objectives().replace(old, new))
+
+
+def test_pr_adhoc_uses_pr_as_last_checkbox():
+    text = objectives().replace("close-out", "pr")
+    require_objectives(text, starting=True, pr_mode=True)
+    assert require_objectives(text.replace("[ ]", "[x]", 5), pr_mode=True) == "pr"
+    require_objectives(text.replace("[ ]", "[x]"), finishing=True, pr_mode=True)
+    with pytest.raises(MDFError):
+        require_objectives(text, starting=True)

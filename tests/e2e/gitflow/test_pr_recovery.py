@@ -18,17 +18,17 @@ pytestmark = pytest.mark.release_only
 @pytest.mark.parametrize('same_source', [True, False])
 def test_concurrent_finish_is_rejected_before_platform_writes(python_exe, tmp_path, monkeypatch, same_source):
     repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     original = platform.get
     nested = []
     def interleave(number):
         if not nested:
             nested.append(None)
             source = first['source'] if same_source else 'release/1.2.1'
-            nested[0] = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source)
+            nested[0] = mdf(python_exe, 'pr', '--repo', str(repo), '--source', source)
         return original(number)
     monkeypatch.setattr(platform, 'get', interleave)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    result = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert result['status'] == 'waiting_for_merge'
     assert nested[0].returncode != 0 and 'finish_busy' in nested[0].stderr
     assert len(platform.pulls) == 1
@@ -48,20 +48,20 @@ def test_finish_lock_is_shared_across_processes_and_released_after_exit(python_e
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         assert process.stdout.readline().strip() == 'locked'
-        busy = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+        busy = mdf(python_exe, 'pr', '--repo', str(work))
         assert busy.returncode != 0 and 'finish_busy' in busy.stderr
         assert platform.pulls == []
     finally:
         process.terminate()
         process.communicate(timeout=5)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    result = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert result['status'] == 'waiting_for_merge' and len(platform.pulls) == 1
 
 
 @pytest.mark.parametrize('changed_branch', [False, True])
 def test_backmerge_worktree_creation_resumes_after_branch_was_created(python_exe, tmp_path, monkeypatch, changed_branch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    payload(mdf(python_exe, 'pr', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
     def interrupted(repo_path, branch, path, start):
         git(repo_path, 'branch', branch, merged if changed_branch else start)
@@ -83,7 +83,7 @@ def test_backmerge_worktree_creation_resumes_after_branch_was_created(python_exe
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
 def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path, monkeypatch, boundary, kind):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     original_git, original_write = pull_finish.git, pull_finish.write_json
     fired = []
@@ -114,14 +114,14 @@ def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path,
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
 def test_review_update_uses_owner_then_merged_cleanup_resumes_from_primary(python_exe, tmp_path, monkeypatch, kind):
     repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('review_fixed = True\n')
     commit(work)
-    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    failed = mdf(python_exe, 'pr', '--repo', str(repo), '--source', first['source'])
     assert failed.returncode != 0 and 'stage_branch' in failed.stderr
     state = json.loads(state_path(repo, first['source']).read_text())
     assert state['head'] == first['pull_request']['head'] and 'pending_head' not in state
-    updated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    updated = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert updated['status'] == 'waiting_for_merge' and not updated['completed']
     assert updated['pull_request']['head'] != first['pull_request']['head']
     assert updated['pull_request']['id'] == first['pull_request']['id'] and len(platform.pulls) == 1
@@ -133,7 +133,7 @@ def test_review_update_uses_owner_then_merged_cleanup_resumes_from_primary(pytho
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
 def test_merged_cleanup_resumes_after_owner_worktree_was_removed(python_exe, tmp_path, monkeypatch, kind):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     original = pull_finish.cleanup
     def interrupted(repo_path, state):
@@ -153,7 +153,7 @@ def test_merged_cleanup_resumes_after_owner_worktree_was_removed(python_exe, tmp
 @pytest.mark.parametrize('recreated', [False, True])
 def test_cleanup_preserves_source_changed_by_another_git_process(python_exe, tmp_path, monkeypatch, recreated):
     repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     source, head = first['source'], first['pull_request']['head']
     new_head = git(work, 'commit-tree', head + '^{tree}', '-p', head, '-m', 'test: 后续提交').stdout.strip()
     key = f'branch.{source}.mdf-roster'
@@ -179,7 +179,7 @@ def test_cleanup_preserves_source_changed_by_another_git_process(python_exe, tmp
 
 def test_cleanup_preserves_source_checked_out_in_another_worktree(python_exe, tmp_path, monkeypatch):
     repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch)
-    first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     source = first['source']
     platform.merge(1, tmp_path)
     original = pull_finish.git

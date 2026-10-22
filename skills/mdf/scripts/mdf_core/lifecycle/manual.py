@@ -6,10 +6,11 @@ from mdf_core.foundation.errors import MDFError
 STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "close-out")
 
 
-def require_manual_objectives(text, *, starting=False, finishing=False):
+def require_manual_objectives(text, *, starting=False, finishing=False, pr_mode=False):
+    steps = (*STEPS[:-1], "pr") if pr_mode else STEPS
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
-    if tuple(name for _, name in items) != STEPS:
-        raise MDFError("人工 feature 必须按固定顺序填写七项步骤", code="invalid_manual_objectives")
+    if tuple(name for _, name in items) != steps:
+        raise MDFError("人工 feature 必须按配置对应的固定顺序填写步骤", code="invalid_manual_objectives")
     checked = tuple(mark == "x" for mark, _ in items)
     if starting and checked != (True, False, False, False, False, False, False):
         raise MDFError("start 仅勾选 start，人工工作必须由用户显式勾选", code="invalid_manual_objectives")
@@ -31,7 +32,9 @@ def feature_completion(repo, source, *, allow_candidate=False):
         raise MDFError("finish 前必须补齐 Change", code="missing_change")
     meta, _ = read_frontmatter(change)
     if data.get("manual"):
-        require_manual_objectives((root / "objectives.md").read_text(), finishing=True)
+        from mdf_core.workspace.merge_policy import configured
+        require_manual_objectives((root / "objectives.md").read_text(), finishing=True,
+                                  pr_mode=configured(repo)["mode"] == "pr")
         if meta.get("proposals") != [] or meta.get("source_branch") != source:
             raise MDFError("人工 feature 的 Change 不引用 PRP", code="invalid_change")
         return None, data["roster"]

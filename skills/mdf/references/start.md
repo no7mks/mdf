@@ -81,6 +81,11 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 
 ## 术语与数据结构
 
+### PR mode 的收尾步骤
+
+按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
+PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺序。
+
 ### 分支参数
 
 <a id="s1"></a>

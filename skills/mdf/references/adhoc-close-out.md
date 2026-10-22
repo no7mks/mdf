@@ -9,11 +9,11 @@
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── PR mode 已有记录 ────→ [委托 PR Close-out 恢复并返回]
-                 ├──── 已实际收口 ──────────→ 7 Report
-                 ├──── 已合并待清理 ────────→ 4 Recheck
-                 ├──── 缺前置步骤 ──────────→ [交接对应账本项]
-                 ├──── 身份不符 ────────────→ [停止并报告]
+                 ├──── PR mode ─────────→ [委托 PR Close-out 恢复并返回]
+                 ├──── 已实际收口 ──────→ 7 Report
+                 ├──── 已合并待清理 ────→ 4 Recheck
+                 ├──── 缺前置步骤 ──────→ [交接对应账本项]
+                 ├──── 身份不符 ────────→ [停止并报告]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -67,11 +67,9 @@
 
 ## 工作流（唯一执行契约）
 
-PR mode 同样使用本页前置与材料，Finish/Report 改按 [PR Close-out](pr-close-out.md) 提交和续办。
-先按 [Goal 与持续推进](pr-close-out.md#goal-与持续推进) 绑定 Goal，再执行首次准备或恢复。
-
-waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流程持续轮询，不返回调用方或结束当前调用。
-仅 completed=true 后核验实际合并与清理；停止/交接按 PR Close-out 处理，不用本地 detached 推断远端完成。
+先核 manifest.closeout。PR mode 直接执行 [合并后续办](pr-close-out.md)，返回实际结果。
+PR 未 merged 时交接 pr，不在 close-out 内创建 PR、轮询 CI 或准备候选材料。
+本页后续编号流程仅用于 local；PR mode 的 pr 可只读取其中材料条款。
 
 读取 [common](common.md)、[delivery-contract](delivery-contract.md) 与 [adhoc](adhoc.md) 的条款。
 仅读身份、账本与调用方规则，不重新执行这些文件的工作流。
@@ -83,7 +81,7 @@ waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流�
 | 3 | Materials | 约束 | 补齐 Change、validation、提交 | Change、validation | 4 | 材料可修 3；其余保留现场 |
 | 4 | Recheck | 约束 | 重核前置与两端，勾 close-out | report、账本、tip | 5 | 主线前进 2；缺项交接；其余停 |
 | 5 | Authorize | 约束 | 核调用授权、裁定与端点 | 调用方、裁定、确认 | 6 | 低 confidence 返回 deliver 6；现场变 4 |
-| 6 | Finish | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 等待留子流程；完成 7；local 7 | 按子流程或保留现场并报告 |
+| 6 | Finish | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 合并后续办；完成 7；local 7 | 按子流程或保留现场并报告 |
 | 7 | Report | 约束 | 按 local/PR 核实际完成并交接 | 模式、completed、merge_commit、清理与路径 | 返回调用方 | 报告实际状态 |
 
 ## 术语与数据结构
@@ -92,7 +90,7 @@ waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流�
 
 本节核对已有工作，不在 close-out 内补做工作、verify 或 fact。
 
-- PR mode 且已锁定 source 的操作记录存在时，先委托 `pr-close-out.md` 恢复后返回，不再走本页首次准备。
+- PR mode 时，先委托 `pr-close-out.md` 恢复后返回，不再走本页首次准备。
   - 恢复仍遵守外层 until 与 decision 策略；source 不明时停止，不从 detached 目录猜测。
 - 运行 `mdf.py adhoc-status --repo <owner> --slug <已知slug>`；completed 时直接到 7。
 - 未 completed 但 merge_commit 已存在时，直接到 4。只续办清理，不改材料或重做集成。
@@ -111,7 +109,7 @@ waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流�
 
 本节在源工作区集成目标主线，并准备本地 Change。
 
-PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr-close-out.md#提交前远端集成)，
+PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr.md#提交前远端集成)，
 使用最新 origin/develop；以下本地 develop 的包含检查与 docs 跳过规则仅适用于 local。
 
 - 先只读检查 owner 与 develop 的实际合并工作区均 clean，无未完成 merge。

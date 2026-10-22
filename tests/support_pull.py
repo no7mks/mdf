@@ -50,16 +50,24 @@ def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix'):
     monkeypatch.setattr(pull_finish, 'origin', lambda *_: identity)
     monkeypatch.setattr(pull_finish, 'Forge', lambda *_: platform)
     arguments = ['--proposal', 'prp-0001', '--roster', 'solo'] if kind == 'feature' else ['--version', '1.2.1']
-    obj = write_release_objectives(tmp_path) if kind == 'release' else write_work_objectives(tmp_path)
-    result = payload(mdf(python_exe, 'start', '--repo', str(repo), '--kind', kind,
-                         '--objectives-file', str(obj), *arguments))
+    if kind == 'adhoc':
+        arguments = ['--name', 'service-health', '--work', '更新说明']
+    else:
+        obj = write_release_objectives(tmp_path) if kind == 'release' else write_work_objectives(tmp_path)
+        arguments += ['--objectives-file', str(obj)]
+    result = payload(mdf(python_exe, 'start', '--repo', str(repo), '--kind', kind, *arguments))
     work = Path(result['worktree'])
     if kind in {'hotfix', 'release'}:
         write_changelog_release(work, '1.2.1')
         (work / 'src/service.py').write_text('fixed = True\n')
     else:
         root = work / 'changes/unreleased/service-health'
-        (root / 'CHANGE.md').write_text('---\nchange_kind: feature\nsource_branch: feature/service-health\nproposals: [prp-0001]\n---\n')
+        proposals = '[]' if kind == 'adhoc' else '[prp-0001]'
+        (root / 'CHANGE.md').write_text(
+            f'---\nchange_kind: {kind}\nsource_branch: {kind}/service-health\nproposals: {proposals}\n---\n')
+        if kind == 'adhoc':
+            obj = root / 'objectives.md'
+            obj.write_text(obj.read_text().replace('[ ]', '[x]'))
     commit(work)
     pull_finish.preflight(work, git(work, "branch", "--show-current").stdout.strip())
     squash_pending(work)

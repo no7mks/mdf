@@ -9,7 +9,7 @@
 │ 1 Resolve                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 已锁定 PR 恢复 ────→ [委托 PR Close-out 并返回]
+                 ├──── 已锁定 PR 恢复 ────→ [委托 PR 并返回]
                  ├──── 范围不明 ──────────→ [询问缺项]
                  ├──── 未就绪 ────────────→ [停止并报告]
                  │
@@ -40,8 +40,8 @@
 
 ## 工作流（唯一执行契约）
 
-PR 恢复优先：按 [PR Close-out 的恢复路由](pr-close-out.md) 核原 source 的操作记录与返工备注。
-命中时先恢复父 close-out，不先要求 adhoc-status 通过；无 PR 恢复时才执行下表与六项账本选型。
+PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
+命中时未 merged 恢复父 pr，已 merged 续办 close-out，不先要求 adhoc-status 通过；无 PR 恢复时才执行下表与六项账本选型。
 
 读取 `references/common.md` 与 `references/delivery-contract.md`；本页专用条款优先于普通交付主线。
 不执行 start 的 clarify、PRP 选择或 roster 确认。
@@ -55,6 +55,14 @@ PR 恢复优先：按 [PR Close-out 的恢复路由](pr-close-out.md) 核原 sou
 
 ## 术语与数据结构
 
+PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
+
+### PR mode 的收尾步骤
+
+按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
+PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺序。
+
 ### 范围与启动
 
 本节规定临时工作的授权、命名和工作区落点。
@@ -64,7 +72,7 @@ PR 恢复优先：按 [PR Close-out 的恢复路由](pr-close-out.md) 核原 sou
   - 描述写实际工作与已有约束、验收，不只写 slug；无需再次确认。
   - 当前未完工作与新描述不一致时询问归属，不覆盖原目标。
 - 显式 adhoc 授权完成六项步骤及必要本地提交、集成和收口。
-  - PR mode 的提交、等待与续办由 adhoc-close-out 委托 PR Close-out；等待平台合并不算完成。
+  - PR mode 由 pr 提交并等待 merged；随后执行 close-out 的合并后续办。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更、测试门槛批准及 fact 的确认仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
@@ -105,7 +113,7 @@ PR 恢复优先：按 [PR Close-out 的恢复路由](pr-close-out.md) 核原 sou
   - owner 已 detached，HEAD 是 develop 的 no-ff merge 非首父。
   - detached owner 须 clean；有本地改动时停止，不将改过的工作描述或账本当成已交付内容。
   - `merge_commit` 是 develop 第一父链中的实际 merge；返回 primary_worktree 供调用方复核。
-  - 账本全勾但仍在源分支时，next_step 仍为 close-out；不据此声称完成。
+  - 账本全勾且仍在源分支时：local 返回 close-out；PR mode 未核验 merged 返回 pr，已核验则 close-out。
 - 状态只读原有材料与 Git，不创建 gate 或新的 workflow 状态文件。
 
 ### 六项账本与续办
@@ -121,6 +129,7 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
 | code-review | 委托 `references/code-review.md`；1 人独立审查，终稿与自勾 |
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
 | fact audit/update | 按下节审阅，必要时更新；fact 确认、自勾与提交 |
+| pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged 且核验通过才结束 |
 | close-out | 仅此项读取并执行 `references/adhoc-close-out.md`；Change 与实际 Git 完成证据 |
 
 - 默认从首个未勾项执行到实际收口；有效的已完成项不重复执行。
@@ -130,7 +139,7 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
   - 每次只委托 until 边界内的当前 intent，decision 与完成核验遵守 deliver；无 target 时不凭空新建 adhoc。
 - 直调在当前项完成或须补前置时回 3；next / deliver 委托则返回调用方，不在本页继续循环。
   - next 本次报告完成项或返工项后结束；deliver 回自己的 Select，依账本再选下一项。
-- 清单全勾仍须核对 close-out 实际成功；仍在 adhoc 分支或上次 close-out 失败时继续 close-out。
+- 清单全勾仍须核对 close-out 实际成功；PR mode 先核 merged；未 merged 继续 pr，已 merged 或 local 的收尾继续 close-out。
   - 不凭全勾宣称完成，不因正常 detached 状态重新 start。
 
 ### Smart 与事实

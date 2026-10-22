@@ -20,3 +20,12 @@ def test_finish_requires_all_steps_and_order():
         require_manual_objectives(checklist("x xxxxx"), finishing=True)
     with pytest.raises(MDFError, match="固定顺序"):
         require_manual_objectives(checklist("xxxxxxx").replace("verify smoke", "converge"))
+
+
+def test_pr_manual_finishes_with_own_tick_without_closeout_tick():
+    text = checklist("xxxxxxx").replace("close-out", "pr")
+    require_manual_objectives(text, finishing=True, pr_mode=True)
+    with pytest.raises(MDFError):
+        require_manual_objectives(text, finishing=True)
+    with pytest.raises(MDFError):
+        require_manual_objectives(text.replace("[x] pr", "[ ] pr"), finishing=True, pr_mode=True)

@@ -108,6 +108,9 @@
 - `$mdf code-review`：审查并修复；收口为无 commit 的 `code-review.md` 终稿（非 gate）
 - `$mdf fact update [<path>...] [--scope branch|full|paths]`：按实现对齐当前事实，再修范围内结构；
   普通主链在 verify branch 之后，fact audit 未通过时调用，完成后重审
+- `$mdf pr`
+  - 用法：`$mdf pr`
+  - PR mode 专用；创建或更新 PR/MR，等待 CI/review，修复反馈，merged 后完成 Goal。
 - `$mdf close-out`：材料与 Gitflow 收口（不含 verify branch / fact）
 - `$mdf squash [--dry-run]`：定地板与切段并 soft-reset；dry-run 只给建议
 
@@ -188,7 +191,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
-  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`close-out`
+  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`pr`、`close-out`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
   `to`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -260,7 +263,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
     - 默认所有 decision 由 AI 评分，优先用 Jev，无 Jev 时主 Agent 评分。
       confidence ≥ 0.8 自动确认，< 0.8 请求用户确认。
-    - 默认 `--until close-out`，exclusive，不执行 close-out；`--stop-at` 为别名。
+    - 默认 local 为 `--until close-out`，PR mode 为 `--until pr`，exclusive，不执行截止 intent；`--stop-at` 为别名。
     - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
     - `--roster` 可转交给 start，仅尚未 start 时有效。
     - strategy / models 可转交给 start、design、code-review：
@@ -351,12 +354,15 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
   - 说明：独立默认 `branch`；`full` 整理知识面全树。主链只用 branch/paths；
     release `--base` 为上一正式发布。独立调用须 manifest ready。
+- `$mdf pr`
+  - 用法：`$mdf pr`
+  - PR mode 专用；创建或更新 PR/MR，等待 CI/review，修复反馈，merged 后完成 Goal。
 - `$mdf close-out`
   - 用法：`$mdf close-out`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 bug close。合入目标
     主线前先 squash dry-run，再由 Agent 按启发式裁定并自主执行，无需逐次确认。
-    PR mode 提交或续办 PR/MR；等待平台合并或回合时不宣称完成。
+    PR mode 只执行 merged 后的发布、backmerge 与清理；提交和等待合并由 pr 承担。
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`
   - 用途：定地板、定型切段、写 message；默认自主 soft-reset 多段整理，无需逐次确认。

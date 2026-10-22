@@ -31,7 +31,7 @@
 │ 3 Execute                        │
 └────────────────┬─────────────────┘
                  │
-                 ├──── PR 正常等待 ────────────────→ [留在 close-out 子流程轮询]
+                 ├──── PR 正常等待 ────────────────→ [留在 pr 子流程轮询]
                  ├──── 阶段完成 ───────────────────→ 2 Select
                  ├──── 内部委托到 until ───────────→ 5 Report
                  ├──── 非 yolo decision 待确认 ────→ 6 Confirm decision
@@ -72,11 +72,11 @@
 
 ## 工作流（唯一执行契约）
 
-- PR mode close-out 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
+- PR mode 的 pr 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
   正常等待不属于外部阻塞；`waiting_for_merge` 时不结束当前调用、不进入步骤 5，也不要求用户再次调用。
-  completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR Close-out](pr-close-out.md)。
+  completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR](pr.md)。
 
-- PR 恢复优先：先核当前 until，再按 [PR Close-out 的恢复路由](pr-close-out.md) 核已锁定 source 的操作记录及返工备注。
+- PR 恢复优先：先核当前 until，再按 [PR 的恢复路由](pr.md) 核已锁定 source 的操作记录及返工备注。
   命中时先恢复父 PR 流程；未命中才进入下方特殊身份或普通选择，不能先要求 owner 当前仍在交付分支。
 
 - 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
@@ -104,6 +104,9 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 | 6 | Confirm decision | 约束 | 展示方案与评分 | 答复、返回位置 | 确认返回；修改重评 | 拒绝按原流程；未决留 6 |
 
 ## 术语与数据结构
+
+PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### 目标与持续授权
 
@@ -214,7 +217,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - objective 写明交付标识、有效 until 与完成判据；含父 intent 内部被截止的实际子步骤。
 - 每次 deliver 会话只创建一次；同范围续办时不重建。已有同一交付、同一范围的未完成 Goal 时复用。
 - 已有其他或更大范围的 active Goal 时不覆盖、不提前完成、不另建冲突 Goal；只报告本次范围进度。
-  - 允许进入 PR close-out 时，按 [Goal 与持续推进](pr-close-out.md#goal-与持续推进) 核验阶段完成或复用父 Goal。
+  - 允许进入 pr 时，按 [Goal 与持续推进](pr.md#goal-与持续推进) 核验阶段完成或复用父 Goal。
   - 更大范围 Goal 纳入本次收口及完成判据，保留其余目标；close-out 完成不代表父 Goal 完成。
 - 内部委托传入该 Goal，子 intent 不得提前将它置 complete；正常等待保持 active；暂停、预算限制与阻塞按宿主规则处理，不假称完成。
 - 仅本次创建或同范围复用的 Goal 可在步骤 5 置 complete：核验允许工作已完成且未越过截止点。
@@ -240,7 +243,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 恢复使用已有调用栈、objectives 续办备注或草稿，不新增 gate；无法恢复原范围时停止报告。
 - PR 已提交但尚未完成收口时，即使 objectives 全勾，也按 PR 恢复路由续办，不进入完成报告。
 - PR 返工上下文优先于普通选择表；每次仍先核当前 until，再补齐该父流程的未完成子步骤。
-  - 保留原 PR/MR 与返回位置；补审补测完成后恢复 close-out 更新原 PR 并轮询，不重新准备整套发布材料。
+  - 保留原 PR/MR 与返回位置；补审补测完成后恢复 pr 更新原 PR 并轮询，不重新准备整套发布材料。
   - 原 source 已删除或 owner detached 的清理恢复从主 worktree 带原 source 续办，不要求缺失的 owner branch。
 
 
@@ -264,7 +267,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
-| fact 已勾、close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
+| fact 已勾、PR mode 且尚未 merged | 委托 `references/pr.md`，持续等待至 merged；完成后回 Select |
+| fact 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
 | close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
 
 剩余工作与失败处理：

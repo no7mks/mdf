@@ -77,7 +77,8 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf lint` | 运行统一 lint：代码规模与项目工具检查 |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
-| `$mdf close-out` | 材料与 Gitflow 收口（verify branch / fact 已在主链完成） |
+| `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 后完成 Goal |
+| `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
@@ -94,11 +95,11 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 主线 intent 由用户手动触发。
 
 - `$mdf next`：单步续办。
-- `$mdf deliver`：自动推进，默认停在 close-out 之前。
+- `$mdf deliver`：自动推进，默认 local 停在 close-out 之前，PR mode 停在 pr 之前。
 
 统一骨架：
 
-`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact → close-out`
+`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact → [pr（仅 PR mode）] → close-out`
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
 - converge 做 smart 验收；实际执行的 feature/release converge 另验可选 coverage。
@@ -134,10 +135,11 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 ### close-out 与 deliver
 
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
-PR close-out 创建或复用 Goal；更大范围 Goal 纳入本次收口，已完成的阶段 Goal 先核验并 complete。
-提交 PR/MR 后每 2 分钟查询结果，可修失败补审补测后更新原 PR；用户或项目 CI 合并后继续收尾。
-仅实际收口与核验完成才结束同范围 Goal；父 Goal 保留其他未完成工作。完整规则见
-[PR Close-out](skills/mdf/references/pr-close-out.md)，外部审查见 [CI 接入](skills/mdf/references/ci-review.md)。
+PR mode 的 objectives 末尾为 pr checkbox，之后是无 checkbox 的必执行 close-out 续办。
+pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
+实际 merged 且核验通过后完成 pr；close-out 只负责后续发布、backmerge、清理与最终核验。
+完整交付继续执行 close-out；默认 deliver 截止于 pr，显式 until 仍生效。
+完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 
 PR 模式在创建或更新 PR/MR 前 fetch 远端目标：develop（feature/bugfix/adhoc）或 master（release/hotfix）。
 PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共享提交并按逻辑分段 squash；
@@ -164,7 +166,7 @@ local 模式先在交付分支集成 develop（feature/bugfix）或 master（rel
 - 自动裁定与截止点：
   - 默认所有 decision 由 AI 计算 confidence，优先用 Jev；不可用时主 Agent 评分。
   - confidence ≥ 0.8 自动确认，低于 0.8 请求用户确认；不降低验收要求。
-  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认 `--until close-out`。
+  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认 local 为 `--until close-out`，PR mode 为 `--until pr`。
   - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
   - manual slug 与收尾 worktree 删除等 decision 也适用；squash 默认自主执行，人工工作仍须用户完成并勾选。
   - close-out 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。

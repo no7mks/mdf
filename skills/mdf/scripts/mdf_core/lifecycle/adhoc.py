@@ -35,10 +35,11 @@ def prepare(args):
     return slugify(args.name), text
 
 
-def require_objectives(text, *, starting=False, finishing=False):
+def require_objectives(text, *, starting=False, finishing=False, pr_mode=False):
+    steps = (*STEPS[:-1], "pr") if pr_mode else STEPS
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
-    if tuple(name for _, name in items) != STEPS:
-        raise MDFError("adhoc 必须按固定顺序填写六项步骤", code="invalid_adhoc_objectives")
+    if tuple(name for _, name in items) != steps:
+        raise MDFError("adhoc 必须按配置对应的固定顺序填写步骤", code="invalid_adhoc_objectives")
     checked = [mark == "x" for mark, _ in items]
     if starting and any(checked):
         raise MDFError("adhoc 启动时六项步骤均须未勾选", code="invalid_adhoc_objectives")
@@ -46,7 +47,7 @@ def require_objectives(text, *, starting=False, finishing=False):
         raise MDFError("adhoc 步骤须顺序完成，返工须退勾后续项", code="invalid_adhoc_objectives")
     if finishing and not all(checked):
         raise MDFError("adhoc 尚有未完成步骤", code="adhoc_work_pending")
-    return next((step for step, done in zip(STEPS, checked) if not done), None)
+    return next((step for step, done in zip(steps, checked) if not done), None)
 
 
 def require_identity(data):
@@ -99,20 +100,40 @@ def command_status(args):
         text = safe(repo, root / "objectives.md").read_text(encoding="utf-8")
     except OSError as exc:
         raise MDFError("adhoc objectives 缺失或不可读", code="invalid_adhoc_objectives") from exc
-    pending = require_objectives(text)
+    from mdf_core.workspace.merge_policy import configured
+    pr_mode = configured(repo)["mode"] == "pr"
+    pending = require_objectives(text, pr_mode=pr_mode)
     head = git(repo, "rev-parse", "HEAD").stdout.strip()
     merge_commit = merged_commit(repo, head)
     if merge_commit and pending is not None:
         raise MDFError("已合并的 adhoc 账本仍有未完成项，保留现场", code="invalid_delivery")
+    next_step = pending or "close-out"
+    state = {}
+    if pr_mode:
+        from mdf_core.lifecycle.publish import state_path
+        from mdf_core.lifecycle.delivery_state import read_json
+        path = state_path(repo, owner)
+        state = read_json(path) if path.exists() else {}
+        if state and (state.get("mode") != "pr" or state.get("source") != owner
+                      or state.get("target") != "develop"):
+            raise MDFError("PR 操作记录与 adhoc 身份不符", code="pull_state_changed")
+        if state.get("merge_commit") and state.get("head") != head:
+            raise MDFError("已合并 PR 之外仍有源提交", code="pull_state_changed")
+        # 候选勾选不是合并证据；只有 pr 已核验并记录实际 M 后才交接收尾。
+        if pending is None:
+            next_step = "close-out" if state.get("merge_commit") else "pr"
     if not branch:
         ensure_clean(repo)
         source_exists = not git(repo, "show-ref", "--verify", "--quiet", f"refs/heads/{owner}",
                                 check=False).returncode
         if pending is not None or source_exists or merge_commit is None:
             raise MDFError("缺少 adhoc 实际收口证据，保留现场", code="adhoc_not_finished")
+        if pr_mode and (state.get("completed") is not True or state.get("merge_commit") != merge_commit
+                        or (state.get("remote_cleanup") or {}).get("status") != "deleted"):
+            raise MDFError("PR 收口尚未核验完成，按原 source 续办 close-out", code="adhoc_not_finished")
     emit({"ok": True, "operation": "adhoc-status", "result": {
         "delivery": data, "path": str(root.relative_to(repo)), "head": head,
-        "next_step": (pending or "close-out") if branch else None,
+        "next_step": next_step if branch else None,
         "completed": not branch, "merge_commit": merge_commit,
         "owner_worktree": str(repo), "primary_worktree": str(primary_worktree(repo)),
     }})
@@ -124,7 +145,9 @@ def completion(repo, source):
 
     root, data = locate(repo)
     require_finish(repo, root, data)
-    require_objectives((root / "objectives.md").read_text(encoding="utf-8"), finishing=True)
+    from mdf_core.workspace.merge_policy import configured
+    require_objectives((root / "objectives.md").read_text(encoding="utf-8"), finishing=True,
+                       pr_mode=configured(repo)["mode"] == "pr")
     change = root / "CHANGE.md"
     if not change.is_file():
         raise MDFError("finish 前必须补齐 Change", code="missing_change")

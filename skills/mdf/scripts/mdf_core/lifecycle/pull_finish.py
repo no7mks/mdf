@@ -196,12 +196,12 @@ def finish_lock(repo):
         yield
 
 
-def finish(repo, source, settings):
+def finish(repo, source, settings, *, phase="close-out"):
     with finish_lock(repo):
-        _finish(repo, source, settings)
+        _finish(repo, source, settings, phase=phase)
 
 
-def _finish(repo, source, settings):
+def _finish(repo, source, settings, *, phase):
     path = state_path(repo, source)
     state = read_json(path) if path.exists() else None
     identity = origin(repo, settings["provider"])
@@ -212,6 +212,8 @@ def _finish(repo, source, settings):
                   or state.get("source") != source or state.get("target") != target):
         raise MDFError("PR/MR 恢复记录与当前配置不符", code="pull_state_changed")
     from mdf_core.workspace.squash import require_ready
+    if state is None and phase == "close-out":
+        raise MDFError("先完成 pr intent，再执行 close-out", code="pr_not_merged")
     if state is None:
         preflight(repo, source)
         require_ready(repo, source)
@@ -223,6 +225,8 @@ def _finish(repo, source, settings):
     pull = forge.get(state["pull"]["id"]) if state.get("pull") else forge.find(source, target)
     confirm_pull(state, pull)
     write_json(path, state)
+    if phase == "close-out" and (pull is None or pull["state"] != "merged"):
+        raise MDFError("PR/MR 尚未 merged；由 pr intent 继续推进", code="pr_not_merged")
     if pull is None or pull["state"] == "open":
         current = git(repo, "rev-parse", "--verify", f"refs/heads/{source}", check=False)
         if current.returncode:
@@ -259,6 +263,11 @@ def _finish(repo, source, settings):
             raise MDFError("平台合并结果已变化", code="pull_state_changed")
         state["merge_commit"] = merged
         write_json(path, state)
+        if phase == "pr":
+            emit({"ok": True, "operation": "pr", "mode": "pr", "source": source,
+                  "completed": True, "status": "merged", "pull_request": pull,
+                  "merge_commit": merged, "next_intent": "close-out"})
+            return
         for branch in (["master", "develop"] if target == "master" else ["develop"]):
             occupant = worktree_map(repo).get(branch)
             if occupant:
@@ -279,7 +288,7 @@ def _finish(repo, source, settings):
         else:
             status = "published_pending_backmerge"
         write_json(path, state)
-    emit({"ok": True, "operation": "finish-gitflow", "mode": "pr", "source": source,
+    emit({"ok": True, "operation": "pr" if phase == "pr" else "finish-gitflow", "mode": "pr", "source": source,
           "completed": state["completed"], "status": status, "pull_request": pull,
           "merge_commit": state.get("merge_commit"), "backmerge": state.get("backmerge"),
           "tag": state.get("tag"), "targets": [target] + (["develop"] if target == "master" else []),

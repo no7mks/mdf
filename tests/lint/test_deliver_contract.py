@@ -61,7 +61,7 @@ def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():
     text = deliver_contract()
     for rule in (
         "`--until <intent>` 与 `--stop-at <intent>` 是同一个 option",
-        "exclusive，不执行该 intent", "默认 `--until close-out`",
+        "exclusive，不执行该 intent", "默认 local 为 `--until close-out`，PR mode 为 `--until pr`",
         "不准备 close-out 材料、不执行其集成或 Gitflow",
         "`--yolo` 未显式指定 until 时无截止点；显式 until 仍生效",
         "缺值、未知 intent、重复指定", "写入或 start 之前完成解析",
@@ -76,7 +76,7 @@ def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():
         assert rule in text
     table = text.split("| 交付路径 |", 1)[1].split("\n\n", 1)[0]
     assert "start（联调时内部 integrate）→ design → write-tests / implement → converge" in table
-    assert "code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ close-out" in table
+    assert "code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ [pr（仅 PR mode）] → close-out" in table
     assert "多词 intent 须作为单个值传入" in text
     assert "until fact update 可完成前置 audit，需要 update 时先停住" in text
     assert "audit 无须修复时也在 update 的顺序位置停住" in text

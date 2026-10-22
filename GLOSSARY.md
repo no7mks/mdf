@@ -6,7 +6,7 @@ Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 
 ## PR mode 与 CI reviewer
 
-PR mode 是通过 GitHub Pull Request 或 GitLab Merge Request 合并的可选 close-out 模式。
+PR mode 使用独立 pr intent 经 GitHub Pull Request 或 GitLab Merge Request 合并，再由 close-out 续办。
 CI reviewer 是在项目 runner 上执行共用 Review 协议的审查 Agent。
 显式 source-commit/target-commit 调用 code-review 时执行独立只读审查，不依赖 roster 或交付材料。
 审查不代替本地 code-review intent；approve、merge 与通知由项目 policy 决定。
@@ -184,7 +184,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 
 ## Deliver、until 与 confidence
 
-`$mdf deliver` 默认自动裁定当前交付的所有 decision，默认在 close-out 之前结束。
+`$mdf deliver` 默认自动裁定当前交付的所有 decision，默认 local 在 close-out 之前结束，PR mode 在 pr 之前结束。
 
 - `--until <intent>`：exclusive 截止点，不执行该 intent；`--stop-at` 是别名。
 - confidence：AI 对一项 decision 的置信度，范围 `[0,1]`；默认由 Jev 评分，无 Jev 时由主 Agent 评分。

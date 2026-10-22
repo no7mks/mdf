@@ -109,7 +109,7 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 - 需要修复时，在已有 code-review 草稿记录来源 verify、原 scope/选题、左端点和待修绿状态。
 - 同时在 objectives 的非 checklist 备注保留父 verify 的原命令、scope/选题与左端点；该备注只用于恢复，不是进度 gate。
 - 子审查覆盖 code-review 终稿时保留父 verify 备注；步骤 6 完成小 loop 后才清理该备注。
-- 这里只清理本轮 verify 备注；不得删除父 PR close-out 返工备注，补验完成后仍按父流程返回原 PR。
+- 这里只清理本轮 verify 备注；不得删除父 PR 返工备注，补验完成后仍按父流程返回原 PR。
 - 新会话恢复先按备注重跑原验证，再用既有草稿续办未齐复审；范围/参数缺失则停止，不凭旧绿报告跳过。
 
 

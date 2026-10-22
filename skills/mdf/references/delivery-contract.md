@@ -12,6 +12,17 @@
 
 ## 术语与数据结构
 
+### PR mode 的收尾步骤
+
+objectives 按 manifest.closeout.mode 固定收尾结构，local 使用原有 checklist。
+
+- PR mode 将末尾 close-out checkbox 替换为 `- [ ] pr`。
+- pr 后写普通步骤 `- close-out（pr merged 后必须续办；不设 checkbox）`。
+- pr 仅勾自己的候选项；提交后仍持续等待实际 merged，不凭勾选结束 Goal。
+- close-out 没有 tick，以发布、backmerge、source 清理与最终核验判定完成。
+- 完整交付在 pr 完成后继续 close-out；until、暂停与普通 next 的单步边界仍有效。
+
+
 适用事件包括：身份、主线、roster、底座、并行、补覆盖、验证或历史整理事件。仅读取条款不触发其中描述的其他 intent。
 
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
@@ -125,7 +136,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook。
     仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
 - **close-out**：材料与 Gitflow 收口。
-  - PR mode 的提交与恢复见 [PR Close-out](pr-close-out.md)；创建 PR/MR 不代表完成。
+  - PR mode 的提交与恢复见 [PR](pr.md)；创建 PR/MR 不代表完成。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。
     bug close 不算 verify 族，release/hotfix 收口步骤可委托。
@@ -142,7 +153,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 - 显式 deliver 按 `references/deliver.md` 串联截止点之前的剩余真实 intent。
   - 可并行阶段按 roster 分别委托 subagent。
   - 默认自动裁定 decision，confidence 低于 0.8 请求用户确认；默认用 Jev 评分，无 Jev 时主 Agent 评分。
-  - 默认 `--until close-out`（exclusive），`--stop-at` 为别名；yolo 无默认截止点、无 confidence 限制。
+  - 默认 local 为 `--until close-out`，PR mode 为 `--until pr`（exclusive），`--stop-at` 为别名；yolo 无默认截止点、无 confidence 限制。
   - 显式 until 对 yolo 仍生效；子 intent 的确认与批准统一遵守 deliver 的 confidence 策略。
 - design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，不计入 roster。
 - deliver 步骤 4 只覆盖可并行的 qa/dev。
@@ -220,7 +231,7 @@ models 取值：
 
 Git 约束：
 
-- 开发阶段的本地工作分支不推送；PR mode 的 close-out 按 [PR Close-out](pr-close-out.md) 推送交付源分支。
+- 开发阶段的本地工作分支不推送；PR mode 的 pr 按 [PR](pr.md) 推送交付源分支。
 - 禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 ### 进度与 Report
 
