@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -90,7 +91,7 @@ def _relationship_graph(repo: Path, name: str, info: dict[str, Any], refs: list[
             f"└── +{info['behind']} commit ── {remote}")
 
 
-def _preview(repo: Path) -> dict[str, Any]:
+def _preview(repo: Path, *, pr: bool = False) -> dict[str, Any]:
     local = set(_local_heads(repo))
     remote = set(_remote_heads(repo))
     branches = {}
@@ -116,15 +117,19 @@ def _preview(repo: Path) -> dict[str, Any]:
                         relation="local_only" if name in local else "remote_only")
         info["graph"] = _relationship_graph(repo, name, info, refs)
         branches[name] = info
+    from mdf_core.workspace.sync_pull import plans
+    pull_plan = plans(repo, branches)
     snapshot = "\0".join([
         str(repo),
         _git(repo, "remote", "get-url", "--all", ORIGIN).stdout,
         _git(repo, "remote", "get-url", "--push", "--all", ORIGIN).stdout,
         *(f"{name}:{branches[name]['local']}:{branches[name]['remote']}" for name in TRUNKS),
+        json.dumps({"pr": pr, "pull_plan": pull_plan}, sort_keys=True),
     ])
     return {
         "ok": True, "operation": "sync-preview", "branches": branches,
         "confirmation": hashlib.sha256(snapshot.encode()).hexdigest(),
+        "pr": pr, "pull_plan": pull_plan,
         "extra_local": sorted(local - set(TRUNKS)),
         "extra_remote": sorted(remote - set(TRUNKS)),
     }
@@ -167,6 +172,12 @@ def _pull_into(work: Path, branch: str) -> str:
 
 
 def command_sync(args) -> None:
+    from mdf_core.lifecycle.pull_finish import finish_lock
+    with finish_lock(repo_path(args.repo)):
+        _command_sync(args)
+
+
+def _command_sync(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
     _require_origin(repo)
@@ -182,7 +193,7 @@ def command_sync(args) -> None:
                 code="missing_upstream_branch",
             )
 
-    preview = _preview(primary)
+    preview = _preview(primary, pr=args.pr)
     if not args.confirm:
         emit(preview)
         return
@@ -191,26 +202,9 @@ def command_sync(args) -> None:
             "分支关系或同步目标已变化；重新展示图并请用户确认", code="sync_plan_changed", details=preview,
         )
 
-    from mdf_core.workspace.merge_policy import configured
-    from mdf_core.inspection.push_audit import audit
-    protected = any(
-        not _git(primary, "cat-file", "-e", f"refs/remotes/origin/{branch}:.mdf/manifest.yaml", check=False).returncode
-        and configured(primary, f"refs/remotes/origin/{branch}")["mode"] == "pr"
-        for branch in ("master", "develop")
-    )
-    if protected or configured(primary)["mode"] == "pr":
-        for branch in ("master", "develop"):
-            info = preview["branches"][branch]
-            if info["relation"] == "diverged":
-                raise MDFError(f"PR mode 不自动合并分叉的 {branch}", code="pr_required")
-            if info["relation"] != "ahead":
-                continue
-            # 只把平台已确认的合并作为例外证据，不按 message 推断来源。
-            evidence = {"sources": {name: _sha(primary, f"refs/heads/{name}")
-                                    for name in ("master", "planning")}, "pull_requests": []}
-            report = audit(primary, branch, info["remote"], info["local"], evidence, source_prefix="refs/heads")
-            if report["verdict"] != "pass":
-                raise MDFError("PR mode 拒绝推送未证明合规的 trunk 增量", code="pr_required", details=report)
+    if preview["pull_plan"] and not args.pr:
+        raise MDFError("需要 PR/MR；用 sync --pr 重新预览、确认后提交或恢复", code="pr_required",
+                       details=preview)
 
     trees = worktree_map(primary)
     need_primary = False
@@ -222,6 +216,18 @@ def command_sync(args) -> None:
             need_primary = True
     if need_primary:
         ensure_clean(primary)
+
+    if preview["pull_plan"]:
+        from mdf_core.workspace.sync_pull import advance
+        pulls = advance(primary, preview["pull_plan"],
+                        {name: preview["branches"][name]["remote"] for name in TRUNKS})
+        completed = all(item["status"] == "completed" for item in pulls.values())
+        refreshed = _preview(primary, pr=args.pr)
+        emit({"ok": True, "operation": "sync", "completed": False,
+              "status": "ready_to_sync" if completed else "waiting_for_pr",
+              "pull_requests": pulls, "preview": refreshed,
+              "extra_local": refreshed["extra_local"], "extra_remote": refreshed["extra_remote"]})
+        return
 
     extras_local = sorted(name for name in _local_heads(primary)
                           if name not in TRUNKS)

@@ -192,7 +192,7 @@ def finish_lock(repo):
                 import fcntl
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as exc:
-            raise MDFError("另一个 PR close-out 正在操作此仓库，请稍后重试", code="finish_busy") from exc
+            raise MDFError("另一个 PR close-out 或 sync 正在操作此仓库，请稍后重试", code="finish_busy") from exc
         yield
 
 

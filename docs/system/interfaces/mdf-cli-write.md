@@ -245,6 +245,16 @@ python3 skills/mdf/scripts/mdf.py sync --repo /path/to/repository
 4. 三大分支全部 pull 成功后，以完整 refspec 原子 push 三者，显式 `--no-follow-tags`。
 5. 执行 JSON 含各 trunk 的 `pull` / `push`，以及只读的 `extra_local` / `extra_remote`。
 
+PR mode 的受保护增量：
+
+- 默认预览的 `pull_plan` 列出 master/develop 的 PR/MR 计划；普通确认执行返回 `pr_required`。
+- `sync --repo <repo> --pr` 预览，带同模式的 `--confirm` 才创建或恢复 PR/MR。
+  - confirmation 另绑定 PR 模式与恢复记录；恢复数据位于 Git common dir 的 `mdf/finish/sync/`。
+- JSON `status: waiting_for_pr` 含各 target 的 `pull_requests`；不继续 pull/push 三大 trunk。
+- 平台 merge commit 核验后仅同名 ff 本地；所有 PR 完成返回 `ready_to_sync` 与新 `preview`。
+  - 按新预览确认，再继续常规 sync；保留 source branch，无 reset 或自动合并 PR。
+- 完整边界见 [Sync 契约](../../../skills/mdf/references/sync.md#pr-提交与恢复)。
+
 conflict 保留 MERGE_HEAD 与 checkout；错误 details 含 branch、worktree、conflicts 和 Git 输出。
 Agent 先尝试解决并验证，无法处理才询问用户；解决后提交并重新预览，继续剩余同步。
 仅本次已授权的 pull 与 resolution 改变 local tip 且 remote 未变时可继续，否则重新确认。

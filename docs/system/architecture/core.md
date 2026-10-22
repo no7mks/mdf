@@ -24,6 +24,7 @@
 
 - 用户命令入口仍为 `skills/mdf/scripts/mdf.py`，由 `mdf_core.cli` 组装命令。
 - `squash_execute.py` 执行分析后的分段计划；`workspace.squash` 提供共享边界检查与 PR 动作前门禁。
+- `workspace.sync_pull` 管理 sync 的 PR 计划与持久化恢复；复用 Forge 和 PR merge 核验，同名 ff 后返回同步预览。
   契约见 [Squash](../../../skills/mdf/references/squash.md)。
 - 共享类型与解析工具位于 `foundation`；跨 package 调用使用完整模块路径。
 - 已迁移模块不在根目录保留 facade 或 re-export；测试的 import 与 monkeypatch 指向实际定义。

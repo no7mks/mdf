@@ -1,7 +1,8 @@
 # Sync
 
 `$mdf sync` 将 `master`、`develop`、`planning` 三大 trunk 与 `origin` 对齐：
-先对三大分支全部 pull，再全部 push。其他本地或远端分支只报告，不操作。
+先对三大分支全部 pull，再全部 push。PR mode 的受保护增量先走本页的 PR 恢复流程。
+其他本地或远端分支只报告，不操作。
 
 ## 决策树
 
@@ -35,6 +36,9 @@
                  ├──── 计划变化 ─────────────────→ 2 Preview branches
                  ├──── conflict 已解决并提交 ────→ 2 Preview branches
                  ├──── conflict 无法处理 ────────→ [保留现场并询问]
+                 ├──── pr_required ──────────────→ [PR 提交与恢复]
+                 ├──── waiting_for_pr ───────────→ [等待平台合并后续办]
+                 ├──── ready_to_sync ────────────→ 2 Preview branches
                  ├──── 其他失败 ─────────────────→ [报告现场并停止]
                  │
                  ▼ 通过
@@ -52,13 +56,14 @@
 读取 `references/common.md`。不要求 manifest ready。
 本 intent 先授权 fetch；用户确认计划后才授权三大 trunk 的 merge（含 no-ff）与 push；
 不授权删分支、rebase 或 force-push。
+PR mode 的计划确认还可授权创建本次 sync source branch、push source 与创建或恢复 PR/MR。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check root | 脚本 | 运行 `info`，解析 Git 根 | 三个版本为 3、REPO_ROOT | 2 | 停止 |
 | 2 | Preview branches | 脚本 | fetch 并展示分支关系图与同步计划 | JSON branches、confirmation | 3 | 停止 |
 | 3 | Confirm sync | 约束 | 确认或核对恢复授权 | 授权快照、核对 | 4 | 未确认留 3；取消停止 |
-| 4 | Sync trunks | 脚本 | 按已确认计划同步、处理 conflict | trunks、现场 | 5 | 变化/解决回 2；无法解决询问；其余停 |
+| 4 | Sync trunks | 脚本 | 按已确认计划同步、处理 conflict 或 PR | trunks、现场 | 5 | 变化/解决回 2；PR 走本页恢复；其余停 |
 | 5 | Report result | 约束 | 报告 trunks 与多余分支 | 摘要含 extras | 结束 | 停止 |
 
 `$mdf sync` 执行本流程。
@@ -102,6 +107,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT"
 - 当前 checkout 或远端 master/develop 的 manifest 启用 PR mode 时，master/develop 分叉不得自动合并。
 - 本地领先的 master/develop 增量须由 CLI 证明合规；无法证明时报告阻塞，不承诺 push。
 - 以下表格的 diverged 合并只适用于未被上述规则禁止的分支；用户确认不覆盖 PR mode 限制。
+- JSON `pull_plan` 列出须创建或恢复 PR/MR 的 master/develop；处理见下文「PR 提交与恢复」。
 
 | relation | local / remote 关系 | 三大 trunk 计划与 conflict 风险 |
 | --- | --- | --- |
@@ -137,7 +143,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMA
 - 执行前再次 fetch；任一绑定项变化，CLI 以 `sync_plan_changed` 返回新预览。
   - 回步骤 2 展示新图与计划，再按步骤 3 核对授权；不得只换 token 自动重试。
 - 占用任一 trunk 的 worktree 必须干净；缺占用者时主 worktree 须干净。
-- CLI 返回 `pr_required` 时保留现场并停止，报告其审计结果；不得绕过 CLI 手工 merge 或 push。
+- CLI 返回 `pr_required` 时保留现场，按「PR 提交与恢复」重新预览；不得手工 merge 或直接 push trunk 绕过。
 - 按序全部 pull：remote 已是祖先则 noop；可 fast-forward 则 ff；已分叉则 no-ff merge。
   - merge 与 push 使用完整 ref；全部 pull 成功后才原子 push 三者，不顺带推送 tag。
   - 禁止 rebase、force-push、删分支。
@@ -154,6 +160,44 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMA
 验收：执行 JSON `ok` 为 true，且含三大 trunk 的 `pull` / `push` 结果。
 
 异常与交接：无法处理的 conflict 才向用户提问；其他失败报告现场，不声称整体完成。
+
+### PR 提交与恢复
+
+`master` 与 `develop` 的分叉或无法证明合规的领先增量使用相同流程。
+普通 sync 返回 `pr_required` 时，Agent 进入以下预览并展示 source、target、local tip 与审计结果：
+
+```bash
+python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --pr
+python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --pr --confirm "$CONFIRMATION"
+```
+
+1. 用户确认 PR 计划后执行第二条命令；confirmation 另绑定 `--pr` 与恢复记录。
+   - 不复用普通 sync 的 token；恢复时重新预览并确认，或按步骤 3 核对已有授权。
+   - 沿用 `closeout.provider` 的 gh/glab 同仓接口；origin fetch/push 地址须唯一且一致。
+2. CLI 为每个 target 保存原 head、remote base、origin 身份与 PR/MR 到 Git common dir 的恢复记录。
+   - 先落盘，再创建 `codex/sync/<target>-<唯一标识>`，精确 push 已记录 head；不直接 push target。
+   - target trunk 保留原现场；master/develop 可各建一个 PR/MR，其余 trunk 等待。
+   - 重试通过已记录 source 查找或读取 PR/MR；push 或 create 响应丢失时不重复创建。
+   - 原 trunk tip 保持固定；等待期间的本地 trunk 新增提交或平台 source/target 异常变化均保留并停止。
+   - source 需解冲突或返工时，在其独立 worktree 合入 target、修复、补审补测并提交；不改原 trunk。
+   - 重新预览会绑定 source 新 tip；用户确认后，仅允许保留原 source 历史的后继提交非 force push 到同一 PR/MR。
+   - 更新前落盘候选 head；push 响应丢失时核对平台 head 恢复；不允许 rebase 或改写 source 历史。
+3. CLI 返回 `waiting_for_pr` 与每个 PR/MR 的 URL、source、head、status；此时整体 sync 未完成。
+   - open 为 `waiting_for_merge`；closed 未 merged 为 `closed_without_merge`，保留记录，不自动重建。
+   - 等平台合并后，再执行上述预览及确认；不得自动 approve 或 merge PR/MR。
+4. CLI 核验平台 source/target/head 与记录一致，并 fetch 目标历史。
+   - merge commit 必须为双亲，第二父为本次确认的 source head，且位于目标远端第一父链；原 base 须仍在目标历史。
+   - 恢复时再次 fetch；任一 trunk remote tip 与确认快照不同则返回 `sync_plan_changed`，先重新预览确认。
+   - 沿用 PR mode 的 merge commit 契约；squash/rebase/ff merge 均停止，不 reset、改写或丢弃本地历史。
+   - 占用 trunk 的 worktree 必须干净；仅允许原 head 或已包含它的远端历史同名 fast-forward。
+   - ff 后中断可继续；仓库级锁避免并发 sync 或 PR close-out 重复操作。
+5. 所有 PR/MR 完成后返回 `ready_to_sync` 与新 `preview`；这仍不是整体 sync 完成。
+   - 展示新图，按步骤 3 确认新计划，再按步骤 4 完成三大 trunk 的常规同步。
+   - 后续调用可不带 `--pr`；不自动复用旧 token 或绕过变化的 tip。
+   - 保留本地及远端 sync source branch 作为历史备份，不删除 branch 或 worktree，不创建 tag 或发版。
+
+验收：两个 target 均可独立或同时续办；最终以普通 sync 的 trunks 结果为完成证据。
+平台或 Git 失败先读日志；身份、历史或现场无法证明一致时停止并报告，不手工改写恢复记录。
 
 <a id="s5"></a>
 

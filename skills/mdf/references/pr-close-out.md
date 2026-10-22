@@ -289,5 +289,6 @@ release/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并�
 - develop 直接维护仅允许 .mdf/、宿主目录、根 AGENTS.md；不判断是否由 upgrade 产生。
 - 混入其他路径须 PR/MR；master 不增加文件维护例外；禁止 rebase 或跨分支 ff-only。
 - planning 检查独有普通提交、rename/delete 原路径、merge resolution 及最终增量，防止 revert 掩盖代码修改。
-- sync 拒绝分叉的 master/develop，以及无法证明合规的本地领先增量；同名 ff 同步允许。
+- sync 的 master/develop 分叉或无法证明合规的领先增量须走 PR/MR；同名 ff 同步允许。
+  - 创建、等待、核验合并及继续同步见 [Sync 的 PR 提交与恢复](sync.md#pr-提交与恢复)。
 - push 后审计与项目配置见 [CI 接入](ci-review.md)。

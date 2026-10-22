@@ -251,6 +251,7 @@ def build_parser() -> argparse.ArgumentParser:
     sync_cmd = subparsers.add_parser("sync")
     sync_cmd.add_argument("--repo", required=True)
     sync_cmd.add_argument("--confirm")
+    sync_cmd.add_argument("--pr", action="store_true", help="通过 PR/MR 同步受保护 trunk 的本地增量")
     sync_cmd.set_defaults(func=command_sync)
 
     from mdf_core.integrations.codewiki_runtime import command_codewiki_runtime

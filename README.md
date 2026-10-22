@@ -84,7 +84,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
 | `$mdf to <target>` | 进入目标 worktree；`plan` 进 planning，`develop` 回主树，`deploy` 检出 master |
-| `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；其他分支只报告 |
+| `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；PR mode 的受保护增量走 PR/MR；其他分支只报告 |
 | `$mdf integrate` | 按工作线联调；collab-mode 由接手 Agent 直接调度两端 worktree |
 
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。
