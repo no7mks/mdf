@@ -5,7 +5,7 @@ import pytest
 
 from mdf_test_support import PRP_NAME, git, mdf, payload
 from support_delivery import commit
-from support_pull import prepare
+from support_pull import prepare, squash_pending
 
 
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
@@ -125,6 +125,7 @@ def test_release_candidate_updates_original_pull_and_verification(python_exe, tm
     manifest.write_text(manifest.read_text().replace('latest_release: "1.2.0"', 'latest_release: "1.2.1"'))
     (root / 'suites.json').write_text(json.dumps({'suites': ['billing']}))
     commit(work)
+    squash_pending(work)
     first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     (work / 'src/service.py').write_text('fixed_after_review = True\n')
     commit(work)
@@ -136,6 +137,7 @@ def test_release_candidate_updates_original_pull_and_verification(python_exe, tm
     assert evidence['all_passed'] and ('release' if kind == 'release' else 'smoke') in evidence['suites']
     assert not (work / 'changes/unreleased/1.2.1').exists()
     commit(work)
+    squash_pending(work)
     updated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert updated['status'] == 'waiting_for_merge'
     assert updated['pull_request']['head'] != first['pull_request']['head']

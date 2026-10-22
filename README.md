@@ -137,7 +137,13 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 close-out 提交 PR/MR 后每 2 分钟查询结果，用户或项目 CI 合并后自动续办。完整规则见
 [PR Close-out](skills/mdf/references/pr-close-out.md)，外部审查见 [CI 接入](skills/mdf/references/ci-review.md)。
 
-close-out 先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
+PR 模式在创建或更新 PR/MR 前 fetch 远端目标：develop（feature/bugfix/adhoc）或 master（release/hotfix）。
+PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共享提交并按逻辑分段 squash；
+可以保留多笔 commit，无可压缩区间则 no-op，保留 merge commit，禁止 force push。
+只要远端 tip 不是当前 HEAD 的 ancestor，就先 no-ff merge 到本分支；无冲突也必须重新完成
+lint、增量 code-review、verify 与 fact，再次 close-out；提交前远端再次前进则重复此流程。
+
+local 模式先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
 以下本地合并与发布行为适用于默认 local 模式。
 
 - 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。

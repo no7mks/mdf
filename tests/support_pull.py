@@ -61,4 +61,17 @@ def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix'):
         root = work / 'changes/unreleased/service-health'
         (root / 'CHANGE.md').write_text('---\nchange_kind: feature\nsource_branch: feature/service-health\nproposals: [prp-0001]\n---\n')
     commit(work)
+    pull_finish.preflight(work, git(work, "branch", "--show-current").stdout.strip())
+    squash_pending(work)
     return repo, remote, work, platform
+
+
+def squash_pending(work):
+    """平台测试先完成新增的提交前整理，再测试平台生命周期。"""
+    from mdf_core.workspace.squash import check
+    from squash_execute import execute
+    plan = check(work)
+    if not plan['noop']:
+        plan.update(start_commit=plan['floor'], segments=[
+            {'tip': plan['old_tip'], 'message': 'test: 整理交付准备'}])
+        execute(work.resolve(), plan, False, [])

@@ -6,6 +6,10 @@ import json
 import subprocess
 from pathlib import Path
 
+from mdf_core.foundation.errors import MDFError
+from mdf_core.workspace import squash
+from mdf_core.lifecycle.roster import parse_role_branch
+
 
 def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     def git(*args: str) -> str:
@@ -35,7 +39,8 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     old_tip = commit(plan["old_tip"])
     branch = plan["branch"]
     require(git("branch", "--show-current") == branch
-            and branch.startswith(("feature/", "bugfix/", "release/", "hotfix/")),
+            and (branch.startswith(("feature/", "bugfix/", "release/", "hotfix/", "adhoc/", "codex/backmerge/"))
+                 or parse_role_branch(branch)),
             "当前分支须为计划中的交付分支")
 
     def verify() -> dict:
@@ -54,6 +59,10 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     floor = commit(plan["floor"])
     git("merge-base", "--is-ancestor", start, floor)
     git("merge-base", "--is-ancestor", floor, old_tip)
+    safe = squash.check(repo)
+    git("merge-base", "--is-ancestor", safe["floor"], floor)
+    if safe["noop"]:
+        return {**verify(), "noop": True}
     require(floor != old_tip, "可改写区间为空")
     segments = plan["segments"]
     require(isinstance(segments, list) and bool(segments), "段界列表不能为空")
@@ -64,11 +73,10 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
                 "每段须有已确认 message")
         git("merge-base", "--is-ancestor", previous, tip)
         git("merge-base", "--is-ancestor", tip, old_tip)
-        require(previous != tip and bool(git("diff", "--name-only", previous, tip, "--")),
-                "段界须严格递增，且每段 tree 有变化")
+        require(previous != tip, "段界须严格递增")
         previous = tip
     require(previous == old_tip, "末段须为旧 tip")
-    email = git("config", "user.email")
+    email = git("var", "GIT_COMMITTER_IDENT").split("<", 1)[1].split(">", 1)[0]
     owners = git("log", "--format=%ae%n%ce", f"{floor}..{old_tip}").splitlines()
     require(bool(email) and all(owner == email for owner in owners), "区间含他人 commit")
     rewritten = set(git("rev-list", f"{floor}..{old_tip}").splitlines())
@@ -81,26 +89,48 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
             u and t and (u == t or u.startswith(t + "/") or t.startswith(u + "/"))
             for u in untracked for t in tracked
         ), "未跟踪文件与段界路径冲突，须先明确处理")
+    require(not git("rev-list", "--min-parents=2", f"{floor}..{old_tip}"), "不得改写 merge commit")
+    if len(segments) == len(rewritten):
+        require(isinstance(plan.get("noop_reason"), str) and bool(plan["noop_reason"].strip()),
+                "保留全部提交须说明语义分段理由")
+        squash.record_analysis(repo, branch, old_tip, reason=plan["noop_reason"])
+        return {**verify(), "noop": True}
+    require(len(segments) < len(rewritten), "squash 不得增加 commit 数量")
+    previous = floor
+    for segment in segments:
+        require(bool(git("diff", "--name-only", previous, segment["tip"], "--")),
+                "需要重建的每段 tree 须有变化")
+        previous = segment["tip"]
     git("reset", "--soft", floor)
     heads = []
     for segment in segments:
         git("restore", f"--source={segment['tip']}", "--staged", "--worktree", ".")
         git("commit", "-m", segment["message"])
         heads.append(git("rev-parse", "HEAD"))
-    return {**verify(), "commits": heads}
+    result = verify()
+    squash.record_analysis(repo, branch, result["head"], reason="已按分析计划完成分段 squash")
+    return {**result, "commits": heads}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", required=True, type=Path)
-    parser.add_argument("--plan-file", required=True, type=Path)
+    parser.add_argument("--plan-file", type=Path)
+    parser.add_argument("--check", action="store_true")
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
     trace: list = []
     try:
-        plan = json.loads(args.plan_file.read_text(encoding="utf-8"))
-        result = execute(args.repo.resolve(), plan, args.verify_only, trace)
-    except (ValueError, KeyError, TypeError, OSError) as error:
+        if args.check:
+            if args.plan_file or args.verify_only:
+                raise ValueError("--check 不与执行或验证选项混用")
+            result = squash.check(args.repo.resolve())
+        else:
+            if not args.plan_file:
+                raise ValueError("需要 --plan-file 或 --check")
+            plan = json.loads(args.plan_file.read_text(encoding="utf-8"))
+            result = execute(args.repo.resolve(), plan, args.verify_only, trace)
+    except (ValueError, KeyError, TypeError, OSError, MDFError) as error:
         print(json.dumps({"ok": False, "error": str(error), "trace": trace}, ensure_ascii=False))
         return 1
     print(json.dumps({"ok": True, "result": result, "trace": trace}, ensure_ascii=False))

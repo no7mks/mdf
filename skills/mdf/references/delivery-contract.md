@@ -129,7 +129,7 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
   - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。
     bug close 不算 verify 族，release/hotfix 收口步骤可委托。
   - `release-closeout` 只复用可复用的 `verification-report.json`，永不执行验证命令。
-  - 合入目标主线前可建议 squash；仅建议时读取 `references/squash.md` 的地板与建议条款，不强制执行。
+  - PR 模式每次 roster merge、远端主线 merge 与 push 前强制执行 `references/squash.md` 的检查；local 模式可选。
 - 开发迭代只用 `$mdf verify --scope smart`；branch 只用于交付验收。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` / `$mdf bug close` 不走交付主线，也不由 deliver 内部委托。
@@ -361,7 +361,8 @@ verify branch 中非 quick 失败时尝试补 quick 复现；结论写入
 `code-review.md` 记「quick 复现」字段（各记各的，不互替）。
 ### 可选历史整理（squash）
 
-仅调用方建议或用户显式调用时，读取 `references/squash.md` 的地板、建议条件、禁止项与执行契约。
+PR 模式共享动作前必须读取 `references/squash.md` 并执行安全边界检查与分析后的分段整理；无可压缩区间则 no-op。
+local 模式仅调用方建议或用户显式调用时读取其可选地板、建议条件与执行契约。
 
 ### 修改与提交权限
 

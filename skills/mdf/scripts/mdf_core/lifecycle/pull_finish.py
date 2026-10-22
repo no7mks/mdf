@@ -211,8 +211,10 @@ def _finish(repo, source, settings):
     if state and (state.get("mode") != "pr" or state.get("identity") != identity
                   or state.get("source") != source or state.get("target") != target):
         raise MDFError("PR/MR 恢复记录与当前配置不符", code="pull_state_changed")
+    from mdf_core.workspace.squash import require_ready
     if state is None:
         preflight(repo, source)
+        require_ready(repo, source)
         state = {"mode": "pr", "identity": identity, "source": source, "target": target,
                  "head": sha(repo, source), "pull": None, "completed": False,
                  "retained_worktree": str(worktree_map(repo).get(source, repo))}
@@ -230,9 +232,11 @@ def _finish(repo, source, settings):
             if not ancestor(repo, state.get("pending_head", state["head"]), head):
                 raise MDFError("源分支历史已改写", code="pull_state_changed")
             preflight(repo, source)
+            require_ready(repo, source)
             state["pending_head"] = sha(repo, source)
             write_json(path, state)
         # 非 force 精确推送本次源提交；重复 push 为 noop。
+        require_ready(repo, source)
         pushed_head = state.get("pending_head", state["head"])
         git(repo, "push", "--no-follow-tags", "origin", f"{pushed_head}:refs/heads/{source}")
         if pull is None:

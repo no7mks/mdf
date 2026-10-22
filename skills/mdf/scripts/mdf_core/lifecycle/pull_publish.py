@@ -72,7 +72,9 @@ def publish(repo, state, version, path):
     previous_head = record.get("head")
     if previous_head and not ancestor(repo, previous_head, sha(work, "HEAD")):
         raise MDFError("回合分支历史已改写，保留现场", code="pull_state_changed")
+    from mdf_core.workspace.squash import require_ready
     if not ancestor(repo, merged, "refs/heads/" + record["source"]):
+        require_ready(work)
         result = git(work, "merge", "--no-ff", "--no-commit", merged, check=False)
         if result.returncode:
             record["conflicts"] = git(work, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
@@ -81,6 +83,7 @@ def publish(repo, state, version, path):
                 return False
             raise MDFError("无法开始回合 merge，保留现场", code="backmerge_failed")
         git(work, "commit", "-m", f"chore(release): 合回 {version} 到 develop")
+    require_ready(work)
     head = sha(work, "HEAD")
     record["head"] = head
     write_json(path, state)

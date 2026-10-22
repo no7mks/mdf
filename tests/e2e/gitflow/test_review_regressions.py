@@ -13,7 +13,7 @@ from mdf_core.reviewing.context import fingerprint
 from mdf_core.reviewing.report import validate
 from mdf_test_support import git, mdf, payload
 from support_delivery import commit
-from support_pull import prepare
+from support_pull import prepare, squash_pending
 
 
 def completed_materials(work, version='1.2.1'):
@@ -31,6 +31,7 @@ def waiting_backmerge(python_exe, tmp_path, monkeypatch):
     from mdf_core.lifecycle import pull_publish
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
     completed_materials(work)
+    squash_pending(work)
     payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
     original = pull_publish.git

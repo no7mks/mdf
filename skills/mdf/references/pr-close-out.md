@@ -45,7 +45,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 核模式、source、origin 与目标现场 | 配置与 Git 状态 | 2 | 保留现场，停止 |
-| 2 | Prepare | 约束 | 首次核前置；恢复核返工与操作记录 | 账本、返工备注、平台事实 | 首次/更新/merged3；等待/关闭4 | 未完返工交接主链，完成回2 |
+| 2 | Prepare | 约束 | 核远端集成与前置；恢复核返工记录 | 账本、返工备注、平台事实 | 首次/更新/merged3；等待/关闭4 | 未完返工交接主链，完成回2 |
 | 3 | Finish | 脚本 | 调用 finish-gitflow 提交或续办 | CLI 状态与平台事实 | 4 | busy 等待后回2；其他读日志并停止 |
 | 4 | Report | 约束 | 核结果；轮询或交回主链修复 | 平台结果、修复与收口证据 | 等待留4；修复后或合并回3；完成返回 | 外部阻塞或未合并报告未完成；缺证据停止 |
 
@@ -76,6 +76,33 @@ closeout:
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
 
+### 提交前远端集成
+
+首次创建及未合并 PR/MR 的源提交更新，都必须先完成本节；已 merged 的恢复不重新集成。
+普通 close-out 的步骤 2、adhoc 的 Integrate 与本页 Prepare 共用本节。
+
+- fetch origin 的目标分支并固定最新远端 tip；feature/bugfix/adhoc 对应 `origin/develop`，release/hotfix 对应 `origin/master`。
+  - 以远端 tip 为准，不用本地 trunk 或平台的无冲突标记替代；fetch 失败或目标缺失时停止并报告。
+- 用 `git merge-base --is-ancestor <远端tip> HEAD` 检查包含关系；“父节点”指 ancestor，不要求直接 parent。
+  - 已包含且没有未完成返工时继续核材料；未包含则必须集成，即使试合并完全无冲突。
+  - 命令异常不能当作未包含或已通过；先读日志定位。
+- 集成前确认 owner clean、无已有 MERGE_HEAD，并保存下节格式的「PR close-out 返工」备注。
+  - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”，不伪造 PR ID，也不提前创建 finish 记录。
+  - 固定集成前 HEAD 为增量审查左端点、远端 tip 与原验证请求；退勾 lint、code-review、verify、fact 和 close-out。
+  - 提交备注后先按 [squash](squash.md#pr-模式的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
+  - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
+  - 禁止 rebase、force push、整侧覆盖或削弱测试；语义不明时保留现场并询问。
+- 只要进行了上述集成，就结束 close-out 内部调用栈，由当前 Agent 在主链外依次完成 lint、增量 code-review、verify 和 fact。
+  - 无冲突、空树差异或仅非本交付 docs 改动均不豁免；不套用 local 模式的跳过判定。
+  - 有有效上轮审查时按 1 人增量新一轮覆盖集成与冲突修复，复核上轮问题；否则按 code-review 首轮规则执行。
+  - 普通交付执行 verify branch；人工 feature 执行 verify smoke；adhoc 执行 verify smart；并补原验证请求所需检查。
+  - 随后完成 fact audit，必要时 fact update 并复核；人工 feature 保持 fact update 要求。
+  - 审查或验证引发修复时按原主链补审补测，直到全部通过；同步报告、objectives 与交付材料并提交。
+- 全部完成后再次 close-out；独立调用也持续续办，不只报告待办。release/hotfix 候选目录沿用下方返工规则。
+  - 创建或更新 PR/MR 前再次 fetch 并检查最新远端 tip；未包含则重复本节，不复用集成前的通过记录。
+  - 清除返工备注和恢复候选勾选按下方规则执行；存在未完成返工时不得调用 finish-gitflow 提交源分支。
+  - 检查后远端仍可能并发前进；本节不保证未来 CI 必过，平台 CI 与合并约束仍须针对最终合并结果核验。
+
 ### 恢复路由与返工上下文
 
 deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本节，不新增 CLI 或 workflow 状态文件。
@@ -91,7 +118,8 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
    - 发布或 backmerge 尚未完成却发现 owner/source 缺失，属于外部删除等异常现场；报告异常并核平台事实后才按固定 M 恢复。
      此恢复容错不授权任何流程提前删除 source 或 owner，也不能据此声称正常清理已完成。
 - 步骤 2：Prepare 先只读查询记录中的原 PR/MR；尚无 PR ID 时按记录的 identity/source/target 查回复用，不能猜测或重复创建。
-   - 首次或有待确认的新 head 时前置齐全转 3；已确认 open 且无新提交转 4；closed 未 merged 转 4；merged 转 3。
+   - 首次或有待确认的新 head 时，先完成提交前远端集成，前置齐全转 3。
+   - 已确认 open 且无新提交转 4；closed 未 merged 转 4；merged 转 3。
    - 仅 open 或尚无 PR、仍需候选源提交时，读取原 source worktree 的同一份材料、objectives 与返工备注。
    - 已 merged 或部分发布时，按记录与实际 Git 直接恢复；owner 目录可不存在，必要已交付材料从固定 merge commit 读取。
    - 查无 PR 时，前置齐全才到 Finish 复用或创建；创建响应丢失仍先查平台，不重做首次材料准备。
@@ -100,6 +128,8 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
    - 备注尚未清理或所需前置项仍未勾时，不直接调用 finish-gitflow，不用旧通过 report 跳过返工。
    - PR/MR 已 merged 或部分发布时，按实际合并记录续办剩余操作；不修改已交付材料或重新跑交付阶段。
      新的未合入修复与实际 merged head 不符时报告阻塞，不以重新提交改变本次发布。
+- 步骤 3 创建或更新前必须完成 squash 必要检查；包含 CLI 准备的候选提交，无可压缩区间则 no-op。
+  - squash_required 时按返回范围分析、执行分段计划，再重试；不 force push，不绕过固定恢复端点。
 - 步骤 3：open 且修复已提交、前置齐全时，在原 source worktree 执行 `finish-gitflow --repo <owner>` 更新原 PR/MR。
    - 本地 head 与已确认 head 不同且未完成项已补齐时，先提交候选新 head，不反复处理旧 head 的 review。
    - 只有已准备且无新提交的等待，或 merged/清理/backmerge 恢复，才从主路径带 `--source <原分支>` 续办。
@@ -169,7 +199,7 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
    - 原调用方为 deliver 时保留其有效 until、yolo 与已有授权依据；新调用有显式边界或用户限制时以本次要求为准。
    - 同时记录反馈对应的旧 head、修复前左端点、原验证请求（scope/模块/选题或 suite/完整命令）及返回 PR close-out 的位置。
    - 进度仍只由 checklist 决定；备注只恢复父流程与参数，不另加 gate 或状态协议，不改写人工工作勾选来源。
-   - 冲突通过 merge 目标分支解决；不 rebase、不 force push，不覆盖他人现场。
+   - 冲突通过 merge 最新远端目标分支解决；不 rebase、不 force push，不覆盖他人现场。
    - CI 暂时故障仅在证据支持时重试；不降低测试、审批或 branch protection 要求。
 - 结束 close-out 内部调用栈，在主链外按影响恢复 lint、增量 code-review、原验证范围及 fact。
    - code-review 与 verify 可相互退回修复，直到问题解决、所需审查和验证通过；同步材料并提交。

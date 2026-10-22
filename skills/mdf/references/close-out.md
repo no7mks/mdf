@@ -158,9 +158,13 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
       核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
   - 版本根提交后有未纳入收口的交付改动、记录缺损或状态不一致时停止，不覆盖版本目录。
 
+PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-out.md#提交前远端集成)。
+本节的本地目标、跳过判定及已收口后禁止新集成仅适用于 local；PR 候选版本按 PR 返工规则续办。
+
 待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
 
-- **可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
+- PR 模式在每次目标主线 merge 与 push 前执行 `references/squash.md` 的必要检查，完成分析及分段 squash 后再继续。
+- **local 模式可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
   - 先内部执行 `references/squash.md` 的 dry-run（由 squash 定地板/切段/message）。
   - dry-run 不可压或失败 → 跳过。
   - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）决定是否向
@@ -170,8 +174,8 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - deliver 的 squash decision 同样评分；yolo 自裁定。禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
-  - feature/bugfix 使用本地 develop；local 模式不 fetch、不 push，PR mode 的远端操作由 PR Close-out 执行。
-  - release/hotfix 使用 master，先 fetch origin 并核对本地 master 与远端一致，不自动覆盖分歧。
+  - local 模式的 feature/bugfix 使用本地 develop，不 fetch、不 push。
+  - local 模式的 release/hotfix 使用 master，先 fetch origin 并核对本地 master 与远端一致，不自动覆盖分歧。
 - 集成：
   - 确认 clean，记录目标主线的完整 commit 与当前 HEAD。
   - 若它尚不是当前 HEAD 的祖先，运行：
@@ -365,7 +369,8 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
-- 再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
+- PR mode 在提交前按 PR Close-out 再次 fetch 并核对远端 ancestor，缺失则集成、补审补测后重新 close-out。
+- local 模式再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
   - release/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。
 - 验收：必要提交、当前证据、源与全部目标 worktree clean；有脏状态或已有 merge 即停止，不处理无关改动。

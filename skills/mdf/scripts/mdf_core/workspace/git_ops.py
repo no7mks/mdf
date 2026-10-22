@@ -62,6 +62,14 @@ def command_merge_no_ff(args) -> None:
     )
     if verified.returncode:
         raise MDFError(f"无法解析合并目标 {source}", code="bad_commit")
+    from mdf_core.workspace.squash import require_ready
+    require_ready(repo)
+    incoming = run(
+        ["git", "for-each-ref", "--format=%(refname)",
+         f"--points-at={verified.stdout.strip()}", "refs/heads"], cwd=repo,
+    ).stdout.splitlines()
+    for branch in incoming:
+        require_ready(repo, branch.removeprefix("refs/heads/"))
     before = run(["git", "rev-parse", "HEAD"], cwd=repo).stdout.strip()
     result = run(["git", "merge", "--no-ff", source], cwd=repo, check=False)
     if result.returncode:
