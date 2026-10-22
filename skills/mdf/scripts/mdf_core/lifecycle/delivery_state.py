@@ -79,11 +79,30 @@ def write_json(path, value):
     temp.replace(path)
 
 
+def material_root(repo, slug, *, owner=None):
+    """PR 候选发布使用已归入版本目录的同一份交付材料。"""
+    owner = owner if owner is not None else current_branch(repo)
+    root = safe(repo, repo / "changes" / "unreleased" / slug)
+    details = branch_details(owner)
+    if details["kind"] in {"release", "hotfix"} and details["version"] == slug:
+        from mdf_core.workspace.merge_policy import configured
+        candidate = safe(repo, repo / "changes" / slug)
+        record = safe(repo, candidate / "delivery.json")
+        if configured(repo)["mode"] == "pr" and record.is_file():
+            if (root / "delivery.json").exists():
+                raise MDFError("候选发布材料存在多个目录", code="invalid_delivery")
+            data = read_json(record)
+            if data.get("branch") != owner or data.get("slug") != slug:
+                raise MDFError("候选发布身份不匹配", code="invalid_delivery")
+            return candidate
+    return root
+
+
 def locate(repo, slug=None, *, owner=None):
     owner = owner if owner is not None else owner_branch(current_branch(repo))
     if slug is None:
         slug = unreleased_slug(branch_details(owner))
-    root = safe(repo, repo / "changes" / "unreleased" / slug)
+    root = material_root(repo, slug, owner=owner)
     if not (root / "delivery.json").is_file():
         raise MDFError("交付记录缺失", code="invalid_delivery")
     data = read_json(safe(repo, root / "delivery.json"))

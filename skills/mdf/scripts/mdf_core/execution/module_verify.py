@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from mdf_core.lifecycle.delivery_state import safe, write_json, read_json
+from mdf_core.lifecycle.delivery_state import safe, write_json, read_json, material_root
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.workspace.gitutil import (
     branch_details,
@@ -37,7 +37,7 @@ from mdf_core.foundation.yamlutil import read_frontmatter
 def evidence_file(repo: Path, slug: str) -> Path:
     return safe(
         repo,
-        repo / "changes/unreleased" / slug / "verification-report.json",
+        material_root(repo, slug) / "verification-report.json",
     )
 
 

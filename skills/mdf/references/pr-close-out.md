@@ -74,7 +74,7 @@ closeout:
 | --- | --- |
 | 尚无 PR/MR | `finish-gitflow --repo <owner>` 提交候选状态、push 源提交、创建或查回复用 |
 | open | CLI 返回 waiting_for_merge；Agent 保留分支与 worktree，在当前调用内每 2 分钟查询平台结果 |
-| 源分支前进 | feature/bugfix/adhoc 先完成受影响的主链检查，再复用 PR/MR；不改写历史 |
+| 未合并时源分支前进 | 所有交付 kind 先完成受影响的主链检查，再非 force push 更新原 PR/MR；不改写历史 |
 | closed，未 merged | 返回 closed_without_merge；不清理、不宣称完成 |
 | merged | 核 source/target/head、双亲 merge commit、远端第一父链，然后续办 |
 | 仅部分后续动作成功 | 核对记录与实际状态，只补剩余步骤 |
@@ -83,7 +83,7 @@ closeout:
 - 从主工作区恢复：`finish-gitflow --repo <主路径> --source <原分支>`，支持所有交付 kind。
 - 返回 completed=false 是正常等待；调用方须读取 status，不得因退出 0 就结束 deliver Goal。
 - PR/MR 由用户或项目 CI 合并；close-out 不批准或合并平台 PR/MR。
-- 已收口 release/hotfix 的源提交前进时报告 publish_state_changed，保留版本目录。
+- release/hotfix 的源提交在 PR/MR 合并前允许合法前进；合并后固定实际 M，不接受追加提交改变本次发布。
 - 首次 push 或创建结果丢失，重入先查平台，禁止重复创建或覆盖记录。
 - tag、远端、来源或目标不符时停止；不 reset、不覆盖 tag、不清理他人现场。
 
@@ -129,7 +129,16 @@ closeout:
    - 独立 close-out 也由当前 Agent 续办上述阶段，不仅报告待办后结束；deliver 返回 Select 按原阶段推进。
 4. 恢复 close-out，步骤 3 非 force push 合法新提交、复用原 PR/MR；新 head 等待新的 CI/review 后继续每 2 分钟查询。
    - 保留 finish 操作记录；不删除或篡改记录以绕过 CLI 核验。
-   - release/hotfix 的 publish_state_changed 仍按当前发布契约处理；不能安全更新固定发布状态时报告阻塞。
+   - release/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
+
+release/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并时仍是候选发布材料。
+
+- 在同一版本目录退勾 objectives、更新 code-review、verification-report、fact 与交付总结，不另建 unreleased 副本。
+- CLI 的 delivery 与 verify branch 共用候选目录；不得重复 release-closeout、搬回目录或删除 finish 记录。
+- 保留原版本和发布范围；按修复同步候选 CHANGE、CHANGELOG 和相关对象，检查链接及声明与实现一致。
+- release 首轮审查仍从目标 master 的上一正式发布记录确定基线，不把候选 manifest 的 latest_release 当作已发布版本。
+- fact 使用 paths 范围补齐受影响的事实页，避免把尚无正式 tag 的候选版本当作 branch 基线。
+- 补审补测与材料提交完成后更新原 PR/MR；合并并发布后，该版本材料冻结。
 
 - backmerge 的冲突在记录的 `backmerge.worktree` 中解决并提交，保留固定发布提交 M 和 tag。
   - 补审使用独立 `$mdf code-review --source-commit <修复后HEAD> --target-commit <回合base>`，覆盖回合与修复。

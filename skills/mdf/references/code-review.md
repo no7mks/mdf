@@ -124,6 +124,8 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
   - close-out 集成或主链 verify 修绿产生的增量新一轮为 1，不改冻结 roster。
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
+  - PR mode 的 release/hotfix 若已准备 `changes/<version>/delivery.json`，本轮使用该版本目录的材料、objectives 和报告。
+    PR/MR 合并前可补审修订；不另建 unreleased 副本。候选流程见 [PR Close-out](pr-close-out.md)。
   - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
     release/hotfix 用该分支的稳定 SemVer，不用 slugify。
   - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
@@ -180,6 +182,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 
 - bugfix/hotfix 用 `git config --local --get "branch.<完整分支名>.mdf-start-commit"` 读取起点。
 - release 首轮依据正式发布记录确认上一版本，核对其 `v<version>` tag 指向的 commit 位于 master 历史。
+  - PR 候选已更新本地 manifest 时，从目标 master 的正式发布记录确定上一版本，不取候选 latest_release。
   - 不取 master 合回 develop 的合并提交，也不使用移动的 master/develop HEAD 代替发布基线。
   - 首次发布没有上一版本时，须用户明确确认初始基线。
   - 基线缺失、歧义或对象不可解析时停止询问。
@@ -397,8 +400,8 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 
 裁定收口（所有 finding 已裁定、无未解决阻断项，且若本轮改过实现、测试或验证配置则 smart 已通过）时：
 
-1. 合并各轮/各份进行中材料，覆盖写入一份
-   `changes/unreleased/<slug>/code-review.md` **终稿**（**report**，非 gate）。
+1. 合并各轮/各份进行中材料，在本轮已定位的交付材料目录覆盖写入一份
+   `code-review.md` **终稿**（**report**，非 gate）；候选发布沿用版本目录。
 2. 终稿须含：结论（声称通过）、已采纳与未解决清单（未解决须为空）、各轮要点与
    裁定摘要、smart、quick 复现；路径与证据指针用仓库相对路径，不用 commit hash。
    - 复现成功的采纳项关联正式 regression test、所属 suite 及修复前失败、修复后通过的报告。

@@ -89,6 +89,30 @@ def cleanup(repo, state):
         git(primary, "branch", "-D", source)
 
 
+def confirm_pull(state, pull):
+    """只以平台事实确认候选提交；push 响应丢失时仍可恢复。"""
+    if pull is None:
+        return
+    if pull["source"] != state["source"] or pull["target"] != state["target"]:
+        raise MDFError("PR/MR 的来源或目标已变化", code="pull_state_changed")
+    pending = state.get("pending_head")
+    if pending and pull["head"] == pending:
+        state["head"] = pending
+        state.pop("pending_head")
+    elif pull["head"] != state["head"]:
+        raise MDFError("PR/MR 的源提交与恢复记录不符", code="pull_state_changed")
+
+
+def check_source(repo, state):
+    """发布或清理前核对源现场，不先产生 tag 或回合副作用。"""
+    occupant = worktree_map(repo).get(state["source"])
+    if occupant is not None:
+        ensure_clean(occupant)
+    current = git(repo, "rev-parse", "--verify", f"refs/heads/{state['source']}", check=False)
+    if (not current.returncode and current.stdout.strip() != state["head"]) or state.get("pending_head"):
+        raise MDFError("已合并 PR/MR 之外仍有源提交，保留现场", code="pull_state_changed")
+
+
 def finish(repo, source, settings):
     path = state_path(repo, source)
     state = read_json(path) if path.exists() else None
@@ -107,32 +131,36 @@ def finish(repo, source, settings):
         write_json(path, state)
     git(repo, "fetch", "origin", "--prune")
     pull = forge.get(state["pull"]["id"]) if state.get("pull") else forge.find(source, target)
+    confirm_pull(state, pull)
+    write_json(path, state)
     if pull is None or pull["state"] == "open":
         current = git(repo, "rev-parse", "--verify", f"refs/heads/{source}", check=False)
         if current.returncode:
             raise MDFError("未合并的源分支不存在", code="missing_branch")
         head = current.stdout.strip()
-        if head != state["head"]:
-            if details["kind"] in {"release", "hotfix"}:
-                raise MDFError("已准备发布的源提交已变化，保留版本目录", code="publish_state_changed")
-            if not ancestor(repo, state["head"], head):
+        if head != state["head"] or state.get("pending_head"):
+            if not ancestor(repo, state.get("pending_head", state["head"]), head):
                 raise MDFError("源分支历史已改写", code="pull_state_changed")
             preflight(repo, source)
-            state["head"] = sha(repo, source)
+            state["pending_head"] = sha(repo, source)
             write_json(path, state)
         # 非 force 精确推送本次源提交；重复 push 为 noop。
-        git(repo, "push", "--no-follow-tags", "origin", f"{state['head']}:refs/heads/{source}")
+        pushed_head = state.get("pending_head", state["head"])
+        git(repo, "push", "--no-follow-tags", "origin", f"{pushed_head}:refs/heads/{source}")
         if pull is None:
             pull = forge.create(source, target, f"chore(delivery): 合入 {source}",
                                 "MDF 交付；请使用 merge commit。合并后再次执行 $mdf close-out 续办。")
         else:
             pull = forge.get(pull["id"])
+    confirm_pull(state, pull)
+    write_json(path, state)
     if pull["source"] != source or pull["target"] != target or pull["head"] != state["head"]:
         raise MDFError("PR/MR 与已准备交付不一致", code="pull_state_changed")
     state["pull"] = pull
     write_json(path, state)
     status = "waiting_for_merge" if pull["state"] == "open" else "closed_without_merge"
     if pull["state"] == "merged":
+        check_source(repo, state)
         git(repo, "fetch", "origin", "--prune")
         merged = verified_merge(repo, pull, source, target, state["head"])
         if state.get("merge_commit") not in (None, merged):

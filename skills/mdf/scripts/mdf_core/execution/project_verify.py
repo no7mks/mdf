@@ -4,7 +4,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from mdf_core.execution.verify_run import run_verify_command
-from mdf_core.lifecycle.delivery_state import safe, read_json
+from mdf_core.lifecycle.delivery_state import safe, read_json, material_root
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace.gitutil import current_branch, branch_details, unreleased_slug
 from mdf_core.execution.verification import SUITES
@@ -13,7 +13,7 @@ MAX_PARALLEL = 5
 
 
 def associated_suites(repo, slug):
-    path = repo / "changes/unreleased" / slug / "suites.json"
+    path = material_root(repo, slug) / "suites.json"
     if not path.is_file():
         return None
     data = read_json(safe(repo, path))
@@ -32,7 +32,7 @@ def evidence_path(repo):
     slug = unreleased_slug(details)
     return safe(
         repo,
-        repo / "changes/unreleased" / slug / "verification-report.json",
+        material_root(repo, slug) / "verification-report.json",
     )
 
 
