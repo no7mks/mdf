@@ -15,16 +15,18 @@ def test_squash_plans_and_closeout_dry_run_before_heuristic():
     assert "reset --hard" in squash
     assert "已推送分支上改写" in squash
     assert "几段与切法" in squash
-    assert "不得改写已确认 message" in squash
+    assert "不得改写已定型 message" in squash
     assert "展示建议并结束" in squash
-    assert "未确认留 3" in squash or "未确认 ──────→ 3 Confirm" in squash
+    assert "不逐次请求用户确认" in squash
+    assert "planning land" in squash and "所有模式" in squash
     assert "不可压或失败" in squash
     assert "references/squash.md" in finish
     assert "dry-run" in finish and "--dry-run" not in finish
     assert "先内部执行" in finish and "dry-run" in finish
     assert "地板取 dry-run 计划" in finish or "计划中的地板" in contract
     assert "[委托 squash 后继续本步]" in finish
-    assert "dry-run 建议且用户确认执行" in finish
+    assert "dry-run 建议且 Agent 裁定" in finish
+    assert "不逐次确认" in finish
     assert "references/squash.md" in contract
     assert "公开 `$mdf squash` 负责" in squash or "公开 `$mdf squash` 承担" in squash
     assert "dry-run 计划" in squash

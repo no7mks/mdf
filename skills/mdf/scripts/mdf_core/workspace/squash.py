@@ -5,7 +5,7 @@ from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace.gitutil import current_branch, ensure_clean
-from mdf_core.workspace.merge_policy import configured, git, sha
+from mdf_core.workspace.merge_policy import configured, git, planning_only, sha
 
 
 def common_dir(repo):
@@ -25,6 +25,11 @@ def inspect(repo, branch=None, *, refresh=True):
         for remote in git(repo, 'remote').stdout.splitlines():
             # 显式获取所有分支，不依赖可能只覆盖一个分支的 fetch refspec。
             git(repo, 'fetch', remote, f'+refs/heads/*:refs/remotes/{remote}/*', '--tags')
+    if branch == 'planning':
+        target = 'refs/heads/develop'
+        if (not git(repo, 'cat-file', '-e', f'{target}:.mdf/manifest.yaml', check=False).returncode
+                and configured(repo, target)['mode'] == 'pr' and not planning_only(repo, target, head)):
+            raise MDFError('planning 须先通过完整文档历史检查，不得用 squash 隐藏代码改动', code='pr_required')
     refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags').stdout.splitlines()
     protected = set()
     for ref in refs:
@@ -85,11 +90,12 @@ def record_analysis(repo, branch, head, *, reason):
 
 def require_ready(repo, branch=None):
     """每次动作重新核边界；多笔尾段必须先由 Agent 分析并执行计划。"""
-    if configured(repo)['mode'] != 'pr':
-        return
     from mdf_core.lifecycle.roster import parse_role_branch
     branch = branch or current_branch(repo)
-    if not (branch.startswith(('feature/', 'bugfix/', 'release/', 'hotfix/', 'adhoc/', 'codex/backmerge/'))
+    if branch != 'planning' and configured(repo)['mode'] != 'pr':
+        return
+    if not (branch == 'planning'
+            or branch.startswith(('feature/', 'bugfix/', 'release/', 'hotfix/', 'adhoc/', 'codex/backmerge/'))
             or parse_role_branch(branch)):
         return
     plan = inspect(repo, branch)

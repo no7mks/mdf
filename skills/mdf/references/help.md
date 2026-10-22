@@ -267,7 +267,7 @@ $mdf clarify 要不要把缓存放到 Redis
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
     - 允许进入 close-out 时包含其合并及适用的 tag、发版推送，不另加固定 Gitflow 确认。
-    - manual slug、squash 与收尾删除工作区同样按 confidence 策略裁定，人工工作仍须用户显式勾选。
+    - manual slug 与收尾删除工作区按 confidence 策略裁定；squash 默认自主执行，人工工作仍须用户显式勾选。
     - close-out 保留 detached worktree；收尾决定是否删除。
       删除后本对话不要再继续，后续工作在主 worktree 开新对话。
 - `$mdf start`
@@ -355,12 +355,12 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf close-out`
   - 用途：按 Gitflow 分支完成审计与收口。
   - 说明：提交不代替用户确认；release/hotfix 收入 `fixed` 前委托 bug close。合入目标
-    主线前先 squash dry-run，再按启发式决定是否展示；确认后完整执行。
+    主线前先 squash dry-run，再由 Agent 按启发式裁定并自主执行，无需逐次确认。
     PR mode 提交或续办 PR/MR；等待平台合并或回合时不宣称完成。
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`
-  - 用途：定地板、定型切段、写 message；确认后 soft-reset 多段整理。
-  - 说明：激活由调用方决定；`--dry-run` 只展示建议。失败不硬回滚。
+  - 用途：定地板、定型切段、写 message；默认自主 soft-reset 多段整理，无需逐次确认。
+  - 说明：激活由调用方决定；所有模式 planning land 前须检查；`--dry-run` 只展示建议。失败不硬回滚。
 - `$mdf archive`
   - 用法：`$mdf archive`
   - 用途：归档终态 Proposal 及 closed/rejected Bug。

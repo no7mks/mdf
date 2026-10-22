@@ -96,13 +96,15 @@ def test_deliver_decisions_use_confidence_without_low_score_fallback():
         "`confidence >= 0.8` 自动确认", "`confidence < 0.8` 进入步骤 6",
         "无法形成有效评分时也进入步骤 6", "新证据、范围或方案变化时重新评分",
         "subagent 的新 decision 同样适用", "`--yolo` 无 confidence 限制：不要求评分",
-        "内部 clarify、manual slug、squash、Gitflow 收口与收尾删除 worktree",
+        "内部 clarify、manual slug、Gitflow 收口与收尾删除 worktree",
+        "squash 默认按其契约自主分析执行，不增加逐次计划确认",
         "人工实际工作仍须由用户完成并显式勾选", "不增加固定 Gitflow 确认关口",
         "不覆盖用户明令禁止、关键事实缺失、外部条件与验收要求",
     ):
         assert rule in text
-    for name in ("start", "design", "implement", "converge", "clarify", "squash", "close-out"):
+    for name in ("start", "design", "implement", "converge", "clarify", "close-out"):
         assert "confidence 策略" in workflow(name), name
+    assert "不为 squash 的常规执行额外设置 confidence 确认" in workflow("squash")
     assert "非 yolo 的 deliver decision 请求用户确认" in workflow("common")
 
 

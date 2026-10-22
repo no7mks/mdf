@@ -89,7 +89,7 @@ closeout:
 - 集成前确认 owner clean、无已有 MERGE_HEAD，并保存下节格式的「PR close-out 返工」备注。
   - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”，不伪造 PR ID，也不提前创建 finish 记录。
   - 固定集成前 HEAD 为增量审查左端点、远端 tip 与原验证请求；退勾 lint、code-review、verify、fact 和 close-out。
-  - 提交备注后先按 [squash](squash.md#pr-模式的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
+  - 提交备注后先按 [squash](squash.md#pr-模式与-planning-land-的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
   - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
   - 禁止 rebase、force push、整侧覆盖或削弱测试；语义不明时保留现场并询问。
 - 只要进行了上述集成，就结束 close-out 内部调用栈，由当前 Agent 在主链外依次完成 lint、增量 code-review、verify 和 fact。

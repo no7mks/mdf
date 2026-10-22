@@ -76,7 +76,8 @@
   - 无法形成有效评分时也进入步骤 6；不把缺失评分当作高 confidence。
   - 展示方案、分数、关键依据与不确定项；用户确认后续办原 decision，拒绝按原 intent 的拒绝去向处理。
 - `--yolo` 无 confidence 限制：不要求评分、不因低 confidence 询问，由主 Agent 自裁定并记录理由。
-- 内部 clarify、manual slug、squash、Gitflow 收口与收尾删除 worktree 的决定均遵守本策略。
+- 内部 clarify、manual slug、Gitflow 收口与收尾删除 worktree 的决定均遵守本策略。
+  - squash 默认按其契约自主分析执行，不增加逐次计划确认；范围或归属不明仍须澄清。
   - 不增加固定 Gitflow 确认关口；只有截止点允许进入 close-out 时才评估其 decision。
   - 人工实际工作仍须由用户完成并显式勾选，所有模式均不得代勾。
   - converge 的 `--test-approval` 记录该裁定、评分或用户确认与理由。

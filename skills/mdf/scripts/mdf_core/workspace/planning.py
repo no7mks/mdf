@@ -150,6 +150,10 @@ def command_planning_land(args) -> None:
             code="planning_occupied",
         )
     ensure_clean(occupant)
+    if planning_wt is not None:
+        ensure_clean(planning_wt)
+    from mdf_core.workspace.squash import require_ready
+    require_ready(planning_wt or primary, BRANCH)
     landed = merge_branch(occupant, BRANCH)
     synced = False
     if planning_wt is not None and git_is_clean(planning_wt):

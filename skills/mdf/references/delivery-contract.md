@@ -363,6 +363,7 @@ verify branch 中非 quick 失败时尝试补 quick 复现；结论写入
 
 PR 模式共享动作前必须读取 `references/squash.md` 并执行安全边界检查与分析后的分段整理；无可压缩区间则 no-op。
 local 模式仅调用方建议或用户显式调用时读取其可选地板、建议条件与执行契约。
+所有模式的 planning land 前也执行必要检查；squash 默认自主分析执行，无需逐次确认计划。
 
 ### 修改与提交权限
 

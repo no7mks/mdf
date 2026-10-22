@@ -1,4 +1,4 @@
-"""执行已确认的 squash 计划；失败保留现场，以 JSON 返回完整 Git 调用记录。"""
+"""执行已定型的 squash 计划；失败保留现场，以 JSON 返回完整 Git 调用记录。"""
 from __future__ import annotations
 
 import argparse
@@ -39,9 +39,10 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     old_tip = commit(plan["old_tip"])
     branch = plan["branch"]
     require(git("branch", "--show-current") == branch
-            and (branch.startswith(("feature/", "bugfix/", "release/", "hotfix/", "adhoc/", "codex/backmerge/"))
+            and (branch == "planning"
+                 or branch.startswith(("feature/", "bugfix/", "release/", "hotfix/", "adhoc/", "codex/backmerge/"))
                  or parse_role_branch(branch)),
-            "当前分支须为计划中的交付分支")
+            "当前分支须为计划中的交付、角色或 planning 分支")
 
     def verify() -> dict:
         require(not git("diff", old_tip, "HEAD", "--"), "最终 tree 与旧 tip 不一致")
@@ -53,7 +54,7 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
 
     if verify_only:
         return verify()
-    require(git("rev-parse", "HEAD") == old_tip, "HEAD 已变化，须重新计划并确认")
+    require(git("rev-parse", "HEAD") == old_tip, "HEAD 已变化，须重新分析计划")
     require(not git("status", "--porcelain", "--untracked-files=no"),
             "已跟踪工作区不干净")
     floor = commit(plan["floor"])
@@ -70,7 +71,7 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     for segment in segments:
         tip = commit(segment["tip"])
         require(isinstance(segment["message"], str) and bool(segment["message"].strip()),
-                "每段须有已确认 message")
+                "每段须有已定型 message")
         git("merge-base", "--is-ancestor", previous, tip)
         git("merge-base", "--is-ancestor", tip, old_tip)
         require(previous != tip, "段界须严格递增")

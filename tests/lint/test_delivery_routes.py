@@ -435,10 +435,10 @@ def test_code_review_covers_branch_starts_and_previous_release():
     assert "references/squash.md" in contract
     squash = workflow("squash")
     assert "git merge --squash" in squash
-    assert "是否 squash 与执行计划的确认均按其 confidence 策略裁定" in squash
+    assert "不增加 squash 的逐次确认" in squash
     assert "是否建议（可选启发式）" in squash
     assert "不可 squash" in squash
-    assert "dry-run 建议且用户确认执行" in finish
+    assert "dry-run 建议且 Agent 裁定" in finish
     assert "推导出必须空转的 owner 开发" in contract
     assert "has_dev" in contract
     verify = workflow("verify")

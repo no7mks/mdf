@@ -203,9 +203,12 @@ python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
     可 fast-forward 时用 ff；已分叉时 no-ff。
   - JSON 含 `worktree`、`created`、`synced`。
 - `land` 要求占用 `develop` 的 worktree clean，把 `planning` 合入 `develop`。
+  - 合入前在所有模式下检查 planning 未共享尾段；planning 占用者也须 clean。
+  - `squash_required` 时按 [squash 契约](../../../skills/mdf/references/squash.md) 自主分析并执行，再重试 land。
+  - planning 无交付 start_commit，squash 计划以安全 floor 为 start_commit；PR mode 先核完整文档历史。
   - 可 fast-forward 时用 ff；已分叉时 no-ff。
   - 规划 worktree clean 时再把 `develop` 合回 `planning`，规则相同。
-- 冲突 abort。不 fetch、不 push。
+- 冲突 abort。squash 检查会 fetch remote 分支与 tag 来核对共享边界；不 push。
 - `planning` 不是 Gitflow 交付分支。
 
 ## `to`

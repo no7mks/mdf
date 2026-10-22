@@ -140,6 +140,7 @@ close-out 提交 PR/MR 后每 2 分钟查询结果，用户或项目 CI 合并�
 PR 模式在创建或更新 PR/MR 前 fetch 远端目标：develop（feature/bugfix/adhoc）或 master（release/hotfix）。
 PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共享提交并按逻辑分段 squash；
 可以保留多笔 commit，无可压缩区间则 no-op，保留 merge commit，禁止 force push。
+所有模式的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
 只要远端 tip 不是当前 HEAD 的 ancestor，就先 no-ff merge 到本分支；无冲突也必须重新完成
 lint、增量 code-review、verify 与 fact，再次 close-out；提交前远端再次前进则重复此流程。
 
@@ -163,7 +164,7 @@ local 模式先在交付分支集成 develop（feature/bugfix）或 master（rel
   - confidence ≥ 0.8 自动确认，低于 0.8 请求用户确认；不降低验收要求。
   - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认 `--until close-out`。
   - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
-  - manual slug、squash 与收尾 worktree 删除等 decision 也适用；人工工作仍须用户完成并勾选。
+  - manual slug 与收尾 worktree 删除等 decision 也适用；squash 默认自主执行，人工工作仍须用户完成并勾选。
   - close-out 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。
     后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。
 - release 从 develop 开分支前确认发布目标。

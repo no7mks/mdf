@@ -16,12 +16,12 @@
 │ 2 Integrate and review           │
 └────────────────┬─────────────────┘
                  │
-                 ├──── dry-run 建议且用户确认执行 ────→ [委托 squash 后继续本步]
-                 ├──── 已收口且证据有效 ──────────────→ 4 Recheck
-                 ├──── 集成冲突无法解决 ──────────────→ [停止并询问]
-                 ├──── 内部审查失败 ──────────────────→ [停止]
-                 ├──── 需主链外补审补测或 fact ───────→ [交接主链并停止]
-                 ├──── 状态不一致 ────────────────────→ [停止]
+                 ├──── dry-run 建议且 Agent 裁定 ────→ [委托 squash 后继续本步]
+                 ├──── 已收口且证据有效 ─────────────→ 4 Recheck
+                 ├──── 集成冲突无法解决 ─────────────→ [停止并询问]
+                 ├──── 内部审查失败 ─────────────────→ [停止]
+                 ├──── 需主链外补审补测或 fact ──────→ [交接主链并停止]
+                 ├──── 状态不一致 ───────────────────→ [停止]
                  │
                  ▼ 待收口或 feature/bugfix
 ┌──────────────────────────────────┐
@@ -106,7 +106,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 - 入口前置：主链 verify branch、fact audit 已完成；配置 hook 时确认已执行及必要补审补测已完成。
   hook 尚未执行或状态不明时交接主链，不在本 intent 或 `finish-gitflow` 内补跑；不要求独立执行记录文档。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
-- 步骤 2 可选 squash：先执行 `references/squash.md` 的 dry-run，确认后再执行完整流程。
+- 步骤 2 可选 squash：先执行 `references/squash.md` 的 dry-run，由 Agent 裁定并执行完整流程。
 - 步骤 7 有 fixed 或需重验的 closed Bug 时读取并内部执行 `references/bug-close.md`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -167,11 +167,10 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
 - **local 模式可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
   - 先内部执行 `references/squash.md` 的 dry-run（由 squash 定地板/切段/message）。
   - dry-run 不可压或失败 → 跳过。
-  - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）决定是否向
-    用户展示该建议；未达信号也可展示。
-  - 独立调用由用户确认；deliver 委托按 confidence 策略确认后执行 `references/squash.md`，可复用计划。
-  - 拒绝则跳过；独立调用未确认也跳过；deliver 低 confidence 待确认时暂停，不擅自执行。
-  - deliver 的 squash decision 同样评分；yolo 自裁定。禁止 rebase / `merge --squash`。
+  - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）由 Agent 裁定是否执行；未达信号也可执行。
+  - 默认自主执行 `references/squash.md`，可复用计划，不逐次确认是否执行、地板、段界或 messages。
+  - 用户明确禁止则跳过；范围或归属不明才询问。deliver 不为常规 squash 额外设置 confidence 确认。
+  - 禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
   - local 模式的 feature/bugfix 使用本地 develop，不 fetch、不 push。

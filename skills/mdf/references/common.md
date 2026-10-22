@@ -237,6 +237,7 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   - 提交后运行 `planning land --repo "$REPO_ROOT"`，在占用 develop 的
     worktree（须 clean）上合入；local 模式可 fast-forward 时用 ff，已分叉时 no-ff。
     PR mode 按 [PR Close-out](pr-close-out.md) 的文档白名单核对，并使用 no-ff。
+    所有模式合入前按 [squash](squash.md) 检查 planning；squash_required 时自主分析执行后重试，不逐次确认。
   - 新建 Proposal 的 ID 在该工作区随机生成，并避开当前 checkout 的 `docs/proposals/`（含 archive）及本批已有 ID；
     合入 develop 后才对 `$mdf start` 可见。
 - 与当前交付分支工作无关、且不属于规划工作区的文档在 develop 更新；独立记录和公共
@@ -361,7 +362,8 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
   把 `planning` 合入占用 develop 的 worktree。
   - local 模式可 fast-forward 时用 ff；已分叉时 no-ff；PR mode 始终 no-ff。
   - 无新提交则该命令为 no-op。
-  - develop 占用者 dirty 时停止并报告，不改 checkout。
+  - 合入前检查 planning 未共享尾段；须整理时按 `squash.md` 自主执行，保留共享历史。
+  - develop 或 planning 占用者 dirty 时停止并报告，不改 checkout。
 
 **返回与委托**
 
