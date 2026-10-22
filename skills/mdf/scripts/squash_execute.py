@@ -82,7 +82,7 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     rewritten = set(git("rev-list", f"{floor}..{old_tip}").splitlines())
     published = set(git("rev-list", "--remotes").splitlines())
     require(not rewritten.intersection(published), "区间含远程引用已发布的 commit")
-    untracked = git("ls-files", "--others", "-z").split("\0")
+    untracked = git("ls-files", "--others", "--exclude-standard", "-z").split("\0")
     for segment in segments:
         tracked = git("ls-tree", "-r", "--name-only", "-z", segment["tip"]).split("\0")
         require(not any(
