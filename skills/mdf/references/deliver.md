@@ -361,6 +361,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
 - 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
   - 按分支核对合并、源分支删除，以及 release/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
+  - PR mode 另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
   - owner 已被外部删除时如实报告，以操作记录与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。

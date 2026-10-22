@@ -48,7 +48,7 @@ def test_pr_retains_branch_and_owner_until_merge_and_publication_finish():
     for rule in (
         'PR/MR 未完成时必须保留 source branch 和 owner worktree',
         '等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理',
-        '完成固定 M 的 tag 发布与 backmerge，之后才可清理 source',
+        '完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source',
         'CLI 始终保留 owner worktree', '恢复容错不授权任何流程提前删除',
     ):
         assert rule in text

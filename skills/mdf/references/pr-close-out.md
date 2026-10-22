@@ -66,7 +66,7 @@ closeout:
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
-  - release/hotfix 还须完成固定 M 的 tag 发布与 backmerge，之后才可清理 source；CLI 始终保留 owner worktree。
+  - release/hotfix 还须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 已有 Git common dir `mdf/finish/<source>.json` 时先按下方恢复路由续办，不重新执行整套材料准备。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
@@ -116,7 +116,7 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
 | closed，未 merged | 返回 closed_without_merge；不清理、不宣称完成 |
 | merged | 核 source/target/head、双亲 merge commit、远端第一父链，然后续办 |
 | 仅部分后续动作成功 | 核对记录与实际状态，只补剩余步骤 |
-| completed | 本地 source 删除；owner 存在时 detached，已外部删除则如实报告；按原清理规则交接 |
+| completed | 远端与本地 source 均已清理；owner 存在时 detached，已外部删除则如实报告；按原清理规则交接 |
 
 - 从主工作区恢复：`finish-gitflow --repo <主路径> --source <原分支>`，支持所有交付 kind。
 - 返回 completed=false 是正常等待；调用方须读取 status，不得因退出 0 就结束 deliver Goal。
@@ -133,7 +133,7 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
 | waiting_for_merge | completed=false，PR/MR 为 open；进入下方轮询，平台合并后回步骤 3 |
 | published_pending_backmerge | completed=false，tag 已发布；读取 backmerge 冲突或 push_error，修复后直接回合 develop |
 | closed_without_merge | completed=false，PR/MR 已关闭但未合并；保留现场，报告未完成，不自动新建 PR/MR |
-| completed | completed=true，核对 merge_commit、目标远端引用与本地 source 清理；通过才报告完成 |
+| completed | completed=true，核对 merge_commit、目标远端引用、remote_deleted=true 与本地 source 清理；通过才报告完成 |
 | 字段缺失、状态矛盾或核验失败 | 保留现场并停止，报告缺项；不以退出 0、源分支消失或 detached 单独判定完成 |
 
 ### 当前调用内轮询
@@ -193,6 +193,24 @@ release/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并�
   - 所需证据齐全并通过后恢复步骤 3；修复后的完整 backmerge HEAD 必须已进入远端 develop，才能完成收口。
   - 修复后由 CLI 直接 push develop；backmerge 不创建 PR/MR，也不进入平台合并轮询。
 - 每轮依据新反馈和验证结果推进；仅在用户停止、外部阻塞或无进展且不能安全继续时交接。
+
+### 远端交付分支清理
+
+本节只清理原 PR/MR 的 feature、bugfix、adhoc、release 或 hotfix source，不清理 master、develop、planning 或 tag。
+
+- 合并核验与所需发布动作完成后，先清理远端 source，再 detach owner、删除本地 source；远端失败时保留本地现场。
+- 删除前直接 ls-remote 查询精确 ref，tip 必须等于已确认 PR head；以显式 expected SHA 的 lease 条件删除，不依赖 tracking ref。
+  - lease 仅用于删除该 source，不用于改写任何分支历史；并发前进时停止并保留新 tip。
+  - 远端已由平台或用户删除时，确认缺失即复用，不重复发删除请求。
+- 操作记录的 remote_cleanup 保存本次 head 与 pending/deleted；请求前落盘 pending，删除响应成功先落盘 deleted，再核远端缺失。
+  - 请求中断、响应丢失或确认写入失败后，重入若远端已缺失则补记成功，再继续本地清理。
+  - pending 重入时远端仍存在，即使 SHA 相同也返回 remote_cleanup_uncertain；不能自动重删可能重建的分支。
+  - 已确认 deleted 后再次出现同名分支，返回 pull_state_changed 并保留，不论其 SHA 是否相同。
+- 删除结果不确定时报告原 PR、source、expected head 与实际远端事实；不得清空或修改操作记录绕过保护。
+  - 核实同名分支归属后，由用户或其明确授权的操作清理远端，再次 close-out 根据缺失事实继续；不自动降低保护。
+- release/hotfix 在 tag/backmerge 均完成后持久化 publication_completed；远端清理重试只核固定 M 和已交付 backmerge head。
+  不再采用保留的 backmerge 工作区中后续新增提交，也不因该临时工作区已删除而重新发布。
+- CLI 的 remote_deleted 独立表示已确认远端 source 删除，deleted 仍表示本地 source；全部清理完成后才能 completed=true。
 
 ### 发布与回合
 

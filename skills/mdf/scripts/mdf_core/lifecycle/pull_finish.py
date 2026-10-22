@@ -74,6 +74,51 @@ def sync_local(repo, branch):
         git(repo, "update-ref", target, remote_head, local_head)
 
 
+def remote_source_head(repo, source):
+    ref = f"refs/heads/{source}"
+    rows = git(repo, "ls-remote", "--refs", "origin", ref).stdout.splitlines()
+    if not rows:
+        return None
+    if len(rows) != 1 or len(rows[0].split()) != 2 or rows[0].split()[1] != ref:
+        raise MDFError("远端 source 查询结果不明确，保留现场", code="remote_cleanup_uncertain")
+    return rows[0].split()[0]
+
+
+def cleanup_remote(repo, state, path):
+    """已合并且发布完成后，条件删除原远端 source；不重删不确定的分支。"""
+    source, head = state["source"], state["head"]
+    record = state.get("remote_cleanup")
+    if record is not None and (not isinstance(record, dict) or record.get("head") != head
+                               or record.get("status") not in {"pending", "deleted"}):
+        raise MDFError("远端清理记录不符，保留现场", code="pull_state_changed")
+    remote = remote_source_head(repo, source)
+    if record is not None and remote is not None:
+        if record["status"] == "deleted" or remote != head:
+            raise MDFError("远端 source 已变化或被重建，保留分支", code="pull_state_changed")
+        raise MDFError("上次删除结果不确定；核实并手动清理远端 source 后再续办，不得清空记录",
+                       code="remote_cleanup_uncertain")
+    if record is None and remote is not None:
+        if state.get("completed") or remote != head:
+            raise MDFError("远端 source 与本次已确认交付不符，保留分支", code="pull_state_changed")
+        record = {"head": head, "status": "pending"}
+        state["remote_cleanup"] = record
+        write_json(path, state)
+        ref = f"refs/heads/{source}"
+        result = git(repo, "push", "--no-follow-tags", f"--force-with-lease={ref}:{head}",
+                     "origin", f":{ref}", check=False)
+        if result.returncode == 0:
+            record["status"] = "deleted"
+            write_json(path, state)
+        remote = remote_source_head(repo, source)
+        if remote is not None:
+            if record["status"] == "deleted" or remote != head:
+                raise MDFError("远端 source 删除时已变化或被重建，保留分支", code="pull_state_changed")
+            raise MDFError("删除未确认；核实并手动清理远端 source 后再续办，不得清空记录",
+                           code="remote_cleanup_uncertain", details={"error": result.stderr.strip()})
+    state["remote_cleanup"] = {"head": head, "status": "deleted"}
+    write_json(path, state)
+
+
 def cleanup(repo, state):
     primary = primary_worktree(repo)
     source = state["source"]
@@ -219,7 +264,11 @@ def _finish(repo, source, settings):
         if target == "master":
             from mdf_core.lifecycle.pull_publish import publish
             ready = publish(repo, state, details["version"], path)
+            if ready:
+                state["publication_completed"] = True
+                write_json(path, state)
         if ready:
+            cleanup_remote(repo, state, path)
             cleanup(repo, state)
             state["completed"] = True
             status = "completed"
@@ -230,5 +279,6 @@ def _finish(repo, source, settings):
           "completed": state["completed"], "status": status, "pull_request": pull,
           "merge_commit": state.get("merge_commit"), "backmerge": state.get("backmerge"),
           "tag": state.get("tag"), "targets": [target] + (["develop"] if target == "master" else []),
+          "remote_deleted": (state.get("remote_cleanup") or {}).get("status") == "deleted",
           "deleted": source if state["completed"] else None, "pushed": True,
           "retained_worktree": state.get("retained_worktree"), "primary_worktree": str(primary_worktree(repo))})

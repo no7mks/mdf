@@ -9,12 +9,17 @@
 - manifest.closeout.mode 为 local/pr，省略为 local；pr 需 provider: github/gitlab。
 - init 保留已有 closeout，doctor 报 manifest.closeout finding；schema_version 仍为 3。
 - `finish-gitflow --repo <repo> [--source <source>]` 在 pr 模式支持所有交付 kind 的恢复。
-- 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted 与工作区路径。
+- 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted、remote_deleted 与工作区路径。
 - waiting_for_merge、closed_without_merge、published_pending_backmerge 都是 completed=false。
 - 发布后以固定 merge commit no-ff 回合并直接 push develop；不创建回合 PR/MR。
   冲突或 push 未完成时保留 backmerge worktree；push 失败详情见 backmerge.push_error。
 - completed=true 后才能报告交付完成；正常等待退出 0，不重复创建远端对象。
 - source 清理再次检查 worktree 占用，并以已确认 head 原子删除 ref；并发前进时拒绝删除，保留分支配置。
+- PR mode 先以显式 expected SHA lease 删除 origin 的原 source，确认缺失后才清理本地 source；remote_deleted 为独立 bool。
+  远端失败时保留本地 branch/worktree；不删除 trunk 或 tag。
+- remote_cleanup 记录 pending/deleted 与 head；中断后远端缺失可补记成功，pending 且仍存在时 remote_cleanup_uncertain。
+  已确认删除后同名 ref 重建则 pull_state_changed；核实归属并清理远端后续办，不清空恢复记录。
+- release/hotfix 的 publication_completed 保存 tag/backmerge 已完成事实；清理重入不发布保留工作区的后续提交。
 - PR/MR 合并前所有交付 kind 均允许保留历史的源提交更新；候选 head 经平台确认后才替换已确认 head。
 - PR 收口按 Git common dir 获取仓库级 OS lock；并发调用返回 finish_busy，不修改恢复记录或共享 Git 状态。
   操作退出或进程中断后自动释放；lock 文件保留，不作为进度或恢复记录。

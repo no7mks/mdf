@@ -33,7 +33,7 @@ def publish(repo, state, version, path):
     git(repo, "fetch", "origin", "--prune")
     remote = "refs/remotes/origin/develop"
     record = state.get("backmerge")
-    if state.get("completed"):
+    if state.get("completed") or state.get("publication_completed"):
         if not ancestor(repo, merged, remote) or (record and not ancestor(repo, record["head"], remote)):
             raise MDFError("已完成回合的远端历史已变化，保留现场", code="pull_state_changed")
         sync_local(repo, "develop")
