@@ -10,7 +10,8 @@
 | 共用 Review 协议和报告 schema | Codex/Cursor CLI、模型、登录凭据与只读权限 |
 | GitHub/GitLab CI 和发布示例 | approve/merge policy、平台写身份、通知和 artifact |
 
-- CI 是本地 code-review 完成后的外部复核，不替代 Repair、终稿或 objectives。
+- CI/CD 通过 `$mdf code-review --source-commit <source> --target-commit <target>` 调用独立只读审查。
+- 不要求本地 code-review、roster 或交付材料；普通交付模式仍按原主链执行。
 - Python3、Git、MDF 为必需依赖；平台采集另需已登录的 gh/glab。
 - LLM 工具执行发生在 runner；模型推理使用所选服务，不要求原生平台 reviewer。
 - 工具应从项目固定安装位置或 policy_ref 版本加载，不执行被审改动新增的规则来豁免本轮。
@@ -26,12 +27,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" review-context \
   --policy-ref "$TARGET_SHA" > context-output.json
 ```
 
-- pre-merge review 可将 --head/--policy-ref 替换为成对的 --source-commit/--target-commit，不能混用。
-  - review-context 与 review.py 都支持；source 仍为交付分支身份，不是 source commit。
-  - 显式首轮用唯一 merge-base→source，delivery_base 保留 delivery.json 的起点；release 也适用。
-  - target_diff/target_paths 提供 merge-base→target；不得将 target 独有变化当成 source 删除。
-  - target 未集成不会标记 incomplete；缺材料仍会。无共同祖先或多个 merge-base 时失败。
-  - 增量要求 target 不变；target 变化需完整首轮。
+- 独立审查的 context 工具只需 --repo 与成对 --source-commit/--target-commit，不需要 --source。
+  - 显式 commit 参数始终选择独立模式；可选 source 不参与身份解析，不读取 delivery。
+  - context.mode=commits，范围为唯一 merge-base→source，target_diff/target_paths 为 merge-base→target。
+  - 不含 roster、source、kind、delivery_base、target 分支或 artifacts；材料缺失不产生 incomplete。
+  - 无共同祖先或多个 merge-base 时失败；不混用 head/policy-ref，不接受 review-base/previous-report。
+- 以下 source、delivery、roster 与增量条款仅适用于未传 commit 参数的交付模式。
 - CLI 返回 result；报告校验接受该 result 内容保存为 context.json，不接受整个 envelope。
 - source 决定交付目录；release/hotfix 同时识别已归档版本目录。
 - codex/backmerge/<version> 使用 annotated 发布 tag 和首次回合双亲定位固定 base/M，复用 M 中的交付证据与 roster。
@@ -45,13 +46,17 @@ python3 "$MDF_ROOT/scripts/mdf.py" review-context \
 
 ## CLI 执行与报告
 
-本节提供两种后端共用的独立审查与 owner 汇总入口。
+本节是可选的 CI 执行器示例；用户入口仍为 code-review intent，backend 仅选择示例内部的宿主 CLI。
 
 ```bash
 python3 "$MDF_ROOT/assets/ci/review.py" \
   --repo "$REPO_ROOT" --source feature/example --head "$HEAD_SHA" \
   --policy-ref "$TARGET_SHA" --backend codex --output-dir "$CI_ARTIFACT_DIR"
 ```
+
+独立模式将示例中的 source/head/policy-ref 换为 source-commit/target-commit，仅调用一次 Agent。
+它使用独立报告 schema，直接校验 findings，不启动 roster reviewers 或 owner 汇总。
+下列多路执行步骤仅用于交付模式。
 
 1. 项目先运行 lint/tests，保存完整报告；CI checkout 固定在 review_head。
 2. controller 生成 context.json，按 roster 分别启动独立 reviewer，partition 时分配路径切片。
@@ -61,7 +66,8 @@ python3 "$MDF_ROOT/assets/ci/review.py" \
 - backend 可选 codex 或 cursor；Cursor 使用 agent 的 ask print mode，Codex 使用 read-only exec。
 - 输出目录须在 checkout 外；controller 检查每路执行前后 HEAD、status 和 tracked diff。
 - 每路保存 stdout/stderr 和 JSON；不会从无效文本中猜测 JSON。
-- report.json 是 schema 指定的最终报告；error.json 是执行失败，不等于有效 review 报告。
+- 独立模式的 report.json 使用 commit-review-report.schema.json；交付模式使用 ci-review-report.schema.json。
+- error.json 是执行失败，不等于有效 review 报告。
 - 供外部执行器接入时，使用 [schema](../assets/templates/ci-review-report.schema.json) 和 [Review 协议](reviewer-protocol.md)。
 - 外部执行器输出可用 `review-report-check --context-file context.json --report-file report.json` 校验。
 - Cursor result envelope 会先解包；仍须通过完整字段、固定范围、规则、人数、覆盖及裁定检查。
@@ -88,7 +94,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" audit-push \
 
 ## 发布 review 与合并
 
-本节把平台写操作放在审查后的独立步骤。
+本节的发布示例消费交付模式报告；独立 commit 报告由接入项目消费和发布。
 
 ```bash
 python3 "$MDF_ROOT/assets/ci/publish.py" \

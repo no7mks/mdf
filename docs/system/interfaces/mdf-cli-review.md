@@ -27,9 +27,11 @@
 
 - audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
-- review-context 和 CI review.py 支持用成对 --source-commit/--target-commit 替换 --head/--policy-ref，不能混用。
-  - 显式模式首轮使用唯一 merge-base→source；target_diff/target_paths 提供 merge-base→target。
-  - target 不必集成到 source；缺失或多个 merge-base 失败，增量轮 target 变化须重做首轮。
+- review-context 和 CI review.py 的成对 --source-commit/--target-commit 选择独立只读模式，--source 可省略。
+  - mode=commits，不依赖 roster 或交付材料；每次使用唯一 merge-base→source，提供 target_diff/target_paths。
+  - 不混用 head/policy-ref，不接受 review-base/previous-report；缺失或多个 merge-base 失败。
+  - 使用 commit-review-report.schema.json，直接校验 findings、覆盖与结论；无 delivery 或 reviewers 字段。
+- 以下 delivery、回合与 release 规则仅用于未传 commit 参数的交付模式。
 - review-context 支持 detached checkout，从已提交 delivery.json 冻结 roster 与基线。
 - 回合 source 从发布 tag 和 no-ff 双亲恢复上下文，kind 为 backmerge；publication 包含固定发布提交与原 source。
 - release 首轮使用 policy_ref 的上一正式发布 tag，首次无版本需显式 --review-base。

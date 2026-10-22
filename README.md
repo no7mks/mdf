@@ -112,8 +112,8 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 ### code-review 与 roster
 
 code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
-显式 pre-merge review 可用 `$mdf code-review --source-commit <source> --target-commit <target>`；
-范围与合入影响语义见 [code-review](skills/mdf/references/code-review.md)。
+独立只读审查可用 `$mdf code-review --source-commit <source> --target-commit <target>`；
+不依赖 roster 或交付材料。以下 roster 规则仅用于交付模式；范围语义见 [code-review](skills/mdf/references/code-review.md)。
 
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
 - 后续增量只审相对操作左端点以来的改动，并复核上轮问题；裁定收口时洗成无

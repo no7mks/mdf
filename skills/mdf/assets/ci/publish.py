@@ -30,6 +30,8 @@ def publish(args):
     ctx = json.loads(Path(args.context_file).read_text())
     report = json.loads(Path(args.report_file).read_text())
     validate(ctx, report)
+    if ctx.get('mode') == 'commits':
+        raise ValueError('独立 commit 报告由接入项目发布；此示例仅支持交付模式')
     forge = Forge(repo, origin(repo, args.provider))
     pull = forge.get(args.number)
     if (pull['state'] != 'open' or pull['head'] != ctx['review_head']

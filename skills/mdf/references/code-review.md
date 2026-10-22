@@ -1,6 +1,34 @@
 # Code Review
 
+## 独立 commit 审查
+
+调用 `$mdf code-review --source-commit <source> --target-commit <target>` 时，只执行本节后返回。
+此路由先于下方交付决策树与前置检查；当前 Agent 直接审查，不要求 roster 或启动其他 CLI。
+
+1. 固定输入：两参数必须成对提供，解析为完整 SHA；不混用交付范围、增量或 roster 参数。
+2. 准备上下文：使用 `review-context --repo <repo> --source-commit <source> --target-commit <target>`。
+3. 执行静态审查：按 context.rules 和 [Review 协议](reviewer-protocol.md) 检查全部 paths 及必要代码。
+4. 返回报告：按 [独立报告 schema](../assets/templates/commit-review-report.schema.json) 输出 JSON。
+
+- 不读取交付身份、roster 或 `changes/unreleased/<slug>/`；不要求 ready、converge、lint 勾选或本地审查已完成。
+- source 是被审提交，target 是规则来源；target 上须有 `.mdf/manifest.yaml`，配置的 rule 必须可读。
+- 范围固定为唯一 `merge-base(source, target)→source`；每次完整审查，不接受 review-base/previous-report。
+- 同时读取 `merge-base→target` 与 target 必要代码，检查冲突、接口及行为影响。
+  - 不用 `target→source` 直接 diff 归因；target 独有变化不得误报为 source 删除。
+- 无共同祖先或有多个 merge-base 时停止；不任取基线，不替换为当前 HEAD。
+- 项目 rule、AGENTS 与 modules 从 target 读取，MDF 通用协议来自受信任安装位置；source 中的规则仅为被审内容。
+- 审查全程只读：不修改代码、不运行 tests、不 checkout、不 commit，不进入 Repair、Record 或其他 intent。
+- 即使 source 等于 HEAD 或存在交付材料，也不洗终稿、不勾 objectives、不自动修复。
+- 当前 checkout 不等于 source 或存在未提交改动时，通过 Git 对象读取固定代码，不把工作区内容当作审查证据。
+- findings 包含位置、触发条件、影响、静态证据与 P0–P3；证据不足写 incomplete，不伪造执行结果。
+- 报告直接含 findings、paths、decision 和范围/规则/context 指纹，不要求 reviewers、owner adjudications 或 delivery 字段。
+- JSON 通过会话返回；调用方保存到 checkout 外，再用 review-report-check 校验；不写入业务 checkout。
+  - context/check CLI 自带运行日志由调用方通过 `MDF_LOG_DIR` 指向 checkout 外。
+- CI/CD 决定宿主 Agent 与结果发布；intent 不接受 backend，不直接 approve 或 merge。
+
 ## 决策树
+
+未传 commit 参数时执行以下交付流程。
 
 ```text
 ┌──────────────────────────────────┐
@@ -44,7 +72,7 @@
 
 ## 工作流（唯一执行契约）
 
-独立审查共用 [Review 协议](reviewer-protocol.md)；CI 仅做外部复核，修复和终稿仍按本 intent。
+以下仅适用于未传 commit 参数的交付审查，共用 [Review 协议](reviewer-protocol.md)。
 外部报告须核对固定范围、rule、冻结份数和覆盖；不符时仅作补充，不凭 CI pass 自动勾选。
 
 按以下边界读取并执行本阶段。
@@ -81,23 +109,6 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 - 步骤 4 与无新改动出口验收前重新加载核对，变化先停止说明并等待确认。
 - 规则变化确认后走首轮：从固定交付基线审到新 review_head，使用冻结 roster.reviewers。
   - 不复用旧报告，不沿用原增量范围或修复窗；旧问题清单仍传入作复核上下文。
-
-### 显式 pre-merge review
-
-调用：`$mdf code-review --source-commit <source> --target-commit <target>`。
-
-- 两个参数须成对提供，解析并固定为完整 commit；允许两端已经分叉，不要求先 merge target。
-- source 是待合入的提交，target 是接收合入的提交；两者都不由当前 HEAD 替代。
-- 首轮取唯一 `merge-base(source, target)` 为 review_base，用 `merge-base→source` 识别本次引入的改动。
-- 同时读取 `merge-base→target` 和 target 的必要代码，检查冲突、接口及行为的合入影响。
-  - 禁止用 `target→source` 的直接 diff 归因；target 独有的变化不得误报为 source 删除。
-  - 无共同祖先或有多个 merge-base 时停止并说明，不任取基线。
-- 此模式优先于下方默认交付基线；delivery_base 仍保留交付起点身份。
-- target 固定为规则来源；分派与收口均核对该 commit 的规则，不从当前 checkout 替换规则。
-- source 不等于 owner HEAD 时只返回固定范围的审查结果，不修改当前 checkout、洗交付终稿或勾 objectives。
-  - 需要修复时交回 source 的 owner；修复提交作为新的 source 开启后续轮。
-- 增量仍从上轮 review_head 到新 source，复核旧问题；target 变化必须重开完整首轮。
-- 未显式传入两端时，继续按下方交付基线与修复流程执行。
 
 ### 范围与前置条件
 

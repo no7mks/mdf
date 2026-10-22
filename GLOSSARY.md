@@ -7,7 +7,8 @@ Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 ## PR mode 与 CI reviewer
 
 PR mode 是通过 GitHub Pull Request 或 GitLab Merge Request 合并的可选 close-out 模式。
-CI reviewer 是在项目 runner 上用 Codex/Cursor CLI 执行共用 Review 协议的外部复核。
+CI reviewer 是在项目 runner 上执行共用 Review 协议的审查 Agent。
+显式 source-commit/target-commit 调用 code-review 时执行独立只读审查，不依赖 roster 或交付材料。
 审查不代替本地 code-review intent；approve、merge 与通知由项目 policy 决定。
 
 ## Jot

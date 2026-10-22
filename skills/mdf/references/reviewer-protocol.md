@@ -8,8 +8,9 @@
 - 以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
 - 严格只读，不修改文件，不运行 tests，不调用会落盘的 MDF CLI；通过回复返回报告。
 - reviewer 可以读取和搜索项目文件、读取 Git 对象；权限由调用方落实。
-- controller 在派发前准备 lint、测量、验证报告，全部独立审查返回前不修改审查对象。
-- CI 是本地 code-review 完成后的外部复核，不替代原 intent，不勾 objectives。
+- 交付 controller 在派发前准备 lint、测量、验证报告，全部独立审查返回前不修改审查对象。
+- 独立 commit 审查由当前 Agent 直接执行，不要求本地审查、交付材料或 roster，不勾 objectives。
+- 下方 reviewers、owner、增量与 delivery 字段仅适用于交付模式；独立模式使用独立报告 schema。
 - 本地完整流程及修复窗继续按 [code-review](code-review.md) 执行。
 
 ## 上下文与范围
@@ -37,6 +38,17 @@
 - 单人覆盖全部范围；同一轮的审查者不共享彼此 findings。
 - `.mdf/modules.yaml` 的 ignore、规模与拆分规则遵循固定策略和测量报告，不手工重复计数。
 - 默认 release 不得因 child 已审而跳过上一正式版本以来的变化；显式 scope=merge 按两端范围。
+
+## 独立报告
+
+mode=commits 使用 [独立报告 schema](../assets/templates/commit-review-report.schema.json)，直接返回审查结果。
+
+- 完整覆盖 paths，记录 review_base、review_head、policy_ref、rules_sha256 与 context_sha256。
+- findings 仅列有静态证据支持的问题，包含 id、path、line、priority、trigger、impact、evidence。
+- 审查完整且无 P0/P1 时可 pass；有阻断问题时 changes_requested；证据不足或未完成时 needs-review。
+- 工具失败使用 error；changes_requested 必须有 finding；不因未运行 tests 自动降低优先级。
+- incomplete 明确记录实际缺项；不将不存在的 MDF 交付材料列为缺项，不要求补齐 delivery。
+- 不要求独立 reviewer 份数、owner 裁定或旧 finding 表；修复后提供新 source，重新完整审查。
 
 ## Findings 与裁定
 
@@ -67,7 +79,7 @@
 本节规定报告传输和平台授权的边界。
 
 - schema 见 [CI 报告 schema](../assets/templates/ci-review-report.schema.json)。
-- controller 先执行 `review-context`，再独立启动冻结人数份 Codex/Cursor CLI。
+- 交付 controller 先执行 `review-context`，再独立启动冻结人数份 Codex/Cursor CLI。
 - controller 落盘 reviewer 回复；CI owner 接收全部报告后汇总为 schema 指定的最终 JSON。
 - Codex 使用 `codex exec`；Cursor 使用 `agent -p`。两者按项目配置落实只读权限。
 - Cursor 的 JSON envelope 先提取 result；必须为完整 JSON，不猜测或修补损坏输出。
