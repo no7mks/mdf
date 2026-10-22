@@ -170,8 +170,8 @@ migrate 必须先通过已有事实、已 ready，或不符合当前契约的判
 Git 基础准备后运行 `doctor`：
 
 - bootstrap 且尚未初始化：允许继续。
-- bootstrap 且已有 manifest：允许 `ready`，或仅 `manifest.initializing` 与 `layout.testing`。
-  这两项由随后的 init CLI 消除。其他 finding 报告后停止。
+- bootstrap 且已有 manifest：仅允许 `manifest.initializing` 与 `layout.testing`。
+  这两项由随后的 init CLI 消除；已变为 ready 时停止并提示 migrate，不重新初始化。其他 finding 报告后停止。
 - migrate 不因 finding 拒绝：
   - 盘点清单里已有的 finding 继续。
   - 新 finding 回到 migrate 步骤 2，不在已经过完的步骤 3 补记。
@@ -277,7 +277,8 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 - 提交后核对实际 commit diff、manifest 的 ready 值及工作区改动与预期一致。
   没有新增变化时直接进入 8，不再次运行 doctor、validate 或事实审阅。
 - 配置、布局或其他材料有新增变化时补做 full validation；不因确定性校验而自动重做事实审阅。
-- 事实发生变化时返回调用方（由其重入 5 补审补验），且步骤 5 按当前 `manifest.state` 验收。
+- 事实发生变化时返回调用方：bootstrap 回其步骤 5，migrate 回其步骤 6，再按本页步骤 5 补审补验。
+  本页步骤 5 按当前 `manifest.state` 验收。
   - 可观察契约、实现、测试、事实页、evidence 或生成源/生成器变化影响对应事实结论。
     说明具体变化及失效原因；复用只限本次初始化，不跨调用缓存。
 - 其他失败保留现场并报告，不宣称已完成。

@@ -82,7 +82,7 @@ waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流�
 | 4 | Recheck | 约束 | 重核前置与两端，勾 close-out | report、账本、tip | 5 | 主线前进 2；缺项交接；其余停 |
 | 5 | Authorize | 约束 | 核调用授权、裁定与端点 | 调用方、裁定、确认 | 6 | 低 confidence 返回 deliver 6；现场变 4 |
 | 6 | Finish | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 等待留子流程；完成 7；local 7 | 按子流程或保留现场并报告 |
-| 7 | Report | 脚本 | adhoc-status 核实际完成并交接 | completed、merge_commit、路径 | 返回调用方 | 报告实际状态 |
+| 7 | Report | 约束 | 按 local/PR 核实际完成并交接 | 模式、completed、merge_commit、清理与路径 | 返回调用方 | 报告实际状态 |
 
 ## 术语与数据结构
 
@@ -145,9 +145,12 @@ PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr-close-out.md
   - 拒绝则保留现场，未决仍返回等待；不绕过关口或再次执行已完成的阶段。
 - 步骤 6 运行 `mdf.py finish-gitflow --repo <owner>`；失败先读 CLI 日志并报告已完成操作。
   - 不声称完成，不盲目重放；续办先回 1 核现场，不能证明可继续时询问。
-- 步骤 7 再运行相同 adhoc-status；要求 completed 为 true、merge_commit 非空。
-  - 核对 no-ff 合入本地 develop、源分支已删、owner 保留且 detached 在交付 tip。
-  - 不 fetch、不 push、不打 tag；不删除 `.mdf/`、`docs/` 或保留的工作区。
+- 步骤 7 按模式核对完成证据，不能相互替代：
+  - local：再运行相同 adhoc-status；要求 completed 为 true、merge_commit 非空。
+    核对 no-ff 合入本地 develop、源分支已删、owner 保留且 detached 在交付 tip；不 fetch、不 push、不打 tag。
+  - PR：按 PR Close-out 核 completed=true、目标远端 merge、remote_deleted=true 与本地 source 清理。
+    不以本地 adhoc-status 或 detached 单独代替平台结果。
+  - 两种模式均不删除 `.mdf/`、`docs/` 或保留的工作区。
   - deliver 返回其完成核验；直调返回 adhoc Select；独立 close-out 报告实际结果后结束。
 - 独立调用只有用户明确要求才删除工作区；deliver 委托按其 confidence 策略与公共清理规则裁定。
   保留目录不影响交付完成。

@@ -363,6 +363,8 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
   - local 模式可 fast-forward 时用 ff；已分叉时 no-ff；PR mode 始终 no-ff。
   - 无新提交则该命令为 no-op。
   - 合入前检查 planning 未共享尾段；须整理时按 `squash.md` 自主执行，保留共享历史。
+  - squash_required 的专用恢复先于调用方的一般失败分支；整理后仅重试原 planning land，不重新生成 ID、写对象或删除 Jot。
+  - 无法完成整理或 land 仍有其他错误时，按调用方的失败分支保留现场并报告。
   - develop 或 planning 占用者 dirty 时停止并报告，不改 checkout。
 
 **返回与委托**

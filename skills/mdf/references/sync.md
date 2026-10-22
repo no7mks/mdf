@@ -179,7 +179,11 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --pr --confirm "$CON
    - target trunk 保留原现场；master/develop 可各建一个 PR/MR，其余 trunk 等待。
    - 重试通过已记录 source 查找或读取 PR/MR；push 或 create 响应丢失时不重复创建。
    - 原 trunk tip 保持固定；等待期间的本地 trunk 新增提交或平台 source/target 异常变化均保留并停止。
-   - source 需解冲突或返工时，在其独立 worktree 合入 target、修复、补审补测并提交；不改原 trunk。
+   - source 需解冲突或返工时，先运行 `mdf.py to --repo "$REPO_ROOT" --target <source>`，确保已有 source branch 的 worktree。
+     按返回 worktree/branch 及 common 的切换规则绑定；不新建另一 source branch，不改原 trunk。
+     合入前核对 source worktree clean、无未完成 merge；不为清场提交或丢弃他人改动。
+   - 在该 worktree 合入 target、修复并提交；用项目验证命令补测，按独立 commit 模式或项目既有入口补审。
+     不要求 source 具备 delivery.json、roster 或交付 branch 验证前置；修复完成后再预览 sync 计划。
    - 重新预览会绑定 source 新 tip；用户确认后，仅允许保留原 source 历史的后继提交非 force push 到同一 PR/MR。
    - 更新前落盘候选 head；push 响应丢失时核对平台 head 恢复；不允许 rebase 或改写 source 历史。
 3. CLI 返回 `waiting_for_pr` 与每个 PR/MR 的 URL、source、head、status；此时整体 sync 未完成。

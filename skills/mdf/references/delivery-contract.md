@@ -16,8 +16,9 @@
 
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
 `$mdf integrate` 只读「补覆盖」。规则持续适用。
-人工 feature 先读取并执行 [专用契约](manual-feature.md)，优先于下文普通主线。
-adhoc 先读取 [专用契约](adhoc.md)，使用其六项账本、smart report 与本地收口规则。
+人工 feature 先读取 [专用契约](manual-feature.md) 的当前阶段条款，优先于下文普通主线。
+adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其六项账本、smart report 与对应模式的收口规则。
+应用条款不重新进入这两个文件的入口或续办工作流；仅由原调用方按已声明条件委托。
 ### 身份与材料
 
 一个 feature 对应一个依赖满足的 active ready PRP。
@@ -132,7 +133,8 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
   - PR 模式每次 roster merge、远端主线 merge 与 push 前强制执行 `references/squash.md` 的检查；local 模式可选。
 - 开发迭代只用 `$mdf verify --scope smart`；branch 只用于交付验收。
 - release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
-- 独立 `$mdf fix` / `$mdf bug close` 不走交付主线，也不由 deliver 内部委托。
+- 独立 `$mdf fix` 不走交付主线，也不由 deliver 内部委托。
+- `$mdf bug close` 不作为 deliver 的直接阶段；close-out 可按本契约内部委托，不改变独立调用的边界。
 - code-review 份数取冻结的 roster.reviewers；close-out 与主链 verify 修绿的增量新一轮为 1。
 #### 触发与协调
 
@@ -248,7 +250,6 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
   - 语义是配置/report，**不是**进度 gate。
 - `record/check` 其他 stage、以及 `gates/*.json` fingerprint：
   **禁止**当作进度或验收关口。
-  - 并行 e2e/旧脚本可能仍调用。
   - Agent 主链不得用其选型或卡 close-out。
 
 测试门槛与所需 suite：

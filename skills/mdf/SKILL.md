@@ -159,8 +159,11 @@ disable-model-invocation: true
   - help intent 经 CLI 检查后同样执行该流程。
   - 不读取其他 intent、不检查仓库、不写入。
 - **MDF_ROOT**：本文件所在目录的绝对路径。
-  - 确认 `scripts/mdf.py` 后运行 `python3 "$MDF_ROOT/scripts/mdf.py" info`；
+  - 独立 commit 审查出现任一 commit 参数时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
+    后续复用该根与日志目录；目录无法安全确认则停止，不在被审 checkout 落盘。
+  - 确认 `scripts/mdf.py` 后运行 `python3 -B "$MDF_ROOT/scripts/mdf.py" info`；
     协议、工具与 schema 版本均须为数字 `3`。
+  - 独立审查的后续 Core 调用同样使用 `python3 -B`，避免在 checkout 内的安装副本生成 bytecode。
   - ❌ 工具缺失或检查失败时停止，不得模拟 CLI。
 
 步骤 3 的执行顺序：

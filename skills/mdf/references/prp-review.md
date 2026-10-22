@@ -179,10 +179,10 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 - 通过后执行以下命令，把已确认内容写成唯一 ready `.html`。
 
 ```bash
-prp-format ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed
+python3 "$MDF_ROOT/scripts/mdf.py" prp-format ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed
 ```
 
-- 删除对应 Markdown 与临时 preview，并改写仓内引用。
+- 该 CLI 删除对应 Markdown 与临时 preview，并改写仓内引用；Agent 回读结果，不再手动重复这些写入。
 
 回读确认状态为 `ready` 后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
 

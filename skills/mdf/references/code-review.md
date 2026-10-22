@@ -116,7 +116,7 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 本节保留独立审查的参数、范围和报告契约。
 
 步骤 6 调用 `review-context --repo <repo> --source-commit <source> --target-commit <target>`。
-CLI 前缀为 `python3 "$MDF_ROOT/scripts/mdf.py"`；先设 checkout 外的 `MDF_LOG_DIR`，不重定向产物到业务树。
+CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先设 checkout 外的 `MDF_LOG_DIR`，不重定向产物到业务树。
 步骤 7 读取 [Review 协议](reviewer-protocol.md)，仅使用独立模式；不执行其中交付 controller 流程。
 步骤 8 使用 [独立报告 schema](../assets/templates/commit-review-report.schema.json)。
 
@@ -465,9 +465,10 @@ close-out 核对：
 - 终稿存在且声称通过；已采纳/未解决清单齐全（未解决为空）。
 - 不使实现审查过期、也不强制重开审查的改动（事实仍须另审）：
   - 记录文件自身、纯事实、收口文档。
-  - close-out 集成引入的非本交付 `docs/` 改动。
+  - local close-out 集成引入的非本交付 `docs/` 改动；PR mode 的远端集成不适用此豁免。
 - close-out 集成 develop/master 产生新提交后：
-  - 仅非本交付 `docs/` 增量不新开审查；按 close-out 契约追加跳过说明。
+  - local 模式仅非本交付 `docs/` 增量不新开审查；按 close-out 契约追加跳过说明。
+  - PR mode 的每次远端集成都补审补测，按 `pr-close-out.md` 执行，不因仅文档或空 tree diff 跳过。
   - 其他集成增量一律作为增量新一轮从 1 开始，左端点为集成前 HEAD（当场记录）。
     - 以集成后的 HEAD 重做 1 份本轮范围审查；需 smart 时按上方边界交接，不复用集成前终稿当增量差。
     - 本轮完成后再次洗成无 commit 终稿并勾选。

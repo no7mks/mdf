@@ -115,7 +115,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc/PR 按子流程；其余 2 | 停止并报告 |
+| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc或(PR且有记录)委托；其余2 | 停止并报告 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 待外部续办则交接；冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 整理 Change 与 HTML 总结 | branch/fact、材料 | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
@@ -382,6 +382,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
 **合并** <a id="s10"></a>
 
 - PR mode 使用 [PR Close-out](pr-close-out.md) 的提交、等待和恢复规则，以下 Gitflow 合并/push 仅适用于 local。
+  - 已发布 backmerge 的修复补审补测在本调用栈外按该子流程执行，不重开已发布版本的交付阶段。
 
 - 执行关口：
   - deliver 委托前须确认其 until 允许进入 close-out；默认 deliver 不进入本 intent。

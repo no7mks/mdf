@@ -53,7 +53,8 @@
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
 
-不读取 `references/common.md`。本 intent 替换已安装 Skill，并更新已有
+除根 SKILL.md 指定的横幅条款外，不读取 `references/common.md`，不执行其公共 workflow。
+本 intent 替换已安装 Skill，并更新已有
 `AGENTS.md` 托管区块；不按文档归属选择分支；替换后在当前分支提交本次路径，
 不 push。
 
@@ -90,7 +91,7 @@
 其他源时传 `--source`。
 
 ```bash
-upgrade --repo "$REPO_ROOT" --dry-run
+python3 "$MDF_ROOT/scripts/mdf.py" upgrade --repo "$REPO_ROOT" --dry-run
 ```
 
 有 `--source` 时追加 `--source <url>`。
@@ -141,7 +142,7 @@ upgrade --repo "$REPO_ROOT" --dry-run
 **替换**
 
 ```bash
-upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
+python3 "$MDF_ROOT/scripts/mdf.py" upgrade --repo "$REPO_ROOT" --expected-commit <步骤2确认的new_commit>
 ```
 
 预览用过 `--source` 时这里使用同一源。

@@ -387,7 +387,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：`plan` 进 planning；`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
 - `$mdf sync`
   - 用法：`$mdf sync`；展示关系图，确认后先拉后推三大 trunk，多余分支只报告；禁止 force-push。
-  - PR mode：master/develop 分叉或本地领先增量无法证明合规时停止，确认不绕过该限制。
+  - PR mode：master/develop 分叉或本地领先增量无法证明合规时转 PR/MR 计划；
+    平台合并核验后重新确认并继续 sync，不直接 push trunk 绕过限制。
 - `$mdf integrate`
   - 用法：`$mdf integrate`
   - 用途：按工作线联调，强制 Goal；collab-mode 由接手 Agent 直接操作前后端 worktree。

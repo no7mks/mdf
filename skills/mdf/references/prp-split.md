@@ -75,7 +75,7 @@
 
 - 在 planning 上一次调用
   `make-id --type proposal --repo "$REPO_ROOT" --slug <子一> --slug <子二>`。
-  - 用重复 --slug 提供全部子项；从返回的 items 取得连续、唯一的 ID 与 filename。
+  - 用重复 --slug 提供全部子项；从返回的 items 取得随机、批内及仓库内唯一的 ID 与 filename，不要求编号连续。
   - 该调用只读、不预占编号。
   - ❌ 不得逐个调用后拼装，也不得先写占位对象。
 - 输入 JSON（字段见下节）写到仓库外，如 `mktemp -d` 建的系统临时目录；

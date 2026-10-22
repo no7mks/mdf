@@ -74,15 +74,17 @@
 - LLM 工具执行发生在 runner；模型推理使用所选服务，不要求原生平台 reviewer。
 - 工具应从项目固定安装位置或 policy_ref 版本加载，不执行被审改动新增的规则来豁免本轮。
 - 第一版支持 origin 同仓；平台权限、分支保护、必需检查与通知由项目负责。
+- 项目提供 checkout 外已存在且可写的绝对 `CI_ARTIFACT_DIR`；context、audit 与运行日志均置于该目录。
+  每次调用 Core 前设置 `MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs"`，Python 使用 `-B`；不把输入、日志或 bytecode 写进被审 checkout。
 
 ### 固定上下文
 
 本节从 Git 对象生成可供独立 reviewer 使用的输入。
 
 ```bash
-python3 "$MDF_ROOT/scripts/mdf.py" review-context \
+MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" review-context \
   --repo "$REPO_ROOT" --source feature/example --head "$HEAD_SHA" \
-  --policy-ref "$TARGET_SHA" > context-output.json
+  --policy-ref "$TARGET_SHA" > "$CI_ARTIFACT_DIR/context-output.json"
 ```
 
 - 独立审查的 context 工具只需 --repo 与成对 --source-commit/--target-commit，不需要 --source。
@@ -107,7 +109,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" review-context \
 本节是可选的 CI 执行器示例；用户入口仍为 code-review intent，backend 仅选择示例内部的宿主 CLI。
 
 ```bash
-python3 "$MDF_ROOT/assets/ci/review.py" \
+python3 -B "$MDF_ROOT/assets/ci/review.py" \
   --repo "$REPO_ROOT" --source feature/example --head "$HEAD_SHA" \
   --policy-ref "$TARGET_SHA" --backend codex --output-dir "$CI_ARTIFACT_DIR"
 ```
@@ -136,9 +138,9 @@ python3 "$MDF_ROOT/assets/ci/review.py" \
 本节审计 develop/master 的完整新增第一父链，不撤销已经接受的 push。
 
 ```bash
-python3 "$MDF_ROOT/scripts/mdf.py" audit-push \
+MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" audit-push \
   --repo "$REPO_ROOT" --branch develop --before "$BEFORE_SHA" \
-  --after "$AFTER_SHA" --collect-evidence > audit.json
+  --after "$AFTER_SHA" --collect-evidence > "$CI_ARTIFACT_DIR/audit.json"
 ```
 
 - 不传 --collect-evidence 时离线运行；可通过 --evidence-file 传 controller 采集的平台事实。
@@ -155,7 +157,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" audit-push \
 本节的发布示例消费交付模式报告；独立 commit 报告由接入项目消费和发布。
 
 ```bash
-python3 "$MDF_ROOT/assets/ci/publish.py" \
+python3 -B "$MDF_ROOT/assets/ci/publish.py" \
   --repo "$REPO_ROOT" --provider github --number 123 \
   --context-file "$CI_ARTIFACT_DIR/context.json" \
   --report-file "$CI_ARTIFACT_DIR/report.json"
