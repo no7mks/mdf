@@ -42,7 +42,8 @@
 │ 4 Save baseline                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ─────────→ [保留现场并报告]
+                 ├──── 配置不符 ──────────→ 3 Configure
+                 ├──── 其他失败/缺失 ─────→ [保留现场并报告]
                  └──── 阶段成果已提交 ────→ [返回调用方]
 
 步骤 5 由调用方按步骤号进入，不是步骤 4 的后续。
@@ -87,8 +88,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check boundary | 约束 | 写入前核对边界、事实与状态 | 项目根与分流依据 | 返回调用方 | 不明回 1；否则按分流表返回 |
 | 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
-| 3 | Configure | 约束 | 核对八项基线、版本、验证与实现根 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
-| 4 | Save baseline | 约束 | init 后完成材料并提交，保持 initializing | 阶段提交、diff | 返回调用方 | 保留现场并报告 |
+| 3 | Configure | 约束 | 核对基线、版本、验证、实现根及收口模式 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
+| 4 | Save baseline | 约束 | init 后核 closeout、完成材料并提交，保持 initializing | 配置、提交、diff | 返回调用方 | 配置不符3；其他保留现场并报告 |
 | 5 | Validate | 约束 | 按调用方审阅并全量校验 | 按 state 允许的 finding（s5） | 返回调用方 | 可修则 5；两轮后停 |
 | 6 | Confirm activation | 约束 | 展示结果与方案并确认启用 | 用户明确确认 | 7 | 保持 initializing，返回调用方 |
 | 7 | Enable | 约束 | 核对增量，启用并提交 | 有效全量结果、增量校验、提交 | 8 | 全量无效返回补验；事实变化重审；其他停 |
@@ -193,6 +194,9 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
     - 如 `pytest --junitxml="$MDF_REPORT_DIR/junit.xml"`。
   - suite 语义与预算见 `delivery-contract.md`「验证 suite」。
 - 可选预算覆盖。
+- 可选 `closeout`：未指定且不存在时用 local；已有值默认保留。
+  - 用户要求启用或调整 PR/MR 时，确认 mode 与 provider，并读取 [PR Close-out](pr-close-out.md) 的模式与 Merge 例外。
+  - 仅核配置要求，不执行该子流程；provider 只接受 github/gitlab，不能唯一确定时返回调用方澄清。
 - `implementation_roots`：
   - 实现根可以为空目录。
   - 单 module 默认使用 `src`，多 module 使用各 `<module>/src`。
@@ -201,6 +205,7 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 更新与保留规则：
 
 - 更新时核对并保留未要求改变的配置，不依赖 CLI 默认值覆盖现有设置。
+  - 保留 manifest 的 `closeout`；未要求修改时不得移除或重置为 local。
   - 保留 manifest 的 `rules`；配置与文件约束见 [项目阶段 rule 契约](project-rules.md)。
 - 已有根文档和 AGENTS 非 MDF 托管块必须保留；续办先检查 diff，只更新确认范围，不覆盖重建。
 - 创建项目 `AGENTS.md` 时仅写标题与 MDF 托管区块；已有非托管内容仅以目标仓库实际文件为准。
@@ -213,6 +218,10 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 - Agent 在仓库根 `.gitignore` 中补齐 `/.mdf/tmp/`，保留已有规则；不预建临时目录。
   - 临时工作文件的用途、布局与清理见 [临时工作目录](temporary-work.md)。
 
+### 配置落地与验收
+
+本节落实已确认配置，并返回调用方验收。
+
 <a id="s4"></a>
 
 步骤 2 通过后调用 `init` CLI，传入步骤 3 确认的完整配置：
@@ -221,6 +230,9 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 - 重复 `--baseline`、`--implementation-root`。
 - `--lint`、`--build`、`--quick`、`--smoke`、`--release`。
 - 可重复的 `--budget <suite>=<秒数>`。
+
+init CLI 没有 closeout option，只保留已有值。用户已确认变更时，在 CLI 完成后定点更新 manifest.closeout。
+回读 mode/provider 并检查 diff；不符回步骤 3 澄清或修正，按步骤 5 full validation 验收后才启用。
 
 init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent 按确认的验证配置填写并清除模板说明：
 
