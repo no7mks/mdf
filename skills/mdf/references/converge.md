@@ -96,9 +96,12 @@ qa/dev ≥1 时的续办与清理：
 `needs_design: no`：无角色可合；确认 owner 干净且开发改动已提交；objectives 的
 owner 开发项已勾。❌ 不因 roster `0,0` 在无 owner 开发项或该项已预勾时仍要求「开发」。
 
-close-out 可选 squash 的**交付地板**按 `squash.md`「可选历史整理」计算。
+PR 模式在 roster-join 前按 [squash](squash.md#pr-模式的必要检查) 检查 owner 与各待合入角色分支，
+先完成分析及必要的分段 squash，无可压缩区间则 no-op。
+
+local 模式 close-out 可选 squash 的**交付地板**按 `squash.md`「可选历史整理」计算。
 有角色时取 roster-join 首次引入提交。`0,0` 时取对应开发项完成提交或 start_commit。
-不以 Join 或 Accept 的当前 HEAD 代替该证据；本 intent **不**询问、执行或委托
+不以 Join 或 Accept 的当前 HEAD 代替该证据；local 模式下本 intent **不**询问、执行或委托
 `$mdf squash`。
 
 ### Accept（前置勾选 + smart + 适用 coverage）

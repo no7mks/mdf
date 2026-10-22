@@ -109,6 +109,7 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 - 需要修复时，在已有 code-review 草稿记录来源 verify、原 scope/选题、左端点和待修绿状态。
 - 同时在 objectives 的非 checklist 备注保留父 verify 的原命令、scope/选题与左端点；该备注只用于恢复，不是进度 gate。
 - 子审查覆盖 code-review 终稿时保留父 verify 备注；步骤 6 完成小 loop 后才清理该备注。
+- 这里只清理本轮 verify 备注；不得删除父 PR close-out 返工备注，补验完成后仍按父流程返回原 PR。
 - 新会话恢复先按备注重跑原验证，再用既有草稿续办未齐复审；范围/参数缺失则停止，不凭旧绿报告跳过。
 
 
@@ -166,6 +167,7 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 
 - branch：无论成败均写入 `changes/unreleased/<slug>/verification-report.json`；
   **report**，非 gate；不含 commit / head；`all_passed:false` 时 CLI 仍失败。
+  - PR mode 的 release/hotfix 候选材料已进入 `changes/<version>/` 时，报告写回该版本目录，不新建 unreleased 副本。
   - 未绿且可修 → 回 3（提交后重跑）；未绿且阻塞 → 停止并报告。
   - 仅 `all_passed:true` 且步骤 5 完成时，在步骤 6 追加 `verification-report.md`（suite、报告路径、架构审视要点）。
     报告标题为 Verification Report，写明 scope: branch 与实际 suites；阶段仍为 verify branch。

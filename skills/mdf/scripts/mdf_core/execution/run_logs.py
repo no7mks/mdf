@@ -104,7 +104,9 @@ def _main_repo(repo):
 
 def _log_root(argv):
     """日志放主仓库的 .mdf/logs，交付 worktree 被 finish 删除后仍在；未接入 MDF 的目录用用户级目录。"""
-    hint = _repo_hint(argv)
+    standalone = bool(argv and argv[0] == "review-context" and any(
+        token.split("=", 1)[0] in {"--source-commit", "--target-commit"} for token in argv))
+    hint = None if standalone else _repo_hint(argv)
     if hint and Path(hint).is_dir():
         repo = Path(hint).resolve()
         main = _main_repo(repo)

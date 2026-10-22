@@ -48,15 +48,18 @@ def backmerge_identity(repo, source, head):
     raise MDFError("无法定位引入发布提交的 no-ff 回合", code="invalid_review_base")
 
 
-def context(repo, source, head=None, policy_ref=None, review_base=None, previous=None,
+def context(repo, source=None, head=None, policy_ref=None, review_base=None, previous=None,
             *, source_commit=None, target_commit=None):
     explicit = source_commit is not None or target_commit is not None
     if explicit:
         if not source_commit or not target_commit or head or policy_ref:
             raise MDFError("需成对传入 source-commit/target-commit，不能混用 head/policy-ref", code="invalid_arguments")
-        head, policy_ref = source_commit, target_commit
-    elif not head or not policy_ref:
-        raise MDFError("需要 head/policy-ref 或 source-commit/target-commit", code="invalid_arguments")
+        if review_base is not None or previous is not None:
+            raise MDFError("独立审查每次覆盖完整范围，不接受 review-base/previous-report", code="invalid_arguments")
+        from mdf_core.reviewing.standalone import commit_context
+        return commit_context(repo, source_commit, target_commit)
+    elif not source or not head or not policy_ref:
+        raise MDFError("需要 source/head/policy-ref 或 source-commit/target-commit", code="invalid_arguments")
     head, policy_ref = sha(repo, head), sha(repo, policy_ref)
     bases = git(repo, "merge-base", "--all", head, policy_ref, check=False).stdout.split()
     if len(bases) != 1:
@@ -88,7 +91,7 @@ def context(repo, source, head=None, policy_ref=None, review_base=None, previous
         raise MDFError("source 与 delivery.json 不符", code="invalid_review_context")
     manifest = manifest_at(repo, policy_ref)
     base = publication["base_commit"] if publication else delivery["start_commit"]
-    if details["kind"] == "release" and not explicit:
+    if details["kind"] == "release":
         previous_version = manifest.get("versioning", {}).get("latest_release")
         if not previous_version:
             if previous is not None:
@@ -104,10 +107,10 @@ def context(repo, source, head=None, policy_ref=None, review_base=None, previous
             if not ancestor(repo, base, policy_ref):
                 raise MDFError("上一版本不在目标历史中", code="invalid_review_base")
     base = sha(repo, base)
-    left = sha(repo, review_base) if review_base else (merge_base if explicit else base)
-    if not ancestor(repo, left, head) or (not explicit and not ancestor(repo, base, left)):
+    left = sha(repo, review_base) if review_base else base
+    if not ancestor(repo, left, head) or not ancestor(repo, base, left):
         raise MDFError("审查基线必须是 head 祖先", code="invalid_review_base")
-    if review_base and left != (merge_base if explicit else base) and previous is None:
+    if review_base and left != base and previous is None:
         raise MDFError("增量复核需要 --previous-report", code="missing_previous_review")
     rule = manifest.get("rules", {}).get("code-review")
     project = {"path": rule, "content": blob(repo, policy_ref, rule)} if rule else None
@@ -145,7 +148,7 @@ def context(repo, source, head=None, policy_ref=None, review_base=None, previous
             raise MDFError("上轮规则已变化或报告不完整；需要完整首轮审查", code="invalid_previous_review")
     result = {"schema_version": 3, "source": source, "kind": details["kind"],
               "delivery_base": base, "review_base": left, "review_head": head, "policy_ref": policy_ref,
-              "scope": "merge" if explicit else "delivery", "merge_base": merge_base,
+              "scope": "delivery", "merge_base": merge_base,
               "target_paths": paths(repo, merge_base, policy_ref),
               "target_diff": git(repo, "diff", "--no-ext-diff", "--no-renames", merge_base, policy_ref).stdout,
               "round": "incremental" if previous is not None else "initial", "roster": roster,

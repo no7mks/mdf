@@ -1,7 +1,7 @@
 # Squash
 
 `$mdf squash [--dry-run]` 在交付分支上整理本地历史：定地板、定型切段、撰写
-message，确认后 soft reset 多段提交。是否激活由调用方决定；本 intent 负责怎么压。
+message，确认后 soft reset 多段提交。PR 模式在共享动作前强制执行检查；local 模式由调用方决定是否激活。
 
 ## 决策树
 
@@ -63,15 +63,44 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 ## 术语与数据结构
 
+### PR 模式的必要检查
+
+本节优先于下方 local 模式的可选规则。squash 先分析逻辑边界，可以保留多笔 Conventional Commit，不要求压成一笔。
+
+- 每次 roster merge、merge 远端主线及 push 源提交前必须检查；检查或执行失败就停止该动作。
+  - roster-join 先检查 owner 与全部待合入角色分支，再开始 merge；角色分支使用 owner 的 start_commit。
+  - 远端主线 merge 前检查当前分支；保留既有 merge commit，不要求退回第一次集成之前。
+  - push 前完成候选材料提交，再检查；finish-gitflow 自动生成的候选提交也计入检查。
+  - tag push 与删除远端 source 不产生可改写区间，为 no-op；已发布历史始终保留。
+- 执行 `squash_execute.py --repo <当前worktree> --check`，先 fetch 所有 remote 分支与 tag，再输出安全地板、旧 tip 与候选 commits。
+  - fetch 失败不能判为 no-op；工作区不 clean 或有未结束 merge 时保留现场。
+  - 地板取第一父链上最近的保护边界：merge commit、他人 commit、start_commit，或已共享提交。
+  - 共享包括远端引用、其他本地分支、tag、其他 worktree HEAD，以及 PR/push 恢复记录固定的端点。
+  - 仅整理该边界之后的本人普通提交；不跨 merge，不重建 merge，不改写已发布或被依赖的历史。
+  - 候选少于两笔时 `noop: true`，直接继续；这不是失败，也不制造新 commit。
+- 候选至少两笔时，Agent 分析完整 diff、提交意图与依赖，按下方计划格式确定几段与切法。
+  - 计划的 floor 不得早于检查返回的安全地板；start_commit 取 owner 的交付起点。
+  - 合并同一逻辑改动的临时提交；独立逻辑可以保留多段，各段 message 使用中文 Conventional Commit。
+  - 全部提交都应独立保留时，计划保留原段界并提供非空 `noop_reason`；脚本记录分析结果而不重写；原有 empty commit 也可保留。
+  - PR 模式已授权该必要整理，不逐次询问是否 squash 或重复确认计划；范围或归属不明才询问。
+- 使用下方执行脚本及同一计划的 --verify-only；核 tree_equal、start_is_ancestor、clean。
+  - 脚本在 Git common dir 的 `mdf/squash/` 保存当前 branch/head 的操作检查结果，不作为交付进度或验收 gate。
+  - 新增提交后旧检查结果失效；CLI 返回 squash_required 时完成分析与执行，再重试原动作。
+  - 多段执行后无需强行再压成一段；同一 HEAD 的已完成分析可复用，每次动作仍重新检查共享边界。
+- 审查窗未结束时先完成审查，不改写其端点；tree 不变无需仅因 hash 变化重跑测试。
+  - squash 后重新固定后续增量审查左端点；不得继续使用已改写的旧 HEAD 作为新的 review 范围。
+  - merge 远端主线后的补审补测仍按 PR Close-out 完整执行，不被 squash 替代。
+- 禁止 rebase、merge --squash、force push；使用 soft reset 分段重建可改写的普通提交。
+
 ### 入口与门禁
 
 <a id="s1"></a>
 
 - 解析 Git 根；工作区对已跟踪改动须 clean。
-- 须在交付分支：读当前交付材料的 `delivery.json`，取 `start_commit`；
+- 须在交付分支或 PR 模式的 qa/dev 角色分支：从 owner 材料或 Git 配置取 `start_commit`；
   缺失或不是 HEAD 祖先 → 停止。
 - 仅接受可选 `--dry-run`；其它未知 `--` 停止询问。
-- 门禁（任一命中则停、不改写；原文见本页禁止项）：
+- local 模式门禁（PR 模式改用上方安全边界）：
   - 已推送分支上改写
   - 审查窗未关时改写
   - 目标主线已合入交付分支后再压
@@ -98,6 +127,7 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 <a id="s3"></a>
 
+- PR 必要检查按上方已有授权执行；以下确认要求适用于独立调用及 local 模式。
 - 向用户展示建议计划；须明确确认地板、段界与 messages。
 - 答复不明 → 留在本步再问；拒绝 → 结束，不改写。
 - 修改段界或 message 后须再确认；❌ 不得在未确认下进入执行。
@@ -134,7 +164,7 @@ message，确认后 soft reset 多段提交。是否激活由调用方决定；�
 
 ### 可选历史整理（squash）
 
-close-out 可在**第一次把目标主线合入交付分支**之前建议整理本地历史。
+local 模式的 close-out 可在**第一次把目标主线合入交付分支**之前建议整理本地历史。
 集成方向：feature/bugfix←develop，release/hotfix←master。非强制；用户拒绝则跳过。
 deliver 委托时，是否 squash 与执行计划的确认均按其 confidence 策略裁定。
 
@@ -187,5 +217,6 @@ Conventional Commit（含 Bug 的段保留完整 Bug ID）。调用方的「是�
 
 ❌ 禁止：`git rebase` / `rebase -i`、`git merge --squash`、越过地板、涵盖他人
 commit。
-❌ 也禁止：已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。
+local 模式也禁止：已推送分支上改写、审查窗未关时改写、目标主线已合入交付分支后再压。
+PR 模式允许已推送分支和已集成主线分支的新尾段，仍禁止改写共享提交及 merge commit。
 仅当各段改动文件完全不重叠时，才可偷懒按路径分批；通用流程仍按段界 **tree**。

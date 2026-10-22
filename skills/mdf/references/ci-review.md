@@ -1,6 +1,64 @@
 # CI 外部审查接入
 
-## 项目与 MDF 的职责
+## 决策树
+
+```text
+┌──────────────────────────────┐
+│ 1 Configure                  │
+└──────────────┬───────────────┘
+               │
+               ├──── 缺配置或权限 ────→ [报告缺项并停止]
+               │
+               ▼ 项目配置齐全
+┌──────────────────────────────┐
+│ 2 Route                      │
+└──────────────┬───────────────┘
+               │
+               ├──── 事件或参数不明 ────→ [停止并报告]
+               ├──── trunk push ────────→ 5 Audit
+               │
+               ▼ review
+┌──────────────────────────────┐
+│ 3 Review                     │
+└──────────────┬───────────────┘
+               │
+               ├──── 执行或报告无效 ────→ [保留日志，报告 error]
+               │
+               ▼ 已校验报告
+┌──────────────────────────────┐
+│ 4 Publish                    │
+└──────────────┬───────────────┘
+               │
+               ├──── 独立报告 ────→ [交项目消费]
+               ├──── 端点变化 ────→ 3 Review
+               ├──── 发布失败 ────→ [保留报告，报告阻塞]
+               └──── 发布成功 ────→ [返回实际平台结果]
+
+步骤 5 仅由步骤 2 的 trunk push 分支进入。
+
+┌──────────────────────────────┐
+│ 5 Audit                      │
+└──────────────┬───────────────┘
+               │
+               ├──── pass ──────────────→ [审计通过]
+               └──── 非 pass 或失败 ────→ [报告阻塞，不撤销 push]
+```
+
+## 工作流（唯一执行契约）
+
+本表供项目显式配置 CI 时使用；读取本页不授权安装 CI、发布评论、approve 或 merge。
+
+| # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Configure | 约束 | 核依赖、固定工具来源、只读权限与项目 policy | runner 配置、身份、固定 ref | 2 | 缺项报告并停止 |
+| 2 | Route | 约束 | 按事件选择 review 或 trunk push 审计 | 事件、参数、固定 SHA | review 3；push 5 | 不明停止，不猜 SHA |
+| 3 | Review | 脚本 | 调用 review.py；核 context、checkout 与 checked.json | 固定上下文、有效报告、完整日志 | 有效报告4 | error 保留日志并停止；无效不发布 |
+| 4 | Publish | 脚本 | 交付报告按 policy 调用 publish.py；独立报告交项目消费 | 已校验报告、当前端点、平台结果 | 返回实际结果 | 端点变化回3；其他阻塞停止 |
+| 5 | Audit | 脚本 | 调用 audit-push 并核 result.verdict | 固定 before/after、平台证据、verdict | pass 返回 | 非 pass 或调用失败报告阻塞 |
+
+## 术语与数据结构
+
+### 项目与 MDF 的职责
 
 本页说明如何在项目 CI 运行共用审查，不自动安装平台设施。
 
@@ -10,13 +68,14 @@
 | 共用 Review 协议和报告 schema | Codex/Cursor CLI、模型、登录凭据与只读权限 |
 | GitHub/GitLab CI 和发布示例 | approve/merge policy、平台写身份、通知和 artifact |
 
-- CI 是本地 code-review 完成后的外部复核，不替代 Repair、终稿或 objectives。
+- CI/CD 通过 `$mdf code-review --source-commit <source> --target-commit <target>` 调用独立只读审查。
+- 不要求本地 code-review、roster 或交付材料；普通交付模式仍按原主链执行。
 - Python3、Git、MDF 为必需依赖；平台采集另需已登录的 gh/glab。
 - LLM 工具执行发生在 runner；模型推理使用所选服务，不要求原生平台 reviewer。
 - 工具应从项目固定安装位置或 policy_ref 版本加载，不执行被审改动新增的规则来豁免本轮。
 - 第一版支持 origin 同仓；平台权限、分支保护、必需检查与通知由项目负责。
 
-## 固定上下文
+### 固定上下文
 
 本节从 Git 对象生成可供独立 reviewer 使用的输入。
 
@@ -26,12 +85,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" review-context \
   --policy-ref "$TARGET_SHA" > context-output.json
 ```
 
-- pre-merge review 可将 --head/--policy-ref 替换为成对的 --source-commit/--target-commit，不能混用。
-  - review-context 与 review.py 都支持；source 仍为交付分支身份，不是 source commit。
-  - 显式首轮用唯一 merge-base→source，delivery_base 保留 delivery.json 的起点；release 也适用。
-  - target_diff/target_paths 提供 merge-base→target；不得将 target 独有变化当成 source 删除。
-  - target 未集成不会标记 incomplete；缺材料仍会。无共同祖先或多个 merge-base 时失败。
-  - 增量要求 target 不变；target 变化需完整首轮。
+- 独立审查的 context 工具只需 --repo 与成对 --source-commit/--target-commit，不需要 --source。
+  - 显式 commit 参数始终选择独立模式；可选 source 不参与身份解析，不读取 delivery。
+  - context.mode=commits，范围为唯一 merge-base→source，target_diff/target_paths 为 merge-base→target。
+  - 不含 roster、source、kind、delivery_base、target 分支或 artifacts；材料缺失不产生 incomplete。
+  - 无共同祖先或多个 merge-base 时失败；不混用 head/policy-ref，不接受 review-base/previous-report。
+- 以下 source、delivery、roster 与增量条款仅适用于未传 commit 参数的交付模式。
 - CLI 返回 result；报告校验接受该 result 内容保存为 context.json，不接受整个 envelope。
 - source 决定交付目录；release/hotfix 同时识别已归档版本目录。
 - codex/backmerge/<version> 使用 annotated 发布 tag 和首次回合双亲定位固定 base/M，复用 M 中的交付证据与 roster。
@@ -43,9 +102,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" review-context \
 - review_head、roster、材料来自 source 的固定 commit，不依赖开发机 Git config。
 - 缺交付身份或基线时命令失败；缺主链材料时 incomplete 非空，不得批准。
 
-## CLI 执行与报告
+### CLI 执行与报告
 
-本节提供两种后端共用的独立审查与 owner 汇总入口。
+本节是可选的 CI 执行器示例；用户入口仍为 code-review intent，backend 仅选择示例内部的宿主 CLI。
 
 ```bash
 python3 "$MDF_ROOT/assets/ci/review.py" \
@@ -53,21 +112,26 @@ python3 "$MDF_ROOT/assets/ci/review.py" \
   --policy-ref "$TARGET_SHA" --backend codex --output-dir "$CI_ARTIFACT_DIR"
 ```
 
-1. 项目先运行 lint/tests，保存完整报告；CI checkout 固定在 review_head。
-2. controller 生成 context.json，按 roster 分别启动独立 reviewer，partition 时分配路径切片。
-3. CI owner 读取全部独立报告，按静态证据逐项裁定，需要复现或修复时交回开发侧。
-4. controller 校验最终报告，保存 checked.json；非 pass 退出非零，保留全部日志。
+独立模式将示例中的 source/head/policy-ref 换为 source-commit/target-commit，仅调用一次 Agent。
+它使用独立报告 schema，直接校验 findings，不启动 roster reviewers 或 owner 汇总。
+下列多路执行契约仅用于交付模式，由步骤 3 的执行器实施。
+
+- 项目先运行 lint/tests，保存完整报告；CI checkout 固定在 review_head。
+- controller 生成 context.json，按 roster 分别启动独立 reviewer，partition 时分配路径切片。
+- CI owner 读取全部独立报告，按静态证据逐项裁定，需要复现或修复时交回开发侧。
+- controller 校验最终报告，保存 checked.json；非 pass 退出非零，保留全部日志。
 
 - backend 可选 codex 或 cursor；Cursor 使用 agent 的 ask print mode，Codex 使用 read-only exec。
 - 输出目录须在 checkout 外；controller 检查每路执行前后 HEAD、status 和 tracked diff。
 - 每路保存 stdout/stderr 和 JSON；不会从无效文本中猜测 JSON。
-- report.json 是 schema 指定的最终报告；error.json 是执行失败，不等于有效 review 报告。
+- 独立模式的 report.json 使用 commit-review-report.schema.json；交付模式使用 ci-review-report.schema.json。
+- error.json 是执行失败，不等于有效 review 报告。
 - 供外部执行器接入时，使用 [schema](../assets/templates/ci-review-report.schema.json) 和 [Review 协议](reviewer-protocol.md)。
 - 外部执行器输出可用 `review-report-check --context-file context.json --report-file report.json` 校验。
 - Cursor result envelope 会先解包；仍须通过完整字段、固定范围、规则、人数、覆盖及裁定检查。
 - 报告校验只验契约，不推理结论，不授予平台 merge 权限。
 
-## Push 审计
+### Push 审计
 
 本节审计 develop/master 的完整新增第一父链，不撤销已经接受的 push。
 
@@ -86,9 +150,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" audit-push \
 - 全零 before、缺对象、无法读取策略或平台故障时 needs-review；trunk 历史改写为 violation。
 - verdict 为 pass、violation、needs-review；调用成功不等于通过，CI 须显式检查 result.verdict。
 
-## 发布 review 与合并
+### 发布 review 与合并
 
-本节把平台写操作放在审查后的独立步骤。
+本节的发布示例消费交付模式报告；独立 commit 报告由接入项目消费和发布。
 
 ```bash
 python3 "$MDF_ROOT/assets/ci/publish.py" \

@@ -339,7 +339,8 @@ $mdf clarify 要不要把缓存放到 Redis
     release→release；不含 commit）；smart/named 不写 branch 报告，运行日志与 JUnit 仍落盘；named 命令来自
     testing 文档 frontmatter。
 - `$mdf code-review`
-  - 用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
+  - 独立只读：`$mdf code-review --source-commit <source> --target-commit <target>`；无 roster 或交付材料要求。
+  - 交付用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 用途：审查并修复实现、测试和 code smell。
   - 说明：进行中可记 tip；裁定收口后覆盖为无 commit 的 `code-review.md` 终稿（非
     gate）。主链在 lint 后、verify branch 前。进度只认 objectives 自勾。

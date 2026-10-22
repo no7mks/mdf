@@ -14,7 +14,7 @@
 | `inspection` | 仓库、事实、evidence、体积与结构检查 | `doctor`、`audit`、`code_size` |
 | `lifecycle` | 交付身份、roster、阶段、版本收口与发布 | `delivery_state`、`roster`、`closeout_stage` |
 | `execution` | module 验证配置、命令执行与测试报告 | `modules`、`module_verify`、`verify_run`、`reports` |
-| `workspace` | Git、worktree、初始化、同步、hook 与安装维护 | `gitflow`、`gitutil`、`init_repo`、`upgrade` |
+| `workspace` | Git、worktree、初始化、同步、hook 与安装维护 | `gitflow`、`gitutil`、`squash`、`init_repo`、`upgrade` |
 | `integrations` | CodeWiki 运行时与跨工作区联调通道 | `codewiki_runtime`、`integrate` |
 | `reviewing` | CI 固定审查上下文与报告契约 | `context`、`report` |
 
@@ -23,6 +23,8 @@
 命令入口负责组合各领域能力，领域模块通过明确的 import 引用实际定义。
 
 - 用户命令入口仍为 `skills/mdf/scripts/mdf.py`，由 `mdf_core.cli` 组装命令。
+- `squash_execute.py` 执行分析后的分段计划；`workspace.squash` 提供共享边界检查与 PR 动作前门禁。
+  契约见 [Squash](../../../skills/mdf/references/squash.md)。
 - 共享类型与解析工具位于 `foundation`；跨 package 调用使用完整模块路径。
 - 已迁移模块不在根目录保留 facade 或 re-export；测试的 import 与 monkeypatch 指向实际定义。
 - 模板读取从 Skill 根的 `assets/templates/` 定位；不依赖调用方 cwd。

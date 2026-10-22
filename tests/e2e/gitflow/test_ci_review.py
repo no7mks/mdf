@@ -24,6 +24,10 @@ def ready_context(python_exe, tmp_path, monkeypatch):
 
 
 def passing(context):
+    if context.get('mode') == 'commits':
+        keys = ('schema_version', 'mode', 'review_base', 'review_head', 'policy_ref',
+                'rules_sha256', 'context_sha256', 'paths')
+        return {**{key: context[key] for key in keys}, 'decision': 'pass', 'incomplete': [], 'findings': []}
     report = {key: context[key] for key in
               ('source', 'delivery_base', 'review_base', 'review_head', 'policy_ref', 'rules_sha256', 'context_sha256')}
     report.update(schema_version=3, decision='pass', incomplete=[], adjudications=[], reviewers=[
@@ -132,22 +136,13 @@ def test_explicit_endpoints_require_unambiguous_pair(python_exe, tmp_path, monke
     assert result.returncode != 0 and 'invalid_arguments' in result.stderr
 
 
-def test_explicit_incremental_requires_same_target(python_exe, tmp_path, monkeypatch):
-    repo, work, original = ready_context(python_exe, tmp_path, monkeypatch)
+@pytest.mark.parametrize('extra', [{'review_base': 'HEAD'}, {'previous': {}}])
+def test_explicit_review_rejects_incremental_inputs(python_exe, tmp_path, monkeypatch, extra):
+    _, work, _ = ready_context(python_exe, tmp_path, monkeypatch)
     from mdf_core.reviewing.context import context
     from mdf_core.foundation.errors import MDFError
-    first = context(work, original['source'], source_commit='HEAD', target_commit='develop')
-    (work / 'source-only.py').write_text('source_only = True\n')
-    commit(work)
-    next_round = context(work, original['source'], source_commit='HEAD', target_commit='develop',
-                         review_base=first['review_head'], previous=passing(first))
-    assert next_round['paths'] == ['source-only.py'] and next_round['round'] == 'incremental'
-    git(repo, 'checkout', 'develop')
-    (repo / 'target-only.py').write_text('target_only = True\n')
-    commit(repo)
-    with pytest.raises(MDFError, match='目标已变化'):
-        context(work, original['source'], source_commit='HEAD', target_commit='develop',
-                review_base=first['review_head'], previous=passing(first))
+    with pytest.raises(MDFError, match='完整范围'):
+        context(work, source_commit='HEAD', target_commit='develop', **extra)
 
 
 def test_explicit_scope_excludes_changes_already_in_target(python_exe, tmp_path, monkeypatch):
@@ -160,9 +155,8 @@ def test_explicit_scope_excludes_changes_already_in_target(python_exe, tmp_path,
     (work / 'source-only.py').write_text('source_only = True\n')
     commit(work)
     ctx = context(work, original['source'], source_commit='HEAD', target_commit='develop')
-    assert ctx['delivery_base'] == original['delivery_base']
+    assert 'delivery_base' not in ctx and 'roster' not in ctx
     assert ctx['review_base'] == original['review_head']
-    assert ctx['review_base'] != ctx['delivery_base']
     assert ctx['paths'] == ['source-only.py']
 
 

@@ -13,7 +13,7 @@ from mdf_core.reviewing.context import fingerprint
 from mdf_core.reviewing.report import validate
 from mdf_test_support import git, mdf, payload
 from support_delivery import commit
-from support_pull import prepare
+from support_pull import prepare, squash_pending
 
 
 def completed_materials(work, version='1.2.1'):
@@ -31,6 +31,7 @@ def waiting_backmerge(python_exe, tmp_path, monkeypatch):
     from mdf_core.lifecycle import pull_publish
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
     completed_materials(work)
+    squash_pending(work)
     payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
     original = pull_publish.git
@@ -45,7 +46,7 @@ def waiting_backmerge(python_exe, tmp_path, monkeypatch):
     return repo, remote, work, platform, result['backmerge'], merged
 
 
-def test_backmerge_pull_has_reviewable_fixed_context(python_exe, tmp_path, monkeypatch):
+def test_backmerge_has_reviewable_fixed_context(python_exe, tmp_path, monkeypatch):
     _, _, _, _, record, merged = waiting_backmerge(python_exe, tmp_path, monkeypatch)
     result = payload(mdf(python_exe, 'review-context', '--repo', record['worktree'],
                          '--source', record['source'], '--head', 'HEAD', '--policy-ref', 'origin/develop'))['result']
@@ -55,9 +56,9 @@ def test_backmerge_pull_has_reviewable_fixed_context(python_exe, tmp_path, monke
     assert result['incomplete'] == []
 
 
-def test_backmerge_updates_existing_pull_after_develop_advances(python_exe, tmp_path, monkeypatch):
+def test_backmerge_pushes_directly_after_develop_advances(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform, record, merged = waiting_backmerge(python_exe, tmp_path, monkeypatch)
-    before = platform.get(2)['head']
+    before = record['head']
     tag = git(remote, 'rev-parse', 'v1.2.1').stdout
     other = tmp_path / 'later-develop'
     git(tmp_path, 'clone', '--branch', 'develop', str(remote), str(other))
@@ -70,16 +71,49 @@ def test_backmerge_updates_existing_pull_after_develop_advances(python_exe, tmp_
     current = git(back, 'rev-parse', 'HEAD').stdout.strip()
     assert current != before
     updated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
-    assert updated['backmerge']['pull']['head'] == current
-    assert len(platform.pulls) == 2
+    assert updated['completed'] and updated['backmerge']['head'] == current
+    assert len(platform.pulls) == 1
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == current
     ctx = payload(mdf(python_exe, 'review-context', '--repo', str(back), '--source', record['source'],
                       '--head', 'HEAD', '--policy-ref', 'origin/develop'))['result']
     assert ctx['delivery_base'] == record['base'] and ctx['publication']['merge_commit'] == merged
     assert ctx['incomplete'] == []
-    platform.merge(2, tmp_path)
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo),
+                       '--source', updated['source']))['completed']
     assert git(remote, 'rev-parse', 'v1.2.1').stdout == tag
     git(repo, 'merge-base', '--is-ancestor', merged, 'origin/develop')
+
+
+
+def test_backmerge_resume_preserves_local_fixes_when_remote_already_contains_release(python_exe, tmp_path, monkeypatch):
+    _, remote, work, platform, record, merged = waiting_backmerge(python_exe, tmp_path, monkeypatch)
+    back = Path(record['worktree'])
+    (back / 'resolution.py').write_text('resolved = True\n')
+    commit(back)
+    expected = git(back, 'rev-parse', 'HEAD').stdout.strip()
+    git(remote, 'update-ref', 'refs/heads/develop', merged)
+    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    assert result['completed'] and len(platform.pulls) == 1
+    git(remote, 'merge-base', '--is-ancestor', expected, 'develop')
+    assert git(remote, 'show', 'develop:resolution.py').stdout == 'resolved = True\n'
+
+
+
+@pytest.mark.parametrize('retained_action', ['advance', 'remove'])
+def test_completed_backmerge_does_not_republish_retained_worktree(python_exe, tmp_path, monkeypatch, retained_action):
+    repo, remote, work, platform, record, _ = waiting_backmerge(python_exe, tmp_path, monkeypatch)
+    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    assert done['completed']
+    expected = git(remote, 'rev-parse', 'develop').stdout
+    back = Path(record['worktree'])
+    if retained_action == 'advance':
+        (back / 'later.py').write_text('unrelated = True\n')
+        commit(back)
+    else:
+        git(repo, 'worktree', 'remove', str(back))
+    repeated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', done['source']))
+    assert repeated['completed'] and len(platform.pulls) == 1
+    assert git(remote, 'rev-parse', 'develop').stdout == expected
 
 
 def incremental_report(state='reopened'):
@@ -163,14 +197,14 @@ def test_ci_runner_accepts_confirmed_initial_release_base(python_exe, tmp_path, 
 def test_rewritten_backmerge_stops_without_creating_new_merge(python_exe, tmp_path, monkeypatch):
     _, remote, work, _, record, _ = waiting_backmerge(python_exe, tmp_path, monkeypatch)
     back = Path(record['worktree'])
-    original = git(remote, 'rev-parse', record['source']).stdout
+    original = git(remote, 'rev-parse', 'develop').stdout
     git(back, 'checkout', '--detach', record['base'])
     git(back, 'branch', '-f', record['source'], record['base'])
     git(back, 'checkout', record['source'])
     failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
     assert failed.returncode != 0 and 'pull_state_changed' in failed.stderr
     assert git(back, 'rev-parse', 'HEAD').stdout.strip() == record['base']
-    assert git(remote, 'rev-parse', record['source']).stdout == original
+    assert git(remote, 'rev-parse', 'develop').stdout == original
 
 
 def test_first_release_incremental_round_keeps_fixed_base_and_old_blockers(python_exe, tmp_path, monkeypatch):

@@ -108,6 +108,9 @@ waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与�
 
 本节在源工作区集成目标主线，并准备本地 Change。
 
+PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr-close-out.md#提交前远端集成)，
+使用最新 origin/develop；以下本地 develop 的包含检查与 docs 跳过规则仅适用于 local。
+
 - 先只读检查 owner 与 develop 的实际合并工作区均 clean，无未完成 merge。
   - 有问题停止并保留现场；不 stash、reset、abort 或提交他人改动，无关工作区不检查。
 - develop 尚非 owner HEAD 的祖先时，固定 develop commit 与集成前 HEAD。

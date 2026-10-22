@@ -128,7 +128,8 @@ disable-model-invocation: true
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
-- start、design、deliver、code-review 可带下列参数，由对应 intent 解析并写入 roster：
+- code-review 可带成对 `--source-commit` / `--target-commit`，直接进入独立只读审查，不要求交付材料或 roster。
+- start、design、deliver、交付模式的 code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
   - `--*-model` 值为口语描述，可点名一个或多个模型。
@@ -166,7 +167,8 @@ disable-model-invocation: true
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-- 除 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
+- 独立 commit code-review 只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。
+- 除上述独立审查及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
   - `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
 

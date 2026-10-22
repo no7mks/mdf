@@ -74,6 +74,10 @@ def roster_join(repo, root, data, approval, qa_branch=None, dev_branch=None):
             raise MDFError("实现分支修改了测试或验证规则",
                            code="test_approval_required",
                            details={"paths": protected})
+    from mdf_core.workspace.squash import require_ready
+    require_ready(repo)
+    for branch in merged:
+        require_ready(worktrees[branch])
     for branch in qa_merged:
         merge_role(repo, root, branch)
     # 多路 qa 的 write-tests 记录冲突时只保留第一路；converge 以合并后的测试为基线。
@@ -96,6 +100,9 @@ def roster_join(repo, root, data, approval, qa_branch=None, dev_branch=None):
 
 
 def merge_role(repo, root, branch):
+    from mdf_core.workspace.squash import require_ready
+    require_ready(repo)
+    require_ready(repo, branch)
     if not git(repo, "merge-base", "--is-ancestor", branch, "HEAD",
                 check=False).returncode:
         return
