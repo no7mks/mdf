@@ -64,6 +64,10 @@ closeout:
 - 初次 close-out 仍按主链完成集成、审查、验证、fact 和材料准备；随后委托本页提交。
 - PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入 develop 后生效。
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
+- PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
+  - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
+  - release/hotfix 还须完成固定 M 的 tag 发布与 backmerge，之后才可清理 source；CLI 始终保留 owner worktree。
+  - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 已有 Git common dir `mdf/finish/<source>.json` 时先按下方恢复路由续办，不重新执行整套材料准备。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
@@ -78,9 +82,11 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
    - 先锁定当前完整交付分支、既有上下文或用户指定的 source；尚无目标时才核对唯一未完成 PR 操作记录，不改绑已锁定交付。
    - 核 mode、origin/provider、source、target 与本仓一致；多个候选无唯一依据时澄清，不按时间或目录名猜测。
    - completed 记录仅用于已明确锁定的原交付；不从历史完成记录自动启动任务。
-3. owner 已 detached 或 source 已删除时，操作记录仍可指向清理、发布或 backmerge 续办。
+3. 清理前置已全部完成、detach 或删除 source 后中断时，按操作记录续办清理与完成记录。
    - 使用原 source 与主 worktree；不因 delivery status 不支持 detached 而停止，不重新 start 或重建 owner。
    - 主 worktree 与记录的 Git common dir 必须一致；不存在 PR 记录时才按原入口的普通规则识别。
+   - 发布或 backmerge 尚未完成却发现 owner/source 缺失，属于外部删除等异常现场；报告异常并核平台事实后才按固定 M 恢复。
+     此恢复容错不授权任何流程提前删除 source 或 owner，也不能据此声称正常清理已完成。
 4. Prepare 先只读查询记录中的原 PR/MR；尚无 PR ID 时按记录的 identity/source/target 查回复用，不能猜测或重复创建。
    - 仅 open 或尚无 PR、仍需候选源提交时，读取原 source worktree 的同一份材料、objectives 与返工备注。
    - 已 merged 或部分发布时，按记录与实际 Git 直接恢复；owner 目录可不存在，必要已交付材料从固定 merge commit 读取。

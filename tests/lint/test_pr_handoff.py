@@ -23,7 +23,7 @@ def test_pr_prepare_resumes_repairs_before_finish_or_polling():
     assert '### 恢复路由与返工上下文' in text
     for rule in (
         '先应用当前 until', '先于 doctor、branch、delivery status 和 adhoc-status',
-        'owner 已 detached 或 source 已删除', '不重新 start',
+        '清理前置已全部完成、detach 或删除 source 后中断', '不重新 start',
         'PR close-out 返工', '非 checklist 备注', '修复前左端点', '原验证请求',
         '父 intent', '原 PR/MR', '未完成返工先交回主链',
         '全部完成后才允许更新 PR/MR 或恢复轮询',
@@ -41,3 +41,14 @@ def test_parent_closeout_survives_nested_review_and_verify():
     deliver = workflow('deliver')
     assert 'PR 返工上下文优先于普通选择表' in deliver
     assert '先核当前 until' in deliver
+
+
+def test_pr_retains_branch_and_owner_until_merge_and_publication_finish():
+    text = workflow('pr-close-out')
+    for rule in (
+        'PR/MR 未完成时必须保留 source branch 和 owner worktree',
+        '等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理',
+        '完成固定 M 的 tag 发布与 backmerge，之后才可清理 source',
+        'CLI 始终保留 owner worktree', '恢复容错不授权任何流程提前删除',
+    ):
+        assert rule in text

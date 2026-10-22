@@ -14,6 +14,7 @@ def test_pr_finish_waits_then_resumes_idempotently(python_exe, tmp_path, monkeyp
     before = git(remote, 'show-ref').stdout
     first = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert not first['completed'] and first['status'] == 'waiting_for_merge'
+    assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == first['source']
     assert git(work, 'branch', '--show-current').stdout.strip()
     assert git(remote, 'rev-parse', 'master').stdout.strip() in before
     assert not git(remote, 'for-each-ref', 'refs/tags/v1.2.1').stdout
@@ -42,6 +43,7 @@ def test_closed_pull_and_changed_merge_never_publish(python_exe, tmp_path, monke
     platform.pulls[0]['state'] = 'closed'
     result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert not result['completed'] and result['status'] == 'closed_without_merge'
+    assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == result['source']
     platform.pulls[0].update(state='merged', merge_commit=git(repo, 'rev-parse', 'master').stdout.strip())
     failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
     assert failed.returncode != 0 and 'invalid_pull_merge' in failed.stderr
@@ -87,6 +89,7 @@ def test_backmerge_conflict_stays_off_develop_and_resumes_directly(python_exe, t
     platform.merge(1, tmp_path)
     result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['status'] == 'published_pending_backmerge' and not result['completed']
+    assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == result['source']
     assert git(remote, 'rev-parse', 'develop').stdout == before
     from pathlib import Path
     back = Path(result['backmerge']['worktree'])
@@ -277,6 +280,7 @@ def test_rejected_develop_push_preserves_pending_without_another_pull(python_exe
         patch.setattr(pull_publish, 'git', rejected)
         result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['status'] == 'published_pending_backmerge'
+    assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == result['source']
     assert len(platform.pulls) == 1
     assert result['backmerge']['push_error'] == 'protected branch'
     assert 'pull' not in result['backmerge']
