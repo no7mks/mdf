@@ -11,6 +11,8 @@
 - `finish-gitflow --repo <repo> [--source <source>]` 在 pr 模式支持所有交付 kind 的恢复。
 - 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted 与工作区路径。
 - waiting_for_merge、closed_without_merge、published_pending_backmerge 都是 completed=false。
+- 发布后以固定 merge commit no-ff 回合并直接 push develop；不创建回合 PR/MR。
+  冲突或 push 未完成时保留 backmerge worktree；push 失败详情见 backmerge.push_error。
 - completed=true 后才能报告交付完成；正常等待退出 0，不重复创建远端对象。
 - PR mode 可能提交候选 PRP 状态、push 源分支、创建 PR/MR、tag 与回合 develop。
 - local 模式的原本地收口和发版语义保留。

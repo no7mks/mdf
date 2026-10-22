@@ -147,7 +147,7 @@ def finish(repo, source, settings):
         ready = True
         if target == "master":
             from mdf_core.lifecycle.pull_publish import publish
-            ready = publish(repo, state, details["version"], forge, path)
+            ready = publish(repo, state, details["version"], path)
         if ready:
             cleanup(repo, state)
             state["completed"] = True

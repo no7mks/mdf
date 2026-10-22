@@ -76,7 +76,7 @@ def test_publish_keeps_tag_on_fixed_merge_after_master_advances(python_exe, tmp_
     assert git(remote, 'ls-tree', '-r', '--name-only', 'develop', 'later.txt').stdout == ''
 
 
-def test_backmerge_conflict_stays_off_develop_and_resumes_via_pull(python_exe, tmp_path, monkeypatch):
+def test_backmerge_conflict_stays_off_develop_and_resumes_directly(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
     git(repo, 'checkout', 'develop')
     (repo / 'src/service.py').write_text('future = True\n')
@@ -92,10 +92,10 @@ def test_backmerge_conflict_stays_off_develop_and_resumes_via_pull(python_exe, t
     back = Path(result['backmerge']['worktree'])
     (back / 'src/service.py').write_text('future = True\nfixed = True\n')
     commit(back)
-    waiting = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
-    assert waiting['backmerge']['pull']['state'] == 'open'
-    platform.merge(2, tmp_path)
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+    completed = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    assert completed['completed']
+    assert len(platform.pulls) == 1
+    assert git(remote, 'show', 'develop:src/service.py').stdout == 'future = True\nfixed = True\n'
 
 
 def test_source_updates_reuse_existing_feature_pull(python_exe, tmp_path, monkeypatch):
@@ -142,7 +142,7 @@ def test_tag_push_response_loss_does_not_retag(python_exe, tmp_path, monkeypatch
     assert git(remote, 'rev-parse', 'v1.2.1').stdout == tagged
 
 
-def test_rejected_develop_push_falls_back_to_backmerge_pull(python_exe, tmp_path, monkeypatch):
+def test_rejected_develop_push_preserves_pending_without_another_pull(python_exe, tmp_path, monkeypatch):
     from types import SimpleNamespace
     from mdf_core.lifecycle import pull_publish
     repo, _, work, platform = prepare(python_exe, tmp_path, monkeypatch)
@@ -157,6 +157,7 @@ def test_rejected_develop_push_falls_back_to_backmerge_pull(python_exe, tmp_path
         patch.setattr(pull_publish, 'git', rejected)
         result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['status'] == 'published_pending_backmerge'
-    assert len(platform.pulls) == 2
-    platform.merge(2, tmp_path)
+    assert len(platform.pulls) == 1
+    assert result['backmerge']['push_error'] == 'protected branch'
+    assert 'pull' not in result['backmerge']
     assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']

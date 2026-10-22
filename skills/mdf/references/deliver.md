@@ -69,8 +69,8 @@
 
 ## 工作流（唯一执行契约）
 
-PR mode close-out 返回 completed=false 时报告等待平台合并或待回合，不声明交付/Goal 完成。
-用户合并后从 close-out 续办；恢复细则见 [PR Close-out](pr-close-out.md)。
+PR mode close-out 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
+completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR Close-out](pr-close-out.md)。
 
 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
@@ -260,6 +260,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - close-out 返回「待主链外续办」时结束该调用栈并返回 Select；保留已齐审查与修复窗。
   - 在 close-out 外恢复 code-review、原验证与 fact 后再续办收口，不在 close-out 内绕跑 verify。
+  - PR/MR 轮询收到可修 review/CI 反馈或冲突时同样返回 Select；修复并补审补测后更新原 PR/MR，继续轮询。
 
 - 内部委托到 until 时逐层返回截止点与未完成子步骤，直接进入 5；不把截止当作失败或自动重试。
 - fact audit 的可修 finding 交回 Select；外部阻塞、缺证据或低 confidence 待确认不擅自启动 fact update。
