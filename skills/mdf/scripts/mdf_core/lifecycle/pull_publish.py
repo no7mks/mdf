@@ -54,7 +54,16 @@ def publish(repo, state, version, path):
     work = Path(record["worktree"])
     occupant = worktree_map(repo).get(record["source"])
     if occupant is None and not work.exists():
-        add_linked_worktree(repo, record["source"], work, record["base"])
+        branch = git(repo, "rev-parse", "--verify", f"refs/heads/{record['source']}", check=False)
+        if branch.returncode:
+            if record.get("head"):
+                raise MDFError("已记录的回合分支丢失，保留现场", code="pull_state_changed")
+            add_linked_worktree(repo, record["source"], work, record["base"])
+        elif branch.stdout.strip() == record.get("head", record["base"]):
+            work.parent.mkdir(parents=True, exist_ok=True)
+            git(repo, "worktree", "add", str(work), record["source"])
+        else:
+            raise MDFError("回合分支与恢复记录不符，保留现场", code="pull_state_changed")
     elif occupant != work:
         raise MDFError("回合 worktree 与记录不符", code="pull_state_changed")
     if git_in_progress_head(work):

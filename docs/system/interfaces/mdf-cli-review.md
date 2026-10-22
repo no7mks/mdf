@@ -14,7 +14,10 @@
 - 发布后以固定 merge commit no-ff 回合并直接 push develop；不创建回合 PR/MR。
   冲突或 push 未完成时保留 backmerge worktree；push 失败详情见 backmerge.push_error。
 - completed=true 后才能报告交付完成；正常等待退出 0，不重复创建远端对象。
+- source 清理再次检查 worktree 占用，并以已确认 head 原子删除 ref；并发前进时拒绝删除，保留分支配置。
 - PR/MR 合并前所有交付 kind 均允许保留历史的源提交更新；候选 head 经平台确认后才替换已确认 head。
+- PR 收口按 Git common dir 获取仓库级 OS lock；并发调用返回 finish_busy，不修改恢复记录或共享 Git 状态。
+  操作退出或进程中断后自动释放；lock 文件保留，不作为进度或恢复记录。
 - PR mode 的 release/hotfix 候选材料已进入版本目录时，delivery 与 verify branch 在该目录读写，不复制回 unreleased。
 - PR mode 可能提交候选 PRP 状态、push 源分支、创建 PR/MR、tag 与回合 develop。
 - local 模式的原本地收口和发版语义保留。

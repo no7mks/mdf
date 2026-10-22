@@ -65,6 +65,9 @@ closeout:
 - PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入 develop 后生效。
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - 已有 Git common dir `mdf/finish/<source>.json` 时先续办本页，不重新执行整套材料准备。
+- 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
+  - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
+  - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
 
 ### 生命周期
 
@@ -86,6 +89,7 @@ closeout:
 - release/hotfix 的源提交在 PR/MR 合并前允许合法前进；合并后固定实际 M，不接受追加提交改变本次发布。
 - 首次 push 或创建结果丢失，重入先查平台，禁止重复创建或覆盖记录。
 - tag、远端、来源或目标不符时停止；不 reset、不覆盖 tag、不清理他人现场。
+- source 清理先核无其他 worktree 占用，再以已确认 head 作 expected SHA 原子删除；并发前进时保留 ref 和分支配置。
 
 步骤 4 核对 `status`、`completed` 与实际结果，按下表等待、续办或返回。
 
@@ -165,6 +169,8 @@ release/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并�
 - 平台拒绝直接 push develop 时保留 tag、回合 worktree 和 push_error；可修问题自行处理，权限阻塞则报告。
 - develop 前进时在回合 worktree 合入远端 develop，解冲突并按影响补审补测；恢复 close-out 后重试直接 push。
 - 新 head 必须保留记录的历史和固定 M；改写历史仍停止。
+- worktree 创建中断后，已有未占用回合分支与记录的 head（尚无 head 时为 base）精确一致，才复用分支建立工作区。
+  分支不符、已被占用或已有 head 的分支丢失时保留现场，不重建或覆盖已记录历史。
 - tag push 响应丢失时先核对远端；已存在且符合记录则复用。
 - local 模式继续原子 push master + tag，develop 只在本地回合。
 

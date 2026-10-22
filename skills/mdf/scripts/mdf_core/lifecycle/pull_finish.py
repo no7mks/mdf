@@ -1,5 +1,7 @@
 """PR/MR 提交、等待、核验与清理；操作记录不充当阶段 gate。"""
-from pathlib import Path
+from contextlib import contextmanager
+import os
+import re
 
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.integrations.forge import Forge, origin
@@ -86,7 +88,21 @@ def cleanup(repo, state):
     if not present.returncode:
         if sha(repo, source) != state["head"]:
             raise MDFError("源分支已变化，不能删除", code="pull_state_changed")
-        git(primary, "branch", "-D", source)
+        if source in worktree_map(repo):
+            raise MDFError("源分支已被其他 worktree 占用，保留现场", code="pull_state_changed")
+        deleted = git(primary, "update-ref", "-d", f"refs/heads/{source}", state["head"], check=False)
+        if deleted.returncode:
+            raise MDFError("源分支删除时已变化或被锁定，保留现场", code="pull_state_changed")
+    remaining = git(repo, "show-ref", "--verify", "--quiet", f"refs/heads/{source}", check=False)
+    if remaining.returncode == 0:
+        raise MDFError("源分支已被重新创建，保留 ref 和配置", code="pull_state_changed")
+    if remaining.returncode != 1:
+        raise MDFError("无法核验源分支删除结果，保留现场", code="command_failed")
+    section = git(primary, "config", "--local", "--get-regexp", rf"^branch\.{re.escape(source)}\.", check=False)
+    if section.returncode == 0:
+        git(primary, "config", "--local", "--remove-section", f"branch.{source}")
+    elif section.returncode != 1:
+        raise MDFError("无法读取已删除分支的配置，保留现场", code="command_failed")
 
 
 def confirm_pull(state, pull):
@@ -113,7 +129,34 @@ def check_source(repo, state):
         raise MDFError("已合并 PR/MR 之外仍有源提交，保留现场", code="pull_state_changed")
 
 
+@contextmanager
+def finish_lock(repo):
+    """锁住同一 Git common dir 的 PR 收口；进程退出时由 OS 自动释放。"""
+    path = state_path(repo, "closeout").parent / ".pr-closeout.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            if os.name == "nt":
+                import msvcrt
+                if path.stat().st_size == 0:
+                    handle.write(b"\0")
+                    handle.flush()
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise MDFError("另一个 PR close-out 正在操作此仓库，请稍后重试", code="finish_busy") from exc
+        yield
+
+
 def finish(repo, source, settings):
+    with finish_lock(repo):
+        _finish(repo, source, settings)
+
+
+def _finish(repo, source, settings):
     path = state_path(repo, source)
     state = read_json(path) if path.exists() else None
     identity = origin(repo, settings["provider"])
