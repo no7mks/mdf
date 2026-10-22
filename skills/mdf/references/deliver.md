@@ -31,6 +31,7 @@
 │ 3 Execute                        │
 └────────────────┬─────────────────┘
                  │
+                 ├──── PR 正常等待 ────────────────→ [留在 close-out 子流程轮询]
                  ├──── 阶段完成 ───────────────────→ 2 Select
                  ├──── 内部委托到 until ───────────→ 5 Report
                  ├──── 非 yolo decision 待确认 ────→ 6 Confirm decision
@@ -72,6 +73,7 @@
 ## 工作流（唯一执行契约）
 
 - PR mode close-out 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
+  正常等待不属于外部阻塞；`waiting_for_merge` 时不结束当前调用、不进入步骤 5，也不要求用户再次调用。
   completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR Close-out](pr-close-out.md)。
 
 - PR 恢复优先：先核当前 until，再按 [PR Close-out 的恢复路由](pr-close-out.md) 核已锁定 source 的操作记录及返工备注。
@@ -96,7 +98,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve | 约束 | 解析策略；先核 PR 恢复，再锁定 owner | 参数、目标、记录、路径 | 锁定2；截止5；start 返回1 | 低分6；失败交接；死硬停 |
 | 2 | Select | 约束 | 先核 until；PR 恢复优先，再选步骤 | 记录、进度、截止点 | 截止或完成5；交接结束；并行4；其他3 | 低分6；其余保留现场 |
-| 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | 完成2；截止5 | 低分6；其余按原流程交接 |
+| 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | PR 等待留子流程；完成2；截止5 | 低分6；其余按原流程交接 |
 | 4 | Parallel | Subagent | 分派、核路径并等待交接 | 各路提交与勾选意向 | 交接2；截止5 | 低分6；其余保留现场 |
 | 5 | Report | 约束 | 核对范围、Goal 与收尾清理 | 截止证据或实际 Git 结果 | 结束 | 清理低分6；缺证据报告实际状态 |
 | 6 | Confirm decision | 约束 | 展示方案与评分 | 答复、返回位置 | 确认返回；修改重评 | 拒绝按原流程；未决留 6 |
@@ -234,6 +236,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - Execute 已打开 verify 小 loop 时，先恢复其原 scope/选题与待修绿/待复审状态，完成后才返回 Select。
 - 不因 code-review 退勾提前选择该 intent；原 verify 负责先修绿再派 1 人增量审查。
 - 恢复使用已有调用栈、objectives 续办备注或草稿，不新增 gate；无法恢复原范围时停止报告。
+- PR 已提交但尚未完成收口时，即使 objectives 全勾，也按 PR 恢复路由续办，不进入完成报告。
 - PR 返工上下文优先于普通选择表；每次仍先核当前 until，再补齐该父流程的未完成子步骤。
   - 保留原 PR/MR 与返回位置；补审补测完成后恢复 close-out 更新原 PR 并轮询，不重新准备整套发布材料。
   - 原 source 已删除或 owner detached 的清理恢复从主 worktree 带原 source 续办，不要求缺失的 owner branch。

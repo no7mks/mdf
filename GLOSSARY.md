@@ -73,6 +73,8 @@ module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置
 - **test**：含若干断言的最小测试项，通常为函数。
 - **test case**：服务于同一目标的一组 test，通常为类或文件；suite 成员的粒度。
 - **suite**：test case 的集合。
+  - 每个 suite 都有自己的名称；quick、smoke、release 是有固定用途的保留名称。
+  - named suite 指其余项目自定义 suite，如 gitflow、planning，不是名为 named 的大集合。
 
 ## 验证 suite
 
@@ -82,6 +84,7 @@ module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置
 - **release**：包含 smoke，发版所需的 test case，无预算上限；仅 release 的 branch 验证跑到此。
 - **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有
   `docs/system/testing/<name>.md`。smart 由 Agent+Jev 选题，不默认整 suite 盲跑。
+  - 与保留 suite 可以重叠，也可含 smoke 之外的成员；报告使用具体 suite 名称。
 
 预算包含启动依赖与预热，不含 build；超出预算视为失败。
 **quick 复现用例**：非 quick 用例在门禁后失败时，为复现同一缺陷补进 quick 的

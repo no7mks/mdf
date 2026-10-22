@@ -66,7 +66,8 @@ PR 模式共享动作及所有模式的 planning land 前强制检查；local �
 
 ### PR 模式与 planning land 的必要检查
 
-本节优先于下方 local 交付的可选规则。squash 先分析逻辑边界，可以保留多笔 Conventional Commit，不要求压成一笔。
+本节的强制检查时机适用于 PR 模式与 planning land；安全 floor 与计划规则也适用于 local 交付。
+squash 按交付目标分析逻辑边界，默认合并同一目标的提交；有明确理由时保留多笔 Conventional Commit。
 
 - 所有模式的 `planning land` 在合入 develop 前检查 planning，不整理 develop。
   - planning worktree 须 clean；无占用者时可检查 branch，实际执行须先在 planning worktree checkout。
@@ -87,8 +88,9 @@ PR 模式共享动作及所有模式的 planning land 前强制检查；local �
   - 候选少于两笔时 `noop: true`，直接继续；这不是失败，也不制造新 commit。
 - 候选至少两笔时，Agent 分析完整 diff、提交意图与依赖，按下方计划格式确定几段与切法。
   - 计划的 floor 不得早于检查返回的安全地板；交付和角色分支的 start_commit 取 owner 起点，planning 取安全 floor。
-  - 合并同一逻辑改动的临时提交；独立逻辑可以保留多段，各段 message 使用中文 Conventional Commit。
-  - 全部提交都应独立保留时，计划保留原段界并提供非空 `noop_reason`；脚本记录分析结果而不重写；原有 empty commit 也可保留。
+  - 按下方「计划」的默认合并与保留理由规则切段，各段 message 使用中文 Conventional Commit。
+  - 全部提交都应独立保留时，计划保留原段界；`noop_reason` 须逐段说明独立保留的具体理由。
+    脚本记录分析结果而不重写；原有 empty commit 有明确用途时也可保留。
   - 必要整理默认由 Agent 自主执行，不逐次询问是否 squash 或重复确认计划；范围或归属不明才询问。
 - 使用下方执行脚本及同一计划的 --verify-only；核 tree_equal、start_is_ancestor、clean。
   - 脚本在 Git common dir 的 `mdf/squash/` 保存当前 branch/head 的操作检查结果，不作为交付进度或验收 gate。
@@ -118,8 +120,13 @@ PR 模式共享动作及所有模式的 planning land 前强制检查；local �
 
 <a id="s2"></a>
 
-- planning 与 PR 模式先用 `--check` 的安全 floor；local 交付按下方地板规则计算（交付地板与他人抬升取较晚者）。
+- 所有模式先用 `--check` 的安全 floor；local 交付不再按开发完成项或 roster-join 材料另设地板。
   - 不可压（地板缺失、区间空、tip 他人等）→ 报告原因并停止。
+- 同一交付目标的实现、测试、直接修正和文档默认合并，包括正常命名的 commit，不限于临时提交。
+  - commit type、文件、角色或流程阶段不同，本身不是保留多笔的理由。
+  - 保留多笔时，建议计划须逐段说明独立行为价值、单独 revert 的意义或必须保留的独立用途。
+  - 理由须对应具体 diff 与依赖；仅称“职责不同”或“各自独立”不充分。不能说明时合并为同一段。
+  - 只在安全 floor 之后按原顺序连续分段；不为合并同一目标而跨保护边界或重排提交。
 - Jev/Agent 定型**几段与切法**（`noul` / `choice` / `run`，见 `common.md`）；
   **不写** message。
   - 段界 = 有序 tip 列表（均在地板..HEAD；末段 = 当前 HEAD；≥1 段）。
@@ -178,40 +185,24 @@ deliver 委托时同样默认自主分析并执行，不增加 squash 的逐次�
 切段定型、message 与执行；可用 `--dry-run` 只产出建议。
 #### 地板（`reset --soft` 目标）
 
-地板必须是当前 HEAD 的祖先，且不得早于交付地板；区间为地板..HEAD。
+local 交付使用与 PR 模式相同的 `--check` 安全 floor；区间为 floor..HEAD。
 
-- **交付地板**（能允许的最早点；有 converge 时 = converge 起点）：
-  - roster ≥1：定位 roster-join 文件在本分支首次引入的 commit。
-    命令：`git log --diff-filter=A --format=%H <start_commit>..HEAD --
-    changes/unreleased/<slug>/gates/roster-join.json`。
-    核对候选 diff 与合流记录；缺失或不唯一则不可压。角色 worktree 须已清理；不得早于该提交。
-  - roster `0,0` 且 objectives checklist **含**开发完成项（owner 开发，或
-    `needs_design: yes` 下的 write-tests / implement；含 start 跳过预勾）：
-    - 在 `start_commit..HEAD` 上找**最晚**一次使**该**项变为 `[x]` 的 commit。
-    - 命令：`git log --format=%H <start_commit>..HEAD -- changes/unreleased/<slug>/objectives.md`。
-    - 从新到旧核对候选 diff，取第一笔把目标开发项变为 `[x]` 的提交；不取其他步骤最近勾选。
-      找不到或歧义 → **不可 squash**（失败/缺失）。
-  - roster `0,0` 且 checklist **无**上述开发完成项：交付地板 = `start_commit`。
-    若其不是 HEAD 祖先，或 `start_commit..HEAD` 为空 → **不可 squash**。
-- **他人抬升**：检查 `start_commit..HEAD`。
-  - `author` 或 `committer` email ≠ 当前 `git config user.email` 的 commit 为他人提交。
-  - 若存在他人提交，地板抬到其中**最新一笔**；保留该笔，只压其后。
-  - tip 本身即他人提交 → 不可 squash。
-  - roster merge 落在交付地板之前则不进区间，不必再判「是否本人」。
+- floor 是第一父链上最近的保护边界：merge commit、他人 commit、start_commit 或已共享提交。
+- 共享引用、worktree HEAD 与恢复端点的保护规则见上方必要检查；不得越过安全 floor。
+- 不以开发完成项勾选、converge 起点或 roster-join 材料提交抬高 floor。
+  实际 roster merge 仍是 merge commit，必须保留，不能跨越。
+- local 的已推送、审查窗和已集成目标主线门禁仍适用；角色 worktree 须已清理。
+  触发上述门禁时不可 squash；放宽 floor 不放宽这些门禁。
+- 候选少于两笔时 no-op；否则按「计划」分析交付目标并默认合并相关提交。
 
-地板 = 历史上较晚者（交付地板与他人抬升结果取更近 tip 的一侧）。
-有 converge 时由 converge 定义地板语义；本小节供 close-out 选用，converge 入口不询问 squash。
 #### 是否建议（可选启发式）
 
-无硬门槛。调用方先取得 `$mdf squash` dry-run 计划，再用计划中的地板收集信号，
-交 Jev/Agent 定型是否展示（`noul` / `choice`）：
+调用方先取得 `$mdf squash` dry-run 计划，以计划中的地板与实际 diff 裁定是否执行。
 
-- `git rev-list --count <地板>..HEAD` ≥ 5；或
-- `git log --oneline <地板>..HEAD` 含 ≥2 条标题匹配 `wip|fixup|tmp|临时`
-  （大小写不敏感）。
+- 存在同一交付目标的多笔候选提交时，默认建议合并；两笔即可，不要求特定标题或更多 commit。
+- 保留多段或全部保留须满足「计划」的具体理由要求；提交数量与临时标题只作辅助信息。
+- 用户禁止则跳过；无可合并提交时报告具体保留理由，不以“未达数量或标题信号”跳过。
 
-- 未达信号也可展示 dry-run 建议。
-- 用户拒绝或调用方决定不展示 → 跳过执行。
 #### 手段（只允许 soft reset）
 
 公开 `$mdf squash` 承担地板计算、切段定型、message 与执行。Jev/Agent 在 squash 内定型几段与切法

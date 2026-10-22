@@ -12,6 +12,8 @@ from mdf_test_support import git, mdf, payload
 from support_delivery import commit
 from support_pull import prepare
 
+pytestmark = pytest.mark.release_only
+
 
 def merged_delivery(python_exe, tmp_path, monkeypatch, kind='hotfix'):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)

@@ -337,9 +337,11 @@ converge（smart）与 verify branch **共用**：
 | quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 / smart |
 | smoke | 任意种类，包含 quick 的全部成员 | 300s | feature/bugfix/hotfix 的 verify branch |
 | release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | 仅 release 的 verify branch |
-| named | 某一功能块的 test case；一 suite 一文档 | 无 | smart 选题，不默认整 suite |
+| 项目自定义 suite | 某一功能块的 test case；一 suite 一文档 | 无 | smart 选题，不默认整 suite |
 
 - 验证入口为 lint/build/quick/smoke/release 与可选 coverage；保留名称不得用作 named suite。
+- named suite 是自定义 suite 的统称；报告使用实际名称，不把它作为包含全部自定义 suite 的聚合入口。
+  - 各 suite 可重叠；自定义 suite 也可含 smoke 之外的成员，完整覆盖后才可复用同一报告。
 - lint 与 build 同 quick 一样必跑：smart 只跑涉及 module；branch 跑全部 module。
 - 每个 **named** suite 在 `docs/system/testing/<name>.md` **独占一页**。
 

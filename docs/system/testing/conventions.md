@@ -49,17 +49,29 @@
 | lint | `python -m pytest tests/lint` | 无 | 约 2s | 任何改动 |
 | build | `python -m compileall -q skills/mdf/scripts` | 无 | <1s | 任何改动 |
 | quick | `python -m pytest tests/unit` | 30s | 约 6s | 任何改动 |
-| smoke | `python -m pytest tests/unit tests/e2e` | 300s | 约 42s | 改动收口 |
-| release | `python -m pytest tests/unit tests/e2e` | 无 | 约 42s | 发布前 |
+| smoke | `python -m pytest tests/unit tests/e2e -m 'not release_only'` | 300s | 按报告核对 | 改动收口 |
+| release | `python -m pytest tests/unit tests/e2e` | 无 | 按报告核对 | 发布前 |
 
 全部 test case 的检查命令为 `python -m pytest`，等于 lint 与 release 之和，没有单独入口。
 
-## named suite
+### smoke 与 release 的成员
 
-按功能块划分；改动某功能块时运行其 named suite，改动涉及几个就跑几个。
+- quick、smoke、release 是有固定用途的保留 suite；smoke 包含全部 quick，release 包含全部 smoke。
+- `release_only` 是 test case 的成员标记，不是 skip；按测试文件标记完整的重型恢复或竞态矩阵。
+  - 当前覆盖 `test_sync_pr.py`、`test_pr_recovery.py`、`test_pr_remote_cleanup.py` 三个 PR 矩阵文件。
+  - smoke 排除这些文件；release 与完整 gitflow suite 仍执行全部成员，不删除测试或减弱断言。
+  - smoke 保留 `test_pull_finish.py` 的常规 PR 收口，以及 `test_sync_pr_smoke.py` 的 master/GitHub 与 develop/GitLab 主路径。
+- 调整成员须结合耗时报告和覆盖职责，保留主路径；收口时核对 smoke 的实际耗时，不通过放宽预算解决超时。
+
+## 项目自定义 suite（named suite）
+
+每个 suite 都有具体名称；named suite 是 gitflow、planning 等自定义 suite 的统称，不是额外的大集合或执行入口。
+按功能块划分；改动某功能块时验证对应 suite，涉及多个功能块则逐个报告实际名称及结果。
 
 - 命令：`python -m pytest tests/unit/<suite> tests/e2e/<suite>`。
 - 没有 `tests/unit/<suite>` 的 suite 只跑 `tests/e2e/<suite>`。
+- 开发时可运行对应 suite；smoke 或 release 已完整覆盖时复用报告，不重复运行。
+- 各 suite 可以重叠，不要求自定义 suite 是 smoke 的子集；不能把所选多个 suite 的合计称为一次 named suite。
 
 | suite | 含 `tests/unit/<suite>` | 覆盖 |
 | --- | --- | --- |
@@ -72,6 +84,21 @@
 | init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
 | integrate | 否 | integrate、integrate_http、integrate_store |
 | deploy | 否 | `mdf-deploy.sh`、upgrade |
+
+### 复用已有报告
+
+- 同一代码、测试及验证配置状态下，smoke 或 release 包含所需 suite 的全部成员时，
+  必须从该次 JUnit XML 提取结果，不再单独运行该 suite，也不并行重复执行已覆盖的成员。
+- 先核对 suite 的成员规则、运行命令、退出码与报告完整性；额外过滤、取消或未执行全部成员的运行不算完整覆盖。
+  - smoke 失败时先读原报告及捕获输出；不得为查看输出重跑 named suite，也不得把其中失败项报告为通过。
+  - 未覆盖的成员，或后续实现、测试、验证配置变化导致结果失效时，只补跑所需范围。
+  - 例如 smoke 只覆盖 gitflow 的非 release_only 成员，须注明部分覆盖；相关改动需完整 gitflow 时只补剩余成员。
+- 按 `<testcase classname>` 的模块路径筛选本页表格对应目录：
+  - 例如 gitflow 选取 `tests.unit.gitflow.` 与 `tests.e2e.gitflow.` 前缀；planning 只取 `tests.e2e.planning.`。
+  - 保留参数化 test 的每个实例，统计 total、passed、failures、errors、skipped；空集合不得算通过。
+  - 同时给出所覆盖目录、完整或部分覆盖与原 JUnit 路径，注明实际运行的 suite，不声称另跑过其他 suite。
+- 可汇总成员的 `time` 作为 test 累计用时；并行 test 用时之和不等于 suite 的实际耗时。
+  - smoke 的预算仍按该次运行的实际耗时核对；不把提取的累计用时当作独立 suite 的预算证据。
 
 ## 点名执行
 

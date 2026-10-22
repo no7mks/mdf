@@ -18,10 +18,12 @@ MDF 测试只依赖 Python 标准库、Git、pytest 和 pytest-xdist：
 | lint | `python -m pytest tests/lint` | 任何改动 |
 | build | `python -m compileall -q skills/mdf/scripts` | 任何改动 |
 | quick | `python -m pytest tests/unit` | 任何改动 |
-| smoke | `python -m pytest tests/unit tests/e2e` | 改动收口 |
+| smoke | `python -m pytest tests/unit tests/e2e -m 'not release_only'` | 改动收口 |
 | release | `python -m pytest tests/unit tests/e2e` | 发布前 |
 
-改动某功能块时另跑其 named suite；各 suite、预算、失败语义与报告见
+named suite 指 gitflow、planning 等具体的自定义 suite，不是一个聚合入口。
+改动某功能块时须验证相应 suite；smoke 或 release 已完整覆盖时不重复运行，从同一份 JUnit 提取结果。
+smoke 未覆盖的 release_only 成员不得声称通过；确需验证时只补跑缺失范围。成员、复用规则与预算见
 [docs/system/testing/conventions.md](docs/system/testing/conventions.md)。
 `pytest.ini` 默认 `-n auto` 并行，只在点名调试时用 `-n0`。
 

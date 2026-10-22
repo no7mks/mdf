@@ -68,7 +68,8 @@
 ## 工作流（唯一执行契约）
 
 PR mode 同样使用本页前置与材料，Finish/Report 改按 [PR Close-out](pr-close-out.md) 提交和续办。
-waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与清理，不用本地 detached 推断远端完成。
+waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流程持续轮询，不返回调用方或结束当前调用。
+仅 completed=true 后核验实际合并与清理；停止/交接按 PR Close-out 处理，不用本地 detached 推断远端完成。
 
 读取 [common](common.md)、[delivery-contract](delivery-contract.md) 与 [adhoc](adhoc.md) 的条款。
 仅读身份、账本与调用方规则，不重新执行这些文件的工作流。
@@ -80,7 +81,7 @@ waiting_for_merge 时保留 owner；仅 completed=true 后核验实际合并与�
 | 3 | Materials | 约束 | 补齐 Change、validation、提交 | Change、validation | 4 | 材料可修 3；其余保留现场 |
 | 4 | Recheck | 约束 | 重核前置与两端，勾 close-out | report、账本、tip | 5 | 主线前进 2；缺项交接；其余停 |
 | 5 | Authorize | 约束 | 核调用授权、裁定与端点 | 调用方、裁定、确认 | 6 | 低 confidence 返回 deliver 6；现场变 4 |
-| 6 | Finish | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 返回实际结果；local 7 | 按子流程或保留现场并报告 |
+| 6 | Finish | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 等待留子流程；完成 7；local 7 | 按子流程或保留现场并报告 |
 | 7 | Report | 脚本 | adhoc-status 核实际完成并交接 | completed、merge_commit、路径 | 返回调用方 | 报告实际状态 |
 
 ## 术语与数据结构

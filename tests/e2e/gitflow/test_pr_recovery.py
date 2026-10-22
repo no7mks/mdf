@@ -12,6 +12,8 @@ from mdf_test_support import git, mdf, payload
 from support_delivery import commit
 from support_pull import prepare
 
+pytestmark = pytest.mark.release_only
+
 
 @pytest.mark.parametrize('same_source', [True, False])
 def test_concurrent_finish_is_rejected_before_platform_writes(python_exe, tmp_path, monkeypatch, same_source):

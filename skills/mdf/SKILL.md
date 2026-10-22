@@ -149,6 +149,8 @@ disable-model-invocation: true
 - deliver 可内部委托截止点之前从 start 起的剩余交付阶段；yolo 无默认截止点。
 - adhoc 可内部委托其六项清单的剩余阶段直到 close-out。
 - `$mdf close-out` 执行 `references/close-out.md`。
+  - PR mode 包含提交、当前调用内等待与合并后收口；独立调用和 deliver 委托均不得发完 PR/MR 就结束。
+  - 正常等待按 `references/pr-close-out.md` 持续轮询；deliver 的 until 仍在委托前检查。
 - `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
 
 帮助与 CLI：

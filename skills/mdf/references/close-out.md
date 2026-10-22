@@ -8,7 +8,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── adhoc ───────────────→ [委托 Adhoc Close-out 并返回]
-                 ├──── PR mode 已有记录 ────→ [委托 PR Close-out 恢复并返回]
+                 ├──── PR mode 已有记录 ────→ [委托 PR Close-out 恢复，等待留在子流程]
                  ├──── 失败/缺失 ───────────→ [停止]
                  │
                  ▼ 通过
@@ -84,7 +84,7 @@
 │ 10 Finish Gitflow                │
 └────────────────┬─────────────────┘
                  │
-                 ├──── PR mode ─────────────────────→ [委托 PR Close-out 并返回其实际状态]
+                 ├──── PR mode ─────────────────────→ [委托 PR Close-out，等待留在子流程]
                  ├──── local 通过 ──────────────────→ [核验、报告并询问工作区清理]
                  ├──── local 失败且用户决定继续 ────→ 10 Finish Gitflow
                  ├──── local 失败且未决 ────────────→ 10 Finish Gitflow
@@ -94,7 +94,11 @@
 ## 工作流（唯一执行契约）
 
 先检查 manifest.closeout。PR mode 读取 [PR Close-out](pr-close-out.md)：首次调用仍完成本页材料前置，
-步骤 10 改为 PR/MR 提交；已有操作记录则优先续办，不重复收口。completed=false 不表示交付完成。
+步骤 10 改为 PR/MR 提交、当前调用内等待与合并后收口；已有操作记录则优先续办，不重复收口。
+
+- `waiting_for_merge` / `completed=false` 是 CLI 的中间结果，不是本 intent 的返回条件。
+- 当前 Agent 按 PR Close-out 持续轮询；正常等待 review、CI 或合并时，不结束当前调用，也不要求用户再次调用。
+- 仅实际完成并核验通过，或命中 PR Close-out 的停止/交接条件时返回；独立调用和 deliver 委托均适用。
 
 adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主线。
 人工 feature 先读取 `references/manual-feature.md`；其余按下文集成与 Gitflow 规则收口。
@@ -111,7 +115,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc/PR 恢复返回；其余 2 | 停止并报告 |
+| 1 | Check entry | 约束 | 核授权及模式；按入口分流或核 doctor、branch | 模式、记录或 ready、现场 | adhoc/PR 按子流程；其余 2 | 停止并报告 |
 | 2 | Integrate and review | 约束 | 委托 squash；集成；审查 | 集成、审查 | 已收口 4；否则 3 | 待外部续办则交接；冲突询问；否则停止 |
 | 3 | Prepare materials | 约束 | 整理 Change 与 HTML 总结 | branch/fact、材料 | 4 | 保留现场，停止 |
 | 4 | Recheck | 约束 | 核 report/勾选；失效交接 | 有效证据 | 已收口或 feature/bugfix→9；待收口→5 | 未过则停止并交接 |
@@ -120,7 +124,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 | 7 | Prepare closures | 约束 | bug close 关闭 fixed；准备 closures | 覆盖、接受记录 | 改了实现→4；否则 8 | 停止 |
 | 8 | Close release | 脚本 | 确认 clean，实际运行 release-closeout | 退出 0、产物与 diff | 9 | 保留现场，停止 |
 | 9 | Hand off | 约束 | 提交、核现场 | clean | 裁定有效 10；低分→deliver 6 | 主线前进 feature/bugfix 回 2；其余停 |
-| 10 | Finish Gitflow | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | 返回实际结果 | PR 按子流程；local 继续或未决则 10；停止则停 |
+| 10 | Finish Gitflow | 脚本 | PR 委托子流程；local 运行 finish-gitflow | 实际状态、Git 结果 | PR 等待留子流程；核验完成返回 | PR 按子流程；local 继续或未决则 10；停止则停 |
 
 ## 术语与数据结构
 
@@ -132,7 +136,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - ❌ 不得将只读请求视为写入、验证命令或 Gitflow 操作的授权。
 - 核授权后先解析目标 Git 根、交付身份与 manifest.closeout，再按以下顺序分流：
   - adhoc 委托 `references/adhoc-close-out.md`，返回其实际结果，不继续普通主线。
-  - PR mode 且已有该 source 的操作记录时，委托 `pr-close-out.md` 恢复后返回。
+  - PR mode 且已有该 source 的操作记录时，委托 `pr-close-out.md` 恢复，正常等待留在子流程。
     source 须来自已锁定交付或用户输入，不能从 detached 路径猜测；恢复不要求原源分支仍存在。
   - 其余首次调用继续下列 doctor、branch 与现场检查。委托前仍应用外层 until 和 decision 策略。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
@@ -167,7 +171,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
 - **local 模式可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
   - 先内部执行 `references/squash.md` 的 dry-run（由 squash 定地板/切段/message）。
   - dry-run 不可压或失败 → 跳过。
-  - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）由 Agent 裁定是否执行；未达信号也可执行。
+  - 用 `squash.md`「是否建议」启发式（地板取 dry-run 计划）裁定；同一交付目标默认合并，保留多笔须有明确理由。
   - 默认自主执行 `references/squash.md`，可复用计划，不逐次确认是否执行、地板、段界或 messages。
   - 用户明确禁止则跳过；范围或归属不明才询问。deliver 不为常规 squash 额外设置 confidence 确认。
   - 禁止 rebase / `merge --squash`。
@@ -368,6 +372,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr-close-ou
   - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
+  - PR mode 此勾选是候选材料；PR 已创建或 checklist 全勾均不能代替实际合并与收口核验。
 - PR mode 在提交前按 PR Close-out 再次 fetch 并核对远端 ancestor，缺失则集成、补审补测后重新 close-out。
 - local 模式再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
