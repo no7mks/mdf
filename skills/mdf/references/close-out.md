@@ -96,6 +96,8 @@
 先检查 manifest.closeout。PR mode 读取 [PR Close-out](pr-close-out.md)：首次调用仍完成本页材料前置，
 步骤 10 改为 PR/MR 提交、当前调用内等待与合并后收口；已有操作记录则优先续办，不重复收口。
 
+先按 [Goal 与持续推进](pr-close-out.md#goal-与持续推进) 绑定 Goal，再执行首次准备或恢复。
+
 - `waiting_for_merge` / `completed=false` 是 CLI 的中间结果，不是本 intent 的返回条件。
 - 当前 Agent 按 PR Close-out 持续轮询；正常等待 review、CI 或合并时，不结束当前调用，也不要求用户再次调用。
 - 仅实际完成并核验通过，或命中 PR Close-out 的停止/交接条件时返回；独立调用和 deliver 委托均适用。

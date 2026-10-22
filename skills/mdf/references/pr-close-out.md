@@ -76,6 +76,36 @@ closeout:
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
 
+### Goal 与持续推进
+
+在入口确认允许进入 PR close-out、锁定交付身份后，先执行本节，再进行远端集成、材料准备或恢复。
+独立 close-out、deliver 委托、next 恢复及 adhoc 共用本节；local 模式不创建 close-out Goal。
+
+| 已有 Goal | 处理 |
+| --- | --- |
+| 没有未完成 Goal | 创建本次 PR close-out Goal |
+| 阶段 Goal 的完成判据已全部满足 | 先核验证据并置 complete，再创建本次 Goal |
+| 未完成 Goal 已覆盖本次收口 | 复用，不重建；同范围续办沿用原 Goal |
+| 未完成 Goal 范围更大 | 复用父 Goal，将本次 PR close-out 及完成判据加入其剩余工作，保留原目标与其他未完成项 |
+| 无关且未完成 Goal | 保留原 Goal，报告范围冲突；不自动 cancel、覆盖或假称完成 |
+
+- 先读宿主实际 Goal 状态与目标；不能仅因进入 close-out 就认定旧阶段已完成。
+- 宿主支持更新目标或子项时，将新增收口要求写入父 Goal；仅支持状态更新时，在当前上下文记录父 Goal 与收口要求的关联。
+  - 后者不得声称已修改宿主 objective；恢复时从原 Goal、交付记录与返工备注重新核对剩余工作。
+  - 不为追加子工作而 complete 或重建尚未完成的父 Goal，不取消既有 Goal。
+- objective 包含交付身份、source/target、已知 PR/MR、有效边界与完成判据；尚未创建 PR/MR 时不伪造 ID。
+  - 持续等待当前 head 的 CI/review，解决可修反馈，补审补测并更新原 PR/MR。
+  - 平台合并后继续适用的 tag 发布、backmerge、远端及本地 source 清理与最终核验。
+  - 仅 `completed=true` 且实际结果核验通过，才满足本次收口的完成判据。
+- 轮询、主链外返工、重新提交与合并后收尾始终沿用同一个 Goal；子阶段完成不结束父流程。
+  - CI 全绿、review 通过、PR 已 merged 或 tag 已发布，均不能单独完成 Goal。
+  - 正常 pending 保持 active；可修失败继续推进，不因一次失败结束任务。
+- 仅本次创建或同范围复用的 Goal，可在全部收口与最终核验完成后置 complete。
+  - 复用更大范围 Goal 时只记录本次收口完成并返回父流程；父 Goal 仍有剩余工作时不得置 complete。
+- 用户停止、预算限制、会话中断或无法自行解决的阻塞按宿主规则处理；保留恢复证据，不标完成。
+- 宿主不提供 Goal 时仍按本页轮询与恢复规则推进，并如实说明缺少跨 turn 自动续办保障。
+  Goal 不替代平台合并授权，也不越过 deliver 的 until、只读限制或用户暂停。
+
 ### 提交前远端集成
 
 首次创建及未合并 PR/MR 的源提交更新，都必须先完成本节；已 merged 的恢复不重新集成。
@@ -134,7 +164,7 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
    - 本地 head 与已确认 head 不同且未完成项已补齐时，先提交候选新 head，不反复处理旧 head 的 review。
    - 只有已准备且无新提交的等待，或 merged/清理/backmerge 恢复，才从主路径带 `--source <原分支>` 续办。
    - owner 缺失且仍需修改或提交新 head 时保留现场并报告，不在主 worktree 代写。
-- 步骤 4：返回 waiting_for_merge 时在当前调用每 120 秒查询新 head 的结果；completed=false 不结束 deliver Goal。
+- 步骤 4：返回 waiting_for_merge 时在当前调用每 120 秒查询新 head 的结果；completed=false 不结束 close-out 或父 Goal。
    - next 选中的是父 close-out：内部返工阶段完成后回同一 PR 流程，不递归调用 next，也不创建 deliver。
    - 清理已完成但仍需完成记录或报告时，按记录及实际 Git 核验，不要求已删除的 source 继续存在。
 
@@ -153,7 +183,7 @@ deliver、next、人工与 adhoc 续办，以及 close-out 的 Prepare 共用本
 | completed | 远端与本地 source 均已清理；owner 存在时 detached，已外部删除则如实报告；按原清理规则交接 |
 
 - 从主工作区恢复：`finish-gitflow --repo <主路径> --source <原分支>`，支持所有交付 kind。
-- 返回 completed=false 是正常等待；调用方须读取 status，不得因退出 0 就结束 deliver Goal。
+- 返回 completed=false 是正常等待；调用方须读取 status，不得因退出 0 就结束 close-out 或父 Goal。
 - PR/MR 由用户或项目 CI 合并；close-out 不批准或合并平台 PR/MR。
 - release/hotfix 的源提交在 PR/MR 合并前允许合法前进；合并后固定实际 M，不接受追加提交改变本次发布。
 - 首次 push 或创建结果丢失，重入先查平台，禁止重复创建或覆盖记录。

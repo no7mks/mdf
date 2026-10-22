@@ -68,6 +68,8 @@
 ## 工作流（唯一执行契约）
 
 PR mode 同样使用本页前置与材料，Finish/Report 改按 [PR Close-out](pr-close-out.md) 提交和续办。
+先按 [Goal 与持续推进](pr-close-out.md#goal-与持续推进) 绑定 Goal，再执行首次准备或恢复。
+
 waiting_for_merge 时保留 owner，由当前 Agent 留在 PR Close-out 子流程持续轮询，不返回调用方或结束当前调用。
 仅 completed=true 后核验实际合并与清理；停止/交接按 PR Close-out 处理，不用本地 detached 推断远端完成。
 

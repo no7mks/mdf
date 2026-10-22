@@ -214,7 +214,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - objective 写明交付标识、有效 until 与完成判据；含父 intent 内部被截止的实际子步骤。
 - 每次 deliver 会话只创建一次；同范围续办时不重建。已有同一交付、同一范围的未完成 Goal 时复用。
 - 已有其他或更大范围的 active Goal 时不覆盖、不提前完成、不另建冲突 Goal；只报告本次范围进度。
-- 内部委托传入该 Goal，子 intent 不得提前将它置 complete；暂停或阻塞时保持 active。
+  - 允许进入 PR close-out 时，按 [Goal 与持续推进](pr-close-out.md#goal-与持续推进) 核验阶段完成或复用父 Goal。
+  - 更大范围 Goal 纳入本次收口及完成判据，保留其余目标；close-out 完成不代表父 Goal 完成。
+- 内部委托传入该 Goal，子 intent 不得提前将它置 complete；正常等待保持 active；暂停、预算限制与阻塞按宿主规则处理，不假称完成。
 - 仅本次创建或同范围复用的 Goal 可在步骤 5 置 complete：核验允许工作已完成且未越过截止点。
   无截止点时核对 close-out 实际成功后才置 complete；证据不足或部分失败时保持 active。
 - 到 until 仅表示本次范围完成，不声称交付已收口，也不勾选因内部截止而未完成的父 intent。

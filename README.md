@@ -134,7 +134,9 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 ### close-out 与 deliver
 
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
-close-out 提交 PR/MR 后每 2 分钟查询结果，用户或项目 CI 合并后自动续办。完整规则见
+PR close-out 创建或复用 Goal；更大范围 Goal 纳入本次收口，已完成的阶段 Goal 先核验并 complete。
+提交 PR/MR 后每 2 分钟查询结果，可修失败补审补测后更新原 PR；用户或项目 CI 合并后继续收尾。
+仅实际收口与核验完成才结束同范围 Goal；父 Goal 保留其他未完成工作。完整规则见
 [PR Close-out](skills/mdf/references/pr-close-out.md)，外部审查见 [CI 接入](skills/mdf/references/ci-review.md)。
 
 PR 模式在创建或更新 PR/MR 前 fetch 远端目标：develop（feature/bugfix/adhoc）或 master（release/hotfix）。

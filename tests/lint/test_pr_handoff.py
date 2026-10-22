@@ -52,3 +52,37 @@ def test_pr_retains_branch_and_owner_until_merge_and_publication_finish():
         'CLI 始终保留 owner worktree', '恢复容错不授权任何流程提前删除',
     ):
         assert rule in text
+
+
+@pytest.mark.parametrize('name', ['close-out', 'adhoc-close-out'])
+def test_pr_entry_binds_goal_before_preparation_or_recovery(name):
+    text = workflow(name).split('## 工作流（唯一执行契约）', 1)[1]
+    assert 'pr-close-out.md#goal-与持续推进' in text
+    assert '绑定 Goal，再执行首次准备或恢复' in text
+
+
+@pytest.mark.parametrize('state,action', [
+    ('没有未完成 Goal', '创建本次 PR close-out Goal'),
+    ('阶段 Goal 的完成判据已全部满足', '先核验证据并置 complete'),
+    ('未完成 Goal 已覆盖本次收口', '复用，不重建'),
+    ('未完成 Goal 范围更大', '加入其剩余工作，保留原目标与其他未完成项'),
+    ('无关且未完成 Goal', '不自动 cancel、覆盖或假称完成'),
+])
+def test_pr_goal_selection_preserves_existing_work(state, action):
+    text = workflow('pr-close-out').split('### Goal 与持续推进', 1)[1].split('### 提交前远端集成', 1)[0]
+    row = next(line for line in text.splitlines() if line.startswith(f'| {state} |'))
+    assert action in row
+
+
+def test_pr_goal_survives_repairs_merge_and_parent_handoff():
+    text = workflow('pr-close-out').split('### Goal 与持续推进', 1)[1].split('### 提交前远端集成', 1)[0]
+    for rule in (
+        '轮询、主链外返工、重新提交与合并后收尾始终沿用同一个 Goal',
+        'CI 全绿、review 通过、PR 已 merged 或 tag 已发布，均不能单独完成 Goal',
+        '仅 `completed=true` 且实际结果核验通过',
+        '父 Goal 仍有剩余工作时不得置 complete',
+        '不得声称已修改宿主 objective',
+        '不越过 deliver 的 until、只读限制或用户暂停',
+    ):
+        assert rule in text
+    assert 'pr-close-out.md#goal-与持续推进' in workflow('deliver')
