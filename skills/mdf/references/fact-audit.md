@@ -117,7 +117,8 @@
 与 `--scope full` 或 `--scope branch` 同用时停止询问：
 
 - `branch`：独立调用默认。
-  - 交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
+  - 无账本 adhoc 优先使用 adhoc-status 的固定 `range.base`，显式传 `--base`，不随目标推进重算。
+  - 有账本交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`。
   - 都没有才由 CLI 取 `merge-base develop HEAD`。
   - 主链 release（verify branch 之后、close-out 之前）传入上一正式发布为 `--base`。
@@ -310,7 +311,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
     `changes/unreleased/<slug>/fact-audit.md`（**report**，非 gate）。
   - 普通主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
   - 人工 feature 经 fact update 委托时，只返回确认记录，由 fact update 完成后勾其自身项。
-  - adhoc 只返回确认记录，由 adhoc 保存 report 并勾 fact audit/update。
+  - adhoc 只返回确认记录；有账本时由 adhoc 保存 report 并勾 fact audit/update。
+  - 无账本时由 adhoc-change 在 status 返回目录保存并提交 report，不创建或勾选 objectives。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。

@@ -10,6 +10,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── PR mode ─────────→ [委托 PR Close-out 恢复并返回]
+                 ├──── local 无账本 ────→ [委托 Adhoc Change 并返回]
                  ├──── 已实际收口 ──────→ 7 Report
                  ├──── 已合并待清理 ────→ 4 Recheck
                  ├──── 缺前置步骤 ──────→ [交接对应账本项]
@@ -79,7 +80,7 @@ local 先运行 adhoc-status；`material_mode: change` 时委托 [无账本 Adho
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 脚本 | 核模式与恢复记录，再核身份及账本 | 记录或 status、doctor | PR 恢复返回；完成 7；已合并 4；其余 2 | 缺前置交接；不符停 |
+| 1 | Check | 脚本 | 核模式、恢复与材料 | status、doctor | PR或无账本委托返回；完成7；合并4；其余2 | 缺前置交接；不符停 |
 | 2 | Integrate | 约束 | 核现场，必要时集成 develop | 端点、diff | 3 | 补审交接；现场未决停 |
 | 3 | Materials | 约束 | 补齐 Change、validation、提交 | Change、validation | 4 | 材料可修 3；其余保留现场 |
 | 4 | Recheck | 约束 | 重核前置与两端，勾 close-out | report、账本、tip | 5 | 主线前进 2；缺项交接；其余停 |

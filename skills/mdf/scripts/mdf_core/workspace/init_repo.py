@@ -125,6 +125,9 @@ def render_manifest(
         lines.extend(["closeout:", f"  mode: {entry['mode']}"])
         if "provider" in entry:
             lines.append(f"  provider: {entry['provider']}")
+        if "trivial_paths" in entry:
+            import json
+            lines.append("  trivial_paths: " + json.dumps(entry["trivial_paths"], ensure_ascii=False))
     return "\n".join(lines) + "\n"
 
 

@@ -123,6 +123,7 @@
 - `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块
 - `$mdf to <target>`：进 worktree（`plan`/`develop`/`deploy`）
+- `$mdf dev-pr [<slug>]`：保全 develop 到 adhoc，reset 对齐远端，审查与 smoke 通过后 PR
 - `$mdf sync`：展示关系图，确认后先拉后推三大 trunk；其他分支只报告
 - `$mdf integrate`：同仓验收；跨仓才收发消息
 - `$mdf help` / `$mdf help <intent>`：目录或单条用法
@@ -193,7 +194,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
   `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`pr`、`close-out`
 - 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
-  `to`、`sync`、`integrate`、`help`
+  `to`、`dev-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
   - 用法：`$mdf bootstrap`
   - 用途：为全新或几乎全新的项目建立 MDF 起点。
@@ -391,6 +392,9 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf to plan|develop|deploy|<分支>`
   - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。
   - 说明：`plan` 进 planning；`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
+- `$mdf dev-pr`
+  - 用法：`$mdf dev-pr [<slug>]`；PR mode 接管 develop 未共享 commits，补材料和检查后 PR。
+  - sync 的 non-trivial develop 增量委托同一流程，项目可覆盖默认 trivial 路径规则。
 - `$mdf sync`
   - 用法：`$mdf sync`；展示关系图，确认后先拉后推三大 trunk，多余分支只报告；禁止 force-push。
   - PR mode：master/develop 分叉或本地领先增量无法证明合规时转 PR/MR 计划；

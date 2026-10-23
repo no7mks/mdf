@@ -11,6 +11,11 @@ CI reviewer 是在项目 runner 上执行共用 Review 协议的审查 Agent。
 显式 source-commit/target-commit 调用 code-review 时执行独立只读审查，不依赖 roster 或交付材料。
 审查不代替本地 code-review intent；approve、merge 与通知由项目 policy 决定。
 
+## Trivial commit
+
+按项目当前 `closeout.trivial_paths` 判断的路径维护提交；未配置时使用 MDF 默认维护范围。
+本地 develop 独有 commits 中任一 non-trivial，整串由 dev-pr 移交 adhoc 并经检查后 PR。
+
 ## Jot
 
 `docs/JOTS.md` 中尚未分诊的随手记录。它可以是想法、优化、小问题或观察；提升后才成为

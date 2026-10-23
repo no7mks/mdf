@@ -26,7 +26,8 @@
 │ 3 Select                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 实际收口已完成 ────→ [报告并结束]
+                 ├──── 未完且无账本 ──────→ 4 Execute
+                 ├──── 完成或无增量 ──────→ [报告并结束]
                  ├──── 身份或账本不符 ────→ [停止并报告]
                  │
                  ▼ 下一步骤已确定
@@ -51,7 +52,7 @@ PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的操作记录�
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve | 约束 | 先核 PR 恢复；否则核目标、work 与 ready | 记录或上下文、doctor | PR 委托并返回；其余2 | 范围不明询问；其余停 |
 | 2 | Prepare | 脚本 | 复用已知 owner，或自动命名创建；运行 adhoc-status | 身份、work、绝对路径 | 3 | 保留现场并报告 |
-| 3 | Select | 脚本 | adhoc-status 选下一项 | 身份、账本、Git | 未完 4；完成结束 | 身份或账本不符则停 |
+| 3 | Select | 脚本 | adhoc-status 按模式选下一项 | 身份、材料模式、Git | 未完 4；完成或无增量结束 | 身份或账本不符则停 |
 | 4 | Execute | 约束 | 按阶段表执行并交接 | 产物、账本、缺项 | 直调 3；委托返回 | 补前置同路由；阻塞交接 |
 
 ## 术语与数据结构
@@ -77,7 +78,8 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更、测试门槛批准及 fact 的确认仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
-  - 当前为无账本 adhoc 时保留真实分支与工作区，进入 adhoc-change 的实际成果收口，不重新 start。
+  - 当前为无账本 adhoc 时保留真实分支与工作区；步骤 3 按 status.next_step 选择 pr 或 close-out，不重新 start。
+  - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方六项账本与勾选条款。
   - detached 现场必须有上下文已知 slug；缺失或不能证明收口时停止，不猜测身份或重新 start。
   - 用户明确发起不同新工作且旧工作已完成时，用返回的 primary_worktree 新建。
     不复用旧目标或工作区。

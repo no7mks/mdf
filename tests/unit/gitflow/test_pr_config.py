@@ -73,3 +73,17 @@ def test_provider_uses_stdin_json_and_explicit_hostname(monkeypatch, tmp_path, p
     assert command[command.index('--hostname') + 1] == 'internal.example'
     assert command[-2:] == ['--input', '-']
     assert json.loads(arguments['input'])['title'] == '含 `字面量` 的标题'
+
+
+@pytest.mark.parametrize("patterns", [None, "docs/*", [1], [""]])
+def test_invalid_trivial_patterns(patterns):
+    with pytest.raises(MDFError, match="trivial_paths"):
+        config({"closeout": {"mode": "local", "trivial_paths": patterns}})
+
+
+def test_trivial_override_survives_manifest_render():
+    from mdf_core.foundation.constants import BASELINES
+    from mdf_core.foundation.yamlutil import parse_yaml
+    baselines = {name: {"status": "not_applicable", "reason": "fixture"} for name in BASELINES}
+    policy = {"mode": "pr", "provider": "github", "trivial_paths": ["docs/*", "AGENTS.md"]}
+    assert config(parse_yaml(render_manifest(baselines, None, ["src"], closeout=policy))) == policy

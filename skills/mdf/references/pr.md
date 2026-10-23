@@ -43,6 +43,15 @@
 本表由 `$mdf pr`、deliver、next 或 adhoc 调用；只适用于 PR mode。
 读取 `references/common.md` 与 `references/delivery-contract.md`。
 
+无账本 adhoc 的专用规则适用于本页全部准备、集成、返工与恢复步骤：
+
+- 不读取、创建或勾退 objectives；前置与完成均核实际报告、平台及 Git 证据。
+- 「PR 返工」备注写在 adhoc-status 返回目录的 `code-review.md`，保留相同身份、原验证请求与左端点。
+  - 审查终稿保留尚未完成的父 PR 备注；补审补测及 fact 完成并提交候选材料时才清除。
+  - 备注仅恢复调用上下文，不作为第二份进度账本；缺少必要参数时停止并报告。
+- 普通无账本 source 使用 smart；dev-pr source 全程使用 named smoke，包括集成、CI 返工与 hook 后补验。
+- Prepare 仅在首次或实际改动使原证据不再适用时执行 adhoc-change 步骤 1–5；已有适用证据逐项复用。
+
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check | 约束 | 核边界、身份、现场并绑定 Goal | 配置与 Git 状态 | 2 | 保留现场，停止 |
@@ -241,6 +250,7 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
 - release/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
 - adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
+  - dev-pr 接管的 source 沿用 [dev-pr](dev-pr.md) 的 smoke 要求，包括集成和返工后的补验。
   - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
   - CI 继续使用已有独立 commit review 路径，不要求读取交付账本或 Change。
 - 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。

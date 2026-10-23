@@ -77,6 +77,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf lint` | 运行统一 lint：代码规模与项目工具检查 |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
+| `$mdf dev-pr [<slug>]` | 将 develop 未共享工作移到 adhoc，检查通过后创建 PR |
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 后完成 Goal |
 | `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |

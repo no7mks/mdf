@@ -37,6 +37,7 @@
                  ├──── conflict 已解决并提交 ────→ 2 Preview branches
                  ├──── conflict 无法处理 ────────→ [保留现场并询问]
                  ├──── pr_required ──────────────→ [PR 提交与恢复]
+                 ├──── dev_pr_required ──────────→ [委托 dev-pr 检查与交付]
                  ├──── waiting_for_pr ───────────→ [等待平台合并后续办]
                  ├──── ready_to_sync ────────────→ 2 Preview branches
                  ├──── 其他失败 ─────────────────→ [报告现场并停止]
@@ -55,7 +56,7 @@
 
 读取 `references/common.md`。不要求 manifest ready。
 本 intent 先授权 fetch；用户确认计划后才授权三大 trunk 的 merge（含 no-ff）与 push；
-不授权删分支、rebase 或 force-push。
+不授权删 trunk、rebase 或 force-push；dev-pr 的保全后 reset 与合并后 source 清理属于已确认 PR 计划。
 PR mode 的计划确认还可授权创建本次 sync source branch、push source 与创建或恢复 PR/MR。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -163,7 +164,17 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --confirm "$CONFIRMA
 
 ### PR 提交与恢复
 
-`master` 与 `develop` 的分叉或无法证明合规的领先增量使用相同流程。
+develop 的 non-trivial 本地增量及分叉委托 [dev-pr](dev-pr.md)。
+
+- 预览 pull_plan 的 action 为 dev_pr；同样先用 `sync --pr` 重新预览并确认，再执行 `sync --pr --confirm`。
+  - 普通 sync 的确认只返回 pr_required，不能直接接管；不得复用普通 sync 的 token。
+  - PR 计划执行后 CLI 先保全到本地 adhoc，再 reset develop 对齐远端。
+- 返回 dev_pr_required 时按返回 worktree 内部执行 dev-pr 的检查、pr 与 close-out，不直接 push source。
+- 直到 close-out 完成，恢复记录始终参与计划；不得因 develop 已 equal 就跳过未完成 PR。
+- 项目 trivial policy 与整串判定见 dev-pr；默认纯维护直接同步，任一 non-trivial 则整串接管。
+
+以下 `--pr` 预览与确认入口由 master/develop 共用。
+其中 master 使用下述创建 source、平台等待与同名 ff 恢复流程；develop 使用上述 dev-pr 流程。
 普通 sync 返回 `pr_required` 时，Agent 进入以下预览并展示 source、target、local tip 与审计结果：
 
 ```bash
@@ -176,7 +187,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --pr --confirm "$CON
    - 沿用 `closeout.provider` 的 gh/glab 同仓接口；origin fetch/push 地址须唯一且一致。
 2. CLI 为每个 target 保存原 head、remote base、origin 身份与 PR/MR 到 Git common dir 的恢复记录。
    - 先落盘，再创建 `codex/sync/<target>-<唯一标识>`，精确 push 已记录 head；不直接 push target。
-   - target trunk 保留原现场；master/develop 可各建一个 PR/MR，其余 trunk 等待。
+   - target trunk 保留原现场；master 创建 sync PR；develop 返回 dev_pr_required，其余 trunk 等待。
    - 重试通过已记录 source 查找或读取 PR/MR；push 或 create 响应丢失时不重复创建。
    - 原 trunk tip 保持固定；等待期间的本地 trunk 新增提交或平台 source/target 异常变化均保留并停止。
    - source 需解冲突或返工时，先运行 `mdf.py to --repo "$REPO_ROOT" --target <source>`，确保已有 source branch 的 worktree。
@@ -200,7 +211,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --pr --confirm "$CON
    - 后续调用可不带 `--pr`；不自动复用旧 token 或绕过变化的 tip。
    - 保留本地及远端 sync source branch 作为历史备份，不删除 branch 或 worktree，不创建 tag 或发版。
 
-验收：两个 target 均可独立或同时续办；最终以普通 sync 的 trunks 结果为完成证据。
+验收：master PR 与 develop 的 dev-pr 均可独立或同时续办；最终以普通 sync 的 trunks 结果为完成证据。
 平台或 Git 失败先读日志；身份、历史或现场无法证明一致时停止并报告，不手工改写恢复记录。
 
 <a id="s5"></a>

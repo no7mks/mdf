@@ -248,6 +248,12 @@ def build_parser() -> argparse.ArgumentParser:
     to_cmd.add_argument("--target", required=True)
     to_cmd.set_defaults(func=command_to)
 
+    from mdf_core.workspace.dev_pr import command_dev_pr
+    dev_pr = subparsers.add_parser("dev-pr")
+    dev_pr.add_argument("--repo", required=True)
+    dev_pr.add_argument("--slug")
+    dev_pr.set_defaults(func=command_dev_pr)
+
     from mdf_core.workspace.sync import command_sync
     sync_cmd = subparsers.add_parser("sync")
     sync_cmd.add_argument("--repo", required=True)

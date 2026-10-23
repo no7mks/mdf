@@ -1,5 +1,6 @@
 """PR mode 配置、路径例外与 Git 历史检查。"""
 from pathlib import Path
+from fnmatch import fnmatchcase
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.paths import load_manifest, manifest_path
@@ -15,11 +16,17 @@ def git(repo, *args, check=True):
 
 def config(manifest):
     value = manifest.get("closeout", {"mode": "local"})
-    if (not isinstance(value, dict) or set(value) - {"mode", "provider"}
+    if (not isinstance(value, dict) or set(value) - {"mode", "provider", "trivial_paths"}
             or value.get("mode") not in ("local", "pr")
             or (value.get("mode") == "pr" and value.get("provider") not in ("github", "gitlab"))
             or ("provider" in value and value["provider"] not in ("github", "gitlab"))):
         raise MDFError("closeout 需要 mode: local|pr；pr 需要 provider: github|gitlab", code="invalid_closeout")
+    patterns = value.get("trivial_paths")
+    if patterns is not None and (not isinstance(patterns, list)
+                                 or any(not isinstance(p, str) or not p.strip() for p in patterns)):
+        raise MDFError("closeout.trivial_paths 必须为非空路径 pattern 的列表", code="invalid_closeout")
+    if "trivial_paths" in value and patterns is None:
+        raise MDFError("closeout.trivial_paths 不能为 null", code="invalid_closeout")
     return dict(value)
 
 
@@ -43,6 +50,17 @@ def ancestor(repo, older, newer):
 
 def maintenance(path):
     return path == "AGENTS.md" or path.startswith((".mdf/", *HOSTS))
+
+
+def trivial(repo, path):
+    patterns = configured(repo).get("trivial_paths")
+    return maintenance(path) if patterns is None else any(fnmatchcase(path, p) for p in patterns)
+
+
+def trivial_commits(repo, before, after):
+    """逐笔检查全部独有历史，避免最终 diff 或 revert 掩盖 non-trivial。"""
+    commits = git(repo, "rev-list", f"{before}..{after}").stdout.split()
+    return all(all(trivial(repo, p) for p in commit_paths(repo, c)) for c in commits)
 
 
 def document(path):

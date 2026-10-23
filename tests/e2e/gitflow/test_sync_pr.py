@@ -16,7 +16,7 @@ pytestmark = pytest.mark.release_only
 
 
 @pytest.mark.parametrize('provider', ['github', 'gitlab'])
-@pytest.mark.parametrize('branch', ['master', 'develop'])
+@pytest.mark.parametrize('branch', ['master'])
 @pytest.mark.parametrize('diverged', [False, True])
 def test_sync_pr_merges_then_ff_and_continues(python_exe, tmp_path, monkeypatch, provider, branch, diverged):
     repo, remote, platform = prepare(tmp_path, monkeypatch, provider, (branch,), diverged)
@@ -50,12 +50,10 @@ def test_both_trunks_wait_without_syncing_other_work(python_exe, tmp_path, monke
     before = git(remote, 'rev-parse', 'planning').stdout
     result = payload(sync(python_exe, repo))
     assert set(result['pull_requests']) == {'master', 'develop'}
-    assert len(platform.pulls) == 2 and git(remote, 'rev-parse', 'planning').stdout == before
-    platform.merge(1, tmp_path)
-    assert payload(sync(python_exe, repo))['status'] == 'waiting_for_pr'
-    platform.merge(2, tmp_path)
-    assert payload(sync(python_exe, repo))['status'] == 'ready_to_sync'
-    assert payload(sync(python_exe, repo))['trunks']['planning']['push'] == 'updated'
+    assert result['status'] == 'dev_pr_required'
+    assert len(platform.pulls) == 1 and git(remote, 'rev-parse', 'planning').stdout == before
+    assert result['pull_requests']['develop']['source'].startswith('adhoc/')
+    assert git(repo, 'rev-parse', 'develop').stdout == git(remote, 'rev-parse', 'develop').stdout
 
 
 @pytest.mark.parametrize('boundary', ['record', 'push', 'create', 'ff', 'completed'])
@@ -174,7 +172,7 @@ def test_sync_lock_blocks_concurrent_closeout_and_sync(python_exe, tmp_path, mon
     assert not platform.pulls
 
 
-@pytest.mark.parametrize('branch', ['master', 'develop'])
+@pytest.mark.parametrize('branch', ['master'])
 def test_sync_pr_conflict_resolution_updates_original_pr(python_exe, tmp_path, monkeypatch, branch):
     repo, remote, platform = prepare(tmp_path, monkeypatch, branches=(branch,))
     (repo / 'src/service.py').write_text('local = True\n')

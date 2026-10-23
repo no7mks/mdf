@@ -6,7 +6,7 @@ from support_sync import prepare, sync
 
 
 @pytest.mark.parametrize('branch,provider,diverged', [
-    ('master', 'github', False), ('develop', 'gitlab', True),
+    ('master', 'github', False),
 ])
 def test_sync_pr_waits_merges_and_continues(python_exe, tmp_path, monkeypatch, branch, provider, diverged):
     repo, remote, platform = prepare(tmp_path, monkeypatch, provider, (branch,), diverged)

@@ -61,3 +61,10 @@
 - [合并后续办](../../../skills/mdf/references/pr-close-out.md)：发布、恢复与白名单。
 - [共用 Review 协议](../../../skills/mdf/references/reviewer-protocol.md)：只读 reviewers 和 owner 裁定。
 - [CI 接入](../../../skills/mdf/references/ci-review.md)：Codex/Cursor、workflow、报告和平台发布示例。
+
+## Develop 接管
+
+`mdf.py dev-pr --repo <root> [--slug <slug>]` 仅准备本地现场：fetch、保全 develop HEAD
+到 adhoc worktree、reset develop 到固定 origin/develop。返回 source、worktree 与 next_intent。
+恢复记录位于 Git common dir；sync 的 dev_pr_required 委托同一 intent，检查通过前不 push。
+项目 trivial 路径覆盖见 [dev-pr 契约](../../../skills/mdf/references/dev-pr.md)。

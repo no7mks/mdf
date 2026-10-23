@@ -224,7 +224,8 @@ def _command_sync(args) -> None:
         completed = all(item["status"] == "completed" for item in pulls.values())
         refreshed = _preview(primary, pr=args.pr)
         emit({"ok": True, "operation": "sync", "completed": False,
-              "status": "ready_to_sync" if completed else "waiting_for_pr",
+              "status": ("dev_pr_required" if any(item["status"] == "dev_pr_required" for item in pulls.values())
+                         else "ready_to_sync" if completed else "waiting_for_pr"),
               "pull_requests": pulls, "preview": refreshed,
               "extra_local": refreshed["extra_local"], "extra_remote": refreshed["extra_remote"]})
         return

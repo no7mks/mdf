@@ -5,7 +5,7 @@ from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import read_json
 from mdf_core.workspace.gitutil import repo_path, require_git_root
 from mdf_core.workspace.merge_policy import (
-    ancestor, commit_paths, configured, document, git, maintenance, paths, planning_only, sha,
+    ancestor, commit_paths, configured, document, git, paths, planning_only, sha, trivial,
 )
 
 
@@ -40,7 +40,7 @@ def classify(repo, commit, branch, evidence, source_prefix):
         return "needs-review", "missing_merge_evidence", changed
     if len(parents) > 2:
         return "needs-review", "unsupported_merge", changed
-    if branch == "develop" and all(maintenance(p) for p in changed):
+    if branch == "develop" and all(trivial(repo, p) for p in changed):
         return "pass", "maintenance", changed
     return "violation", "direct_trunk_commit", changed
 

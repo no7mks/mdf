@@ -13,6 +13,7 @@ implementation_roots:
 # closeout:
 #   mode: pr
 #   provider: github
+#   trivial_paths: [".mdf/*", ".codex/*", "AGENTS.md"] # 可选；替代 MDF 默认 trivial 路径
 # 可选 hooks 配置见 references/hooks/post-gitflow-start.md。
 # fact 前的 hook 见 references/hooks/pre-gitflow-finish.md。
 # 可选项目 rule：与 MDF rule merge，冲突时 project 优先；仅 rule，不支持 command。

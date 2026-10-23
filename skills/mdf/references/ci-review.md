@@ -148,7 +148,8 @@ MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" au
 - evidence 为 object：pull_requests 数组和 sources mapping；不得根据 commit message 手写伪造证明。
 - pull_requests 每项含 id、url、source、target、head、state、merge_commit；state 需为 merged。
 - sources 的 planning/master 为对应 origin ref 历史内的固定 SHA，缺失时不猜来源。
-- 规则使用 before；即使 after 修改了 closeout mode，也按 before 审查本次 push。
+- PR mode 使用 before；即使 after 修改了 closeout mode，也按 before 审查本次 push。
+  - trivial 路径使用当前 checkout 的项目定义，缺省为 MDF 默认值，见 [dev-pr](dev-pr.md)。
 - 全零 before、缺对象、无法读取策略或平台故障时 needs-review；trunk 历史改写为 violation。
 - verdict 为 pass、violation、needs-review；调用成功不等于通过，CI 须显式检查 result.verdict。
 

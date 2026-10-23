@@ -121,7 +121,8 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 `--scope` 与 fact audit 同义，三选一：
 
 - `branch`：独立调用默认。
-  - 起点与 `fact-audit.md` 相同，三级回退：
+  - 无账本 adhoc 使用 adhoc-status 的固定 `range.base`；后续 Audit 显式传同一 `--base`。
+  - 其他情况起点与 `fact-audit.md` 相同，三级回退：
     - `delivery.json` 的 `start_commit`。
     - 否则 git config `branch.<owner 分支>.mdf-start-commit`。
     - 否则 `git merge-base develop HEAD`。
@@ -144,7 +145,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
   - 在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
   - 无关的独立维护在 develop 完成，不在 master 写入。
 - 主链调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix/adhoc 为
-  start_commit，release 为上一正式发布。
+  start_commit，release 为上一正式发布；无账本 adhoc 使用固定 range.base。
 
 验收：doctor 结果、调用方类型、scope、事实与实现范围。
 

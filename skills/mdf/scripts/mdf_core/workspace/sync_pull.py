@@ -27,9 +27,15 @@ def plans(repo, branches):
     from mdf_core.inspection.push_audit import audit
     config = settings(repo)
     result = {}
+    from mdf_core.workspace.dev_pr import pending
+    from mdf_core.workspace.merge_policy import trivial_commits
+    dev = pending(repo)
     for branch in ("master", "develop"):
+        if branch == "develop" and dev:
+            result[branch] = {"action": "dev_pr", "record": dev}
+            continue
         path = state_path(repo, f"sync/{branch}")
-        state = read_json(path) if path.exists() else None
+        state = read_json(path) if branch == "master" and path.exists() else None
         if state and not state.get("completed"):
             source = git(repo, "rev-parse", "--verify", f"refs/heads/{state['source']}", check=False)
             result[branch] = {"action": "resume_pr", "record": state,
@@ -39,15 +45,18 @@ def plans(repo, branches):
             continue
         info = branches[branch]
         report = None
+        if branch == "develop" and info["relation"] == "ahead":
+            if trivial_commits(repo, info["remote"], info["local"]):
+                continue
         if info["relation"] == "ahead":
             evidence = {"sources": {name: sha(repo, f"refs/heads/{name}") for name in ("master", "planning")},
                         "pull_requests": []}
             report = audit(repo, branch, info["remote"], info["local"], evidence, source_prefix="refs/heads")
-            if report["verdict"] == "pass":
+            if report["verdict"] == "pass" and report.get("reason") != "local_mode":
                 continue
         elif info["relation"] != "diverged":
             continue
-        result[branch] = {"action": "create_pr", "head": info["local"], "base": info["remote"],
+        result[branch] = {"action": "dev_pr" if branch == "develop" else "create_pr", "head": info["local"], "base": info["remote"],
                           "provider": config["provider"], "audit": report}
     return result
 
@@ -96,6 +105,10 @@ def advance(repo, plan, remote_tips):
     config = settings(repo)
     results = {}
     for branch, item in plan.items():
+        if item["action"] == "dev_pr":
+            from mdf_core.workspace.dev_pr import prepare
+            results[branch] = prepare(repo, expected_head=item.get("head"), expected_base=item.get("base"))
+            continue
         state = item.get("record")
         provider = state["identity"]["provider"] if state else item["provider"]
         if config["mode"] != "pr" or config.get("provider") != provider:

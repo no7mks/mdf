@@ -128,7 +128,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 
 - 完整文档白名单：docs/、changes/、根 *.md、.mdf/ 及以下全部宿主目录。
 - 宿主目录：.agents/、.claude/、.codex/、.cursor/、.kiro/、.openclaw/，不限定 skills/mdf。
-- develop 直接维护仅允许 .mdf/、宿主目录、根 AGENTS.md；不判断是否由 upgrade 产生。
+- develop 默认直接维护仅允许 .mdf/、宿主目录、根 AGENTS.md；项目可按 [dev-pr](dev-pr.md) 覆盖 trivial policy。
 - 混入其他路径须 PR/MR；master 不增加文件维护例外；禁止 rebase 或跨分支 ff-only。
 - planning 检查独有普通提交、rename/delete 原路径、merge resolution 及最终增量，防止 revert 掩盖代码修改。
 - sync 的 master/develop 分叉或无法证明合规的领先增量须走 PR/MR；同名 ff 同步允许。

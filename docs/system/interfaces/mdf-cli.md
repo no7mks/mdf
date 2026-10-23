@@ -99,6 +99,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
+| `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |
 | `pre-gitflow-finish` | fact 前执行 hook 或检查其改动 | [仓库写入命令](mdf-cli-write.md) |
@@ -129,6 +130,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `adhoc` | `start --kind adhoc --name`、`verify smart` 与 `finish-gitflow` |
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
+| `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
 | `pr` | `pr --repo <repo> [--source <source>]`；merged 后完成，交给 close-out | [PR mode](mdf-cli-review.md) |
 | `close-out` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
