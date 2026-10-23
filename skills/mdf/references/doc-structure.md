@@ -7,7 +7,7 @@
 - 目标仓库：根文档、`docs/**`、`changes/**` 与 `AGENTS.md` 托管区块。
   - `docs/JOTS.md` 免结构限制；MDF 新写或改写的说明性文本仍采用下方写作原则。
 - MDF 自身：Skill、intent、模板、`docs/` 与根文档。
-- 目标项目中命中 `.mdf/modules.yaml` module `ignore` 的文件，免除本文结构硬限制与超限拆分要求。
+- 目标项目中命中 `.mdf/modules.yaml` repo 或 module `ignore` 的文件，免除本文结构硬限制与超限拆分要求。
   - 沿用现有 `pattern` + `reason`，不另加配置；审阅报告排除依据，不再要求这些文件拆分。
 
 ## ASD-STE100 写作

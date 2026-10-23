@@ -78,6 +78,8 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - source 的 manifest 决定当前事实布局；实现范围兼顾 base/source/target 的 implementation_roots。
 - 确定性结构检查和 ignore 使用 target modules；source 新增 ignore 不得令本次审阅免检。
 - ignore 是否有效按 target 的普通文件清单验证；排除匹配作用于 source，删除或 rename 不制造空匹配误报。
+- repo ignore 全仓生效，module ignore 仅在其 sourceset 内生效；均使用 target 配置。
+- target 中有效的 ignore 同时排除事实语义审阅；source 新增或放宽 ignore 不改变本次审阅范围。
 - 临时 snapshot 位于 checkout 外，仅物化 Git 普通文件并建立独立 index/HEAD，退出时清理。
   不执行 hooks、filters、textconv、tests、验证入口或生成器；不修改原仓库文件、index、refs。
 - snapshot 显式继承原仓库的 Git object format，不受宿主默认 SHA-1/SHA-256 设置影响。
@@ -86,10 +88,13 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 
 ## 影响范围与语义复核
 
-- `paths` 保留全部 source 变化；rename 按删除旧路径、新增新路径处理。
-- `implementation_paths` 包含变化的实现与源代码路径，包括删除路径。
+- `paths` 为 source 变化中未被 target 有效 ignore 排除的路径；`diff` 仅包含这些路径。
+- `ignored` 记录被排除的变化路径、ignore_path 与 reason，包括删除路径。
+- rename 按删除旧路径、新增新路径分别匹配 target ignore；移出排除目录的新路径仍须审阅。
+- `implementation_paths` 包含有效审阅范围内变化的实现与源代码路径，包括删除路径。
 - `document_paths` 包含变化的事实页，以及 base/source 任一侧 evidence 引用变化路径的事实页。
   base 映射防止删除实现、移除 evidence 或删除事实页后漏掉审阅。
+- `document_paths` 仅排除自身命中 target 有效 ignore 的事实页；引用被排除文件的项目事实页仍须审阅。
 - base/source 映射同时包含 generated.source 与 generated.generator；目录 evidence 覆盖其下变更文件。
 - source 上仍存在的事实页须检查完整陈述，不能只看 Markdown diff。
 - 已删除页面与实现使用 base 证据判断：能力是否移除、文档是否迁移、新路径是否承接原契约。

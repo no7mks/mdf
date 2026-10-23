@@ -397,7 +397,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
 `references/object-contract.md` 定义 Proposal、Bug 与 Change 的 schema 和不变量。
 intent 声明读取的契约或模板缺失时停止并报告，不猜测内容。
 
-- 写入源代码或测试源代码前，读取 `repository-contract.md` 的体积及 module `ignore` 条款。
+- 写入源代码或测试源代码前，读取 `repository-documents.md` 的体积条款及 `modules.md` 的 ignore 条款。
   - 先核对 `.mdf/modules.yaml`；命中 ignore 的文件报告 pattern 与 reason，不要求长度或拆分验收。
   - 其余文件按 `sourceset` 读取所有适用 module 的 `size_limits`，缺省字段用 1000/50/70。
   - 实测物理行数及所在 package 的实现/测试文件数，分别满足所有适用上限；未归属成员用默认策略。
@@ -410,6 +410,6 @@ intent 声明读取的契约或模板缺失时停止并报告，不猜测内容�
 | 意图 | `references/` | 读取已确认 intent 的流程及其声明委托的内部流程 |
 | 公共契约 | `references/` | 按 intent 指定读取目录、对象或 CodeWiki 契约 |
 | 模板 | `assets/` | intent 要求写入仓库产出物时读取对应模板 |
-| 代码体积 | `references/repository-contract.md` | 写入源代码或测试源代码前读取体积条款 |
+| 代码体积 | `references/repository-documents.md` | 写入源代码或测试源代码前读取体积条款 |
 | 文档结构与写作 | `references/doc-structure.md` | 写入或改写任何 Markdown 产出物前读取 |
 | 确定性 CLI | `scripts/` | intent 要求确定性操作时调用 |

@@ -280,7 +280,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "按依赖\n拆成多个 test case 分别归入合适的 suite" in contract
     assert "验证入口为 lint/build/quick/smoke/release 与可选 coverage" in contract
     assert "非 feature 分支变更 modules.yaml 套件入口或新增 named suite：默认模式需用户确认" in contract
-    repo_contract = workflow("repository-contract")
+    repo_contract = workflow("repository-contract") + workflow("modules")
     assert "验证命令**不在** manifest；写在 `.mdf/modules.yaml`" in repo_contract
     assert "`named` 中每个名字必须有独立文档" in repo_contract
     design_text = workflow("design")
@@ -327,7 +327,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "审阅结论由执行者按下列通过条件判定，无需用户确认" in workflow("fact-audit")
     assert "不重跑" in workflow("bug-close")
     assert "既有 suite 命令未产出报告时" in workflow("migrate")
-    assert "占位命令必然失败" in workflow("repository-contract")
+    assert "占位命令必然失败" in workflow("modules")
     assert "`unknown_suite`" not in review
     assert "suites.json" in workflow("verify") or "named suite" in workflow("verify")
     assert "suites.json" not in workflow("start")

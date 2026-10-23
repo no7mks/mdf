@@ -74,6 +74,7 @@ class ModulesConfig:
     modules: dict[str, Module] = field(default_factory=dict)
     budgets: dict[str, int] = field(default_factory=dict)
     overrides: dict[str, str | dict] = field(default_factory=dict)
+    ignore: tuple[IgnoreRule, ...] = ()
 
     def names(self) -> list[str]:
         return sorted(self.modules)
@@ -107,6 +108,8 @@ class ModulesConfig:
         hit: set[str] = set()
         for raw in paths:
             rel = raw.replace("\\", "/")
+            if any(match(rel, rule.pattern) for rule in self.ignore):
+                continue
             for module in self.modules.values():
                 if path_ignored(rel, module):
                     continue
@@ -115,10 +118,14 @@ class ModulesConfig:
         return sorted(hit)
 
     def is_ignored(self, rel: str) -> bool:
-        for module in self.modules.values():
-            if path_ignored(rel, module):
-                return True
-        return False
+        if any(match(rel, rule.pattern) for rule in self.ignore):
+            return True
+        owners = [m for m in self.modules.values() if any(match(rel, p) for p in m.sourceset)]
+        return bool(owners) and all(path_ignored(rel, m) for m in owners)
+
+    def ignore_matches(self, rel: str, owner: str, rule: IgnoreRule) -> bool:
+        return match(rel, rule.pattern) and (not owner or any(
+            match(rel, pattern) for pattern in self.modules[owner].sourceset))
 
     def size_policies(self, paths: list[str]) -> list[tuple[str, SizeLimits]]:
         policies: dict[str, SizeLimits] = {}
@@ -126,14 +133,15 @@ class ModulesConfig:
             matched = False
             for name, module in self.modules.items():
                 if any(match(path, pattern) for pattern in module.sourceset):
-                    policies[name] = module.size_limits
                     matched = True
+                    if not path_ignored(path, module):
+                        policies[name] = module.size_limits
             if not matched:
                 policies[""] = SizeLimits()
         return sorted(policies.items())
 
     def all_ignore_rules(self) -> list[tuple[str, IgnoreRule]]:
-        rules: list[tuple[str, IgnoreRule]] = []
+        rules: list[tuple[str, IgnoreRule]] = [("", rule) for rule in self.ignore]
         for module in self.modules.values():
             for rule in module.ignore:
                 rules.append((module.name, rule))
@@ -163,7 +171,7 @@ def load_modules(repo: Path) -> ModulesConfig:
 def parse_modules(raw: Any) -> ModulesConfig:
     if not isinstance(raw, dict):
         raise MDFError("modules.yaml 根必须是 mapping", code="modules_invalid")
-    extra = set(raw) - {"modules", "budgets", "verification"}
+    extra = set(raw) - {"modules", "budgets", "verification", "ignore"}
     if extra:
         raise MDFError(
             f"modules.yaml 含未知键: {sorted(extra)}",
@@ -192,7 +200,8 @@ def parse_modules(raw: Any) -> ModulesConfig:
             )
         module = _parse_module(name, body, seen_named)
         modules[name] = module
-    return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides)
+    return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides,
+                         ignore=tuple(_parse_ignore('repo', raw.get('ignore', []))))
 
 
 def _parse_overrides(raw: Any) -> dict[str, str | dict]:
@@ -234,7 +243,8 @@ def match(path: str, pattern: str) -> bool:
 
 
 def path_ignored(rel: str, module: Module) -> bool:
-    return any(match(rel, rule.pattern) for rule in module.ignore)
+    return (any(match(rel, pattern) for pattern in module.sourceset)
+            and any(match(rel, rule.pattern) for rule in module.ignore))
 
 
 def _parse_budgets(raw: Any) -> dict[str, int]:
@@ -295,7 +305,7 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
             f"module {name}.sourceset 不能为空",
             code="modules_invalid",
         )
-    ignore = _parse_ignore(name, body.get("ignore", []))
+    ignore = _parse_ignore(f'module {name}', body.get("ignore", []))
     lint = _nonempty_command(body["lint"], f"module {name}.lint")
     build = _nonempty_command(body["build"], f"module {name}.build")
     quick = _parse_suite(name, "quick", body["quick"])
@@ -342,26 +352,26 @@ def _parse_ignore(name: str, raw: Any) -> list[IgnoreRule]:
         return []
     if not isinstance(raw, list):
         raise MDFError(
-            f"module {name}.ignore 必须是列表",
+            f"{name}.ignore 必须是列表",
             code="modules_invalid",
         )
     rules: list[IgnoreRule] = []
     for entry in raw:
         if not isinstance(entry, dict) or set(entry) != {"pattern", "reason"}:
             raise MDFError(
-                f"module {name}.ignore 项需要 pattern 与 reason",
+                f"{name}.ignore 项需要 pattern 与 reason",
                 code="modules_invalid",
             )
         pattern = entry["pattern"]
         reason = entry["reason"]
         if not isinstance(pattern, str) or not pattern.strip():
             raise MDFError(
-                f"module {name}.ignore.pattern 必须非空",
+                f"{name}.ignore.pattern 必须非空",
                 code="modules_invalid",
             )
         if not isinstance(reason, str) or not reason.strip():
             raise MDFError(
-                f"module {name}.ignore.reason 必须非空",
+                f"{name}.ignore.reason 必须非空",
                 code="modules_invalid",
             )
         rules.append(IgnoreRule(pattern.strip(), reason.strip()))

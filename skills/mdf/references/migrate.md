@@ -172,7 +172,7 @@
   - 本地或外部调研材料归入 `docs/context/research/`。
   - 已确认决策归入 `docs/context/adr/`。
 - 从仓库证据收敛八项 `基线`、最近稳定版本与 `verification` 的五个入口。
-- `docs/` 内材料按 `repository-contract.md`「文档分类与按需加载」归位：
+- `docs/` 内材料按 `repository-documents.md`「文档分类与按需加载」归位：
   - 面向使用者的页面进 `docs/user-guide/`（`README.md` 只路由，主题各一页）。
   - 边界、架构、接口、数据、运维进 `docs/system/` 对应切面的主题叶。
   - 测试约定进 `docs/system/testing/`（已有根 `docs/testing.md` 则迁入该切面）。

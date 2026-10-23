@@ -261,6 +261,8 @@ def test_repository_contract_defines_root_document_responsibilities() -> None:
 
     assert "## 根文档职责" in contract
     assert "`README.md` 面向项目用户" in contract
+    assert '(repository-documents.md)' in contract
+    contract += (skill / "references" / "repository-documents.md").read_text(encoding="utf-8")
     assert "用户（非维护者）" in contract
     assert "├── README.md                 # 用户入口" in contract
     assert "仅维护者需要的环境、验证、lint、CI、目录例外、发布" in contract

@@ -85,7 +85,7 @@
 - 步骤 1 拒绝不允许的路径：`docs/JOTS.md`、`docs/repowiki/**`、非 Markdown 或仓库外路径。
   - 显式列出这类路径时停止并报告，不静默跳过。
   - full 与 branch 自动清单只选 Markdown；ready PRP 的 HTML 不进入本 intent。
-- 命中 `.mdf/modules.yaml` module `ignore` 的文件从待美化清单排除，显式指定路径时同样排除。
+- 命中 `.mdf/modules.yaml` repo 或 module `ignore` 的文件从待美化清单排除，显式指定路径时同样排除。
   - 报告匹配 pattern 与 reason；排除后清单为空则报告并结束，不强制改写。
 - 写入分支遵守 `common.md` 的写入规则。
   - ❌ 不在 master 上直接改写。

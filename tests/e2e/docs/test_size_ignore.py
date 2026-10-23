@@ -1,9 +1,10 @@
-"""module ignore 对文档体积、单句与 prose-check 使用一致的排除语义。"""
+"""repo ignore 对文档体积、单句与 prose-check 使用一致的排除语义。"""
 from mdf_test_support import *  # noqa: F403
 
 
 @pytest.mark.parametrize("scope", ["full", "branch", "paths"])
-def test_audit_module_ignore_exempts_document_limits(python_exe, tmp_path, scope):
+@pytest.mark.parametrize("level", ["repo", "module"])
+def test_audit_ignore_exempts_document_limits(python_exe, tmp_path, scope, level):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
@@ -21,28 +22,30 @@ def test_audit_module_ignore_exempts_document_limits(python_exe, tmp_path, scope
     codes = {item["code"] for item in json.loads(result.stdout)["findings"]}
     assert {"size.hard", "prose.sentence"} <= codes
     modules = repo / ".mdf/modules.yaml"
-    modules.write_text(modules.read_text().replace(
-        "    ignore: []\n",
-        f"    ignore:\n      - pattern: {name}\n        reason: 保留外部手册\n",
-    ))
+    modules.write_text(f"ignore:\n  - pattern: {name}\n    reason: 保留外部手册\n" + modules.read_text())
+    if level == 'module':
+        text = modules.read_text().split('modules:\n', 1)[1]
+        text = text.replace('      - "src/**"', '      - "src/**"\n      - "docs/**"')
+        text = text.replace('    ignore: []\n',
+                            f'    ignore:\n      - pattern: {name}\n        reason: 保留外部手册\n')
+        modules.write_text('modules:\n' + text)
     git(repo, "add", "--all")
     git(repo, "commit", "-q", "-m", "test: 排除外部手册")
     data = payload(mdf(python_exe, *args))
     assert data["findings"] == []
+    assert name not in data['document_paths']
+    assert all(row['document'] != name for row in data['mappings'])
     assert data["ignored"] == [{"path": name, "ignore_path": name, "reason": "保留外部手册"}]
 
 
 @pytest.mark.parametrize("explicit", [False, True])
-def test_prose_check_honors_module_ignore(python_exe, tmp_path, explicit):
+def test_prose_check_honors_repo_ignore(python_exe, tmp_path, explicit):
     repo = copy_fixture(tmp_path)
     name = "docs/system/testing/conventions.md"
     page = repo / name
     page.write_text(page.read_text() + "\n" + "长" * 101 + "。\n")
     modules = repo / ".mdf/modules.yaml"
-    modules.write_text(modules.read_text().replace(
-        "    ignore: []\n",
-        f"    ignore:\n      - pattern: {name}\n        reason: 保留外部手册\n",
-    ))
+    modules.write_text(f"ignore:\n  - pattern: {name}\n    reason: 保留外部手册\n" + modules.read_text())
     init_git(repo)
     extra = ["--path", name] if explicit else []
     data = payload(mdf(python_exe, "prose-check", "--repo", str(repo), *extra))

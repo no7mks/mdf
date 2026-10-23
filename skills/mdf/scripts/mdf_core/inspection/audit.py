@@ -166,42 +166,21 @@ def _ignored_paths(
     *, validation_paths: list[str] | None = None,
 ) -> tuple[dict[Path, dict[str, str]], set[str]]:
     """返回命中记录与完整 pattern 集，删除路径仍按全部规则判定范围。"""
-    from mdf_core.execution.modules import match as _match
-
     result: dict[Path, dict[str, str]] = {}
-    agents = (repo / "AGENTS.md").resolve()
-    for module in config.modules.values():
-        for rule in module.ignore:
-            matched = [
-                item
-                for item in sources
-                if _match(relative(repo, item), rule.pattern)
-            ]
-            if rule.pattern.replace("\\", "/") in {"AGENTS.md"}:
-                if agents.is_file() and not agents.is_symlink():
-                    result[agents] = {
-                        "path": rule.pattern,
-                        "reason": rule.reason,
-                        "module": module.name,
-                    }
-                continue
-            valid = bool(matched) if validation_paths is None else any(
-                _match(path, rule.pattern) for path in validation_paths
-            )
-            if not valid:
-                add_finding(
-                    findings,
-                    "audit.ignore_empty",
-                    "ignore pattern matches no tracked repository file",
-                    f"{module.name}:{rule.pattern}",
-                )
-                continue
-            for item in matched:
-                result[item] = {
-                    "path": rule.pattern,
-                    "reason": rule.reason,
-                    "module": module.name,
-                }
+    for owner, rule in config.all_ignore_rules():
+        matched = [item for item in sources
+                   if config.ignore_matches(relative(repo, item), owner, rule)]
+        valid = bool(matched) if validation_paths is None else any(
+            config.ignore_matches(path, owner, rule) for path in validation_paths
+        )
+        if not valid:
+            add_finding(findings, "audit.ignore_empty",
+                        "ignore pattern matches no tracked file in its scope",
+                        f"{owner or 'repo'}:{rule.pattern}")
+            continue
+        for item in matched:
+            if config.is_ignored(relative(repo, item)):
+                result.setdefault(item, {"path": rule.pattern, "reason": rule.reason, "module": owner})
     return result, {rule.pattern for _, rule in config.all_ignore_rules()}
 
 
@@ -275,15 +254,19 @@ def audit_payload(
             )
             sized = documents
             code_paths = sources
+        # 先从原始范围推导受影响事实页，再分别排除自身命中 ignore 的文件。
+        checked_paths = set(sources + code_paths + sized)
+        sources = [path for path in sources if path not in ignored]
+        documents = [path for path in documents if path not in ignored]
+        sized = [path for path in sized if path not in ignored]
         report_progress(
             "fact-audit 范围",
             f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
         )
     with plan.stage(3):
-        limited_documents = [path for path in sized if path not in ignored]
         findings.extend(collect_parallel([
-            ("文档体积", partial(size_findings, repo, limited_documents)),
-            ("文档结构", partial(structure_findings, repo, limited_documents)),
+            ("文档体积", partial(size_findings, repo, sized)),
+            ("文档结构", partial(structure_findings, repo, sized)),
             ("核心模块表", partial(overview_core_module_findings, repo, documents)),
             ("项目入口", partial(project_entry_link_findings, repo, sized)),
         ], label="文档结构检查"))
@@ -316,7 +299,6 @@ def audit_payload(
             and path not in ignored
             and path.name not in NON_BEHAVIORAL_NAMES
         ]
-    checked_paths = set(sources + code_paths + sized)
     payload = {
         "ok": not findings,
         "operation": "audit",

@@ -162,7 +162,10 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 `merge-base develop HEAD`。
 - `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，实现根下已跟踪文件或已跟踪源代码（含测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
-- CLI 按 `repository-contract.md` 的文档体积表检查 size.hard、prose.*；命中 module ignore 时保留排除依据。
+- CLI 按 `repository-documents.md` 的文档体积表检查 size.hard、prose.*；命中 repo 或 module ignore 时保留排除依据。
+- `implementation_paths`、`document_paths` 与 mappings 仅包含未被有效 ignore 排除的语义审阅范围。
+  - 先从原始变更推导受影响事实页，再独立判断页面自身是否被 ignore。
+  - 项目事实页不会因 evidence 引用已排除的 MDF 安装文件而免审；`ignored` 保留排除路径及理由。
 - 代码文件行数与 package 文件数检查由统一 lint 执行；本 intent 不产生 code.size 或 package.size。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，
   不合则 `overview.core_modules` finding：
@@ -267,7 +270,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 - 逐条审阅 CLI warning（`audit.uncovered`）以及步骤 3 记下的
   `agents.project_content`。
-- `.mdf/modules.yaml` 某 module 的 `ignore` 已覆盖 `AGENTS.md` 时，
+- `.mdf/modules.yaml` `ignore` 在适用范围内已覆盖 `AGENTS.md` 时，
   不再审阅 `agents.project_content`。
 
 验收：

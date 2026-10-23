@@ -104,7 +104,8 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | Bug | 500 |
 | Proposal、`docs/JOTS.md` | 不限 |
 
-- module `ignore` 对源代码、测试源代码和文档均生效，可匹配实现根外的已跟踪文件。
+- repo `ignore` 对全仓源代码、测试源代码与文档生效；module `ignore` 仅匹配自身 `sourceset`。
+  - 重叠归属时，其他未忽略该文件的 module 仍保留验证与检查。
   - 命中后跳过 `code.size`、`size.hard` 与 `prose.*`，免除长度与 70% 拆分要求。
   - `ignored` 返回命中路径、`ignore_path` 与 `reason`；未匹配文件仍正常检查。
 - 未排除文件超限必须拆分，每个结果不超过对应硬限制的 70%，整数向下取整；审查复核拆分结果。
@@ -187,7 +188,7 @@ python3 skills/mdf/scripts/mdf.py prose-check --repo /path/to/repository [--path
 - 省略 `--path` 时检查全部带角色文档（`docs/JOTS.md` 除外）；`--path` 可重复，
   接受任意仓库内 Markdown。
 - `AGENTS.md` 只查托管区块；不要求 manifest ready。
-- 存在 `.mdf/modules.yaml` 时遵守 module `ignore`，显式 `--path` 同样生效；`ignored` 列出排除路径。
+- 存在 `.mdf/modules.yaml` 时遵守 repo 与 module `ignore` 的适用范围，显式 `--path` 同样生效；`ignored` 列出排除路径。
 - 输出 `checked`（不含排除文件）、`issue_count` 与逐条 `issues`（`path`、`line`、`code`、`message`）；
   有违例时以状态码 `2` 退出。
 

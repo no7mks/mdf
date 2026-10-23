@@ -3,7 +3,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
 
-from mdf_core.execution.modules import ModulesConfig, SizeLimits
+from mdf_core.execution.modules import ModulesConfig, SizeLimits, path_ignored
 from mdf_core.foundation.errors import Finding
 from mdf_core.foundation.paths import relative
 
@@ -70,11 +70,12 @@ def package_size_findings(repo: Path, paths: Iterable[Path], *,
     findings = []
     for (package, tests), members in sorted(groups.items()):
         for module, limits in _policies(repo, members, config):
-            if len(members) > limits.max_package_files:
+            count = sum(not path_ignored(relative(repo, p), config.get(module)) for p in members) if module else len(members)
+            if count > limits.max_package_files:
                 prefix = f"module {module}: " if module else ""
                 findings.append(Finding(
                     "package.size",
-                    f"{prefix}package 的{'测试' if tests else '实现'}文件 {len(members)} 个，"
+                    f"{prefix}package 的{'测试' if tests else '实现'}文件 {count} 个，"
                     f"超过 {limits.max_package_files}；必须按职责与设计模式拆分，"
                     f"每个结果同类直属文件最多 {limits.target(limits.max_package_files)} 个",
                     relative(repo, package),
@@ -102,8 +103,9 @@ def code_size_measurements(line_counts: dict[str, int], all_paths: list[str],
     for name in sorted(eligible):
         if Path(name).parent in touched:
             groups[Path(name).parent, is_test_source(Path(name))].append(name)
-    packages = [record(package.as_posix(), module, len(members), limits.max_package_files,
+    packages = [record(package.as_posix(), module, count, limits.max_package_files,
                        limits, tests=tests)
                 for (package, tests), members in sorted(groups.items())
-                for module, limits in config.size_policies(members)]
+                for module, limits in config.size_policies(members)
+                for count in [sum(not path_ignored(p, config.get(module)) for p in members) if module else len(members)]]
     return {"files": files, "packages": packages}

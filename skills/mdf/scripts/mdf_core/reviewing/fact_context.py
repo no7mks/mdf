@@ -77,20 +77,34 @@ def fact_context(repo, source, target):
                     if entry.startswith(('100644 blob ', '100755 blob '))]
     references = Path(__file__).resolve().parents[3] / 'references'
     rules = {'mdf': {name: (references / name).read_text(encoding='utf-8') for name in
-                     ('fact-audit-commits.md', 'fact-audit.md', 'repository-contract.md', 'doc-structure.md')},
+                     ('fact-audit-commits.md', 'fact-audit.md', 'repository-contract.md',
+                      'repository-documents.md', 'modules.md', 'doc-structure.md')},
              'manifest': manifest, 'modules': modules,
              'agents': blob(repo, policy, 'AGENTS.md', required=False)}
     changed = paths(repo, base, head)
+    valid_rules = [(owner, rule) for owner, rule in policy_modules.all_ignore_rules()
+                   if any(policy_modules.ignore_matches(p, owner, rule) for p in policy_paths)]
+    def excluded(path):
+        return policy_modules.is_ignored(path) and any(
+            policy_modules.ignore_matches(path, owner, rule) for owner, rule in valid_rules)
+
+    ignored = {}
+    for path in changed:
+        for owner, rule in valid_rules:
+            if excluded(path) and policy_modules.ignore_matches(path, owner, rule):
+                ignored[path] = {'path': path, 'ignore_path': rule.pattern, 'reason': rule.reason}
+                break
+    review_paths = [p for p in changed if p not in ignored]
     with TemporaryDirectory(prefix='mdf-fact-') as folder:
         before, after = Path(folder).resolve() / 'base', Path(folder).resolve() / 'source'
         snapshot(repo, base, before)
         snapshot(repo, head, after)
         old, new = inventory(before), inventory(after)
         documents = sorted({p for p in old.keys() | new.keys()
-                            if p in changed or any(
+                            if not excluded(p) and (p in changed or any(
                                 e == '.' or c == e or c.startswith(e.rstrip('/') + '/')
                                 for raw in old.get(p, []) + new.get(p, [])
-                                for e in [posixpath.normpath(raw)] for c in changed)})
+                                for e in [posixpath.normpath(raw)] for c in changed))})
         roots = set()
         for ref in (base, head, policy):
             config = manifest_at(repo, ref)
@@ -99,18 +113,21 @@ def fact_context(repo, source, target):
                     or any(not isinstance(r, str) or not r.strip() for r in configured_roots)):
                 raise MDFError(f'{ref} 的 implementation_roots 必须为非空路径列表', code='invalid_fact_context')
             roots.update(posixpath.normpath(r) for r in configured_roots)
-        implementations = sorted(p for p in changed if is_source(Path(p)) or
+        implementations = sorted(p for p in review_paths if is_source(Path(p)) or
                                  any(r == '.' or p == r or p.startswith(r.rstrip('/') + '/') for r in roots))
         audit, _ = audit_payload(after, 'branch', [], [], base,
                                  extra_documents=documents, policy_modules=policy_modules, policy_paths=policy_paths)
         audit.pop('repo')
         result = {'schema_version': 3, 'mode': 'commits', 'operation': 'fact-audit',
                   'review_base': base, 'review_head': head, 'policy_ref': policy,
-                  'paths': changed, 'implementation_paths': implementations, 'document_paths': documents,
+                  'paths': review_paths, 'implementation_paths': implementations, 'document_paths': documents,
+                  'ignored': [ignored[p] for p in sorted(ignored)],
                   'base_mappings': old, 'source_mappings': new, 'audit': audit,
                   'rules': rules, 'rules_sha256': fingerprint(rules), 'incomplete': []}
     for key, ref in (('diff', head), ('target_diff', policy)):
-        result[key] = git(repo, 'diff', '--no-ext-diff', '--no-textconv', '--no-renames', base, ref).stdout
+        selected = review_paths if key == 'diff' else paths(repo, base, ref)
+        result[key] = git(repo, 'diff', '--no-ext-diff', '--no-textconv', '--no-renames', base, ref,
+                          '--', *(':(literal)' + p for p in selected)).stdout if selected else ''
     result['target_paths'] = paths(repo, base, policy)
     result['context_sha256'] = fingerprint(result)
     return result

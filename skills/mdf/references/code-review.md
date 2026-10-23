@@ -289,8 +289,8 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先设 checkout 外的 `
   - close-out 集成增量轮（1 人）只使用该已汇总清单，
     不得把上轮多份独立报告交给本轮 reviewer 自行合并。
 - 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
-- 每份任务均包含 `repository-contract.md` 的体积与 ignore 条款以及 lint 工具报告；涉及文档时另含 `doc-structure.md`。
-  - 先核对 `.mdf/modules.yaml`；命中 module `ignore` 的文件报告排除依据，不提出长度或拆分问题。
+- 每份任务均包含 `repository-documents.md` 的体积与 `modules.md` 的 ignore 条款以及 lint 工具报告；涉及文档时另含 `doc-structure.md`。
+  - 先核对 `.mdf/modules.yaml`；命中 repo 或 module `ignore` 的文件报告排除依据，不提出长度或拆分问题。
   - 读取 lint 报告，按 `sourceset` 核对全部适用 module 的 `size_limits`；各字段默认 1000/50/70，未归属文件用默认策略。
   - 单文件行数与触及 package 的完整同类成员数分别满足各配置；package 实现/测试不相加。
   - 源代码/package 超限按各触发配置的 `split_percent` 向下取整验收；文档仍按角色上限及 70%。

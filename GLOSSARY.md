@@ -53,12 +53,13 @@ MDF 的适用方式见 [文档结构规则](skills/mdf/references/doc-structure.
 
 `.mdf/modules.yaml` 中的交付单元：含 `sourceset`、`ignore`、分套件命令与可选 `named`
 suite 列表。ignore 命中路径不触发 verify，也不产生 uncovered 提示。
-源代码、测试源代码与文档均可通过 module ignore 排除长度及结构硬限制，不再要求超限拆分。
+module ignore 仅在自身 sourceset 内生效；顶层 repo ignore 作用于整个仓库。
+两者均可排除适用范围内源代码、测试源代码与文档的长度及结构硬限制，不再要求超限拆分。
 
 ## Package
 
 按目录组织的直属源文件集合，子目录独立计数；实现和测试分别统计，默认每类最多 50 个。
-超限按设计职责拆分，默认每个结果每类最多 35 个；module ignore 命中文件不计。
+超限按设计职责拆分，默认每个结果每类最多 35 个；repo 或 module ignore 命中文件不计。
 module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置共同生效；文档规则不受影响。
 
 ## `$mdf verify`

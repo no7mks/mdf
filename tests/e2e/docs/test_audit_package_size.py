@@ -23,8 +23,7 @@ def test_audit_package_scope_and_ignore(python_exe, tmp_path, scope, folder):
     findings = json.loads(result.stdout)["findings"]
     assert not findings
     modules = repo / ".mdf/modules.yaml"
-    modules.write_text(modules.read_text().replace("    ignore: []\n",
-        f"    ignore:\n      - pattern: {folder}/unit_50.py\n        reason: 生成文件\n"))
+    modules.write_text(f"ignore:\n  - pattern: {folder}/unit_50.py\n    reason: 生成文件\n" + modules.read_text())
     data = payload(mdf(python_exe, *args))
     expected = ([{"path": f"{folder}/unit_50.py",
                   "ignore_path": f"{folder}/unit_50.py", "reason": "生成文件"}] if scope == "full" else [])
