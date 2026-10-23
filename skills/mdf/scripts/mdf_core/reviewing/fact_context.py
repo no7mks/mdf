@@ -72,26 +72,30 @@ def fact_context(repo, source, target):
     base = bases[0]
     manifest = manifest_at(repo, policy)
     modules = blob(repo, policy, '.mdf/modules.yaml')
-    policy_modules = parse_modules(parse_yaml(modules))
-    policy_paths = [entry.split('\t', 1)[1] for entry in git(repo, 'ls-tree', '-rz', policy).stdout.split('\0')
+    parse_modules(parse_yaml(modules))
+    ignore_modules = blob(repo, head, '.mdf/modules.yaml')
+    ignore_config = parse_modules(parse_yaml(ignore_modules))
+    ignore_paths = [entry.split('\t', 1)[1] for ref in (base, head)
+                    for entry in git(repo, 'ls-tree', '-rz', ref).stdout.split('\0')
                     if entry.startswith(('100644 blob ', '100755 blob '))]
     references = Path(__file__).resolve().parents[3] / 'references'
     rules = {'mdf': {name: (references / name).read_text(encoding='utf-8') for name in
                      ('fact-audit-commits.md', 'fact-audit.md', 'repository-contract.md',
                       'repository-documents.md', 'modules.md', 'doc-structure.md')},
              'manifest': manifest, 'modules': modules,
+             'ignore': {'ref': head, 'modules': ignore_modules},
              'agents': blob(repo, policy, 'AGENTS.md', required=False)}
     changed = paths(repo, base, head)
-    valid_rules = [(owner, rule) for owner, rule in policy_modules.all_ignore_rules()
-                   if any(policy_modules.ignore_matches(p, owner, rule) for p in policy_paths)]
+    valid_rules = [(owner, rule) for owner, rule in ignore_config.all_ignore_rules()
+                   if any(ignore_config.ignore_matches(p, owner, rule) for p in ignore_paths)]
     def excluded(path):
-        return policy_modules.is_ignored(path) and any(
-            policy_modules.ignore_matches(path, owner, rule) for owner, rule in valid_rules)
+        return ignore_config.is_ignored(path) and any(
+            ignore_config.ignore_matches(path, owner, rule) for owner, rule in valid_rules)
 
     ignored = {}
     for path in changed:
         for owner, rule in valid_rules:
-            if excluded(path) and policy_modules.ignore_matches(path, owner, rule):
+            if excluded(path) and ignore_config.ignore_matches(path, owner, rule):
                 ignored[path] = {'path': path, 'ignore_path': rule.pattern, 'reason': rule.reason}
                 break
     review_paths = [p for p in changed if p not in ignored]
@@ -116,10 +120,10 @@ def fact_context(repo, source, target):
         implementations = sorted(p for p in review_paths if is_source(Path(p)) or
                                  any(r == '.' or p == r or p.startswith(r.rstrip('/') + '/') for r in roots))
         audit, _ = audit_payload(after, 'branch', [], [], base,
-                                 extra_documents=documents, policy_modules=policy_modules, policy_paths=policy_paths)
+                                 extra_documents=documents, ignore_modules=ignore_config, ignore_paths=ignore_paths)
         audit.pop('repo')
         result = {'schema_version': 3, 'mode': 'commits', 'operation': 'fact-audit',
-                  'review_base': base, 'review_head': head, 'policy_ref': policy,
+                  'review_base': base, 'review_head': head, 'policy_ref': policy, 'ignore_ref': head,
                   'paths': review_paths, 'implementation_paths': implementations, 'document_paths': documents,
                   'ignored': [ignored[p] for p in sorted(ignored)],
                   'base_mappings': old, 'source_mappings': new, 'audit': audit,

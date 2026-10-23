@@ -45,7 +45,7 @@ budgets:
   - 命中文件不受长度与 70% 拆分要求约束；审阅不得再按这些规则要求拆分，报告匹配路径与理由。
   - `fact-audit` 的 `ignored` 保留命中路径、pattern 与 reason；未匹配的已跟踪文件仍正常检查。
   - fact audit 各 scope 均排除有效 ignore 命中的语义审阅路径；项目事实页独立判定。
-  - 独立 commit fact audit 使用 target 中有效的 ignore；普通 audit 使用当前配置。
+  - 独立 commit fact audit 使用固定 source SHA 的 ignore 与 sourceset 归属；普通 audit 使用当前配置。
     具体范围与报告约束见 [独立事实审阅](fact-audit-commits.md)。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
 - repo 级同名入口默认按 module 名排序**串行展开**执行（plan id 为

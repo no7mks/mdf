@@ -192,8 +192,8 @@ def audit_payload(
     base: str | None = None,
     *,
     extra_documents: list[str] = (),
-    policy_modules: ModulesConfig | None = None,
-    policy_paths: list[str] | None = None,
+    ignore_modules: ModulesConfig | None = None,
+    ignore_paths: list[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
     plan = ProgressPlan("fact-audit", ("全量契约校验", "解析范围", "检查文档结构", "映射 evidence 与覆盖"),
                         groups=("契约检查", "事实文档", "文档结构检查"))
@@ -207,12 +207,12 @@ def audit_payload(
         all_sources = [path for path in all_tracked
                        if any(path == root or root in path.parents for root in roots)]
         try:
-            size_config = policy_modules if policy_modules is not None else load_modules(repo)
+            size_config = ignore_modules if ignore_modules is not None else load_modules(repo)
         except MDFError as exc:
             add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
             size_config = ModulesConfig()
         ignored, ignored_patterns = _ignored_paths(repo, all_tracked, findings, size_config,
-                                                  validation_paths=policy_paths)
+                                                  validation_paths=ignore_paths)
         resolved_base: str | None = None
         sized: list[Path]
         if scope == "full":

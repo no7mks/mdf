@@ -85,7 +85,7 @@ def test_commit_audit_keeps_base_evidence_impacts(tmp_path, change):
         assert 'src/renamed.py' in ctx['implementation_paths']
 
 
-def test_source_ignore_cannot_hide_new_implementation(tmp_path):
+def test_source_module_ignore_excludes_new_implementation(tmp_path):
     repo, base = repository(tmp_path)
     (repo / 'src/new.py').write_text('VALUE = 2\n')
     modules = repo / '.mdf/modules.yaml'
@@ -93,15 +93,17 @@ def test_source_ignore_cannot_hide_new_implementation(tmp_path):
                       '    ignore:\n      - pattern: src/new.py\n        reason: skip'))
     ctx = fact_context(repo, commit(repo), base)
     assert ctx['rules']['modules'] == git(repo, 'show', base + ':.mdf/modules.yaml').stdout
-    assert 'src/new.py' in ctx['paths'] and 'src/new.py' in ctx['implementation_paths']
-    assert ctx['ignored'] == []
-    assert any(w['path'] == 'src/new.py' for w in ctx['audit']['warnings'])
+    assert ctx['ignore_ref'] == ctx['review_head']
+    assert ctx['rules']['ignore']['modules'] == modules.read_text()
+    assert 'src/new.py' not in ctx['paths'] and ctx['implementation_paths'] == []
+    assert ctx['ignored'] == [{'path': 'src/new.py', 'ignore_path': 'src/new.py', 'reason': 'skip'}]
+    assert ctx['audit']['warnings'] == []
 
 
 @pytest.mark.parametrize('change', ['modify', 'delete', 'rename', 'move-out', 'move-in'])
-def test_target_ignore_excludes_installed_mdf_from_commit_review(python_exe, tmp_path, change):
+def test_source_repo_ignore_excludes_installed_mdf_from_commit_review(python_exe, tmp_path, change):
     repo, _ = repository(tmp_path)
-    installed = '.codex/skills/mdf'
+    installed = '.agents/skills/mdf'
     vendor = repo / installed / 'scripts/tool.py'
     vendor.parent.mkdir(parents=True)
     vendor.write_text('VALUE = 1\n')
@@ -109,8 +111,8 @@ def test_target_ignore_excludes_installed_mdf_from_commit_review(python_exe, tmp
     if change == 'move-in':
         project.write_text('VALUE = 2\n')
     modules = repo / '.mdf/modules.yaml'
-    modules.write_text('ignore:\n  - pattern: ' + installed + '/**\n    reason: MDF 安装目录\n' + modules.read_text())
     target = commit(repo)
+    modules.write_text('ignore:\n  - pattern: ' + installed + '/**\n    reason: MDF 安装目录\n' + modules.read_text())
     if change == 'modify':
         vendor.write_text('VALUE = 2\n')
     elif change == 'delete':
@@ -125,7 +127,9 @@ def test_target_ignore_excludes_installed_mdf_from_commit_review(python_exe, tmp
     ctx = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo),
                       '--source-commit', source, '--target-commit', target))['result']
     expected = ['src/tool.py'] if change in {'move-out', 'move-in'} else []
-    assert ctx['paths'] == ctx['implementation_paths'] == expected
+    assert ctx['implementation_paths'] == expected
+    assert ctx['paths'] == ['.mdf/modules.yaml', *expected]
+    assert ctx['ignore_ref'] == source
     assert ctx['document_paths'] == []
     excluded = [f'{installed}/scripts/tool.py']
     if change == 'rename':
@@ -134,7 +138,7 @@ def test_target_ignore_excludes_installed_mdf_from_commit_review(python_exe, tmp
         excluded = [f'{installed}/scripts/new.py']
     assert ctx['ignored'] == [
         {'path': p, 'ignore_path': f'{installed}/**', 'reason': 'MDF 安装目录'} for p in sorted(excluded)]
-    assert installed not in ctx['diff']
+    assert f'diff --git a/{installed}/' not in ctx['diff']
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
     context_file.write_text(json.dumps(ctx))
     report_file.write_text(json.dumps(report_for(ctx)))
@@ -175,7 +179,7 @@ def test_vendor_ignore_keeps_project_code_and_fact_pages_in_review(python_exe, t
         validate_fact_report(ctx, report)
 
 
-def test_source_cannot_widen_target_vendor_ignore(tmp_path):
+def test_source_can_widen_target_vendor_ignore(tmp_path):
     repo, _ = repository(tmp_path)
     installed = repo / '.codex/skills/mdf'
     installed.mkdir(parents=True)
@@ -188,9 +192,10 @@ def test_source_cannot_widen_target_vendor_ignore(tmp_path):
                                                 'pattern: .codex/skills/mdf/**'))
     (installed / 'tool.py').write_text('VALUE = 2\n')
     ctx = fact_context(repo, commit(repo), target)
-    assert '.codex/skills/mdf/tool.py' in ctx['paths']
-    assert '.codex/skills/mdf/tool.py' in ctx['implementation_paths']
-    assert ctx['ignored'] == []
+    assert '.codex/skills/mdf/tool.py' not in ctx['paths']
+    assert ctx['implementation_paths'] == []
+    assert ctx['ignored'] == [{'path': '.codex/skills/mdf/tool.py',
+                               'ignore_path': '.codex/skills/mdf/**', 'reason': 'MDF 安装文件'}]
 
 
 def test_module_ignore_does_not_hide_installed_mdf_outside_sourceset(tmp_path):
@@ -209,7 +214,7 @@ def test_module_ignore_does_not_hide_installed_mdf_outside_sourceset(tmp_path):
 
 
 @pytest.mark.parametrize('change', ['delete', 'rename', 'target-only', 'invalid-target'])
-def test_ignore_policy_is_validated_against_target(tmp_path, change):
+def test_removed_source_ignore_does_not_use_target_rules(tmp_path, change):
     repo, base = repository(tmp_path)
     modules = repo / '.mdf/modules.yaml'
     original = modules.read_text()
@@ -231,12 +236,13 @@ def test_ignore_policy_is_validated_against_target(tmp_path, change):
         modules.write_text(original)
     ctx = fact_context(repo, commit(repo), target)
     findings = ctx['audit']['findings']
+    assert findings == []
+    assert validate_fact_report(ctx, report_for(ctx))['decision'] == 'pass'
     if change == 'invalid-target':
-        assert any(f['code'] == 'audit.ignore_empty' for f in findings)
+        assert ctx['implementation_paths'] == []
+        assert ctx['ignored'] == [{'path': 'src/generated.py', 'ignore_path': 'src/generated.py', 'reason': 'generated'}]
+    elif change in {'delete', 'rename'}:
         assert 'src/generated.py' in ctx['implementation_paths'] and ctx['ignored'] == []
-    else:
-        assert findings == []
-        assert validate_fact_report(ctx, report_for(ctx))['decision'] == 'pass'
     if change == 'rename':
         assert any(w['path'] == 'src/renamed.py' for w in ctx['audit']['warnings'])
 
