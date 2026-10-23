@@ -23,6 +23,8 @@
 命令入口负责组合各领域能力，领域模块通过明确的 import 引用实际定义。
 
 - 用户命令入口仍为 `skills/mdf/scripts/mdf.py`，由 `mdf_core.cli` 组装命令。
+- `lifecycle.adhoc_context` 统一真实 source、材料目录与固定范围；`adhoc_finish` 管理本地合并及有限恢复。
+  无账本使用 Change，已有账本仍核原阶段；CI 的独立 commit review 不依赖这些材料。
 - `squash_execute.py` 执行分析后的分段计划；`workspace.squash` 提供共享边界检查与 PR 动作前门禁。
 - `workspace.sync_pull` 管理 sync 的 PR 计划与持久化恢复；复用 Forge 和 PR merge 核验，同名 ff 后返回同步预览。
   契约见 [Squash](../../../skills/mdf/references/squash.md)。

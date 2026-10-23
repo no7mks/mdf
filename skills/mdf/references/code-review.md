@@ -156,6 +156,9 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先设 checkout 外的 `
 
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
+无账本 adhoc 的收口审查按 adhoc-change.md 的 Check 条款执行；不套用本节的账本、roster 配置或勾选前置。
+已有 CI 的独立 commit review 路径不变，不因无账本 adhoc 增加材料依赖。
+
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
 - 先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
 - 审查人数取冻结 roster.reviewers：

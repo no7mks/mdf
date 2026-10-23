@@ -284,6 +284,10 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 
 `$mdf adhoc <工作描述>` 从 develop 创建 `adhoc/<slug>` 与独立临时 worktree。
 
+已有普通分支也可直接执行 `$mdf pr` 或 `$mdf close-out`；无账本时按实际成果生成 Change 并收口。
+四类 Gitflow 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
+无账本 adhoc 保留真实分支与工作区，不补造 delivery/objectives；CI 的独立 commit review 路径不变。
+
 - slug 由 Agent 自定；直接生成六项 objectives，不另确认目标文本或 roster，不绑定 PRP。
 - 主线：`工作 → lint → code-review → verify smart → fact audit/update → close-out`。
 - 工作可由 Agent 完成并勾选；code-review 使用 1 个 reviewer，smart 成败均留存 report。

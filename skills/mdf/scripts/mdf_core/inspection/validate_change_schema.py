@@ -76,7 +76,7 @@ def validate_change_file(
                     "change_kind must match source_branch",
                     rel,
                 )
-            elif not root and details["slug"] != expected_slug:
+            elif not root and details["kind"] != "adhoc" and details["slug"] != expected_slug:
                 add_finding(
                     findings,
                     "change.slug",
@@ -134,8 +134,13 @@ def validate_change_file(
                 f"{key} must be a list",
                 rel,
             )
-    if (change_kind == "adhoc" or (isinstance(source_branch, str)
-                                  and source_branch.startswith("adhoc/"))) and metadata.get("proposals") != []:
+    adhoc = change_kind == "adhoc"
+    if isinstance(source_branch, str):
+        try:
+            adhoc = adhoc or branch_details(source_branch)["kind"] == "adhoc"
+        except MDFError:
+            pass
+    if adhoc and metadata.get("proposals") != []:
         add_finding(findings, "change.proposals", "adhoc Change 的 proposals 必须为空列表", rel)
     if "bugs" in metadata:
         add_finding(
@@ -227,6 +232,13 @@ def validate_change_file(
             findings, "change.evidence", "evidence must be a mapping", rel
         )
     else:
+        fixed = evidence.get("range")
+        if "range" in evidence and (not isinstance(fixed, dict)
+                                  or not {"base", "source_head"} <= fixed.keys()
+                                  or any(not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value)
+                                         for value in fixed.values())
+                                  or set(fixed) - {"base", "source_head", "target_head"}):
+            add_finding(findings, "change.range", "evidence.range 需要完整 commit hash 范围", rel)
         for key in ("tests", "commands", "artifacts"):
             values = evidence.get(key)
             if not isinstance(values, list) or any(

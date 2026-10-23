@@ -66,13 +66,16 @@ closeout:
 - origin fetch/push 地址须一致且唯一，支持 SSH/HTTPS 与自建 host；第一版只支持同仓 PR/MR。
 - 项目安装并登录 gh/glab；MDF 不自动配置账号、CI、runner 或 branch protection。
 - 首次 pr 先完成主链前置，再按下方材料准备条款生成候选材料。
+  - 无账本 adhoc 在 Prepare 委托 [无账本 Adhoc 收口](adhoc-change.md) 的步骤 1–5，再返回本页 Finish。
+  - 保留真实分支与 worktree，不要求 delivery/objectives；已有损坏账本不能绕过。
 - PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入 develop 后生效。
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
   - release/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
-- 已有 Git common dir `mdf/finish/<source>.json` 时先按下方恢复路由续办，不重新执行整套材料准备。
+- 已有 Git common dir `mdf/finish/` 操作记录时先按下方恢复路由续办，不重新执行整套材料准备。
+  - 四类 Gitflow 使用 `<source>.json`；adhoc 使用 `adhoc-<source 的 SHA256>.json`，内容保存真实 source。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
@@ -238,12 +241,15 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
 - release/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
 - adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
+  - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
+  - CI 继续使用已有独立 commit review 路径，不要求读取交付账本或 Change。
 - 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。
 - 提交前重核远端 ancestor 与 squash；目标前进则回本页集成、补审补测循环。
 
 ### 勾选与交接
 
 pr 只维护自己的 checkbox，close-out 是其后无 checkbox 的必执行步骤。
+无账本 adhoc 不创建 checkbox；pr 与 close-out 的完成仍分别核实际平台与清理结果。
 
 - 提交候选材料前将 pr 项勾选并提交；这只表示已准备候选，不表示 intent 或 Goal 完成。
 - 创建 PR、CI 全绿与候选勾选均不能结束 pr；必须等待实际 merged 并核验通过。

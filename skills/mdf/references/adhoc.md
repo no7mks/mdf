@@ -1,6 +1,7 @@
 # Adhoc
 
 `$mdf adhoc [<工作描述>]` 在临时 worktree 中连续完成一次小工作，直到按配置收口。
+其他已有分支也可归为 adhoc；没有交付账本时，pr / close-out 按 [无账本 Adhoc 收口](adhoc-change.md) 接管。
 
 ## 决策树
 
@@ -76,6 +77,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更、测试门槛批准及 fact 的确认仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
+  - 当前为无账本 adhoc 时保留真实分支与工作区，进入 adhoc-change 的实际成果收口，不重新 start。
   - detached 现场必须有上下文已知 slug；缺失或不能证明收口时停止，不猜测身份或重新 start。
   - 用户明确发起不同新工作且旧工作已完成时，用返回的 primary_worktree 新建。
     不复用旧目标或工作区。

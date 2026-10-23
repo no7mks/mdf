@@ -1,4 +1,5 @@
 import re
+import hashlib
 import subprocess
 from pathlib import Path
 from threading import Lock
@@ -116,13 +117,26 @@ def require_planning(repo: Path) -> None:
         )
 
 
+def valid_branch_name(name: str) -> bool:
+    return (bool(name) and name not in {"@", "HEAD"} and not name.startswith(("-", "/"))
+            and not name.endswith(("/", ".")) and not re.search(r"[\x00-\x20\x7f~^:?*\[\\]", name)
+            and not any(value in name for value in ("..", "@{", "//"))
+            and all(not part.startswith(".") and not part.endswith(".lock") for part in name.split("/")))
+
+
 def branch_details(name: str) -> dict[str, Any]:
     match = re.fullmatch(r"(feature|bugfix|adhoc)/(.+)", name)
     if match:
+        try:
+            slug = slugify(match.group(2))
+        except MDFError:
+            if match.group(1) != "adhoc":
+                raise
+            slug = "adhoc-" + hashlib.sha256(name.encode()).hexdigest()[:12]
         return {
             "name": name,
             "kind": match.group(1),
-            "slug": slugify(match.group(2)),
+            "slug": slug,
             "version": None,
             "supported": True,
         }
@@ -141,12 +155,17 @@ def branch_details(name: str) -> dict[str, Any]:
             "version": version,
             "supported": True,
         }
+    supported = valid_branch_name(name) and name not in {"master", "main", "develop", "planning"}
+    try:
+        slug = slugify(name) if name else ""
+    except MDFError:
+        slug = "adhoc-" + hashlib.sha256(name.encode()).hexdigest()[:12]
     return {
         "name": name,
-        "kind": "unsupported",
-        "slug": slugify(name),
+        "kind": "adhoc" if supported else "unsupported",
+        "slug": slug,
         "version": None,
-        "supported": False,
+        "supported": supported,
     }
 
 

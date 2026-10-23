@@ -65,6 +65,9 @@ def command_pre_gitflow_finish(args):
     branch = current_branch(repo)
     if not branch_details(branch)["supported"]:
         raise MDFError("hook 只在 owner 交付分支执行", code="unsupported_branch")
+    if branch_details(branch)["kind"] == "adhoc":
+        from mdf_core.lifecycle.adhoc_context import require_source
+        require_source(branch)
     if load_manifest(repo).get("state") != "ready":
         raise MDFError("hook 要求 manifest state 为 ready", code="manifest_not_ready")
     if args.after is not None:

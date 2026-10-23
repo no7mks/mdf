@@ -147,8 +147,11 @@ evidence:
 ```
 
 - `source_branch: feature/<slug>` / `bugfix/<bug-id>` / `adhoc/<slug>`：独立分支交付；
-  目录 slug 必须与分支后缀的 kebab 形式对齐，change_kind 与分支类型一致。
+  feature/bugfix 的目录 slug 必须与分支后缀的 kebab 形式对齐，change_kind 与分支类型一致。
   - adhoc 分支也允许 `change_kind: fix`；两种类型均要求 `proposals: []`。
+- 除四类 Gitflow 及 master/main/develop/planning 外的合法分支均归 adhoc，source_branch 保留真实名称。
+  - adhoc 材料目录可独立命名；按 source 精确定位，冲突不覆盖；内部角色与 backmerge 仍走所属 workflow。
+  - 无账本 adhoc 不要求 delivery/objectives；规范 Change 可独立进入 pr / close-out 与后续 release 聚合。
 - `source_branch: develop`：无独立交付分支的直合 Change；目录自选 kebab slug，
   不与分支名对齐；change_kind 允许 feature、bugfix 或 fix；不经 close-out，只由后续 release 作 child 聚合。
 - `fix` 表示比 feature、bugfix 更轻的小范围修正，可涉及代码、测试、文档或配置，不要求先建 Bug 或 Proposal。
@@ -158,6 +161,8 @@ evidence:
   - ❌ duplicate ID 不得出现在任何 outcome 列表。
 - `evidence.tests`、`evidence.commands` 与 `evidence.artifacts` 都是列表；
   每个元素必须是非空字符串。
+  - 无账本 adhoc 可用 `evidence.range` 固定 base、source_head 与 target_head，值为完整 commit hash。
+  - 范围记录不替代实际验收；业务 source_head 与材料提交后的合并 tip 分开。
 - 正文必须包含“结果”“已更新的当前文档”和“已知偏差”章节。
 
 ## 版本根 Change

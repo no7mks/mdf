@@ -17,6 +17,9 @@ def preflight(repo, source):
     if current_branch(repo) != source:
         raise MDFError("首次提交或更新 PR/MR 必须在源 worktree 执行", code="stage_branch")
     kind = branch_details(source)["kind"]
+    if kind == "adhoc":
+        from mdf_core.lifecycle.adhoc_context import require_source
+        require_source(source)
     if kind == "feature":
         from mdf_core.lifecycle.manual import feature_completion
         complete, roster = feature_completion(repo, source, allow_candidate=True)
@@ -202,6 +205,9 @@ def finish(repo, source, settings, *, phase="close-out"):
 
 
 def _finish(repo, source, settings, *, phase):
+    if branch_details(source)["kind"] == "adhoc":
+        from mdf_core.lifecycle.adhoc_context import require_source
+        require_source(source)
     path = state_path(repo, source)
     state = read_json(path) if path.exists() else None
     identity = origin(repo, settings["provider"])
@@ -212,6 +218,26 @@ def _finish(repo, source, settings, *, phase):
                   or state.get("source") != source or state.get("target") != target):
         raise MDFError("PR/MR 恢复记录与当前配置不符", code="pull_state_changed")
     from mdf_core.workspace.squash import require_ready
+    if state is None and details["kind"] == "adhoc":
+        from mdf_core.lifecycle.adhoc_context import material
+        from mdf_core.lifecycle.adhoc import completion
+        work = worktree_map(repo).get(source, repo)
+        _, ledger = material(work, source)
+        if not ledger:
+            git(repo, "fetch", "origin", "--prune")
+            existing = forge.find(source, target)
+            if existing and existing["state"] == "merged":
+                ensure_clean(work)
+                if sha(work, "HEAD") != existing["head"]:
+                    raise MDFError("接管已合并 PR 须绑定原 source tip", code="pull_state_changed")
+                completion(work, source)
+                merged = verified_merge(repo, existing, source, target, existing["head"])
+                state = {"mode": "pr", "identity": identity, "source": source, "target": target,
+                         "head": existing["head"], "pull": existing, "completed": False,
+                         "merge_commit": merged, "retained_worktree": str(work)}
+                write_json(path, state)
+            elif ancestor(repo, sha(repo, source), sha(repo, f"origin/{target}")):
+                raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
     if state is None and phase == "close-out":
         raise MDFError("先完成 pr intent，再执行 close-out", code="pr_not_merged")
     if state is None:

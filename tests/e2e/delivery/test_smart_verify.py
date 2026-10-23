@@ -6,10 +6,10 @@ from mdf_test_support import *  # noqa: F403
     ("develop", "unsupported", False),
     ("master", "unsupported", False),
     ("planning", "unsupported", False),
-    ("codex/fix/bug-CD34", "unsupported", True),
+    ("codex/fix/bug-CD34", "adhoc", True),
     ("qa/feature/service-health/1", "unsupported", False),
     ("dev/feature/service-health/1", "unsupported", False),
-    ("临时修复", "unsupported", False),
+    ("临时修复", "adhoc", False),
     ("feature/service-health", "feature", False),
     ("bugfix/bug-CD34", "bugfix", False),
     ("release/1.3.0", "release", False),
@@ -40,7 +40,7 @@ def test_smart_runs_without_delivery_materials(
     assert result["results"][2]["report"]["tests"] == 1
     assert not list(work.rglob("objectives.md"))
     assert not list(work.rglob("delivery.json"))
-    assert not list(work.rglob("verification-report.json"))
+    assert bool(list(work.rglob("verification-report.json"))) == (kind == "adhoc")
 
 
 @pytest.mark.parametrize("branch", ["develop", "codex/fix/bug-CD34"])

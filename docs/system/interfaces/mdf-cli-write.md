@@ -287,7 +287,7 @@ python3 skills/mdf/scripts/mdf.py pre-gitflow-finish --repo /path/to/repository 
 python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
 ```
 
-要求当前分支为支持的 Gitflow 交付分支、worktree clean。
+要求当前分支为支持的交付分支、worktree clean；普通分支归 adhoc，主线及内部角色不独立收口。
 
 - 在 fetch、合并或发布记录写入前，一次性只读检查源与全部目标 worktree。
   feature/bugfix/adhoc 检查 develop；release/hotfix 检查 master、develop。
@@ -313,8 +313,18 @@ feature/bugfix/adhoc：
 - 以 `--no-ff --no-commit` 合并到本地 `develop`，再以
   `chore(gitflow): 合并 <source> 到 <target>` 提交。
   - feature 的 implemented 转换包含在该 merge commit。
-  - adhoc 要求六项清单完成，Change 为 adhoc 且 `proposals: []`；不修改 PRP。
+  - 有账本 adhoc 要求清单完成；无账本不创建 delivery/objectives，核规范 Change。
+  - adhoc Change 可为 adhoc 或 fix，source_branch 保留真实名称且 `proposals: []`；不修改 PRP。
 - 角色分支或 worktree 仍在则失败。
+
+adhoc 的状态与恢复：
+
+- `adhoc-status --repo <owner> [--slug <slug>] [--source <source>]` 返回材料模式、目录及实际完成证据。
+- 无账本时还返回 range、paths；材料目录冲突不覆盖，smart report 使用同一目录。
+- local 以安全 source hash 在 Git common dir 保存最小操作记录，支持 `finish-gitflow --source <source>` 恢复。
+  - 恢复核实际双亲 merge、源 tip 与目标第一父链；不重复 merge，不删除重新创建的源 ref。
+- 主 worktree 能切回 develop 时切回，否则 detach；独立 owner 保留在交付 tip。
+- PR mode 可接管只有规范 Change 的已合并外部 PR；先核平台 source/target/head，再续办清理。
 
 release/hotfix：
 

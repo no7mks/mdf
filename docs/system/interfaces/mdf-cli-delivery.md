@@ -118,12 +118,13 @@
 **smart**
 
 - 不要求交付分支或交付材料；detached HEAD 返回 `detached_head`。
-- 结果 `branch` 保留原名；非交付 branch 的 `kind` 为 `unsupported`。
+- 结果 `branch` 保留原名；master/main/develop/planning 的 `kind` 为 `unsupported`，其他普通分支归 adhoc。
 - 须至少一个 `--module` 或可由 `--paths` 推断的 module。
 - 跑涉及 module 的 lint、build、quick；可选 `--test` 追加点名命令。
 - 不写 `verification-report.json`；stdout 返回结果 JSON。
 - adhoc 例外：smart 成败均保存 `verification-report.json`，scope 仍为 smart。
   - 只跑涉及 module 的 lint/build/quick 与选题，不要求 smoke 或 branch scope。
+  - 包括无账本分支；使用 adhoc-status 的材料目录，允许独立 slug，不创建 delivery/objectives。
 
 **named**
 

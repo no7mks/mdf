@@ -272,12 +272,14 @@ def _verify_branch(repo, branch, kind, slug) -> None:
 
 def _verify_smart(repo, args) -> None:
     branch = current_branch(repo)
-    kind = branch.partition("/")[0]
-    # smart 无需 slug；release/hotfix 的稳定 SemVer 命名约束仍生效。
-    if kind in {"release", "hotfix"}:
-        kind = branch_details(branch)["kind"]
-    elif kind not in {"feature", "bugfix", "adhoc"} or "/" not in branch:
+    kind = branch_details(branch)["kind"]
+    from mdf_core.lifecycle.roster import parse_role_branch
+    if parse_role_branch(branch) or branch.startswith("codex/backmerge/"):
         kind = "unsupported"
+    report_path = None
+    if kind == "adhoc":
+        from mdf_core.lifecycle.adhoc_context import material
+        report_path = material(repo, branch)[0] / "verification-report.json"
     modules = list(args.module or [])
     if args.paths:
         config = load_modules(repo)
@@ -359,8 +361,8 @@ def _verify_smart(repo, args) -> None:
             "paths": list(args.paths or []),
         },
     }
-    if kind == "adhoc":
-        write_json(evidence_file(repo, unreleased_slug(branch_details(branch))), result)
+    if report_path is not None:
+        write_json(safe(repo, report_path), result)
     if not all_passed:
         raise MDFError(
             "smart 验证失败",

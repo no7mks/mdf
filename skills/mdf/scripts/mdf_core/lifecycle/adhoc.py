@@ -51,11 +51,13 @@ def require_objectives(text, *, starting=False, finishing=False, pr_mode=False):
 
 
 def require_identity(data):
+    from mdf_core.workspace.gitutil import branch_details
+
     work = data.get("work")
     roster = data["roster"]
     if (not isinstance(work, str) or not work.strip() or data["needs_design"]
             or data.get("proposal") or data.get("bug") or data.get("manual")
-            or data["branch"] != f"adhoc/{data['slug']}"
+            or branch_details(data["branch"])["kind"] != "adhoc"
             or tuple(roster[key] for key in ("qa", "dev", "reviewers")) != (0, 0, 1)):
         raise MDFError("adhoc 身份需要工作描述、固定 solo 且不绑定对象或 design", code="invalid_delivery")
 
@@ -76,7 +78,6 @@ def command_status(args):
     from mdf_core.lifecycle.delivery_state import git, locate, safe
     from mdf_core.foundation.errors import emit
     from mdf_core.workspace.gitutil import (
-        branch_details,
         ensure_clean,
         primary_worktree,
         repo_path,
@@ -86,13 +87,33 @@ def command_status(args):
 
     repo = repo_path(args.repo)
     require_git_root(repo)
+    if args.slug is not None and (not args.slug or slugify(args.slug) != args.slug):
+        raise MDFError("材料 slug 必须为 kebab slug", code="invalid_slug")
     branch = git(repo, "branch", "--show-current").stdout.strip()
+    from mdf_core.lifecycle.adhoc_context import material, require_source
+    source = getattr(args, "source", None) or branch
+    if not source and args.slug:
+        root = safe(repo, repo / "changes/unreleased" / args.slug)
+        from mdf_core.lifecycle.delivery_state import read_json
+        if (root / "delivery.json").is_file():
+            source = read_json(safe(repo, root / "delivery.json")).get("branch")
+        elif (root / "CHANGE.md").is_file():
+            from mdf_core.foundation.yamlutil import read_frontmatter
+            source = read_frontmatter(safe(repo, root / "CHANGE.md"))[0].get("source_branch")
+    if not source:
+        raise MDFError("adhoc-status 需要当前 adhoc 或上下文已知的 --slug / --source", code="invalid_slug")
+    require_source(source)
+    root, ledger = material(repo, source, args.slug)
+    if not ledger:
+        from mdf_core.lifecycle.adhoc_finish import status
+        emit({"ok": True, "operation": "adhoc-status", "result": status(repo, source, args.slug)})
+        return
     slug = args.slug
-    if slug is None and branch.startswith("adhoc/"):
-        slug = branch_details(branch)["slug"]
+    if slug is None:
+        slug = root.name
     if not slug or slugify(slug) != slug:
         raise MDFError("adhoc-status 需要当前 adhoc 或上下文已知的 --slug", code="invalid_slug")
-    owner = f"adhoc/{slug}"
+    owner = source
     if branch and branch != owner:
         raise MDFError("adhoc-status 必须绑定本次 owner worktree", code="stage_branch")
     root, data = locate(repo, slug, owner=owner)
@@ -132,6 +153,7 @@ def command_status(args):
                         or (state.get("remote_cleanup") or {}).get("status") != "deleted"):
             raise MDFError("PR 收口尚未核验完成，按原 source 续办 close-out", code="adhoc_not_finished")
     emit({"ok": True, "operation": "adhoc-status", "result": {
+        "material_mode": "ledger", "source": owner,
         "delivery": data, "path": str(root.relative_to(repo)), "head": head,
         "next_step": next_step if branch else None,
         "completed": not branch, "merge_commit": merge_commit,
@@ -143,7 +165,11 @@ def completion(repo, source):
     from mdf_core.lifecycle.delivery_state import locate, require_finish
     from mdf_core.foundation.yamlutil import read_frontmatter
 
-    root, data = locate(repo)
+    from mdf_core.lifecycle.adhoc_context import material, complete_change
+    root, ledger = material(repo, source)
+    if not ledger:
+        return complete_change(repo, source, root)
+    root, data = locate(repo, root.name, owner=source)
     require_finish(repo, root, data)
     from mdf_core.workspace.merge_policy import configured
     require_objectives((root / "objectives.md").read_text(encoding="utf-8"), finishing=True,

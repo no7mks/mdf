@@ -47,6 +47,8 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 
 - 未 merged 时不能调用 finish-gitflow；返回 pr 尚未完成，不绕过 objectives 顺序。
 - 已 merged 后不重做源分支集成、材料、审查或验证；使用固定 M 与操作记录。
+  - 无账本 adhoc 的外部 PR 没有 MDF 操作记录时，可绑定已知 source tip 后首次接管。
+  - 核规范 Change、平台 source/target/head、双亲 M 与目标远端第一父链，再记录并续办；未 merged 返回 pr。
 - source 已删除、owner detached 或外部删除时，仍从同一 Git common dir 的主 worktree 恢复。
 - `completed=true` 须同时核对 merge_commit、远端目标、remote_deleted=true 与本地 source 删除。
   owner 存在时核 detached；owner 已外部删除时如实报告，不重建。

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
-from mdf_core.workspace.gitutil import current_branch, ensure_clean
+from mdf_core.workspace.gitutil import branch_details, current_branch, ensure_clean
 from mdf_core.workspace.merge_policy import configured, git, planning_only, sha
 
 
@@ -61,6 +61,19 @@ def inspect(repo, branch=None, *, refresh=True):
     role = parse_role_branch(branch)
     if role:
         owner = role[0]
+    if branch_details(branch)['kind'] == 'adhoc' and not role and not branch.startswith('codex/backmerge/'):
+        from mdf_core.lifecycle.adhoc_context import material
+        from mdf_core.foundation.yamlutil import read_frontmatter
+        root, ledger = material(repo, branch)
+        change = root / 'CHANGE.md'
+        if not ledger and change.is_file():
+            metadata, _ = read_frontmatter(change)
+            evidence = metadata.get('evidence')
+            fixed = evidence.get('range') if isinstance(evidence, dict) else None
+            if fixed is not None:
+                if not isinstance(fixed, dict) or not fixed.get('source_head'):
+                    raise MDFError('Change 固定范围无效', code='squash_boundary_unknown')
+                protected.add(sha(repo, fixed['source_head']))
     start = git(repo, 'config', '--get', f'branch.{owner}.mdf-start-commit', check=False)
     if start.returncode == 0:
         protected.add(sha(repo, start.stdout.strip()))
@@ -95,7 +108,7 @@ def require_ready(repo, branch=None):
     if branch != 'planning' and configured(repo)['mode'] != 'pr':
         return
     if not (branch == 'planning'
-            or branch.startswith(('feature/', 'bugfix/', 'release/', 'hotfix/', 'adhoc/', 'codex/backmerge/'))
+            or branch_details(branch)['supported']
             or parse_role_branch(branch)):
         return
     plan = inspect(repo, branch)

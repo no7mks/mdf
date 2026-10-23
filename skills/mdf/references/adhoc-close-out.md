@@ -71,6 +71,9 @@
 PR 未 merged 时交接 pr，不在 close-out 内创建 PR、轮询 CI 或准备候选材料。
 本页后续编号流程仅用于 local；PR mode 的 pr 可只读取其中材料条款。
 
+local 先运行 adhoc-status；`material_mode: change` 时委托 [无账本 Adhoc 收口](adhoc-change.md) 并返回。
+有账本时执行本页后续流程；损坏账本不能改走无账本路径。
+
 读取 [common](common.md)、[delivery-contract](delivery-contract.md) 与 [adhoc](adhoc.md) 的条款。
 仅读身份、账本与调用方规则，不重新执行这些文件的工作流。
 

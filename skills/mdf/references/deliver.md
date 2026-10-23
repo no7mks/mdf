@@ -80,6 +80,8 @@
   命中时先恢复父 PR 流程；未命中才进入下方特殊身份或普通选择，不能先要求 owner 当前仍在交付分支。
 
 - 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
+  - 无账本 adhoc 按 adhoc-status 返回的实际范围与模式进入 pr 或 close-out；边界外不准备材料。
+  - 不把分支类别当作已启动流程，不生成虚拟 objectives；归属不明先询问。
 - 人工 feature 在步骤 2 执行 `references/manual-feature.md` 的步骤 1–2，替代普通选择表。
 - 尚未 start 时将 `--manual` 转交 start，不要求 target 或选择 PRP。
 - 人工工作未勾时交接用户，所有模式均不得代勾。

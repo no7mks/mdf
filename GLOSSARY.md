@@ -171,16 +171,18 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 ## Fix
 
 Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更轻，不要求先建 Bug 或 Proposal。
-只用于 `source_branch: develop` 或 `adhoc/<slug>`；后者沿用 adhoc 流程与空 proposals 要求。
+只用于 `source_branch: develop` 或归类为 adhoc 的真实分支；后者沿用 adhoc 流程与空 proposals 要求。
 
 ## Adhoc
 
-一次临时的小工作，可涉及代码、测试、文档或配置；由 `$mdf adhoc` 启动。
+临时工作分支，可涉及代码、测试、文档或配置；四类 Gitflow 与 master/main/develop/planning 外的分支均归此类。
 
 - Agent 自行选相关 slug，从 develop 建立 `adhoc/<slug>` 与独立 worktree，不绑定 PRP。
-- objectives 直接生成为五项：工作、code-review、verify smart、fact audit/update、close-out。
+- `$mdf adhoc` 的 local objectives 为六项：工作、lint、code-review、verify smart、fact audit/update、close-out。
 - roster 固定 `0,0,1`，`needs_design: false`；工作可由 Agent 完成并勾选。
 - smart 成败均写 verification-report.json；本地 no-ff 合入 develop 后保留 detached worktree。
+- 已有分支可无账本收口：保留真实名称与工作区，由 pr / close-out 准备 Change 与实际 evidence，不补造 delivery/objectives。
+- 内部 qa/dev 角色及 backmerge 先归属原 workflow；不能独立作为 adhoc 收口。
 
 ## Deliver、until 与 confidence
 

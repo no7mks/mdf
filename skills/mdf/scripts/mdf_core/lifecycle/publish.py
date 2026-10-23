@@ -9,6 +9,10 @@ from mdf_core.workspace.gitutil import current_branch, ensure_clean, primary_wor
 def state_path(repo, source):
     from mdf_core.workspace.gitflow import _git
     common = Path(_git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
+    from mdf_core.workspace.gitutil import branch_details
+    if branch_details(source)["kind"] == "adhoc":
+        import hashlib
+        return safe(common, common / "mdf/finish" / f"adhoc-{hashlib.sha256(source.encode()).hexdigest()}.json")
     return safe(common, common / "mdf/finish" / f"{source}.json")
 
 

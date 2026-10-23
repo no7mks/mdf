@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mdf_core.lifecycle.adhoc import completion, merged_commit, prepare, validate_start
+from mdf_core.lifecycle.adhoc import prepare, validate_start
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.workspace.gitutil import (
     add_linked_worktree,
@@ -359,6 +359,9 @@ def command_finish_gitflow(args) -> None:
     if not details["supported"]:
         raise MDFError("finish requires a Gitflow delivery branch",
                        code="unsupported_branch")
+    if details["kind"] == "adhoc":
+        from mdf_core.lifecycle.adhoc_context import require_source
+        require_source(source)
     from mdf_core.workspace.merge_policy import configured
     settings = configured(repo)
     if settings["mode"] == "pr":
@@ -367,9 +370,13 @@ def command_finish_gitflow(args) -> None:
         return
     if getattr(args, "phase", "close-out") == "pr":
         raise MDFError("pr intent 仅适用于 PR mode", code="invalid_closeout")
+    if details["kind"] == "adhoc":
+        from mdf_core.lifecycle.adhoc_finish import finish
+        finish(repo, source, recovering=bool(args.source))
+        return
     kind = details["kind"]
     publish = kind in {"release", "hotfix"}
-    targets = ["develop"] if kind in {"feature", "bugfix", "adhoc"} else ["master", "develop"]
+    targets = ["develop"] if kind in {"feature", "bugfix"} else ["master", "develop"]
     if args.source and not publish:
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
     if not publish and not _exists(repo, "refs/heads/develop"):
@@ -378,8 +385,6 @@ def command_finish_gitflow(args) -> None:
     if kind == "feature":
         from mdf_core.lifecycle.manual import feature_completion
         complete_feature, finish_roster = feature_completion(repo, source)
-    elif kind == "adhoc":
-        finish_roster = completion(repo, source)
     else:
         finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)
@@ -401,9 +406,8 @@ def command_finish_gitflow(args) -> None:
         _merge(merge_at, incoming, target, hook)
         return merge_at
 
-    if kind in {"feature", "bugfix", "adhoc"}:
-        if kind != "adhoc" or not merged_commit(repo, _git(repo, "rev-parse", source).stdout.strip()):
-            merge_into("develop", source, complete_feature)
+    if kind in {"feature", "bugfix"}:
+        merge_into("develop", source, complete_feature)
     else:
         from mdf_core.lifecycle.publish import publish as publish_release
         publish_release(repo, source, details["version"])
@@ -411,7 +415,7 @@ def command_finish_gitflow(args) -> None:
     source_wt = remaining.get(source)
     retained = source_wt or (repo if repo != primary else None)
     if retained is not None:
-        _git(retained, "checkout", "--detach", *([source] if kind == "adhoc" else []))
+        _git(retained, "checkout", "--detach")
     if _exists(primary, f"refs/heads/{source}"):
         _git(primary, "branch", "-D", source)
     tag = f"v{details['version']}" if publish else None

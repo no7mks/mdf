@@ -185,6 +185,7 @@ def build_parser() -> argparse.ArgumentParser:
     adhoc_status = subparsers.add_parser("adhoc-status")
     adhoc_status.add_argument("--repo", required=True)
     adhoc_status.add_argument("--slug")
+    adhoc_status.add_argument("--source")
     adhoc_status.set_defaults(func=command_adhoc_status)
 
     from mdf_core.documents.list_objects import command_list

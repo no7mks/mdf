@@ -15,6 +15,8 @@ def core():
     ("adhoc/Update_README", "adhoc", "update-readme", None),
     ("release/1.3.0", "release", "1-3-0", "1.3.0"),
     ("hotfix/1.2.1", "hotfix", "1-2-1", "1.2.1"),
+    ("fix/readme", "adhoc", "fix-readme", None),
+    ("scratch", "adhoc", "scratch", None),
 ])
 def test_delivery_branches(name, kind, slug, version):
     gitutil, _ = core()
@@ -24,7 +26,7 @@ def test_delivery_branches(name, kind, slug, version):
     )
 
 
-@pytest.mark.parametrize("name", ["develop", "master", "planning", "qa/feature/x/1"])
+@pytest.mark.parametrize("name", ["develop", "master", "main", "planning", "", "feature/"])
 def test_other_branches_are_unsupported(name):
     gitutil, _ = core()
     assert gitutil.branch_details(name)["kind"] == "unsupported"

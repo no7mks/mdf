@@ -9,6 +9,7 @@ from pathlib import Path
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace import squash
 from mdf_core.lifecycle.roster import parse_role_branch
+from mdf_core.workspace.gitutil import branch_details
 
 
 def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
@@ -40,7 +41,7 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     branch = plan["branch"]
     require(git("branch", "--show-current") == branch
             and (branch == "planning"
-                 or branch.startswith(("feature/", "bugfix/", "release/", "hotfix/", "adhoc/", "codex/backmerge/"))
+                 or branch_details(branch)["supported"]
                  or parse_role_branch(branch)),
             "当前分支须为计划中的交付、角色或 planning 分支")
 

@@ -136,6 +136,8 @@ def test_feature_source_branch_accepts_matching_slug(tmp_path: Path):
 @pytest.mark.parametrize("source_branch,slug", [
     ("develop", "small-correction"),
     ("adhoc/small-correction", "small-correction"),
+    ("fix/small-correction", "small-correction"),
+    ("scratch", "scratch-unique"),
 ])
 def test_fix_change_accepts_lightweight_sources(tmp_path: Path, source_branch, slug):
     path = tmp_path / "changes/unreleased" / slug / "CHANGE.md"
@@ -147,7 +149,6 @@ def test_fix_change_accepts_lightweight_sources(tmp_path: Path, source_branch, s
 @pytest.mark.parametrize("source_branch,code", [
     ("feature/small-correction", "change.kind"),
     ("bugfix/small-correction", "change.kind"),
-    ("fix/small-correction", "change.source_branch"),
     ("master", "change.source_branch"),
 ])
 def test_fix_change_rejects_other_sources(tmp_path: Path, source_branch, code):
@@ -159,14 +160,15 @@ def test_fix_change_rejects_other_sources(tmp_path: Path, source_branch, code):
     assert any(item.code == code for item in findings)
 
 
-def test_adhoc_fix_preserves_slug_and_proposal_constraints(tmp_path: Path):
+def test_adhoc_fix_allows_independent_slug_but_requires_empty_proposals(tmp_path: Path):
     path = tmp_path / "changes/unreleased/other-slug/CHANGE.md"
     _write_change(path, change_kind="fix", source_branch="adhoc/small-correction")
     path.write_text(path.read_text().replace("proposals: []", "proposals: [prp-0001]"))
 
     findings = _findings_for(tmp_path, path, expected_slug="other-slug")
 
-    assert {"change.slug", "change.proposals"} <= {item.code for item in findings}
+    assert "change.proposals" in {item.code for item in findings}
+    assert "change.slug" not in {item.code for item in findings}
 
 
 @pytest.mark.parametrize("source_branch", ["release/1.2.0", "hotfix/1.2.0"])

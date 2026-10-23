@@ -64,6 +64,7 @@
 ## 工作流（唯一执行契约）
 
 adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步骤 6 完成验收后自勾 verify smart。
+无账本 adhoc 按 adhoc-change.md 的实际检查顺序执行 smart；使用 adhoc-status 的材料目录，不要求或创建 checkbox。
 开发或 code-review 内部 smart 不勾主链项；主链验证中修改业务内容则退勾 code-review 及后续项，按下方小 loop 完成增量复审。
 人工 feature 的 objectives 项名为 verify smoke；执行 branch scope，沿用 feature
 的 lint/build/quick/smoke 和 branch 报告要求，在步骤 6 自勾 verify smoke。
