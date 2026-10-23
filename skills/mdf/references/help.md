@@ -374,6 +374,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：仅用户要求预览时 dry-run；未要求则实际归档。
 - `$mdf fact audit`
   - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
+  - PR 独立模式：`$mdf fact audit --source-commit <head> --target-commit <base>`。
+    固定 snapshot，只读返回 JSON；不混用 scope/paths，不进入主链确认。
   - 用途：只读审阅覆盖、证据、语义与加载质量。
   - 说明：不执行 `verification`；`size.hard` 阻断。主链 release `--base` 为上一正式发布。
 - `$mdf prettify`

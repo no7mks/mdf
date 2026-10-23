@@ -1,5 +1,8 @@
 # Fact Audit
 
+出现 `--source-commit` 或 `--target-commit` 时，直接执行
+[独立 commit 模式](fact-audit-commits.md)，不进入下方主链流程与当场确认。
+
 ## 决策树
 
 ```text

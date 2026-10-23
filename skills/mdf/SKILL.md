@@ -135,6 +135,7 @@ disable-model-invocation: true
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
   - `--*-model` 值为口语描述，可点名一个或多个模型。
+- fact audit 可用 `--source-commit <head> --target-commit <base>` 进入独立 PR 只读审阅，不能混用 scope/paths。
 - fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
 - upgrade 可带 `--source`。

@@ -85,12 +85,20 @@ def build_parser() -> argparse.ArgumentParser:
     audit = subparsers.add_parser("fact-audit")
     audit.add_argument("--repo", required=True)
     audit.add_argument(
-        "--scope", choices=("full", "branch", "paths"), default="full"
+        "--scope", choices=("full", "branch", "paths"), default=None
     )
     audit.add_argument("--base")
+    audit.add_argument("--source-commit")
+    audit.add_argument("--target-commit")
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)
+
+    from mdf_core.reviewing.fact_report import command_fact_report_check
+    fact_report = subparsers.add_parser("fact-audit-report-check")
+    fact_report.add_argument("--context-file", required=True)
+    fact_report.add_argument("--report-file", required=True)
+    fact_report.set_defaults(func=command_fact_report_check)
 
     prose = subparsers.add_parser("prose-check")
     prose.add_argument("--repo", required=True)

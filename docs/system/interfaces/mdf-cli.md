@@ -79,7 +79,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `merge-no-ff` | 在当前分支 no-ff 合并指定提交 | [仓库写入命令](mdf-cli-write.md) |
 | `init` | 初始化写入 | [仓库写入命令](mdf-cli-write.md) |
 | `validate` | 确定性校验 | [只读命令](mdf-cli-inspect.md) |
-| `fact-audit` | 确定性审计 | [只读命令](mdf-cli-inspect.md) |
+| `fact-audit-report-check` | 独立事实 report 校验 | [只读命令](mdf-cli-inspect.md) |
+| `fact-audit` | 确定性审计与独立 commit context | [只读命令](mdf-cli-inspect.md) |
 | `prose-check` | 文档结构硬限制检查 | [只读命令](mdf-cli-inspect.md) |
 | `make-id` | 对象 ID | [只读命令](mdf-cli-inspect.md) |
 | `make-jot-id` | Jot ID | [只读命令](mdf-cli-inspect.md) |

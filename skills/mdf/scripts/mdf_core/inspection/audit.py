@@ -162,7 +162,8 @@ def _branch_scope(
 
 
 def _ignored_paths(
-    repo: Path, sources: list[Path], findings: list[Finding], config: ModulesConfig
+    repo: Path, sources: list[Path], findings: list[Finding], config: ModulesConfig,
+    *, validation_paths: list[str] | None = None,
 ) -> tuple[dict[Path, dict[str, str]], set[str]]:
     """返回命中记录与完整 pattern 集，删除路径仍按全部规则判定范围。"""
     from mdf_core.execution.modules import match as _match
@@ -184,7 +185,10 @@ def _ignored_paths(
                         "module": module.name,
                     }
                 continue
-            if not matched:
+            valid = bool(matched) if validation_paths is None else any(
+                _match(path, rule.pattern) for path in validation_paths
+            )
+            if not valid:
                 add_finding(
                     findings,
                     "audit.ignore_empty",
@@ -207,6 +211,10 @@ def audit_payload(
     implementation_paths: list[str],
     document_paths: list[str],
     base: str | None = None,
+    *,
+    extra_documents: list[str] = (),
+    policy_modules: ModulesConfig | None = None,
+    policy_paths: list[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
     plan = ProgressPlan("fact-audit", ("全量契约校验", "解析范围", "检查文档结构", "映射 evidence 与覆盖"),
                         groups=("契约检查", "事实文档", "文档结构检查"))
@@ -220,11 +228,12 @@ def audit_payload(
         all_sources = [path for path in all_tracked
                        if any(path == root or root in path.parents for root in roots)]
         try:
-            size_config = load_modules(repo)
+            size_config = policy_modules if policy_modules is not None else load_modules(repo)
         except MDFError as exc:
             add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
             size_config = ModulesConfig()
-        ignored, ignored_patterns = _ignored_paths(repo, all_tracked, findings, size_config)
+        ignored, ignored_patterns = _ignored_paths(repo, all_tracked, findings, size_config,
+                                                  validation_paths=policy_paths)
         resolved_base: str | None = None
         sized: list[Path]
         if scope == "full":
@@ -244,6 +253,7 @@ def audit_payload(
             changed = _changed_paths(repo, resolved_base) if resolved_base else []
             code_paths = [path for path in changed if git_path_tracked(repo, path)]
             sources, documents = _branch_scope(repo, all_sources, facts, changed)
+            documents = sorted(set(documents) | {repo / p for p in extra_documents if repo / p in facts})
             sized = documents + [
                 path for path in changed
                 if path not in facts and size_role(relative(repo, path)) is not None
@@ -336,9 +346,16 @@ def audit_payload(
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
+    if args.source_commit is not None or args.target_commit is not None:
+        if (not args.source_commit or not args.target_commit or args.scope is not None
+                or args.base is not None or args.implementation_path or args.document_path):
+            raise MDFError("commit 参数须成对，不能混用 scope/base/paths", code="invalid_arguments")
+        from mdf_core.reviewing.fact_context import fact_context
+        emit({"ok": True, "result": fact_context(repo, args.source_commit, args.target_commit)})
+        return
     payload, exit_code = audit_payload(
         repo,
-        args.scope,
+        args.scope or "full",
         list(args.implementation_path),
         list(args.document_path),
         args.base,

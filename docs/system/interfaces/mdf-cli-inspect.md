@@ -156,6 +156,26 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --document-path docs/system/interfaces/api.md
 ```
 
+### 独立 commit 事实审阅
+
+```bash
+python3 -B skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
+  --source-commit <head> --target-commit <base>
+python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
+  --context-file /outside/context.json --report-file /outside/report.json
+```
+
+- commit 参数须成对，拒绝混用 scope/base/paths；原有 CLI 默认 full 不变。
+- 固定唯一 merge-base；在 checkout 外构建 base/source 临时 snapshot，结束后清理。
+- 不执行 checkout、hooks、filters、tests 或生成器；snapshot 遇 symlink/submodule 明确失败。
+- 不依赖当前 HEAD、脏工作区、交付账本或 ready 前置；source 契约问题仍保留为 findings。
+- target 提供 AGENTS、manifest 与 modules policy；source 配置仅为被审数据。
+- 返回 `ok: true, result: context` 表示 context 构建成功，不能据此宣称 audit 通过。
+- context 包含固定端点、双侧 diff、base/source 映射、影响范围、确定性 audit 与指纹。
+- report-check 验证指纹、覆盖、warning 处置和结论；完整格式不证明语义判断正确。
+- 日志通过 `MDF_LOG_DIR` 指向 checkout 外；JSON report 也由调用方保存到 checkout 外。
+- Agent 执行与 report 契约见 [独立事实审阅](../../../skills/mdf/references/fact-audit-commits.md)。
+
 ## `prose-check`
 
 ```bash
