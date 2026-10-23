@@ -1,7 +1,7 @@
 # Fact Audit
 
 出现 `--source-commit` 或 `--target-commit` 时，直接执行
-[独立 commit 模式](fact-audit-commits.md)，不进入下方主链流程与当场确认。
+[独立 commit 模式](fact-audit-commits.md)，不进入下方主链流程。
 
 ## 决策树
 
@@ -40,7 +40,7 @@
                  │
                  ├──── 无法完成审阅 ────→ [停止]
                  │
-                 ▼ 通过（含未确认项记录）
+                 ▼ 通过（含逐条处置记录）
 ┌──────────────────────────────────┐
 │ 6 Validate                       │
 └────────────────┬─────────────────┘
@@ -51,7 +51,7 @@
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
-│ 7 Confirm review                 │
+│ 7 Report result                  │
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过 ────────────────→ [审阅通过]
@@ -77,17 +77,17 @@
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
 | 6 | Validate | 脚本 | 运行 full validation，不跑验证命令 | validation findings | 7 | update 仅结构返回；其余未通过 |
-| 7 | Confirm review | 约束 | 报告发现并取得当场确认 | 摘要、当场确认 | 审阅通过 | 报告未通过；独立结束，委托返回 |
+| 7 | Report result | 约束 | 按证据与 findings 判定并报告结论 | 摘要、审阅结论 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
 
 ### 逐项进度
 
-- 全局固定 7 个阶段：确定范围 → Audit CLI → 事实复核 → 覆盖复核 → warning 审阅 → validation → 确认。
+- 全局固定 7 个阶段：确定范围 → Audit CLI → 事实复核 → 覆盖复核 → warning 审阅 → validation → 报告结论。
   - 开始先列完整清单；所有播报保留 `fact audit · 阶段 i/7 阶段名`。
   - 语义审阅固定 3 组计数：文档复核、实现覆盖、warning 审阅；CLI 返回后统一列出各组总量。
   - 逐页 evidence、CLI 子计数组在扫描后补报数量与各组总量，未知时标为待确定；空组标为无需处理。
-  - 局部 n/n 后说明下一组与剩余阶段；validation 结束后仍有确认，不提前报告整体完成。
+  - 局部 n/n 后说明下一组与剩余阶段；validation 结束后仍须汇总审阅结论，不提前报告整体完成。
   - fact update 委托时使用父级全局阶段与本流程子阶段，保留轮次，不重置最外层进度。
   - 为 3 个语义计数组预分配稳定编号；Audit CLI 与 validation 的子组待扫描后展开，未知时不宣称总组数已确定。
   - CLI 本地组映射到本次审阅的组清单；每条进度显示当前组编号与完成、运行、待开始、跳过、中断数量。
@@ -102,8 +102,8 @@
 - 长阶段按 `common.md` 的 60 秒要求更新，连续短项可合并播报。
   - 单项未完成时保持计数，说明当前核对内容或等待的命令，不虚构百分比或预计完成时间。
 - full validation 开始前说明实际命令；等待期间转述已取得的具体检查位置。
-  validation 结束后报告 findings，再进入确认或按失败去向返回。
-- 等待确认时说明审阅结论与待确认项，不提前宣称通过。
+  validation 结束后报告 findings，再汇总结论或按失败去向返回。
+- 复核与 validation 全部完成后，按通过条件报告审阅结论。
   以上计数只在会话中播报，不生成持久报告或进度文件。
 
 ### 范围与确定性映射
@@ -112,9 +112,9 @@
 
 #### 范围
 
-除委托确认记录外只读：本流程不写入、移动、提交、生成持久报告；
+本流程只读，不写入、移动、提交、生成持久报告；
 不执行 `.mdf/modules.yaml` 验证入口，也不调用 `$mdf verify`。
-步骤 7 的确认记录由调用方写入并提交。
+步骤 7 的审阅报告由有材料目录的调用方写入并提交。
 
 `--scope` 三选一，与 fact update 共用；列出 `<path>...` 即 `paths`，
 与 `--scope full` 或 `--scope branch` 同用时停止询问：
@@ -187,7 +187,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 不得把解析失败当作初始化豁免。
 
-### 双向复核与确认
+### 双向复核与结论
 
 <a id="s3"></a>
 
@@ -268,7 +268,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 逐条审阅 CLI warning（`audit.uncovered`）以及步骤 3 记下的
   `agents.project_content`。
 - `.mdf/modules.yaml` 某 module 的 `ignore` 已覆盖 `AGENTS.md` 时，
-  不再确认 `agents.project_content`。
+  不再审阅 `agents.project_content`。
 
 验收：
 
@@ -294,52 +294,50 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 - fact-update 委托的例外须同时满足：
   - 本轮语义、CLI 与 validation 问题均仅属步骤 7 定义的结构 finding。
-  - 没有未确认 warning。
+  - 没有未完成处置的 warning。
   满足时返回「仅结构 finding」与清单，由调用方步骤 4 修结构。
   不宣称审阅通过，不勾选进度。
 - 其余失败：独立调用报告并停止；内部委托返回未通过，调用方走失败分支。
 
 <a id="s7"></a>
 
-#### 确认
+#### 结论
 
 返回审阅类型、两类范围、映射、warnings、复核文档、语义/validation findings 与未触及理由。
 
-验收：会话摘要和有效确认；deliver 委托按其 confidence 策略裁定，其余调用由用户当场确认。
+验收：会话摘要、复核证据与审阅结论。审阅结论由执行者按下列通过条件判定，无需用户确认，
+也不作为 deliver 的 confidence decision。
 
-- 确认单独提问，只问本次审阅结论是否确认，不与 Bug 分诊、收口、补验等其他决定放在同一问。
-- 用户答复其他议题不视为确认。
-- 本流程只返回确认记录与时间，不落盘；用户确认记录原话，deliver 自动确认记录评分、来源与依据。
-  - 有材料目录的调用方写入并提交确认记录；主链（含经 fact update 委托）写
+- warning 由执行者依据 evidence 逐条处置：记录不适用或已覆盖的理由；确有事实或覆盖问题则记为 finding。
+- 本流程只返回审阅结果，不落盘。
+  - 有材料目录的调用方写入并提交审阅报告；主链（含经 fact update 委托）写
     `changes/unreleased/<slug>/fact-audit.md`（**report**，非 gate）。
   - 普通主链成功后将 `objectives.md` 的 fact audit 项改为 `[x]` 并提交。
-  - 人工 feature 经 fact update 委托时，只返回确认记录，由 fact update 完成后勾其自身项。
-  - adhoc 只返回确认记录；有账本时由 adhoc 保存 report 并勾 fact audit/update。
+  - 人工 feature 经 fact update 委托时，只返回审阅结果，由 fact update 完成后勾其自身项。
+  - adhoc 只返回审阅结果；有账本时由 adhoc 保存 report 并勾 fact audit/update。
   - 无账本时由 adhoc-change 在 status 返回目录保存并提交 report，不创建或勾选 objectives。
-  - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中确认。
+  - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中报告结论。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。
 validation 已由步骤 6 判定通过，本步不再复核。
 
 - 无语义 finding（含结构 finding）。
 - 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
-- 无未确认 warning。
+- 无未完成处置的 warning。
 - 无其他 CLI finding（如 `modules.invalid`、`audit.scope`）。
 - 范围内应复核的事实、实现覆盖与 warning 已全部复核；明确按契约排除的项不计入应复核范围。
   尚有未触及项时只报告已完成范围与缺项，按未通过返回，不以未触及理由替代复核证据。
 
-该确认不跨审阅调用复用；deliver 的同一未变 decision 待答复后 resume 不算新审阅调用。
+异常与交接：存在其他 finding、未完成处置的 warning、应复核但未触及的项时：
 
-异常与交接：存在其他 finding、未确认 warning、应复核但未触及的项，或未取得用户确认时：
-
-- 报告审阅未通过、阻断原因与待确认项，不得称审阅通过。
+- 报告审阅未通过、阻断原因与未完成项，不得称审阅通过。
 - 独立调用报告后结束。
 - 其他未通过时，内部委托返回未通过，调用方走失败分支。
   不得推进依赖审阅通过的步骤。
 - 调用方是 fact-update，且未通过项只有结构 finding 时，返回「仅结构 finding」。
   fact-update 进入其步骤 4，不走失败停止。
   - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
-- 修复、补充确认或重审由调用方按其契约处理；fact audit 保持只读，不自行修复或自动重试。
+- 修复、补充证据或重审由调用方按其契约处理；fact audit 保持只读，不自行修复或自动重试。
 
 Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查：
 

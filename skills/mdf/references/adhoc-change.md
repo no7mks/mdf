@@ -35,9 +35,9 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 实现改动 ────→ 3 Check
-                 ├──── 待确认 ──────→ [沿用 fact 确认]
+                 ├──── 未通过 ──────→ [返回未通过与阻断原因]
                  │
-                 ▼ 事实已确认
+                 ▼ 事实审阅通过
 ┌──────────────────────────────────┐
 │ 5 Materials                      │
 └────────────────┬─────────────────┘
@@ -64,7 +64,7 @@
 | 1 | Resolve | 脚本 | 核 source、状态、范围与材料目录 | adhoc-status、Git、上下文 | 有增量2；合并恢复6；无增量结束 | 账本返回原流程；歧义停 |
 | 2 | Integrate | 约束 | 固定范围，必要时 no-ff 集成目标 | 固定端点与 diff | 3 | 冲突修复；语义不明询问 |
 | 3 | Check | 约束 | lint、1 人审查、普通 source smart 或 dev-pr smoke | 实际报告 | 4 | 可修回3；否则报告阻塞 |
-| 4 | Facts | 约束 | hook、fact audit，必要时 update | hook 结果、确认与报告 | 5 | 修改代码回3；其他按原流程 |
+| 4 | Facts | 约束 | hook、fact audit，必要时 update | hook 结果、审阅报告 | 5 | 修改代码回3；其他按原流程 |
 | 5 | Materials | 约束 | 完成 Change、validate 并提交 | Change 与 evidence | 6 | 修正材料后重验 |
 | 6 | Finish | 脚本 | local finish；PR 返回 pr 或合并后续办 | 实际 merge 与清理结果 | 核验后返回 | 保留现场，按记录恢复 |
 
@@ -114,7 +114,7 @@
   - 修复实现、测试或验证配置后补必要审查与验证；已有适用报告可复用，不伪造完成。
 - hook 沿用 `pre-gitflow-finish` 的一次执行与日志恢复规则；实现改动返回 Check。
 - 按 `fact-audit.md` 使用固定 base 的 branch scope；必要时执行 fact update。
-  - 沿用 fact 确认规则，将实际确认与报告保存在同一材料目录。
+  - 按 fact 审阅结果保存报告，保存在同一材料目录。
   - 不创建 objectives，也不向其他交付的 checklist 追加或补勾。
 
 ### Change、平台与完成

@@ -239,7 +239,7 @@ Git 约束：
 
 - deliver / next / 人工续办：只读勾选决定下一 intent。
 - write-tests 写完可编译或可加载执行的测试即完成，**不要求全绿**；完成后自勾 objectives。
-- ❌ 不以 `gates/<stage>.json`、`verification-report.json`、fact 确认、`code-review.md` 当阶段通行证。
+- ❌ 不以 `gates/<stage>.json`、`verification-report.json`、fact 审阅报告、`code-review.md` 当阶段通行证。
 - ❌ 不对 report 做「相对 HEAD / 相对上游 intent」的过期 gatekeeping。
 
 **Report**（证明做过与结果，供核对「交没交」）：
@@ -248,7 +248,7 @@ Git 约束：
 | --- | --- | --- |
 | code-review | `…/code-review.md` 无 commit 终稿 | code-review |
 | verify branch / adhoc smart | `…/verification-report.json`（及可选 `verification-report.md`） | verify |
-| fact | 材料目录内 confirmation / 会话确认记录 | 调用方（audit 只返回确认） |
+| fact | 材料目录内审阅报告 / 会话审阅结论 | 调用方（audit 只返回审阅结果） |
 | 测试框架报告 | `.mdf/reports/` 等 | verify |
 
 close-out 只查上表是否已交且声称通过；不复验对不对。

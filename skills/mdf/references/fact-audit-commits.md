@@ -65,7 +65,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - context 成功不是审阅通过，必须继续完成步骤 3–5；CLI 不判断自然语言陈述是否真实。
 - 不运行 doctor ready 前置，不读取交付身份或 roster，不要求 objectives 或本地审查完成。
 - source 中 MDF 契约缺失或不符仍记录为 validation finding；无法建立范围则明确 error。
-- 不执行本地主链确认，不修复、不提交、不勾选、不调用 fact update、verify 或其他 intent。
+- 不修复、不提交、不勾选、不调用 fact update、verify 或其他 intent。
 - report 通过会话返回；调用方决定保存与发布，不直接 approve、merge 或发消息。
 
 ## 固定输入与信任边界

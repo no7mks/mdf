@@ -129,7 +129,7 @@ def test_deliver_policy_is_inherited_before_nested_intents_and_decisions():
     assert "用原始分数比较，不四舍五入抬过阈值" in policy
     assert "任一路到 until" in deliver
     assert "先等其他已派写入者完成或暂停到可交接点" in deliver
-    assert "deliver 自动确认记录评分、来源与依据" in workflow("fact-audit")
+    assert "也不作为 deliver 的 confidence decision" in workflow("fact-audit")
     assert "用户确认后 resume 同一 subagent" in deliver
     assert "端点、方案或范围已变化则重新评分" in deliver
     assert "只拒绝 squash 等可选操作时按原 intent 跳过" in deliver

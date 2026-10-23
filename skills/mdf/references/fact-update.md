@@ -97,7 +97,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 - 结构修复报告当前页面、finding、已改写页数与剩余未处理 finding。
   - 改写完成但尚未重审时标为待复核；只有重审结果才能证明 finding 已消除。
   - 每次重审说明轮次、原因与新增页面；原有两次重审上限不变。
-- 等待审阅确认时报告实际结论与待确认项；全部完成后才报告 fact update 完成。
+- 按内部 Audit 的证据与 findings 判定审阅结论，无需用户确认；全部完成后才报告 fact update 完成。
   以上计数只在会话中播报，不新增进度文件或 gate。
 
 ### 范围与写入边界
@@ -208,7 +208,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 
 - 通过。
 - 仅剩结构 finding：加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
-- 其他未通过：事实错误、覆盖遗漏、validation 阻断、未确认 warning、未取得用户确认。
+- 其他未通过：事实错误、覆盖遗漏、validation 阻断、未完成处置的 warning。
 - 验证失败：所需验证命令失败或缺少结果。
 
 验收：fact audit 结论、验证结果。
@@ -245,7 +245,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 - 无改写或重审通过后，事实页应已在审阅前提交。
   - 主链委托时不把事实页留到调用方。
   - ❌ 不再记录 fact-update stage gate。
-  - 本次事实审阅确认与验证证据按 fact audit 的返回规则交接。
+  - 本次事实审阅结果与验证证据按 fact audit 的返回规则交接。
 
 验收：结构 diff、适用提交；无 fact-update stage gate。
 

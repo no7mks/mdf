@@ -197,11 +197,19 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert re.search(r"未通过且独立调用 ─+→ \[报告未通过并结束\]", diagram)
     assert re.search(r"未通过且内部委托 ─+→ \[返回未通过，调用方走失败分支\]", diagram)
     result = compact(text.split('<a id="s7"></a>', 1)[1])
-    for condition in ("存在其他finding", "未确认warning", "未取得用户确认"):
+    for condition in ("存在其他finding", "未完成处置的warning", "应复核但未触及的项"):
         assert condition in result
-    assert "阻断原因与待确认项" in result
+    assert "阻断原因与未完成项" in result
     assert "不得推进依赖审阅通过的步骤" in result
     assert "不自行修复或自动重试" in result
+    assert rows(text)[6][1] == "Report result"
+    assert "无需用户确认" in result
+    assert "warning由执行者依据evidence逐条处置" in result
+    for name in ("fact-audit", "fact-update", "close-out", "adhoc", "adhoc-change",
+                 "adhoc-close-out", "delivery-contract"):
+        contract = workflow(name)
+        for obsolete in ("取得当场确认", "未取得用户确认", "确认记录", "fact 确认", "fact-audit 已确认"):
+            assert obsolete not in contract, (name, obsolete)
     # 返回未通过仍允许 migrate 在当前审阅步骤修复；交付调用方继续使用失败出口。
     assert "可修复则重验" in rows(workflow("migrate"))[5][6]
     assert rows(workflow("fact-update"))[2][5] == "通过或仅结构则 4"

@@ -136,7 +136,7 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 fact audit 也支持独立 PR 审阅：
 `$mdf fact audit --source-commit <head> --target-commit <base>`。
 固定 merge-base→source 范围，在 source snapshot 核对事实与覆盖，返回独立 JSON report；
-不要求交付账本，不进入当场确认。见 [独立事实审阅](skills/mdf/references/fact-audit-commits.md)。
+不要求交付账本，直接返回独立审阅报告。见 [独立事实审阅](skills/mdf/references/fact-audit-commits.md)。
 
 ### close-out 与 deliver
 

@@ -324,7 +324,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     contract = workflow("delivery-contract")
     assert "只复用可复用的" in contract or "永不执行验证命令" in contract
     assert "不运行 `delivery check --stage finish`" in finish
-    assert "确认单独提问" in workflow("fact-audit")
+    assert "审阅结论由执行者按下列通过条件判定，无需用户确认" in workflow("fact-audit")
     assert "不重跑" in workflow("bug-close")
     assert "既有 suite 命令未产出报告时" in workflow("migrate")
     assert "占位命令必然失败" in workflow("repository-contract")

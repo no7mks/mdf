@@ -270,7 +270,7 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 - 同次启用增量仅含以下内容时，复用步骤 5 的 full validation 与事实审阅：
   - `.mdf/manifest.yaml` 的 `state: initializing → ready`。
   - Change 等收口记录中对本次启用状态的说明，不包含新的事实、承诺或配置变更。
-  - 这些改动不构成事实变化，不重新调用 fact update 或 fact audit，不重复请求事实确认。
+  - 这些改动不构成事实变化，不重新调用 fact update 或 fact audit，不重复执行事实审阅。
 - 写 ready 后运行一次 `validate --repo "$REPO_ROOT" --scope targeted`，零 finding 后提交。
   - targeted 仍检查 ready 状态、配置、布局、记录与 evidence 路径，不重查 Git history。
   - 它只补验上述启用增量，不能替代步骤 5 的 full validation。

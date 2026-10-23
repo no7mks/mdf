@@ -76,7 +76,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 - 显式 adhoc 授权完成六项步骤及必要本地提交、集成和收口。
   - PR mode 由 pr 提交并等待 merged；随后执行 close-out 的合并后续办。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
-  - 目标变更、测试门槛批准及 fact 的确认仍沿用各 intent 规则。
+  - 目标变更与测试门槛批准仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
   - 当前为无账本 adhoc 时保留真实分支与工作区；步骤 3 按 status.next_step 选择 pr 或 close-out，不重新 start。
   - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方六项账本与勾选条款。
@@ -132,7 +132,7 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
 | lint | 委托 `references/lint.md`；全部 module 工具报告与自勾 |
 | code-review | 委托 `references/code-review.md`；1 人独立审查，终稿与自勾 |
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
-| fact audit/update | 按下节审阅，必要时更新；fact 确认、自勾与提交 |
+| fact audit/update | 按下节审阅，必要时更新；报告结论、自勾与提交 |
 | pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged 且核验通过才结束 |
 | close-out | 仅此项读取并执行 `references/adhoc-close-out.md`；Change 与实际 Git 完成证据 |
 
@@ -168,4 +168,4 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
   - hook 失败仅汇报，仍按实际 diff 处理。CLI 现场检查失败则停止，不改分支或改写历史。
   - 按 `references/fact-audit.md` 审阅 branch scope，基线为 start_commit。
   - 需更新时委托 `references/fact-update.md`，沿用其内部审阅；不新增 checklist 项。
-  - 获得有效 fact 确认后保存 `fact-audit.md`，自勾 fact audit/update 并提交。
+  - fact 审阅通过后保存 `fact-audit.md`，自勾 fact audit/update 并提交。

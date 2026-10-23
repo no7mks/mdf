@@ -227,7 +227,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 **材料** <a id="s3"></a>
 - 确认主链 report **已交且声称通过**：
   - 存在 `verification-report.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
-  - 存在 `fact-audit.md`（或等价确认记录）表明已确认通过。
+  - 存在 `fact-audit.md`（或等价审阅报告）表明审阅通过。
   - 普通交付 objectives 中 verify branch / fact audit 已勾；人工交付勾 verify smoke / fact update。
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
     `$mdf fact audit`，❌ 本 intent 不委托补跑。
@@ -261,7 +261,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
   - `verification-report.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
-  - fact 确认记录存在。
+  - fact 审阅报告存在且结论通过。
   - objectives：普通交付勾 converge、lint、code-review、verify branch、fact audit 及开发依赖。
     人工交付勾人工工作、lint、code-review、verify smoke、fact update。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
@@ -276,7 +276,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 本步发现前置失效时停止交接，不在 close-out 内补跑主链阶段。
 - 其他失败走本步骤的失败去向。
 - ❌ 不在本步重新委托 fact audit / fact update；仅确认主链前置已满足。
-- 验收：各分支 `code-review.md` 结论可用；objectives 前置已勾；主链 fact 确认已提交。
+- 验收：各分支 `code-review.md` 结论可用；objectives 前置已勾；主链 fact 审阅报告已提交。
 - 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
   - 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。
 
@@ -287,7 +287,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 只读准备收口输入：release 读全部 unreleased child Change（移动留给步骤 8）；
   hotfix 无 child Change 且提供实际结果 JSON；两者均提供规范 `--release-date`。
 - 验收：完整版本收口输入。通过：release→7，hotfix→6。异常：停止。
-- Core 记录确定性审计；语义审阅用本次已确认 audit。
+- Core 记录确定性审计；语义审阅用本次已通过的 audit。
 
 **热修复** <a id="s6"></a>
 

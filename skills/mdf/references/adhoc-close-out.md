@@ -101,7 +101,7 @@ local 先运行 adhoc-status；`material_mode: change` 时委托 [无账本 Adho
 - 未完成时运行 doctor，要求 ready；核对工作、lint、code-review、verify smart、fact audit/update 已勾。
 - 任何退勾或提交前先只读检查 owner clean；有本地改动时保留现场并停止。
 - 只查 report 已交且声称通过，不做 commit 对齐审判。
-  - code-review 终稿无 commit hash、无未解决项；fact-audit 已确认。
+  - code-review 终稿无 commit hash、无未解决项；fact-audit 报告结论通过。
   - verification-report.json 的 branch 对应本交付。
     `scope: smart`、`all_passed: true`。
 - 未合并时，缺项按最早未完成项交接；缺报告且该项仍勾选时退勾该项及后续项，有改动才提交。
