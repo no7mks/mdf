@@ -7,15 +7,6 @@
         3
       ]
     },
-    "review_base": {
-      "type": "string"
-    },
-    "review_head": {
-      "type": "string"
-    },
-    "policy_ref": {
-      "type": "string"
-    },
     "rules_sha256": {
       "type": "string"
     },
@@ -40,7 +31,7 @@
     "mode": {
       "type": "string",
       "enum": [
-        "commits"
+        "against"
       ]
     },
     "paths": {
@@ -91,59 +82,15 @@
         "additionalProperties": false
       }
     },
-    "operation": {
-      "type": "string",
-      "enum": [
-        "fact-audit"
-      ]
+    "against": {
+      "type": "string"
     },
-    "implementation_paths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "document_paths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "warnings": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "index": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "disposition": {
-            "type": "string",
-            "enum": [
-              "accepted",
-              "finding",
-              "needs-review"
-            ]
-          },
-          "evidence": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "index",
-          "disposition",
-          "evidence"
-        ],
-        "additionalProperties": false
-      }
+    "worktree_sha256": {
+      "type": "string"
     }
   },
   "required": [
     "schema_version",
-    "review_base",
-    "review_head",
-    "policy_ref",
     "rules_sha256",
     "context_sha256",
     "decision",
@@ -151,10 +98,8 @@
     "mode",
     "paths",
     "findings",
-    "operation",
-    "implementation_paths",
-    "document_paths",
-    "warnings"
+    "against",
+    "worktree_sha256"
   ],
   "additionalProperties": false
 }

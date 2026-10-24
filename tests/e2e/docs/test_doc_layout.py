@@ -282,7 +282,8 @@ def test_agents_ignore_rule_remains_available(python_exe: str, tmp_path: Path):
     agents.write_text("\n".join(["自定义规则。"] * 300) + "\n" + text, encoding="utf-8")
     modules = repo / ".mdf" / "modules.yaml"
     modules.write_text(
-        "ignore:\n  - pattern: AGENTS.md\n    reason: 保留托管块外说明\n" + modules.read_text(),
+        modules.read_text().replace('"src/**"', '"src/**"\n      - "AGENTS.md"', 1).replace("    ignore: []",
+            "    ignore:\n      - pattern: AGENTS.md\n        reason: 保留托管块外说明"),
         encoding="utf-8",
     )
     init_git(repo)

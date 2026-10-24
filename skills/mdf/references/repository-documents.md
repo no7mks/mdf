@@ -89,7 +89,7 @@
 - package 按目录统计直属源文件，实现文件与测试文件分开计数，子 package 独立计数。
   - 每类默认最多 50 个文件；超限按职责、依赖与设计模式拆分，默认每个结果同类最多 35 个。
   - 实际使用适用 module 的 `max_package_files` 与 `split_percent`，逐项满足全部配置。
-  - 只统计已跟踪源代码，含 `__init__.py`；配置、数据与文档不计，repo 或 module `ignore` 命中文件排除。
+  - 只统计已跟踪源代码，含 `__init__.py`；配置、数据与文档不计，module `ignore` 命中文件排除。
   - 测试按 `test/`、`tests/`、`__tests__/` 目录，或 `test_*`、`*_test`、`*Test`、`*Tests`、`.test.`、`.spec.` 文件名识别。
   - 同目录混放实现和测试时两类不相加；`src` 与 `tests` 分别统计，不合并到共同父目录。
   - 统一 lint 超限报 `package.size`；全部 module 检查全部 package，smart 对选中 module 触及的 package 统计完整成员。

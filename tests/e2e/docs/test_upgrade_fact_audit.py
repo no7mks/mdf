@@ -1,4 +1,4 @@
-"""PR 主链普通 audit 在真实 MDF upgrade 后排除安装文件，保留项目事实。"""
+"""PR 主链普通 audit 在真实 MDF upgrade 后按 module 归属排除安装文件。"""
 import json
 
 import pytest
@@ -14,8 +14,6 @@ def test_pr_audit_after_upgrade_excludes_install_but_keeps_project_facts(python_
     manifest.write_text(manifest.read_text().replace('implementation_roots: [src]', 'implementation_roots: [.]')
                         + 'closeout:\n  mode: pr\n  provider: github\n')
     modules = repo / '.mdf/modules.yaml'
-    modules.write_text('ignore:\n  - pattern: .codex/skills/mdf/**\n    reason: MDF 安装目录\n'
-                       + modules.read_text())
     installed = write_installed(repo, '.codex/skills', 'old MDF', 'old-revision')
     (installed / 'tool.py').write_text('VALUE = 1\n')
     document = 'docs/system/interfaces/api.md'
@@ -50,11 +48,9 @@ def test_pr_audit_after_upgrade_excludes_install_but_keeps_project_facts(python_
 
     data = audit()
     assert not any(p.startswith('.codex/skills/mdf/') for p in data['implementation_paths'])
-    assert document in data['document_paths']
-    assert any(m['document'] == document and '.codex/skills/mdf/tool.py' in m['evidence'] for m in data['mappings'])
+    assert (document in data['document_paths']) == (scope != 'branch')
     assert any(f['code'] == 'evidence.stale' and f['path'] == document for f in data['findings'])
-    assert any(row['path'] == '.codex/skills/mdf/tool.py' and row['reason'] == 'MDF 安装目录'
-               for row in data['ignored'])
+    assert data['ignored'] == []
 
     if scope == 'branch':
         # 模拟 upgrade 后的项目改动：新代码与项目事实页仍须审阅。

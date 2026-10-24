@@ -95,7 +95,7 @@ python3 -B "$MDF_ROOT/scripts/measure_code.py" --repo "$REPO_ROOT" \
 
 - 工具只读源码、Git 与配置，不生成文件或 cache，不执行项目 linter、tests 或验证入口。
 - files 的 value 是物理行数；packages 的 value 是完整同类直属文件数，tests 区分实现与测试。
-- 每项包含 module、limit、split_target、within_limit 与 within_split_target；ignore 沿用 repo 与 module 的适用范围。
+- 每项包含 module、limit、split_target、within_limit 与 within_split_target；ignore 沿用 module 的适用范围。
 - 退出 0 只表示数据采集成功。硬限制是否通过看 within_limit；本轮超限拆分另核原目标。
 - 在修改目录或配置前保存原超限对象的工具数据；只取原报告 within_limit: false 的触发项 split_target，不使用 limit 冒充拆分目标。
 - 文件拆分用 --file-target，package 拆分用 --package-target；每个原触发目标各传一次，不从迁移后的新策略推回原目标。

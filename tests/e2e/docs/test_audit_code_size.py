@@ -26,7 +26,7 @@ def test_audit_leaves_code_size_to_lint(python_exe, tmp_path, scope, name):
 
 @pytest.mark.parametrize("scope", ["full", "branch", "paths"])
 @pytest.mark.parametrize("name", ["src/generated/large.py", "tests/generated/test_large.py"])
-def test_repo_ignore_exempts_code_size_only_for_matched_files(python_exe, tmp_path, scope, name):
+def test_module_ignore_exempts_code_size_only_for_matched_files(python_exe, tmp_path, scope, name):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
@@ -37,7 +37,7 @@ def test_repo_ignore_exempts_code_size_only_for_matched_files(python_exe, tmp_pa
     other.write_text("pass\n" * 1001)
     pattern = name.rsplit("/", 1)[0] + "/**"
     modules = repo / ".mdf/modules.yaml"
-    modules.write_text(f"ignore:\n  - pattern: {pattern}\n    reason: 保留生成文件\n" + modules.read_text())
+    modules.write_text(modules.read_text().replace('"src/**"', '"**"', 1).replace("    ignore: []", f"    ignore:\n      - pattern: {pattern}\n        reason: 保留生成文件"))
     git(repo, "add", "--all")
     extra = ["--base", base] if scope == "branch" else []
     if scope == "paths":

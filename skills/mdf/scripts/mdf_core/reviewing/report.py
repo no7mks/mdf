@@ -16,9 +16,9 @@ def require(condition, message):
 
 def validate(context, report):
     from mdf_core.reviewing.schema import check
-    if isinstance(context, dict) and context.get("mode") == "commits":
-        from mdf_core.reviewing.standalone import validate_commit_report
-        return validate_commit_report(context, report)
+    if isinstance(context, dict) and context.get("mode") == "against":
+        from mdf_core.reviewing.standalone import validate_against_report
+        return validate_against_report(context, report)
     schema = Path(__file__).resolve().parents[3] / 'assets/templates/ci-review-report.schema.json'
     check(report, json.loads(schema.read_text(encoding='utf-8')))
     required = {"source", "delivery_base", "review_base", "review_head", "policy_ref", "rules_sha256", "context_sha256",

@@ -114,7 +114,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 ### code-review 与 roster
 
 code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
-独立只读审查可用 `$mdf code-review --source-commit <source> --target-commit <target>`；
+独立只读审查可用 `$mdf code-review --against <ref>`；
 不依赖 roster 或交付材料。以下 roster 规则仅用于交付模式；范围语义见 [code-review](skills/mdf/references/code-review.md)。
 
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
@@ -134,9 +134,9 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
     值为口语描述，可点名一个或多个模型。
 
 fact audit 也支持独立 PR 审阅：
-`$mdf fact audit --source-commit <head> --target-commit <base>`。
-固定 merge-base→source 范围，在 source snapshot 核对事实与覆盖，返回独立 JSON report；
-不要求交付账本，直接返回独立审阅报告。见 [独立事实审阅](skills/mdf/references/fact-audit-commits.md)。
+`$mdf fact audit --against <ref>`。
+直接比较历史版本与完整当前工作区，包含未提交内容，并按当前 rules、sourceset 和 ignore 审阅；
+不要求交付账本，直接返回独立审阅报告。见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
 
 ### close-out 与 deliver
 

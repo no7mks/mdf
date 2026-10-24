@@ -74,7 +74,6 @@ class ModulesConfig:
     modules: dict[str, Module] = field(default_factory=dict)
     budgets: dict[str, int] = field(default_factory=dict)
     overrides: dict[str, str | dict] = field(default_factory=dict)
-    ignore: tuple[IgnoreRule, ...] = ()
 
     def names(self) -> list[str]:
         return sorted(self.modules)
@@ -108,8 +107,6 @@ class ModulesConfig:
         hit: set[str] = set()
         for raw in paths:
             rel = raw.replace("\\", "/")
-            if any(match(rel, rule.pattern) for rule in self.ignore):
-                continue
             for module in self.modules.values():
                 if path_ignored(rel, module):
                     continue
@@ -117,14 +114,15 @@ class ModulesConfig:
                     hit.add(module.name)
         return sorted(hit)
 
+    def owns(self, rel: str) -> bool:
+        return any(match(rel, pattern) for module in self.modules.values() for pattern in module.sourceset)
+
     def is_ignored(self, rel: str) -> bool:
-        if any(match(rel, rule.pattern) for rule in self.ignore):
-            return True
         owners = [m for m in self.modules.values() if any(match(rel, p) for p in m.sourceset)]
         return bool(owners) and all(path_ignored(rel, m) for m in owners)
 
     def ignore_matches(self, rel: str, owner: str, rule: IgnoreRule) -> bool:
-        return match(rel, rule.pattern) and (not owner or any(
+        return match(rel, rule.pattern) and (any(
             match(rel, pattern) for pattern in self.modules[owner].sourceset))
 
     def size_policies(self, paths: list[str]) -> list[tuple[str, SizeLimits]]:
@@ -141,7 +139,7 @@ class ModulesConfig:
         return sorted(policies.items())
 
     def all_ignore_rules(self) -> list[tuple[str, IgnoreRule]]:
-        rules: list[tuple[str, IgnoreRule]] = [("", rule) for rule in self.ignore]
+        rules: list[tuple[str, IgnoreRule]] = []
         for module in self.modules.values():
             for rule in module.ignore:
                 rules.append((module.name, rule))
@@ -171,7 +169,7 @@ def load_modules(repo: Path) -> ModulesConfig:
 def parse_modules(raw: Any) -> ModulesConfig:
     if not isinstance(raw, dict):
         raise MDFError("modules.yaml 根必须是 mapping", code="modules_invalid")
-    extra = set(raw) - {"modules", "budgets", "verification", "ignore"}
+    extra = set(raw) - {"modules", "budgets", "verification"}
     if extra:
         raise MDFError(
             f"modules.yaml 含未知键: {sorted(extra)}",
@@ -200,8 +198,7 @@ def parse_modules(raw: Any) -> ModulesConfig:
             )
         module = _parse_module(name, body, seen_named)
         modules[name] = module
-    return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides,
-                         ignore=tuple(_parse_ignore('repo', raw.get('ignore', []))))
+    return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides)
 
 
 def _parse_overrides(raw: Any) -> dict[str, str | dict]:

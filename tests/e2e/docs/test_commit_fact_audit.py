@@ -24,8 +24,7 @@ def repository(tmp_path):
 
 
 def report_for(context):
-    report = {k: context[k] for k in ('schema_version', 'mode', 'operation', 'review_base', 'review_head',
-                                     'policy_ref', 'rules_sha256', 'context_sha256', 'paths',
+    report = {k: context[k] for k in ('schema_version', 'mode', 'operation', 'against', 'worktree_sha256', 'rules_sha256', 'context_sha256', 'paths',
                                      'implementation_paths', 'document_paths')}
     report.update(findings=[], incomplete=[], warnings=[
         {'index': i, 'disposition': 'accepted', 'evidence': '内部常量，无可观察契约'}
@@ -34,31 +33,23 @@ def report_for(context):
     return copy.deepcopy(report)
 
 
-def test_commit_audit_uses_source_snapshot_and_keeps_checkout_untouched(python_exe, tmp_path):
+def test_against_audit_captures_complete_worktree_without_mutation(python_exe, tmp_path):
     repo, base = repository(tmp_path)
-    (repo / 'src/service.py').write_text('def healthy():\n    return False\n')
-    source = commit(repo)
-    git(repo, 'checkout', '--detach', base)
-    (repo / 'target-only.txt').write_text('target\n')
-    target = commit(repo)
-    (repo / 'src/service.py').write_text('dirty = True\n')
-    before = git(repo, 'status', '--porcelain=v1').stdout
-    index = (repo / '.git/index').read_bytes()
+    (repo / 'src/service.py').write_text('staged = True\n')
+    git(repo, 'add', 'src/service.py')
+    (repo / 'src/service.py').write_text('unstaged = True\n')
+    (repo / 'src/new.py').write_text('untracked = True\n')
+    (repo / '.gitignore').write_text('src/ignored.py\n')
+    (repo / 'src/ignored.py').write_text('excluded = True\n')
     files = {p.relative_to(repo): p.read_bytes() for p in repo.rglob('*') if p.is_file()}
-    ctx = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo),
-                      '--source-commit', source, '--target-commit', target))['result']
-    assert ctx['review_base'] == base and ctx['review_head'] == source
-    assert ctx['paths'] == ['src/service.py']
-    assert ctx['target_paths'] == ['target-only.txt']
-    assert 'dirty' not in ctx['diff'] and '+    return False' in ctx['diff']
+    ctx = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo), '--against', base))['result']
+    assert ctx['against'] == base and ctx['mode'] == 'against'
+    assert ctx['paths'] == ['src/new.py', 'src/service.py']
+    assert '+unstaged = True' in ctx['diff'] and '+untracked = True' in ctx['diff']
+    assert '+staged = True' not in ctx['diff'] and 'excluded = True' not in ctx['diff']
     assert 'docs/system/interfaces/api.md' in ctx['document_paths']
-    assert any(f['code'].startswith('evidence.') for f in ctx['audit']['findings'])
-    assert git(repo, 'status', '--porcelain=v1').stdout == before
-    assert git(repo, 'rev-parse', 'HEAD').stdout.strip() == target
-    assert (repo / '.git/index').read_bytes() == index
     assert files == {p.relative_to(repo): p.read_bytes() for p in repo.rglob('*') if p.is_file()}
-    assert not (repo / 'audit-ran').exists()
-    assert not {'roster', 'artifacts', 'delivery_base'} & ctx.keys()
+    assert not {'review_head', 'policy_ref', 'target_paths', 'target_diff', 'roster'} & ctx.keys()
 
 
 @pytest.mark.parametrize('change', ['delete', 'rename', 'remove-evidence', 'delete-doc'])
@@ -76,7 +67,7 @@ def test_commit_audit_keeps_base_evidence_impacts(tmp_path, change):
     else:
         doc.unlink()
     source = commit(repo)
-    ctx = fact_context(repo, source, base)
+    ctx = fact_context(repo, base)
     assert 'docs/system/interfaces/api.md' in ctx['document_paths']
     assert ctx['base_mappings']['docs/system/interfaces/api.md'] == ['src/service.py']
     if change != 'delete-doc':
@@ -91,17 +82,15 @@ def test_source_module_ignore_excludes_new_implementation(tmp_path):
     modules = repo / '.mdf/modules.yaml'
     modules.write_text(modules.read_text().replace('    ignore: []',
                       '    ignore:\n      - pattern: src/new.py\n        reason: skip'))
-    ctx = fact_context(repo, commit(repo), base)
-    assert ctx['rules']['modules'] == git(repo, 'show', base + ':.mdf/modules.yaml').stdout
-    assert ctx['ignore_ref'] == ctx['review_head']
-    assert ctx['rules']['ignore']['modules'] == modules.read_text()
+    ctx = fact_context(repo, base)
+    assert ctx['rules']['modules'] == modules.read_text()
     assert 'src/new.py' not in ctx['paths'] and ctx['implementation_paths'] == []
     assert ctx['ignored'] == [{'path': 'src/new.py', 'ignore_path': 'src/new.py', 'reason': 'skip'}]
     assert ctx['audit']['warnings'] == []
 
 
 @pytest.mark.parametrize('change', ['modify', 'delete', 'rename', 'move-out', 'move-in'])
-def test_source_repo_ignore_excludes_installed_mdf_from_commit_review(python_exe, tmp_path, change):
+def test_sourceset_excludes_installed_mdf_from_commit_review(python_exe, tmp_path, change):
     repo, _ = repository(tmp_path)
     installed = '.agents/skills/mdf'
     vendor = repo / installed / 'scripts/tool.py'
@@ -112,7 +101,6 @@ def test_source_repo_ignore_excludes_installed_mdf_from_commit_review(python_exe
         project.write_text('VALUE = 2\n')
     modules = repo / '.mdf/modules.yaml'
     target = commit(repo)
-    modules.write_text('ignore:\n  - pattern: ' + installed + '/**\n    reason: MDF 安装目录\n' + modules.read_text())
     if change == 'modify':
         vendor.write_text('VALUE = 2\n')
     elif change == 'delete':
@@ -125,19 +113,12 @@ def test_source_repo_ignore_excludes_installed_mdf_from_commit_review(python_exe
         project.rename(vendor.with_name('new.py'))
     source = commit(repo)
     ctx = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo),
-                      '--source-commit', source, '--target-commit', target))['result']
+                      '--against', target))['result']
     expected = ['src/tool.py'] if change in {'move-out', 'move-in'} else []
     assert ctx['implementation_paths'] == expected
-    assert ctx['paths'] == ['.mdf/modules.yaml', *expected]
-    assert ctx['ignore_ref'] == source
+    assert ctx['paths'] == expected
     assert ctx['document_paths'] == []
-    excluded = [f'{installed}/scripts/tool.py']
-    if change == 'rename':
-        excluded.append(f'{installed}/scripts/renamed.py')
-    elif change == 'move-in':
-        excluded = [f'{installed}/scripts/new.py']
-    assert ctx['ignored'] == [
-        {'path': p, 'ignore_path': f'{installed}/**', 'reason': 'MDF 安装目录'} for p in sorted(excluded)]
+    assert ctx['ignored'] == []
     assert f'diff --git a/{installed}/' not in ctx['diff']
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
     context_file.write_text(json.dumps(ctx))
@@ -156,17 +137,16 @@ def test_vendor_ignore_keeps_project_code_and_fact_pages_in_review(python_exe, t
     doc.write_text(doc.read_text().replace('evidence:\n',
                    'evidence:\n  - path: .codex/skills/mdf/tool.py\n'))
     modules = repo / '.mdf/modules.yaml'
-    modules.write_text('ignore:\n  - pattern: .codex/skills/mdf/**\n    reason: MDF 安装目录\n' + modules.read_text())
     target = commit(repo)
     vendor.write_text('VALUE = 2\n')
-    # 仅由 vendor evidence 触发的项目事实页也必须保留。
-    ctx = fact_context(repo, commit(repo), target)
+    # 未归属实现的 evidence 不扩展语义审阅范围；全量契约校验仍保留。
+    ctx = fact_context(repo, target)
     assert ctx['paths'] == ctx['implementation_paths'] == []
-    assert ctx['document_paths'] == ['docs/system/interfaces/api.md']
+    assert ctx['document_paths'] == []
     (repo / 'src/service.py').write_text('def healthy():\n    return True\n\n# project change\n')
     doc.write_text(doc.read_text() + '\n项目事实变更。\n')
     ctx = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo),
-                      '--source-commit', commit(repo), '--target-commit', target))['result']
+                      '--against', target))['result']
     assert ctx['paths'] == ['docs/system/interfaces/api.md', 'src/service.py']
     assert ctx['implementation_paths'] == ['src/service.py']
     expected_documents = sorted(p for p, evidence in ctx['base_mappings'].items() if 'src/service.py' in evidence)
@@ -179,26 +159,7 @@ def test_vendor_ignore_keeps_project_code_and_fact_pages_in_review(python_exe, t
         validate_fact_report(ctx, report)
 
 
-def test_source_can_widen_target_vendor_ignore(tmp_path):
-    repo, _ = repository(tmp_path)
-    installed = repo / '.codex/skills/mdf'
-    installed.mkdir(parents=True)
-    (installed / 'pinned.py').write_text('VALUE = 1\n')
-    (installed / 'tool.py').write_text('VALUE = 1\n')
-    modules = repo / '.mdf/modules.yaml'
-    modules.write_text('ignore:\n  - pattern: .codex/skills/mdf/pinned.py\n    reason: MDF 安装文件\n' + modules.read_text())
-    target = commit(repo)
-    modules.write_text(modules.read_text().replace('pattern: .codex/skills/mdf/pinned.py',
-                                                'pattern: .codex/skills/mdf/**'))
-    (installed / 'tool.py').write_text('VALUE = 2\n')
-    ctx = fact_context(repo, commit(repo), target)
-    assert '.codex/skills/mdf/tool.py' not in ctx['paths']
-    assert ctx['implementation_paths'] == []
-    assert ctx['ignored'] == [{'path': '.codex/skills/mdf/tool.py',
-                               'ignore_path': '.codex/skills/mdf/**', 'reason': 'MDF 安装文件'}]
-
-
-def test_module_ignore_does_not_hide_installed_mdf_outside_sourceset(tmp_path):
+def test_unowned_mdf_is_outside_review_even_with_unrelated_module_ignore(tmp_path):
     repo, _ = repository(tmp_path)
     vendor = repo / '.codex/skills/mdf/tool.py'
     vendor.parent.mkdir(parents=True)
@@ -208,8 +169,8 @@ def test_module_ignore_does_not_hide_installed_mdf_outside_sourceset(tmp_path):
         '    ignore:\n      - pattern: "**"\n        reason: 本 module 排除\n', 1))
     target = commit(repo)
     vendor.write_text('VALUE = 2\n')
-    ctx = fact_context(repo, commit(repo), target)
-    assert ctx['paths'] == ctx['implementation_paths'] == ['.codex/skills/mdf/tool.py']
+    ctx = fact_context(repo, target)
+    assert ctx['paths'] == ctx['implementation_paths'] == []
     assert ctx['ignored'] == ctx['audit']['ignored'] == []
 
 
@@ -234,7 +195,7 @@ def test_removed_source_ignore_does_not_use_target_rules(tmp_path, change):
         else:
             (repo / 'src/generated.py').rename(repo / 'src/renamed.py')
         modules.write_text(original)
-    ctx = fact_context(repo, commit(repo), target)
+    ctx = fact_context(repo, target)
     findings = ctx['audit']['findings']
     assert findings == []
     assert validate_fact_report(ctx, report_for(ctx))['decision'] == 'pass'
@@ -256,8 +217,8 @@ def test_commit_audit_inherits_object_format(tmp_path, monkeypatch, object_forma
     (repo / 'src/new.py').write_text('VALUE = 1\n')
     source = commit(repo)
     monkeypatch.setenv('GIT_DEFAULT_HASH', host_default)
-    ctx = fact_context(repo, source, target)
-    assert ctx['review_head'] == source and ctx['review_base'] == target
+    ctx = fact_context(repo, target)
+    assert ctx['against'] == target
     assert ctx['paths'] == ['src/new.py']
     assert ctx['audit']['findings'] == []
     assert validate_fact_report(ctx, report_for(ctx))['decision'] == 'pass'
@@ -269,7 +230,7 @@ def test_deleted_evidence_matches_normalized_relative_paths(tmp_path):
     doc.write_text(doc.read_text().replace('path: src/service.py', 'path: ./src/service.py'))
     base = commit(repo)
     (repo / 'src/service.py').unlink()
-    ctx = fact_context(repo, commit(repo), base)
+    ctx = fact_context(repo, base)
     assert 'docs/system/interfaces/api.md' in ctx['document_paths']
     assert 'docs/system/interfaces/api.md' in ctx['audit']['document_paths']
 
@@ -289,10 +250,12 @@ def test_indirect_fact_dependencies_are_in_review_scope(tmp_path, dependency):
         generator.chmod(0o755)
         doc.write_text(doc.read_text().replace('evidence:\n',
                        'generated:\n  source: schema.yaml\n  generator: generate.py\nevidence:\n'))
+        modules = repo / '.mdf/modules.yaml'
+        modules.write_text(modules.read_text().replace('"src/**"', '"src/**"\n      - "schema.yaml"\n      - "generate.py"', 1))
         changed = schema if dependency == 'generated-source' else generator
     base = commit(repo)
     changed.write_text(changed.read_text() + '\n# changed\n')
-    ctx = fact_context(repo, commit(repo), base)
+    ctx = fact_context(repo, base)
     assert 'docs/system/interfaces/api.md' in ctx['document_paths']
     assert 'docs/system/interfaces/api.md' in ctx['audit']['document_paths']
 
@@ -305,37 +268,22 @@ def test_shallow_snapshot_preserves_available_history(tmp_path):
     shallow = tmp_path / 'shallow'
     git(tmp_path, 'clone', '--depth=2', repo.as_uri(), str(shallow))
     head = git(shallow, 'rev-parse', 'HEAD').stdout.strip()
-    ctx = fact_context(shallow, head, head)
+    ctx = fact_context(shallow, head)
     assert ctx['audit']['findings'] == []
 
 
-@pytest.mark.parametrize('extra', [[], ['--scope', 'full'], ['--scope', 'branch'], ['--base', 'HEAD'],
+@pytest.mark.parametrize('extra', [['--scope', 'full'], ['--scope', 'branch'], ['--base', 'HEAD'],
                                   ['--implementation-path', 'src/service.py']])
-def test_commit_audit_rejects_incomplete_or_mixed_arguments(python_exe, tmp_path, extra):
+def test_against_audit_rejects_mixed_arguments(python_exe, tmp_path, extra):
     repo, base = repository(tmp_path)
-    args = ['--source-commit', base]
-    if extra:
-        args += ['--target-commit', base, *extra]
-    result = mdf(python_exe, 'fact-audit', '--repo', str(repo), *args)
+    result = mdf(python_exe, 'fact-audit', '--repo', str(repo), '--against', base, *extra)
     assert result.returncode != 0 and 'invalid_arguments' in result.stderr
 
 
-@pytest.mark.parametrize('case', ['unrelated', 'multiple', 'missing'])
-def test_commit_audit_rejects_invalid_history(tmp_path, case):
-    repo, base = repository(tmp_path)
-    tree = git(repo, 'rev-parse', base + '^{tree}').stdout.strip()
-    if case == 'missing':
-        source, target = 'absent-ref', base
-    elif case == 'unrelated':
-        source = git(repo, 'commit-tree', tree, '-m', 'root').stdout.strip()
-        target = base
-    else:
-        left = git(repo, 'commit-tree', tree, '-p', base, '-m', 'left').stdout.strip()
-        right = git(repo, 'commit-tree', tree, '-p', base, '-m', 'right').stdout.strip()
-        source = git(repo, 'commit-tree', tree, '-p', left, '-p', right, '-m', 'merge1').stdout.strip()
-        target = git(repo, 'commit-tree', tree, '-p', right, '-p', left, '-m', 'merge2').stdout.strip()
+def test_against_audit_rejects_unknown_reference(tmp_path):
+    repo, _ = repository(tmp_path)
     with pytest.raises(MDFError):
-        fact_context(repo, source, target)
+        fact_context(repo, 'absent-ref')
 
 
 def test_snapshot_does_not_run_filters_or_follow_symlinks(tmp_path, monkeypatch):
@@ -347,19 +295,19 @@ def test_snapshot_does_not_run_filters_or_follow_symlinks(tmp_path, monkeypatch)
     config = tmp_path / 'global-config'
     config.write_text('[filter \"hostile\"]\n\tclean = touch ' + str(marker) + '\n')
     monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(config))
-    ctx = fact_context(repo, source, base)
-    assert not marker.exists() and 'src/service.py' in ctx['source_mappings']['docs/system/interfaces/api.md']
+    ctx = fact_context(repo, base)
+    assert not marker.exists() and 'src/service.py' in ctx['worktree_mappings']['docs/system/interfaces/api.md']
     monkeypatch.delenv('GIT_CONFIG_GLOBAL')
     (repo / 'escape').symlink_to(tmp_path)
     source = commit(repo)
-    with pytest.raises(MDFError, match='非普通文件'):
-        fact_context(repo, source, base)
+    with pytest.raises(MDFError, match='symlink'):
+        fact_context(repo, base)
     assert not marker.exists()
 
 
 def test_fact_report_cli_accepts_complete_clean_review(python_exe, tmp_path):
     repo, base = repository(tmp_path)
-    ctx = fact_context(repo, base, base)
+    ctx = fact_context(repo, base)
     report = report_for(ctx)
     assert report['decision'] == 'pass'
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
@@ -370,17 +318,17 @@ def test_fact_report_cli_accepts_complete_clean_review(python_exe, tmp_path):
     assert result['result']['decision'] == 'pass'
 
 
-@pytest.mark.parametrize('damage', ['fingerprint', 'head', 'coverage', 'warning', 'semantic', 'validation', 'incomplete'])
+@pytest.mark.parametrize('damage', ['fingerprint', 'worktree', 'coverage', 'warning', 'semantic', 'validation', 'incomplete'])
 def test_fact_report_rejects_false_pass(tmp_path, damage):
     repo, base = repository(tmp_path)
     (repo / 'src/new.py').write_text('VALUE = 1\n')
-    ctx = fact_context(repo, commit(repo), base)
+    ctx = fact_context(repo, base)
     report = report_for(ctx)
     report['decision'] = 'pass'
     if damage == 'fingerprint':
         ctx['diff'] = 'forged'
-    elif damage == 'head':
-        report['review_head'] = base
+    elif damage == 'worktree':
+        report['worktree_sha256'] = 'wrong'
     elif damage == 'coverage':
         report['implementation_paths'] = []
     elif damage == 'warning':
@@ -402,7 +350,7 @@ def test_fact_report_rejects_false_pass(tmp_path, damage):
 def test_fact_report_allows_explicit_incomplete_and_findings(tmp_path):
     repo, base = repository(tmp_path)
     (repo / 'src/service.py').unlink()
-    ctx = fact_context(repo, commit(repo), base)
+    ctx = fact_context(repo, base)
     report = report_for(ctx)
     assert validate_fact_report(ctx, report)['decision'] == 'changes_requested'
     report.update(document_paths=[], incomplete=['事实页尚未复核'], decision='needs-review')
@@ -414,7 +362,7 @@ def test_fact_report_allows_explicit_incomplete_and_findings(tmp_path):
 def test_fact_report_rejects_malformed_context_with_structured_error(tmp_path, field, value):
     from mdf_core.reviewing.context import fingerprint
     repo, base = repository(tmp_path)
-    ctx = fact_context(repo, base, base)
+    ctx = fact_context(repo, base)
     report = report_for(ctx)
     ctx[field] = value
     ctx['context_sha256'] = fingerprint({k: v for k, v in ctx.items() if k != 'context_sha256'})
@@ -424,13 +372,12 @@ def test_fact_report_rejects_malformed_context_with_structured_error(tmp_path, f
 
 
 @pytest.mark.parametrize('roots', ['null', '[1]', '[{}]'])
-def test_commit_audit_rejects_malformed_roots_with_structured_error(tmp_path, roots):
+def test_against_audit_reports_invalid_current_manifest(tmp_path, roots):
     repo, base = repository(tmp_path)
     manifest = repo / '.mdf/manifest.yaml'
     manifest.write_text(manifest.read_text().replace('implementation_roots: [src]', 'implementation_roots: ' + roots))
-    source = commit(repo)
-    with pytest.raises(MDFError, match='implementation_roots'):
-        fact_context(repo, source, base)
+    ctx = fact_context(repo, base)
+    assert ctx['audit']['findings']
 
 
 @pytest.mark.parametrize('root', ['.', './src'])
@@ -440,5 +387,5 @@ def test_commit_audit_normalizes_implementation_roots(tmp_path, root):
     manifest.write_text(manifest.read_text().replace('implementation_roots: [src]', f'implementation_roots: [{root}]'))
     base = commit(repo)
     (repo / 'src/config.json').write_text('{"enabled": true}\n')
-    ctx = fact_context(repo, commit(repo), base)
+    ctx = fact_context(repo, base)
     assert 'src/config.json' in ctx['implementation_paths']

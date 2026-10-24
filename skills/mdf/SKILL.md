@@ -130,12 +130,12 @@ disable-model-invocation: true
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
-- code-review 可带成对 `--source-commit` / `--target-commit`，直接进入独立只读审查，不要求交付材料或 roster。
+- code-review 可带 `--against <ref>`，比较历史版本与完整当前工作区并执行独立只读审查，不要求交付材料或 roster。
 - start、design、deliver、交付模式的 code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
   - `--*-model` 值为口语描述，可点名一个或多个模型。
-- fact audit 可用 `--source-commit <head> --target-commit <base>` 进入独立 PR 只读审阅，不能混用 scope/paths。
+- fact audit 可用 `--against <ref>` 比较历史版本与完整工作区，只读审阅；不能混用 scope/base/paths。
 - fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
 - upgrade 可带 `--source`。
@@ -164,7 +164,7 @@ disable-model-invocation: true
   - help intent 经 CLI 检查后同样执行该流程。
   - 不读取其他 intent、不检查仓库、不写入。
 - **MDF_ROOT**：本文件所在目录的绝对路径。
-  - 独立 commit 审查出现任一 commit 参数时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
+  - code-review 或 fact audit 带 `--against` 时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
     后续复用该根与日志目录；目录无法安全确认则停止，不在被审 checkout 落盘。
   - 确认 `scripts/mdf.py` 后运行 `python3 -B "$MDF_ROOT/scripts/mdf.py" info`；
     协议、工具与 schema 版本均须为数字 `3`。
@@ -177,7 +177,7 @@ disable-model-invocation: true
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-- 独立 commit code-review 只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。
+- code-review 与 fact audit 的 against 模式只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。
 - 除上述独立审查及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
   - `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。

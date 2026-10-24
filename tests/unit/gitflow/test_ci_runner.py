@@ -133,20 +133,20 @@ def test_commit_runner_uses_one_report_without_roster(monkeypatch, tmp_path, mut
     from mdf_core.reviewing.context import context as make_context
     module = load('review')
     repo = local_repo(tmp_path)
-    context = make_context(repo, source_commit='HEAD', target_commit='HEAD')
+    context = make_context(repo, against='HEAD')
     calls = []
     def invoke(repo, backend, prompt, body, schema, prefix):
         calls.append(body)
-        assert schema.name == 'commit-review-report.schema.json'
+        assert schema.name == 'against-review-report.schema.json'
         assert 'roster' not in body['context'] and 'reviewers' not in body
         if mutates:
             (repo / 'unexpected.txt').write_text('越界\n')
-        keys = ('schema_version', 'mode', 'review_base', 'review_head', 'policy_ref',
+        keys = ('schema_version', 'mode', 'against', 'worktree_sha256',
                 'rules_sha256', 'context_sha256', 'paths')
         return {**{key: context[key] for key in keys}, 'decision': 'pass', 'incomplete': [], 'findings': []}
     monkeypatch.setattr(module, 'invoke', invoke)
     args = SimpleNamespace(repo=str(repo), source=None, head=None, policy_ref=None,
-                           source_commit='HEAD', target_commit='HEAD', backend='codex',
+                           against='HEAD', backend='codex',
                            output_dir=str(tmp_path / 'output'))
     if mutates:
         with pytest.raises(MDFError, match='修改了 checkout'):

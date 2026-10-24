@@ -10,7 +10,7 @@ from mdf_core.reviewing.schema import check
 
 
 def validate_fact_report(context, report):
-    schema = Path(__file__).resolve().parents[3] / 'assets/templates/commit-fact-audit-report.schema.json'
+    schema = Path(__file__).resolve().parents[3] / 'assets/templates/against-fact-audit-report.schema.json'
     check(report, json.loads(schema.read_text(encoding='utf-8')))
     require(isinstance(context, dict) and {'audit', 'rules', 'rules_sha256', 'context_sha256',
             'implementation_paths', 'document_paths', 'paths', 'incomplete'} <= context.keys(), 'context 缺少字段')
@@ -25,7 +25,7 @@ def validate_fact_report(context, report):
     require(context['context_sha256'] == fingerprint({k: v for k, v in context.items() if k != 'context_sha256'}),
             'context 内容与指纹不符')
     require(context['rules_sha256'] == fingerprint(context['rules']), '规则与指纹不符')
-    for key in ('schema_version', 'mode', 'operation', 'review_base', 'review_head', 'policy_ref',
+    for key in ('schema_version', 'mode', 'operation', 'against', 'worktree_sha256',
                 'rules_sha256', 'context_sha256'):
         require(report[key] == context.get(key), f'报告 {key} 与本轮不符')
     pending = bool(context['incomplete'] or report['incomplete'])
@@ -58,7 +58,7 @@ def validate_fact_report(context, report):
         require(decision != 'pass', '存在事实或 validation finding，不能通过')
     if decision == 'changes_requested':
         require(blocked, 'changes_requested 需要 finding')
-    return {'valid': True, 'decision': decision, 'review_head': context['review_head']}
+    return {'valid': True, 'decision': decision, 'against': context['against'], 'worktree_sha256': context['worktree_sha256']}
 
 
 def command_fact_report_check(args):

@@ -42,11 +42,11 @@
 
 - audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
-- review-context 和 CI review.py 的成对 --source-commit/--target-commit 选择独立只读模式，--source 可省略。
-  - mode=commits，不依赖 roster 或交付材料；每次使用唯一 merge-base→source，提供 target_diff/target_paths。
-  - 不混用 head/policy-ref，不接受 review-base/previous-report；缺失或多个 merge-base 失败。
-  - 使用 commit-review-report.schema.json，直接校验 findings、覆盖与结论；无 delivery 或 reviewers 字段。
-- 以下 delivery、回合与 release 规则仅用于未传 commit 参数的交付模式。
+- review-context 和 CI review.py 的 --against <ref> 选择独立只读模式，不接受 source/head/policy-ref。
+  - mode=against，直接比较指定历史版本与完整当前工作区，含 staged、unstaged 和非忽略 untracked 文件。
+  - 不接受 review-base/previous-report；不计算 merge-base，不生成 target_diff/target_paths。
+  - 使用 against-review-report.schema.json，绑定 against、worktree_sha256、规则与 context 指纹。
+- 以下 delivery、回合与 release 规则仅用于未传 against 的交付模式。
 - review-context 支持 detached checkout，从已提交 delivery.json 冻结 roster 与基线。
 - 回合 source 从发布 tag 和 no-ff 双亲恢复上下文，kind 为 backmerge；publication 包含固定发布提交与原 source。
 - release 首轮使用 policy_ref 的上一正式发布 tag，首次无版本需显式 --review-base。
@@ -68,3 +68,14 @@
 到 adhoc worktree、reset develop 到固定 origin/develop。返回 source、worktree 与 next_intent。
 恢复记录位于 Git common dir；sync 的 dev_pr_required 委托同一 intent，检查通过前不 push。
 项目 trivial 路径覆盖见 [dev-pr 契约](../../../skills/mdf/references/dev-pr.md)。
+
+## 审查范围
+
+against 模式的 code-review 与 fact audit 使用当前工作区的规则、sourceset 和 module ignore。
+
+- 实现变更与 sourceset 并集求交；未归属实现不进入 paths、diff 或覆盖检查。
+- 重叠归属须所有 owner 均忽略才排除；删除和 rename 的新旧路径分别判定。
+- 项目文档和交付材料按各自契约独立纳入，不要求归属 module。
+- rule 路径与正文、AGENTS、manifest、modules 均从本轮工作区 snapshot 读取。
+- snapshot 位于仓外；不修改原仓库 HEAD、index 或 objects，不运行项目 hooks、filters 或 tests。
+- 工作区路径、mode 与内容共同生成 worktree_sha256；修改后须重建 context。

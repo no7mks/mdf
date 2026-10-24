@@ -81,7 +81,8 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 
 `--scope` 可为 `full`（默认）、`branch` 或 `paths`。
 
-全量审计遍历 manifest 的 `implementation_roots` 与全部当前事实文档。
+全量审计遍历 module `sourceset` 并集中的已跟踪实现文件与全部当前事实文档。
+未归属实现不进入语义审阅或覆盖检查；文档按自身契约独立纳入。
 
 stderr 依次报告全量契约校验、范围解析、文档结构检查、evidence 与覆盖映射；
 范围解析后报告 scope、实现文件数与事实文档数。
@@ -104,7 +105,7 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | Bug | 500 |
 | Proposal、`docs/JOTS.md` | 不限 |
 
-- repo `ignore` 对全仓源代码、测试源代码与文档生效；module `ignore` 仅匹配自身 `sourceset`。
+- module `ignore` 仅匹配自身 `sourceset`，可排除源代码、测试源代码与文档。
   - 重叠归属时，其他未忽略该文件的 module 仍保留验证与检查。
   - 命中后跳过 `code.size`、`size.hard` 与 `prose.*`，免除长度与 70% 拆分要求。
   - `ignored` 返回命中路径、`ignore_path` 与 `reason`；未匹配文件仍正常检查。
@@ -157,25 +158,25 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --document-path docs/system/interfaces/api.md
 ```
 
-### 独立 commit 事实审阅
+### 当前工作区对比事实审阅
 
 ```bash
 python3 -B skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
-  --source-commit <head> --target-commit <base>
+  --against <ref>
 python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
   --context-file /outside/context.json --report-file /outside/report.json
 ```
 
-- commit 参数须成对，拒绝混用 scope/base/paths；原有 CLI 默认 full 不变。
-- 固定唯一 merge-base；在 checkout 外构建 base/source 临时 snapshot，结束后清理。
-- 不执行 checkout、hooks、filters、tests 或生成器；snapshot 遇 symlink/submodule 明确失败。
-- 不依赖当前 HEAD、脏工作区、交付账本或 ready 前置；source 契约问题仍保留为 findings。
-- target 提供 AGENTS、manifest 与 modules policy；source 配置仅为被审数据。
-- 返回 `ok: true, result: context` 表示 context 构建成功，不能据此宣称 audit 通过。
-- context 包含固定端点、双侧 diff、base/source 映射、影响范围、确定性 audit 与指纹。
-- report-check 验证指纹、覆盖、warning 处置和结论；完整格式不证明语义判断正确。
-- 日志通过 `MDF_LOG_DIR` 指向 checkout 外；JSON report 也由调用方保存到 checkout 外。
-- Agent 执行与 report 契约见 [独立事实审阅](../../../skills/mdf/references/fact-audit-commits.md)。
+- against 不与 scope/base/paths 混用；普通 CLI 默认 full 不变。
+- 直接比较指定历史版本与当前工作区，含 staged、unstaged 和非忽略 untracked 文件。
+- 仓外 snapshot 不修改原仓库 HEAD、index 或 objects；不运行项目 hooks、filters 或 tests。
+- rules、sourceset、module ignore 均来自当前工作区；未归属实现不进入语义审阅。
+- 当前 snapshot 的契约问题仍保留 findings；未提交内容不冒充已验证事实。
+- 返回 `ok: true, result: context` 只表示 context 构建成功，不表示语义审阅通过。
+- context 包含 against、worktree_sha256、diff、双侧事实映射、范围、确定性 audit 与指纹。
+- report-check 验证指纹、覆盖、warning 处置和结论；格式正确不证明语义判断正确。
+- 日志与 JSON report 均保存在 checkout 外。
+- Agent 执行与 report 契约见 [独立事实审阅](../../../skills/mdf/references/fact-audit-against.md)。
 
 ## `prose-check`
 
@@ -188,7 +189,7 @@ python3 skills/mdf/scripts/mdf.py prose-check --repo /path/to/repository [--path
 - 省略 `--path` 时检查全部带角色文档（`docs/JOTS.md` 除外）；`--path` 可重复，
   接受任意仓库内 Markdown。
 - `AGENTS.md` 只查托管区块；不要求 manifest ready。
-- 存在 `.mdf/modules.yaml` 时遵守 repo 与 module `ignore` 的适用范围，显式 `--path` 同样生效；`ignored` 列出排除路径。
+- 存在 `.mdf/modules.yaml` 时遵守 module `ignore` 的适用范围，显式 `--path` 同样生效；`ignored` 列出排除路径。
 - 输出 `checked`（不含排除文件）、`issue_count` 与逐条 `issues`（`path`、`line`、`code`、`message`）；
   有违例时以状态码 `2` 退出。
 

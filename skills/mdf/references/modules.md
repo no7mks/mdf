@@ -4,12 +4,9 @@
 
 ## Modules
 
-`.mdf/modules.yaml` 声明 repo ignore、每个 module 的 sourceset、ignore 与分套件入口：
+`.mdf/modules.yaml` 声明每个 module 的 sourceset、ignore 与分套件入口：
 
 ```yaml
-ignore:
-  - pattern: ".codex/skills/mdf/**"
-    reason: "MDF 安装目录"
 # verification:          # 可选；覆写的入口不再按 module 展开
 #   lint: "make -j1 lint"
 modules:
@@ -36,17 +33,18 @@ budgets:
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
   - 可选 `ignore`、`named`、`size_limits` 与 `coverage`。
 - **ignore**：`pattern` + `reason`，路径与 pattern 均相对 repo 根；可排除源代码、测试源代码与文档。
-  - 顶层 `ignore` 作用于整个 repo；MDF 安装目录等共用依赖在此声明，不要求位于实现根内。
   - `modules.<name>.ignore` 仅在自身 `sourceset` 内生效，不能排除其他 module 或未归属文件。
   - 重叠 `sourceset` 中仍有 module 未忽略该文件时，保留该 module 的验证与检查。
-  - verify、lint、prose-check 与 fact audit 共用以上范围判断。
+  - verify、lint、prose-check 与审阅共用 module ignore 的归属判断。
+  - fact audit 与 code-review 的实现范围先与 `sourceset` 并集求交，再应用 module ignore。
+  - 未归属实现不进入审阅；事实页、文档入口及交付材料仍按各自契约检查。
   - 命中路径不触发 verify，也不产生 uncovered / `agents.project_content` 类提示。
   - lint 跳过命中文件的代码规模检查，package 计数排除命中文件；fact audit 与 prose-check 跳过其文档规模与结构检查。
   - 命中文件不受长度与 70% 拆分要求约束；审阅不得再按这些规则要求拆分，报告匹配路径与理由。
   - `fact-audit` 的 `ignored` 保留命中路径、pattern 与 reason；未匹配的已跟踪文件仍正常检查。
   - fact audit 各 scope 均排除有效 ignore 命中的语义审阅路径；项目事实页独立判定。
-  - 独立 commit fact audit 使用固定 source SHA 的 ignore 与 sourceset 归属；普通 audit 使用当前配置。
-    具体范围与报告约束见 [独立事实审阅](fact-audit-commits.md)。
+  - against 审阅与普通 audit 使用当前工作区的 ignore 与 sourceset；交付 CI context 使用固定 source 配置。
+    具体范围与报告约束见 [独立事实审阅](fact-audit-against.md)。
 - **quick ⊆ smoke ⊆ release**：以 `tests` glob 匹配到的已跟踪文件集校验。
 - repo 级同名入口默认按 module 名排序**串行展开**执行（plan id 为
   `<entry>:<module>`）；可选顶层 `verification` 覆写子集为单命令（id 为
@@ -59,7 +57,7 @@ budgets:
 - 初始化仍可通过 CLI 传入 `--lint` 等，写入默认 module。
 - 占位命令必然失败：不得用恒成功的空命令冒充真实 lint/build/suite。
 
-`.mdf/audit-ignore.yaml` 已废弃；例外写在 repo 或 module `ignore`。
+例外写在 module `ignore`。
 
 - 未被 `evidence` 引用且未被 ignore 的实现文件会产生 warning，不阻断 audit，但必须在语义审阅中由用户确认。
   - 锁文件、`.gitignore` 与版本钉等不承载行为的文件不产生该 warning。
@@ -90,7 +88,7 @@ size_limits:
   - 未归属任何 module 的文件使用默认策略；package 有未归属成员时默认策略也参与该组检查。
   - 已匹配 module 未写某字段时仍使用其默认值；实现与测试各自确定适用配置，不相加。
   - 测试目录需要 override 时也须纳入 `sourceset`，不从 suite 的 `tests` glob 推断归属。
-- repo 与 module `ignore` 优先；文档上限、文档拆分比例与 `prose.*` 不受 `size_limits` 影响。
+- module `ignore` 优先；文档上限、文档拆分比例与 `prose.*` 不受 `size_limits` 影响。
 
 ## 可选 coverage 入口
 

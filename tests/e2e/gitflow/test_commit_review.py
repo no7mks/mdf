@@ -13,6 +13,9 @@ def repository(tmp_path):
     repo.mkdir()
     (repo / '.mdf').mkdir()
     (repo / '.mdf/manifest.yaml').write_text('schema_version: 3\nrules:\n  code-review: rule.md\n')
+    from mdf_test_support import copy_fixture
+    (repo / '.mdf/modules.yaml').write_text((copy_fixture(tmp_path / 'fixture') / '.mdf/modules.yaml').read_text()
+                                          .replace('"src/**"', '"code.py"', 1))
     (repo / 'rule.md').write_text('检查边界条件\n')
     (repo / 'AGENTS.md').write_text('目标规则\n')
     (repo / 'code.py').write_text('value = 1\n')
@@ -25,20 +28,22 @@ def repository(tmp_path):
     source = git(repo, 'rev-parse', 'HEAD').stdout.strip()
     git(repo, 'checkout', '--detach', target)
     (repo / 'code.py').write_text('dirty = True\n')
+    (repo / 'rule.md').write_text('当前工作区规则\n')
+    (repo / 'AGENTS.md').write_text('当前 Agent 规则\n')
     return repo, source, target
 
 
-def test_commit_context_without_delivery_is_read_only_and_uses_target_policy(python_exe, tmp_path):
+def test_commit_context_without_delivery_is_read_only_and_uses_current_policy(python_exe, tmp_path):
     repo, source, target = repository(tmp_path)
     before = {str(p.relative_to(repo)): p.read_bytes() for p in repo.rglob('*') if p.is_file() and '.git' not in p.parts}
     ctx = payload(mdf(python_exe, 'review-context', '--repo', str(repo),
-                      '--source-commit', source, '--target-commit', target))['result']
+                      '--against', target))['result']
     after = {str(p.relative_to(repo)): p.read_bytes() for p in repo.rglob('*') if p.is_file() and '.git' not in p.parts}
     assert before == after
-    assert ctx['mode'] == 'commits' and ctx['review_base'] == target and ctx['review_head'] == source
-    assert ctx['rules']['project']['content'] == '检查边界条件\n'
-    assert ctx['rules']['agents'] == '目标规则\n'
-    assert '+value = 2' in ctx['diff'] and 'dirty' not in ctx['diff']
+    assert ctx['mode'] == 'against' and ctx['against'] == target
+    assert ctx['rules']['project']['content'] == '当前工作区规则\n'
+    assert ctx['rules']['agents'] == '当前 Agent 规则\n'
+    assert '+dirty = True' in ctx['diff'] and '+value = 2' not in ctx['diff']
     assert not {'roster', 'source', 'delivery_base', 'artifacts', 'kind', 'target'} & ctx.keys()
     assert ctx['incomplete'] == []
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
@@ -49,16 +54,16 @@ def test_commit_context_without_delivery_is_read_only_and_uses_target_policy(pyt
     assert result['result']['valid'] and result['result']['decision'] == 'pass'
 
 
-@pytest.mark.parametrize('damage', ['head', 'rules', 'context', 'coverage', 'blocking', 'incomplete', 'empty_changes'])
+@pytest.mark.parametrize('damage', ['worktree', 'rules', 'context', 'coverage', 'blocking', 'incomplete', 'empty_changes'])
 def test_commit_report_cannot_forge_pass(python_exe, tmp_path, damage):
     repo, source, target = repository(tmp_path)
     from mdf_core.reviewing.context import context
     from mdf_core.reviewing.report import validate
     from mdf_core.foundation.errors import MDFError
-    ctx = context(repo, source_commit=source, target_commit=target)
+    ctx = context(repo, against=target)
     report = passing(ctx)
-    if damage == 'head':
-        report['review_head'] = target
+    if damage == 'worktree':
+        report['worktree_sha256'] = 'wrong'
     elif damage == 'rules':
         report['rules_sha256'] = 'wrong'
     elif damage == 'context':
@@ -82,7 +87,7 @@ def test_commit_report_accepts_supported_outcomes(tmp_path, decision, priority, 
     repo, source, target = repository(tmp_path)
     from mdf_core.reviewing.context import context
     from mdf_core.reviewing.report import validate
-    ctx = context(repo, source_commit=source, target_commit=target)
+    ctx = context(repo, against=target)
     report = passing(ctx)
     report.update(decision=decision, incomplete=incomplete, findings=[
         {'id': 'f1', 'path': 'code.py', 'line': 1, 'priority': priority,
@@ -90,16 +95,13 @@ def test_commit_report_accepts_supported_outcomes(tmp_path, decision, priority, 
     assert validate(ctx, report)['decision'] == decision
 
 
-def test_commit_context_rejects_multiple_merge_bases(tmp_path):
-    repo, source, target = repository(tmp_path)
+def test_against_uses_exact_version_instead_of_merge_base(tmp_path):
     from mdf_core.reviewing.context import context
-    from mdf_core.foundation.errors import MDFError
-    tree = git(repo, 'rev-parse', target + '^{tree}').stdout.strip()
-    sibling = git(repo, 'commit-tree', tree, '-p', target, '-m', 'sibling').stdout.strip()
-    left = git(repo, 'commit-tree', tree, '-p', source, '-p', sibling, '-m', 'left').stdout.strip()
-    right = git(repo, 'commit-tree', tree, '-p', sibling, '-p', source, '-m', 'right').stdout.strip()
-    with pytest.raises(MDFError, match='唯一 merge-base'):
-        context(repo, source_commit=left, target_commit=right)
+    repo, source, target = repository(tmp_path)
+    # source 是另一条线的后续提交；直接比较它与当前工作区，不退回共同祖先。
+    ctx = context(repo, against=source)
+    assert ctx['against'] == source
+    assert '-value = 2' in ctx['diff'] and '+dirty = True' in ctx['diff']
 
 
 def test_commit_context_does_not_execute_textconv(tmp_path):
@@ -114,6 +116,37 @@ def test_commit_context_does_not_execute_textconv(tmp_path):
                       + 'print("masked diff")\n')
     (repo / '.gitattributes').write_text('code.py diff=review\n')
     git(repo, 'config', 'diff.review.textconv', shlex.join([sys.executable, str(driver)]))
-    ctx = context(repo, source_commit=source, target_commit=target)
+    ctx = context(repo, against=target)
     assert not marker.exists()
-    assert '+value = 2' in ctx['diff']
+    assert '+dirty = True' in ctx['diff']
+
+
+def test_current_rule_change_updates_fingerprint_without_changing_commit_scope(tmp_path):
+    from mdf_core.reviewing.context import context
+    repo, source, target = repository(tmp_path)
+    before = context(repo, against=target)
+    (repo / 'rule.md').write_text('更新后的当前规则\n')
+    after = context(repo, against=target)
+    assert after['rules']['project']['content'] == '更新后的当前规则\n'
+    assert before['rules_sha256'] != after['rules_sha256']
+    assert before['context_sha256'] != after['context_sha256']
+    assert before['against'] == after['against']
+    assert before['worktree_sha256'] != after['worktree_sha256']
+
+
+def test_rule_path_comes_from_current_manifest(tmp_path):
+    from mdf_core.reviewing.context import context
+    repo, source, target = repository(tmp_path)
+    (repo / '.mdf/manifest.yaml').write_text('schema_version: 3\nrules:\n  code-review: AGENTS.md\n')
+    ctx = context(repo, against=target)
+    assert ctx['rules']['project']['path'] == 'AGENTS.md'
+    assert ctx['rules']['project']['content'] == '当前 Agent 规则\n'
+
+
+def test_missing_current_rule_does_not_fall_back_to_target(tmp_path):
+    from mdf_core.reviewing.context import context
+    from mdf_core.foundation.errors import MDFError
+    repo, source, target = repository(tmp_path)
+    (repo / 'rule.md').unlink()
+    with pytest.raises(MDFError, match='rules.code-review'):
+        context(repo, against=target)

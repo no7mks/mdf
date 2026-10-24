@@ -88,8 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--scope", choices=("full", "branch", "paths"), default=None
     )
     audit.add_argument("--base")
-    audit.add_argument("--source-commit")
-    audit.add_argument("--target-commit")
+    audit.add_argument("--against")
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)
@@ -133,7 +132,7 @@ def build_parser() -> argparse.ArgumentParser:
     review_context = subparsers.add_parser("review-context")
     review_context.add_argument("--repo", required=True)
     review_context.add_argument("--source")
-    for name in ("head", "policy-ref", "source-commit", "target-commit"):
+    for name in ("head", "policy-ref", "against"):
         review_context.add_argument(f"--{name}")
     review_context.add_argument("--review-base")
     review_context.add_argument("--previous-report")

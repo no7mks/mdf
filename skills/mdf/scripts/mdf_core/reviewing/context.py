@@ -4,12 +4,13 @@ import json
 import re
 from pathlib import Path, PurePosixPath
 
+from mdf_core.reviewing.scope import review_changes, source_modules
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.foundation.textutil import stable_semver
 from mdf_core.lifecycle.delivery_state import read_json
 from mdf_core.lifecycle.roster import require_roster
 from mdf_core.workspace.gitutil import branch_details, repo_path, require_git_root, unreleased_slug
-from mdf_core.workspace.merge_policy import ancestor, git, manifest_at, paths, sha
+from mdf_core.workspace.merge_policy import ancestor, git, manifest_at, sha
 
 
 def blob(repo, ref, path, *, required=True):
@@ -49,17 +50,14 @@ def backmerge_identity(repo, source, head):
 
 
 def context(repo, source=None, head=None, policy_ref=None, review_base=None, previous=None,
-            *, source_commit=None, target_commit=None):
-    explicit = source_commit is not None or target_commit is not None
-    if explicit:
-        if not source_commit or not target_commit or head or policy_ref:
-            raise MDFError("需成对传入 source-commit/target-commit，不能混用 head/policy-ref", code="invalid_arguments")
-        if review_base is not None or previous is not None:
-            raise MDFError("独立审查每次覆盖完整范围，不接受 review-base/previous-report", code="invalid_arguments")
-        from mdf_core.reviewing.standalone import commit_context
-        return commit_context(repo, source_commit, target_commit)
+            *, against=None):
+    if against is not None:
+        if not against or any(value is not None for value in (source, head, policy_ref, review_base, previous)):
+            raise MDFError('against 不能混用交付或增量参数', code='invalid_arguments')
+        from mdf_core.reviewing.standalone import against_context
+        return against_context(repo, against)
     elif not source or not head or not policy_ref:
-        raise MDFError("需要 source/head/policy-ref 或 source-commit/target-commit", code="invalid_arguments")
+        raise MDFError('需要 source/head/policy-ref 或 against', code='invalid_arguments')
     head, policy_ref = sha(repo, head), sha(repo, policy_ref)
     bases = git(repo, "merge-base", "--all", head, policy_ref, check=False).stdout.split()
     if len(bases) != 1:
@@ -119,6 +117,10 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
     protocol = protocol_path.read_text(encoding="utf-8")
     rules = {"mdf": protocol, "project": project, "agents": agents,
              "modules": blob(repo, policy_ref, ".mdf/modules.yaml", required=False)}
+    scope_config, scope_raw = source_modules(repo, head)
+    rules["scope"] = {"modules": scope_raw}
+    review_paths, review_diff = review_changes(repo, left, head, scope_config)
+    target_paths, target_diff = review_changes(repo, merge_base, policy_ref, scope_config)
     artifacts, incomplete = {}, []
     for name in ("objectives.md", "code-review.md", "verification-report.json", "fact-audit.md", "CHANGE.md"):
         raw = blob(repo, artifact_ref, root + "/" + name, required=False)
@@ -149,12 +151,12 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
     result = {"schema_version": 3, "source": source, "kind": details["kind"],
               "delivery_base": base, "review_base": left, "review_head": head, "policy_ref": policy_ref,
               "scope": "delivery", "merge_base": merge_base,
-              "target_paths": paths(repo, merge_base, policy_ref),
-              "target_diff": git(repo, "diff", "--no-ext-diff", "--no-renames", merge_base, policy_ref).stdout,
+              "target_paths": target_paths,
+              "target_diff": target_diff,
               "round": "incremental" if previous is not None else "initial", "roster": roster,
               "rules": rules, "rules_sha256": fingerprint(rules), "artifacts": artifacts,
-              "paths": paths(repo, left, head),
-              "diff": git(repo, "diff", "--no-ext-diff", "--no-renames", left, head).stdout,
+              "paths": review_paths,
+              "diff": review_diff,
               "incomplete": incomplete, "previous_report": previous,
               "target": "master" if details["kind"] in {"release", "hotfix"} else "develop"}
     if publication:
@@ -168,4 +170,4 @@ def command_context(args):
     require_git_root(repo)
     previous = read_json(Path(args.previous_report)) if args.previous_report else None
     emit({"ok": True, "result": context(repo, args.source, args.head, args.policy_ref, args.review_base, previous,
-                                       source_commit=args.source_commit, target_commit=args.target_commit)})
+                                       against=args.against)})

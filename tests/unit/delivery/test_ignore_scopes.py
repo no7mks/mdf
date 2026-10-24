@@ -1,4 +1,4 @@
-"""repo ignore 与 module sourceset 边界，跨入口复用相同匹配。"""
+"""module ignore 与 sourceset 边界，跨入口复用相同匹配。"""
 from pathlib import Path
 
 import pytest
@@ -13,12 +13,11 @@ def module(sourceset, ignore=()):
             **{name: {'command': 'test', 'tests': ['tests/**']} for name in ('quick', 'smoke', 'release')}}
 
 
-def test_repo_ignore_applies_to_all_modules_and_measurements():
-    config = parse_modules({'ignore': [{'pattern': 'vendor/**', 'reason': '第三方依赖'}],
-                            'modules': {'app': module(['**']), 'tools': module(['vendor/**'])}})
+def test_module_ignore_applies_to_all_owners_and_measurements():
+    rule = [{'pattern': 'vendor/**', 'reason': '第三方依赖'}]
+    config = parse_modules({'modules': {'app': module(['**'], rule), 'tools': module(['vendor/**'], rule)}})
     assert config.is_ignored('vendor/tool.py')
     assert config.modules_for_paths(Path('.'), ['vendor/tool.py']) == []
-    assert config.modules_for_paths(Path('.'), ['src/app.py']) == ['app']
     assert code_size_measurements({'vendor/tool.py': 2000}, ['vendor/tool.py'], config) == {
         'files': [], 'packages': []}
 
@@ -55,6 +54,11 @@ def test_shared_package_counts_respect_each_modules_ignore():
 
 @pytest.mark.parametrize('raw', ['vendor/**', [{}], [{'pattern': '**'}],
                                [{'pattern': '', 'reason': '依赖'}], [{'pattern': '**', 'reason': ''}]])
-def test_repo_ignore_requires_pattern_and_reason(raw):
-    with pytest.raises(MDFError, match='repo.ignore'):
-        parse_modules({'ignore': raw, 'modules': {'app': module(['src/**'])}})
+def test_module_ignore_requires_pattern_and_reason(raw):
+    with pytest.raises(MDFError, match='module app.ignore'):
+        parse_modules({'modules': {'app': {**module(['src/**']), 'ignore': raw}}})
+
+
+def test_unknown_top_level_key_is_rejected():
+    with pytest.raises(MDFError, match='未知键'):
+        parse_modules({'ignore': [], 'modules': {'app': module(['src/**'])}})
