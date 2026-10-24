@@ -2,6 +2,10 @@
 
 ## 独立 against 审查
 
+`$mdf code-review --against <commit>`：审阅当前 worktree 相对这个 commit。
+commit 可以是 branch start、last release，或调用方选定的任意 commit。
+Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill 并完成步骤 5–8。
+
 出现 `--against` 时，步骤 1 直接转 5，不运行交付前置检查。
 步骤 5–8 是独立只读审查，不进入 Repair 或 Record；未传 against 时执行步骤 1–4。
 
@@ -104,7 +108,7 @@
 | 2 | Review | Subagent | 按本轮应派人数启动严格只读 subagent 覆盖本轮 | N 份静态审查、范围与证据 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 裁定、修复、整理 tests 并复核 | 裁定、修复与 suite 验证，无阻断项 | 4 | 可修则留在 3；否则保留现场并报告 |
 | 4 | Record | 约束 | 按需 smart；裁定收口则洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 结束 | close-out 需 smart 返回待续办；可修则 3；否则停 |
-| 5 | Resolve | 约束 | 核 Git 根、against 参数与仓外日志；拒绝交付、增量、roster 参数 | 根、参数、日志目录 | 6 | 停止并报告 |
+| 5 | Resolve | 约束 | 核 Git 根、against 参数与仓外日志；拒绝交付与增量参数 | 根、参数、日志目录 | 6 | 停止并报告 |
 | 6 | Context | 脚本 | 调用下方 review-context，日志置于 checkout 外 | context.result、范围与规则 | 7 | 读日志，报告缺项并停止 |
 | 7 | Review | 约束 | 按固定 context.rules 与 Review 协议静态审查全部 paths | findings、覆盖、incomplete | 8 | 未完成标 needs-review；工具失败标 error，转8 |
 | 8 | Report | 约束 | 复核 context 未变，生成并校验 JSON | 两次 context 指纹、校验结果 | 有效则返回 | 变化回6；格式可修留8；其余报 error |
@@ -116,7 +120,9 @@ close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左
 
 ### 独立输入与只读边界
 
-步骤 6 调用 `review-context --repo <repo> --against <ref>`。
+步骤 6 在当前 worktree 调用 `review-context --repo <repo> --against <commit>`。
+步骤 7 由执行该 intent 的 Agent 读取仓库，步骤 8 写出报告。
+CLI 只提供确定性 context；MDF 不包装额外 Agent，也不把 context 作为 stdin 审阅材料。
 CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在 checkout 外。
 步骤 7 使用 [Review 协议](reviewer-protocol.md) 的独立模式，步骤 8 使用
 [独立报告 schema](../assets/templates/against-review-report.schema.json)。
@@ -125,7 +131,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
 - 包含 staged、unstaged 和未被 Git ignore 的 untracked 普通文件；同一路径以磁盘内容为准。
 - rules、sourceset 和 module ignore 均读取当前工作区 snapshot，MDF 协议来自当前安装位置。
 - 实现变更先与当前 sourceset 并集求交，再应用 module ignore；文档和交付材料独立按契约纳入。
-- 不接受交付、roster、review-base、previous-report 或 backend 参数；无需 ready 或本地交付材料。
+- 不接受交付、review-base、previous-report 或 backend 参数；无需 ready 或本地交付材料。
 - snapshot 在仓外构建并清理，不修改原仓库 HEAD、index、refs、objects，不运行项目 hooks 或 filters。
 - 全程只读，不修复、不运行 tests、不 commit、不勾 objectives，不进入交付 Repair/Record。
 - findings 提供位置、触发条件、影响、证据与 P0–P3；未完成写 incomplete。
@@ -160,7 +166,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
 无账本 adhoc 的收口审查按 adhoc-change.md 的 Check 条款执行；不套用本节的账本、roster 配置或勾选前置。
-已有 CI 的独立 against review 路径不变，不因无账本 adhoc 增加材料依赖。
+独立 against 审查始终执行步骤 5–8。
 
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
 - 先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。

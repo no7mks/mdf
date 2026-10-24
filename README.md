@@ -114,8 +114,9 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 ### code-review 与 roster
 
 code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
-独立只读审查可用 `$mdf code-review --against <ref>`；
-不依赖 roster 或交付材料。以下 roster 规则仅用于交付模式；范围语义见 [code-review](skills/mdf/references/code-review.md)。
+`$mdf code-review --against <commit>`：审阅当前 worktree 相对这个 commit。
+commit 可以是 branch start、last release，或调用方选定的任意 commit。
+执行方式见 [code-review](skills/mdf/references/code-review.md)；以下 roster 规则仅用于交付模式。
 
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
 - 后续增量只审相对操作左端点以来的改动，并复核上轮问题；裁定收口时洗成无
@@ -133,10 +134,11 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
   - `--write-tests-model`、`--implement-model`、`--code-review-model`；
     值为口语描述，可点名一个或多个模型。
 
-fact audit 也支持独立 PR 审阅：
-`$mdf fact audit --against <ref>`。
-直接比较历史版本与完整当前工作区，包含未提交内容，并按当前 rules、sourceset 和 ignore 审阅；
-不要求交付账本，直接返回独立审阅报告。见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
+`$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
+commit 的范围同上。见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
+
+两种 against 均由执行 intent 的 Agent 加载 Skill，在当前 worktree 运行对应命令、读取仓库并写出报告。
+Cursor 与 Codex 使用同一 intent；调用方如何准备 worktree、如何选定 commit 不属于 MDF。
 
 ### close-out 与 deliver
 
@@ -292,7 +294,7 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 
 已有普通分支也可直接执行 `$mdf pr` 或 `$mdf close-out`；无账本时按实际成果生成 Change 并收口。
 四类 Gitflow 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
-无账本 adhoc 保留真实分支与工作区，不补造 delivery/objectives；CI 的独立 commit review 路径不变。
+无账本 adhoc 保留真实分支与工作区，不补造 delivery/objectives。
 
 - slug 由 Agent 自定；直接生成六项 objectives，不另确认目标文本或 roster，不绑定 PRP。
 - 主线：`工作 → lint → code-review → verify smart → fact audit/update → close-out`。

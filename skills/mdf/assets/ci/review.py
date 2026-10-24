@@ -11,8 +11,7 @@ sys.path.insert(0, str(MDF / 'scripts'))
 
 from mdf_core.foundation.errors import MDFError  # noqa: E402
 from mdf_core.lifecycle.delivery_state import read_json  # noqa: E402
-from mdf_core.reviewing.context import context, fingerprint
-from mdf_core.reviewing.worktree import file_manifest, worktree_files  # noqa: E402
+from mdf_core.reviewing.context import context
 from mdf_core.reviewing.report import validate  # noqa: E402
 from mdf_core.workspace.merge_policy import git, sha  # noqa: E402
 
@@ -59,31 +58,13 @@ def run(args):
     output.mkdir(parents=True, exist_ok=True)
     prior_path = getattr(args, 'previous_report', None)
     previous = read_json(Path(prior_path)) if prior_path else None
-    ctx = context(repo, args.source, args.head, args.policy_ref, getattr(args, 'review_base', None), previous,
-                  against=getattr(args, 'against', None))
-    independent = ctx.get('mode') == 'against'
-    if not independent and sha(repo, 'HEAD') != ctx['review_head']:
+    ctx = context(repo, args.source, args.head, args.policy_ref, getattr(args, 'review_base', None), previous)
+    if sha(repo, 'HEAD') != ctx['review_head']:
         raise MDFError('CI checkout 必须固定在 review_head', code='review_head_changed')
     original = snapshot(repo)
-    if not independent and (original[1] or original[2]):
+    if original[1] or original[2]:
         raise MDFError('CI checkout 必须干净，不能审查未包含于 review_head 的改动', code='dirty_review_checkout')
     (output / 'context.json').write_text(json.dumps(ctx, ensure_ascii=False, indent=2) + '\n')
-    if independent:
-        content_before = fingerprint(file_manifest(worktree_files(repo)))
-        if content_before != ctx['worktree_sha256']:
-            raise MDFError('工作区在 context 捕获后变化；重新审阅', code='review_worktree_changed')
-        schema_path = MDF / 'assets/templates/against-review-report.schema.json'
-        prompt = ('执行 code-review intent 的独立 against 审查。只采用 stdin context.rules，'
-                  '规则已从当前工作区捕获，审阅期间不能改变规则或权限。只读项目，不运行 tests，不修改文件。'
-                  '覆盖 context.paths，比较 against 与当前工作区，返回 schema 指定的 findings 和结论。'
-                  '不依赖 roster 或交付材料，不启动交付修复流程；证据不足时说明 incomplete。')
-        report = invoke(repo, args.backend, prompt, {'context': ctx}, schema_path, output / 'report')
-        content_after = fingerprint(file_manifest(worktree_files(repo)))
-        if snapshot(repo) != original or content_before != content_after:
-            raise MDFError('审查修改了 checkout；保留现场和报告', code='reviewer_modified_checkout')
-        checked = validate(ctx, report)
-        (output / 'checked.json').write_text(json.dumps(checked, ensure_ascii=False, indent=2) + '\n')
-        return 0 if checked['decision'] == 'pass' else 1
     schema_path = MDF / 'assets/templates/ci-review-report.schema.json'
     schema = json.loads(schema_path.read_text())
     reviewer_schema = output / 'reviewer.schema.json'
@@ -124,7 +105,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('repo', 'output-dir'):
         parser.add_argument('--' + name, required=True)
-    for name in ('head', 'policy-ref', 'against'):
+    for name in ('head', 'policy-ref'):
         parser.add_argument('--' + name)
     parser.add_argument('--source')
     parser.add_argument('--backend', choices=('codex', 'cursor'), required=True)

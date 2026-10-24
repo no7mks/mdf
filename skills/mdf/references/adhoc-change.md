@@ -130,7 +130,6 @@
   - 部分成功按操作记录续办，可从同一仓库使用 `--source <真实source>` 恢复。
   - 没有匹配记录不能仅靠 --source 猜测恢复；同名源分支重建或端点变化时保留现场。
 - PR 准备完成后返回 pr，沿用其 Goal、等待、返工与实际 merged 判据。
-  - 现有 CI 可继续使用独立 commit review，不要求 CI 读取 Change、delivery 或 objectives。
   - 未 merged 不清理；已 merged 的 close-out 只核平台结果并续办，不重跑本页检查。
   - 外部创建并已 merged 的 PR 可由 close-out 接管：绑定已知 source tip，核规范 Change 与平台事实。
   - 首次接管仍核 source/target/head、双亲 merge commit 及远端第一父链，不能只凭本地包含关系。

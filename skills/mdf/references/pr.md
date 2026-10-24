@@ -266,7 +266,6 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
   - dev-pr 接管的 source 沿用 [dev-pr](dev-pr.md) 的 smoke 要求，包括集成和返工后的补验。
   - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
-  - CI 继续使用已有独立 commit review 路径，不要求读取交付账本或 Change。
 - 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。
 - 提交前重核远端 ancestor 与 squash；目标前进则回本页集成、补审补测循环。
 

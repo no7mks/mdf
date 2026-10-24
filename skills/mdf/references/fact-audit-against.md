@@ -1,6 +1,8 @@
 # 当前工作区对比审阅
 
-`$mdf fact audit --against <ref>` 比较指定历史版本与完整当前工作区。
+`$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
+commit 可以是 branch start、last release，或调用方选定的任意 commit。
+Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill、运行命令、读取仓库并写出报告。
 
 ## 决策树
 
@@ -61,12 +63,12 @@
 CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先将 `MDF_LOG_DIR` 指向 checkout 外。
 
 ```bash
-python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --against <ref>
+python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --against <commit>
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
   --context-file /outside/context.json --report-file /outside/report.json
 ```
 
-- against 不与 scope、base、路径或交付参数混用；无需 ready、roster 或交付材料。
+- against 不与 scope、base、路径或交付参数混用；无需 ready 或交付材料。
 - 直接比较指定版本，不计算 merge-base，不要求 against 是 HEAD 的祖先。
 - 当前状态包含已提交、staged、unstaged 与未被 Git ignore 的 untracked 普通文件。
 - 同一文件 staged 与 unstaged 不同时，以当前磁盘内容为准；已跟踪文件不因 Git ignore 排除。

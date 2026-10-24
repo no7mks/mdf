@@ -1,4 +1,4 @@
-# CI 外部审查接入
+# 交付 CI 外部审查接入
 
 ## 决策树
 
@@ -29,7 +29,6 @@
 │ 4 Publish                    │
 └──────────────┬───────────────┘
                │
-               ├──── 独立报告 ────→ [交项目消费]
                ├──── 端点变化 ────→ 3 Review
                ├──── 发布失败 ────→ [保留报告，报告阻塞]
                └──── 发布成功 ────→ [返回实际平台结果]
@@ -53,7 +52,7 @@
 | 1 | Configure | 约束 | 核依赖、固定工具来源、只读权限与项目 policy | runner 配置、身份、固定 ref | 2 | 缺项报告并停止 |
 | 2 | Route | 约束 | 按事件选择 review 或 trunk push 审计 | 事件、参数、固定 SHA | review 3；push 5 | 不明停止，不猜 SHA |
 | 3 | Review | 脚本 | 调用 review.py；核 context、checkout 与 checked.json | 固定上下文、有效报告、完整日志 | 有效报告4 | error 保留日志并停止；无效不发布 |
-| 4 | Publish | 脚本 | 交付报告按 policy 调用 publish.py；独立报告交项目消费 | 已校验报告、当前端点、平台结果 | 返回实际结果 | 端点变化回3；其他阻塞停止 |
+| 4 | Publish | 脚本 | 交付报告按 policy 调用 publish.py | 已校验报告、当前端点、平台结果 | 返回实际结果 | 端点变化回3；其他阻塞停止 |
 | 5 | Audit | 脚本 | 调用 audit-push 并核 result.verdict | 固定 before/after、平台证据、verdict | pass 返回 | 非 pass 或调用失败报告阻塞 |
 
 ## 术语与数据结构
@@ -68,18 +67,16 @@
 | 共用 Review 协议和报告 schema | Codex/Cursor CLI、模型、登录凭据与只读权限 |
 | GitHub/GitLab CI 和发布示例 | approve/merge policy、平台写身份、通知和 artifact |
 
-- CI/CD 通过 `$mdf code-review --against <ref>` 调用独立只读审查。
-- 不要求本地 code-review、roster 或交付材料；普通交付模式仍按原主链执行。
 - Python3、Git、MDF 为必需依赖；平台采集另需已登录的 gh/glab。
 - LLM 工具执行发生在 runner；模型推理使用所选服务，不要求原生平台 reviewer。
-- 工具从项目当前安装位置加载；独立 against 模式从当前工作区捕获规则并固定本轮指纹。
+- 工具从项目当前安装位置加载。
 - 第一版支持 origin 同仓；平台权限、分支保护、必需检查与通知由项目负责。
 - 项目提供 checkout 外已存在且可写的绝对 `CI_ARTIFACT_DIR`；context、audit 与运行日志均置于该目录。
   每次调用 Core 前设置 `MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs"`，Python 使用 `-B`；不把输入、日志或 bytecode 写进被审 checkout。
 
 ### 固定上下文
 
-交付模式从固定 Git 对象生成上下文；against 模式捕获完整当前工作区。
+交付模式从固定 Git 对象生成上下文。
 
 ```bash
 MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" review-context \
@@ -87,11 +84,6 @@ MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" re
   --policy-ref "$TARGET_SHA" > "$CI_ARTIFACT_DIR/context-output.json"
 ```
 
-- 独立 context 只需 --repo 与 --against <ref>，不接受交付 source/head/policy-ref 或增量参数。
-  - mode=against，直接比较历史版本与完整当前工作区，使用当前 rules、sourceset 和 module ignore。
-  - 包含 staged、unstaged、非忽略 untracked 文件；无需 clean，不生成 target_diff/target_paths。
-  - context/report 以 against、worktree_sha256、rules_sha256 与 context_sha256 绑定本轮。
-- 以下 source、delivery、roster 与增量条款仅用于未传 against 的交付模式。
 - CLI 返回 result；报告校验接受该 result 内容保存为 context.json，不接受整个 envelope。
 - source 决定交付目录；release/hotfix 同时识别已归档版本目录。
 - codex/backmerge/<version> 使用 annotated 发布 tag 和首次回合双亲定位固定 base/M，复用 M 中的交付证据与 roster。
@@ -105,18 +97,13 @@ MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" re
 
 ### CLI 执行与报告
 
-本节是可选的 CI 执行器示例；用户入口仍为 code-review intent，backend 仅选择示例内部的宿主 CLI。
+本节是交付模式的可选 CI 执行器示例；backend 选择示例内部的宿主 CLI。
 
 ```bash
 python3 -B "$MDF_ROOT/assets/ci/review.py" \
   --repo "$REPO_ROOT" --source feature/example --head "$HEAD_SHA" \
   --policy-ref "$TARGET_SHA" --backend codex --output-dir "$CI_ARTIFACT_DIR"
 ```
-
-独立模式将示例中的 source/head/policy-ref 换为 against，仅调用一次 Agent。
-它使用独立报告 schema，允许 dirty 工作区；前后检查内容指纹，包含 untracked 文件内容变化。
-直接校验 findings，不启动 roster reviewers 或 owner 汇总。
-下列多路执行契约仅用于交付模式，由步骤 3 的执行器实施。
 
 - 项目先运行 lint/tests，保存完整报告；CI checkout 固定在 review_head。
 - controller 生成 context.json，按 roster 分别启动独立 reviewer，partition 时分配路径切片。
@@ -126,7 +113,7 @@ python3 -B "$MDF_ROOT/assets/ci/review.py" \
 - backend 可选 codex 或 cursor；Cursor 使用 agent 的 ask print mode，Codex 使用 read-only exec。
 - 输出目录须在 checkout 外；controller 检查每路执行前后 HEAD、status 和 tracked diff。
 - 每路保存 stdout/stderr 和 JSON；不会从无效文本中猜测 JSON。
-- 独立模式的 report.json 使用 against-review-report.schema.json；交付模式使用 ci-review-report.schema.json。
+- report.json 使用 ci-review-report.schema.json。
 - error.json 是执行失败，不等于有效 review 报告。
 - 供外部执行器接入时，使用 [schema](../assets/templates/ci-review-report.schema.json) 和 [Review 协议](reviewer-protocol.md)。
 - 外部执行器输出可用 `review-report-check --context-file context.json --report-file report.json` 校验。
@@ -155,7 +142,7 @@ MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" au
 
 ### 发布 review 与合并
 
-本节的发布示例消费交付模式报告；独立 against 报告由接入项目消费和发布。
+本节的发布示例消费交付模式报告。
 
 ```bash
 python3 -B "$MDF_ROOT/assets/ci/publish.py" \

@@ -42,7 +42,7 @@
 
 - audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
-- review-context 和 CI review.py 的 --against <ref> 选择独立只读模式，不接受 source/head/policy-ref。
+- review-context 的 --against <commit> 选择独立只读模式，不接受 source/head/policy-ref。
   - mode=against，直接比较指定历史版本与完整当前工作区，含 staged、unstaged 和非忽略 untracked 文件。
   - 不接受 review-base/previous-report；不计算 merge-base，不生成 target_diff/target_paths。
   - 使用 against-review-report.schema.json，绑定 against、worktree_sha256、规则与 context 指纹。

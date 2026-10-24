@@ -127,31 +127,15 @@ def test_ci_runner_refuses_dirty_checkout_before_starting_llm(monkeypatch, tmp_p
         module.run(args)
 
 
-@pytest.mark.parametrize('mutates', [False, True])
-def test_commit_runner_uses_one_report_without_roster(monkeypatch, tmp_path, mutates):
-    from support_delivery import local_repo
-    from mdf_core.reviewing.context import context as make_context
+def test_ci_runner_rejects_against_before_starting_agent(monkeypatch, tmp_path, capsys):
     module = load('review')
-    repo = local_repo(tmp_path)
-    context = make_context(repo, against='HEAD')
-    calls = []
-    def invoke(repo, backend, prompt, body, schema, prefix):
-        calls.append(body)
-        assert schema.name == 'against-review-report.schema.json'
-        assert 'roster' not in body['context'] and 'reviewers' not in body
-        if mutates:
-            (repo / 'unexpected.txt').write_text('越界\n')
-        keys = ('schema_version', 'mode', 'against', 'worktree_sha256',
-                'rules_sha256', 'context_sha256', 'paths')
-        return {**{key: context[key] for key in keys}, 'decision': 'pass', 'incomplete': [], 'findings': []}
-    monkeypatch.setattr(module, 'invoke', invoke)
-    args = SimpleNamespace(repo=str(repo), source=None, head=None, policy_ref=None,
-                           against='HEAD', backend='codex',
-                           output_dir=str(tmp_path / 'output'))
-    if mutates:
-        with pytest.raises(MDFError, match='修改了 checkout'):
-            module.run(args)
-    else:
-        assert module.run(args) == 0
-        assert json.loads((tmp_path / 'output/checked.json').read_text())['valid']
-    assert len(calls) == 1
+    monkeypatch.setattr(module, 'invoke', lambda *args: pytest.fail('不得启动 Agent'))
+    monkeypatch.setattr(module.sys, 'argv', [
+        'review.py', '--repo', str(tmp_path), '--output-dir', str(tmp_path / 'output'),
+        '--backend', 'codex', '--against', 'HEAD',
+    ])
+    with pytest.raises(SystemExit) as exc:
+        module.main()
+    assert exc.value.code == 2
+    assert 'unrecognized arguments: --against HEAD' in capsys.readouterr().err
+    assert not (tmp_path / 'output').exists()

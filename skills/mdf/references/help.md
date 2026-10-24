@@ -343,7 +343,7 @@ $mdf clarify 要不要把缓存放到 Redis
     release→release；不含 commit）；smart/named 不写 branch 报告，运行日志与 JUnit 仍落盘；named 命令来自
     testing 文档 frontmatter。
 - `$mdf code-review`
-  - 独立只读：`$mdf code-review --against <ref>`；比较历史版本与完整当前工作区，无 roster 或交付材料要求。
+  - 独立只读：`$mdf code-review --against <commit>`；审阅当前 worktree 相对这个 commit。
   - 交付用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`
   - 交付用途：审查并修复实现、测试和 code smell；against 模式只读，不修复、不运行 tests。
   - 说明：进行中可记 tip；裁定收口后覆盖为无 commit 的 `code-review.md` 终稿（非
@@ -374,7 +374,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：仅用户要求预览时 dry-run；未要求则实际归档。
 - `$mdf fact audit`
   - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
-  - 独立对比：`$mdf fact audit --against <ref>`。
+  - 独立对比：`$mdf fact audit --against <commit>`。
     比较历史版本与完整当前工作区，只读返回 JSON；不混用 scope/base/paths，不进入主链确认。
   - 用途：只读审阅覆盖、证据、语义与加载质量。
   - 说明：不执行 `verification`；`size.hard` 阻断。主链 release `--base` 为上一正式发布。
