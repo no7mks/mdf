@@ -92,6 +92,31 @@ def test_pr_goal_survives_repairs_merge_and_parent_handoff():
     assert 'pr.md#goal-与持续推进' in workflow('deliver')
 
 
+def test_pr_tracks_originating_run_and_all_jobs_after_merge():
+    text = workflow('pr')
+    polling = text.split('### 当前调用内轮询', 1)[1].split('### 反馈修复与重新提交', 1)[0]
+    for rule in (
+        '发起该 PR/MR 的 workflow run / pipeline',
+        'run ID、attempt、URL',
+        '不能仅按 PR head SHA 查找',
+        '全部 job 与 step',
+        '非 required checks',
+        'PR 已 merged 但关联运行未结束时，保持 Goal active',
+        'cancelled、timed_out、action_required',
+        '合并后的失败不得向已合入的 source 追加提交',
+        '查询失败、权限不足或关联不明不能当作没有 CI',
+    ):
+        assert rule in polling
+    goal = text.split('### Goal 与持续推进', 1)[1].split('### 提交前远端集成', 1)[0]
+    assert 'CLI 合并核验与关联 CI 收尾均通过' in goal
+    assert '必要但不充分' in goal
+
+
+@pytest.mark.parametrize('name', ['pr', 'next', 'deliver', 'pr-close-out'])
+def test_merged_recovery_cannot_bypass_ci_completion(name):
+    assert 'merged 但关联 CI 未收尾或缺少证据时先恢复 pr' in workflow(name)
+
+
 def test_pr_mode_default_cutoff_and_mandatory_unticked_continuation():
     policy = workflow('deliver-policy')
     assert 'PR mode 为 `--until pr`' in policy

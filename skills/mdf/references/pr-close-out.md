@@ -30,7 +30,7 @@
 
 ## 工作流（唯一执行契约）
 
-本页只由 PR mode 的 close-out 调用；pr 已完成实际合并，不创建 pr Goal。
+本页只由 PR mode 的 close-out 调用；pr 已完成实际合并与关联 CI 收尾，不创建 pr Goal。
 读取 `references/common.md`；遵守调用方 until 与既有授权。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -46,6 +46,7 @@
 close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等待 CI。
 
 - 未 merged 时不能调用 finish-gitflow；返回 pr 尚未完成，不绕过 objectives 顺序。
+- merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验；通过前不发布或清理。
 - 已 merged 后不重做源分支集成、材料、审查或验证；使用固定 M 与操作记录。
   - 无账本 adhoc 的外部 PR 没有 MDF 操作记录时，可绑定已知 source tip 后首次接管。
   - 核规范 Change、平台 source/target/head、双亲 M 与目标远端第一父链，再记录并续办；未 merged 返回 pr。

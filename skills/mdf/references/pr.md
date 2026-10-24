@@ -31,7 +31,7 @@
 │ 4 Report                     │
 └──────────────┬───────────────┘
                │
-               ├──── 等待平台合并 ────────→ [等待 2 分钟，只读查询；合并后回 3]
+               ├──── 等待合并收尾 ────────→ [等待 2 分钟，只读查询 PR 与关联 CI；收尾后回 3]
                ├──── 可修问题 ────────────→ [主链外修复、补审补测后回 3]
                ├──── 关闭但未合并 ────────→ [保留现场，报告未完成]
                ├──── 完成且核验通过 ──────→ [返回调用方]
@@ -109,11 +109,11 @@ closeout:
 - objective 包含交付身份、source/target、已知 PR/MR、有效边界与完成判据；尚未创建 PR/MR 时不伪造 ID。
   - 持续等待当前 head 的 CI/review，解决可修反馈，补审补测并更新原 PR/MR。
   - 平台实际 merged，且 source/target/head、双亲 merge commit 与远端第一父链核验通过。
-  - `pr` CLI 返回 `status=merged`、`completed=true` 才满足本次 pr 的完成判据。
+  - `pr` CLI 返回 `status=merged`、`completed=true` 是必要但不充分的证据；还须按下方轮询规则核关联 CI 收尾。
 - 轮询、主链外返工与重新提交始终沿用同一个 Goal；子阶段完成不结束父流程。
-  - CI 全绿或 review 通过不能完成 Goal；实际 merged 且核验通过后结束 pr Goal。
+  - CI 全绿或 review 通过不能完成 Goal；实际 merged 且 CLI 合并核验与关联 CI 收尾均通过后结束 pr Goal。
   - 正常 pending 保持 active；可修失败继续推进，不因一次失败结束任务。
-- 仅本次创建或同范围复用的 Goal，可在 pr 合并核验完成后置 complete。
+- 仅本次创建或同范围复用的 Goal，可在 pr 合并核验与关联 CI 收尾完成后置 complete。
   - 复用更大范围 Goal 时只记录本次收口完成并返回父流程；父 Goal 仍有剩余工作时不得置 complete。
 - 用户停止、预算限制、会话中断或无法自行解决的阻塞按宿主规则处理；保留恢复证据，不标完成。
 - 宿主不提供 Goal 时仍按本页轮询与恢复规则推进，并如实说明缺少跨 turn 自动续办保障。
@@ -155,7 +155,8 @@ closeout:
 恢复先核调用边界，再按同一份 finish 操作记录选择 pr 或 close-out。
 
 - PR 恢复优先于 doctor、branch、delivery status 和 adhoc-status；先应用当前 until。
-  未 merged 选 pr，已 merged 选 close-out；默认 until pr 不进入这两个阶段。
+  未 merged 选 pr，已 merged 且关联 CI 收尾通过才选 close-out；默认 until pr 不进入这两个阶段。
+  merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按下方轮询规则查回关联运行。
 - source 来自已锁定交付、当前完整分支或用户指定；无目标时才检查唯一未完成记录。
   多个候选须澄清；不按时间猜测，不从历史 completed 记录自动启动任务。
 - 核 Git common dir、origin/provider、source、target；身份不符保留现场。
@@ -164,7 +165,7 @@ closeout:
   保留父 intent、原验证请求、修复前左端点、未完成子步骤，全部完成后才允许更新 PR/MR 或恢复轮询。
 - 无新提交且已确认 open 时只轮询；有新 head 时从原 source worktree 调用 `mdf.py pr --repo <owner>`。
   owner 缺失且仍需修改时报告阻塞，不在主 worktree 代写，不重新 start。
-- merged 时调用 `mdf.py pr --repo <主路径> --source <原分支>` 核验合并，结束 pr 后交接 close-out。
+- merged 时调用 `mdf.py pr --repo <主路径> --source <原分支>` 核验合并，关联 CI 收尾通过后才结束 pr 并交接 close-out。
   已进入发布或清理的恢复直接执行 [合并后续办](pr-close-out.md)，不重开 pr Goal。
 - 清理前置已全部完成、detach 或删除 source 后中断时，从主 worktree 续办 close-out。
   此恢复容错不授权任何流程提前删除 source 或 owner；发布未完而 source 缺失须核实际证据。
@@ -181,7 +182,7 @@ closeout:
 | open | status=waiting_for_merge、completed=false；保持 Goal active，持续轮询 |
 | source 前进 | 完成补审补测与 fact，非 force push 更新原 PR/MR |
 | closed，未 merged | status=closed_without_merge、completed=false；保留现场，不自动新建 |
-| merged | 核身份、head、双亲 merge commit 与远端第一父链；status=merged、completed=true |
+| merged | 核身份、head、双亲 merge commit 与远端第一父链；CLI 返回 status=merged、completed=true 后仍须核关联 CI 收尾 |
 
 - PR/MR 由用户或项目 CI 合并；pr 不批准或合并平台 PR/MR，不修改 CI policy。
 - pr 完成不执行 tag、backmerge、source 清理或 detach；这些操作全部属于 close-out。
@@ -192,15 +193,28 @@ closeout:
 
 轮询由当前 Agent 执行，不创建 automation、定时任务或后台常驻服务。
 
-- 首次返回等待时报告 PR/MR 链接；此后每 120 秒只读查询该 PR/MR 的 state、head、review/approval 与 CI checks。
+- 首次返回等待时报告 PR/MR 与关联运行链接；此后每 120 秒只读查询 state、head、review/approval 与关联 CI。
   - 使用已登录的 gh/glab 查询记录中的 provider、host、project 和 PR/MR ID；不猜测其他仓库或 PR/MR。
   - 等待拆成不超过 60 秒的可中断调用；期间响应用户输入，累计 120 秒才再次查询平台。
+- 关联 CI 包含发起该 PR/MR 的 workflow run / pipeline，以及当前 head 的全部关联运行，包含非 required checks。
+  - 从调用上下文、PR/MR 时间线和平台运行详情核实关系，记录 provider、project、run ID、attempt、URL、head 与触发来源。
+  - 发起 PR 的运行可能使用目标分支 SHA，不能仅按 PR head SHA 查找；不把同仓库无关运行纳入等待。
+  - 保存已确认运行身份与链接到现有交接上下文；中断后查回复用，不以“PR 已合并”丢弃原运行。
+- 每轮核完整 run / pipeline 的状态、结论和全部 job 与 step；不能只看 PR checks 摘要或负责 merge 的 job。
+  - 查询须遍历分页；发现新 job、关联运行或 rerun attempt 时更新范围，不能复用旧 attempt 的成功结论。
+  - PR 已 merged 但关联运行未结束时，保持 Goal active；queued、in_progress、waiting 等状态继续等待。
 - open 且 CI/review 仍在运行、等待审批或等待自动合并时，继续本轮询，不结束当前 pr 或 deliver。
   - 没有新结果时不重复汇报；不设固定轮数或总等待超时。
   - 查询本身不重复调用 pr，不重复 push，也不调用 approve/merge 或修改 CI policy。
 - 确认 merged 后回步骤 3，执行 `pr --repo <主路径> --source <原分支>`。
-  - CLI 仅核验实际合并；`status=merged` 且 `completed=true` 才返回 pr 完成。
+  - CLI 仅核验实际合并；`status=merged` 且 `completed=true` 后，关联运行也全部结束且结论通过才返回 pr 完成。
+  - skipped / neutral 仅在项目 policy 允许且无失败、未完成 job 时接受；cancelled、timed_out、action_required 不算通过。
   - 调用方继续选择 close-out；不得将 pr 完成报告成整个交付完成。
+- 关联运行失败时读取失败 job / step 的日志与报告，按证据修复或处理阻塞；不能因 PR 已 merged 忽略失败。
+  - 合并后的失败不得向已合入的 source 追加提交、重开原 PR 或改写固定 M；需要代码修改时按调用边界另行交付。
+  - 仅有证据支持暂时故障且已有授权时重试；否则报告运行链接、失败 job 与恢复位置，保留未完成状态。
+- 查询失败、权限不足或关联不明不能当作没有 CI；先查明或报告阻塞，不完成 Goal 或进入清理。
+  - 平台证据确认没有关联运行时可按无 CI 处理；完成前再次查询，确认没有新增运行或 attempt。
 - review 要求修改、CI checks 失败或合并冲突时，先读取已有报告与平台详情，按下方修复流程继续推进。
 - 权限不足、无法获取必要证据、身份或历史不符等无法安全自行解决的问题，报告具体阻塞并保留现场。
   - head/source/target 变化时核对来源；本轮修复产生的合法前进按修复流程处理，不覆盖他人提交或改写历史。
@@ -262,7 +276,7 @@ pr 只维护自己的 checkbox，close-out 是其后无 checkbox 的必执行步
 无账本 adhoc 不创建 checkbox；pr 与 close-out 的完成仍分别核实际平台与清理结果。
 
 - 提交候选材料前将 pr 项勾选并提交；这只表示已准备候选，不表示 intent 或 Goal 完成。
-- 创建 PR、CI 全绿与候选勾选均不能结束 pr；必须等待实际 merged 并核验通过。
+- 创建 PR、CI 全绿与候选勾选均不能结束 pr；必须等待实际 merged、合并核验与关联 CI 收尾通过。
 - merged 后不追加仅为勾选的源提交；返回调用方执行 close-out，无须额外文档 PR。
 - close-out 只核实际结果，不预勾、不补勾；完整交付不能因 checklist 全勾跳过续办。
 
@@ -274,4 +288,4 @@ pr 只维护自己的 checkbox，close-out 是其后无 checkbox 的必执行步
 - 创建或更新 PR/MR 前按 deliver-policy 裁定源提交与 push；低 confidence 返回 deliver 步骤 6。
   yolo 不受 confidence 限制；独立 pr 沿用调用授权，不引入 deliver 的评分。
 - squash、bug close、code-review、verify 与 fact 的内部返工也先核 until；被截断返回外层，不绕过边界。
-- 仅 pr 的实际合并核验完成才结束其同范围 Goal；随后按原调用边界交接 close-out。
+- 仅 pr 的实际合并核验与关联 CI 收尾均完成才结束其同范围 Goal；随后按原调用边界交接 close-out。

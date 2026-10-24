@@ -108,6 +108,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 ## 术语与数据结构
 
 PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验，通过后才选择 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### 目标与持续授权
@@ -269,7 +270,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
-| fact 已勾、PR mode 且尚未 merged | 委托 `references/pr.md`，持续等待至 merged；完成后回 Select |
+| fact 已勾、PR mode 且 pr 尚未完成 | 委托 `references/pr.md`，等待 merged、合并核验与关联 CI 收尾通过；完成后回 Select |
 | fact 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
 | close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
 

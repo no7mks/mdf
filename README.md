@@ -78,7 +78,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
 | `$mdf dev-pr [<slug>]` | 将 develop 未共享工作移到 adhoc，检查通过后创建 PR |
-| `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 后完成 Goal |
+| `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
 | `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
@@ -143,7 +143,7 @@ fact audit 也支持独立 PR 审阅：
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
 PR mode 的 objectives 末尾为 pr checkbox，之后是无 checkbox 的必执行 close-out 续办。
 pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
-实际 merged 且核验通过后完成 pr；close-out 只负责后续发布、backmerge、清理与最终核验。
+实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；close-out 只负责后续发布、backmerge、清理与最终核验。
 完整交付继续执行 close-out；默认 deliver 截止于 pr，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 

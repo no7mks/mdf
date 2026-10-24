@@ -38,7 +38,9 @@
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：按 [PR 的恢复路由](pr.md) 只读核已锁定 source 的操作记录及返工备注。
-命中时未 merged 恢复父 pr，已 merged 续办 close-out；先应用仍在协调的 deliver 边界，不先调用普通身份检查，不因 detached 或 source 已删除而另选任务。
+命中时未 merged 恢复父 pr，已 merged 且关联 CI 收尾通过才续办 close-out。
+merged 但关联 CI 未收尾或缺少证据时先恢复 pr；先应用仍在协调的 deliver 边界。
+不先调用普通身份检查，不因 detached 或 source 已删除而另选任务。
 
 adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次只完成一个账本项。
 
@@ -64,6 +66,7 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 ## 术语与数据结构
 
 PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+选择 close-out 前须按 [PR 轮询](pr.md#当前调用内轮询) 确认关联 CI 收尾通过。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### 在途流程识别
