@@ -79,7 +79,7 @@
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
-| 6 | Validate | 脚本 | 运行 full validation，不跑验证命令 | validation findings | 7 | update 仅结构返回；其余未通过 |
+| 6 | Validate | 脚本 | 运行 strict validation，不跑验证命令 | validation findings | 7 | update 仅结构返回；其余未通过 |
 | 7 | Report result | 约束 | 按证据与 findings 判定并报告结论 | 摘要、审阅结论 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
@@ -104,7 +104,7 @@
   - 未触及项单列数量与理由，不计入已复核数，不把已复核误报为全部覆盖。
 - 长阶段按 `common.md` 的 60 秒要求更新，连续短项可合并播报。
   - 单项未完成时保持计数，说明当前核对内容或等待的命令，不虚构百分比或预计完成时间。
-- full validation 开始前说明实际命令；等待期间转述已取得的具体检查位置。
+- strict validation 开始前说明实际命令；等待期间转述已取得的具体检查位置。
   validation 结束后报告 findings，再汇总结论或按失败去向返回。
 - 复核与 validation 全部完成后，按通过条件报告审阅结论。
   以上计数只在会话中播报，不生成持久报告或进度文件。
@@ -144,7 +144,7 @@
 | 主链其他（含待收口 release） | 经 fact update 委托或直接 audit，`--scope` 同调用方，不得改用 `full` |
 
 首次发布无上一版本时停止确认初始基线。
-审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 full validation 契约。
+审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 strict validation 契约。
 
 验收：调用方、scope 与范围。
 
@@ -288,7 +288,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 #### 校验
 
-- 运行 `validate --repo "$REPO_ROOT" --scope full`（即 full validation），不运行验证命令。
+- 运行 `validate --repo "$REPO_ROOT" --level strict`（即 strict validation），不运行验证命令。
 - migrate 只允许 `manifest.initializing` finding。
 
 验收：validation findings。
@@ -363,7 +363,7 @@ Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查�
 ## 独立 quick 模式
 
 仅供独立调用与 CI/CD；不替代交付主链的完整 fact audit，不勾选 objectives。
-不读取 common.md 的交付前置流程，不运行 doctor、full validation 或验证入口。
+不读取 common.md 的交付前置流程，不运行 doctor、strict validation 或验证入口。
 
 - 核 Git 根并解析 scope；Skill 省略 scope 时仍为 branch，显式路径即 paths。
   - branch 基线沿用上方规则；CI 可显式传 `--base <commit>`。

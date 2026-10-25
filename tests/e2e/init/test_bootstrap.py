@@ -46,13 +46,13 @@ def test_new_project_can_reach_ready_without_fact_pages_or_remote(
         assert not (repo / "src").exists()
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs: 建立 MDF 起点")
-    initializing = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    initializing = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert initializing.returncode == 2
     findings = json.loads(initializing.stdout)["findings"]
     assert [item["code"] for item in findings] == ["manifest.initializing"]
     # 模拟调用方取得启用确认后的状态写入，不调用 fact-audit。
     replace(repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready")
-    payload(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "targeted"))
+    payload(mdf(python_exe, "validate", "--repo", str(repo), "--level", "basic"))
     git(repo, "add", "--", ".mdf/manifest.yaml")
     git(repo, "commit", "-m", "chore: 启用 MDF 工作流")
     git(repo, "branch", "develop", "master")

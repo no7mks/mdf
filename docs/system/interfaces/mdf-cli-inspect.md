@@ -62,12 +62,13 @@ generated 另报告 source、generator 及其 Git history 检查位置。
 
 ```bash
 python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
-  --scope targeted
+  --level basic
 ```
 
-`--scope` 可为 `targeted`（默认）或 `full`。两者都校验 MDF 确定性契约；
-`full` 额外检查 evidence 与 generated 的 Git 跟踪、脏状态和提交先后。
-`targeted` 仍检查配置、布局、记录、事实页格式与 evidence 路径。
+`--level` 可为 `basic`（默认）或 `strict`。两者扫描相同的 MDF 管理范围；
+`strict` 额外检查 evidence 与 generated 的 Git 跟踪、脏状态和提交先后。
+`basic` 仍检查配置、布局、记录、事实页格式与 evidence 路径。
+JSON 结果用 `level` 返回校验级别；不接受文件路径列表。
 存在 finding 时仍输出完整 JSON 结果，
 但以状态码 `2` 失败。
 

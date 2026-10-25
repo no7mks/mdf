@@ -268,7 +268,7 @@ evidence:
 
 - `evidence` 路径必须仓库相对、存在且被 Git 跟踪。
 - ❌ 不再在 evidence 上声明 `verification`；怎么验归 `.mdf/modules.yaml` 的套件与 `$mdf verify`。
-- `full validation` 下 `evidence` 在文档之后变更会报 `evidence.stale`。
+- `strict validation` 下 `evidence` 在文档之后变更会报 `evidence.stale`。
 - ❌ 发版流程会改写的记录不能作为 evidence（`evidence.record`）：
   `.mdf/manifest.yaml`、`CHANGELOG.md`、`docs/JOTS.md`；`changes/**`、`docs/proposals/**`、`docs/bugs/**`。
 - evidence 为另一份当前事实文档时只核对存在与已跟踪，不比较提交先后。
@@ -284,7 +284,7 @@ generated:
 ```
 
 - `source` 必须是仓库内存在且被跟踪的文件；`generator` 必须是仓库内可执行文件。
-- `full validation` 校验这些元数据及 Git 陈旧性。
+- `strict validation` 校验这些元数据及 Git 陈旧性。
   - 但不复制仓库、不运行 generator，也不自动比较生成内容；内容一致性属于`事实复核`。
 - 模板见 `assets/templates/generated-fact.md`。
 

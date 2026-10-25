@@ -40,4 +40,4 @@ def test_release_moves_delivery_materials_and_rewrites_proposal_links(python_exe
     assert 'href="../../src/service.py"' in root_summary
     assert not review.exists()
     assert not child.exists()
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))

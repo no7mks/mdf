@@ -175,7 +175,7 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 
 **就绪**
 
-- 先在 `draft` 状态运行 `targeted validation`。
+- 先在 `draft` 状态运行 `basic validation`。
 - 通过后执行以下命令，把已确认内容写成唯一 ready `.html`。
 
 ```bash
@@ -190,7 +190,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" prp-format ready --repo "$REPO_ROOT" --propos
 
 异常与交接：
 
-- `targeted validation` 失败：保持 `draft` 与现场并停止。
+- `basic validation` 失败：保持 `draft` 与现场并停止。
 - `preview_changed`：保持 draft，回步骤 5 重新生成、检查 HTML 并取得本稿确认。
 - 写回 `ready`、回读、提交或 `planning land` 失败：保留现场并停止。
   - 报告对象实际状态：是否已写 `ready`、是否已提交、是否已合入 develop。

@@ -438,7 +438,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
 
 - close-out 集成后的增量审查仍按下方「close-out 核对」；branch 验证证据由主链
   `verification-report.json` 负责，不在本步伪造。
-- ❌ 不能用仅检查文档结构的全量 validation 代替业务验证。
+- ❌ 不能用仅检查文档结构的 strict validation 代替业务验证。
 - 非 quick 用例在 converge 之后失败且本轮触及：
   - 必须尝试补一条 quick 复现用例。
   - 结果写入终稿「quick 复现」字段。

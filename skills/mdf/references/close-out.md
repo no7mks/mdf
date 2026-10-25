@@ -155,7 +155,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - 版本根不存在，且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。
   - 版本根已跟踪、已提交，且 version、change_kind、source_branch 与当前分支完全一致、
     latest_release 等于目标版本时：
-    - 运行文档全量 validation（不跑 `$mdf verify`），并按步骤 4 已收口规则
+    - 运行文档 strict validation（不跑 `$mdf verify`），并按步骤 4 已收口规则
       核对版本根证据仍覆盖当前交付结果；通过才判为已收口。
   - 版本根提交后有未纳入收口的交付改动、记录缺损或状态不一致时停止，不覆盖版本目录。
 

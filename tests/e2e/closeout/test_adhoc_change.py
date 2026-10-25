@@ -20,4 +20,4 @@ def test_release_archives_adhoc_child_and_keeps_its_kind(python_exe, tmp_path):
     assert "source_branch: adhoc/update-docs" in archived.read_text()
     assert "update-docs" in (repo / "changes/1.3.0/CHANGE.md").read_text()
     assert not root.exists()
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))

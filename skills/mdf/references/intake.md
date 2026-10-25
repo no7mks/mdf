@@ -214,7 +214,7 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 每处写入后在该工作区完成以下核对：
 
-1. 运行 `validate --repo "$REPO_ROOT" --scope targeted`。
+1. 运行 `validate --repo "$REPO_ROOT" --level basic`。
 2. 回读对象并对照模板、确认清单与完整 diff。
 3. 核对 schema、必填章节、初始状态和依赖；`depends_on` 不得残留 `new:` 临时引用。
 
@@ -235,5 +235,5 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 异常与交接：本步展示步骤 6 已验收对象；无法展示时停止。
 
-- Proposal 后续显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`。
+- Proposal 后续显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。
 - Bug 创建后即为 `open`，不得关闭普通对象或填写 `released_in`/`fixed_in`。

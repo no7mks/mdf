@@ -87,7 +87,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - 双侧映射覆盖目录 evidence、generated.source 与 generated.generator。
 - 删除与 rename 的新旧路径分别判定；删除文件从 against 读取，不丢弃基线事实映射。
 - 步骤 3–4 仅读取 [fact audit 的双向复核标准](fact-audit.md#s3) 至 warnings 条款，执行事实、覆盖与加载质量检查。
-  - 不进入其默认 scope、ready 前置或七步主流程，不重复执行 full validation。
+  - 不进入其默认 scope、ready 前置或七步主流程，不重复执行 strict validation。
 - 步骤 3 还须审阅 paths 中的项目文档与交付材料结构，不能因它们不在 document_paths 就跳过。
 - 当前事实页审完整陈述，不仅看 Markdown diff；新增行为须反查缺失文档。
 - audit 保留当前 snapshot 的全量契约 validation 和范围结构检查，不把既有问题冒充本次引入。

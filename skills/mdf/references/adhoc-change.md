@@ -122,7 +122,7 @@
 - 按 `assets/templates/change.md` 在返回 path 完成 CHANGE.md，填实际成果与 evidence。
   - `change_kind: adhoc` 或 `fix`，`source_branch` 为真实名称，`proposals: []`。
   - 保留 evidence.range 与适用报告；不要求 design、delivery-summary.html 或 PRP。
-  - 运行 `mdf.py validate --repo <owner> --scope targeted`，修正本次材料并提交。
+  - 运行 `mdf.py validate --repo <owner> --level basic`，修正本次材料并提交。
 - local 运行 `mdf.py finish-gitflow --repo <owner>`，以返回的实际 merge 与清理状态核验。
   - no-ff 合入 develop、按预期 SHA 删除 source ref；不 fetch、不 push、不打 tag。
   - 保留工作目录；主 worktree 能切回 develop 时切回，被其他 worktree 占用则 detach 保留。

@@ -156,7 +156,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 本节把 Bug 标为 `fixed`，校验后提交。
 
 1. 将 Bug `status` 改为 `fixed`，不得写 `fixed_in`，不得改为 `closed`。
-2. 运行 `validate --repo "$REPO_ROOT" --scope targeted`，回读对象并核对 `fixed` 与完整 diff。
+2. 运行 `validate --repo "$REPO_ROOT" --level basic`，回读对象并核对 `fixed` 与完整 diff。
    - 校验退出 0 且零 finding。
 3. 按 `common.md` 提交本次红灯测试、修复、回归验证与对象状态；不夹带无关改动。
    - 提交说明须含完整 Bug ID；release/hotfix 上的直接修复同样适用，供 bug close 定位审查范围。

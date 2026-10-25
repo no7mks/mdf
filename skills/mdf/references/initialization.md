@@ -232,7 +232,7 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 - 可重复的 `--budget <suite>=<秒数>`。
 
 init CLI 没有 closeout option，只保留已有值。用户已确认变更时，在 CLI 完成后定点更新 manifest.closeout。
-回读 mode/provider 并检查 diff；不符回步骤 3 澄清或修正，按步骤 5 full validation 验收后才启用。
+回读 mode/provider 并检查 diff；不符回步骤 3 澄清或修正，按步骤 5 strict validation 验收后才启用。
 
 init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent 按确认的验证配置填写并清除模板说明：
 
@@ -244,11 +244,11 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 
 <a id="s5"></a>
 
-按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 full validation，
-即 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT" --scope full`。
+按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 strict validation，
+即 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT" --level strict`。
 
-- bootstrap 不调用 fact audit，full validation 是确定性契约校验，不是事实审阅。
-- migrate 的同次 fact audit 已执行 full validation，且后续项目内容未变时，复用其结果，
+- bootstrap 不调用 fact audit，strict validation 是确定性契约校验，不是事实审阅。
+- migrate 的同次 fact audit 已执行 strict validation，且后续项目内容未变时，复用其结果，
   不在本段再次运行；核对仓库、scope、提交与工作区 diff，并检查完整 findings。
 - `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；
   已是 ready 时须零 finding。
@@ -267,16 +267,16 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
   不按文件数、行数或「只是 flag」判断结果是否有效。
   同次全量结果缺失、不符合步骤 5 的允许项或无法核对时，先返回调用方补验。
   bootstrap 回步骤 5，migrate 回步骤 6，取得本文件步骤 5 要求的结果。
-- 同次启用增量仅含以下内容时，复用步骤 5 的 full validation 与事实审阅：
+- 同次启用增量仅含以下内容时，复用步骤 5 的 strict validation 与事实审阅：
   - `.mdf/manifest.yaml` 的 `state: initializing → ready`。
   - Change 等收口记录中对本次启用状态的说明，不包含新的事实、承诺或配置变更。
   - 这些改动不构成事实变化，不重新调用 fact update 或 fact audit，不重复执行事实审阅。
-- 写 ready 后运行一次 `validate --repo "$REPO_ROOT" --scope targeted`，零 finding 后提交。
-  - targeted 仍检查 ready 状态、配置、布局、记录与 evidence 路径，不重查 Git history。
-  - 它只补验上述启用增量，不能替代步骤 5 的 full validation。
+- 写 ready 后运行一次 `validate --repo "$REPO_ROOT" --level basic`，零 finding 后提交。
+  - basic 仍检查 ready 状态、配置、布局、记录与 evidence 路径，不重查 Git history。
+  - 它只补验上述启用增量，不能替代步骤 5 的 strict validation。
 - 提交后核对实际 commit diff、manifest 的 ready 值及工作区改动与预期一致。
   没有新增变化时直接进入 8，不再次运行 doctor、validate 或事实审阅。
-- 配置、布局或其他材料有新增变化时补做 full validation；不因确定性校验而自动重做事实审阅。
+- 配置、布局或其他材料有新增变化时补做 strict validation；不因确定性校验而自动重做事实审阅。
 - 事实发生变化时返回调用方：bootstrap 回其步骤 5，migrate 回其步骤 6，再按本页步骤 5 补审补验。
   本页步骤 5 按当前 `manifest.state` 验收。
   - 可观察契约、实现、测试、事实页、evidence 或生成源/生成器变化影响对应事实结论。

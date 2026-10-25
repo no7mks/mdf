@@ -193,7 +193,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 
 内部委托 fact audit 之前，先提交本次事实页，含新建或拆出的专用叶。
 
-- full validation 按已提交内容判 `fact.untracked` 与 `evidence.stale`。
+- strict validation 按已提交内容判 `fact.untracked` 与 `evidence.stale`。
 - 未提交的同次写入会变成其他未通过，到不了步骤 4。
 - 主链委托时，这次事实提交由本 intent 完成。
   调用方随后提交 Change 等其余材料。

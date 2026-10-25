@@ -78,8 +78,8 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
         "validate",
         "--repo",
         str(repo),
-        "--scope",
-        "full",
+        "--level",
+        "strict",
     )
     assert full.returncode != 0
     assert "manifest.initializing" in full.stdout

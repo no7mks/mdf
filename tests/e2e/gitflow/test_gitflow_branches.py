@@ -224,7 +224,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     git(repo, "push", "origin", "master", "develop")
     root_change = repo / "changes" / version / "CHANGE.md"
     root_before = root_change.read_bytes()
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo)))
 
     finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))

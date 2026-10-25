@@ -187,7 +187,7 @@ def command_init(args: argparse.Namespace) -> None:
         ],
         "next": (
             "按调用 intent 完成核对与校验，取得启用确认后改为 ready，"
-            "再次运行 full validation 并提交就绪结果。"
+            "再次运行 strict validation 并提交就绪结果。"
         ),
     }
     write_files(
@@ -208,14 +208,14 @@ def command_init(args: argparse.Namespace) -> None:
     )
 
 
-def validation_payload(repo: Path, scope: str) -> tuple[dict[str, Any], int]:
-    plan = ProgressPlan("validate", (f"{scope} 契约校验",), groups=("契约检查", "事实文档"))
+def validation_payload(repo: Path, level: str) -> tuple[dict[str, Any], int]:
+    plan = ProgressPlan("validate", (f"{level} 契约校验",), groups=("契约检查", "事实文档"))
     with plan.stage(1):
-        findings = doctor.collect_findings(repo, full=scope == "full")
+        findings = doctor.collect_findings(repo, full=level == "strict")
     payload = {
         "ok": not findings,
         "operation": "validate",
-        "scope": scope,
+        "level": level,
         "repo": str(repo),
         "finding_count": len(findings),
         "findings": serialize_findings(findings),
@@ -226,7 +226,7 @@ def validation_payload(repo: Path, scope: str) -> tuple[dict[str, Any], int]:
 def command_validate(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
-    payload, exit_code = validation_payload(repo, args.scope)
+    payload, exit_code = validation_payload(repo, args.level)
     emit(payload)
     if exit_code:
         raise SystemExit(exit_code)
@@ -340,7 +340,7 @@ def command_archive(args: argparse.Namespace) -> None:
     input_findings = doctor.collect_findings(repo, full=True)
     if input_findings:
         raise MDFError(
-            "Archive input does not pass full validation",
+            "Archive input does not pass strict validation",
             code="invalid_object",
             details={"findings": serialize_findings(input_findings)},
         )
@@ -356,7 +356,7 @@ def command_archive(args: argparse.Namespace) -> None:
         "moves": move_details,
         "rewrites": [relative(repo, path) for path in sorted(rewrites)],
         "rewrite_details": rewrite_details,
-        "validation": {"scope": "full", "finding_count": 0},
+        "validation": {"level": "strict", "finding_count": 0},
     }
     if not args.dry_run:
         apply_moves_and_rewrites(moves, rewrites)

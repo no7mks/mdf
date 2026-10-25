@@ -44,7 +44,7 @@ def test_user_guide_pages_require_user_guide_doc_type(python_exe: str, tmp_path:
     replace(topic, "doc_type: system-interfaces", "doc_type: user-guide")
     git(repo, "add", "--all")
     git(repo, "commit", "-q", "-m", "test: 修正 doc_type")
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_retired_docs_directories_report_layout_migrate(python_exe: str, tmp_path: Path):
@@ -132,7 +132,7 @@ def test_adrs_live_under_context(python_exe: str, tmp_path: Path):
         encoding="utf-8",
     )
     init_git(repo)
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
     replace(adr, "id: adr-use-sqlite", "id: adr-other")
     result = mdf(python_exe, "validate", "--repo", str(repo))

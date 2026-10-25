@@ -265,10 +265,10 @@
 - 步骤 5 的阶段提交就是审阅基线。本步不再另做一次提交。
 - 比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`。
 - 内部委托 `fact audit` 执行`全量审阅`（`--scope full`），审的是已提交内容。
-- 按 `initialization.md` 段 5 核对 full validation；同次 fact audit 已校验且内容未变时复用结果。
+- 按 `initialization.md` 段 5 核对 strict validation；同次 fact audit 已校验且内容未变时复用结果。
 - 审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 
-验收：事实复核、diff 与 full validation；仅允许 `manifest.initializing` finding。
+验收：事实复核、diff 与 strict validation；仅允许 `manifest.initializing` finding。
 
 通过条件：审阅与校验通过后进入 7。
 
@@ -287,7 +287,7 @@
 2. 取得用户明确“结束初始化并启用正常工作流”确认后，按 initialization 段 7 收口。
    核对增量、改 ready、校验并提交，再核对本地 master/develop。
 
-验收：事实审阅与 full validation 仍有效，启用增量校验零 finding、就绪结果已提交、本地分支可用。
+验收：事实审阅与 strict validation 仍有效，启用增量校验零 finding、就绪结果已提交、本地分支可用。
 
 异常与交接：
 

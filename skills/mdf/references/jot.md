@@ -83,7 +83,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check entry | 脚本 | 运行 `doctor`；按追加或提升分流 | 允许正常流程 | 追加 2；提升 4 | 未知或 doctor 失败则停 |
 | 2 | Read input | 约束 | 取得一条完整原文，不预判类型 | 完整输入 | 3 | 留在 2 询问 |
-| 3 | Append | 脚本 | 生成 ID，追加完整 marker 并 targeted 校验 | 条目、校验、diff | 结束 | 保留现场，停止 |
+| 3 | Append | 脚本 | 生成 ID，追加完整 marker 并 basic 校验 | 条目、校验、diff | 结束 | 保留现场，停止 |
 | 4 | Select jot | 约束 | 按 jot-ID 读取唯一条目的完整 marker | 唯一 ID 与原文 | 5 | 留在 4 消歧 |
 | 5 | Clarify | 约束 | 用 `list` 查重，内部 clarify 成 Proposal/Bug | 完整草稿、list 结果 | 6 | 保留 Jot，停止 |
 | 6 | Confirm | 约束 | 展示草稿、事实及排除范围，取得明确确认 | 用户明确确认 | 7 | 保留 Jot，停止 |
@@ -127,7 +127,7 @@
 1. 调用 `make-jot-id`。
 2. 从原文压缩一句短标题（不另写生成器）。
 3. 在 `docs/JOTS.md` 末尾追加完整 marker 条目，保留原始含义和细节。
-4. 再运行 `targeted validation`。
+4. 再运行 `basic validation`。
 
 验收：新增条目和 diff。
 
@@ -219,7 +219,7 @@
 
 - Proposal：`make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`。
 - Bug：`make-id --type bug --repo "$REPO_ROOT" --slug <slug>`。
-- Proposal 写为 `draft`，Bug 写为 `open`，运行写入校验（`targeted validation`）。
+- Proposal 写为 `draft`，Bug 写为 `open`，运行写入校验（`basic validation`）。
 
 验收：写入根、Jot 核对结果、新对象与写入校验。
 
@@ -233,8 +233,8 @@
 
 不重写对象，不改状态：Proposal 保持 `draft`，Bug 保持 `open`。
 
-1. 在步骤 7 已写入的 draft/open 上运行复验（`targeted validation`）。
-2. 复验通过后删除选中 Jot marker，再运行删 Jot 后校验（`targeted validation`）。
+1. 在步骤 7 已写入的 draft/open 上运行复验（`basic validation`）。
+2. 复验通过后删除选中 Jot marker，再运行删 Jot 后校验（`basic validation`）。
 
 复验失败时尚未改动 Jot，保留对象与原 Jot 并停止。
 
@@ -249,4 +249,4 @@
 - 成功时将本次创建与移除作为同一个独立 commit 提交。
 - 提交或 `planning land` 失败时不恢复 Jot，保留现场并报告是否已提交、是否已合入 develop。
 - 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
-  - 然后提示用户显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`。
+  - 然后提示用户显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。

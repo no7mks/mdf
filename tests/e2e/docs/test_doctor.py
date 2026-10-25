@@ -87,7 +87,8 @@ def test_doctor_allows_stale_evidence_but_full_checks_reject_it(
     assert data["normal_workflows_allowed"] is True
     assert data["clean"] is (change_state == "committed")
     for command in ("validate", "fact-audit"):
-        result = mdf(python_exe, command, "--repo", str(repo), "--scope", "full")
+        options = ["--level", "strict"] if command == "validate" else ["--scope", "full"]
+        result = mdf(python_exe, command, "--repo", str(repo), *options)
         assert result.returncode == 2
         checked = json.loads(result.stdout)
         assert checked["ok"] is False
@@ -124,7 +125,8 @@ def test_doctor_allows_stale_generated_facts_but_full_checks_reject_them(
     assert data["normal_workflows_allowed"] is True
     assert data["clean"] is committed
     for command in ("validate", "fact-audit"):
-        result = mdf(python_exe, command, "--repo", str(repo), "--scope", "full")
+        options = ["--level", "strict"] if command == "validate" else ["--scope", "full"]
+        result = mdf(python_exe, command, "--repo", str(repo), *options)
         assert result.returncode == 2
         checked = json.loads(result.stdout)
         assert checked["ok"] is False
@@ -286,6 +288,6 @@ def test_validate_rejects_noncurrent_manifest_schema(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "manifest.schema" in result.stdout

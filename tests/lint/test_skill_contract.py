@@ -183,7 +183,7 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
         assert "object-contract.md" in document
         assert "内部 clarify intent" in document
         assert "normal_workflows_allowed" in document
-        assert "先在 `draft` 状态运行 `targeted validation`" in document
+        assert "先在 `draft` 状态运行 `basic validation`" in document
     assert "object-contract.md" in intake
     assert "内部 clarify intent" in intake
     assert "normal_workflows_allowed" in intake

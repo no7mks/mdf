@@ -16,7 +16,7 @@ def test_bug_close_writes_status_and_version(python_exe, tmp_path, branch):
     text = bug.read_text()
     assert "status: closed" in text and "fixed_in: 1.3.0" in text
     assert "found_in: unreleased" in text
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full"))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 @pytest.mark.parametrize("version", ["unreleased", "1.3.0-rc.1", "1.2.1"])

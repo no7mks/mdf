@@ -75,7 +75,7 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
         release_dir / "CHANGE.md"
     ).read_text(encoding="utf-8")
     assert_ok(
-        mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+        mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     )
 
 

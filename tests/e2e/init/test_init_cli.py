@@ -3,6 +3,34 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 
+@pytest.mark.parametrize("level", [None, "basic", "strict"])
+def test_validate_level_and_freshness(python_exe, tmp_path, level):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    options = [] if level is None else ["--level", level]
+    clean = payload(mdf(python_exe, "validate", "--repo", str(repo), *options))
+    assert clean["level"] == (level or "basic")
+    assert "scope" not in clean
+    evidence = repo / "src" / "service.py"
+    evidence.write_text(evidence.read_text() + "\n# changed evidence\n")
+    result = mdf(python_exe, "validate", "--repo", str(repo), *options)
+    codes = {item["code"] for item in json.loads(result.stdout)["findings"]}
+    assert result.returncode == (2 if level == "strict" else 0)
+    assert ("evidence.stale" in codes) == (level == "strict")
+
+
+@pytest.mark.parametrize("options", [
+    ["--scope", "targeted"], ["--scope", "full"],
+    ["--level", "targeted"], ["--level", "full"],
+])
+def test_validate_rejects_removed_arguments(python_exe, tmp_path, options):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    result = mdf(python_exe, "validate", "--repo", str(repo), *options)
+    assert result.returncode == 2
+    assert "error:" in result.stderr
+
+
 def test_modules_required_while_ready(
     python_exe: str, tmp_path: Path
 ):
@@ -13,10 +41,10 @@ def test_modules_required_while_ready(
     )
     init_git(repo)
 
-    targeted = mdf(python_exe, "validate", "--repo", str(repo))
-    assert targeted.returncode != 0
-    assert "manifest.initializing" in targeted.stdout
-    assert "modules.missing" in targeted.stdout
+    basic = mdf(python_exe, "validate", "--repo", str(repo))
+    assert basic.returncode != 0
+    assert "manifest.initializing" in basic.stdout
+    assert "modules.missing" in basic.stdout
 
     replace(
         repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready"
@@ -27,14 +55,14 @@ def test_modules_required_while_ready(
 
 
 @pytest.mark.parametrize("state", ["ready", "invalid"])
-def test_activation_targeted_checks_state_without_git_history(
+def test_activation_basic_checks_state_without_git_history(
     python_exe, tmp_path, monkeypatch, state,
 ):
     repo = copy_fixture(tmp_path)
     manifest = repo / ".mdf/manifest.yaml"
     replace(manifest, "state: ready", "state: initializing")
     init_git(repo)
-    baseline = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    baseline = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert baseline.returncode == 2
     assert {item["code"] for item in json.loads(baseline.stdout)["findings"]} == {
         "manifest.initializing",
@@ -46,7 +74,7 @@ def test_activation_targeted_checks_state_without_git_history(
         pytest.fail("仅启用状态变更不应重查 Git history")
 
     monkeypatch.setattr(GitPathIndex, "last_commit", unexpected_history)
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "targeted")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "basic")
     data = json.loads(result.stdout)
     if state == "ready":
         assert_ok(result)

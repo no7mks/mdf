@@ -321,7 +321,7 @@ def test_duplicate_can_close_before_canonical_but_manual_archive_rejects(
     init_git(repo)  # noqa: F405
 
     assert_ok(
-        mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+        mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     )  # noqa: F405
     result = mdf(  # noqa: F405
         python_exe,

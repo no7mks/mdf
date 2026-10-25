@@ -117,7 +117,7 @@
 - 非预览操作前按公共规则整理本次改动并确认 clean。
   - 范围不明或存在无关改动时澄清，不夹带提交。
 - 仅非预览调用授权运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH"`。
-  - 之后运行 `validate --repo "$REPO_ROOT" --scope full`。
+  - 之后运行 `validate --repo "$REPO_ROOT" --level strict`。
 - 验收：对象、`moves`、`rewrites` 数量与 validation。
 - 异常与交接：
   - `duplicate_group_open` 时停止且不得单独移动。

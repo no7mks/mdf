@@ -78,7 +78,7 @@ def build_parser() -> argparse.ArgumentParser:
     validate = subparsers.add_parser("validate")
     validate.add_argument("--repo", required=True)
     validate.add_argument(
-        "--scope", choices=("targeted", "full"), default="targeted"
+        "--level", choices=("basic", "strict"), default="basic"
     )
     validate.set_defaults(func=command_validate)
 

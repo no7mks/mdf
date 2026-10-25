@@ -17,8 +17,8 @@ def test_full_audit_works_without_site_packages(
             "validate",
             "--repo",
             str(repo),
-            "--scope",
-            "full",
+            "--level",
+            "strict",
         ]
     )
     assert_ok(result)
@@ -248,7 +248,7 @@ def test_audit_flags_evidence_changed_after_fact_doc(
     repo = copy_fixture(tmp_path)
     init_git(repo)
     assert_ok(
-        mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+        mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     )
 
     service = repo / "src" / "service.py"
@@ -259,7 +259,7 @@ def test_audit_flags_evidence_changed_after_fact_doc(
     git(repo, "add", "src/service.py")
     git(repo, "commit", "-m", "test: 修改事实证据")
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "src/service.py" in result.stdout
 
@@ -278,7 +278,7 @@ def test_audit_rejects_ignored_untracked_evidence(
     init_git(repo)
     assert not git(repo, "ls-files", "ignored-evidence.txt").stdout
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "ignored-evidence.txt" in result.stdout
 
@@ -307,7 +307,7 @@ def test_audit_does_not_let_dirty_fact_docs_hide_stale_evidence(
             encoding="utf-8",
         )
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "evidence" in result.stdout
 
@@ -323,7 +323,7 @@ def test_validate_rejects_missing_evidence_path_still(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "evidence.missing_path" in result.stdout
 
@@ -354,7 +354,7 @@ def test_generated_fact_requires_evidence_and_repository_relative_paths(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "generated.outside_repo" in result.stdout
 
@@ -394,6 +394,6 @@ def test_audit_does_not_rerun_generated_document_generator(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo), "--scope", "full")
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert_ok(result)
     assert "generated.drift" not in result.stdout

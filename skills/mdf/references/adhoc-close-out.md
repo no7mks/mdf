@@ -130,7 +130,7 @@ PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr.md#提交前
   - `change_kind: adhoc` 或 `fix`、`source_branch: adhoc/<slug>`、`proposals: []`。
   - 小范围修正可选 fix，分支与交付步骤仍按 adhoc 执行。
   - 总结直接写入 Change；不要求 design 或 delivery-summary.html，不修改 PRP 或创建版本目录。
-- 运行 `mdf.py validate --repo <owner> --scope targeted`。
+- 运行 `mdf.py validate --repo <owner> --level basic`。
   回读 findings 并核对 diff 后提交。
   - 失败保留材料，修正本次材料后重做 3；外部缺项或无法修正时停止，不代替业务验证。
 

@@ -150,7 +150,7 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
   与规范化文件名，避开已有 ID。
   - 以模板写入 `docs/proposals/`，初始状态为 `draft`。
 - 仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
-- 写入后运行 `validate --repo "$REPO_ROOT" --scope targeted`。
+- 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
   - 回读对象并对照模板、确认事实与完整 diff。
   - 核对 schema、必填章节、`draft` 状态和依赖。
 - 通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
@@ -170,5 +170,5 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 
 验收：会话摘要。
 
-异常与交接：停止。后续显式调用 `$mdf prp review`，经 draft targeted validation 后转为 `ready`；
+异常与交接：停止。后续显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`；
 不得关闭普通对象或填写 `released_in`。
