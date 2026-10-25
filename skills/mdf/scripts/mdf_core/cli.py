@@ -89,6 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     audit.add_argument("--base")
     audit.add_argument("--against")
+    audit.add_argument("--quick", action="store_true")
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)

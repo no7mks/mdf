@@ -81,7 +81,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
 | `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
-| `$mdf fact audit [<path>...] [--scope branch\|full\|paths]` | 只读审阅文档与实现的覆盖、证据、语义与加载质量 |
+| `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--quick]` | 只读事实审阅；独立 quick 仅检查 evidence stale |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
@@ -136,6 +136,10 @@ commit 可以是 branch start、last release，或调用方选定的任意 commi
 
 `$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
 commit 的范围同上。见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
+
+`$mdf fact audit --quick` 仅供独立检查，不替代交付主链审阅。
+CI/CD 可直接调用 `mdf.py fact-audit --repo <repo> --quick --scope full`，无需 Agent。
+返回 JSON；退出码 0 为 quick 通过，2 为 finding，其他非零为执行失败；需要完整 Git history。
 
 两种 against 均由执行 intent 的 Agent 加载 Skill，在当前 worktree 运行对应命令、读取仓库并写出报告。
 Cursor 与 Codex 使用同一 intent；调用方如何准备 worktree、如何选定 commit 不属于 MDF。

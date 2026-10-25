@@ -129,8 +129,10 @@ def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str 
 
 
 def _changed_paths(repo: Path, base: str) -> list[Path]:
-    """base 到当前工作区（含未提交）的改动路径。"""
-    result = run(["git", "diff", "--name-only", "-z", base, "--"], cwd=repo)
+    """base 到当前工作区（含未提交）的改动路径；rename 保留新旧两端。"""
+    result = run(
+        ["git", "diff", "--name-only", "--no-renames", "--ignore-submodules=none", "-z", base, "--"], cwd=repo,
+    )
     return sorted(
         {
             (repo / raw).resolve()
@@ -147,7 +149,8 @@ def _branch_scope(
     changed: list[Path],
 ) -> tuple[list[Path], list[Path]]:
     """实现范围是改动到的实现文件；文档范围是改动到的事实页及 evidence 引用这些实现的事实页。"""
-    implementation = [path for path in changed if path in set(all_sources)]
+    source_set = set(all_sources)
+    implementation = [path for path in changed if path in source_set]
     documents = {path for path in changed if path in facts}
     touched = set(implementation)
     for document in facts:
@@ -281,6 +284,7 @@ def audit_payload(
     with plan.stage(4):
         mappings: list[dict[str, Any]] = []
         covered: set[Path] = set()
+        source_set = set(sources)
         for document in documents:
             try:
                 metadata, _ = read_frontmatter(document)
@@ -291,7 +295,7 @@ def audit_payload(
             resolved = []
             for raw in evidence:
                 candidate = (repo / raw).resolve()
-                if candidate in sources:
+                if candidate in source_set:
                     covered.add(candidate)
                 resolved.append(raw)
             mappings.append(
@@ -336,6 +340,15 @@ def audit_payload(
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
+    if args.quick:
+        if args.against is not None:
+            raise MDFError('quick 不能与 against 混用', code='invalid_arguments')
+        from mdf_core.inspection.audit_quick import quick_payload
+        payload, exit_code = quick_payload(repo, args)
+        emit(payload)
+        if exit_code:
+            raise SystemExit(exit_code)
+        return
     if args.against is not None:
         if not args.against or args.scope is not None or args.base is not None or args.implementation_path or args.document_path:
             raise MDFError('against 不能混用 scope/base/paths', code='invalid_arguments')

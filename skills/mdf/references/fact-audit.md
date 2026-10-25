@@ -1,5 +1,8 @@
 # Fact Audit
 
+出现 `--quick` 时，直接执行下方「独立 quick 模式」，不进入七步主链流程。
+`--quick` 与 `--against` 互斥。
+
 出现 `--against` 时，直接执行
 [独立 against 模式](fact-audit-against.md)，不进入下方主链流程。
 
@@ -355,3 +358,35 @@ Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查�
 - `范围审阅`（`--scope branch` 或 `paths`）：从文档和实现两个方向覆盖起点以来或
   调用方给定的实现与文档范围。
   - 结构检查只及范围内页面与改动到的入口页。
+
+
+## 独立 quick 模式
+
+仅供独立调用与 CI/CD；不替代交付主链的完整 fact audit，不勾选 objectives。
+不读取 common.md 的交付前置流程，不运行 doctor、full validation 或验证入口。
+
+- 核 Git 根并解析 scope；Skill 省略 scope 时仍为 branch，显式路径即 paths。
+  - branch 基线沿用上方规则；CI 可显式传 `--base <commit>`。
+  - CLI 省略 scope 时为 full；CI 推荐显式 full。
+- 执行一次下列 CLI；不进入语义、覆盖、warning 或文档结构审阅。
+- 读取 JSON 与退出码后返回「quick 检查通过」或 findings；不称完整审阅通过。
+  - 有 stale 或证据不可判定时返回未通过，不自动修复、提交或转入完整 audit。
+
+```bash
+python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --scope full
+python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --scope branch --base <commit>
+```
+
+| 检查 | quick 行为 |
+| --- | --- |
+| evidence 时间关系 | 沿用 Git commit ancestry；证据比事实页新或证据 dirty 时报 stale，不使用 mtime |
+| generated | 同样检查 source 与 generator 的 Git history 和 dirty 状态，不运行 generator |
+| 无法判定 | frontmatter 无法解析、证据缺失、越界、未 tracked 或无提交记录均不通过 |
+| 事实页相互引用 | 仅作链接，不比较先后；未提交的文档修改不能消除 stale |
+| scope | full 检查全部事实页；branch 检查变化事实页与受影响页；paths 检查指定页及指定实现影响页 |
+| 依赖映射 | 包含删除路径、目录 evidence 与 generated 依赖；按 module ignore 排除 |
+| shallow checkout | 返回 audit.shallow；调用方准备完整 history 后再检查，CLI 不自动 fetch |
+| 结果 | JSON 含 mode=quick、semantic_review=false、范围与 findings；0 为通过，2 为 finding |
+
+参数、配置或执行异常返回非零；CI 不得将缺失或不可解析的 JSON 视为通过。
+仓外日志可通过 `MDF_LOG_DIR` 指定；CI 应检查退出码，不能只搜索 stale 文案。

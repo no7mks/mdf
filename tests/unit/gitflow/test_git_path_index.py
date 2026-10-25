@@ -71,3 +71,46 @@ def test_repository_state_is_loaded_once_under_concurrent_queries(
         assert list(pool.map(check, range(4))) == [expected] * 4
     assert len(calls) == 1
     assert calls[0][1] == command
+
+
+@pytest.mark.parametrize("answer", [False, True])
+def test_shared_ancestry_is_queried_once_and_cache_is_per_index(answer, monkeypatch, tmp_path):
+    from mdf_core.workspace import gitutil
+
+    barrier = Barrier(4, timeout=5)
+    calls = []
+
+    def ancestry(repo, newer, older):
+        calls.append((repo, newer, older))
+        return answer
+
+    monkeypatch.setattr(gitutil, "commit_is_after", ancestry)
+    index = gitutil.GitPathIndex(tmp_path)
+
+    def query(_):
+        barrier.wait()
+        return index.commit_is_after("newer", "older")
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        assert list(pool.map(query, range(4))) == [answer] * 4
+    assert calls == [(tmp_path, "newer", "older")]
+    assert index.commit_is_after("same", "same") is False
+    assert len(calls) == 1
+    assert gitutil.GitPathIndex(tmp_path).commit_is_after("newer", "older") is answer
+    assert len(calls) == 2
+
+
+def test_distinct_ancestry_pairs_overlap_and_preserve_direction(monkeypatch, tmp_path):
+    from mdf_core.workspace import gitutil
+
+    barrier = Barrier(2, timeout=5)
+
+    def ancestry(repo, newer, older):
+        barrier.wait()
+        return (newer, older) == ("newer", "older")
+
+    monkeypatch.setattr(gitutil, "commit_is_after", ancestry)
+    index = gitutil.GitPathIndex(tmp_path)
+    pairs = [("newer", "older"), ("older", "newer")]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(lambda pair: index.commit_is_after(*pair), pairs)) == [True, False]

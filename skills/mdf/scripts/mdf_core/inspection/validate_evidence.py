@@ -13,7 +13,7 @@ from mdf_core.foundation.constants import (
     USER_GUIDE_DOC_TYPE,
 )
 from mdf_core.foundation.errors import Finding, MDFError, add_finding
-from mdf_core.workspace.gitutil import GitPathIndex, commit_is_after
+from mdf_core.workspace.gitutil import GitPathIndex
 from mdf_core.foundation.paths import path_stays_in_repo, relative
 from mdf_core.foundation.progress import (
     progress, progress_items, register_progress_groups, report_progress, skip_progress_group,
@@ -75,11 +75,16 @@ def validate_evidence(
     findings: list[Finding],
     *,
     check_staleness: bool,
+    documents: list[Path] | None = None,
+    freshness_only: bool = False,
 ) -> None:
-    index = GitPathIndex(repo)
     with progress("事实文档：扫描文档"):
-        documents = list(fact_documents(repo))
-        fact_paths = {doc.resolve() for doc in documents}
+        all_documents = list(fact_documents(repo))
+        fact_paths = {doc.resolve() for doc in all_documents}
+        if documents is None:
+            documents = all_documents
+    # 小范围继续按需查询；较多页面共享一次有限 history 预取。
+    index = GitPathIndex(repo, batch_history=check_staleness and len(documents) >= 8)
     register_progress_groups(
         [f"evidence：{relative(repo, doc)}" for doc in documents], reason="文档扫描完成",
     )
@@ -98,43 +103,44 @@ def validate_evidence(
             add_finding(findings, "fact.frontmatter", str(exc), rel)
             skip_progress_group(f"evidence：{rel}", "页面无法解析，总量无法确定")
             return findings
-        if metadata.get("doc_type") not in DOC_TYPES:
-            add_finding(
-                findings,
-                "fact.doc_type",
-                "Fact document requires a supported doc_type",
-                rel,
-            )
-        else:
-            parts = Path(rel).parts
-            expected_doc_type: str | None = None
-            if len(parts) >= 3 and parts[:2] == ("docs", "user-guide"):
-                expected_doc_type = USER_GUIDE_DOC_TYPE
-            elif len(parts) >= 3 and parts[:2] == ("docs", "system"):
-                selector = parts[2]
-                expected_doc_type = SYSTEM_DOC_TYPES.get(selector)
-            if expected_doc_type is None:
+        if not freshness_only:
+            if metadata.get("doc_type") not in DOC_TYPES:
                 add_finding(
                     findings,
-                    "fact.path",
-                    "Fact document is outside a supported user-guide/system "
-                    "view",
+                    "fact.doc_type",
+                    "Fact document requires a supported doc_type",
                     rel,
                 )
-            elif metadata.get("doc_type") != expected_doc_type:
+            else:
+                parts = Path(rel).parts
+                expected_doc_type: str | None = None
+                if len(parts) >= 3 and parts[:2] == ("docs", "user-guide"):
+                    expected_doc_type = USER_GUIDE_DOC_TYPE
+                elif len(parts) >= 3 and parts[:2] == ("docs", "system"):
+                    selector = parts[2]
+                    expected_doc_type = SYSTEM_DOC_TYPES.get(selector)
+                if expected_doc_type is None:
+                    add_finding(
+                        findings,
+                        "fact.path",
+                        "Fact document is outside a supported user-guide/system "
+                        "view",
+                        rel,
+                    )
+                elif metadata.get("doc_type") != expected_doc_type:
+                    add_finding(
+                        findings,
+                        "fact.doc_type_path",
+                        f"doc_type must be {expected_doc_type} at this path",
+                        rel,
+                    )
+            if MARKER_RE.search(body):
                 add_finding(
                     findings,
-                    "fact.doc_type_path",
-                    f"doc_type must be {expected_doc_type} at this path",
+                    "fact.marker",
+                    "Fact document contains an unresolved template marker",
                     rel,
                 )
-        if MARKER_RE.search(body):
-            add_finding(
-                findings,
-                "fact.marker",
-                "Fact document contains an unresolved template marker",
-                rel,
-            )
         evidence = frontmatter_evidence(metadata)
         generated = metadata.get("generated")
         if not evidence:
@@ -203,15 +209,15 @@ def validate_evidence(
                 )
                 continue
             evidence_commit = index.last_commit(candidate)
-            if index.dirty(candidate) or doc_commit is None:
+            if index.dirty(candidate) or doc_commit is None or (freshness_only and evidence_commit is None):
                 add_finding(
                     findings,
                     "evidence.stale",
                     f"Evidence requires revalidation: {evidence_path}",
                     rel,
                 )
-            elif evidence_commit is not None and commit_is_after(
-                repo, evidence_commit, doc_commit
+            elif evidence_commit is not None and index.commit_is_after(
+                evidence_commit, doc_commit
             ):
                 add_finding(
                     findings,
@@ -322,7 +328,7 @@ def validate_evidence(
                         index.dirty(generated_path)
                         or doc_commit is None
                         or generated_commit is None
-                        or commit_is_after(repo, generated_commit, doc_commit)
+                        or index.commit_is_after(generated_commit, doc_commit)
                     ):
                         add_finding(
                             findings,

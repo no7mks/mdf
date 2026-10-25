@@ -81,6 +81,17 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 
 `--scope` 可为 `full`（默认）、`branch` 或 `paths`。
 
+`--quick` 为独立 freshness 检查，可与 scope/base/paths 按原参数规则组合，不与 against 混用。
+
+- 只校验范围内 evidence 与 generated 的有效性、Git tracked、dirty 和提交先后。
+- 不运行全量契约、文档结构或覆盖检查；不调用 Agent、tests 或 generator。
+- branch 包含删除、目录 evidence 与 generated 依赖；paths 自动纳入指定实现影响页。
+- shallow checkout 报 `audit.shallow`，不自动 fetch；CI 应准备完整 history。
+- 输出 `mode: quick`、`semantic_review: false`、`document_paths`、`ignored` 与 findings。
+  - `ignored` 是被排除事实页的路径列表；完整 audit 的原 payload 不变。
+  - 无 finding 返回 0，有 finding 返回 2；参数、配置与执行异常同样非零。
+- quick 通过只表示未发现 stale 或证据有效性问题，不替代主链完整 fact audit。
+
 全量审计遍历 module `sourceset` 并集中的已跟踪实现文件与全部当前事实文档。
 未归属实现不进入语义审阅或覆盖检查；文档按自身契约独立纳入。
 

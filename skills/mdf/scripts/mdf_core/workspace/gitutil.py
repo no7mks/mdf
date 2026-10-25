@@ -264,13 +264,16 @@ def _status_paths(raw: str) -> list[str]:
 class GitPathIndex:
     """线程间共享跟踪、脏状态和路径历史；不同路径的历史查询可并行。"""
 
-    def __init__(self, repo: Path) -> None:
+    def __init__(self, repo: Path, *, batch_history: bool = False) -> None:
         self.repo = repo
         self._tracked: set[str] | None = None
         self._dirty: set[str] | None = None
         self._commits: dict[str, str | None] = {}
         self._lock = Lock()
         self._commit_locks: dict[str, Any] = {}
+        self._ancestry: dict[tuple[str, str], bool] = {}
+        self._ancestry_locks: dict[tuple[str, str], Any] = {}
+        self._batch_history = batch_history
 
     def tracked(self, path: Path) -> bool:
         with self._lock:
@@ -293,11 +296,28 @@ class GitPathIndex:
     def last_commit(self, path: Path) -> str | None:
         rel = relative(self.repo, path)
         with self._lock:
+            if self._batch_history:
+                from mdf_core.workspace.git_history import plain_history_path, recent_path_commits
+                self._commits.update({name: sha for name, sha in recent_path_commits(self.repo).items()
+                                      if plain_history_path(name)})
+                self._batch_history = False
             path_lock = self._commit_locks.setdefault(rel, Lock())
         with path_lock:
             if rel not in self._commits:
                 self._commits[rel] = git_last_commit(self.repo, path)
             return self._commits[rel]
+
+    def commit_is_after(self, newer: str, older: str) -> bool:
+        """同一检查内复用不可变 commit pair；并行页面只查询一次相同 ancestry。"""
+        if newer == older:
+            return False
+        pair = (newer, older)
+        with self._lock:
+            pair_lock = self._ancestry_locks.setdefault(pair, Lock())
+        with pair_lock:
+            if pair not in self._ancestry:
+                self._ancestry[pair] = commit_is_after(self.repo, newer, older)
+            return self._ancestry[pair]
 
 
 def worktree_map(repo: Path) -> dict[str, Path]:
