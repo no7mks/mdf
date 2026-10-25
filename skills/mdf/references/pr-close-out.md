@@ -15,8 +15,9 @@
 │ 2 Finish Gitflow             │
 └──────────────┬───────────────┘
                │
-               ├──── finish_busy ────→ [等待持锁调用退出，回 1]
-               ├──── 其他失败 ───────→ [读日志，保留现场并报告恢复位置]
+               ├──── finish_busy ─────→ [等待持锁调用退出，回 1]
+               ├──── 本地集成冲突 ────→ [保留现场，修复并验证后回 2]
+               ├──── 其他失败 ────────→ [读日志，保留现场并报告恢复位置]
                │
                ▼ 返回实际结果
 ┌──────────────────────────────┐
@@ -36,8 +37,8 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check merged | 约束 | 锁定 source、模式与原 PR/MR，核实际 merged | 平台与恢复记录 | 2 | 未 merged 交接 pr；身份不符停止 |
-| 2 | Finish Gitflow | 脚本 | 从主 worktree 调用 finish-gitflow --source | CLI 结果与实际 Git | 3 | busy 等待后回1；其他读日志报告恢复位置 |
-| 3 | Report | 约束 | 核发布、backmerge 与清理 | completed、merge_commit、remote_deleted | 完成返回 | 可修 backmerge 修复后回2；否则报告阻塞 |
+| 2 | Finish Gitflow | 脚本 | 从主 worktree 调用 finish-gitflow --source | CLI 结果与实际 Git | 3 | busy 回1；本地冲突修复验证后回2；其他报恢复位置 |
+| 3 | Report | 约束 | 核发布、本地集成、backmerge 与清理 | completed、merge_commit、remote_deleted | 完成返回 | 可修 backmerge 修复后回2；否则报告阻塞 |
 
 ## 术语与数据结构
 
@@ -85,7 +86,8 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
   - 已确认 deleted 后再次出现同名分支，返回 pull_state_changed 并保留，不论其 SHA 是否相同。
 - 删除结果不确定时报告原 PR、source、expected head 与实际远端事实；不得清空或修改操作记录绕过保护。
   - 核实同名分支归属后，由用户或其明确授权的操作清理远端，再次 close-out 根据缺失事实继续；不自动降低保护。
-- release/hotfix 在 tag/backmerge 均完成后持久化 publication_completed；远端清理重试只核固定 M 和已交付 backmerge head。
+- release/hotfix 在确认 tag/backmerge 均完成后、集成本地 develop 前持久化 publication_completed。
+  本地集成或远端清理重试只核固定 M 和已交付 backmerge head。
   不再采用保留的 backmerge 工作区中后续新增提交，也不因该临时工作区已删除而重新发布。
 - CLI 的 remote_deleted 独立表示已确认远端 source 删除，deleted 仍表示本地 source；全部清理完成后才能 completed=true。
 
@@ -102,7 +104,8 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 | 独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
 | 清理远端及本地 source，保留临时回合目录 | remote_deleted、deleted、owner 状态 | 步骤 3 核清理记录；不删除主目录 |
 
-- 不跟随后来前进的 master HEAD；本地 master/develop 只做同名 ff 同步，分歧时保留现场。
+- 不跟随后来前进的 master HEAD；本地 master 只做同名 ff 同步，分歧时保留现场。
+- 本地 develop 的集成遵循下节；远端 backmerge 始终以远端 develop 为 base，不夹带本地独有 commits。
 - tag 已发布、回合未完成时返回 published_pending_backmerge。
 - backmerge 是直接进入 develop 的特例；使用 no-ff merge 和非 force push，不创建回合 PR/MR。
 - 冲突保留在返回的 backmerge.worktree；当前 Agent 解决、补审补测并提交后恢复 close-out，直接 push develop。
@@ -114,6 +117,18 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 - tag push 响应丢失时先核对远端；已存在且符合记录则复用。
 - local 模式继续原子 push master + tag，develop 只在本地回合。
 
+### 本地 develop 集成
+
+close-out 要求本地 develop 包含远端交付结果，不要求本地与远端 tip 相同。
+
+- 本地落后时同名 ff；已包含远端时保留本地 commits；双方分叉时将远端 no-ff merge 到本地。
+- 不分类、squash 或 push 本地独有 commits，不要求先执行 dev-pr；这些工作的远端交付独立处理。
+- 目标 worktree 必须 clean 且无未结束 merge；未被检出时，分叉集成在同级 develop worktree 中执行并保留。
+- merge 冲突保留现场，报告 worktree、base 和 remote_head；解决并提交后恢复 close-out，不 reset、rebase 或自动 abort。
+- 实际 merge 后按集成影响补审补测；原 PR 的 CI 不代表本地组合已验证，不重开原 PR 或改写固定 M。
+  - 调用前记录本地 develop tip；以它为 base 核本轮集成 diff，审查和验证证据保存在 checkout 外。
+- 本地集成完成后才清理 source；重入已包含远端时不重复 merge。
+
 ### Merge 例外
 
 本节约束 MDF 的 Git 入口；平台可保留正常 push 权限。
@@ -124,6 +139,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 | planning → develop | 完整文档白名单才允许 no-ff |
 | master → develop | 允许固定 master 历史提交 no-ff 回合 |
 | develop 上纯 MDF/宿主维护 | 允许直接提交和 push |
+| close-out 中 origin/develop → 本地 develop | 允许 no-ff 集成；不 push 本地独有 commits |
 | 其他合入 master/develop | 拒绝，提示 PR/MR |
 | trunk → owner、角色分支 → owner | 沿用现有集成 |
 

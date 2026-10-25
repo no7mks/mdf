@@ -8,6 +8,114 @@ from support_delivery import commit
 from support_pull import prepare, squash_pending
 
 
+@pytest.mark.parametrize('kind', ['release', 'hotfix'])
+@pytest.mark.parametrize('action', ['remove', 'advance'])
+def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path, monkeypatch, kind, action):
+    from pathlib import Path
+    from mdf_core.lifecycle.publish import state_path
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
+    merged = platform.merge(1, tmp_path)
+    git(repo, 'checkout', 'develop')
+    (repo / 'src/service.py').write_text('local_work = True\n')
+    commit(repo)
+    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    assert failed.returncode != 0 and 'merge_conflict' in failed.stderr
+    state = json.loads(state_path(repo, first['source']).read_text())
+    assert state['publication_completed'] and not state['completed']
+    back = Path(state['backmerge']['worktree'])
+    git(remote, 'merge-base', '--is-ancestor', merged, 'develop')
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == state['backmerge']['head']
+    before = git(remote, 'rev-parse', 'develop').stdout
+    (repo / 'src/service.py').write_text('local_work = True\nfixed = True\n')
+    commit(repo)
+    if action == 'remove':
+        git(repo, 'worktree', 'remove', str(back))
+        git(repo, 'branch', '-D', state['backmerge']['source'])
+    else:
+        (back / 'later.py').write_text('unrelated_later_work = True\n')
+        commit(back)
+        squash_pending(back)
+    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    assert result['completed'] and result['merge_commit'] == merged
+    assert git(remote, 'rev-parse', 'develop').stdout == before
+    assert json.loads(state_path(repo, first['source']).read_text())['backmerge']['head'] == state['backmerge']['head']
+
+
+@pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
+@pytest.mark.parametrize('occupied', [False, True])
+def test_closeout_integrates_develop_without_publishing_local_commits(python_exe, tmp_path, monkeypatch, kind, occupied):
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
+    merged = platform.merge(1, tmp_path)
+    git(repo, 'checkout', 'develop')
+    (repo / 'local-only.py').write_text('local_work = True\n')
+    commit(repo)
+    local = git(repo, 'rev-parse', 'HEAD').stdout.strip()
+    if not occupied:
+        git(repo, 'checkout', 'master')
+    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    assert result['completed'] and result['merge_commit'] == merged
+    git(repo, 'merge-base', '--is-ancestor', local, 'develop')
+    git(repo, 'merge-base', '--is-ancestor', 'origin/develop', 'develop')
+    assert git(repo, 'show', 'develop:local-only.py').stdout == 'local_work = True\n'
+    assert not git(remote, 'ls-tree', '-r', '--name-only', 'develop', 'local-only.py').stdout
+    assert git(repo, 'rev-list', '--parents', '-n', '1', 'develop').stdout.split()[1:] == [
+        local, git(repo, 'rev-parse', 'origin/develop').stdout.strip()]
+    before = git(repo, 'rev-parse', 'develop').stdout
+    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))['completed']
+    assert git(repo, 'rev-parse', 'develop').stdout == before
+
+
+def test_closeout_keeps_develop_ahead_of_merged_remote(python_exe, tmp_path, monkeypatch):
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, 'feature')
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
+    merged = platform.merge(1, tmp_path)
+    git(repo, 'fetch', 'origin')
+    git(repo, 'checkout', 'develop')
+    git(repo, 'merge', '--ff-only', 'origin/develop')
+    (repo / 'local-only.py').write_text('local_work = True\n')
+    commit(repo)
+    before = git(repo, 'rev-parse', 'develop').stdout
+    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    assert result['completed']
+    assert git(repo, 'rev-parse', 'develop').stdout == before
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == merged
+
+
+@pytest.mark.parametrize('occupied', [False, True])
+def test_closeout_develop_conflict_preserves_and_resumes(python_exe, tmp_path, monkeypatch, occupied):
+    from mdf_core.workspace.gitutil import worktree_map
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, 'feature')
+    (work / 'src/service.py').write_text('remote_work = True\n')
+    commit(work)
+    squash_pending(work)
+    first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
+    merged = platform.merge(1, tmp_path)
+    git(repo, 'checkout', 'develop')
+    (repo / 'src/service.py').write_text('local_work = True\n')
+    commit(repo)
+    local = git(repo, 'rev-parse', 'develop').stdout.strip()
+    if not occupied:
+        git(repo, 'checkout', 'master')
+    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    assert failed.returncode != 0 and 'merge_conflict' in failed.stderr
+    develop = worktree_map(repo)['develop']
+    assert str(develop) in failed.stderr
+    assert git(develop, 'rev-parse', 'MERGE_HEAD').stdout.strip() == merged
+    assert git(repo, 'rev-parse', 'develop').stdout.strip() == local
+    assert git(remote, 'rev-parse', first['source']).stdout.strip() == first['pull_request']['head']
+    assert git(work, 'branch', '--show-current').stdout.strip() == first['source']
+    again = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    assert again.returncode != 0 and 'dirty_worktree' in again.stderr
+    (develop / 'src/service.py').write_text('local_work = True\nremote_work = True\n')
+    commit(develop)
+    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    assert result['completed']
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == merged
+    git(repo, 'merge-base', '--is-ancestor', local, 'develop')
+
+
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
 def test_pr_finish_waits_then_resumes_idempotently(python_exe, tmp_path, monkeypatch, kind):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)

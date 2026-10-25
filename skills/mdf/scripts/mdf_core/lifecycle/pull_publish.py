@@ -36,12 +36,15 @@ def publish(repo, state, version, path):
     if state.get("completed") or state.get("publication_completed"):
         if not ancestor(repo, merged, remote) or (record and not ancestor(repo, record["head"], remote)):
             raise MDFError("已完成回合的远端历史已变化，保留现场", code="pull_state_changed")
-        sync_local(repo, "develop")
+        sync_local(repo, "develop", integrate_develop=True)
         return True
-    if record is None and ancestor(repo, merged, remote):
-        sync_local(repo, "develop")
+    if ancestor(repo, merged, remote) and (record is None or (
+            record.get("head") and ancestor(repo, record["head"], remote))):
+        state["publication_completed"] = True
+        write_json(path, state)
+        sync_local(repo, "develop", integrate_develop=True)
         return True
-    sync_local(repo, "develop")
+    sync_local(repo, "develop", integrate_develop=True)
     if record is None:
         branch = f"codex/backmerge/{version}"
         work = sibling_worktree(repo, branch)
@@ -92,8 +95,9 @@ def publish(repo, state, version, path):
     if ancestor(repo, merged, remote) and ancestor(repo, head, remote):
         record.pop("push_error", None)
         record.pop("conflicts", None)
+        state["publication_completed"] = True
         write_json(path, state)
-        sync_local(repo, "develop")
+        sync_local(repo, "develop", integrate_develop=True)
         return True
     record["push_error"] = result.stderr.strip() or "远端 develop 尚未包含回合提交"
     write_json(path, state)

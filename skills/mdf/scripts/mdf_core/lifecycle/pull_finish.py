@@ -8,7 +8,9 @@ from mdf_core.integrations.forge import Forge, origin
 from mdf_core.lifecycle.delivery_state import read_json, write_json
 from mdf_core.lifecycle.publish import state_path
 from mdf_core.lifecycle.roster import resolve_roster, role_branches
-from mdf_core.workspace.gitutil import branch_details, current_branch, ensure_clean, primary_worktree, worktree_map
+from mdf_core.workspace.gitutil import (
+    branch_details, current_branch, ensure_clean, git_in_progress_head, primary_worktree, sibling_worktree, worktree_map,
+)
 from mdf_core.workspace.merge_policy import ancestor, git, sha
 
 
@@ -53,8 +55,8 @@ def verified_merge(repo, pull, source, target, head):
     return merged
 
 
-def sync_local(repo, branch):
-    """仅同名 ff 同步；不覆盖本地开发或他人 worktree。"""
+def sync_local(repo, branch, *, integrate_develop=False):
+    """默认同名 ff；close-out 可将远端集成到本地 develop，保留未共享工作。"""
     remote = f"refs/remotes/origin/{branch}"
     target = f"refs/heads/{branch}"
     remote_head = sha(repo, remote)
@@ -68,6 +70,23 @@ def sync_local(repo, branch):
     local_head = local.stdout.strip()
     if local_head == remote_head:
         return
+    if integrate_develop and branch == "develop":
+        if ancestor(repo, remote_head, local_head):
+            return
+        if not ancestor(repo, local_head, remote_head):
+            if occupant is None:
+                occupant = sibling_worktree(repo, branch)
+                occupant.parent.mkdir(parents=True, exist_ok=True)
+                git(repo, "worktree", "add", str(occupant), branch)
+            ensure_clean(occupant)
+            result = git(occupant, "merge", "--no-ff", "-m",
+                         "chore(closeout): 集成远端 develop 并保留本地工作", remote_head, check=False)
+            if result.returncode:
+                raise MDFError("本地 develop 集成失败，保留现场；解决并验证后续办 close-out",
+                               code="merge_conflict" if git_in_progress_head(occupant) else "command_failed",
+                               details={"worktree": str(occupant), "base": local_head,
+                                        "remote_head": remote_head, "error": result.stderr.strip()})
+            return
     if not ancestor(repo, local_head, remote_head):
         raise MDFError(f"本地 {branch} 与远端分歧，保留现场", code="upstream_diverged")
     if occupant:
@@ -298,14 +317,11 @@ def _finish(repo, source, settings, *, phase):
             occupant = worktree_map(repo).get(branch)
             if occupant:
                 ensure_clean(occupant)
-        sync_local(repo, target)
+        sync_local(repo, target, integrate_develop=True)
         ready = True
         if target == "master":
             from mdf_core.lifecycle.pull_publish import publish
             ready = publish(repo, state, details["version"], path)
-            if ready:
-                state["publication_completed"] = True
-                write_json(path, state)
         if ready:
             cleanup_remote(repo, state, path)
             cleanup(repo, state)
