@@ -56,7 +56,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
 | `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
 | `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
-| `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 自动推进到截止 intent 之前；可并行分派 subagent |
+| `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 默认推进至 close-out 完成，可显式指定截止 intent；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf adhoc [<工作描述>]` | 自动生成六项 objectives，在临时 worktree 完成小工作并收口 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
@@ -96,7 +96,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 主线 intent 由用户手动触发。
 
 - `$mdf next`：单步续办。
-- `$mdf deliver`：自动推进，默认 local 停在 close-out 之前，PR mode 停在 pr 之前。
+- `$mdf deliver`：自动推进，默认走完 close-out；非 yolo 在 pr、close-out 前分别取得用户确认。
 
 统一骨架：
 
@@ -150,7 +150,7 @@ Cursor 与 Codex 使用同一 intent；调用方如何准备 worktree、如何�
 PR mode 的 objectives 末尾为 pr checkbox，之后是无 checkbox 的必执行 close-out 续办。
 pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
 实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；close-out 只负责后续发布、backmerge、清理与最终核验。
-完整交付继续执行 close-out；默认 deliver 截止于 pr，显式 until 仍生效。
+完整交付继续执行 close-out；默认 deliver 走完 close-out，非 yolo 在 pr、close-out 前分别取得用户确认，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 
 PR 模式在创建或更新 PR/MR 前 fetch 远端目标：develop（feature/bugfix/adhoc）或 master（release/hotfix）。
@@ -176,10 +176,10 @@ local 模式先在交付分支集成 develop（feature/bugfix）或 master（rel
 - deliver 尚未 start 时先委托 start。
 - 可传位置参数 target（PRP 或 Bug ID，自动分辨）。
 - 自动裁定与截止点：
-  - 默认所有 decision 由 AI 计算 confidence，优先用 Jev；不可用时主 Agent 评分。
+  - 除 pr、close-out 入口确认外，其他 decision 由 AI 计算 confidence，优先用 Jev；不可用时主 Agent 评分。
   - confidence ≥ 0.8 自动确认，低于 0.8 请求用户确认；不降低验收要求。
-  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认 local 为 `--until close-out`，PR mode 为 `--until pr`。
-  - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
+  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+  - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
   - manual slug 与收尾 worktree 删除等 decision 也适用；squash 默认自主执行，人工工作仍须用户完成并勾选。
   - close-out 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。
     后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。

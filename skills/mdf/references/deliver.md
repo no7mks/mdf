@@ -58,7 +58,7 @@
                  ├──── 清理 decision 待确认 ────→ 6 Confirm decision
                  └──── 证据不足 ────────────────→ [报告实际状态]
 
-步骤 1–5 中低 confidence 的 decision 均进入步骤 6；不是步骤 5 的后续。
+步骤 1–5 中入口待确认或低 confidence 的 decision 均进入步骤 6；不是步骤 5 的后续。
 
 ┌──────────────────────────────────┐
 │ 6 Confirm decision               │
@@ -72,7 +72,7 @@
 
 ## 工作流（唯一执行契约）
 
-- PR mode 的 pr 在当前调用内等待平台合并，每 2 分钟查询结果，合并后自动续办。
+- PR mode 的 pr 在当前调用内等待平台合并，每 2 分钟查询结果，合并后按入口确认策略续办 close-out。
   正常等待不属于外部阻塞；`waiting_for_merge` 时不结束当前调用、不进入步骤 5，也不要求用户再次调用。
   completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR](pr.md)。
 
@@ -88,7 +88,7 @@
   已勾后，经本表步骤 3 执行该续办工作流的步骤 3，完成后回 Select；先核 until 边界。
 
 读取 `references/common.md`、`references/delivery-contract.md` 与 `references/deliver-policy.md`。
-步骤 4 只由 Select 分派；到截止点或实际收口进入 5；任一步的低 confidence decision 均进入 6。
+步骤 4 只由 Select 分派；到截止点或实际收口进入 5；任一步的入口待确认或低 confidence decision 均进入 6。
 按所选阶段完整读取其 intent 及声明的公共引用，执行原编号工作流，不以本流程摘要替代。
 审查阶段读取 `references/code-review.md`；fact 阶段读取 fact-audit，须修复时另读 fact-update。
 
@@ -99,11 +99,11 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve | 约束 | 解析策略；先核 PR 恢复，再锁定 owner | 参数、目标、记录、路径 | 锁定2；截止5；start 返回1 | 低分6；失败交接；死硬停 |
-| 2 | Select | 约束 | 先核 until；PR 恢复优先，再选步骤 | 记录、进度、截止点 | 截止或完成5；交接结束；并行4；其他3 | 低分6；其余保留现场 |
-| 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | PR 等待留子流程；完成2；截止5 | 低分6；其余按原流程交接 |
-| 4 | Parallel | Subagent | 分派、核路径并等待交接 | 各路提交与勾选意向 | 交接2；截止5 | 低分6；其余保留现场 |
+| 2 | Select | 约束 | 先核 until；PR 恢复优先，再选步骤 | 记录、进度、截止点 | 截止或完成5；交接结束；并行4；其他3 | 待确认6；其余保留现场 |
+| 3 | Execute | 约束 | 按原 intent 续办单阶段 | 原流程证据 | PR 等待留子流程；完成2；截止5 | 待确认6；其余按原流程交接 |
+| 4 | Parallel | Subagent | 分派、核路径并等待交接 | 各路提交与勾选意向 | 交接2；截止5 | 待确认6；其余保留现场 |
 | 5 | Report | 约束 | 核对范围、Goal 与收尾清理 | 截止证据或实际 Git 结果 | 结束 | 清理低分6；缺证据报告实际状态 |
-| 6 | Confirm decision | 约束 | 展示方案与评分 | 答复、返回位置 | 确认返回；修改重评 | 拒绝按原流程；未决留 6 |
+| 6 | Confirm decision | 约束 | 展示操作范围与确认原因（入口确认或评分） | 答复、返回位置 | 确认返回；修改重评 | 拒绝按原流程；未决留 6 |
 
 ## 术语与数据结构
 
@@ -114,7 +114,7 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 ### 目标与持续授权
 
 调用 `$mdf deliver [<target>] [--until <intent>] [--yolo]` 授权连续推进本次交付。
-默认自动裁定所有 decision，直到指定 intent 之前；无截止点时直到 close-out 完成。
+除 pr、close-out 入口确认外，默认自动裁定其他 decision，直到指定 intent 之前；无截止点时直到 close-out 完成。
 
 - 授权含截止点之前尚未完成的 start、本地提交、并行委托与集成；允许进入 close-out 时含 Gitflow 操作。
 - target 是唯一位置参数，不是 `--` option；option 可在其前或后，option 的值不算 target。
@@ -131,7 +131,7 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 确认与暂停：
 
 - 已有有效确认继续适用。
-- 所有 decision 按下方 confidence 策略处理，包括目标选择、clarify、设计、roster、测试修改批准与目标调整。
+- 除 pr、close-out 入口确认外，其他 decision 按下方 confidence 策略处理，包括目标选择、clarify、设计、roster、测试修改批准与目标调整。
 - 低 confidence 需要用户决定时暂停，收到回答后从本次暂停处续办，不要求用户重复调用每个阶段。
 - 步骤 6 保存原步骤、内部 intent/subagent、具体 decision 与端点；答复只授权该 decision。
   - 回复后先核现场；端点、方案或范围已变化则重新评分，不复用过时确认。
@@ -231,7 +231,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 
 步骤 2 结合 `objectives.md` 勾选、`delivery.json` 身份、对话确认、未完成子步骤、
 产物、Git 历史及执行者状态判断。按下表自上而下命中即停止，不并行套用多行。
-先应用 until 截止点，再查表；任何表内委托、回退或重试都不得越过截止点。
+先应用 until 截止点，再查表；进入 pr、close-out 前按 deliver-policy 核用户确认；任何表内委托、回退或重试都不得越过截止点。
 
 - **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
   - report（code-review.md / verification-report.json / fact-audit.md）只证明做过与声称结果。

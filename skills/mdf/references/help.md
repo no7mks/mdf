@@ -92,7 +92,7 @@
 
 #### 交付
 - `$mdf next [--depth N]`：续办在途；adhoc 使用六项账本，无在途时委托 tree
-- `$mdf deliver [<target>] [--until <intent>] [--yolo]`：自动推进到截止 intent 之前；可并行阶段强制 subagent 分别执行
+- `$mdf deliver [<target>] [--until <intent>] [--yolo]`：默认推进至 close-out 完成，可显式指定截止 intent；可并行阶段强制 subagent 分别执行
 - `$mdf start`（可带 `--manual`）：按 Gitflow 创建本地交付分支；始终在
   `<repo-name>-worktrees/` 下建立 worktree
 - `$mdf adhoc [<工作描述>]`：自动命名临时 worktree，按六项 objectives 完成工作并按配置收口
@@ -262,10 +262,11 @@ $mdf clarify 要不要把缓存放到 Redis
     - 支持 feature/bugfix/hotfix/release/adhoc；roster ≥1 且两路可并行时强制分别使用
       qa/dev worktree 的 subagent。
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
-    - 默认所有 decision 由 AI 评分，优先用 Jev，无 Jev 时主 Agent 评分。
+    - 除 pr、close-out 入口确认外，其他 decision 由 AI 评分，优先用 Jev，无 Jev 时主 Agent 评分。
       confidence ≥ 0.8 自动确认，< 0.8 请求用户确认。
-    - 默认 local 为 `--until close-out`，PR mode 为 `--until pr`，exclusive，不执行截止 intent；`--stop-at` 为别名。
-    - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
+    - 默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+    - 显式 until 为 exclusive，不执行截止 intent；`--stop-at` 为别名。
+    - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
     - `--roster` 可转交给 start，仅尚未 start 时有效。
     - strategy / models 可转交给 start、design、code-review：
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；

@@ -117,9 +117,9 @@ def test_merged_recovery_cannot_bypass_ci_completion(name):
     assert 'merged 但关联 CI 未收尾或缺少证据时先恢复 pr' in workflow(name)
 
 
-def test_pr_mode_default_cutoff_and_mandatory_unticked_continuation():
+def test_pr_mode_default_completion_and_mandatory_unticked_continuation():
     policy = workflow('deliver-policy')
-    assert 'PR mode 为 `--until pr`' in policy
+    assert '默认 local 与 PR mode 均无截止点，直到 close-out 完成' in policy
     assert '显式 `--until close-out` 允许 pr 等到 merged 后停止' in policy
     contract = workflow('delivery-contract')
     assert '- close-out（pr merged 后必须续办；不设 checkbox）' in contract

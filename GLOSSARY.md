@@ -192,7 +192,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 
 ## Deliver、until 与 confidence
 
-`$mdf deliver` 默认自动裁定当前交付的所有 decision，默认 local 在 close-out 之前结束，PR mode 在 pr 之前结束。
+`$mdf deliver` 默认走完 close-out；非 yolo 在 pr、close-out 前分别取得用户确认，其他 decision 按 confidence 策略裁定。
 
 - `--until <intent>`：exclusive 截止点，不执行该 intent；`--stop-at` 是别名。
 - confidence：AI 对一项 decision 的置信度，范围 `[0,1]`；默认由 Jev 评分，无 Jev 时由主 Agent 评分。
@@ -202,7 +202,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 
 ## Yolo
 
-`$mdf deliver --yolo`：无默认 until、无 confidence 限制；显式 until 仍生效。
+`$mdf deliver --yolo`：无默认 until，跳过 pr、close-out 入口确认，无 confidence 限制；显式 until 仍生效。
 不可恢复的死硬阻塞仍停止，既有验收要求不变。
 
 ## ADR

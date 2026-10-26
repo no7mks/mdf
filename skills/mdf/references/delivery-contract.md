@@ -152,9 +152,10 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 - 用户手动触发主线 intent，或显式调用 next 委托下一阶段。
 - 显式 deliver 按 `references/deliver.md` 串联截止点之前的剩余真实 intent。
   - 可并行阶段按 roster 分别委托 subagent。
-  - 默认自动裁定 decision，confidence 低于 0.8 请求用户确认；默认用 Jev 评分，无 Jev 时主 Agent 评分。
-  - 默认 local 为 `--until close-out`，PR mode 为 `--until pr`（exclusive），`--stop-at` 为别名；yolo 无默认截止点、无 confidence 限制。
-  - 显式 until 对 yolo 仍生效；子 intent 的确认与批准统一遵守 deliver 的 confidence 策略。
+  - 除 pr、close-out 入口确认外，默认自动裁定其他 decision，confidence 低于 0.8 请求用户确认；默认用 Jev 评分，无 Jev 时主 Agent 评分。
+  - 默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+  - 显式 until 为 exclusive，`--stop-at` 为别名；yolo 跳过入口确认、无 confidence 限制。
+  - 显式 until 对 yolo 仍生效；子 intent 的确认与批准统一遵守 deliver-policy 的入口确认与 confidence 策略。
 - design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，不计入 roster。
 - deliver 步骤 4 只覆盖可并行的 qa/dev。
 - 不新增独立 Owner 调度服务或统一状态协议。

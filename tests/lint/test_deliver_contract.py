@@ -45,7 +45,7 @@ def test_deliver_continues_within_scope_and_preserves_evidence():
         assert f"references/{name}.md" in text
     for name in ("start", "design", "write-tests", "implement", "converge", "code-review"):
         assert "deliver 内部委托时完成后返回调用方" in workflow(name)
-    assert "默认 deliver 不进入本 intent" in workflow("close-out")
+    assert "非 yolo 须先取得本 intent 的独立用户确认" in workflow("close-out")
     assert "低 confidence 返回 deliver 步骤 6" in workflow("close-out")
     assert "yolo 无 confidence 限制" in workflow("close-out")
     assert "直接执行本步骤" in workflow("close-out")
@@ -61,8 +61,8 @@ def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():
     text = deliver_contract()
     for rule in (
         "`--until <intent>` 与 `--stop-at <intent>` 是同一个 option",
-        "exclusive，不执行该 intent", "默认 local 为 `--until close-out`，PR mode 为 `--until pr`",
-        "不准备 close-out 材料、不执行其集成或 Gitflow",
+        "exclusive，不执行该 intent", "默认 local 与 PR mode 均无截止点，直到 close-out 完成",
+        "先核 until，再核本节确认；被截止的 intent 不询问、不执行",
         "`--yolo` 未显式指定 until 时无截止点；显式 until 仍生效",
         "缺值、未知 intent、重复指定", "写入或 start 之前完成解析",
         "多词 intent 须作为单个值传入", "不适用该路径的 intent 报参数错误",
@@ -178,3 +178,20 @@ def test_deliver_requires_independent_subagents_and_verified_worktrees():
         "横幅随绑定的 worktree 更新",
     ):
         assert rule in text
+
+
+def test_deliver_requires_separate_user_confirmation_before_pr_and_closeout():
+    policy = workflow("deliver-policy")
+    for rule in (
+        "非 yolo 在进入 pr、close-out 前分别取得用户明确确认，不以高 confidence 自动通过",
+        "PR mode 需要两次独立确认；local 只需 close-out 入口确认",
+        "调用 deliver 本身不代替入口确认；pr 的确认不授权后续 close-out",
+        "pr 确认发生在候选材料准备、push、创建或更新 PR/MR、轮询之前",
+        "同一范围的返工、重试或中断恢复复用已有有效确认",
+        "用户未确认或拒绝进入时保留现场并暂停",
+        "`--yolo` 跳过这两个入口确认",
+        "普通、manual、adhoc 及 PR 恢复路由",
+    ):
+        assert rule in policy
+    assert "核 pr 入口确认（yolo 跳过）" in workflow("pr")
+    assert "不能复用 pr 的入口确认" in workflow("close-out")

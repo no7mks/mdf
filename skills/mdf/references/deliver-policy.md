@@ -10,7 +10,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve context | 约束 | 核调用参数、路径与当前事件 | 调用、交付身份、事件 | 2 | 参数错误或缺上下文则停止 |
-| 2 | Apply policy | 约束 | 应用截止或 decision 策略 | 边界、评分、确认 | 3 | 截止返回；低分交 deliver 6；阻塞停 |
+| 2 | Apply policy | 约束 | 应用截止或 decision 策略 | 边界、评分、确认 | 3 | 截止返回；待确认交 deliver 6；阻塞停 |
 | 3 | Return | 约束 | 返回允许、截止或实际阻塞 | 裁定、依据、返回位置 | 返回原步骤 | 缺证据不允许执行 |
 
 ## 术语与数据结构
@@ -20,8 +20,8 @@
 本节在任何写入或分派前确定本次调用的执行边界。
 
 - `--until <intent>` 与 `--stop-at <intent>` 是同一个 option；截止点为 exclusive，不执行该 intent。
-- 默认 local 为 `--until close-out`，PR mode 为 `--until pr`：完成此前阶段后结束本次调用，不准备 close-out 材料、不执行其集成或 Gitflow。
-- PR mode 的默认截止点排除 pr 及 close-out；显式 `--until close-out` 允许 pr 等到 merged 后停止。
+- 默认 local 与 PR mode 均无截止点，直到 close-out 完成；非 yolo 的入口确认见下节。
+- 显式 `--until pr` 排除 pr 及 close-out；显式 `--until close-out` 允许 pr 等到 merged 后停止。
 - local 不接受 `--until pr`；pr 不在该路径中。
 - `--yolo` 未显式指定 until 时无截止点；显式 until 仍生效，包括 `--yolo --until close-out`。
 - 缺值、未知 intent、重复指定（含混用两个别名）均停止并说明参数错误；写入或 start 之前完成解析。
@@ -59,6 +59,22 @@
 - 所有内部 intent 遇到边界都返回「到 until」、调用栈与 resume 位置，不勾选被截断的父阶段。
   不把该返回当作失败，不重试或换另一入口继续；deliver 直接到 Report。
 
+### pr 与 close-out 入口确认
+
+先核 until，再核本节确认；被截止的 intent 不询问、不执行。
+
+- 非 yolo 在进入 pr、close-out 前分别取得用户明确确认，不以高 confidence 自动通过。
+  - PR mode 需要两次独立确认；local 只需 close-out 入口确认。
+  - 调用 deliver 本身不代替入口确认；pr 的确认不授权后续 close-out。
+- 进入前展示当前成果、验证结果、目标分支及该 intent 将执行的操作，然后返回 deliver 步骤 6 等待答复。
+  - pr 确认发生在候选材料准备、push、创建或更新 PR/MR、轮询之前。
+  - close-out 确认发生在其材料、发布、backmerge、清理或 Gitflow 操作之前；PR mode 先完成 pr 的合并与 CI 核验。
+- 确认记入现有交接材料，绑定当前交付、intent 与操作范围，不新增状态文件。
+  - 同一范围的返工、重试或中断恢复复用已有有效确认，不逐轮重复询问；范围变化须重新确认。
+  - 用户未确认或拒绝进入时保留现场并暂停；不得换用 next、独立 intent 或内部委托绕过。
+- `--yolo` 跳过这两个入口确认；显式 until、用户限制、验收要求与死硬阻塞仍生效。
+- 本节适用于普通、manual、adhoc 及 PR 恢复路由；独立 pr / close-out 与普通 next 不增加这些确认。
+
 ### 自动裁定与 confidence
 
 所有 deliver 默认启用本策略；独立 intent 与普通 next 不受影响。
@@ -80,7 +96,7 @@
 - `--yolo` 无 confidence 限制：不要求评分、不因低 confidence 询问，由主 Agent 自裁定并记录理由。
 - 内部 clarify、manual slug、Gitflow 收口与收尾删除 worktree 的决定均遵守本策略。
   - squash 默认按其契约自主分析执行，不增加逐次计划确认；范围或归属不明仍须澄清。
-  - 不增加固定 Gitflow 确认关口；仅在截止点允许进入对应 pr 或 close-out 时评估该阶段的 decision。
+  - pr、close-out 的入口确认优先于 confidence 策略；进入后不增加固定 Gitflow 确认关口。
   - 人工实际工作仍须由用户完成并显式勾选，所有模式均不得代勾。
   - converge 的 `--test-approval` 记录该裁定、评分或用户确认与理由。
 - 本策略覆盖子 intent 的询问与确认要求，不覆盖用户明令禁止、关键事实缺失、外部条件与验收要求。

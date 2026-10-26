@@ -382,7 +382,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 已发布 backmerge 的修复补审补测在本调用栈外按该子流程执行，不重开已发布版本的交付阶段。
 
 - 执行关口：
-  - deliver 委托前须确认其 until 允许进入 close-out；默认 deliver 不进入本 intent。
+  - deliver 委托前须确认其 until 允许进入 close-out；非 yolo 须先取得本 intent 的独立用户确认，不能复用 pr 的入口确认。
   - deliver 委托时，Gitflow 按其 confidence 策略裁定；低 confidence 返回 deliver 步骤 6。
     展示主线、源分支删除、保留目录与适用的 tag/push；有效确认前不得调用 `finish-gitflow`。
   - yolo 无 confidence 限制；无截止点阻断且步骤 9 通过后直接执行本步骤。

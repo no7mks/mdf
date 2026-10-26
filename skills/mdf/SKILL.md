@@ -114,8 +114,9 @@ disable-model-invocation: true
   - `$mdf next` 无问号时执行 `references/next.md`。
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]` 仍是 deliver，不是独立 intent。
   - option 可在 target 前或后；`--stop-at` 是 `--until` 的别名，值不算 target。
-  - 默认自动裁定 decision，confidence < 0.8 请求用户确认；默认 local 为 `--until close-out`，PR mode 为 `--until pr`，不执行该 intent。
-  - `--yolo` 无默认截止点、无 confidence 限制；显式 until 仍生效。详见 deliver。
+  - 默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+  - 其他 decision 默认自动裁定，confidence < 0.8 请求用户确认；显式 until 不执行截止 intent。
+  - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效。详见 deliver。
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
   - `--yolo` 仅自动确认内部 clarify，不跳过红灯或回归验证，也不代替测试门槛批准；fix 不执行 Gitflow 收口。
 - `$mdf bug close <bug-id> --fixed-in <version>`：ID 与稳定 SemVer 必填；
@@ -150,7 +151,7 @@ disable-model-invocation: true
 - 各 intent 仅在其编号工作流明示的条件下内部委托；主链 verify 的增量 code-review 与审查内部 smart 按各自契约执行。
 - init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
-- deliver 可内部委托截止点之前从 start 起的剩余交付阶段；yolo 无默认截止点。
+- deliver 可内部委托截止点之前从 start 起的剩余交付阶段；默认无截止点。
 - adhoc 可内部委托其六项清单的剩余阶段直到 close-out。
 - `$mdf pr` 执行 `references/pr.md`，只适用于 PR mode。
   - 创建/更新 PR、等待 CI/review、修复并持续等待；merged 且核验通过后完成 pr Goal。

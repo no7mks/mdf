@@ -155,7 +155,7 @@ closeout:
 恢复先核调用边界，再按同一份 finish 操作记录选择 pr 或 close-out。
 
 - PR 恢复优先于 doctor、branch、delivery status 和 adhoc-status；先应用当前 until。
-  未 merged 选 pr，已 merged 且关联 CI 收尾通过才选 close-out；默认 until pr 不进入这两个阶段。
+  未 merged 选 pr，已 merged 且关联 CI 收尾通过才选 close-out；显式 until pr 不进入这两个阶段。
   merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按下方轮询规则查回关联运行。
 - source 来自已锁定交付、当前完整分支或用户指定；无目标时才检查唯一未完成记录。
   多个候选须澄清；不按时间猜测，不从历史 completed 记录自动启动任务。
@@ -283,7 +283,8 @@ pr 只维护自己的 checkbox，close-out 是其后无 checkbox 的必执行步
 
 步骤 1、每次内部委托及步骤 3 提交前，先核当前调用的边界与有效授权。
 
-- deliver 委托沿用其 until、confidence 与 yolo；被截止的 pr 不绑定新 Goal、不准备材料、不 push 或轮询。
+- deliver 委托先核 until，再按 deliver-policy 核 pr 入口确认（yolo 跳过）；沿用其 confidence 策略。
+  被截止的 pr 不绑定新 Goal、不准备材料、不 push 或轮询。
 - 创建或更新 PR/MR 前按 deliver-policy 裁定源提交与 push；低 confidence 返回 deliver 步骤 6。
   yolo 不受 confidence 限制；独立 pr 沿用调用授权，不引入 deliver 的评分。
 - squash、bug close、code-review、verify 与 fact 的内部返工也先核 until；被截断返回外层，不绕过边界。
