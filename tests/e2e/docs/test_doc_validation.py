@@ -93,7 +93,7 @@ def test_validation_rejects_symlink_in_managed_docs(
     assert "path.symlink" in result.stdout
 
 
-@pytest.mark.parametrize("name", ["logs", "reports"])
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
 def test_validation_ignores_symlinks_inside_local_artifacts(python_exe, tmp_path, name):
     from mdf_core.execution.run_logs import ignored_dir
 
@@ -103,6 +103,10 @@ def test_validation_ignores_symlinks_inside_local_artifacts(python_exe, tmp_path
     init_git(repo)
 
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"] is True
+    assert not any(item["code"] == "path.symlink" for item in data["findings"])
 
 
 @pytest.mark.parametrize("record", [".mdf/manifest.yaml", "CHANGELOG.md"])

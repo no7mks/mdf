@@ -8,7 +8,7 @@ from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.paths import ensure_safe_managed_paths, managed_symlinks
 
 
-@pytest.mark.parametrize("name", ["logs", "reports"])
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
 def test_managed_paths_do_not_descend_into_local_artifacts(tmp_path, monkeypatch, name):
     root = tmp_path / ".mdf" / name
     root.mkdir(parents=True)
@@ -26,7 +26,7 @@ def test_managed_paths_do_not_descend_into_local_artifacts(tmp_path, monkeypatch
 
 
 @pytest.mark.parametrize("name", [
-    ".mdf", ".mdf/logs", ".mdf/reports", ".mdf/manifest.yaml",
+    ".mdf", ".mdf/logs", ".mdf/reports", ".mdf/tmp", ".mdf/manifest.yaml",
     ".mdf/config/escape", "docs/system/escape", "docs/logs/escape", "AGENTS.md",
 ])
 def test_managed_paths_still_reject_symlinks(tmp_path, name):

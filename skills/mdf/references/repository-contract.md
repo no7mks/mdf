@@ -112,8 +112,8 @@ MDF 工作记录统一位于 `docs/`，配置位于 `.mdf/`；`.mdf/logs/` 与 `
   测试归入 `<module>/tests/`。module 目录（含各自包清单）属于顶层允许项，
   不得摊平进仓库根 `src/<module>/` 与 `tests/<module>/`。
 
-托管路径的 symlink 检查不递归扫描 `.mdf/logs/` 与 `.mdf/reports/` 内部；仍检查这两个
-目录本身，创建日志与报告目录时另检查父目录、目标目录和 `.gitignore`。
+托管路径的 symlink 检查不递归扫描 `.mdf/logs/`、`.mdf/reports/` 与 `.mdf/tmp/` 内部；
+仍检查这三个目录本身，创建日志与报告目录时另检查父目录、目标目录和 `.gitignore`。
 
 生成物应归入名称明确的子目录。生态惯例要求其他目录名时，须在 `PROJECT.md`
 中说明。
