@@ -73,7 +73,7 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve branch | 脚本 | 确认 kind；普通 feature 选 PRP，人工 feature 确认 manual | 参数、list | 2 | 留在 1 询问 |
-| 2 | Clarify objectives | 约束 | 写/确认 objectives checklist（含大步骤） | 确认目标文件 | 3 | 不写目标，停止 |
+| 2 | Clarify objectives | 约束 | 盘点前置条件，写/确认 objectives checklist（含大步骤） | 确认目标与准备说明 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 确认 member、strategy 与 models | 明确确认、与步骤2的 needs_design 一致 | 冲突2；否则4 | 拒绝停止；未决留3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
 | 5 | Switch worktree | 约束 | 切到 owner；交接 | 路径、交接 | 同/跨→6；collab 交接结束；其他结束 | 留在 5 等待 |
@@ -121,6 +121,8 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 
 **澄清**
 
+所有 kind（含人工 feature）先执行下方「前置条件盘点」，将结果纳入本步的共同理解与确认文本。
+
 人工 feature 先执行内部 clarify，议题为工作范围、验收与 slug。
 独立调用必须先询问用户，再依据回答给 slug 建议并确认；deliver 委托按其 confidence 策略裁定。
 采用 `manual-objectives.md`，start 已勾，其余六项未勾，不添加 design / converge。
@@ -164,9 +166,31 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
 
-验收：确认目标、`needs_design`（release 另含联调工作线与 `has_dev`）以及共同理解。
+验收：确认目标、前置条件与准备安排、`needs_design`（release 另含联调工作线与 `has_dev`）以及共同理解。
+人工 feature 按专用规则确认，不要求 `needs_design`。
 
 异常与交接：不写目标、不创建分支。
+
+### 前置条件盘点
+
+本条属于步骤 2，覆盖内部 clarify、精简确认与人工 feature；调用 clarify 时作为必须落地的事实传入。
+
+- 先查仓库与已有对话：运行说明、配置样例、runtime/dependency 声明、启动与测试入口、CI 和已配置 hook。
+  只盘点本次实现与验收需要的条件；已有证据或有效确认直接复用，只询问剩余未知项。
+- 按实际需要核对以下内容；没有额外依赖时一句说明即可，不强制空表或逐类提问。
+  - 配置：必填项、用途、已有默认值与待决定的值。
+  - credential：名称、用途、权限、可用状态与注入来源或方式。
+  - 环境与资源：runtime 版本、服务、数据库、网络、测试账号、测试数据与联调对端。
+- 区分未知事实与未就绪资源：
+  - 缺项影响目标可行性、方案选择、验收范围或当前步骤时，先查证或向用户确认；无法获得则停止。
+  - 条件与准备方式明确、仅后续阶段使用的资源，可确认准备方与最晚就绪阶段后继续。
+    最晚就绪阶段按首次使用确定，可能早于 verify；到时未就绪则报告阻塞，不跳过必要验证。
+  - 用户认可准备计划、confidence 或 `--yolo` 均不代表资源已可用。
+- 核对新 worktree 的准备范围：不假定旧工作区的 gitignored 配置、本地文件或 virtual environment 自动可用。
+  qa/dev 并行需要独立端口、数据库或账号时，确认相应准备方式；owner hook 的结果不代表 qa/dev 已就绪。
+- 在既有 objectives 的约束或准备说明中记录所需条件、已知状态、准备方式、准备方与最晚就绪阶段。
+  不新增阶段 checkbox；不要求用户在对话中粘贴 secret，不将密钥值写入 objectives、报告、日志或 Git。
+- 不因盘点自动复制 `.env` 或 credential；post-start hook 仍按原契约执行，失败仅汇报。
 
 ### Roster 确认
 
@@ -205,6 +229,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - 用户可改人数或策略；改后按上列规则重新展示，不得静默沿用旧值。
 - qa/dev 改动与已确认 needs_design 冲突时回步骤 2，仅重确认受影响内容并更新临时 objectives。
   不用未更新的旧文件进入 start CLI；此前未变的目标、slug 与其他确认直接复用。
+- roster 改动影响端口、数据库、账号等资源需求时，同样回步骤 2，仅更新并重确认受影响的准备说明。
 - 📌 必须取得明确确认才进入创建；不得把沉默当作同意。
 - 由 deliver 委托时，本步按已给参数与上述默认值、其 confidence 策略裁定。
 
