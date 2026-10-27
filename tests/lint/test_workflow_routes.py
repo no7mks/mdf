@@ -114,7 +114,7 @@ def test_init_accepts_initializing_at_entry_before_readiness_gate():
     assert "doctor finding 不是拒绝理由" in entry
     assert "全部 finding 记入盘点清单，由步骤 3 逐项处置" in entry
     assert "`path.symlink`）报告后停止" in entry
-    assert "用户明确“结束初始化并启用正常工作流”确认" in compact(text)
+    assert "依 `SKILL.md`「用户确认」接受 yes 等明确肯定答复后收口" in text
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():
     update = workflow("codewiki-update")
@@ -188,7 +188,9 @@ def test_initialization_and_init_have_explicit_reaudit_routes():
     assert rows(shared)[6][6] == "全量无效返回补验；事实变化重审；其他停"
     assert rows(workflow("migrate"))[6][6] == "补验或事实变化 6；未确认则结束；否则停"
     assert "bootstrap 不调用 fact audit" in shared
-    assert "用户明确“结束初始化并启用正常工作流”确认" in shared
+    assert "是否结束初始化并启用正常工作流？" in shared
+    assert "按 `SKILL.md`「用户确认」识别答复" in shared
+    assert "用户明确“结束初始化并启用正常工作流”确认" not in shared
 
 def test_fact_audit_failure_returns_without_advancing_the_caller():
     text = workflow("fact-audit")

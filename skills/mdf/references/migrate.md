@@ -284,7 +284,7 @@
 **就绪**
 
 1. 按 `initialization.md` 的公共完成规则展示当前事实复核、八项基线、验证命令和分支方案。
-2. 取得用户明确“结束初始化并启用正常工作流”确认后，按 initialization 段 7 收口。
+2. 按 initialization 段 6 询问是否启用，依 `SKILL.md`「用户确认」接受 yes 等明确肯定答复后收口。
    核对增量、改 ready、校验并提交，再核对本地 master/develop。
 
 验收：事实审阅与 strict validation 仍有效，启用增量校验零 finding、就绪结果已提交、本地分支可用。
