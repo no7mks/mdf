@@ -9,7 +9,7 @@ from mdf_core.lifecycle.closeout_stage import apply_closeout, summarize_closeout
 from mdf_core.lifecycle.closeout_shape import unreleased_change_slugs, validate_closeout_shape
 from mdf_core.lifecycle.closeout_validate import normalize_hotfix_change
 from mdf_core.foundation.constants import SCHEMA_VERSION
-from mdf_core.foundation.errors import MDFError, emit, serialize_findings
+from mdf_core.foundation.errors import MDFError, emit, has_errors, serialize_findings
 from mdf_core.workspace.gitutil import (
     _status_paths,
     branch_details,
@@ -222,9 +222,9 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             code="manifest_not_ready",
         )
     pre_findings = doctor.collect_findings(repo, full=True)
-    if pre_findings:
+    if has_errors(pre_findings):
         raise MDFError(
-            "release closeout 要求全量确定性审计零 finding",
+            "release closeout 要求全量确定性审计零 error",
             code="audit_not_passed",
             details={"findings": serialize_findings(pre_findings)},
         )
@@ -255,7 +255,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     result = apply_closeout(repo, context)
 
     post_findings = doctor.collect_findings(repo, full=True)
-    if post_findings:
+    if has_errors(post_findings):
         raise MDFError(
             "release closeout 的 post-validation 失败；写入已落在工作树且未提交",
             code="post_validation_failed",

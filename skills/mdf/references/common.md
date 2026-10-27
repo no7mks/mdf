@@ -36,6 +36,7 @@ upgrade 不读取本文件。
 
 - intent 要求正常流程可用时，以 `doctor` 的 `normal_workflows_allowed` 为准。
   - `evidence.stale`、`generated.stale` 只报告，不单独阻断正常流程。
+  - `severity: warning` 的 finding 仅报告，不阻断任何工作；验收中的零 finding 要求仅计 error。
   - 其他 findings 与各操作的 clean 要求仍按原规则处理。
   - `validate full` 与 fact audit 仍严格检查 stale，不因此放宽验收。
 

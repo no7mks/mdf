@@ -32,7 +32,7 @@ def test_strip_control_removes_csi_and_splits_cr():
     assert strip_control("ab\rcd") == "ab\ncd"
 
 
-@pytest.mark.parametrize("name", [".mdf", ".mdf/reports", ".mdf/reports/.gitignore"])
+@pytest.mark.parametrize("name", [".mdf", ".mdf/reports/.gitignore"])
 def test_report_creation_rejects_symlink_at_write_target(tmp_path, name):
     from mdf_core.execution.reports import new_report_dir
     from mdf_core.foundation.errors import MDFError
@@ -84,3 +84,23 @@ def test_run_nonzero_returns_run_failed(tmp_path, python_exe):
     error = json.loads(result.stderr.strip().splitlines()[-1])
     assert error["error"] == "run_failed"
     assert error["details"]["exit_code"] == 3
+
+
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
+def test_local_artifact_symlink_allows_writes_and_skips_pruning(tmp_path, name):
+    from mdf_core.execution.run_logs import ignored_dir, prune
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    old = outside / "old.log"
+    old.write_text("keep")
+    stale = time.time() - 8 * 86400
+    os.utime(old, (stale, stale))
+    link = tmp_path / ".mdf" / name
+    link.parent.mkdir()
+    link.symlink_to(outside, target_is_directory=True)
+
+    assert ignored_dir(link) == link
+    assert (outside / ".gitignore").read_text() == "*\n"
+    prune(link)
+    assert old.read_text() == "keep"

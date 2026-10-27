@@ -175,7 +175,7 @@ Git 基础准备后运行 `doctor`：
 - migrate 不因 finding 拒绝：
   - 盘点清单里已有的 finding 继续。
   - 新 finding 回到 migrate 步骤 2，不在已经过完的步骤 3 补记。
-  - 仅无法安全处理的状态（如 `path.symlink`）报告后停止。
+  - 仅无法安全处理的状态（如非本地产物目录的 `path.symlink`）报告后停止。
 
 CLI init 仍要求 Git 根目录，不负责语义判定、Git 化、提交或启用。
 init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI。

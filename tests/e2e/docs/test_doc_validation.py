@@ -127,3 +127,31 @@ def test_route_page_does_not_expire_when_its_leaf_changes(python_exe, tmp_path):
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 叶子页晚于路由页更新")
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
+
+
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
+def test_local_artifact_directory_symlink_is_nonblocking_warning(python_exe, tmp_path, name):
+    import shutil
+
+    repo = copy_fixture(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = repo / ".mdf" / name
+    if link.exists():
+        shutil.rmtree(link)
+    link.symlink_to(outside, target_is_directory=True)
+    init_git(repo)
+
+    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"] is True
+    warnings = [item for item in data["findings"] if item["code"] == "path.symlink"]
+    assert len(warnings) == 1
+    assert warnings[0]["severity"] == "warning"
+    assert warnings[0]["path"] == f".mdf/{name}"
+    result = mdf(python_exe, "validate", "--repo", str(repo))
+    assert_ok(result)
+    assert payload(result)["ok"] is True
+    assert_ok(mdf(python_exe, "archive", "--repo", str(repo), "--epoch", "1.3", "--dry-run"))
+    assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "full"))
+    if name == "logs":
+        assert any(outside.glob("*-doctor/meta.json"))

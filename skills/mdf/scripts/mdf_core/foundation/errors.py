@@ -41,6 +41,10 @@ def serialize_findings(findings: Iterable[Finding]) -> list[dict[str, Any]]:
     ]
 
 
+def has_errors(findings: Iterable[Finding]) -> bool:
+    return any(finding.severity == "error" for finding in findings)
+
+
 def emit(payload: dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from mdf_core.foundation.errors import Finding, add_finding
-from mdf_core.foundation.paths import managed_symlinks
+from mdf_core.foundation.paths import is_local_artifact_root, managed_symlinks
 from mdf_core.foundation.progress import (
     progress, register_progress_groups, report_count, report_progress, skip_progress_group,
 )
@@ -48,8 +48,10 @@ def collect_findings(
             add_finding(
                 findings,
                 "path.symlink",
-                "MDF-managed paths must not be symbolic links",
+                ("本地产物目录为 symlink；允许继续工作，过期清理跳过此目录"
+                 if is_local_artifact_root(repo, path) else "MDF-managed paths must not be symbolic links"),
                 path.relative_to(repo).as_posix(),
+                severity="warning" if is_local_artifact_root(repo, path) else "error",
             )
         manifest = validate_manifest(repo, findings)
         validate_modules(repo, findings)

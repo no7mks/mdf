@@ -113,7 +113,8 @@ MDF 工作记录统一位于 `docs/`，配置位于 `.mdf/`；`.mdf/logs/` 与 `
   不得摊平进仓库根 `src/<module>/` 与 `tests/<module>/`。
 
 托管路径的 symlink 检查不递归扫描 `.mdf/logs/`、`.mdf/reports/` 与 `.mdf/tmp/` 内部；
-仍检查这三个目录本身，创建日志与报告目录时另检查父目录、目标目录和 `.gitignore`。
+仍检查这三个目录本身；目录本身为 symlink 时仅报 `path.symlink` warning，不阻断任何工作。
+日志与报告允许写入链接目录，过期清理跳过链接目录；创建时仍检查父目录和 `.gitignore`。
 
 生成物应归入名称明确的子目录。生态惯例要求其他目录名时，须在 `PROJECT.md`
 中说明。

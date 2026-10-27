@@ -110,7 +110,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 仅接受 `release/<version>` 或 `hotfix/<version>` 当前分支。
 
-- 要求 Git 根、clean worktree、`manifest.state: ready` 与 strict validation 零 finding。
+- 要求 Git 根、clean worktree、`manifest.state: ready` 与 strict validation 零 error。
 - 必须提供 `--release-date`。
 - Core 只验证确定性审计；同次 `$mdf close-out` 的语义审阅与用户确认属于 intent 的职责。
 

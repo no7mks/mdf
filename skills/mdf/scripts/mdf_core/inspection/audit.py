@@ -6,7 +6,7 @@ from typing import Any
 from mdf_core.inspection import doctor
 from mdf_core.inspection.code_size import is_source
 from mdf_core.inspection.doc_size import sizable_documents, size_findings, size_role, structure_findings
-from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, serialize_findings
+from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, has_errors, serialize_findings
 from mdf_core.workspace.gitutil import git_path_tracked, repo_path, require_git_root, run
 from mdf_core.inspection.overview_modules import overview_core_module_findings, project_entry_link_findings
 from mdf_core.foundation.paths import path_stays_in_repo, relative
@@ -312,7 +312,7 @@ def audit_payload(
             and path.name not in NON_BEHAVIORAL_NAMES
         ]
     payload = {
-        "ok": not findings,
+        "ok": not has_errors(findings),
         "operation": "audit",
         "scope": scope,
         "base": resolved_base,
@@ -334,7 +334,7 @@ def audit_payload(
         "finding_count": len(findings),
         "findings": serialize_findings(findings),
     }
-    return payload, 0 if not findings else 2
+    return payload, 0 if not has_errors(findings) else 2
 
 
 def command_audit(args: argparse.Namespace) -> None:

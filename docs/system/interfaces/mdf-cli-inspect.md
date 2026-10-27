@@ -39,7 +39,7 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 - 已初始化仓库会给出 manifest state。
   - state 为 `ready` 且没有阻断性 finding 时，`normal_workflows_allowed` 为 `true`。
   - `evidence.stale`、`generated.stale` 仍完整报告，但不阻断正常工作流。
-  - 其他 finding 仍阻断；`validate full` 与 fact audit 仍因 stale 失败。
+  - warning 仅报告，不阻断任何工作；其他 error 仍阻断；`validate full` 与 fact audit 仍因 stale 失败。
 - 进行中的 `changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md 不构成 finding。
 - clean 单独报告，由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
@@ -69,8 +69,8 @@ python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
 `strict` 额外检查 evidence 与 generated 的 Git 跟踪、脏状态和提交先后。
 `basic` 仍检查配置、布局、记录、事实页格式与 evidence 路径。
 JSON 结果用 `level` 返回校验级别；不接受文件路径列表。
-存在 finding 时仍输出完整 JSON 结果，
-但以状态码 `2` 失败。
+存在 finding 时仍输出完整 JSON 结果；仅有 warning 时成功，
+存在 error 时以状态码 `2` 失败。
 
 stderr 报告 scope 与契约检查阶段；检查结束不代表没有 finding。
 

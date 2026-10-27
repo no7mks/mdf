@@ -25,10 +25,15 @@ def prepare_release(repo: Path, slug: str = "service-health") -> None:
     git(repo, "checkout", "-b", "release/1.3.0")
 
 
+@pytest.mark.parametrize("artifact", [None, "logs", "reports", "tmp"])
 def test_closeout_preview_is_optional_read_only_summary_then_apply(
-    python_exe: str, tmp_path: Path
+    python_exe: str, tmp_path: Path, artifact
 ):
     repo = copy_fixture(tmp_path)
+    if artifact:
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (repo / ".mdf" / artifact).symlink_to(outside, target_is_directory=True)
     prepare_release(repo)
     arguments = release_arguments(repo)
 

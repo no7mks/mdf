@@ -113,7 +113,7 @@ def test_init_accepts_initializing_at_entry_before_readiness_gate():
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
     assert "doctor finding 不是拒绝理由" in entry
     assert "全部 finding 记入盘点清单，由步骤 3 逐项处置" in entry
-    assert "`path.symlink`）报告后停止" in entry
+    assert "非本地产物目录的纳管路径 `path.symlink`）报告后停止" in entry
     assert "依 `SKILL.md`「用户确认」接受 yes 等明确肯定答复后收口" in text
 
 def test_codewiki_requires_verified_close_and_recoverable_failure():

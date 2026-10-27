@@ -55,8 +55,8 @@ def ignored_dir(path):
     """建目录并在其中放 `*` 的 .gitignore，使内容不进 Git、不影响 clean 与指纹。"""
     path = Path(path)
     ignore = path / ".gitignore"
-    if path.parent.is_symlink() or path.is_symlink() or ignore.is_symlink():
-        raise MDFError(f"日志与报告目录及 .gitignore 不允许 symbolic link: {path}", code="managed_symlink")
+    if path.parent.is_symlink() or ignore.is_symlink():
+        raise MDFError(f"日志与报告的父目录及 .gitignore 不允许 symbolic link: {path}", code="managed_symlink")
     path.mkdir(parents=True, exist_ok=True)
     if not ignore.is_file():
         ignore.write_text("*\n")
@@ -115,7 +115,7 @@ def _log_root(argv):
             prune(repo / REPORTS)
         main_metadata = main / ".mdf"
         logs = main / LOGS
-        if main_metadata.is_dir() and not main_metadata.is_symlink() and not logs.is_symlink():
+        if main_metadata.is_dir() and not main_metadata.is_symlink():
             prune(logs)
             return ignored_dir(logs)
     fallback = os.environ.get(FALLBACK_ENV) or str(Path.home() / ".mdf" / "logs")

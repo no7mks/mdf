@@ -26,7 +26,7 @@ def test_managed_paths_do_not_descend_into_local_artifacts(tmp_path, monkeypatch
 
 
 @pytest.mark.parametrize("name", [
-    ".mdf", ".mdf/logs", ".mdf/reports", ".mdf/tmp", ".mdf/manifest.yaml",
+    ".mdf", ".mdf/manifest.yaml",
     ".mdf/config/escape", "docs/system/escape", "docs/logs/escape", "AGENTS.md",
 ])
 def test_managed_paths_still_reject_symlinks(tmp_path, name):
@@ -39,3 +39,13 @@ def test_managed_paths_still_reject_symlinks(tmp_path, name):
 
     assert error.value.code == "managed_symlink"
     assert error.value.details["paths"] == [name]
+
+
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
+def test_local_artifact_symlink_does_not_block_managed_paths(tmp_path, name):
+    path = tmp_path / ".mdf" / name
+    path.parent.mkdir()
+    path.symlink_to(tmp_path / "outside")
+
+    assert managed_symlinks(tmp_path) == [path]
+    ensure_safe_managed_paths(tmp_path)

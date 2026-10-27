@@ -6,7 +6,7 @@ from mdf_core.inspection import doctor
 from mdf_core.documents.archive import archive_plan
 from mdf_core.foundation.constants import PROTOCOL_VERSION, SCHEMA_VERSION, TOOL_VERSION
 from mdf_core.foundation.digests import text_diff
-from mdf_core.foundation.errors import Finding, MDFError, emit, serialize_findings
+from mdf_core.foundation.errors import Finding, MDFError, emit, has_errors, serialize_findings
 from mdf_core.workspace.gitutil import (
     branch_details,
     current_branch,
@@ -94,7 +94,8 @@ def command_doctor(args: argparse.Namespace) -> None:
             payload["normal_workflows_allowed"] = (
                 payload["state"] == "ready"
                 and not any(
-                    finding.code not in {"evidence.stale", "generated.stale"}
+                    finding.severity == "error"
+                    and finding.code not in {"evidence.stale", "generated.stale"}
                     for finding in findings
                 )
             )
@@ -213,14 +214,14 @@ def validation_payload(repo: Path, level: str) -> tuple[dict[str, Any], int]:
     with plan.stage(1):
         findings = doctor.collect_findings(repo, full=level == "strict")
     payload = {
-        "ok": not findings,
+        "ok": not has_errors(findings),
         "operation": "validate",
         "level": level,
         "repo": str(repo),
         "finding_count": len(findings),
         "findings": serialize_findings(findings),
     }
-    return payload, 0 if not findings else 2
+    return payload, 0 if not has_errors(findings) else 2
 
 
 def command_validate(args: argparse.Namespace) -> None:
@@ -338,7 +339,7 @@ def command_archive(args: argparse.Namespace) -> None:
     load_manifest(repo)
     ensure_clean(repo)
     input_findings = doctor.collect_findings(repo, full=True)
-    if input_findings:
+    if has_errors(input_findings):
         raise MDFError(
             "Archive input does not pass strict validation",
             code="invalid_object",
@@ -361,7 +362,7 @@ def command_archive(args: argparse.Namespace) -> None:
     if not args.dry_run:
         apply_moves_and_rewrites(moves, rewrites)
         post_findings = doctor.collect_findings(repo, full=True)
-        if post_findings:
+        if has_errors(post_findings):
             raise MDFError(
                 "Archive post-validation failed; leave the git worktree for "
                 "manual inspection",
