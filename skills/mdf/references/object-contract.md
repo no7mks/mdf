@@ -87,6 +87,9 @@ found_in: unreleased | <stable-semver>
 
 - Bug 不使用 `depends_on`。一般关联只在正文中说明。
 - 正文必须包含“观察到的行为”“期望行为”“复现步骤”“影响”和“所需回归证据”。
+- 创建时在“所需回归证据”的“关联 failing tests”中关联至少一条已运行失败的 test，可复用或新增。
+  仅用户明确确认后允许空关联，并记录原因与确认依据；空关联不提供 verify 豁免。
+- 关联记录、精确匹配与全部 test 的恢复规则见 [Bug test 契约](known-bug-tests.md)。
 - `found_in: unreleased` 表示当前未发布线中的稳定关联；它不是 SemVer。
 - `fixed_in` 只接受稳定 SemVer。
 
@@ -102,6 +105,8 @@ Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。
 | `rejected` | 终态，必须有 `reject-reason` |
 
 - 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release 或 hotfix 交付。
+- 存在 test 临时移除时，标为 `fixed` 前须恢复原 suite 成员并验证通过；不等待 `closed`。
+  记录与状态不变量见 [已知 Bug test 契约](known-bug-tests.md)。
 - release 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change。
   - 该 Bug 进入版本根 Change 或 hotfix 结果的 `fixed` outcome。
   - 独立修复不写 child Change。

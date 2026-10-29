@@ -110,6 +110,9 @@
 使用内部 clarify intent 澄清观察到的行为、期望行为、复现步骤、影响、 所需回归证据、`found_in`
 与 severity。
 
+- 按 [Bug test 契约](known-bug-tests.md) 复用或新增 test，实际运行并建立 failing test 关联。
+- 默认至少一条；无法取得红灯时，须请求用户明确确认空关联，否则不得创建。
+
 验收：完整必填事实。
 
 异常与交接：必填事实仍无法确认时停止，不得写入任何对象。
@@ -118,7 +121,7 @@
 
 **确认**
 
-展示 Bug、边界和排除范围。
+展示 Bug、边界、排除范围和 failing test 关联；空关联须单独取得明确确认并记录。
 
 验收：只有用户明确确认 open 才继续。
 
@@ -138,7 +141,8 @@
   再以模板写入 `docs/bugs/`，状态为 `open`。
 - 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
   - 回读对象并对照模板、确认事实与完整 diff。
-  - 核对 schema、必填章节及 `open` 状态。
+  - 核对 schema、必填章节、`open` 状态及 test 关联证据；空关联必须有用户明确确认。
+  - 创建流程一并提交新增复现 test、关联记录与必要选题配置；不修改生产实现。
 
 验收：open Bug、校验退出 0 且零 finding、回读结果与 diff。
 

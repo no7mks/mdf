@@ -172,6 +172,9 @@
 - 采信后仍按上表收敛；`insufficient` 或未采信走主 Agent / 询问。
 - ❌ 不改写 Jot。
 
+提升为 Bug 时，按 [Bug test 契约](known-bug-tests.md) 复用或新增 test，运行取得红灯并关联。
+空关联须取得用户明确确认并记录，不能以确认提升代替；新增 test 随 Bug 一起提交。
+
 验收：完整 draft。
 
 异常与交接：停止，不得改写 Jot。

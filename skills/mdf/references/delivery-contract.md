@@ -323,7 +323,7 @@ Core 判定退出码与测试报告（见下节）。
 converge（smart）与 verify branch **共用**：
 
 1. 测试运行必须有框架自带报告文件（JUnit 等），禁止靠 tee/tail 冒充报告。
-2. fail 后先复测**单用例**。
+2. verify 的 quick、smoke 失败先按 [已知 Bug test 契约](known-bug-tests.md) 分诊；其他失败先复测**单用例**。
 3. 修一个用例 → 复测该单用例。
 4. 有 side effect 的 flaky 例外（须记录依据）。
 5. 相关单用例都绿后，才继续该轮 verify（smart 或 branch）。
@@ -339,8 +339,9 @@ converge（smart）与 verify branch **共用**：
   项目须配置运行器使其对应 test case。
 - Core 解析后在同目录写 `summary.json`：test case 级的结果与用时，及其下 test 级的
   结果与用时。report 与 code-review 记录报告路径与 test case 级汇总。
-- 缺报告、报告无法解析、未含任何 test，或含 failure、error、skipped（含 xfail）时，
+- 缺报告、报告无法解析、普通空报告，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
+- quick/smoke 的全豁免空报告仅按 [Bug test 契约](known-bug-tests.md) 校验通过；不适用于普通空报告。
 - 点名执行 test case 或 test 只用于定位；定位复测仍应尽量落盘框架报告。
   有运行器报告则读报告；否则用 `mdf.py run` 落盘。
 #### 验证 suite

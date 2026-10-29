@@ -65,6 +65,11 @@ def summarize(repo, path, suite):
               for result in ("passed", "failed", "error", "skipped")}
     summary = {"suite": suite, "path": str(Path(path).relative_to(repo)),
                "tests": len(tests), **totals, "cases": ordered}
+    if files and not tests:
+        from mdf_core.execution.empty_suite import validate_empty_suite
+        exemption = validate_empty_suite(repo, path, suite)
+        if exemption:
+            summary.update(exemption)
     (Path(path) / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n"
     )
@@ -73,7 +78,7 @@ def summarize(repo, path, suite):
     ]}
     if not files:
         raise MDFError("suite 未产出 JUnit XML 报告", code="missing_test_report", details=compact)
-    if not tests:
+    if not tests and not summary.get("fully_exempted"):
         raise MDFError("测试报告未包含任何 test", code="empty_test_report", details=compact)
     if len(tests) != totals["passed"]:
         raise MDFError("测试报告含 failure、error 或 skipped", code="test_report_failed",

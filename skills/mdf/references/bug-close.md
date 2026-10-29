@@ -107,6 +107,8 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
       精确匹配复现 test（结合 case 名消歧）；case/test 明确 passed 时才引用并不重跑。
     - 报告缺失、无法唯一匹配或未 passed 时，按 testing 文档点名执行；全绿不足以证明已覆盖。
   - 其他分支按 docs/system/testing/ 的命令模板点名执行；Bug 有可执行命令则按其执行。
+- 核对 [已知 Bug test 契约](known-bug-tests.md) 的恢复已在 fixed 前完成。
+  若仍有有效排除项则停止并交给 fix 补齐恢复；排除后的绿报告不能证明该 test 已通过。
 - 只要求这些复现用例通过。
 - 本步修改实现/测试/验证配置时，另对涉及 module 跑 smart（含 quick suite），须退出 0。
   - CLI：`verify --scope smart --repo "$REPO_ROOT"`。

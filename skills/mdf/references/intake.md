@@ -152,6 +152,8 @@ findings 后停止。
 - Bug 收敛：
   - Observed/Expected Behavior、Reproduction、Impact、Regression Evidence Required。
   - `found_in` 与 active severity。
+  - 按 [Bug test 契约](known-bug-tests.md) 复用或新增 test，运行取得红灯并记录关联。
+  - 默认至少一条关联；空关联须逐个 Bug 取得用户明确确认，整体清单确认不能代替。
 
 验收：完整必填事实。
 
