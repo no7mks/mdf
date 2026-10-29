@@ -40,6 +40,7 @@ def test_historical_outcome_does_not_constrain_current_status(tmp_path):
 def test_finish_rejects_inconsistent_outcome_before_side_effects(tmp_path, monkeypatch, entry, status):
     from mdf_core.workspace import gitflow
     from mdf_core.lifecycle import pull_finish
+    from mdf_core.workspace import merge_policy
 
     bug, _ = write_outcome(tmp_path, status)
     before = bug.read_bytes()
@@ -49,6 +50,7 @@ def test_finish_rejects_inconsistent_outcome_before_side_effects(tmp_path, monke
     monkeypatch.setattr(gitflow, "ensure_clean", lambda repo: None)
     monkeypatch.setattr(gitflow, "current_branch", lambda repo: source)
     monkeypatch.setattr(pull_finish, "current_branch", lambda repo: source)
+    monkeypatch.setattr(merge_policy, "configured", lambda repo: {"mode": "local"})
     with pytest.raises(MDFError) as caught:
         if entry == "local":
             gitflow.command_finish_gitflow(SimpleNamespace(repo=str(tmp_path), source=None))
@@ -66,3 +68,20 @@ def test_finish_check_allows_valid_status_and_ignores_other_source(tmp_path):
         require_fixed_outcomes(tmp_path, "bugfix/bug-0001")
     write_outcome(tmp_path, "open", source="bugfix/other")
     require_fixed_outcomes(tmp_path, "bugfix/bug-0001")
+
+
+def test_pr_recovery_does_not_validate_current_checkout_outcomes(tmp_path, monkeypatch):
+    from mdf_core.workspace import gitflow, merge_policy
+    from mdf_core.lifecycle import pull_finish
+
+    source = "bugfix/bug-0001"
+    write_outcome(tmp_path, "open", source=source)
+    monkeypatch.setattr(gitflow, "repo_path", lambda value: tmp_path)
+    monkeypatch.setattr(gitflow, "require_git_root", lambda repo: None)
+    monkeypatch.setattr(gitflow, "ensure_clean", lambda repo: None)
+    monkeypatch.setattr(merge_policy, "configured", lambda repo: {"mode": "pr"})
+    calls = []
+    monkeypatch.setattr(pull_finish, "finish",
+                        lambda repo, branch, settings, **kwargs: calls.append((branch, kwargs["phase"])))
+    gitflow.command_finish_gitflow(SimpleNamespace(repo=str(tmp_path), source=source, phase="close-out"))
+    assert calls == [(source, "close-out")]

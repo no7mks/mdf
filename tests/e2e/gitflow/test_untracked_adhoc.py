@@ -192,3 +192,20 @@ def test_finish_record_keys_do_not_conflict_for_valid_branch_names(tmp_path):
         write_json(path, {"source": source})
         assert json.loads(path.read_text())["source"] == source
     assert state_path(repo, "foo").parent == state_path(repo, "foo.json/bar").parent
+
+
+@pytest.mark.parametrize("status", ["open", "rejected"])
+def test_change_only_finish_rejects_unfixed_bug_before_merge(python_exe, tmp_path, status):
+    repo, work = manual_work(tmp_path, linked=True)
+    root = write_change(work, "chore/readme", "chore-readme")
+    bug = work / "docs/bugs/bug-0001-example.md"
+    bug.parent.mkdir(parents=True, exist_ok=True)
+    bug.write_text(f"---\nid: bug-0001\ntype: bug\nstatus: {status}\n---\n")
+    change = root / "CHANGE.md"
+    change.write_text(change.read_text().replace("fixed: []", "fixed: [bug-0001]"))
+    commit(work)
+    target = git(repo, "rev-parse", "develop").stdout.strip()
+    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    assert result.returncode != 0 and "change.fixed_status" in result.stderr
+    assert git(repo, "rev-parse", "develop").stdout.strip() == target
+    assert git(work, "branch", "--show-current").stdout.strip() == "chore/readme"

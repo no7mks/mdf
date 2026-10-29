@@ -79,6 +79,8 @@ def _finish(repo, source, *, recovering):
         merged = merged_commit(repo, head) if ledger else None
         if ancestor(repo, head, sha(repo, "develop")) and not merged:
             raise MDFError("没有未合入提交；不创建 Change 或删除分支", code="no_pending_commits")
+        from mdf_core.inspection.validate_records import require_fixed_outcomes
+        require_fixed_outcomes(repo, source)
         completion(repo, source)
         state = {"mode": "local", "source": source, "target": "develop", "head": head,
                  "target_before": sha(repo, "develop"), "merge_commit": merged, "completed": False,
