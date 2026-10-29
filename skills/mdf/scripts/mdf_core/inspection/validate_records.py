@@ -239,6 +239,13 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                             record_metadata, _ = read_frontmatter(record_path)
                         except MDFError:
                             record_metadata = {}
+                        if (key == "fixed" and path.is_relative_to(changes / "unreleased")
+                                and record_metadata.get("status") not in {"fixed", "closed"}):
+                            add_finding(
+                                findings, "change.fixed_status",
+                                f"未发布 Change 的 fixed Bug {identifier} 必须为 fixed 或 closed",
+                                relative(repo, path),
+                            )
                         if (
                             record_metadata.get("status") == "rejected"
                             and record_metadata.get("reject-reason")
@@ -252,6 +259,18 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                                 "ID",
                                 relative(repo, path),
                             )
+
+
+def require_fixed_outcomes(repo: Path, source: str) -> None:
+    """合入前复用引用校验，仅拦截当前 source 的未发布修复状态冲突。"""
+    findings: list[Finding] = []
+    validate_record_references(repo, findings)
+    for finding in findings:
+        if finding.code != "change.fixed_status":
+            continue
+        metadata, _ = read_frontmatter(repo / finding.path)
+        if metadata.get("source_branch") == source:
+            raise MDFError(finding.message, code=finding.code, details=finding.as_dict())
 
 
 SATISFIED = {"implemented", "released"}

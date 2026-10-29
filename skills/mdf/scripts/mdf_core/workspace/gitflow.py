@@ -362,6 +362,8 @@ def command_finish_gitflow(args) -> None:
     if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
+    from mdf_core.inspection.validate_records import require_fixed_outcomes
+    require_fixed_outcomes(repo, source)
     from mdf_core.workspace.merge_policy import configured
     settings = configured(repo)
     if settings["mode"] == "pr":

@@ -252,7 +252,9 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - feature/bugfix 不建版本目录。
   - local 模式的普通 feature PRP 在成功合入 develop 的 merge commit 中转换为 implemented。
     PR mode 在源分支准备候选状态，随 PR/MR 合入 develop 后生效。
-    bugfix 的对象状态按既有契约处理。
+  - 准备 Change 的 `fixed` outcome 前，依据修复与验证证据把对应 open Bug 更新为 `fixed`。
+    缺少证据则停止；已 closed 的 Bug 保持状态，不得仅凭 Change 声明自动改写。
+    validate 与合入前检查拒绝未发布 Change 的 `fixed` 引用 open 或 rejected Bug。
   - release/hotfix 按后续收口步骤管理版本与对象。
 - 验收：事实一致性、所需 report 已交、规范 Change 和链接检查。
 - 异常与交接：保留现场；缺少前置阶段时报告，不自动执行被跳过的主线 intent。

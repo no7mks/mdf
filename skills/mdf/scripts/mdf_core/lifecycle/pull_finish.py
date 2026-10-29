@@ -18,6 +18,8 @@ def preflight(repo, source):
     """沿用交付材料检查；由外层 intent 完成审查、验证及 fact。"""
     if current_branch(repo) != source:
         raise MDFError("首次提交或更新 PR/MR 必须在源 worktree 执行", code="stage_branch")
+    from mdf_core.inspection.validate_records import require_fixed_outcomes
+    require_fixed_outcomes(repo, source)
     kind = branch_details(source)["kind"]
     if kind == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source

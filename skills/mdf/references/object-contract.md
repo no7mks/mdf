@@ -133,6 +133,7 @@ duplicate_of: bug-<canonical>
 未版本化的子 Change 位于 `changes/unreleased/<slug>/CHANGE.md`。
 
 - 该目录在 CHANGE.md 出现前即可保存交付身份与材料，包括 `code-review.md`。
+- 未发布 Change 的 `fixed` 引用必须对应 `fixed` 或 `closed` Bug；`open`、`rejected` 不得声明为已修复。
 - CHANGE.md 是完成后的 Change 记录：
 
 ```yaml
