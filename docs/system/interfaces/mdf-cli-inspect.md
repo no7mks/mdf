@@ -176,17 +176,21 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
 python3 -B skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --against <ref>
 python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
-  --context-file /outside/context.json --report-file /outside/report.json
+  --repo /path/to/repository --context-file /outside/context.json --report-file /outside/report.json
 ```
 
 - against 不与 scope/base/paths 混用；普通 CLI 默认 full 不变。
 - 直接比较指定历史版本与当前工作区，含 staged、unstaged 和非忽略 untracked 文件。
 - 仓外 snapshot 不修改原仓库 HEAD、index 或 objects；不运行项目 hooks、filters 或 tests。
+- Git 读取禁用 replacement，按真实 object 比较；基线 blob 使用单次 batch 流式写盘。
 - rules、sourceset、module ignore 均来自当前工作区；未归属实现不进入语义审阅。
 - 当前 snapshot 的契约问题仍保留 findings；未提交内容不冒充已验证事实。
 - 返回 `ok: true, result: context` 只表示 context 构建成功，不表示语义审阅通过。
 - context 包含 against、worktree_sha256、diff、双侧事实映射、范围、确定性 audit 与指纹。
-- report-check 验证指纹、覆盖、warning 处置和结论；格式正确不证明语义判断正确。
+- context 的 input_identity 记录 HEAD、shallow 边界与 MDF 脚本、规则、模板的指纹。
+- report-check 必须指定 repo，验证指纹、覆盖、warning 处置和结论，并轻量复核当前输入身份。
+  - 只扫描文件与输入身份，不重建 snapshot 或重跑 audit；变化时拒绝旧报告，须重新生成 context 并审阅。
+  - 格式正确且输入未变不证明语义判断正确。
 - 日志与 JSON report 均保存在 checkout 外。
 - Agent 执行与 report 契约见 [独立事实审阅](../../../skills/mdf/references/fact-audit-against.md)。
 

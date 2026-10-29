@@ -123,7 +123,7 @@ def test_sourceset_excludes_installed_mdf_from_commit_review(python_exe, tmp_pat
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
     context_file.write_text(json.dumps(ctx))
     report_file.write_text(json.dumps(report_for(ctx)))
-    checked = payload(mdf(python_exe, 'fact-audit-report-check', '--context-file', str(context_file),
+    checked = payload(mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo), '--context-file', str(context_file),
                           '--report-file', str(report_file)))
     assert checked['result']['decision'] == 'pass'
 
@@ -313,7 +313,7 @@ def test_fact_report_cli_accepts_complete_clean_review(python_exe, tmp_path):
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
     context_file.write_text(json.dumps(ctx))
     report_file.write_text(json.dumps(report))
-    result = payload(mdf(python_exe, 'fact-audit-report-check', '--context-file', str(context_file),
+    result = payload(mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo), '--context-file', str(context_file),
                          '--report-file', str(report_file)))
     assert result['result']['decision'] == 'pass'
 

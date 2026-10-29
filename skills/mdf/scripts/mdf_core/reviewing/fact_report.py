@@ -5,8 +5,10 @@ from pathlib import Path
 from mdf_core.foundation.errors import emit
 from mdf_core.lifecycle.delivery_state import read_json
 from mdf_core.reviewing.context import fingerprint
+from mdf_core.reviewing.fact_identity import check_fact_inputs
 from mdf_core.reviewing.report import require
 from mdf_core.reviewing.schema import check
+from mdf_core.workspace.gitutil import repo_path, require_git_root
 
 
 def validate_fact_report(context, report):
@@ -62,6 +64,10 @@ def validate_fact_report(context, report):
 
 
 def command_fact_report_check(args):
+    repo = repo_path(args.repo)
+    require_git_root(repo)
     context = read_json(Path(args.context_file))
     report = read_json(Path(args.report_file))
-    emit({'ok': True, 'result': validate_fact_report(context, report), 'report': report})
+    result = validate_fact_report(context, report)
+    check_fact_inputs(repo, context)
+    emit({'ok': True, 'result': result, 'report': report})

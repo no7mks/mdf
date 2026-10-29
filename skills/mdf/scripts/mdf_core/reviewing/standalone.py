@@ -7,13 +7,12 @@ from tempfile import TemporaryDirectory
 from mdf_core.execution.modules import parse_modules
 from mdf_core.foundation.yamlutil import parse_yaml
 from mdf_core.reviewing.scope import review_document, selected_diff
-from mdf_core.reviewing.worktree import working_snapshot
+from mdf_core.reviewing.worktree import git, sha, working_snapshot
 from mdf_core.foundation.errors import MDFError
 from mdf_core.reviewing.context import fingerprint
 from mdf_core.reviewing.policy import current_policy
 from mdf_core.workspace.project_rules import load_project_rule
 from mdf_core.reviewing.schema import check
-from mdf_core.workspace.merge_policy import git, sha
 
 
 def against_context(repo, against):

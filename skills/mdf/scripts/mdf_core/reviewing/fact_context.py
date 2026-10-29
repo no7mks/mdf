@@ -9,10 +9,10 @@ from mdf_core.foundation.yamlutil import parse_yaml, read_frontmatter
 from mdf_core.inspection.audit import audit_payload
 from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
 from mdf_core.reviewing.context import fingerprint
+from mdf_core.reviewing.fact_identity import input_identity
 from mdf_core.reviewing.policy import current_policy
 from mdf_core.reviewing.scope import review_document, selected_diff
-from mdf_core.reviewing.worktree import snapshot, working_snapshot
-from mdf_core.workspace.merge_policy import git, sha
+from mdf_core.reviewing.worktree import git, sha, snapshot, working_snapshot
 
 
 def inventory(repo):
@@ -35,6 +35,7 @@ def inventory(repo):
 
 def fact_context(repo, against):
     base = sha(repo, against)
+    identity = input_identity(repo)
     with TemporaryDirectory(prefix='mdf-fact-') as folder:
         before, after = Path(folder).resolve() / 'base', Path(folder).resolve() / 'worktree'
         snapshot(repo, base, before)
@@ -68,7 +69,7 @@ def fact_context(repo, against):
                                  scope_changes=[p for p in changed if config.owns(p) or review_document(p)])
         audit.pop('repo')
         result = {'schema_version': 3, 'mode': 'against', 'operation': 'fact-audit',
-                  'against': base, 'worktree_sha256': fingerprint(files),
+                  'against': base, 'worktree_sha256': fingerprint(files), 'input_identity': identity,
                   'paths': review_paths, 'implementation_paths': implementations, 'document_paths': documents,
                   'ignored': [ignored[p] for p in sorted(ignored)],
                   'base_mappings': old, 'worktree_mappings': new, 'audit': audit,

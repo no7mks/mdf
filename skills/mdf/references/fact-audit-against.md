@@ -4,6 +4,14 @@
 commit 可以是 branch start、last release，或调用方选定的任意 commit。
 Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill、运行命令、读取仓库并写出报告。
 
+## 静态审阅边界
+
+- 本 intent 执行静态事实审阅，不承担 HTML 渲染或视觉验收。
+- 不得仅因缺少 browser / HTML preview 将报告标为 incomplete。
+- 文档声称已完成视觉验收时，须核对该声明的证据；证据缺失或不支持声明时，按事实问题记录 finding。
+  - 无法完成该声明的静态复核时，记录具体 incomplete 原因，不以缺少渲染工具代替原因。
+- 静态检查通过只支持静态审阅结论，不得表述为 HTML 渲染或视觉检查通过。
+
 ## 决策树
 
 ```text
@@ -54,7 +62,7 @@ Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skil
 | 2 | Context | 脚本 | 调用 fact-audit --against，保存 result | against 完整 SHA、指纹与范围 | 3 | 读日志，报 error 并停止 |
 | 3 | Facts | 约束 | 复核当前完整事实页、evidence 与结构 | 逐页 findings | 4 | 记 incomplete，转5 |
 | 4 | Coverage | 约束 | 反查覆盖并复核删除与 rename | 覆盖与 warnings | 5 | 记 incomplete，转5 |
-| 5 | Report | 约束 | 复核 context 未变，生成并校验 JSON | 两次指纹、校验结果 | 有效则返回 | 变化回2；格式可修留5；其余报 error |
+| 5 | Report | 约束 | 生成 JSON，轻量复核输入身份并校验报告 | 输入指纹、校验结果 | 有效则返回 | 变化回2；格式可修留5；其余报 error |
 
 ## 术语与数据结构
 
@@ -65,7 +73,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先将 `MDF_LOG_DIR` 指
 ```bash
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --against <commit>
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
-  --context-file /outside/context.json --report-file /outside/report.json
+  --repo "$REPO_ROOT" --context-file /outside/context.json --report-file /outside/report.json
 ```
 
 - against 不与 scope、base、路径或交付参数混用；无需 ready 或交付材料。
@@ -75,6 +83,8 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - 只读原仓库，不 checkout、commit 或修改 index、refs、objects；不运行项目 tests、hooks 或 filters。
 - snapshot 位于仓外，退出时清理；symlink、submodule 与不安全路径明确报错。
 - 继承原仓库 object format 与 shallow 边界，不自动 fetch；against 必须在本地可解析。
+- Git 读取统一禁用 replacement，完整 SHA 固定真实 object；不解释默认或宿主指定的 replacement refs。
+- 基线 blob 用一次 git cat-file --batch 流式写盘，不在内存中缓存全部 blob 或单个大 blob。
 
 ### 规则与范围
 
@@ -107,17 +117,20 @@ CLI envelope 的 result 才是 context；下表字段按所属对象读取或生
 | report 按实际完成范围填写 | paths / implementation_paths / document_paths | 已完成复核的范围，不超出 context |
 | 仅 context | ignored | context 中有效 module ignore 排除的变更路径与理由 |
 | 仅 context | base_mappings / worktree_mappings | context 中基线与当前的事实映射 |
+| 仅 context | input_identity | HEAD 完整 SHA、shallow 边界与 MDF 脚本、规则、模板的指纹 |
 | report | findings | 静态证据支持的问题，包含位置、触发条件、影响和 P0–P3 |
 | report | warnings | CLI warning 的逐条裁定与证据 |
 | report | incomplete | 未完成、证据缺失或工具失败的具体原因 |
 | report | decision | pass / changes_requested / needs-review / error |
 
-- 步骤 5 先用 context.against 的完整 SHA 重跑同一 fact-audit --against 命令，核对 context_sha256。
-  - 一致才生成报告；变化则用新 context 回2，再完成步骤 3–4，不复用旧通过结论，不重新解析原符号 ref。
-  - 复核命令失败或无有效 context 时，报告 error 与日志位置；不伪造 schema 必需字段。
-- 按上方命令运行 fact-audit-report-check：退出 0 且 result.valid 为 true 才返回 report 的 decision。
+- 步骤 5 基于原 context 生成报告，按上方命令运行 fact-audit-report-check，不重跑完整 audit。
+  - report-check 校验 context_sha256 与报告，并重新扫描工作区文件路径、mode、内容及 input_identity。
+  - 轻量复核不创建 snapshot，不重算 diff、evidence 映射、结构检查或 validation。
+  - 输入变化则用 context.against 的完整 SHA 回2，再完成步骤 3–4；不复用旧通过结论，不重新解析原符号 ref。
+  - 复核失败时报告 error 与日志位置；不伪造 schema 必需字段。
+- report-check 退出 0 且 result.valid 为 true 才返回 report 的 decision。
   - 格式可修则留5，无法修正则报告 error；校验成功不等于语义 pass。
-- 不把仅 context 的 ignored、mappings 或 audit 字段复制进最终 report。
+- 不把仅 context 的 ignored、mappings、audit 或 input_identity 字段复制进最终 report。
 - 审阅期间以捕获的规则为准；代码、文档或规则变化均需重新核对 snapshot 身份。
 - 完整覆盖所有三类范围、处置全部 warnings，且无 finding/incomplete 才能 pass。
 - warning disposition 为 accepted、finding 或 needs-review；accepted 须附证据与理由。

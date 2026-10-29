@@ -96,6 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     from mdf_core.reviewing.fact_report import command_fact_report_check
     fact_report = subparsers.add_parser("fact-audit-report-check")
+    fact_report.add_argument("--repo", required=True)
     fact_report.add_argument("--context-file", required=True)
     fact_report.add_argument("--report-file", required=True)
     fact_report.set_defaults(func=command_fact_report_check)
