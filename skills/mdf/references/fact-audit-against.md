@@ -103,6 +103,8 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - 当前事实页审完整陈述，不仅看 Markdown diff；新增行为须反查缺失文档。
 - audit 保留当前 snapshot 的全量契约 validation 和范围结构检查，不把既有问题冒充本次引入。
 - CLI 只提供确定性 context，成功不表示完成语义审阅。
+- 实际引用按 fact-audit.md 的 Evidence 输入边界逐项核对；不得用 snapshot 外的 ignored reports/logs 补证。
+  context 的变更路径不是完整 evidence 清单；未改动但属于 snapshot 的实现仍可作为证据。
 
 ### 快照身份与报告
 

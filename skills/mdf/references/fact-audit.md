@@ -204,12 +204,30 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 <a id="s3"></a>
 
+#### Evidence 输入边界
+
+普通、against 与交付审阅共用本节；按需核对实际引用，不输出完整文件清单。
+
+- 事实裁定只使用本轮审阅输入中的文件与明确固定的 Git history，不从本地额外产物补证。
+  against 以 snapshot 为准；普通 scope 同样排除 ignored 且未跟踪的文件，不能因磁盘上存在而采信。
+- 引用前按路径核对 Git 身份：先用 `git -C "$REPO_ROOT" --literal-pathspecs ls-files --error-unmatch -- <path>` 判断是否 tracked。
+  未跟踪路径再用 `git -C "$REPO_ROOT" check-ignore -- <path>` 判断；目录引用逐项核对实际使用的文件。
+  区分正常未匹配与 Git 执行错误；错误时停止核查，不把失败当作 untracked 或未 ignored。
+- tracked 文件不因匹配 ignore 规则自动排除；非 ignored 的未跟踪文件只可用于包含工作区内容的本地审阅。
+  PR 最终候选必须已提交，不能用 CI checkout 不含的本地改动或文件补证。
+- `.mdf/reports/`、`.mdf/logs/` 等 ignored 本地产物可用于 verify 或排障，不能支持 fact audit 通过或消除 finding。
+  不因这些文件存在、缺失或内容不同改变事实裁定；不为审阅读取其内容、运行测试或生成替代日志。
+- 文档仅说明日志位置或使用方法时，核对 tracked 实现与配置，不要求实例日志存在。
+  文档声称验证通过、报告齐全时，须有审阅输入内的证据；引用本地临时产物时记录不可共享证据问题。
+- 缺少共享证据不等于已证明测试失败；报告具体不受支持的声明，无法完成复核时记 incomplete。
+  已提交摘要也须核实支持范围，不能将“声称通过”自动等同于原始运行已验证。
+
 #### 事实
 
 - 从文档到实现执行`事实复核`：复核范围内每份当前事实文档、陈述和 `evidence`。
 - 测试、modules 或 suite 声明变化时，核对 suite/testcase 索引与列表中的新增、删除和 rename 成员。
 - 「收集/声明」类陈述须核对实际配置和入口源码（如 modules 与 suite runner），不能仅凭旁证判定成立。
-- 文档声称报告齐全或验证通过时，读取对应报告内容；空文件、仅存在路径或 CLI clear 均不支持该声明。
+- 文档声称报告齐全或验证通过时，按上述输入边界读取对应报告内容；空文件、仅存在路径或 CLI clear 均不支持该声明。
 - 范围内未复核的文档逐份记录未触及理由，供步骤 7 报告。
 - 同时按加载质量清单审阅范围内文档结构（`full` 覆盖 `docs/**` 与根文档）。
   结构与契约问题记语义 finding；`agents.project_content` 记 warning。

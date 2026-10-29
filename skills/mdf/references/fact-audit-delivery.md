@@ -72,6 +72,7 @@
 - fact update 委托时，完整复核后仅剩结构 finding 且 warning 已处置，可返回「仅结构 finding」。
   结构分类沿用 [普通结论](fact-audit.md#s7)，不得将 incomplete 或其他 error 归为结构问题。
 - 修复仍由调用方执行；再次委托时重新生成 context，不复用修复前的通过结论。
+- 按 fact-audit.md 的 Evidence 输入边界审阅；本地 verify 日志不能补足交付声明的共享证据。
 - 同一输入下共用范围和校验不保证两次 Agent 判断完全相同；不得承诺 CI 必然通过。
 
 ## 主链报告与进度

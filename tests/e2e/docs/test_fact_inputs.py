@@ -189,3 +189,42 @@ def test_candidate_materials_require_new_review_before_push(python_exe, tmp_path
     assert checked['result']['valid'] is True
     assert checked['result']['decision'] == 'pass'
     assert git(repo, 'status', '--porcelain').stdout == ''
+
+
+@pytest.mark.parametrize('referenced', [False, True])
+def test_ignored_runtime_evidence_cannot_change_candidate_audit(python_exe, tmp_path, referenced):
+    repo, _ = repository(tmp_path)
+    ignored = repo / '.gitignore'
+    ignored.write_text('.mdf/reports/\n.mdf/logs/\n')
+    base = commit(repo)
+    doc = repo / 'docs/system/interfaces/api.md'
+    if referenced:
+        doc.write_text(doc.read_text().replace('evidence:\n',
+                       'evidence:\n  - path: .mdf/reports/run.json\n  - path: .mdf/logs/run.log\n'))
+    else:
+        doc.write_text(doc.read_text() + '\n报告路径为 `.mdf/reports/run.json`。\n')
+    tip = commit(repo)
+    ci = tmp_path / 'ci'
+    git(tmp_path, 'clone', '--no-local', str(repo), str(ci))
+    git(ci, 'checkout', '--detach', tip)
+    expected = context_module.fact_context(ci, base)
+    context_file, report_file = report_files(tmp_path, expected)
+    decisions = []
+    for content in [None, 'all tests passed', 'tests failed', None]:
+        for name in ['.mdf/reports/run.json', '.mdf/logs/run.log']:
+            path = repo / name
+            if content is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+        assert context_module.fact_context(repo, base) == expected
+        result = payload(mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
+                             '--context-file', context_file, '--report-file', report_file))
+        decisions.append(result['result']['decision'])
+    assert len(set(decisions)) == 1
+    if referenced:
+        assert decisions[0] == 'changes_requested'
+        assert any(f['code'] == 'evidence.missing_path' for f in expected['audit']['findings'])
+    assert not (ci / '.mdf/reports').exists()
+    assert not (ci / '.mdf/logs').exists()
