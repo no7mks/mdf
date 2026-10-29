@@ -163,13 +163,14 @@ closeout:
 - 按原 PR/MR ID 查询；创建响应丢失时按 identity/source/target 查回复用，不重复创建。
 - open 且有未完成返工时先恢复「PR 返工」非 checklist 备注。
   保留父 intent、原验证请求、修复前左端点、未完成子步骤，全部完成后才允许更新 PR/MR 或恢复轮询。
-- 无新提交且已确认 open 时只轮询；有新 head 时从原 source worktree 调用 `mdf.py pr --repo <owner>`。
+- 无新提交且已确认 open 时只轮询；有新 head 时先完成 Prepare 的最终候选复核，再从原 source worktree 调用 CLI。
   owner 缺失且仍需修改时报告阻塞，不在主 worktree 代写，不重新 start。
 - merged 时调用 `mdf.py pr --repo <主路径> --source <原分支>` 核验合并，关联 CI 收尾通过后才结束 pr 并交接 close-out。
   已进入发布或清理的恢复直接执行 [合并后续办](pr-close-out.md)，不重开 pr Goal。
 - 清理前置已全部完成、detach 或删除 source 后中断时，从主 worktree 续办 close-out。
   此恢复容错不授权任何流程提前删除 source 或 owner；发布未完而 source 缺失须核实际证据。
 - `pr` 在 push 前执行 squash 必要检查；squash_required 时按返回范围整理后重试，不 force push。
+  squash 后 HEAD 变化，须返回 Prepare 重做最终候选复核，不能直接重试 push。
 - `finish_busy` 时等待持锁调用退出；不删除 lock 或操作记录，不启动第二个写入流程。
 
 ### 生命周期
@@ -249,6 +250,7 @@ release/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并�
 - 保留原版本和发布范围；按修复同步候选 CHANGE、CHANGELOG 和相关对象，检查链接及声明与实现一致。
 - release 首轮审查仍从目标 master 的上一正式发布记录确定基线，不把候选 manifest 的 latest_release 当作已发布版本。
 - fact 使用 paths 范围补齐受影响的事实页，避免把尚无正式 tag 的候选版本当作 branch 基线。
+  paths 仅定位修复；完成审阅沿用首轮固定 base SHA 与完整 against 范围，不从候选 manifest 重算发布基线。
 - 补审补测与材料提交完成后更新原 PR/MR；合并并发布后，该版本材料冻结。
 
 
@@ -268,6 +270,9 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
   - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
 - 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。
 - 提交前重核远端 ancestor 与 squash；目标前进则回本页集成、补审补测循环。
+- 候选材料与 checkbox 提交、必要 squash 完成后，push 前执行
+  [PR 最终候选复核](fact-audit-delivery.md#pr-最终候选复核)。首次与更新 PR 均适用。
+  未通过不 push；本轮 JSON 留在仓外，不再写回报告或产生候选提交。
 
 ### 勾选与交接
 
@@ -287,5 +292,7 @@ pr 只维护自己的 checkbox，close-out 是其后无 checkbox 的必执行步
   被截止的 pr 不绑定新 Goal、不准备材料、不 push 或轮询。
 - 创建或更新 PR/MR 前按 deliver-policy 裁定源提交与 push；低 confidence 返回 deliver 步骤 6。
   yolo 不受 confidence 限制；独立 pr 沿用调用授权，不引入 deliver 的评分。
+- 每次可能 push 新 head 的步骤 3 调用前，必须完成 Prepare 的最终候选复核；恢复或返工直达步骤 3 也不豁免。
+  当前 head 的纯轮询、已 merged 核验与合并后 close-out 不适用。
 - squash、bug close、code-review、verify 与 fact 的内部返工也先核 until；被截断返回外层，不绕过边界。
 - 仅 pr 的实际合并核验与关联 CI 收尾均完成才结束其同范围 Goal；随后按原调用边界交接 close-out。

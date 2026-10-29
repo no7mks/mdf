@@ -11,6 +11,20 @@ from mdf_core.reviewing.fact_report import command_fact_report_check
 from test_commit_fact_audit import commit, repository, report_for
 
 
+def candidate_materials(repo):
+    folder = repo / 'changes/unreleased/candidate'
+    folder.mkdir(parents=True)
+    (folder / 'CHANGE.md').write_text(
+        '---\nchange_kind: fix\nsource_branch: develop\nproposals: []\nfixed: []\n'
+        'closed: []\ndeferred: []\nadrs: []\nrelease_notes:\n  Changed:\n'
+        '    - 更新事实审阅记录\nbreaking: false\nevidence:\n  tests: []\n'
+        '  commands:\n    - "true"\n  artifacts: []\n---\n\n# Change\n\n'
+        '## 结果\n\n完成候选材料。\n\n## 已更新的当前文档\n\n无。\n\n## 已知偏差\n\n无。\n')
+    report = folder / 'fact-audit.md'
+    report.write_text('# 审阅记录\n\n前一轮复核记录，最终候选仍须审阅。\n')
+    return report
+
+
 def report_files(tmp_path, ctx):
     context_file, report_file = tmp_path / 'context.json', tmp_path / 'report.json'
     context_file.write_text(json.dumps(ctx))
@@ -121,3 +135,57 @@ def test_fact_review_ignores_replacement_objects(tmp_path, monkeypatch, kind, re
     refreshed = context_module.fact_context(repo, base)
     assert refreshed['base_mappings'] == ctx['base_mappings']
     assert refreshed['context_sha256'] == ctx['context_sha256']
+
+
+@pytest.mark.parametrize('change', ['rename', 'delete', 'directory', 'new-member'])
+def test_delivery_candidate_and_ci_checkout_share_context(python_exe, tmp_path, change):
+    """主链与 CI 共用 against：独立 checkout 的范围、映射和确定性结论一致。"""
+    repo, _ = repository(tmp_path)
+    doc = repo / 'docs/system/interfaces/api.md'
+    doc.write_text(doc.read_text().replace('path: src/service.py', 'path: src'))
+    base = commit(repo)
+    source = repo / 'src/service.py'
+    if change == 'rename':
+        source.rename(repo / 'src/renamed.py')
+    elif change == 'delete':
+        source.unlink()
+    elif change == 'directory':
+        source.write_text('VALUE = 2\n')
+    else:
+        (repo / 'src/test_new.py').write_text('def test_new():\n    assert True\n')
+    # 最终材料在 context 之前准备；本地和 CI 都必须审到。
+    candidate_materials(repo)
+    tip = commit(repo)
+    local = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo), '--against', base))['result']
+    ci = tmp_path / 'ci'
+    git(tmp_path, 'clone', '--no-local', str(repo), str(ci))
+    git(ci, 'checkout', '--detach', tip)
+    remote = payload(mdf(python_exe, 'fact-audit', '--repo', str(ci), '--against', base))['result']
+    assert local == remote
+    assert 'changes/unreleased/candidate/fact-audit.md' in local['paths']
+    assert 'docs/system/interfaces/api.md' in local['document_paths']
+    assert 'fact-audit-delivery.md' in local['rules']['mdf']
+    expected = 'src/test_new.py' if change == 'new-member' else 'src/service.py'
+    assert expected in local['implementation_paths']
+    if change == 'rename':
+        assert 'src/renamed.py' in local['implementation_paths']
+
+
+def test_candidate_materials_require_new_review_before_push(python_exe, tmp_path):
+    repo, base = repository(tmp_path)
+    initial = context_module.fact_context(repo, base)
+    context_file, report_file = report_files(tmp_path, initial)
+    material = candidate_materials(repo)
+    commit(repo)
+    stale = mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
+                '--context-file', context_file, '--report-file', report_file)
+    assert stale.returncode != 0
+    assert '须重新生成 context 并审阅' in stale.stderr
+    final = context_module.fact_context(repo, base)
+    assert material.relative_to(repo).as_posix() in final['paths']
+    context_file, report_file = report_files(tmp_path, final)
+    checked = payload(mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
+                          '--context-file', context_file, '--report-file', report_file))
+    assert checked['result']['valid'] is True
+    assert checked['result']['decision'] == 'pass'
+    assert git(repo, 'status', '--porcelain').stdout == ''

@@ -1,10 +1,14 @@
 # Fact Audit
 
-出现 `--quick` 时，直接执行下方「独立 quick 模式」，不进入七步主链流程。
+出现 `--quick` 时，直接执行下方「独立 quick 模式」，不进入七步普通流程。
 `--quick` 与 `--against` 互斥。
 
 出现 `--against` 时，直接执行
-[独立 against 模式](fact-audit-against.md)，不进入下方主链流程。
+[独立 against 模式](fact-audit-against.md)，不进入下方普通流程。
+
+交付主链调用（含 fact update 内部委托）先执行
+[交付事实审阅](fact-audit-delivery.md)，复用 against 的范围与报告校验，不进入下方七步流程。
+独立 branch/full/paths、migrate 与已收口后的 paths 修复仍执行下方流程。
 
 ## 决策树
 
@@ -203,6 +207,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 #### 事实
 
 - 从文档到实现执行`事实复核`：复核范围内每份当前事实文档、陈述和 `evidence`。
+- 测试、modules 或 suite 声明变化时，核对 suite/testcase 索引与列表中的新增、删除和 rename 成员。
+- 「收集/声明」类陈述须核对实际配置和入口源码（如 modules 与 suite runner），不能仅凭旁证判定成立。
+- 文档声称报告齐全或验证通过时，读取对应报告内容；空文件、仅存在路径或 CLI clear 均不支持该声明。
 - 范围内未复核的文档逐份记录未触及理由，供步骤 7 报告。
 - 同时按加载质量清单审阅范围内文档结构（`full` 覆盖 `docs/**` 与根文档）。
   结构与契约问题记语义 finding；`agents.project_content` 记 warning。

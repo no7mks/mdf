@@ -51,6 +51,7 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 
 读取 `references/common.md` 与 `references/repository-contract.md`；
 步骤 3 读取并内部执行 `references/fact-audit.md`。
+主链委托按其入口转入 `fact-audit-delivery.md`，复用 against；独立维护沿用七步 Audit。
 deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 until 则逐层返回截止点与未完成步骤。
 已提交的合法事实改动保留，不进入 Audit、不自勾 fact update，也不把截止当作失败重试。
 
@@ -75,7 +76,8 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
   - 本流程有页面对齐 1 组计数；内部 Audit 每轮有文档复核、实现覆盖、warning 审阅 3 组计数。
   - 逐页 evidence、CLI 子计数组在扫描后补报数量与各组总量，尚未扫描时标为待确定。
   - 结构修复按 finding 单列 1 组，仅需要时启用；各组 n/n 不表示整个 fact update 完成。
-  - 内部 Audit 保留父阶段并显示子阶段 j/7；结构修复后重审显示返回阶段 3/4 与第几轮/最多 3 轮。
+  - 内部 Audit 保留父阶段；主链显示子阶段 j/5，独立维护显示 j/7。
+  - 结构修复后重审显示返回阶段 3/4 与第几轮/最多 3 轮。
   - 重审沿用组名称并附轮次，以新编号追加本轮执行实例；保留已执行组，不重置总数与完成数。
   - 先登记页面对齐、首轮 Audit 的 3 个语义计数组，以及入口 doctor、Audit CLI、validation 的待展开子组。
   - CLI 扫描后把其计数组展开到父级清单，保留调用名称与本地编号的对应关系，避免多个 CLI 的组 1 混淆。
@@ -144,8 +146,10 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
   - 可在当前工作相关的 feature、bugfix、release、hotfix 或 adhoc 分支同步事实。
   - 在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
   - 无关的独立维护在 develop 完成，不在 master 写入。
-- 主链调用采用固定起点到 HEAD 的精确范围：feature/bugfix/hotfix/adhoc 为
-  start_commit，release 为上一正式发布；无账本 adhoc 使用固定 range.base。
+- 主链在步骤 1 按 `fact-audit-delivery.md` 确定本轮完整 base SHA，事实同步与后续审阅使用同一基线。
+  有失败 audit context 时沿用其 base 与范围；不得到步骤 3 才切换 CI base。
+  - 默认起点为 start_commit，release 为上一正式发布；无账本 adhoc 用固定 range.base。
+  - 按共用 against 范围规则纳入双侧 evidence、目录和 generated 依赖；paths 只定位修复，不缩小完成审阅。
 
 验收：doctor 结果、调用方类型、scope、事实与实现范围。
 
@@ -197,9 +201,9 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 - 未提交的同次写入会变成其他未通过，到不了步骤 4。
 - 主链委托时，这次事实提交由本 intent 完成。
   调用方随后提交 Change 等其余材料。
-- 委托使用同一 `--scope` 与 `--base`。
+- 主链委托传入步骤 1 固定的 base SHA，由 against 重新捕获修复后的完整范围，不混传 scope/base/paths 参数。
+- 独立维护委托使用同一 `--scope` 与 `--base`；独立 branch 仍依赖 tracked diff。
   - `paths` 要把本次新建或拆出的页写入 `--document-path`。
-  - `branch` 依赖已提交的 diff，未提交的新文件不在范围内。
 
 - 只改事实文档不重跑业务验证。
 - 实现、测试或 verification 配置变了，才重跑当前交付所需 suite。

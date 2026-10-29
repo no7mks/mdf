@@ -188,6 +188,8 @@ python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
   - 格式正确且输入未变不证明语义判断正确。
 - 日志与 JSON report 均保存在 checkout 外。
 - Agent 执行与 report 契约见 [独立事实审阅](../../../skills/mdf/references/fact-audit-against.md)。
+- 主链 Skill 也调用同一 against CLI 与 report-check；不新增 delivery CLI 模式。
+  调用方基线、报告与 PR 最终候选流程见 [交付事实审阅](../../../skills/mdf/references/fact-audit-delivery.md)。
 
 ## `prose-check`
 

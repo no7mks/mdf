@@ -3,6 +3,7 @@
 `$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
 commit 可以是 branch start、last release，或调用方选定的任意 commit。
 Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill、运行命令、读取仓库并写出报告。
+交付主链与 PR 最终候选也复用本流程；仅交付调用适用 [交付事实审阅](fact-audit-delivery.md) 的前后事项。
 
 ## 静态审阅边界
 

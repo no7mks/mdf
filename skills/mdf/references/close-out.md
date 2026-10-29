@@ -228,6 +228,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 确认主链 report **已交且声称通过**：
   - 存在 `verification-report.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价审阅报告）表明审阅通过。
+    报告须有实际范围、复核证据和结论；空文件或仅写 CLI clear 不满足要求。
   - 普通交付 objectives 中 verify branch / fact audit 已勾；人工交付勾 verify smoke / fact update。
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
     `$mdf fact audit`，❌ 本 intent 不委托补跑。

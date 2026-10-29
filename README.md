@@ -139,6 +139,10 @@ commit 可以是 branch start、last release，或调用方选定的任意 commi
 `$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
 commit 的范围同上。见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
 
+交付主链的 fact audit 自动复用 against 的范围、语义审阅与报告校验，无需手动补跑。
+PR 在候选材料与 squash 完成后、push 前再核最终候选，JSON 留在仓外。
+与 CI 一致须使用相同 base 和输入；见 [交付事实审阅](skills/mdf/references/fact-audit-delivery.md)。
+
 `$mdf fact audit --quick` 仅供独立检查，不替代交付主链审阅。
 CI/CD 可直接调用 `mdf.py fact-audit --repo <repo> --quick --scope full`，无需 Agent。
 返回 JSON；退出码 0 为 quick 通过，2 为 finding，其他非零为执行失败；需要完整 Git history。

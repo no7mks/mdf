@@ -44,7 +44,7 @@ def fact_context(repo, against):
         config = parse_modules(parse_yaml(local['modules']))
         references = Path(__file__).resolve().parents[3] / 'references'
         rules = {**local, 'mdf': {name: (references / name).read_text(encoding='utf-8') for name in
-                 ('fact-audit-against.md', 'fact-audit.md', 'repository-contract.md',
+                 ('fact-audit-against.md', 'fact-audit-delivery.md', 'fact-audit.md', 'repository-contract.md',
                   'repository-documents.md', 'modules.md', 'doc-structure.md')}}
         changed = git(after, 'diff', '--no-renames', '--name-only', '-z', base, '--').stdout.split('\0')
         changed = [p for p in changed if p]
