@@ -362,6 +362,8 @@ def command_audit(args: argparse.Namespace) -> None:
         list(args.document_path),
         args.base,
     )
+    from mdf_core.foundation.paths import load_manifest
+    payload["state"] = load_manifest(repo).get("state")
     emit(payload)
     if exit_code:
         raise SystemExit(exit_code)

@@ -200,7 +200,7 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert re.search(r"未通过且独立调用 ─+→ \[报告未通过并结束\]", diagram)
     assert re.search(r"未通过且内部委托 ─+→ \[返回未通过，调用方走失败分支\]", diagram)
     result = compact(text.split('<a id="s7"></a>', 1)[1])
-    for condition in ("存在其他finding", "未完成处置的warning", "应复核但未触及的项"):
+    for condition in ("存在未豁免error或语义finding", "未完成处置的warning", "应复核但未触及的项"):
         assert condition in result
     assert "阻断原因与未完成项" in result
     assert "不得推进依赖审阅通过的步骤" in result

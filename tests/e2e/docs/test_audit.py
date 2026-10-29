@@ -25,6 +25,41 @@ def test_full_audit_works_without_site_packages(
     assert json.loads(result.stdout)["finding_count"] == 0
 
 
+
+@pytest.mark.parametrize("scope", ["full", "branch", "paths"])
+@pytest.mark.parametrize("state", ["ready", "initializing"])
+def test_audit_reports_state_without_rejecting_migrate(python_exe, tmp_path, scope, state):
+    repo = copy_fixture(tmp_path)
+    replace(repo / ".mdf/manifest.yaml", "state: ready", f"state: {state}")
+    init_git(repo)
+    options = ["--scope", scope]
+    if scope == "branch":
+        options += ["--base", git(repo, "rev-parse", "HEAD").stdout.strip()]
+    elif scope == "paths":
+        options += ["--document-path", "docs/system/interfaces/api.md"]
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo), *options)
+    data = json.loads(result.stdout)
+    assert data["state"] == state
+    assert result.returncode == (0 if state == "ready" else 2)
+    assert {item["code"] for item in data["findings"]} == (
+        set() if state == "ready" else {"manifest.initializing"}
+    )
+    assert "mappings" in data
+
+
+@pytest.mark.parametrize("mode", ["quick", "against"])
+def test_independent_audit_modes_do_not_add_readiness(python_exe, tmp_path, mode):
+    repo = copy_fixture(tmp_path)
+    replace(repo / ".mdf/manifest.yaml", "state: ready", "state: initializing")
+    init_git(repo)
+    options = (["--quick"] if mode == "quick" else
+               ["--against", git(repo, "rev-parse", "HEAD").stdout.strip()])
+    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo), *options))
+    assert "state" not in data
+    if mode == "against":
+        assert "state" not in data["result"]["audit"]
+
+
 def test_audit_reports_evidence_mapping_without_running_commands(
     python_exe: str, tmp_path: Path
 ):

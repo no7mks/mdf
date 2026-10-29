@@ -39,7 +39,7 @@ python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
 - 已初始化仓库会给出 manifest state。
   - state 为 `ready` 且没有阻断性 finding 时，`normal_workflows_allowed` 为 `true`。
   - `evidence.stale`、`generated.stale` 仍完整报告，但不阻断正常工作流。
-  - warning 仅报告，不阻断任何工作；其他 error 仍阻断；`validate full` 与 fact audit 仍因 stale 失败。
+  - warning 仅报告，不阻断任何工作；其他 error 仍阻断；`validate --level strict` 与 fact audit 仍因 stale 失败。
 - 进行中的 `changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md 不构成 finding。
 - clean 单独报告，由具体操作决定是否要求，不作为正常工作流的统一门槛。
 
@@ -99,9 +99,12 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 stderr 依次报告全量契约校验、范围解析、文档结构检查、evidence 与覆盖映射；
 范围解析后报告 scope、实现文件数与事实文档数。
 
-- 输出实现范围、文档—`evidence` 映射、ignore 匹配、warnings 和 findings。
+- 普通 CLI 输出 manifest `state`、实现范围、文档—`evidence` 映射、ignore 匹配、warnings 和 findings。
+  - direct intent 在语义审阅前要求 `state: ready`；CLI 保留 `initializing` 结果供 migrate 使用。
+  - quick 与 against 不增加此字段或 ready 前置。
 - 未被 evidence 覆盖的实现文件是 warning，不会令命令失败。
-- 结构、范围、证据与 ignorelist 错误是 finding，并以状态码 `2` 失败。
+- 结构、范围、证据与 ignorelist 错误是 finding；存在 `severity: error` 时以状态码 `2` 失败。
+  - 仅有 warning 时 CLI 成功；完整 Agent audit 仍须逐条处置全部 warning。
 - 它不执行 manifest `verification`，不判断文本语义，也不写入文件。
 
 它同时按文档角色检查体积（物理行；`AGENTS.md` 的 `size.hard` 只计托管区块），
@@ -119,20 +122,12 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 
 - module `ignore` 仅匹配自身 `sourceset`，可排除源代码、测试源代码与文档。
   - 重叠归属时，其他未忽略该文件的 module 仍保留验证与检查。
-  - 命中后跳过 `code.size`、`size.hard` 与 `prose.*`，免除长度与 70% 拆分要求。
+  - 命中后跳过 `size.hard` 与 `prose.*`，免除长度与 70% 拆分要求。
   - `ignored` 返回命中路径、`ignore_path` 与 `reason`；未匹配文件仍正常检查。
 - 未排除文件超限必须拆分，每个结果不超过对应硬限制的 70%，整数向下取整；审查复核拆分结果。
-- 源代码与测试源代码单文件默认超过 1000 行报 `code.size`，默认拆分后每个最多 700 行。
-  - module `size_limits` 可 override 行数、package 文件数及拆分比例；缺省字段为 1000/50/70。
-  - 同一对象满足全部适用 module 配置，finding 标明触发 module、硬上限及其拆分目标。
-  - `full` 检查全仓已跟踪代码；`branch` 检查改动代码；`paths` 检查指定实现路径中的代码。
-  - 扩展名集合见 `mdf_core/inspection/code_size.py`；配置、数据、文档与 lockfile 不计。
-- package 对目录直属实现、测试源文件分别计数；默认超过 50 报 `package.size`，默认拆分后每类最多 35。
-  - 始终统计完整同类成员总数，按成员匹配的全部 module 配置检查；有未归属成员时默认策略也参与。
+- 代码行数与 package 文件数由 [统一 lint](../../../skills/mdf/references/lint.md) 检查。
+  - fact audit 不产生 `code.size` 或 `package.size`。
   - 文档角色上限、70% 拆分要求及 `prose.*` 不受 module `size_limits` 影响。
-  - 子目录独立计数；`__init__.py` 计入，配置、数据、文档与 ignore 命中文件不计。
-  - full 检查全部 package；branch/paths 检查触及 package 的全部现存成员，含未改动文件。
-  - 测试命名规则见 `mdf_core/inspection/code_size.py`，同目录的实现与测试也不相加。
 - Proposal、`docs/JOTS.md` 与 HTML 不检查行数上限；Proposal 的正文仍执行结构检查。
 - `AGENTS.md` 只检查 MDF 托管块，不对整份文件另设行数 warning。
 - `full` 检查全部带角色文档；`branch`、`paths` 只检查范围内文档与本次改动到的入口页。

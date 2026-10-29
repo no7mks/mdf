@@ -74,12 +74,12 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve scope | 约束 | 确认调用方、状态与 `--scope`（branch/full/paths） | 类型、scope、范围、state | 2 | 停止 |
-| 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI | 映射、体积、表与入口、findings | 可审阅→3 | 无法审阅则停止 |
+| 1 | Resolve scope | 约束 | 确认调用方与 `--scope`（branch/full/paths） | 类型、scope、范围 | 2 | 停止 |
+| 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI 并核对 state | state、映射、结构、findings | 可审阅→3 | 无法审阅则停止 |
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
-| 6 | Validate | 脚本 | 运行 strict validation，不跑验证命令 | validation findings | 7 | update 仅结构返回；其余未通过 |
+| 6 | Validate | 脚本 | 运行 strict validation，处置新增 warning | validation findings、处置记录 | 7 | update 仅结构返回；其余未通过 |
 | 7 | Report result | 约束 | 按证据与 findings 判定并报告结论 | 摘要、审阅结论 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
 ## 术语与数据结构
@@ -95,7 +95,8 @@
   - 为 3 个语义计数组预分配稳定编号；Audit CLI 与 validation 的子组待扫描后展开，未知时不宣称总组数已确定。
   - CLI 本地组映射到本次审阅的组清单；每条进度显示当前组编号与完成、运行、待开始、跳过、中断数量。
   - 并行时列运行组编号；语义审阅完成后仍保留 validation 的待开始组，不把前 3 组完成当作审阅结束。
-- CLI 返回后报告 scope、实现文件数、文档数与 warning 数；范围未知时不填总数。
+- CLI 返回后核对 state，报告 scope、实现文件数、文档数与 warning 数；范围未知时不填总数。
+  - warning 数包含 `warnings` 与 `findings` 中 `severity: warning` 的项。
   - CLI 的文档与 evidence 检查计数只表示确定性检查，不计入后续语义复核。
 - 事实复核按文档、覆盖复核按实现文件、warning 审阅按条目分别计数。
   - 每类报告已复核数/总数、当前路径或 warning、当前核对内容与剩余项。
@@ -138,10 +139,12 @@
 | 调用方 | 范围与状态 |
 | --- | --- |
 | fact update 委托 | 与 fact update 相同的 `--scope`、`--base` 与路径，允许审阅调用方的同次写入 |
-| direct 调用 | 步骤 1 运行 `doctor --repo "$REPO_ROOT"` 读取 state，非 `ready` 即停止 |
+| direct 调用 | 步骤 2 读取 Audit CLI 的 `state`，缺失或非 `ready` 即停止，不进入语义审阅 |
 | migrate | `full`，允许 `initializing` |
 | 已收口 release/hotfix（直接委托） | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
 | 主链其他（含待收口 release） | 经 fact update 委托或直接 audit，`--scope` 同调用方，不得改用 `full` |
+
+direct 调用不再为读取 state 运行入口 doctor；fact update 写入前的 doctor 仍由调用方执行。
 
 首次发布无上一版本时停止确认初始基线。
 审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 strict validation 契约。
@@ -177,9 +180,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 范围内的 `PROJECT.md` 须含下列入口，缺则 `project.entry_links` finding：
   - `docs/system/overview.md`、`docs/README.md` 与 `docs/system/testing/index.md`。
 
-验收：范围、文档—`evidence` 映射、ignore 匹配、体积、核心模块表、入口指向、warnings、findings。
+验收：state、范围、文档—`evidence` 映射、ignore 匹配、体积、核心模块表、入口指向、warnings、findings。
 
-通过条件：得到可解析 payload；findings 非空时 CLI 退出码为 2，仍按 payload 处理。
+通过条件：得到可解析 payload，按调用方核对 state；存在 `severity: error` 时 CLI 退出码为 2，仍按 payload 处理。
 
 - `size.hard`、`overview.core_modules`、`project.entry_links` 不在本步停止。
 - migrate 仅 `manifest.initializing` 也继续。
@@ -271,15 +274,16 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 #### 警告
 
-- 逐条审阅 CLI warning（`audit.uncovered`）以及步骤 3 记下的
-  `agents.project_content`。
+- 逐条审阅 CLI `warnings`（含 `audit.uncovered`）、CLI `findings` 中 `severity: warning` 的项，
+  以及语义审阅记录的 warning（含 `agents.project_content`）。
+- `path.symlink` 等操作提示记录处置理由，不仅因存在 warning 就提升为 error。
 - `.mdf/modules.yaml` `ignore` 在适用范围内已覆盖 `AGENTS.md` 时，
   不再审阅 `agents.project_content`。
 
 验收：
 
 - 未被 evidence 引用且未被 ignorelist 覆盖的实现文件。
-- 未忽略的 `agents.project_content`。
+- CLI findings 中全部 warning 与未忽略的 `agents.project_content`。
 - 逐条处置记录。
 
 异常与交接：列入会话摘要后继续 6。
@@ -289,12 +293,13 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 #### 校验
 
 - 运行 `validate --repo "$REPO_ROOT" --level strict`（即 strict validation），不运行验证命令。
-- migrate 只允许 `manifest.initializing` finding。
+- migrate 只豁免 `manifest.initializing` error。
+- validation 新增的 warning 按步骤 5 补做处置后再形成结论；已处置且内容未变的项不重复审阅。
 
 验收：validation findings。
 
-通过条件：输出可解析且无 finding（migrate 仅余 `manifest.initializing`）；有 finding 时 CLI
-退出码为 2，按未通过处理；无输出或不可解析同样未通过。
+通过条件：输出可解析且无 `severity: error`（migrate 仅豁免 `manifest.initializing`），全部 warning 已处置。
+存在未豁免 error、未处置 warning、无输出或不可解析均未通过；CLI 仅有 warning 时退出码为 0。
 
 异常与交接：
 
@@ -330,11 +335,11 @@ validation 已由步骤 6 判定通过，本步不再复核。
 - 无语义 finding（含结构 finding）。
 - 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
 - 无未完成处置的 warning。
-- 无其他 CLI finding（如 `modules.invalid`、`audit.scope`）。
+- 无其他 `severity: error` 的 CLI finding（如 `modules.invalid`、`audit.scope`）。
 - 范围内应复核的事实、实现覆盖与 warning 已全部复核；明确按契约排除的项不计入应复核范围。
   尚有未触及项时只报告已完成范围与缺项，按未通过返回，不以未触及理由替代复核证据。
 
-异常与交接：存在其他 finding、未完成处置的 warning、应复核但未触及的项时：
+异常与交接：存在未豁免 error 或语义 finding、未完成处置的 warning、应复核但未触及的项时：
 
 - 报告审阅未通过、阻断原因与未完成项，不得称审阅通过。
 - 独立调用报告后结束。
