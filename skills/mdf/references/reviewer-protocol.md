@@ -72,7 +72,7 @@ mode=against 使用 [独立报告 schema](../assets/templates/against-review-rep
 - 增量报告逐项复核旧 finding：resolved、reopened 或 not_applicable，并给证据。
 - reopened 旧项由原 reviewer 在 findings 保留原 ID、完整证据与原级别；缺项或未裁定时只能 needs-review/error。
 - findings 可交回开发侧；范围、规则与份数符合原 intent 才可复用独立报告。
-- CI 报告保存 SHA；交付终稿继续无 SHA，不互相覆盖。
+- CI 报告保存 SHA；交付终稿正文继续无 SHA，不互相覆盖。父 PR 返工备注按 code-review 的 Record 条款保留。
 - 每轮报告保留固定 delivery_base；增量仅推进 review_base/head，首次 release 的后续轮也不能改变交付基线。
 
 ## 输出与执行器

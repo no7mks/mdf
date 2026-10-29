@@ -79,6 +79,7 @@
 - Resolve 先识别本次未提交成果；归属明确时按 common 提交相关路径，无法归属时停止，不提交他人工作。
   - 有未提交成果时不能仅凭 no_pending_commits 结束；处理后重读 status，再核范围和无增量结论。
 - 运行 `mdf.py adhoc-status --repo <owner>`，回读 material_mode、source、path、range、paths。
+  - 向用户说明 kind、material_mode、base、target 与下一步；分类不表示已通过检查。
   - `material_mode: ledger` 返回原账本流程；属于本 source 的损坏账本必须修正，不能绕过。
   - `material_mode: change` 使用返回的 path；不自行从分支前缀再次推导。
   - 继承的其他交付不是本次身份；默认目录冲突时 Core 选择带 source hash 的目录。
@@ -102,11 +103,8 @@
 - local 按实际目标关系 no-ff 集成 develop；PR 沿用 pr 的提交前远端集成与 squash 规则。
   - 目标推进、冲突修复或其他实现改动后补审补测，保留原 base。
   - 两端 worktree 须 clean；已有未提交工作先按已授权范围处理，不提交他人改动。
-- 先按 `lint.md` 执行项目 lint，再由 1 个独立 reviewer 审查固定 base 到当前 head。
-  - 读取 `reviewer-protocol.md`，从最新目标 policy_ref 加载项目 rule 与 AGENTS.md。
-  - 分派时分别给出 base、head、policy_ref 与实际工作；不依赖 roster 配置或 objectives。
-  - 按 code-review 的问题裁定、修复与增量复核规则处理，终稿写入返回 path 下的 code-review.md。
-  - 不把固定 base 伪装成最新目标来调用 standalone review，避免误用旧 policy。
+- 委托 [无账本审查](code-review-adhoc.md)，传固定 base、当前 head、最新目标 policy_ref 与实际工作。
+  - 该子流程完成 lint、1 人审查、裁定与必要修复验证，返回后继续本页检查；不递归进入收口。
 - dev-pr 接管的 source 仅读 [dev-pr](dev-pr.md) 的「材料与验收」条款，执行 smoke 并保存 named suite 证据。
   - 替代本节 smart，不重新进入 dev-pr 工作流；恢复时按 Git common dir 的 dev-pr 记录核 source 身份。
 - 其他 source 按 `verify.md` 执行 smart；按固定范围选 module 与 test，成败均保存报告。

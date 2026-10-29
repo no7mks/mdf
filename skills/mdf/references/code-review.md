@@ -7,7 +7,8 @@ commit 可以是 branch start、last release，或调用方选定的任意 commi
 Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill 并完成步骤 5–8。
 
 出现 `--against` 时，步骤 1 直接转 5，不运行交付前置检查。
-步骤 5–8 是独立只读审查，不进入 Repair 或 Record；未传 against 时执行步骤 1–4。
+步骤 5–8 是独立只读审查，不进入 Repair 或 Record；未传 against 时先识别身份。
+无账本普通 branch（含独立调用）执行 [无账本审查](code-review-adhoc.md) 并返回；有账本执行步骤 1–4。
 
 ## 决策树
 
@@ -19,6 +20,7 @@ Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skil
 └────────────────┬─────────────────┘
                  │
                  ├──── 指定 against     ────────→ 5 Resolve
+                 ├──── 无账本 adhoc      ───────→ [无账本审查并返回]
                  ├──── 来源 verify 且待修绿 ────→ [返回原 verify；独立调用报告待续办]
                  ├──── 已齐审查且修复续办 ──────→ 3 Repair
                  ├──── 已齐审查但勾选未完成 ────→ 4 Record
@@ -165,7 +167,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
 
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
-无账本 adhoc 的收口审查按 adhoc-change.md 的 Check 条款执行；不套用本节的账本、roster 配置或勾选前置。
+无账本 adhoc 按 code-review-adhoc.md 执行；不套用本节的账本、roster 配置或勾选前置。
 独立 against 审查始终执行步骤 5–8。
 
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
@@ -250,7 +252,7 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
 - 步骤 1 仅在新审查或增量新一轮时将本轮左端点与 review_head 记入进行中草稿
   （或派发参数），明确尚未通过，再启动审查。
 - 交付起点 base_commit 在本轮操作中固定，续办沿用，不重新追随分支或 tag；
-  裁定收口写入终稿时不得保留任何 commit hash。
+  裁定收口写入终稿正文时不得保留任何 commit hash；父 PR 返工备注按步骤 4 单列保留。
 
 各分支前置条件：
 
@@ -461,9 +463,9 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
    - 无法构建 failing test 的 finding 保留降级、替代证据和最终裁定；待跟进项说明后续处理，不伪记为已修复。
 3. rule 内容指纹须明确标注，不属于 commit hash；终稿保留该证据。
    ❌ 终稿不得出现任何 commit hash（含 base_commit / review_head / final_head /
-   左端点 tip、完整或缩写 SHA）。
+   左端点 tip、完整或缩写 SHA）。本条仅约束审查正文；父 PR 返工备注单列保留恢复所需 SHA。
 4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
-5. 提交终稿，将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
+5. 提交终稿；有账本时将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
    - 只清理本轮审查草稿；不得删除父 PR 返工备注，完成后按其返回位置交还调用方。
 6. ❌ 报告未齐或仍在修复窗时不得洗稿、不得勾选。
 

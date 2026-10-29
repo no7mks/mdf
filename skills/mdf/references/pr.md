@@ -48,6 +48,7 @@
 - 不读取、创建或勾退 objectives；前置与完成均核实际报告、平台及 Git 证据。
 - 「PR 返工」备注写在 adhoc-status 返回目录的 `code-review.md`，保留相同身份、原验证请求与左端点。
   - 审查终稿保留尚未完成的父 PR 备注；补审补测及 fact 完成并提交候选材料时才清除。
+  - 备注单列在审查正文之外，可保留恢复所需 SHA；不受审查终稿正文的无 commit hash 约束。
   - 备注仅恢复调用上下文，不作为第二份进度账本；缺少必要参数时停止并报告。
 - 普通无账本 source 使用 smart；dev-pr source 全程使用 named smoke，包括集成、CI 返工与 hook 后补验。
 - Prepare 仅在首次或实际改动使原证据不再适用时执行 adhoc-change 步骤 1–5；已有适用证据逐项复用。

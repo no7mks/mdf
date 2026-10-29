@@ -120,6 +120,8 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
 commit 可以是 branch start、last release，或调用方选定的任意 commit。
 执行方式见 [code-review](skills/mdf/references/code-review.md)；以下 roster 规则仅用于交付模式。
 
+- 普通无账本 branch 可直接执行 `$mdf code-review`，完成 lint、1 人审查与修复，不自动收口。
+- 手动创建的 `feature/*` 等专用 branch 仍检查对应交付材料，不因缺账本转为 adhoc。
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
 - 后续增量只审相对操作左端点以来的改动，并复核上轮问题；裁定收口时洗成无
   commit 的 `code-review.md` 终稿。
