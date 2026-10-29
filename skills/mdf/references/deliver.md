@@ -233,7 +233,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 产物、Git 历史及执行者状态判断。按下表自上而下命中即停止，不并行套用多行。
 先应用 until 截止点，再查表；进入 pr、close-out 前按 deliver-policy 核用户确认；任何表内委托、回退或重试都不得越过截止点。
 
-- **进度只认 objectives 勾选**；不以 `gates/*.json` 或一次 `delivery check` 选型。
+- **进度只认 objectives 勾选**；未完成子步骤同时读取同一 objectives 的准备说明，不以 gate 或一次 check 选型。
+  - 存在「start 步骤 5 未完成」时，即使 start 已勾也先按 [Post-start check](start.md#post-start-check) 恢复。
+  - 不重新 start 或重跑 hook；先应用 until，排除 start 时只报告未完成，不跳到后续阶段。
   - report（code-review.md / verification-report.json / fact-audit.md）只证明做过与声称结果。
 - 角色尚在时从对应 qa/dev worktree 读取各路提交与交接说明，不因 owner 尚未合入就重复分派。
 - 角色已集成并清理时读取 owner 的两路证据，不把正常清理当作缺失而重建角色。
@@ -252,7 +254,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 
 | 当前状态 | 后续处理 |
 | --- | --- |
-| start 未完成 | 续办 start，锁定其返回路径 |
+| start 未完成 | 含准备说明中的「start 步骤 5 未完成」；续办原步骤，锁定已有 owner |
 | release 缺 integrate checklist 项或正文未写工作线 | 停止；须有 integrate 项且工作线四选一 |
 | release collab-mode 联调未完成且尚待接手 | 按 `collab-mode.md` 交接并结束；保留未完成进度与 Goal |
 | release integrate 未勾 | 执行 `$mdf integrate`；同 worktree / collab-mode 不开通道；不联调不得留未勾 |

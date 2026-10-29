@@ -42,11 +42,12 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 未切到 ─────────────────────→ [留在 5 等待]
+                 ├──── post-start check 阻塞 ──────→ [留在 5 补齐材料]
                  ├──── collab-mode 已交接 ─────────→ [结束]
                  ├──── 已切到且 release 需联调 ────→ 6 Open integrate
                  └──── 已切到 ─────────────────────→ [结束]
 
-步骤 5 先处理 collab-mode 交接；其余 release 需联调才进入 6，不是步骤 4 的后续。
+步骤 5 切换后先完成 hook，再执行 Post-start check，通过后处理 collab-mode 交接；其余 release 需联调才进入 6，不是步骤 4 的后续。
 
 ┌──────────────────────────────────┐
 │ 6 Open integrate                 │
@@ -76,7 +77,7 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 | 2 | Clarify objectives | 约束 | 盘点前置条件，写/确认 objectives checklist（含大步骤） | 确认目标与准备说明 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 确认 member、strategy 与 models | 明确确认、与步骤2的 needs_design 一致 | 冲突2；否则4 | 拒绝停止；未决留3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
-| 5 | Switch worktree | 约束 | 切到 owner；交接 | 路径、交接 | 同/跨→6；collab 交接结束；其他结束 | 留在 5 等待 |
+| 5 | Switch worktree | 约束 | 切到 owner；hook 后检查材料；交接 | 路径、材料检查、交接 | 同/跨→6；collab 交接结束；其他结束 | 未切到或材料阻塞则留5 |
 | 6 | Open integrate | 约束 | 立即执行 `$mdf integrate` | Goal；跨 worktree 另有通道与 poll | 结束 | 按 integrate 交接 |
 
 ## 术语与数据结构
@@ -314,23 +315,58 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - 向用户给出目标绝对路径与分支名。
 - Cursor 未进入则留在 5，重复切换；其他宿主绑定绝对路径后即通过。
 - 不拆除已建 worktree 与分支。
-- 已切到后看 objectives，release 的 collab-mode 先按 [交接契约](collab-mode.md) 输出本仓材料并结束。
+- 已切到后先完成 pending rule hook，再执行下方「Post-start check」；通过后才可交接、进入 6 或返回调用方。
+- 检查通过后看 objectives，release 的 collab-mode 先按 [交接契约](collab-mode.md) 输出本仓材料并结束。
   - deliver 内部委托时返回调用方并说明待接手，不进入 6、不接管另一仓的 start 或联调。
 - release 且为同 worktree 或跨 worktree 则进入 6，不得先结束。
 - 其他 kind，或不联调的 release：
   - 独立调用结束，由用户手动触发 design 或通过 next 委托。
   - deliver 内部委托时返回调用方。
 
-验收：已切到 owner；collab-mode 已交接；同/跨 worktree 联调进入 6，否则结束或返回。
+验收：已切到 owner 且 Post-start check 通过；collab-mode 已交接；同/跨 worktree 联调进入 6，否则结束或返回。
 
-异常与交接：未切到则留在 5。
+异常与交接：未切到或材料检查阻塞则留在 5；保留已建 worktree 与分支。
+
+### Post-start check
+
+本检查属于步骤 5，由 start Agent 必执行，覆盖所有 kind 与人工 feature，核对完成本工作所需的材料。
+
+- 必须在 post-start hook 处理完成之后检查实际状态；步骤 2 的前置条件盘点不能替代本检查。
+  - command 已由 CLI 执行，不重跑；rule pending 时先按 [hook 契约](post-gitflow-start.md) 执行并汇报。
+  - 未配置 hook 也执行检查；hook 已失败仍检查，不因失败回滚或自动重试。
+  - hook 状态不明时按其契约报告缺项并停止，不声称检查通过。
+- 对照 objectives、PRP/Bug、验收要求与准备说明，在新 worktree 核对实际材料。
+  - 检查所需配置、credential 注入、runtime、服务、测试账号/数据、外部资料与联调信息。
+  - 按实际需要检查 owner 及 qa/dev；hook 成功不代表材料齐全，owner 就绪不代表 qa/dev 就绪。
+  - 只记录名称、用途、可用状态与证据来源；不输出 secret，不把密钥值写入材料、日志或 Git。
+- 检查前在既有 objectives 的准备说明中记录「start 步骤 5 未完成」，附 owner 路径、hook 结果与恢复位置。
+  - start 对应项已勾不代表本子步骤完成；不新增阶段 checkbox、配置或独立 gate 文件。
+- 将检查结果更新到同一准备说明。
+  - 已齐全时简要说明依据；无法验证的项标为未知，不推定可用。
+  - 有缺项时列出影响、Agent 可准备的部分、是否需要用户提供、提供方式、准备方与最晚就绪阶段。
+  - 需要用户提供时明确请求；credential 通过本地配置或安全注入提供，不要求在对话中粘贴 secret。
+- 缺项处理沿用「前置条件盘点」：当前必需或影响方案/验收的未知项未解决时留在 5，保留现场。
+  - 仅后续阶段需要的材料，准备方式与最晚就绪阶段明确后可继续；首次使用前必须复核。
+  - 阻塞时保留「start 步骤 5 未完成」及具体缺项；用户补齐后复查受影响项。
+  - confidence 与 `--yolo` 不能替代材料就绪。
+- 检查通过后将该未完成记录改为「Post-start check 已通过」，保留依据及后续材料安排。
+  - 记录更新失败则保留未完成状态并停止，不交接或推进。
+
+续办按既有 objectives 的准备说明恢复，不依赖原会话上下文：
+
+- next / deliver 发现「start 步骤 5 未完成」时，优先恢复本步骤，包括人工 feature；不因 start 已勾跳过。
+- 使用已有 owner 与角色 worktree，不重新运行 start CLI，不重跑已有结果的 hook。
+- hook 结果缺失或状态不明时先查原日志，无法恢复则报告阻塞，不猜测成功。
+- 本步骤通过后按原调用方与工作线返回；deliver 的 until 截止点仍优先，排除 start 时只报告未完成。
+
+验收：实际材料状态与缺项安排已记录，当前必需材料齐全；通过后按步骤 5 的工作线继续。
 
 <a id="s6"></a>
 
 **通道**
 
 仅 release 且 objectives 写明同 worktree 或跨 worktree 时进入。不联调不进入。
-切到 owner 后立即执行，不得先做其他预发布工作。
+切到 owner 并通过 Post-start check 后立即执行，不得先做其他预发布工作。
 
 - 完整读取并执行 `references/integrate.md`。
 - deliver 的 until 排除 integrate 时在委托前返回截止点与当前 resume 位置，不打开通道或启动 poll。

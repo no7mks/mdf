@@ -15,9 +15,10 @@
 │ 2 Select step                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 人工工作未勾 ──────→ [交接用户并返回调用方]
-                 ├──── 已实际完成收口 ────→ [返回调用方核验实际收口]
-                 ├──── 前置未完成 ────────→ [停止并报告]
+                 ├──── start 步骤 5 未完成 ────→ 3 Delegate（恢复 start）
+                 ├──── 人工工作未勾 ───────────→ [交接用户并返回调用方]
+                 ├──── 已实际完成收口 ─────────→ [返回调用方核验实际收口]
+                 ├──── 前置未完成 ─────────────→ [停止并报告]
                  │
                  ▼ 可执行阶段已确定
 ┌──────────────────────────────────┐
@@ -41,7 +42,7 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check delivery | 脚本 | 先核 PR 恢复；否则核身份与七项清单 | 记录或 status、账本 | PR 委托并返回；其余2 | 停止并报告 |
-| 2 | Select step | 约束 | 核人工工作、PR 实际状态与剩余步骤 | 勾选、平台、收口证据 | 阶段 3；已收口返回 | 人工未勾交接；不符停止 |
+| 2 | Select step | 约束 | 先核 start 续办，再核人工工作与剩余步骤 | 准备说明、勾选、平台 | start 续办或阶段3；已收口返回 | 人工未勾交接；不符停止 |
 | 3 | Delegate | 约束 | 按阶段表执行一个原 intent 并交接 | 原 intent 产物与勾选 | 返回调用方 | 按原 intent 交接 |
 
 ## 术语与数据结构
@@ -65,7 +66,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → [pr（仅 PR mode）] → close-out。
 - start 自勾 start；人工工作仅由用户显式勾选，Agent 不得代勾。
   - 用户可要求 Agent 介入实现与测试；介入不代表人工工作已完成。
-  - next / deliver 在人工工作未勾时交接给用户；所有模式同样不得代勾或越过。
+  - next / deliver 先恢复未完成的 start 步骤 5；完成后人工工作未勾才交接给用户，不代勾或越过。
   - 用户显式勾选后，由 next 单步续办或 deliver 串联剩余阶段。
 - code-review 用 1 个 reviewer；前置为人工工作已勾，不要求 converge。
 - verify smoke 执行 feature 的 branch 验证（lint/build/quick/smoke），
@@ -87,7 +88,13 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 - 无 proposal，roster 为 `0,0,1`。
 objectives 须与模式对应的固定顺序一致且没有缺项；不符则报告具体差异并停止。
 
-步骤 2 先核对 start 已勾；未勾或人工工作勾选来源不明时停止并询问。
+步骤 2 先读 objectives 准备说明；存在「start 步骤 5 未完成」时，即使 start 已勾也优先选 start，进入步骤 3。
+
+- 按 [Post-start check](start.md#post-start-check) 恢复已有 owner 上的步骤 5，不重新 start 或重跑 hook。
+- 阻塞时保留未完成记录，不交接人工工作；通过后更新记录，再按 next / deliver 的返回规则交接。
+- deliver 先应用 until，排除 start 时只报告未完成，不跳到人工工作或后续阶段。
+
+无上述未完成记录时核对 start 已勾；未勾或人工工作勾选来源不明时停止并询问。
 人工工作未勾时返回用户交接，不委托开发，也不自动勾选。
 人工工作已勾后，先核 PR 与实际收口状态，再按以下阶段表选择；各项前置必须已勾。
 PR mode 尚未 merged 时，即使 pr 候选项已勾仍选 pr；merged 后选无 checkbox 的 close-out。

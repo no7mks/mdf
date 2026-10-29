@@ -137,7 +137,10 @@ PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续
 
 完整读取所选 intent 及其要求的公共引用，以其编号工作流、前置条件和失败恢复规则为准。
 
-- 先复核 `objectives.md` 勾选与 `delivery.json` 身份，从尚未勾选的下一步续办。
+- 先检查 objectives 准备说明；存在「start 步骤 5 未完成」时，按 [Post-start check](start.md#post-start-check) 恢复。
+  - 即使 start 已勾也优先恢复，不重新 start 或重跑 hook；本次完成该 start 续办后返回。
+  - 人工 feature 由其专用续办规则执行同一优先级，不提前交接人工工作。
+- 无上述未完成记录时，复核 `objectives.md` 勾选与 `delivery.json` 身份，从尚未勾选的下一步续办。
   - 已勾且仍有效的步骤不重做已验收且仍有效的操作。
   - ❌ 不读 stage gate 表选型；report 只证明做过，不当通行证。
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。

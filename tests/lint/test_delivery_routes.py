@@ -74,7 +74,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[4][1] == "Switch worktree"
     assert table[4][2] == "约束"
     assert table[4][5] == "同/跨→6；collab 交接结束；其他结束"
-    assert table[4][6] == "留在 5 等待"
+    assert table[4][6] == "未切到或材料阻塞则留5"
     assert table[5][1] == "Open integrate"
     assert table[5][5] == "结束"
     assert "needs_design" in text
@@ -494,3 +494,33 @@ def test_deliver_tracks_delivery_with_goal():
     assert "核对 close-out 实际成功后才置 complete" in deliver
     assert "仅本次创建或同范围复用的 Goal" in deliver
     assert "已有其他或更大范围的 active Goal 时不覆盖、不提前完成" in deliver
+
+
+def test_post_start_check_records_recoverable_incomplete_step():
+    text = workflow("start").split("### Post-start check", 1)[1].split('<a id="s6"></a>', 1)[0]
+    assert "检查前在既有 objectives 的准备说明中记录「start 步骤 5 未完成」" in text
+    assert "附 owner 路径、hook 结果与恢复位置" in text
+    assert "阻塞时保留「start 步骤 5 未完成」及具体缺项" in text
+    assert "检查通过后将该未完成记录改为「Post-start check 已通过」" in text
+    assert "记录更新失败则保留未完成状态并停止" in text
+    assert "不重新运行 start CLI，不重跑已有结果的 hook" in text
+    assert "无法恢复则报告阻塞，不猜测成功" in text
+    assert "排除 start 时只报告未完成" in text
+
+
+def test_resume_prioritizes_post_start_check_over_checked_start():
+    for name in ("next", "deliver", "manual-feature"):
+        text = workflow(name)
+        assert "start 步骤 5 未完成" in text
+        assert "即使 start 已勾也优先" in text or "即使 start 已勾也先" in text
+        assert "start.md#post-start-check" in text
+        assert "不重新 start 或重跑 hook" in text
+    manual = workflow("manual-feature")
+    diagram = manual.split("```text", 1)[1].split("```", 1)[0]
+    assert diagram.index("start 步骤 5 未完成") < diagram.index("人工工作未勾")
+    table = rows(manual)
+    assert "先核 start 续办" in table[1][3]
+    assert "start 续办或阶段3" in table[1][5]
+    assert "阻塞时保留未完成记录，不交接人工工作" in manual
+    for name in ("deliver", "manual-feature"):
+        assert "排除 start 时只报告未完成，不跳到" in workflow(name)

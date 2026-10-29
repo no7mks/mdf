@@ -109,6 +109,8 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
   - 支持 command / rule，失败仅汇报；配置见 [契约](skills/mdf/references/hooks/pre-gitflow-finish.md)。
 - 一个 feature 对应一个 PRP；`needs_design: yes` 时 design 提交共用底座。
 - start 始终独立 worktree。
+  - post-start hook 处理完成后，Agent 必须检查材料是否齐全，明确需要用户提供的配置、credential 等。
+    执行与缺项处理见 [Start](skills/mdf/references/start.md#post-start-check)。
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
 
 ### code-review 与 roster
