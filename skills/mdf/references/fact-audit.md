@@ -156,7 +156,8 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
   - 有账本交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`。
   - 都没有才由 CLI 取 `merge-base develop HEAD`。
-  - 主链 release（verify branch 之后、close-out 之前）传入上一正式发布为 `--base`。
+  - 主链 release（verify branch 之后、close-out 之前）的 `--base` 为上一正式发布；
+    CLI 收成 against 时使用同一 SHA。
   - 范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
     引用这些实现的事实页；同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
@@ -166,11 +167,11 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
 
 | 调用方 | 范围与状态 |
 | --- | --- |
-| fact update 委托 | 与 fact update 相同的 `--scope`、`--base` 与路径，允许审阅调用方的同次写入 |
-| direct 调用 | 步骤 2 读取 Audit CLI 的 `state`，缺失或非 `ready` 即停止，不进入语义审阅 |
+| fact update 委托 | branch→`--against <步骤1 SHA>`；full/paths 同其 scope；不得 `--quick`；允许审阅其已提交写入 |
+| direct 调用 | against/branch 走共用核；full/paths 步骤 2 读取 Audit CLI 的 `state`，缺失或非 `ready` 即停止，不进入语义审阅 |
 | migrate | `full`，允许 `initializing` |
-| 已收口 release/hotfix（直接委托） | `branch`（`--base` 为上一正式发布）或等价 `paths`，不得改用 `full` |
-| 主链其他（含待收口 release） | 经 fact update 委托或直接 audit，`--scope` 同调用方，不得改用 `full` |
+| 已收口 release/hotfix（直接委托） | resolve-base 后 against，或等价 `paths`，不得改用 `full` |
+| 主链其他（含待收口 release） | 经 fact update 委托或直接 against；不得改用 `full` |
 
 direct 调用不再为读取 state 运行入口 doctor；fact update 写入前的 doctor 仍由调用方执行。
 

@@ -50,8 +50,10 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 执行可选 hook 与必要补审补测；独立文档维护不触发，内部 Audit 不重复执行。
 
 读取 `references/common.md` 与 `references/repository-contract.md`；
-步骤 3 读取并内部执行 `references/fact-audit.md`。
-主链委托按其入口转入 `fact-audit-delivery.md`，复用 against；独立维护沿用七步 Audit。
+步骤 3 读取并内部执行 `references/fact-audit.md` 共用核。
+主链与独立 `branch`：resolve-base 后委托 `--against <完整 SHA>`（交付外壳见
+`fact-audit-delivery.md`）；独立 `full`/`paths` 走同一语义标准，仅 must-cover 解析不同。
+内部 Audit **不得**带 `--quick`（不得跳过 LLM）。
 deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 until 则逐层返回截止点与未完成步骤。
 已提交的合法事实改动保留，不进入 Audit、不自勾 fact update，也不把截止当作失败重试。
 
@@ -59,9 +61,9 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与范围 | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
+| 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与 resolve-base | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
-| 3 | Audit | 约束 | 委托同 scope 的 fact audit；按变更验证 | 审阅、验证 | 通过或仅结构则 4 | 其他未通过或验证失败则停 |
+| 3 | Audit | 约束 | 提交后委托 fact audit 共用核；按变更验证 | 审阅、验证 | 通过或仅结构则 4 | 其他未通过或验证失败则停 |
 | 4 | Refine structure | 约束 | 修结构；人工成功后自勾 | diff、提交 | 可重审3；无 finding 结束 | 超次或无法改则停 |
 
 人工 feature 的本步成功后，当前执行者将 objectives 的 fact update 项自勾 `[x]` 并提交。
@@ -76,7 +78,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
   - 本流程有页面对齐 1 组计数；内部 Audit 每轮有文档复核、实现覆盖、warning 审阅 3 组计数。
   - 逐页 evidence、CLI 子计数组在扫描后补报数量与各组总量，尚未扫描时标为待确定。
   - 结构修复按 finding 单列 1 组，仅需要时启用；各组 n/n 不表示整个 fact update 完成。
-  - 内部 Audit 保留父阶段；主链显示子阶段 j/5，独立维护显示 j/7。
+  - 内部 Audit 保留父阶段，子阶段沿用 fact-audit 共用核进度（against/交付外壳或 full/paths 机械入口）。
   - 结构修复后重审显示返回阶段 3/4 与第几轮/最多 3 轮。
   - 重审沿用组名称并附轮次，以新编号追加本轮执行实例；保留已执行组，不重置总数与完成数。
   - 先登记页面对齐、首轮 Audit 的 3 个语义计数组，以及入口 doctor、Audit CLI、validation 的待展开子组。
@@ -93,7 +95,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 - 长阶段按 `common.md` 的 60 秒要求播报上述实际计数与剩余项，短页面可合并播报。
   - 单项迟迟未完成时保持计数，说明当前核对内容或等待的命令，不虚构百分比或预计完成时间。
 - 提交前说明本次提交路径；提交后报告实际结果，再进入 Audit。
-- Audit 报告第几轮/最多 3 轮，并沿用同一 scope 与 base。
+- Audit 报告第几轮/最多 3 轮，并沿用同一 resolve-base（against SHA 或 full/paths 范围）。
   - 文档复核、实现覆盖与 warning 分开计数，不把 CLI 检查结束计为语义审阅完成。
   - 运行 validation 或所需 suite 前说明实际命令；等待期间转述已取得的具体进度。
 - 结构修复报告当前页面、finding、已改写页数与剩余未处理 finding。
@@ -120,18 +122,14 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 - 已有 findings 如实记录，事实及 evidence 问题由步骤 2–4 按范围处理。
   - 其他超出本次范围的问题报告后停止，不借同步入口修改无关对象或配置。
 
-`--scope` 与 fact audit 同义，三选一：
+`--scope` 与 fact audit 同义，三选一；**左端点一律按 [fact-audit resolve-base](fact-audit.md#resolve-base)**：
 
-- `branch`：独立调用默认。
-  - 无账本 adhoc 使用 adhoc-status 的固定 `range.base`；后续 Audit 显式传同一 `--base`。
-  - 其他情况起点与 `fact-audit.md` 相同，三级回退：
-    - `delivery.json` 的 `start_commit`。
-    - 否则 git config `branch.<owner 分支>.mdf-start-commit`。
-    - 否则 `git merge-base develop HEAD`。
-  - 范围是该起点以来实现改动该碰的事实页与被改到的路由链接，不是「分支上改过的 Markdown」。
+- `branch`：独立调用默认。步骤 1 解析完整 base SHA；Align 与后续 Audit 共用该 SHA。
+  - Audit 委托：`$mdf fact audit --against <该 SHA>`（等同 CLI `--scope branch` 收成 against 核）。
+  - must-cover = `diff(base, 当前工作区) ∩ sourceset ∩ ¬ignore` 该碰的事实页与被改到的路由链接，
+    不是「分支上改过的 Markdown」。
   - 未改实现只想整理文档时显式用 `full`。
-  - 主链 release 的 `--base` 为上一正式发布的 master commit/tag（与 code-review 同一左端点）；
-    首次发布无上一版本时停止确认初始基线。
+  - 首次发布无上一版本时停止确认初始基线。
 - `full`：知识面全树——`docs/user-guide/**`、`docs/system/**`、入口根文档、
   `docs/context/adr/` 的复述检查与全部体积。结构 finding 可全改。
 - `paths`：调用方给出精确实现/文档路径；独立调用列出 `<path>...` 即此形式。
@@ -146,10 +144,9 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
   - 可在当前工作相关的 feature、bugfix、release、hotfix 或 adhoc 分支同步事实。
   - 在途 feature 时只在 owner 工作，cwd 为 qa/dev 则切回 owner。
   - 无关的独立维护在 develop 完成，不在 master 写入。
-- 主链在步骤 1 按 `fact-audit-delivery.md` 确定本轮完整 base SHA，事实同步与后续审阅使用同一基线。
-  有失败 audit context 时沿用其 base 与范围；不得到步骤 3 才切换 CI base。
-  - 默认起点为 start_commit，release 为上一正式发布；无账本 adhoc 用固定 range.base。
-  - 按共用 against 范围规则纳入双侧 evidence、目录和 generated 依赖；paths 只定位修复，不缩小完成审阅。
+- 主链在步骤 1 按 resolve-base 确定本轮完整 base SHA，事实同步与后续审阅使用同一基线。
+  有失败 audit context 时沿用其 against 与范围；不得到步骤 3 才切换 CI base。
+  - 按 against must-cover 纳入双侧 evidence、目录和 generated 依赖；paths 只定位修复，不缩小完成审阅。
 
 验收：doctor 结果、调用方类型、scope、事实与实现范围。
 
@@ -195,15 +192,18 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 
 **审阅**
 
-内部委托 fact audit 之前，先提交本次事实页，含新建或拆出的专用叶。
+内部委托 fact audit 之前，先提交本次事实页，含新建或拆出的专用叶
+（保证 `fact.untracked` / stale 可判定；不是因为 audit 强制 clean）。
 
+- ❌ 内部委托不得带 `--quick`。
 - strict validation 按已提交内容判 `fact.untracked` 与 `evidence.stale`。
 - 未提交的同次写入会变成其他未通过，到不了步骤 4。
 - 主链委托时，这次事实提交由本 intent 完成。
   调用方随后提交 Change 等其余材料。
-- 主链委托传入步骤 1 固定的 base SHA，由 against 重新捕获修复后的完整范围，不混传 scope/base/paths 参数。
-- 独立维护委托使用同一 `--scope` 与 `--base`；独立 branch 仍依赖 tracked diff。
-  - `paths` 要把本次新建或拆出的页写入 `--document-path`。
+- 主链与独立 `branch`：传入步骤 1 固定的完整 SHA，执行
+  `fact-audit --against <SHA>`，由 against 核捕获修复后的完整范围；不混传 scope/base/paths。
+- 独立 `full`：`fact-audit --scope full`。
+- 独立 `paths`：同一 `--scope paths`；把本次新建或拆出的页写入 `--document-path`。
 
 - 只改事实文档不重跑业务验证。
 - 实现、测试或 verification 配置变了，才重跑当前交付所需 suite。
@@ -239,9 +239,9 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 不改承诺的行为，不改范围外页面，不为「顺手」重排文档树。
 
 - 有改写则回到 3 重审；`4→3` 最多两次。这次重审不重跑 suite。
-  - 重审前再次提交结构改写。
+  - 重审前再次提交结构改写；仍不得带 `--quick`。
   - 仅 `--scope paths` 把新建或拆出的页并入 `--document-path`。
-  - `branch` 与 `full` 保持原 scope，不附加路径。
+  - `branch` 重审仍用原 against SHA；`full` 保持 `--scope full`，不附加路径。
   - 只改本次 audit 范围内的页面。
 - 第三次仍有结构 finding（表中的超次 finding）则停止并报告，即使本步已经改写也不回 3。
 - 无结构 finding 时无改写结束，含第三次审阅已通过。

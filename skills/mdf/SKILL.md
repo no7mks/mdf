@@ -158,6 +158,7 @@ disable-model-invocation: true
   - `--quick`：只跳过 LLM（不换工作对象；可与 against / scope 组合）；
   - `--scope branch`：resolve-base 后等同 against；`full|paths` 为机械入口（与 against 互斥）。
 - fact update、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
+  - fact update 的 `branch`：resolve-base 后内部委托 `--against`（不得 `--quick`）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
 - upgrade 可带 `--source`。
 - ❌ 未知 `--` token 停止询问。

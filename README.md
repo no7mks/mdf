@@ -81,7 +81,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
 | `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
-| `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--quick]` | 只读事实审阅；独立 quick 仅检查 evidence stale |
+| `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--against] [--quick]` | 只读事实审阅；`--quick` 只跳过 LLM |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
@@ -260,9 +260,9 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 - 文档按角色有行数硬限制，超出由 fact audit 报 `size.hard`，fact update 以拆页或下沉修复。
   - PRP 与 `docs/JOTS.md` 不设文件行数上限。
 - fact update / fact audit 的 `--scope`：
-  - 默认 `branch`（起点以来实现改动该碰的事实页）；release 的 `branch` 基线为上一正式发布。
-  - `full` 整理知识面全树。
-  - close-out 只用 `branch`/`paths`。
+  - 默认 `branch`：resolve-base 后走 against（must-cover = 起点以来实现改动该碰的事实页）。
+  - `full` 整理知识面全树；`paths` 精确路径。
+  - close-out / 主链委托只用 `branch`/`paths`。
 
 `docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。
 当一条 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
