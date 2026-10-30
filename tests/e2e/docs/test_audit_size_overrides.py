@@ -31,7 +31,7 @@ def test_audit_keeps_code_size_limits_out_of_document_checks(python_exe, tmp_pat
     git(repo, "commit", "-m", "test: 超出代码规模覆盖")
     result = mdf(python_exe, *args)
     assert result.returncode == 0
-    assert not json.loads(result.stdout)["findings"]
+    assert not fact_audit_view(json.loads(result.stdout))["findings"]
 
 
 def test_module_split_percent_does_not_override_document_rules(python_exe, tmp_path):

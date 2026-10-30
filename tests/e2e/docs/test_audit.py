@@ -39,8 +39,13 @@ def test_audit_reports_state_without_rejecting_migrate(python_exe, tmp_path, sco
         options += ["--document-path", "docs/system/interfaces/api.md"]
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), *options)
     data = json.loads(result.stdout)
-    assert data["state"] == state
-    assert result.returncode == (0 if state == "ready" else 2)
+    if scope == "branch":
+        assert data["result"]["rules"]["manifest"]["state"] == state
+        assert result.returncode == 0  # context 构建成功，不表示审阅通过。
+        data = fact_audit_view(data)
+    else:
+        assert data["state"] == state
+        assert result.returncode == (0 if state == "ready" else 2)
     assert {item["code"] for item in data["findings"]} == (
         set() if state == "ready" else {"manifest.initializing"}
     )
@@ -54,10 +59,14 @@ def test_independent_audit_modes_do_not_add_readiness(python_exe, tmp_path, mode
     init_git(repo)
     options = (["--quick"] if mode == "quick" else
                ["--against", git(repo, "rev-parse", "HEAD").stdout.strip()])
-    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo), *options))
-    assert "state" not in data
+    result = mdf(python_exe, "fact-audit", "--repo", str(repo), *options)
+    data = json.loads(result.stdout)
     if mode == "against":
+        assert_ok(result)
         assert "state" not in data["result"]["audit"]
+    else:
+        assert result.returncode == 2
+        assert "manifest.initializing" in {f["code"] for f in data["findings"]}
 
 
 def test_audit_reports_evidence_mapping_without_running_commands(
@@ -218,7 +227,7 @@ def test_audit_rejects_empty_ignore_pattern(
     assert "audit.ignore_empty" in result.stdout
 
 
-def test_audit_accepts_exact_range_paths(
+def test_audit_paths_includes_implementation_dependents(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -239,7 +248,12 @@ def test_audit_accepts_exact_range_paths(
         )
     )
     assert data["implementation_paths"] == ["src/service.py"]
-    assert data["document_paths"] == ["docs/system/interfaces/api.md"]
+    from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
+    from mdf_core.foundation.yamlutil import read_frontmatter
+    expected = sorted(p.relative_to(repo).as_posix() for p in fact_documents(repo)
+                      if "src/service.py" in frontmatter_evidence(read_frontmatter(p)[0]))
+    assert data["document_paths"] == expected
+    assert "docs/system/interfaces/api.md" in expected
 
 
 @pytest.mark.parametrize(

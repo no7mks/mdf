@@ -85,12 +85,13 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 `--quick` **只**跳过 LLM；不换工作对象；可与 scope/base/paths 或 `--against` 组合（against 不与 scope 混用）。
 不强制 clean；`--scope branch` 经 resolve-base 后等同 against。
 
-- 机械检查范围内 evidence / generated 的有效性、Git tracked 与提交先后；against/branch 另含 must-cover uncovered。
+- 复用完整 audit 的确定性检查：契约、文档结构、evidence / generated 的有效性、Git tracked、提交先后与 must-cover uncovered。
 - 不调用 Agent 或 generator；不替代主链完整 fact audit。
 - branch/against 包含删除、目录 evidence 与 generated 依赖；paths 自动纳入指定实现影响页。
 - shallow checkout 报 `audit.shallow`，不自动 fetch；CI 应准备完整 history。
-- against/branch：`mode`/`semantic_review` + `result` context（exit 0 表示 context 成功）。
-- full/paths quick：输出 `mode: quick`、范围与 findings；无 finding 返回 0，有 finding 返回 2。
+- against/branch：`mode`/`semantic_review` + `result` context；非 quick 的 exit 0 只表示 context 成功。
+- full/paths quick：输出 `mode: quick`、state、范围、findings 与 warnings；与非 quick 共用机械 payload。
+- 所有 quick：无 finding/warning 返回 0；存在 finding 或未处置 warning（含 uncovered）返回 2。
 
 全量审计遍历 module `sourceset` 并集中的已跟踪实现文件与全部当前事实文档。
 未归属实现不进入语义审阅或覆盖检查；文档按自身契约独立纳入。
@@ -178,7 +179,7 @@ python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
 - against 不与 scope/base/paths 混用；右端点为当前工作区（可 dirty）。
 - 仓外 snapshot 不修改原仓库；不运行 hooks、filters 或 tests。
 - rules、sourceset、module ignore 来自当前工作区；未归属实现不进入语义审阅。
-- 返回 `ok: true, result: context` 只表示 context 成功；`--quick` 时 `semantic_review: false`。
+- 非 quick 返回 `ok: true, result: context` 只表示 context 成功；quick 的 `ok` 与退出码反映机械结论，`semantic_review: false`。
 - context 含 against、worktree_sha256（工作区树指纹）、diff、映射、audit 与指纹。
 - report-check 验证指纹与覆盖；工作区或 HEAD 身份变化须重建 context。
 - Agent 契约见 [旁路与报告](../../../skills/mdf/references/fact-audit-against.md)；

@@ -4,14 +4,13 @@ from pathlib import Path
 
 from mdf_core.execution.modules import parse_modules
 from mdf_core.foundation.yamlutil import parse_yaml
-from mdf_core.reviewing.scope import selected_diff
+from mdf_core.reviewing.scope import review_changes
 from mdf_core.reviewing.worktree import sha
 from mdf_core.reviewing.context import fingerprint
 from mdf_core.reviewing.policy import current_policy
 from mdf_core.workspace.gitutil import ensure_clean
 from mdf_core.workspace.project_rules import load_project_rule
 from mdf_core.reviewing.schema import check
-from mdf_core.workspace.merge_policy import paths as changed_paths
 
 
 def against_context(repo, against):
@@ -23,11 +22,10 @@ def against_context(repo, against):
     protocol = Path(__file__).resolve().parents[3] / 'references/reviewer-protocol.md'
     rules = {**local, 'mdf': protocol.read_text(encoding='utf-8'),
              'project': load_project_rule(repo, local['manifest'], 'code-review')}
-    selected = [p for p in changed_paths(repo, base, head)
-                if config.owns(p) and not config.is_ignored(p)]
+    selected, diff = review_changes(repo, base, head, config)
     result = {'schema_version': 3, 'mode': 'against', 'scope': 'head',
               'against': base, 'head': head, 'paths': selected,
-              'diff': selected_diff(repo, base, head, selected),
+              'diff': diff,
               'rules': rules, 'rules_sha256': fingerprint(rules), 'incomplete': []}
     result['context_sha256'] = fingerprint(result)
     return result

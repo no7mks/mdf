@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from mdf_core.inspection import doctor
+from mdf_core.inspection.audit_quick import affected_documents, quick_exit_code
 from mdf_core.inspection.code_size import is_source
 from mdf_core.inspection.doc_size import sizable_documents, size_findings, size_role, structure_findings
 from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, has_errors, serialize_findings
@@ -263,6 +264,8 @@ def audit_payload(
                 facts,
                 findings,
             )
+            affected = [p for p in sources if p not in ignored and size_config.owns(relative(repo, p))]
+            documents = sorted(set(documents) | affected_documents(repo, facts, affected))
             sized = documents
             code_paths = sources
         # 实现按 module 归属过滤；事实页独立检查自身的 ignore。
@@ -295,8 +298,8 @@ def audit_payload(
             resolved = []
             for raw in evidence:
                 candidate = (repo / raw).resolve()
-                if candidate in source_set:
-                    covered.add(candidate)
+                covered.update(path for path in source_set
+                               if path == candidate or candidate in path.parents)
                 resolved.append(raw)
             mappings.append(
                 {"document": relative(repo, document), "evidence": resolved}
@@ -340,14 +343,22 @@ def audit_payload(
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
+    if args.quick and run(["git", "rev-parse", "--is-shallow-repository"], cwd=repo).stdout.strip() == "true":
+        emit({'ok': False, 'mode': 'quick', 'semantic_review': False, 'findings': serialize_findings([
+            Finding('audit.shallow', 'quick 需要完整 Git history，无法在 shallow checkout 判断 stale'),
+        ])})
+        raise SystemExit(2)
     if args.against is not None:
         if not args.against or args.scope is not None or args.base is not None or args.implementation_path or args.document_path:
             raise MDFError('against 不能混用 scope/base/paths', code='invalid_arguments')
         from mdf_core.reviewing.fact_context import fact_context
         result = fact_context(repo, args.against)
         # --quick 只跳过 LLM，不换 against 工作对象。
-        emit({'ok': True, 'result': result, 'semantic_review': not args.quick,
+        exit_code = quick_exit_code(result['audit']) if args.quick else 0
+        emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
               'mode': 'against' if not args.quick else 'quick'})
+        if exit_code:
+            raise SystemExit(exit_code)
         return
     # branch 收成 against 核：resolve-base → fact_context；--quick 仍只跳过 LLM。
     if args.scope == 'branch':
@@ -362,13 +373,9 @@ def command_audit(args: argparse.Namespace) -> None:
             )
         from mdf_core.reviewing.fact_context import fact_context
         result = fact_context(repo, base)
-        emit({'ok': True, 'result': result, 'semantic_review': not args.quick,
+        exit_code = quick_exit_code(result['audit']) if args.quick else 0
+        emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
               'mode': 'against' if not args.quick else 'quick'})
-        return
-    if args.quick:
-        from mdf_core.inspection.audit_quick import quick_payload
-        payload, exit_code = quick_payload(repo, args)
-        emit(payload)
         if exit_code:
             raise SystemExit(exit_code)
         return
@@ -381,6 +388,9 @@ def command_audit(args: argparse.Namespace) -> None:
     )
     from mdf_core.foundation.paths import load_manifest
     payload["state"] = load_manifest(repo).get("state")
+    if args.quick:
+        exit_code = quick_exit_code(payload)
+        payload.update(mode='quick', semantic_review=False, ok=not exit_code)
     emit(payload)
     if exit_code:
         raise SystemExit(exit_code)

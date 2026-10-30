@@ -165,3 +165,13 @@ def test_dirty_worktree_rejected(tmp_path):
     (repo / 'code.py').write_text('dirty = True\n')
     with pytest.raises(MDFError, match='clean|dirty_worktree'):
         context(repo, against=target)
+
+
+def test_against_ignores_replacement_refs(tmp_path):
+    from mdf_core.reviewing.context import context
+    repo, source, target = repository(tmp_path)
+    git(repo, 'replace', target, source)
+    ctx = context(repo, against=target)
+    assert ctx['against'] == target and ctx['head'] == source
+    assert 'code.py' in ctx['paths']
+    assert '-value = 1' in ctx['diff'] and '+value = 2' in ctx['diff']

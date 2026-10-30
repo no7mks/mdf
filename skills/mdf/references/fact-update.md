@@ -49,11 +49,13 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 主链调用方进入本 intent 前须按 [pre-gitflow-finish](pre-gitflow-finish.md)
 执行可选 hook 与必要补审补测；独立文档维护不触发，内部 Audit 不重复执行。
 
-读取 `references/common.md` 与 `references/repository-contract.md`；
+读取 `references/common.md` 与 `references/repository-contract.md`。
 步骤 3 读取并内部执行 `references/fact-audit.md` 共用核。
-主链与独立 `branch`：resolve-base 后委托 `--against <完整 SHA>`（交付外壳见
-`fact-audit-delivery.md`）；独立 `full`/`paths` 走同一语义标准，仅 must-cover 解析不同。
-内部 Audit **不得**带 `--quick`（不得跳过 LLM）。
+
+- 主链与独立 `branch`：resolve-base 后委托 `--against <完整 SHA>`，交付外壳见 `fact-audit-delivery.md`。
+- 独立 `full`/`paths` 走同一语义标准，仅 must-cover 解析不同。
+- 内部 Audit **不得**带 `--quick`（不得跳过 LLM）。
+
 deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 until 则逐层返回截止点与未完成步骤。
 已提交的合法事实改动保留，不进入 Audit、不自勾 fact update，也不把截止当作失败重试。
 

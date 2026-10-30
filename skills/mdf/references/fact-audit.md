@@ -417,7 +417,7 @@ Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查�
 
 ## `--quick`（跳过 LLM）
 
-同一审阅核内跳过步骤 3–6 的 LLM 语义审阅；clean、resolve-base、diff、stale、uncovered 仍执行。
+同一审阅核内跳过 LLM 语义审阅；resolve-base、diff、契约与结构检查、stale、uncovered 仍执行。
 不替代交付主链的完整 fact audit，不勾选 objectives。不读取 common.md 的交付前置。
 
 ```bash
@@ -434,6 +434,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --a
 | 无法判定 | frontmatter 无法解析、证据缺失、越界、未 tracked 均不通过 |
 | against | 与完整审阅同一 context；`semantic_review=false` |
 | shallow checkout | 返回 audit.shallow；CLI 不自动 fetch |
-| 结果 | JSON 含 mode=quick、semantic_review=false；0 通过，2 为 finding |
+| 结果 | JSON 含 mode=quick、semantic_review=false；无 finding/warning 为 0，否则为 2 |
 
+quick 不裁定 warning；uncovered 等待处置项也返回 2，不表示已完成语义审阅。
 参数或执行异常返回非零；CI 检查退出码，不能只搜索 stale 文案。

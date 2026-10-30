@@ -90,3 +90,18 @@ def test_review_uses_source_ownership_and_overlapping_ignore(python_exe, tmp_pat
         # 当前脏配置不影响固定 source。
         repeated = context(work, initial['source'], head, initial['policy_ref'])
         assert repeated == ctx
+
+
+@pytest.mark.parametrize('explicit', [False, True])
+def test_review_excludes_documents_in_broad_sourceset(python_exe, tmp_path, monkeypatch, explicit):
+    _, work, initial = ready_context(python_exe, tmp_path, monkeypatch)
+    modules = work / '.mdf/modules.yaml'
+    modules.write_text(modules.read_text().replace('"src/**"', '"**"'))
+    doc = work / 'docs/system/interfaces/api.md'
+    doc.write_text(doc.read_text() + '\n事实修订。\n')
+    (work / 'src/service.py').write_text('VALUE = 2\n')
+    commit(work)
+    ctx = review(work, initial, explicit)
+    assert 'src/service.py' in ctx['paths']
+    assert not any(p.startswith(('docs/', 'changes/')) for p in ctx['paths'])
+    assert '事实修订' not in ctx['diff']

@@ -2,7 +2,7 @@
 from mdf_core.execution.modules import parse_modules
 from mdf_core.foundation.yamlutil import parse_yaml
 from pathlib import PurePosixPath
-from mdf_core.workspace.merge_policy import git, paths
+from mdf_core.reviewing.worktree import git
 
 
 def source_modules(repo, head):
@@ -23,6 +23,7 @@ def selected_diff(repo, base, head, selected):
 
 
 def review_changes(repo, base, head, config):
-    selected = [p for p in paths(repo, base, head)
-                if config.owns(p) and not config.is_ignored(p)]
+    changed = git(repo, 'diff', '--no-renames', '--name-only', '-z', base, head, '--').stdout.split('\0')
+    selected = [p for p in changed if p and config.owns(p)
+                and not review_document(p) and not config.is_ignored(p)]
     return selected, selected_diff(repo, base, head, selected)

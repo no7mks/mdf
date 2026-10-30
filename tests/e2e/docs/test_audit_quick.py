@@ -9,7 +9,7 @@ def quick(python_exe, repo, *args):
     return mdf(python_exe, "fact-audit", "--repo", str(repo), "--quick", *args)
 
 
-def test_quick_skips_contract_structure_coverage_and_semantics(python_exe, tmp_path):
+def test_quick_keeps_contract_structure_and_coverage_checks(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     (repo / "AGENTS.md").unlink()
     (repo / "src/uncovered.py").write_text("VALUE = 1\n")
@@ -18,12 +18,15 @@ def test_quick_skips_contract_structure_coverage_and_semantics(python_exe, tmp_p
                     + "\n`healthy()` 返回错误的描述。\n" + "无关超长文字\n" * 600)
     init_git(repo)
     result = quick(python_exe, repo)
-    assert_ok(result)
+    assert result.returncode == 2
     data = json.loads(result.stdout)
     assert data["mode"] == "quick" and data["semantic_review"] is False
     assert data["scope"] == "full" and FACT in data["document_paths"]
-    assert data["findings"] == []
-    assert "契约检查" not in result.stderr and "文档结构检查" not in result.stderr
+    assert "size.hard" in {f["code"] for f in data["findings"]}
+    assert any(f["code"] == "audit.uncovered" for f in data["warnings"])
+    full = json.loads(mdf(python_exe, "fact-audit", "--repo", str(repo)).stdout)
+    for key in ("findings", "warnings", "implementation_paths", "document_paths"):
+        assert data[key] == full[key]
     assert not (repo / "audit-ran").exists()
     assert mdf(python_exe, "fact-audit", "--repo", str(repo)).returncode == 2
 
@@ -41,7 +44,7 @@ def test_quick_rejects_changed_evidence(python_exe, tmp_path, state):
     git(repo, "add", "-A")
     git(repo, "commit", "-m", "test: 更新实现")
     result = quick(python_exe, repo, "--scope", "branch", "--base", base)
-    assert_ok(result)
+    assert result.returncode == 2
     data = fact_audit_view(json.loads(result.stdout))
     assert FACT in data["document_paths"]
     expected = "evidence.missing_path" if state == "deleted" else "evidence.stale"
@@ -71,8 +74,16 @@ def test_quick_passes_after_document_revalidation(python_exe, tmp_path):
     fact.write_text(fact.read_text() + "\n已复核当前实现。\n")
     git(repo, "add", FACT)
     git(repo, "commit", "-m", "docs: 复核事实")
-    assert_ok(quick(python_exe, repo, "--scope", "paths", "--document-path", FACT))
+    # 共用契约校验仍报告其他尚未复核的事实页。
+    assert quick(python_exe, repo, "--scope", "paths", "--document-path", FACT).returncode == 2
     assert quick(python_exe, repo, "--scope", "full").returncode == 2
+    for doc in (repo / "docs").rglob("*.md"):
+        if "path: src/service.py" in doc.read_text():
+            doc.write_text(doc.read_text() + "\n已复核当前实现。\n")
+    git(repo, "add", "docs")
+    git(repo, "commit", "-m", "docs: 复核所有受影响事实")
+    assert_ok(quick(python_exe, repo, "--scope", "paths", "--document-path", FACT))
+    assert_ok(quick(python_exe, repo, "--scope", "full"))
 
 
 @pytest.mark.parametrize("reference", ["directory", "generated"])
@@ -97,10 +108,7 @@ def test_quick_maps_directory_and_generated_dependencies(python_exe, tmp_path, r
                  ("--scope", "paths", "--implementation-path", source.relative_to(repo).as_posix())):
         result = quick(python_exe, repo, *args)
         data = fact_audit_view(json.loads(result.stdout))
-        if args[0] == "--scope" and args[1] == "branch":
-            assert_ok(result)
-        else:
-            assert result.returncode == 2
+        assert result.returncode == 2
         assert FACT in data["document_paths"]
         code = "generated.stale" if reference == "generated" else "evidence.stale"
         assert code in {item["code"] for item in data["findings"]}
@@ -133,16 +141,21 @@ def test_quick_respects_document_ignore(python_exe, tmp_path):
     result = quick(python_exe, repo, "--scope", "paths", "--document-path", FACT)
     assert_ok(result)
     assert json.loads(result.stdout)["document_paths"] == []
-    assert json.loads(result.stdout)["ignored"] == [FACT]
+    assert [row["path"] for row in json.loads(result.stdout)["ignored"]] == [FACT]
 
 
-def test_quick_explicit_document_does_not_validate_unrelated_page(python_exe, tmp_path):
+def test_quick_explicit_document_keeps_shared_contract_validation(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     (repo / "docs/system/data/model.md").write_text("缺少 frontmatter\n")
     init_git(repo)
     result = quick(python_exe, repo, "--scope", "paths", "--document-path", FACT)
-    assert_ok(result)
-    assert payload(result)["document_paths"] == [FACT]
+    assert result.returncode == 2
+    data = json.loads(result.stdout)
+    full = json.loads(mdf(python_exe, "fact-audit", "--repo", str(repo),
+                          "--scope", "paths", "--document-path", FACT).stdout)
+    assert data["document_paths"] == [FACT]
+    assert data["findings"] == full["findings"]
+    assert "fact.frontmatter" in {f["code"] for f in data["findings"]}
 
 
 @pytest.mark.parametrize("args", [
@@ -164,12 +177,16 @@ def test_quick_with_against_is_allowed(python_exe, tmp_path):
     assert data["semantic_review"] is False and data["result"]["against"] == base
 
 
-def test_quick_rejects_shallow_ci_checkout(python_exe, tmp_path):
+@pytest.mark.parametrize("scope", ["full", "branch", "against"])
+def test_quick_rejects_shallow_ci_checkout(python_exe, tmp_path, scope):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     clone = tmp_path / "shallow"
     git(tmp_path, "clone", "--depth", "1", repo.as_uri(), str(clone))
-    result = quick(python_exe, clone)
+    options = ["--against", "HEAD"] if scope == "against" else ["--scope", scope]
+    if scope == "branch":
+        options += ["--base", "HEAD"]
+    result = quick(python_exe, clone, *options)
     assert result.returncode == 2
     assert "audit.shallow" in result.stdout
 
@@ -183,7 +200,7 @@ def test_quick_branch_retains_renamed_evidence_old_path(python_exe, tmp_path, de
     git(repo, "mv", "src/service.py", destination)
     git(repo, "commit", "-m", "test: 重命名证据")
     result = quick(python_exe, repo, "--scope", "branch", "--base", base)
-    assert_ok(result)
+    assert result.returncode == 2
     data = fact_audit_view(json.loads(result.stdout))
     assert FACT in data["document_paths"]
     assert any(item["code"] == "evidence.missing_path" and item["path"] == FACT for item in data["findings"])
@@ -208,9 +225,69 @@ def test_quick_detects_submodule_directory_stale_despite_diff_ignore(python_exe,
     extra = ("--base", dependency) if scope == "branch" else ()
     result = quick(python_exe, repo, "--scope", scope, *extra)
     data = fact_audit_view(json.loads(result.stdout))
-    if scope == "branch":
-        assert_ok(result)
-    else:
-        assert result.returncode == 2
+    assert result.returncode == 2
     assert any(item["code"] == "evidence.stale" and item["path"] == FACT
                for item in data["findings"])
+
+
+@pytest.mark.parametrize("scope", ["full", "paths", "branch", "against"])
+def test_quick_uncovered_cannot_pass(python_exe, tmp_path, scope):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "src/uncovered.py").write_text("VALUE = 1\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "test: 新增未覆盖实现")
+    options = ["--scope", scope]
+    if scope == "paths":
+        options += ["--implementation-path", "src/uncovered.py"]
+    elif scope == "branch":
+        options += ["--base", base]
+    elif scope == "against":
+        options = ["--against", base]
+    result = quick(python_exe, repo, *options)
+    assert result.returncode == 2
+    data = fact_audit_view(json.loads(result.stdout))
+    assert any(f["code"] == "audit.uncovered" and f["path"] == "src/uncovered.py"
+               for f in data["warnings"])
+
+
+@pytest.mark.parametrize("scope", ["branch", "against"])
+def test_quick_stale_exit_status(python_exe, tmp_path, scope):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    source = repo / "src/service.py"
+    source.write_text(source.read_text() + "\nVALUE = 2\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "test: 更新证据")
+    options = ["--against", base] if scope == "against" else ["--scope", "branch", "--base", base]
+    result = quick(python_exe, repo, *options)
+    assert result.returncode == 2
+    assert json.loads(result.stdout)["ok"] is False
+    assert "evidence.stale" in result.stdout
+
+
+@pytest.mark.parametrize("scope", ["full", "paths", "branch", "against"])
+@pytest.mark.parametrize("coverage", ["directory", "ignored"])
+def test_quick_accepts_covered_or_ignored_implementation(python_exe, tmp_path, scope, coverage):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "src/new.py").write_text("VALUE = 1\n")
+    if coverage == "directory":
+        replace(repo / FACT, "path: src/service.py", "path: src")
+    else:
+        replace(repo / ".mdf/modules.yaml", "    ignore: []",
+                "    ignore:\n      - pattern: src/new.py\n        reason: 无需事实覆盖")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "test: 记录覆盖或排除依据")
+    options = ["--scope", scope]
+    if scope == "paths":
+        options += ["--implementation-path", "src/new.py"]
+    elif scope == "branch":
+        options += ["--base", base]
+    elif scope == "against":
+        options = ["--against", base]
+    data = fact_audit_view(payload(quick(python_exe, repo, *options)))
+    assert not data["findings"] and not data["warnings"]
