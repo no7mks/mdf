@@ -1,4 +1,4 @@
-"""仓外只读审阅快照：固定 against 与完整当前工作区，不修改原仓库对象或 index。"""
+"""仓外只读审阅快照：固定 against / HEAD 树，不修改原仓库对象或 index。"""
 import hashlib
 import subprocess
 from pathlib import Path, PurePosixPath
@@ -44,8 +44,9 @@ def snapshot(repo, ref, destination):
     for entry in filter(None, entries):
         metadata, name = entry.split('\t', 1)
         mode, kind, oid = metadata.split()
-        if (mode not in {'100644', '100755'} or kind != 'blob'
-                or any(part.lower() in {'.git', '..'} for part in PurePosixPath(name).parts)
+        if mode not in {'100644', '100755'} or kind != 'blob':
+            continue  # 跳过 gitlink / tree；不入事实 snapshot。
+        if (any(part.lower() in {'.git', '..'} for part in PurePosixPath(name).parts)
                 or PurePosixPath(name).is_absolute()):
             raise MDFError(f'snapshot 不支持非普通文件或不安全路径：{name}', code='invalid_fact_snapshot')
         selected.append((mode, oid, name))
@@ -111,6 +112,8 @@ def worktree_files(repo):
             raise MDFError(f'工作区不支持 symlink：{name}', code='invalid_review_snapshot')
         if not path.exists():
             continue
+        if tracked.get(name) == '160000':
+            continue  # gitlink；不入工作区 snapshot。
         if path.is_dir() and tracked.get(name) in {'100644', '100755'}:
             continue  # 已跟踪文件被目录替换；其新文件由 untracked 清单收集。
         if not path.is_file():

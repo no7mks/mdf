@@ -1,4 +1,4 @@
-"""独立 fact audit quick：只检查选中文档的 evidence 有效性与 Git stale。"""
+"""fact audit --quick：full/paths 机械 stale 检查（跳过 LLM；不强制 clean）。"""
 import argparse
 from pathlib import Path
 from typing import Any

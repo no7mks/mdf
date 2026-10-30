@@ -115,6 +115,26 @@ def payload(result):
     return json.loads(result.stdout)
 
 
+def fact_audit_view(data: dict) -> dict:
+    """统一 full/paths 机械 payload 与 against/branch→against 的 result.audit 视图。"""
+    result = data.get("result")
+    if isinstance(result, dict) and "audit" in result:
+        audit = dict(result["audit"])
+        audit["implementation_paths"] = result.get(
+            "implementation_paths", audit.get("implementation_paths", [])
+        )
+        audit["document_paths"] = result.get(
+            "document_paths", audit.get("document_paths", [])
+        )
+        audit["ignored"] = result.get("ignored", audit.get("ignored", []))
+        audit["base"] = result.get("against", audit.get("base"))
+        audit["mode"] = data.get("mode", result.get("mode"))
+        audit["semantic_review"] = data.get("semantic_review")
+        audit["against"] = result.get("against")
+        return audit
+    return data
+
+
 def copy_fixture(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     shutil.copytree(FIXTURE, repo, ignore=shutil.ignore_patterns("__pycache__"))

@@ -72,10 +72,11 @@
 
 ## 审查范围
 
-code-review 的 against 与 delivery 强制覆盖实现变更；fact audit against 仍可比较完整当前工作区（含 dirty）。
+code-review against 要求 clean；fact audit against / `--scope branch` 比较基线与当前工作区（可 dirty），
+`--quick` 只跳过 LLM。强制覆盖实现变更（sourceset ∩ ¬ignore）。
 
 - code-review：实现变更与 sourceset 求交后再排除 module ignore；未归属实现不进入 paths、diff 或覆盖检查。
 - 重叠归属须所有 owner 均忽略才排除；删除和 rename 的新旧路径分别判定。
 - code-review 不把项目文档和交付材料列入强制 paths；reviewer 可读但不纳入覆盖校验。
-- against code-review：worktree 必须 clean；规则、AGENTS、manifest、modules 从当前 HEAD 工作区读取；context 绑定 against 与 head SHA。
-- fact audit against：继续使用仓外 working snapshot 与 worktree_sha256；不修改原仓库 HEAD、index 或 objects。
+- against code-review：worktree 必须 clean；规则、AGENTS、manifest、modules 从当前 HEAD 读取；context 绑定 against 与 head SHA。
+- fact audit against / branch：比较 against → 当前工作区；`worktree_sha256` 为工作区树指纹；仓外 snapshot 不改原仓库。

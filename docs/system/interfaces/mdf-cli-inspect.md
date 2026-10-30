@@ -82,16 +82,15 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 
 `--scope` 可为 `full`（默认）、`branch` 或 `paths`。
 
-`--quick` 为独立 freshness 检查，可与 scope/base/paths 按原参数规则组合，不与 against 混用。
+`--quick` **只**跳过 LLM；不换工作对象；可与 scope/base/paths 或 `--against` 组合（against 不与 scope 混用）。
+不强制 clean；`--scope branch` 经 resolve-base 后等同 against。
 
-- 只校验范围内 evidence 与 generated 的有效性、Git tracked、dirty 和提交先后。
-- 不运行全量契约、文档结构或覆盖检查；不调用 Agent、tests 或 generator。
-- branch 包含删除、目录 evidence 与 generated 依赖；paths 自动纳入指定实现影响页。
+- 机械检查范围内 evidence / generated 的有效性、Git tracked 与提交先后；against/branch 另含 must-cover uncovered。
+- 不调用 Agent 或 generator；不替代主链完整 fact audit。
+- branch/against 包含删除、目录 evidence 与 generated 依赖；paths 自动纳入指定实现影响页。
 - shallow checkout 报 `audit.shallow`，不自动 fetch；CI 应准备完整 history。
-- 输出 `mode: quick`、`semantic_review: false`、`document_paths`、`ignored` 与 findings。
-  - `ignored` 是被排除事实页的路径列表；完整 audit 的原 payload 不变。
-  - 无 finding 返回 0，有 finding 返回 2；参数、配置与执行异常同样非零。
-- quick 通过只表示未发现 stale 或证据有效性问题，不替代主链完整 fact audit。
+- against/branch：`mode`/`semantic_review` + `result` context（exit 0 表示 context 成功）。
+- full/paths quick：输出 `mode: quick`、范围与 findings；无 finding 返回 0，有 finding 返回 2。
 
 全量审计遍历 module `sourceset` 并集中的已跟踪实现文件与全部当前事实文档。
 未归属实现不进入语义审阅或覆盖检查；文档按自身契约独立纳入。
@@ -165,31 +164,25 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --document-path docs/system/interfaces/api.md
 ```
 
-### 当前工作区对比事实审阅
+### against → HEAD 事实审阅
 
 ```bash
 python3 -B skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
   --against <ref>
+python3 -B skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository \
+  --against <ref> --quick
 python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
   --repo /path/to/repository --context-file /outside/context.json --report-file /outside/report.json
 ```
 
-- against 不与 scope/base/paths 混用；普通 CLI 默认 full 不变。
-- 直接比较指定历史版本与当前工作区，含 staged、unstaged 和非忽略 untracked 文件。
-- 仓外 snapshot 不修改原仓库 HEAD、index 或 objects；不运行项目 hooks、filters 或 tests。
-- Git 读取禁用 replacement，按真实 object 比较；基线 blob 使用单次 batch 流式写盘。
-- rules、sourceset、module ignore 均来自当前工作区；未归属实现不进入语义审阅。
-- 当前 snapshot 的契约问题仍保留 findings；未提交内容不冒充已验证事实。
-- 返回 `ok: true, result: context` 只表示 context 构建成功，不表示语义审阅通过。
-- context 包含 against、worktree_sha256、diff、双侧事实映射、范围、确定性 audit 与指纹。
-- context 的 input_identity 记录 HEAD、shallow 边界与 MDF 脚本、规则、模板的指纹。
-- report-check 必须指定 repo，验证指纹、覆盖、warning 处置和结论，并轻量复核当前输入身份。
-  - 只扫描文件与输入身份，不重建 snapshot 或重跑 audit；变化时拒绝旧报告，须重新生成 context 并审阅。
-  - 格式正确且输入未变不证明语义判断正确。
-- 日志与 JSON report 均保存在 checkout 外。
-- Agent 执行与 report 契约见 [独立事实审阅](../../../skills/mdf/references/fact-audit-against.md)。
-- 主链 Skill 也调用同一 against CLI 与 report-check；不新增 delivery CLI 模式。
-  调用方基线、报告与 PR 最终候选流程见 [交付事实审阅](../../../skills/mdf/references/fact-audit-delivery.md)。
+- against 不与 scope/base/paths 混用；右端点为当前工作区（可 dirty）。
+- 仓外 snapshot 不修改原仓库；不运行 hooks、filters 或 tests。
+- rules、sourceset、module ignore 来自当前工作区；未归属实现不进入语义审阅。
+- 返回 `ok: true, result: context` 只表示 context 成功；`--quick` 时 `semantic_review: false`。
+- context 含 against、worktree_sha256（工作区树指纹）、diff、映射、audit 与指纹。
+- report-check 验证指纹与覆盖；工作区或 HEAD 身份变化须重建 context。
+- Agent 契约见 [旁路与报告](../../../skills/mdf/references/fact-audit-against.md)；
+  交付外壳见 [交付事实审阅](../../../skills/mdf/references/fact-audit-delivery.md)。
 
 ## `prose-check`
 

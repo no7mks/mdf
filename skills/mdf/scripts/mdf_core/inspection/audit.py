@@ -340,20 +340,37 @@ def audit_payload(
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
+    if args.against is not None:
+        if not args.against or args.scope is not None or args.base is not None or args.implementation_path or args.document_path:
+            raise MDFError('against 不能混用 scope/base/paths', code='invalid_arguments')
+        from mdf_core.reviewing.fact_context import fact_context
+        result = fact_context(repo, args.against)
+        # --quick 只跳过 LLM，不换 against 工作对象。
+        emit({'ok': True, 'result': result, 'semantic_review': not args.quick,
+              'mode': 'against' if not args.quick else 'quick'})
+        return
+    # branch 收成 against 核：resolve-base → fact_context；--quick 仍只跳过 LLM。
+    if args.scope == 'branch':
+        if args.implementation_path or args.document_path:
+            raise MDFError('branch audit accepts no explicit paths', code='invalid_arguments')
+        findings: list[Finding] = []
+        base = _resolve_base(repo, args.base, findings)
+        if findings or not base:
+            raise MDFError(
+                findings[0].message if findings else 'branch audit 需要可解析 base',
+                code=findings[0].code if findings else 'audit.base',
+            )
+        from mdf_core.reviewing.fact_context import fact_context
+        result = fact_context(repo, base)
+        emit({'ok': True, 'result': result, 'semantic_review': not args.quick,
+              'mode': 'against' if not args.quick else 'quick'})
+        return
     if args.quick:
-        if args.against is not None:
-            raise MDFError('quick 不能与 against 混用', code='invalid_arguments')
         from mdf_core.inspection.audit_quick import quick_payload
         payload, exit_code = quick_payload(repo, args)
         emit(payload)
         if exit_code:
             raise SystemExit(exit_code)
-        return
-    if args.against is not None:
-        if not args.against or args.scope is not None or args.base is not None or args.implementation_path or args.document_path:
-            raise MDFError('against 不能混用 scope/base/paths', code='invalid_arguments')
-        from mdf_core.reviewing.fact_context import fact_context
-        emit({'ok': True, 'result': fact_context(repo, args.against)})
         return
     payload, exit_code = audit_payload(
         repo,

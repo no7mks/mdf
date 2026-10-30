@@ -56,6 +56,7 @@ def test_module_ignore_ownership_uses_source_sourcesets(tmp_path, owners):
         config = 'modules:\n  default:\n' + ignored_module + '  overlapping:\n' + other
     modules.write_text(config)
     (repo / 'src/new.py').write_text('VALUE = 2\n')
+    commit(repo)
     ctx = fact_context(repo, target)
     excluded = owners in {'all', 'outside'}
     assert ('src/new.py' not in ctx['paths']) == excluded
@@ -80,6 +81,7 @@ def test_source_module_ignore_validates_base_and_source_files(tmp_path, change):
         generated.unlink()
     elif change == 'rename':
         generated.rename(repo / 'src/renamed.py')
+    commit(repo)
     ctx = fact_context(repo, target)
     empty = [f for f in ctx['audit']['findings'] if f['code'] == 'audit.ignore_empty']
     assert bool(empty) == (change == 'never-matched')
@@ -118,6 +120,7 @@ def test_source_ignore_filters_document_structure_independently(tmp_path, ignore
     modules.write_text(modules.read_text().replace('"src/**"', '"**"', 1).replace('    ignore: []',
         f'    ignore:\n      - pattern: {pattern}\n        reason: excluded'))
     (repo / 'src/service.py').write_text('VALUE = 2\n')
+    commit(repo)
     ctx = fact_context(repo, target)
     rel = doc.relative_to(repo).as_posix()
     assert (rel not in ctx['document_paths']) == ignored_document
@@ -134,6 +137,7 @@ def test_report_rejects_paths_outside_source_ignore_context(tmp_path, field):
     modules.write_text(modules.read_text().replace('    ignore: []',
         '    ignore:\n      - pattern: src/service.py\n        reason: excluded'))
     (repo / 'src/service.py').write_text('VALUE = 2\n')
+    commit(repo)
     ctx = fact_context(repo, target)
     report = json.loads(json.dumps(report_for(ctx)))
     report[field].append('src/service.py')
@@ -144,7 +148,7 @@ def test_report_rejects_paths_outside_source_ignore_context(tmp_path, field):
 @pytest.mark.parametrize('scope', ['full', 'branch', 'paths'])
 @pytest.mark.parametrize('prefix', ['', './'])
 def test_owned_configuration_outside_implementation_roots(python_exe, tmp_path, scope, prefix):
-    from mdf_test_support import mdf, payload
+    from mdf_test_support import fact_audit_view, mdf, payload
     repo, _ = repository(tmp_path)
     modules = repo / '.mdf/modules.yaml'
     modules.write_text(modules.read_text().replace('"src/**"', '"src/**"\n      - "config/**"', 1))
@@ -159,7 +163,7 @@ def test_owned_configuration_outside_implementation_roots(python_exe, tmp_path, 
     args = ['--base', base] if scope == 'branch' else []
     if scope == 'paths':
         args = ['--implementation-path', prefix + 'config/runtime.json']
-    result = payload(mdf(python_exe, 'fact-audit', '--repo', str(repo), '--scope', scope, *args))
+    result = fact_audit_view(payload(mdf(python_exe, 'fact-audit', '--repo', str(repo), '--scope', scope, *args)))
     assert 'config/runtime.json' in result['implementation_paths']
     assert '.codex/skills/mdf/runtime.json' not in result['implementation_paths']
     ctx = fact_context(repo, base)
@@ -170,11 +174,12 @@ def test_owned_configuration_outside_implementation_roots(python_exe, tmp_path, 
 def test_fact_context_uses_current_policy_and_current_scope(tmp_path):
     repo, target = repository(tmp_path)
     (repo / 'src/new.py').write_text('VALUE = 1\n')
-    source = commit(repo)
+    commit(repo)
     before = fact_context(repo, target)
     (repo / 'AGENTS.md').write_text('当前工作区审阅规则\n')
     modules = repo / '.mdf/modules.yaml'
     modules.write_text(modules.read_text().replace('src/**', 'other/**'))
+    commit(repo)
     after = fact_context(repo, target)
     assert after['rules']['agents'] == '当前工作区审阅规则\n'
     assert after['rules']['modules'] == modules.read_text()

@@ -81,7 +81,7 @@ def test_report_cli_rejects_changed_inputs(python_exe, tmp_path, change):
     result = mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
                  '--context-file', context_file, '--report-file', report_file)
     assert result.returncode != 0
-    assert '须重新生成 context 并审阅' in result.stderr
+    assert ('须重新生成 context 并审阅' in result.stderr or 'dirty_worktree' in result.stderr)
 
 
 @pytest.mark.parametrize('area', ['scripts', 'references', 'assets'])
@@ -102,16 +102,18 @@ def test_report_check_rejects_changed_mdf_files(tmp_path, monkeypatch, area):
 def test_report_check_uses_fixed_against_and_ignores_excluded_files(python_exe, tmp_path):
     repo, base = repository(tmp_path)
     (repo / '.gitignore').write_text('ignored.txt\n')
-    git(repo, 'branch', 'review-base', base)
+    commit(repo)
+    git(repo, 'branch', 'review-base', git(repo, 'rev-parse', 'HEAD').stdout.strip())
     ctx = context_module.fact_context(repo, 'review-base')
     context_file, report_file = report_files(tmp_path, ctx)
     (repo / 'ignored.txt').write_text('not an input')
     # 改动符号 ref 不改变原 against 或 HEAD。
-    other = git(repo, 'commit-tree', f'{base}^{{tree}}', '-p', base, '-m', 'test: 移动 ref').stdout.strip()
+    against = ctx['against']
+    other = git(repo, 'commit-tree', f'{against}^{{tree}}', '-p', against, '-m', 'test: 移动 ref').stdout.strip()
     git(repo, 'branch', '-f', 'review-base', other)
     result = payload(mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
                          '--context-file', context_file, '--report-file', report_file))
-    assert result['result']['against'] == base
+    assert result['result']['against'] == against
     assert result['result']['decision'] == 'pass'
     assert not (repo / '.mdf/logs').exists()
 

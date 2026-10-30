@@ -166,6 +166,6 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
   - 读取 changed_paths 与 needs_recheck，并核对内容。仅文档则复核提交，无改动不制造提交。
   - 其他改动退勾 code-review 及后续项，再补审补测。增量审查左端点为原 before_head。
   - hook 失败仅汇报，仍按实际 diff 处理。CLI 现场检查失败则停止，不改分支或改写历史。
-  - 按 `references/fact-audit.md` 审阅 branch scope，基线为 start_commit。
+  - 按 `references/fact-audit.md` 共用核审阅；基线为 start_commit（`--against`）。
   - 需更新时委托 `references/fact-update.md`，沿用其内部审阅；不新增 checklist 项。
   - fact 审阅通过后保存 `fact-audit.md`，自勾 fact audit/update 并提交。

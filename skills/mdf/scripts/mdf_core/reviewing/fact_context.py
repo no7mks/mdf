@@ -1,4 +1,4 @@
-"""当前工作区相对 against 的事实审阅 context。"""
+"""against → 当前工作区的事实审阅 context（允许 dirty）。"""
 import posixpath
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -30,7 +30,6 @@ def inventory(repo):
             # 确定性 validation 报告格式错误；仍将该页纳入候选。
             result[path.relative_to(repo).as_posix()] = []
     return result
-
 
 
 def fact_context(repo, against):

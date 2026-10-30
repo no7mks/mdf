@@ -111,7 +111,7 @@
   - 不要求 objectives checkbox；报告须对应真实分支，`scope: smart`、`all_passed: true`。
   - 修复实现、测试或验证配置后补必要审查与验证；已有适用报告可复用，不伪造完成。
 - hook 沿用 `pre-gitflow-finish` 的一次执行与日志恢复规则；实现改动返回 Check。
-- 按 `fact-audit.md` 使用固定 base 的 branch scope；必要时执行 fact update。
+- 按 `fact-audit.md` 共用核，以固定 `range.base` 为 `--against`；必要时执行 fact update。
   - 按 fact 审阅结果保存报告，保存在同一材料目录。
   - 不创建 objectives，也不向其他交付的 checklist 追加或补勾。
 

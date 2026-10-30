@@ -1,16 +1,38 @@
 # Fact Audit
 
-出现 `--quick` 时，直接执行下方「独立 quick 模式」，不进入七步普通流程。
-`--quick` 与 `--against` 互斥。
+## 审阅核与参数
 
-出现 `--against` 时，直接执行
-[独立 against 模式](fact-audit-against.md)，不进入下方普通流程。
+所有调用共用同一审阅核（只读）：
 
-交付主链调用（含 fact update 内部委托）先执行
-[交付事实审阅](fact-audit-delivery.md)，复用 against 的范围与报告校验，不进入下方七步流程。
-独立 branch/full/paths、migrate 与已收口后的 paths 修复仍执行下方流程。
+`resolve-base → diff → 过滤 → must-cover → stale → uncovered → [LLM] → gather → [output]`
+
+- 不强制 clean；against 比较基线与**当前工作区**（可含 dirty）。
+- `must-cover` = `diff(base, 当前工作区) ∩ sourceset ∩ ¬module-ignore` 的实现路径。
+  - stale：frontmatter evidence 落在 must-cover 内的事实页。
+  - uncovered：must-cover 每项须有文档覆盖或显式 ignored；只裁定该集合，不是全库。
+- 交付与独立 branch：CLI `--scope branch` / Agent resolve-base 后均走 against 核（同一核）。
+- `$mdf fact audit --quick`：**只**跳过 LLM；不换工作对象；可与 `--against` / `--scope branch` 或 full/paths 组合。
+- 旁路 / CI 将 JSON 写在 checkout 外；交付主链另写 Markdown 摘要。
+- 交付主链按 [交付事实审阅](fact-audit-delivery.md)；旁路见 [旁路与报告](fact-audit-against.md)。
+- CLI `--scope full|paths` 仍为确定性机械入口（无 against 左端点时）。
+
+### resolve-base
+
+| 情形 | 本轮左端点 |
+| --- | --- |
+| 显式 `--against` | 解析后的完整 SHA |
+| feature·bugfix·hotfix·有账本 adhoc | `delivery.start_commit` → `mdf-start-commit` |
+| release | 上一正式发布 master commit/tag |
+| 无账本 adhoc | 固定 `range.base` |
+| 独立 `--scope branch` | resolve-base 后等同 `--against <SHA>` |
+| 独立 `--scope full` | 无 diff 基线；must-cover = 全 sourceset |
+| 独立 `--scope paths` | 调用方 implementation paths 即 must-cover |
+
+报告可另记 CI base；与交付起点分离时不得混称。
 
 ## 决策树
+
+交付 / against 旁路在步骤 1–2 使用对应外壳 CLI，语义仍用本表；`--quick` 在步骤 2 后跳到 7。
 
 ```text
 ┌──────────────────────────────────┐
@@ -25,6 +47,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 无法审阅 ────→ [停止]
+                 ├──── --quick ─────→ 7 Report result
                  │
                  ▼ 可审阅
 ┌──────────────────────────────────┐
@@ -78,14 +101,15 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve scope | 约束 | 确认调用方与 `--scope`（branch/full/paths） | 类型、scope、范围 | 2 | 停止 |
-| 2 | Audit CLI | 脚本 | 按 scope 运行 fact-audit CLI 并核对 state | state、映射、结构、findings | 可审阅→3 | 无法审阅则停止 |
+| 1 | Resolve scope | 约束 | 调用方与 base / `--against` 或 `--scope` | 类型、scope、范围 | 2 | 停止 |
+| 2 | Audit CLI | 脚本 | against / branch→against 或 full/paths 机械 CLI | 映射、结构、findings | 可审阅→3；quick→7 | 无法审阅则停止 |
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
 | 6 | Validate | 脚本 | 运行 strict validation，处置新增 warning | validation findings、处置记录 | 7 | update 仅结构返回；其余未通过 |
 | 7 | Report result | 约束 | 按证据与 findings 判定并报告结论 | 摘要、审阅结论 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
+against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md) 与 [交付事实审阅](fact-audit-delivery.md)；语义标准仍用下方 s3–s7。
 ## 术语与数据结构
 
 ### 逐项进度
@@ -151,7 +175,7 @@
 direct 调用不再为读取 state 运行入口 doctor；fact update 写入前的 doctor 仍由调用方执行。
 
 首次发布无上一版本时停止确认初始基线。
-审阅不要求 clean，不替调用方提交；未提交内容仍须满足 evidence 与 strict validation 契约。
+不强制 clean；不替调用方提交。主链与独立 branch 优先 `--against <完整 SHA>`，与 resolve-base 一致。
 
 验收：调用方、scope 与范围。
 
@@ -208,12 +232,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 普通、against 与交付审阅共用本节；按需核对实际引用，不输出完整文件清单。
 
-- 事实裁定只使用本轮审阅输入中的文件与明确固定的 Git history，不从本地额外产物补证。
-  against 以 snapshot 为准；普通 scope 同样排除 ignored 且未跟踪的文件，不能因磁盘上存在而采信。
+- 事实裁定只使用本轮审阅输入（against 工作区 snapshot 或 full/paths 范围）与明确固定的 Git history，
+  不从审阅输入外的本地产物补证。against 以 against/当前工作区 snapshot 为准（可含 dirty）。
 - 引用前按路径核对 Git 身份：先用 `git -C "$REPO_ROOT" --literal-pathspecs ls-files --error-unmatch -- <path>` 判断是否 tracked。
   未跟踪路径再用 `git -C "$REPO_ROOT" check-ignore -- <path>` 判断；目录引用逐项核对实际使用的文件。
   区分正常未匹配与 Git 执行错误；错误时停止核查，不把失败当作 untracked 或未 ignored。
-- tracked 文件不因匹配 ignore 规则自动排除；非 ignored 的未跟踪文件只可用于包含工作区内容的本地审阅。
+- tracked 文件不因匹配 ignore 规则自动排除；against 审阅对象即当前工作区。
   PR 最终候选必须已提交，不能用 CI checkout 不含的本地改动或文件补证。
 - `.mdf/reports/`、`.mdf/logs/` 等 ignored 本地产物可用于 verify 或排障，不能支持 fact audit 通过或消除 finding。
   不因这些文件存在、缺失或内容不同改变事实裁定；不为审阅读取其内容、运行测试或生成替代日志。
@@ -390,33 +414,25 @@ Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查�
   - 结构检查只及范围内页面与改动到的入口页。
 
 
-## 独立 quick 模式
+## `--quick`（跳过 LLM）
 
-仅供独立调用与 CI/CD；不替代交付主链的完整 fact audit，不勾选 objectives。
-不读取 common.md 的交付前置流程，不运行 doctor、strict validation 或验证入口。
-
-- 核 Git 根并解析 scope；Skill 省略 scope 时仍为 branch，显式路径即 paths。
-  - branch 基线沿用上方规则；CI 可显式传 `--base <commit>`。
-  - CLI 省略 scope 时为 full；CI 推荐显式 full。
-- 执行一次下列 CLI；不进入语义、覆盖、warning 或文档结构审阅。
-- 读取 JSON 与退出码后返回「quick 检查通过」或 findings；不称完整审阅通过。
-  - 有 stale 或证据不可判定时返回未通过，不自动修复、提交或转入完整 audit。
+同一审阅核内跳过步骤 3–6 的 LLM 语义审阅；clean、resolve-base、diff、stale、uncovered 仍执行。
+不替代交付主链的完整 fact audit，不勾选 objectives。不读取 common.md 的交付前置。
 
 ```bash
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --scope full
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --scope branch --base <commit>
+python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --against <commit>
 ```
 
 | 检查 | quick 行为 |
 | --- | --- |
-| evidence 时间关系 | 沿用 Git commit ancestry；证据比事实页新或证据 dirty 时报 stale，不使用 mtime |
-| generated | 同样检查 source 与 generator 的 Git history 和 dirty 状态，不运行 generator |
-| 无法判定 | frontmatter 无法解析、证据缺失、越界、未 tracked 或无提交记录均不通过 |
-| 事实页相互引用 | 仅作链接，不比较先后；未提交的文档修改不能消除 stale |
-| scope | full 检查全部事实页；branch 检查变化事实页与受影响页；paths 检查指定页及指定实现影响页 |
-| 依赖映射 | 包含删除路径、目录 evidence 与 generated 依赖；按 module ignore 排除 |
-| shallow checkout | 返回 audit.shallow；调用方准备完整 history 后再检查，CLI 不自动 fetch |
-| 结果 | JSON 含 mode=quick、semantic_review=false、范围与 findings；0 为通过，2 为 finding |
+| evidence 时间关系 | Git ancestry；证据比事实页新或 dirty 时报 stale，不使用 mtime |
+| generated | 检查 source / generator 的 Git history，不运行 generator |
+| uncovered | 仅对 must-cover 集合；每项须覆盖或显式 ignored |
+| 无法判定 | frontmatter 无法解析、证据缺失、越界、未 tracked 均不通过 |
+| against | 与完整审阅同一 context；`semantic_review=false` |
+| shallow checkout | 返回 audit.shallow；CLI 不自动 fetch |
+| 结果 | JSON 含 mode=quick、semantic_review=false；0 通过，2 为 finding |
 
-参数、配置或执行异常返回非零；CI 不得将缺失或不可解析的 JSON 视为通过。
-仓外日志可通过 `MDF_LOG_DIR` 指定；CI 应检查退出码，不能只搜索 stale 文案。
+参数或执行异常返回非零；CI 检查退出码，不能只搜索 stale 文案。

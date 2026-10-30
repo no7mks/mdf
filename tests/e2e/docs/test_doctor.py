@@ -89,6 +89,10 @@ def test_doctor_allows_stale_evidence_but_full_checks_reject_it(
     for command in ("validate", "fact-audit"):
         options = ["--level", "strict"] if command == "validate" else ["--scope", "full"]
         result = mdf(python_exe, command, "--repo", str(repo), *options)
+        if command == "fact-audit" and change_state != "committed":
+            assert result.returncode != 0
+            assert "dirty_worktree" in result.stderr
+            continue
         assert result.returncode == 2
         checked = json.loads(result.stdout)
         assert checked["ok"] is False
@@ -127,6 +131,10 @@ def test_doctor_allows_stale_generated_facts_but_full_checks_reject_them(
     for command in ("validate", "fact-audit"):
         options = ["--level", "strict"] if command == "validate" else ["--scope", "full"]
         result = mdf(python_exe, command, "--repo", str(repo), *options)
+        if command == "fact-audit" and not committed:
+            assert result.returncode != 0
+            assert "dirty_worktree" in result.stderr
+            continue
         assert result.returncode == 2
         checked = json.loads(result.stdout)
         assert checked["ok"] is False

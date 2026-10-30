@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from mdf_test_support import copy_fixture, git, init_git, mdf, payload
+from mdf_test_support import copy_fixture, fact_audit_view, git, init_git, mdf, payload
 from support_upgrade import init_upstream, source_head, write_installed
 
 
@@ -44,7 +44,7 @@ def test_pr_audit_after_upgrade_excludes_install_but_keeps_project_facts(python_
             extra = ['--implementation-path', '.codex/skills/mdf/tool.py', '--document-path', document]
         result = mdf(python_exe, 'fact-audit', '--repo', str(repo), '--scope', scope, *extra)
         assert result.returncode in {0, 2}
-        return json.loads(result.stdout)
+        return fact_audit_view(json.loads(result.stdout))
 
     data = audit()
     assert not any(p.startswith('.codex/skills/mdf/') for p in data['implementation_paths'])
@@ -63,4 +63,5 @@ def test_pr_audit_after_upgrade_excludes_install_but_keeps_project_facts(python_
         assert 'src/project.py' in data['implementation_paths']
         assert document in data['document_paths']
         assert not any(p.startswith('.codex/skills/mdf/') for p in data['implementation_paths'])
-        assert any(m['document'] == document and 'src/project.py' in m['evidence'] for m in data['mappings'])
+        assert any(m['document'] == document and 'src/project.py' in m['evidence']
+                   for m in data['mappings'])

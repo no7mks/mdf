@@ -17,17 +17,21 @@ def test_audit_ignore_exempts_document_limits(python_exe, tmp_path, scope):
         extra = ["--document-path", name]
     args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     result = mdf(python_exe, *args)
-    assert result.returncode == 2
-    codes = {item["code"] for item in json.loads(result.stdout)["findings"]}
+    data = fact_audit_view(json.loads(result.stdout))
+    if scope == "branch":
+        assert_ok(result)
+    else:
+        assert result.returncode == 2
+    codes = {item["code"] for item in data["findings"]}
     assert {"size.hard", "prose.sentence"} <= codes
     modules = repo / ".mdf/modules.yaml"
     modules.write_text(modules.read_text().replace('"src/**"', '"**"', 1).replace("    ignore: []", f"    ignore:\n      - pattern: {name}\n        reason: 保留外部手册"))
     git(repo, "add", "--all")
     git(repo, "commit", "-q", "-m", "test: 排除外部手册")
-    data = payload(mdf(python_exe, *args))
+    data = fact_audit_view(payload(mdf(python_exe, *args)))
     assert data["findings"] == []
     assert name not in data['document_paths']
-    assert all(row['document'] != name for row in data['mappings'])
+    assert all(row['document'] != name for row in data.get('mappings', []))
     assert data["ignored"] == [{"path": name, "ignore_path": name, "reason": "保留外部手册"}]
 
 

@@ -18,6 +18,7 @@ def test_audit_keeps_code_size_limits_out_of_document_checks(python_exe, tmp_pat
         "    ignore: []\n    size_limits:\n      max_file_lines: 1200\n"
         "      max_package_files: 60\n      split_percent: 60\n"))
     git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 配置代码规模覆盖")
     extra = ["--base", base] if scope == "branch" else []
     if scope == "paths":
         extra = ["--implementation-path", "src/large.py", "--implementation-path", "src/package/unit_0.py"]
@@ -27,6 +28,7 @@ def test_audit_keeps_code_size_limits_out_of_document_checks(python_exe, tmp_pat
     for index in range(55, 61):
         (package / f"unit_{index}.py").write_text("pass\n")
     git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 超出代码规模覆盖")
     result = mdf(python_exe, *args)
     assert result.returncode == 0
     assert not json.loads(result.stdout)["findings"]

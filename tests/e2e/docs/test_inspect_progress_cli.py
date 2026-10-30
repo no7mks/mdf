@@ -67,6 +67,9 @@ def test_findings_still_fail_after_progress(command, python_exe, tmp_path):
     init_git(repo)
     (repo / "src/service.py").write_text("# 已变更\n")
     options = ["--level", "strict"] if command == "validate" else ["--scope", "full"]
+    if command == "fact-audit":
+        git(repo, "add", "src/service.py")
+        git(repo, "commit", "-m", "test: 更新 evidence")
     result = mdf(python_exe, command, "--repo", str(repo), *options)
     assert result.returncode == 2
     data = json.loads(result.stdout)

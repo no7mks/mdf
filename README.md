@@ -140,19 +140,15 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc；worktree 必�
   - `--write-tests-model`、`--implement-model`、`--code-review-model`；
     值为口语描述，可点名一个或多个模型。
 
-`$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit（可含 dirty）。
-见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
+fact audit 共用核：`resolve-base → diff → must-cover → stale → uncovered → [LLM] → output`。
+见 [Fact Audit](skills/mdf/references/fact-audit.md)。不强制 clean。
 
-交付主链的 fact audit 自动复用 against 的范围、语义审阅与报告校验，无需手动补跑。
-PR 在候选材料与 squash 完成后、push 前再核最终候选，JSON 留在仓外。
-与 CI 一致须使用相同 base 和输入；见 [交付事实审阅](skills/mdf/references/fact-audit-delivery.md)。
-
-`$mdf fact audit --quick` 仅供独立检查，不替代交付主链审阅。
-CI/CD 可直接调用 `mdf.py fact-audit --repo <repo> --quick --scope full`，无需 Agent。
-返回 JSON；退出码 0 为 quick 通过，2 为 finding，其他非零为执行失败；需要完整 Git history。
-
-两种 against 均由执行 intent 的 Agent 加载 Skill，在当前 worktree 运行对应命令、读取仓库并写出报告。
-Cursor 与 Codex 使用同一 intent；调用方如何准备 worktree、如何选定 commit 不属于 MDF。
+- `$mdf fact audit --against <commit>`：覆盖左端点，与当前工作区比较。
+- `$mdf fact audit --scope branch`：resolve-base 后等同 against。
+- `$mdf fact audit --quick`：只跳过 LLM；不换工作对象；可与 `--against` / scope 组合。
+- 交付主链复用同一核并写 `fact-audit.md` / 勾选；见 [交付事实审阅](skills/mdf/references/fact-audit-delivery.md)。
+- CI 可用 `mdf.py fact-audit --repo <repo> --quick --scope full` 或 `--quick --against <sha>`；
+  退出码 0 通过、2 为 finding；需要完整 Git history。
 
 ### close-out 与 deliver
 

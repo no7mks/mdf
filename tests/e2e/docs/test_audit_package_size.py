@@ -14,17 +14,21 @@ def test_audit_package_scope_and_ignore(python_exe, tmp_path, scope, folder):
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
     name = f"{folder}/unit_0.py"
     (repo / name).write_text("pass  # touched\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 更新 package 成员")
     extra = ["--base", base] if scope == "branch" else []
     if scope == "paths":
         extra = ["--implementation-path", name]
     args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     result = mdf(python_exe, *args)
     assert result.returncode == 0
-    findings = json.loads(result.stdout)["findings"]
+    findings = fact_audit_view(json.loads(result.stdout))["findings"]
     assert not findings
     modules = repo / ".mdf/modules.yaml"
     modules.write_text(modules.read_text().replace('"src/**"', '"**"', 1).replace("    ignore: []", f"    ignore:\n      - pattern: {folder}/unit_50.py\n        reason: 生成文件"))
-    data = payload(mdf(python_exe, *args))
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 配置 package ignore")
+    data = fact_audit_view(payload(mdf(python_exe, *args)))
     expected = ([{"path": f"{folder}/unit_50.py",
                   "ignore_path": f"{folder}/unit_50.py", "reason": "生成文件"}] if scope == "full" else [])
     assert data["ignored"] == expected
@@ -40,9 +44,10 @@ def test_branch_audit_checks_package_after_deleting_a_member(python_exe, tmp_pat
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
     (directory / "unit_51.py").unlink()
     git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 删除 package 成员")
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch", "--base", base)
     assert result.returncode == 0
-    assert not json.loads(result.stdout)["findings"]
+    assert not fact_audit_view(json.loads(result.stdout))["findings"]
 
 
 @pytest.mark.parametrize("scope", ["branch", "paths"])
@@ -71,6 +76,8 @@ def test_ignored_member_does_not_trigger_package_check(python_exe, tmp_path, sco
             name = "src/large/generated_two.py"
     else:
         (repo / name).write_text("pass  # touched\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 更新 ignored package 成员")
     extra = ["--base", base] if scope == "branch" else ["--implementation-path", name]
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra))
     full = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "full")

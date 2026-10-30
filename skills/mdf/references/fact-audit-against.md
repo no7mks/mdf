@@ -1,143 +1,48 @@
-# 当前工作区对比审阅
+# 事实审阅旁路与报告
 
-`$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
-commit 可以是 branch start、last release，或调用方选定的任意 commit。
-Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill、运行命令、读取仓库并写出报告。
-交付主链与 PR 最终候选也复用本流程；仅交付调用适用 [交付事实审阅](fact-audit-delivery.md) 的前后事项。
-
-## 静态审阅边界
-
-- 本 intent 执行静态事实审阅，不承担 HTML 渲染或视觉验收。
-- 不得仅因缺少 browser / HTML preview 将报告标为 incomplete。
-- 文档声称已完成视觉验收时，须核对该声明的证据；证据缺失或不支持声明时，按事实问题记录 finding。
-  - 无法完成该声明的静态复核时，记录具体 incomplete 原因，不以缺少渲染工具代替原因。
-- 静态检查通过只支持静态审阅结论，不得表述为 HTML 渲染或视觉检查通过。
-
-## 决策树
-
-```text
-┌──────────────────────────────────┐
-│ 1 Resolve                        │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 参数或配置无效 ────→ [报告 error 并停止]
-                 │
-                 ▼ 参数与路径已确认
-┌──────────────────────────────────┐
-│ 2 Context                        │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 命令失败或输出缺失 ────→ [读日志，报告 error 并停止]
-                 │
-                 ▼ 有效 context
-┌──────────────────────────────────┐
-│ 3 Facts                          │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 未完成或证据缺失 ────→ 5 Report
-                 │
-                 ▼ 事实复核完成，可有 findings
-┌──────────────────────────────────┐
-│ 4 Coverage                       │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 未完成或证据缺失 ────→ 5 Report
-                 │
-                 ▼ 覆盖与 warnings 已处置
-┌──────────────────────────────────┐
-│ 5 Report                         │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 复核命令失败 ──────────→ [报告 error 并停止]
-                 ├──── context 已变化 ────────→ 2 Context
-                 ├──── 格式不符且可修 ────────→ 5 Report
-                 ├──── 格式无法修正 ──────────→ [报告 error 并停止]
-                 └──── 指纹一致且报告有效 ────→ [返回调用方]
-```
+独立 `$mdf fact audit --against <commit>`（可加 `--quick`）走
+[Fact Audit](fact-audit.md) 共用核的只读旁路；不勾 objectives、不写交付 Markdown。
+交付主链另见 [交付事实审阅](fact-audit-delivery.md)。
+树形：not-tree。
 
 ## 工作流（唯一执行契约）
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve | 约束 | 核 Git 根、参数、当前配置与仓外产物位置 | 根、参数、配置、日志目录 | 2 | 报 error 并停止 |
-| 2 | Context | 脚本 | 调用 fact-audit --against，保存 result | against 完整 SHA、指纹与范围 | 3 | 读日志，报 error 并停止 |
-| 3 | Facts | 约束 | 复核当前完整事实页、evidence 与结构 | 逐页 findings | 4 | 记 incomplete，转5 |
-| 4 | Coverage | 约束 | 反查覆盖并复核删除与 rename | 覆盖与 warnings | 5 | 记 incomplete，转5 |
-| 5 | Report | 约束 | 生成 JSON，轻量复核输入身份并校验报告 | 输入指纹、校验结果 | 有效则返回 | 变化回2；格式可修留5；其余报 error |
+| 1 | Resolve | 约束 | Git 根、参数、仓外产物位置 | 根、参数、日志目录 | 2 | 报 error 并停止 |
+| 2 | Context | 脚本 | `fact-audit --against`，保存 result | against、工作区指纹与范围 | 3 | 读日志，报 error 并停止 |
+| 3 | Facts | 约束 | 复核事实页、evidence 与结构（`--quick` 跳过） | 逐页 findings | 4 | 记 incomplete，转5 |
+| 4 | Coverage | 约束 | must-cover 覆盖与 warnings（`--quick` 跳过） | 覆盖与 warnings | 5 | 记 incomplete，转5 |
+| 5 | Report | 约束 | 仓外 JSON + report-check | 指纹、校验结果 | 有效则返回 | 变化回2；其余报 error |
 
-## 术语与数据结构
-
-### 输入与快照
-
-CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；先将 `MDF_LOG_DIR` 指向 checkout 外。
+## CLI
 
 ```bash
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --against <commit>
+python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --against <commit> --quick
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
   --repo "$REPO_ROOT" --context-file /outside/context.json --report-file /outside/report.json
 ```
 
-- against 不与 scope、base、路径或交付参数混用；无需 ready 或交付材料。
-- 直接比较指定版本，不计算 merge-base，不要求 against 是 HEAD 的祖先。
-- 当前状态包含已提交、staged、unstaged 与未被 Git ignore 的 untracked 普通文件。
-- 同一文件 staged 与 unstaged 不同时，以当前磁盘内容为准；已跟踪文件不因 Git ignore 排除。
-- 只读原仓库，不 checkout、commit 或修改 index、refs、objects；不运行项目 tests、hooks 或 filters。
-- snapshot 位于仓外，退出时清理；symlink、submodule 与不安全路径明确报错。
-- 继承原仓库 object format 与 shallow 边界，不自动 fetch；against 必须在本地可解析。
-- Git 读取统一禁用 replacement，完整 SHA 固定真实 object；不解释默认或宿主指定的 replacement refs。
-- 基线 blob 用一次 git cat-file --batch 流式写盘，不在内存中缓存全部 blob 或单个大 blob。
+- against 不与 scope、base、路径混用；右端点为当前工作区（可 dirty）。
+- 直接比较指定版本与当前工作区，不计算 merge-base；against 须本地可解析。
+- 只读原仓库，不改 HEAD/index/refs/objects；不跑 tests/hooks/filters。
+- 规则、manifest、modules 来自当前工作区；must-cover 见 fact-audit 审阅核。
+- 步骤 3–4 只读 [双向复核标准](fact-audit.md#s3) 至 warnings；不跑普通七步的 scope 默认。
+- `--quick` **只**跳过步骤 3–4 的 LLM，不换工作对象；仍保留 context 内确定性 audit / stale / uncovered。
 
-### 规则与范围
-
-- MDF 通用协议来自当前安装位置；项目 rules、manifest、AGENTS 与 modules 来自当前工作区 snapshot。
-- 实现范围为 `against → 当前工作区` 变更与当前 sourceset 并集的交集，再应用当前 module ignore。
-- 未归属实现不进入 paths、diff、implementation_paths 或覆盖检查。
-- 重叠归属须所有 owner 均忽略才排除；ignore 空匹配用基线与当前文件清单并集校验。
-- paths 与 diff 同步过滤；文档与交付材料按各自契约独立纳入，不要求归属 module。
-- document_paths 包含变化事实页，以及基线或当前 evidence 引用有效实现变更的事实页。
-- 双侧映射覆盖目录 evidence、generated.source 与 generated.generator。
-- 删除与 rename 的新旧路径分别判定；删除文件从 against 读取，不丢弃基线事实映射。
-- 步骤 3–4 仅读取 [fact audit 的双向复核标准](fact-audit.md#s3) 至 warnings 条款，执行事实、覆盖与加载质量检查。
-  - 不进入其默认 scope、ready 前置或七步主流程，不重复执行 strict validation。
-- 步骤 3 还须审阅 paths 中的项目文档与交付材料结构，不能因它们不在 document_paths 就跳过。
-- 当前事实页审完整陈述，不仅看 Markdown diff；新增行为须反查缺失文档。
-- audit 保留当前 snapshot 的全量契约 validation 和范围结构检查，不把既有问题冒充本次引入。
-- CLI 只提供确定性 context，成功不表示完成语义审阅。
-- 实际引用按 fact-audit.md 的 Evidence 输入边界逐项核对；不得用 snapshot 外的 ignored reports/logs 补证。
-  context 的变更路径不是完整 evidence 清单；未改动但属于 snapshot 的实现仍可作为证据。
-
-### 快照身份与报告
+## 报告字段
 
 最终 report 使用 [JSON schema](../assets/templates/against-fact-audit-report.schema.json)。
-CLI envelope 的 result 才是 context；下表字段按所属对象读取或生成。
 
 | 对象 | 字段 | 含义 |
 | --- | --- | --- |
-| context → report 原样复制 | schema_version / mode / operation | 固定为 3 / against / fact-audit |
-| context → report 原样复制 | against | 实际比较基线的完整 SHA |
-| context → report 原样复制 | worktree_sha256 | 本轮工作区文件路径、mode 与内容的指纹 |
-| context → report 原样复制 | rules_sha256 / context_sha256 | 已捕获规则与完整 context 的指纹 |
-| report 按实际完成范围填写 | paths / implementation_paths / document_paths | 已完成复核的范围，不超出 context |
-| 仅 context | ignored | context 中有效 module ignore 排除的变更路径与理由 |
-| 仅 context | base_mappings / worktree_mappings | context 中基线与当前的事实映射 |
-| 仅 context | input_identity | HEAD 完整 SHA、shallow 边界与 MDF 脚本、规则、模板的指纹 |
-| report | findings | 静态证据支持的问题，包含位置、触发条件、影响和 P0–P3 |
-| report | warnings | CLI warning 的逐条裁定与证据 |
-| report | incomplete | 未完成、证据缺失或工具失败的具体原因 |
-| report | decision | pass / changes_requested / needs-review / error |
+| context → report | schema_version / mode / operation | 3 / against / fact-audit |
+| context → report | against / worktree_sha256 | 基线 SHA；当前工作区树指纹 |
+| context | input_identity | HEAD / shallow / 工具指纹 |
+| report | paths / implementation_paths / document_paths | 已复核范围，不超出 context |
+| report | findings / warnings / incomplete / decision | 语义与完成状态 |
 
-- 步骤 5 基于原 context 生成报告，按上方命令运行 fact-audit-report-check，不重跑完整 audit。
-  - report-check 校验 context_sha256 与报告，并重新扫描工作区文件路径、mode、内容及 input_identity。
-  - 轻量复核不创建 snapshot，不重算 diff、evidence 映射、结构检查或 validation。
-  - 输入变化则用 context.against 的完整 SHA 回2，再完成步骤 3–4；不复用旧通过结论，不重新解析原符号 ref。
-  - 复核失败时报告 error 与日志位置；不伪造 schema 必需字段。
-- report-check 退出 0 且 result.valid 为 true 才返回 report 的 decision。
-  - 格式可修则留5，无法修正则报告 error；校验成功不等于语义 pass。
-- 不把仅 context 的 ignored、mappings、audit 或 input_identity 字段复制进最终 report。
-- 审阅期间以捕获的规则为准；代码、文档或规则变化均需重新核对 snapshot 身份。
-- 完整覆盖所有三类范围、处置全部 warnings，且无 finding/incomplete 才能 pass。
-- warning disposition 为 accepted、finding 或 needs-review；accepted 须附证据与理由。
-- audit.findings 不能被空语义 findings 掩盖；未完成只能 needs-review/error。
-- changes_requested 要求复核完整且存在 finding；P0–P3 不豁免事实错误。
-- 报告由会话返回，调用方保存到 checkout 外；不直接 approve、merge 或发消息。
-- report-check 只验证结构、覆盖与指纹一致性，不证明语义判断真实。
+- report-check 校验指纹与覆盖；输入变化则用原 against 回步骤 2，不复用旧通过结论。
+- 完整覆盖三类范围、处置 warnings、无 finding/incomplete 才能 pass。
+- 报告由会话返回；调用方保存到 checkout 外；不直接 approve/merge。

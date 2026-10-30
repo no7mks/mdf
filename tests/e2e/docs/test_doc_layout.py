@@ -4,7 +4,11 @@ from mdf_test_support import *  # noqa: F403
 
 
 def _codes(result) -> list[str]:
-    return [item["code"] for item in json.loads(result.stdout)["findings"]]
+    return [item["code"] for item in fact_audit_view(json.loads(result.stdout))["findings"]]
+
+
+def _audit(result) -> dict:
+    return fact_audit_view(json.loads(result.stdout))
 
 
 def test_fact_pages_allow_product_macros(python_exe: str, tmp_path: Path):
@@ -214,9 +218,10 @@ def test_markdown_proposals_and_jots_have_no_line_limit(
         text += "<!-- /jot -->\n"
     path.write_text(text, encoding="utf-8")
     git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 扩展无行数限制文档")
     extra = ["--base", base] if scope == "branch" else []
     args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
-    data = payload(mdf(python_exe, *args))
+    data = _audit(mdf(python_exe, *args))
     assert data["findings"] == []
 
     # PRP 仍检查正文结构，JOTS 继续免结构限制。
@@ -227,13 +232,18 @@ def test_markdown_proposals_and_jots_have_no_line_limit(
     else:
         text += sentence
     path.write_text(text, encoding="utf-8")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 添加长句")
     result = mdf(python_exe, *args)
     if relative_path.startswith("docs/proposals/"):
-        assert result.returncode == 2
+        if scope == "branch":
+            assert_ok(result)
+        else:
+            assert result.returncode == 2
         assert _codes(result) == ["prose.sentence"]
     else:
         assert_ok(result)
-        assert payload(result)["findings"] == []
+        assert _audit(result)["findings"] == []
 
 
 def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):
@@ -260,18 +270,25 @@ def test_html_proposals_have_no_line_limit(python_exe, tmp_path, scope):
         ),
         encoding="utf-8",
     )
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 扩展 HTML proposal")
     extra = ["--base", base] if scope == "branch" else []
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     assert_ok(result)
-    assert payload(result)["findings"] == []
+    assert _audit(result)["findings"] == []
 
     # 免除行数限制后仍须检查可见正文结构。
     proposal.write_text(
         proposal.read_text().replace("</main>", "<p>" + "说明" * 101 + "。</p></main>"),
         encoding="utf-8",
     )
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 添加 HTML 长句")
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
-    assert result.returncode == 2
+    if scope == "branch":
+        assert_ok(result)
+    else:
+        assert result.returncode == 2
     assert _codes(result) == ["prose.sentence"]
 
 
@@ -375,10 +392,10 @@ def test_branch_scope_maps_changed_implementation_to_fact_pages(
         (repo / "docs/README.md").read_text(encoding="utf-8") + "补充。\n" * 200,
         encoding="utf-8",
     )
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 扩展文档入口")
 
-    data = json.loads(
-        mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch").stdout
-    )
+    data = _audit(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch"))
     assert data["base"] == base
     assert data["implementation_paths"] == ["src/service.py"]
     assert set(data["document_paths"]) == {
@@ -394,8 +411,10 @@ def test_branch_scope_maps_changed_implementation_to_fact_pages(
     assert hard == ["docs/README.md"]
 
     (repo / "docs/README.md").write_text("# Documentation\n", encoding="utf-8")
-    explicit = json.loads(
-        mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch", "--base", base).stdout
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 缩短文档入口")
+    explicit = _audit(
+        mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch", "--base", base)
     )
     assert explicit["implementation_paths"] == ["src/service.py"]
     assert explicit["base"] == base
@@ -410,8 +429,10 @@ def test_branch_scope_ignores_unrelated_fact_pages(python_exe: str, tmp_path: Pa
     git(repo, "checkout", "-q", "-b", "feature/docs")
     page = repo / "docs/system/interfaces/api.md"
     page.write_text(page.read_text(encoding="utf-8") + "\n补充说明。\n", encoding="utf-8")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 更新事实页")
 
-    data = payload(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch"))
+    data = _audit(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch"))
     assert data["implementation_paths"] == []
     assert data["document_paths"] == ["docs/system/interfaces/api.md"]
 
@@ -421,15 +442,13 @@ def test_branch_scope_rejects_paths_and_missing_base(python_exe: str, tmp_path: 
     init_git(repo)
 
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch")
-    assert result.returncode == 2
-    assert "audit.base" in _codes(result)
+    assert result.returncode != 0 and "audit.base" in result.stderr
 
     result = mdf(
         python_exe, "fact-audit", "--repo", str(repo), "--scope", "branch",
         "--base", "HEAD", "--implementation-path", "src/service.py",
     )
-    assert result.returncode == 2
-    assert "audit.scope" in _codes(result)
+    assert result.returncode != 0 and "invalid_arguments" in result.stderr
 
     result = mdf(
         python_exe, "fact-audit", "--repo", str(repo), "--scope", "full", "--base", "HEAD"

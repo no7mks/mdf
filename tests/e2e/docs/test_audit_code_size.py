@@ -12,15 +12,18 @@ def test_audit_leaves_code_size_to_lint(python_exe, tmp_path, scope, name):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("pass\n" * 1001, encoding="utf-8")
     git(repo, "add", name)
+    git(repo, "commit", "-m", "test: 添加大代码文件")
     extra = ["--base", base] if scope == "branch" else []
     if scope == "paths":
         extra = ["--implementation-path", name]
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     assert result.returncode == 0
-    findings = json.loads(result.stdout)["findings"]
+    findings = fact_audit_view(json.loads(result.stdout))["findings"]
     assert not findings
 
     path.write_text("pass\n" * 700, encoding="utf-8")
+    git(repo, "add", name)
+    git(repo, "commit", "-m", "test: 缩小代码文件")
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra))
 
 
@@ -39,14 +42,17 @@ def test_module_ignore_exempts_code_size_only_for_matched_files(python_exe, tmp_
     modules = repo / ".mdf/modules.yaml"
     modules.write_text(modules.read_text().replace('"src/**"', '"**"', 1).replace("    ignore: []", f"    ignore:\n      - pattern: {pattern}\n        reason: 保留生成文件"))
     git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 添加 ignored 大代码文件")
     extra = ["--base", base] if scope == "branch" else []
     if scope == "paths":
         extra = ["--implementation-path", name, "--implementation-path", "src/other.py"]
     args = ("fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     result = mdf(python_exe, *args)
     assert result.returncode == 0
-    data = json.loads(result.stdout)
+    data = fact_audit_view(json.loads(result.stdout))
     assert not data["findings"]
     assert data["ignored"] == [{"path": name, "ignore_path": pattern, "reason": "保留生成文件"}]
     other.write_text("pass\n" * 700)
+    git(repo, "add", "src/other.py")
+    git(repo, "commit", "-m", "test: 缩小非 ignored 代码文件")
     assert_ok(mdf(python_exe, *args))
