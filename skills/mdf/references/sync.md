@@ -193,7 +193,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT" --pr --confirm "$CON
    - source 需解冲突或返工时，先运行 `mdf.py to --repo "$REPO_ROOT" --target <source>`，确保已有 source branch 的 worktree。
      按返回 worktree/branch 及 common 的切换规则绑定；不新建另一 source branch，不改原 trunk。
      合入前核对 source worktree clean、无未完成 merge；不为清场提交或丢弃他人改动。
-   - 在该 worktree 合入 target、修复并提交；用项目验证命令补测，再以本次 sync 恢复记录的 base 调用 `code-review --against <base>` 补审。
+   - 在该 worktree 合入 target、修复并提交（须 clean）；用项目验证命令补测，再以本次 sync 恢复记录的 base 调用 `code-review --against <base> --read-only` 补审。
      base 缺失或无法解析时停止并报告，不改用移动的 target tip。
      不要求 source 具备 delivery.json、roster 或交付 branch 验证前置；修复完成后再预览 sync 计划。
    - 重新预览会绑定 source 新 tip；用户确认后，仅允许保留原 source 历史的后继提交非 force push 到同一 PR/MR。

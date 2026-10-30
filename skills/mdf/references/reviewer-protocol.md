@@ -9,8 +9,8 @@
 - 严格只读，不修改文件，不运行 tests，不调用会落盘的 MDF CLI；通过回复返回报告。
 - reviewer 可以读取和搜索项目文件、读取 Git 对象；权限由调用方落实。
 - 交付 controller 在派发前准备 lint、测量、验证报告，全部独立审查返回前不修改审查对象。
-- 独立 against 审查由当前 Agent 直接执行，不要求本地审查、交付材料或 roster，不勾 objectives。
-- 下方 reviewers、owner、增量与 delivery 字段仅适用于交付模式；独立模式使用独立报告 schema。
+- 只读旁路（`--read-only` / 独立 `--against`）由当前 Agent 直接执行，不要求本地审查、交付材料或 roster，不勾 objectives；worktree 必须 clean。
+- 下方 reviewers、owner、增量与 delivery 字段仅适用于交付模式；只读旁路使用独立报告 schema。
 - 本地完整流程及修复窗继续按 [code-review](code-review.md) 执行。
 
 ## 上下文与范围
@@ -27,10 +27,10 @@
 | roster、paths | 冻结人数、review strategy 与需覆盖路径 |
 | artifacts、incomplete | 现有交付证据与缺项；缺项不能默认为通过 |
 
-- 实现审查先与 sourceset 并集求交，再应用 module ignore；文档与交付材料独立按契约纳入。
-- 独立 against 模式直接比较历史版本与当前工作区，配置与规则均来自当前 snapshot。
-  - against 为完整基线 SHA，worktree_sha256 绑定当前文件内容；paths 与 diff 已过滤。
-  - 读取当前文件完整内容前核对工作区未变化，变化后重建 context。
+- 实现审查与 sourceset 求交后再应用 module ignore；文档与交付材料不进强制 paths，可读不禁。
+- 只读 against 模式直接比较历史版本与当前 HEAD；worktree 必须 clean；配置与规则均来自当前 HEAD。
+  - against 为完整基线 SHA，head 为当前 HEAD 完整 SHA；paths 与 diff 已过滤。
+  - 复核前核对 HEAD 与 context 指纹未变；变化后重建 context。
 - 交付 CI 模式继续使用固定 source 配置和 target policy，保留 target 上下文与旧 findings。
 - 同时读取必要上下文，不仅审 diff、标题或文件名。
 - 审查正确性、验收覆盖、测试质量、code smell、架构合理性与非必要复杂度。
@@ -38,18 +38,18 @@
 - replicate 每人覆盖全部路径；partition 由 controller 切片，所有报告覆盖并集须完整。
 - 单人覆盖全部范围；同一轮的审查者不共享彼此 findings。
 - `.mdf/modules.yaml` 的 ignore、规模与拆分规则遵循固定策略和测量报告，不手工重复计数。
-- 默认 release 不得因 child 已审而跳过上一正式版本以来的变化；独立 against 按指定历史版本与当前工作区范围。
+- 默认 release 不得因 child 已审而跳过上一正式版本以来的变化；独立 against 按指定历史版本与当前 HEAD。
 
 ## 独立报告
 
 mode=against 使用 [独立报告 schema](../assets/templates/against-review-report.schema.json)，直接返回审查结果。
 
-- 完整覆盖 paths，记录 against、worktree_sha256、rules_sha256 与 context_sha256。
+- 完整覆盖 paths，记录 against、head、rules_sha256 与 context_sha256。
 - findings 仅列有静态证据支持的问题，包含 id、path、line、priority、trigger、impact、evidence。
 - 审查完整且无 P0/P1 时可 pass；有阻断问题时 changes_requested；证据不足或未完成时 needs-review。
 - 工具失败使用 error；changes_requested 必须有 finding；不因未运行 tests 自动降低优先级。
 - incomplete 明确记录实际缺项；不将不存在的 MDF 交付材料列为缺项，不要求补齐 delivery。
-- 不要求独立 reviewer 份数、owner 裁定或旧 finding 表；修复后重新捕获工作区，重新完整审查。
+- 不要求独立 reviewer 份数、owner 裁定或旧 finding 表；修复后须 clean 提交，再重新完整审查。
 
 ## Findings 与裁定
 

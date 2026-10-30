@@ -145,13 +145,16 @@ disable-model-invocation: true
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
-- code-review 可带 `--against <commit>`，审阅当前 worktree 相对这个 commit。
+- code-review 要求 clean worktree；可带：
+  - `--against <commit>`：覆盖本轮左端点，与当前 HEAD 比较；
+  - `--read-only`：跳过 Repair/Record/勾选；
+  - `--output <path>`：额外写入经校验的 JSON report。
 - start、design、deliver、交付模式的 code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
   - `--*-model` 值为口语描述，可点名一个或多个模型。
 - fact audit 可用 `--quick` 独立检查 evidence stale，支持 CI/CD；不替代主链审阅，不与 against 混用。
-- fact audit 可用 `--against <commit>` 比较历史版本与完整工作区，只读审阅；不能混用 scope/base/paths。
+- fact audit 可用 `--against <commit>` 比较历史版本与完整工作区（可含 dirty），只读审阅；不能混用 scope/base/paths。
 - fact update、fact audit、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
 - upgrade 可带 `--source`。
@@ -193,7 +196,7 @@ disable-model-invocation: true
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-- code-review 与 fact audit 的 against 模式只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。
+- code-review 的 `--read-only` / 独立 `--against` 与 fact audit 的 against 模式只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。
 - fact audit 的 quick 模式直接执行其独立契约，不读取 common.md，不运行 doctor。
 - 除上述独立审查、quick 模式及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。

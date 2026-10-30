@@ -1,4 +1,4 @@
-"""代码审查按固定 source 的 module 归属过滤，保留文档和交付材料。"""
+"""代码审查按固定 source 的 module 归属过滤；文档不进强制 paths。"""
 import pytest
 
 from mdf_test_support import git
@@ -46,7 +46,7 @@ def test_review_excludes_unowned_and_ignored_changes(python_exe, tmp_path, monke
     commit(work)
     ctx = review(work, initial, explicit)
     assert 'src/service.py' in ctx['paths']
-    assert 'docs/system/interfaces/api.md' in ctx['paths']
+    assert 'docs/system/interfaces/api.md' not in ctx['paths']
     assert 'src/generated.py' not in ctx['paths']
     assert not any(p.startswith('.codex/') for p in ctx['paths'])
     assert '.codex/skills/mdf' not in ctx['diff']
@@ -75,13 +75,18 @@ def test_review_uses_source_ownership_and_overlapping_ignore(python_exe, tmp_pat
     assert ('src/new.py' in ctx['paths']) == (owners == 'one')
     assert ('+new = True' in ctx['diff']) == (owners == 'one')
     assert ctx['rules']['modules' if explicit else 'scope'] == (config if explicit else {'modules': config})
-    # 当前脏配置不影响固定 source。
     modules.write_text(config + '\nbudgets:\n  quick: 60\n')
-    repeated = context(work, against=initial['policy_ref']) if explicit else context(
-        work, initial['source'], head, initial['policy_ref'])
-    assert repeated['paths'] == ctx['paths'] and repeated['diff'] == ctx['diff']
     if explicit:
+        from mdf_core.foundation.errors import MDFError
+        with pytest.raises(MDFError, match='clean|dirty_worktree'):
+            context(work, against=initial['policy_ref'])
+        commit(work)
+        repeated = context(work, against=initial['policy_ref'])
+        assert repeated['paths'] == ctx['paths']
         assert repeated['rules']['modules'] == modules.read_text()
         assert repeated['rules_sha256'] != ctx['rules_sha256']
+        assert repeated['head'] != ctx['head']
     else:
+        # 当前脏配置不影响固定 source。
+        repeated = context(work, initial['source'], head, initial['policy_ref'])
         assert repeated == ctx

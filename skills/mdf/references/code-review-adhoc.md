@@ -8,8 +8,8 @@
 
 1. 读取 common.md，核 Git 根与 manifest ready；运行 branch，先识别内部角色及 backmerge 的所属 workflow。
 2. feature、bugfix、release、hotfix 沿用专用流程；master/main/develop/planning 不走本页。
-   材料缺失时说明分类与缺项；只读审查可使用显式 `--against`，不自动改名或降级为 adhoc。
-3. 按 common 处理本次相关未提交成果；无法隔离时停止，不遗漏未提交工作或提交他人改动。
+   材料缺失时说明分类与缺项；只读审查可使用显式 `--against` / `--read-only`，不自动改名或降级为 adhoc。
+3. worktree 必须 clean；按 common 处理本次相关未提交成果；无法隔离时停止，不遗漏未提交工作或提交他人改动。
 4. 运行 `adhoc-status --repo <owner>`，使用返回的 material_mode、path、range、paths。
    ledger 返回有账本 code-review；损坏账本停止，不绕过或补造 delivery/objectives。
 5. 报告 kind、material_mode、base、target 与下一步；无待审改动时结束，不生成 Change 或删除 branch。
@@ -41,7 +41,7 @@
 - 读取 [Review 协议](reviewer-protocol.md) 与 code-review 的「独立审查」「缺陷复现」「汇总、修复与复核」条款。
   使用相同 reviewer opening、范围过滤、finding 裁定与 regression test 要求。
 - 从固定目标 policy_ref 加载项目 rule 与 AGENTS.md，分别传入 base、head、policy_ref、实际工作与 lint 报告。
-  不把固定 base 当作最新目标，也不改用 standalone against 的当前工作区 policy。
+  不把固定 base 当作最新目标；独立 `--against` 只读旁路改用当前 HEAD 的 policy。
 - lint 修复提交后固定本轮 review_head，再派 reviewer；base 与 policy_ref 保持原值。
 - 本轮修复沿用原 review_head 与 findings；修复窗结束后新改动才进入增量复核，仍为 1 人。
 - 修复实现、测试或验证配置后，执行必要验证；普通 source 用 smart，dev-pr source 保持 named smoke。

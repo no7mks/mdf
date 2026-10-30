@@ -8,8 +8,8 @@ Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 
 PR mode 使用独立 pr intent 经 GitHub Pull Request 或 GitLab Merge Request 合并，再由 close-out 续办。
 CI reviewer 是在项目 runner 上执行共用 Review 协议的审查 Agent。
-显式 against 调用 code-review 时执行独立只读审查，不依赖 roster 或交付材料。
-审查不代替本地 code-review intent；approve、merge 与通知由项目 policy 决定。
+显式 `--against` / `--read-only` 调用 code-review 时走只读旁路，要求 clean worktree，不依赖 roster 或交付材料。
+审查不代替本地交付 code-review 的 Repair/Record；approve、merge 与通知由项目 policy 决定。
 
 ## Trivial commit
 

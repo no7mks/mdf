@@ -64,7 +64,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 发布后的修复保持固定 M，不重新进入 pr。
 
 - backmerge 的冲突在记录的 `backmerge.worktree` 中解决并提交，保留固定发布提交 M 和 tag。
-  - 补审使用独立 `$mdf code-review --against <回合base>`，覆盖回合与修复。
+  - 补审前须 clean；使用独立 `$mdf code-review --against <回合base> --read-only`，覆盖回合与修复。
   - 在该 worktree 用 verify named 执行 lint、build、quick 和原发布所需 suite（release 或 smoke），再按改动补 named suite。
   - fact audit/update 使用 paths 范围，指向受修复影响的事实页；不修改固定发布提交或已发布版本材料。
   - 审查、验证和 fact 证据保存在 checkout 外的运行报告目录；不退勾已发布版本的 objectives，不套用交付 branch 验证。

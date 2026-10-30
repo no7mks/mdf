@@ -43,9 +43,10 @@
 - audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
 - review-context 的 --against <commit> 选择独立只读模式，不接受 source/head/policy-ref。
-  - mode=against，直接比较指定历史版本与完整当前工作区，含 staged、unstaged 和非忽略 untracked 文件。
-  - 不接受 review-base/previous-report；不计算 merge-base，不生成 target_diff/target_paths。
-  - 使用 against-review-report.schema.json，绑定 against、worktree_sha256、规则与 context 指纹。
+  - mode=against，要求 worktree clean；直接比较指定历史版本与当前 HEAD，不计算 merge-base。
+  - 不接受 review-base/previous-report；不生成 target_diff/target_paths。
+  - 强制 paths 仅含 sourceset ∩ ¬module-ignore 的实现变更；文档与交付材料不进覆盖清单。
+  - 使用 against-review-report.schema.json，绑定 against、head、规则与 context 指纹。
 - 以下 delivery、回合与 release 规则仅用于未传 against 的交付模式。
 - review-context 支持 detached checkout，从已提交 delivery.json 冻结 roster 与基线。
 - 回合 source 从发布 tag 和 no-ff 双亲恢复上下文，kind 为 backmerge；publication 包含固定发布提交与原 source。
@@ -71,11 +72,10 @@
 
 ## 审查范围
 
-against 模式的 code-review 与 fact audit 使用当前工作区的规则、sourceset 和 module ignore。
+code-review 的 against 与 delivery 强制覆盖实现变更；fact audit against 仍可比较完整当前工作区（含 dirty）。
 
-- 实现变更与 sourceset 并集求交；未归属实现不进入 paths、diff 或覆盖检查。
+- code-review：实现变更与 sourceset 求交后再排除 module ignore；未归属实现不进入 paths、diff 或覆盖检查。
 - 重叠归属须所有 owner 均忽略才排除；删除和 rename 的新旧路径分别判定。
-- 项目文档和交付材料按各自契约独立纳入，不要求归属 module。
-- rule 路径与正文、AGENTS、manifest、modules 均从本轮工作区 snapshot 读取。
-- snapshot 位于仓外；不修改原仓库 HEAD、index 或 objects，不运行项目 hooks、filters 或 tests。
-- 工作区路径、mode 与内容共同生成 worktree_sha256；修改后须重建 context。
+- code-review 不把项目文档和交付材料列入强制 paths；reviewer 可读但不纳入覆盖校验。
+- against code-review：worktree 必须 clean；规则、AGENTS、manifest、modules 从当前 HEAD 工作区读取；context 绑定 against 与 head SHA。
+- fact audit against：继续使用仓外 working snapshot 与 worktree_sha256；不修改原仓库 HEAD、index 或 objects。

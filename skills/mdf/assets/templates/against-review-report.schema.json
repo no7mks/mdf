@@ -85,7 +85,7 @@
     "against": {
       "type": "string"
     },
-    "worktree_sha256": {
+    "head": {
       "type": "string"
     }
   },
@@ -99,7 +99,7 @@
     "paths",
     "findings",
     "against",
-    "worktree_sha256"
+    "head"
   ],
   "additionalProperties": false
 }

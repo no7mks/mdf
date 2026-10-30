@@ -24,5 +24,5 @@ def selected_diff(repo, base, head, selected):
 
 def review_changes(repo, base, head, config):
     selected = [p for p in paths(repo, base, head)
-                if (config.owns(p) or review_document(p)) and not config.is_ignored(p)]
+                if config.owns(p) and not config.is_ignored(p)]
     return selected, selected_diff(repo, base, head, selected)

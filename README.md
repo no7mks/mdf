@@ -115,16 +115,18 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 
 ### code-review 与 roster
 
-code-review 支持 feature、bugfix、hotfix、release 和 adhoc。
-`$mdf code-review --against <commit>`：审阅当前 worktree 相对这个 commit。
-commit 可以是 branch start、last release，或调用方选定的任意 commit。
+code-review 支持 feature、bugfix、hotfix、release 和 adhoc；worktree 必须 clean。
+共用审阅核：`clean → resolve-base → diff → 过滤 → 派工 → 汇总 → [Repair/Record] → [JSON]`。
 执行方式见 [code-review](skills/mdf/references/code-review.md)；以下 roster 规则仅用于交付模式。
 
+- `$mdf code-review --against <commit>`：覆盖左端点，与当前 HEAD 比较（仍须 clean）。
+- `$mdf code-review --read-only`：跳过修复与勾选；`--output <path>`：额外写 JSON report。
 - 普通无账本 branch 可直接执行 `$mdf code-review`，完成 lint、1 人审查与修复，不自动收口。
 - 手动创建的 `feature/*` 等专用 branch 仍检查对应交付材料，不因缺账本转为 adhoc。
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
-- 后续增量只审相对操作左端点以来的改动，并复核上轮问题；裁定收口时洗成无
+- 后续增量只审相对上轮闭环 tip 以来的改动，并复核上轮问题；裁定收口时洗成无
   commit 的 `code-review.md` 终稿。
+- 强制覆盖仅为 sourceset 内实现变更；文档可读不进覆盖清单。
 - 默认每人全范围（replicate），也可切片审查（partition）。
 - 主 Agent 汇总裁定、修复并复核。
 - reviewer 严格只读，返回静态证据；main Agent 汇总去重后构建并运行 failing test。
@@ -138,8 +140,8 @@ commit 可以是 branch start、last release，或调用方选定的任意 commi
   - `--write-tests-model`、`--implement-model`、`--code-review-model`；
     值为口语描述，可点名一个或多个模型。
 
-`$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit。
-commit 的范围同上。见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
+`$mdf fact audit --against <commit>`：对当前 worktree 相对这个 commit 做 fact audit（可含 dirty）。
+见 [独立事实审阅](skills/mdf/references/fact-audit-against.md)。
 
 交付主链的 fact audit 自动复用 against 的范围、语义审阅与报告校验，无需手动补跑。
 PR 在候选材料与 squash 完成后、push 前再核最终候选，JSON 留在仓外。

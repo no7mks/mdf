@@ -25,7 +25,7 @@ def ready_context(python_exe, tmp_path, monkeypatch):
 
 def passing(context):
     if context.get('mode') == 'against':
-        keys = ('schema_version', 'mode', 'against', 'worktree_sha256',
+        keys = ('schema_version', 'mode', 'against', 'head',
                 'rules_sha256', 'context_sha256', 'paths')
         return {**{key: context[key] for key in keys}, 'decision': 'pass', 'incomplete': [], 'findings': []}
     report = {key: context[key] for key in
@@ -84,7 +84,8 @@ def test_invalid_or_incomplete_reports_cannot_pass(python_exe, tmp_path, monkeyp
     elif damage == 'count':
         report['reviewers'] = []
     elif damage == 'paths':
-        report['reviewers'][0]['paths'] = []
+        # 空 paths 在 context 无实现变更时仍合法；用越界路径强制失败。
+        report['reviewers'][0]['paths'] = ['not-in-review-scope.py']
     elif damage == 'incomplete':
         report['incomplete'] = ['未核实']
     else:

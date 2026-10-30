@@ -1,31 +1,48 @@
 # Code Review
 
-## 独立 against 审查
+## 审阅核与参数
 
-`$mdf code-review --against <commit>`：审阅当前 worktree 相对这个 commit。
-commit 可以是 branch start、last release，或调用方选定的任意 commit。
-Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skill 并完成步骤 5–8。
+所有调用共用同一审阅核：
 
-出现 `--against` 时，步骤 1 直接转 5，不运行交付前置检查。
-步骤 5–8 是独立只读审查，不进入 Repair 或 Record；未传 against 时先识别身份。
-无账本普通 branch（含独立调用）执行 [无账本审查](code-review-adhoc.md) 并返回；有账本执行步骤 1–4。
+`ensure clean → resolve-base → diff → 过滤 sourceset → 派工 → 审查 → 汇总 → [Repair/Record] → [JSON]`
+
+- worktree **必须 clean**；脏库停止，先提交或隔离无关改动。
+- 右端点固定为当前 `HEAD`（即本轮 `review_head`）。
+- 强制覆盖 paths = sourceset ∩ ¬module-ignore 的实现变更；文档/配置/交付材料不进覆盖清单，reviewer 可读不禁。
+- `$mdf code-review --against <commit>`：用该 commit 覆盖本轮左端点（完整 SHA），仍要求 clean。
+- `$mdf code-review --read-only`：跳过 Repair/Record/勾选；汇总后出结论即返回（CI/旁路常用）。
+- `$mdf code-review --output <path>`：在正常产出之外，额外写入经校验的 JSON report（仓外路径优先）。
+- `--against` / `--read-only` / `--output` 可组合；未传 `--against` 时按下方 resolve-base 自动选左端点。
+- 无账本普通 branch（含独立调用）执行 [无账本审查](code-review-adhoc.md) 并返回；有账本走步骤 1–4。
+- `--read-only` 或显式独立 against 旁路（无交付续办）执行步骤 5–8，不进入交付 Repair/Record。
+
+### resolve-base
+
+| 情形 | 本轮左端点 |
+| --- | --- |
+| 显式 `--against` | 解析后的完整 SHA |
+| 无有效审查账本 / 首轮；feature·bugfix·hotfix·adhoc | branch start（`delivery.json.start_commit` 或 `branch.*.mdf-start-commit`） |
+| 无有效审查账本 / 首轮；release | 上一正式发布 master commit/tag |
+| 有账本且可增量 | 上轮闭环 tip（终稿落盘 commit；close-out 集成用集成前 HEAD；verify 修绿用传入左端点） |
+
+报告上下文可另保留 `delivery_base`（整次交付起点），与本轮左端点分离。
 
 ## 决策树
 
-步骤 1 按参数分流；步骤 5–8 仅由against 参数进入。
+步骤 1 按参数分流；步骤 5–8 仅由只读旁路进入。
 
 ```text
 ┌──────────────────────────────────┐
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 指定 against     ────────→ 5 Resolve
-                 ├──── 无账本 adhoc      ───────→ [无账本审查并返回]
+                 ├──── 只读旁路             ────→ 5 Resolve
+                 ├──── 无账本 adhoc         ────→ [无账本审查并返回]
                  ├──── 来源 verify 且待修绿 ────→ [返回原 verify；独立调用报告待续办]
-                 ├──── 已齐审查且修复续办 ──────→ 3 Repair
+                 ├──── 已齐审查且修复续办   ────→ 3 Repair
                  ├──── 已齐审查但勾选未完成 ────→ 4 Record
-                 ├──── 已齐审查且无新改动 ──────→ [结束]
-                 ├──── 失败或缺失 ──────────────→ [停止并报告]
+                 ├──── 已齐审查且无新改动   ────→ [结束]
+                 ├──── 失败或缺失           ────→ [停止并报告]
                  │
                  ▼ 新审查、增量新一轮或首轮未齐
 ┌──────────────────────────────────┐
@@ -39,8 +56,8 @@ Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skil
 │ 3 Repair                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 修复或验证可修 ────────→ 3 Repair
-                 ├──── 需要用户决定 ──────────→ [保留现场并报告]
+                 ├──── 修复或验证可修     ────→ 3 Repair
+                 ├──── 需要用户决定       ────→ [保留现场并报告]
                  ├──── 外部条件或无法继续 ────→ [保留现场并报告]
                  │
                  ▼ finding 已裁定且无阻断项
@@ -49,21 +66,21 @@ Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skil
 └────────────────┬─────────────────┘
                  │
                  ├──── close-out 委托且需 smart ────→ [交接主链外续办修复窗]
-                 ├──── smart 失败且可修 ────────────→ 3 Repair
-                 ├──── 其他失败或缺失 ──────────────→ [停止并报告]
+                 ├──── smart 失败且可修         ────→ 3 Repair
+                 ├──── 其他失败或缺失           ────→ [停止并报告]
                  │
-                 ▼ 通过
+                 ▼ 通过（可选 --output JSON）
                  [结束]
 
-步骤 5 仅由步骤 1 的 against 参数分支进入。
+步骤 5 仅由步骤 1 的只读旁路进入。
 
 ┌──────────────────────────────┐
 │ 5 Resolve                    │
 └──────────────┬───────────────┘
                │
-               ├──── 参数不符 ────→ [停止并报告]
+               ├──── dirty / 参数不符 ────→ [停止并报告]
                │
-               ▼ 参数已核对
+               ▼ clean 且左端点已定
 ┌──────────────────────────────┐
 │ 6 Context                    │
 └──────────────┬───────────────┘
@@ -77,28 +94,26 @@ Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skil
                │
                ├──── 未完成或工具失败 ────→ 8 Report
                │
-               ▼ 记录 findings 与缺项
+               ▼ findings 齐全
 ┌──────────────────────────────┐
 │ 8 Report                     │
 └──────────────┬───────────────┘
                │
-               ├──── 复核命令失败 ──────────→ [报告 error 并停止]
-               ├──── context 已变化 ────────→ 6 Context
-               ├──── 格式不符且可修 ────────→ 8 Report
-               ├──── 格式无法修正 ──────────→ [报告 error 并停止]
-               └──── 指纹一致且报告有效 ────→ [返回调用方]
+               ├──── context 已变化 ────→ 6 Context
+               ├──── 格式可修       ────→ 8 Report
+               └──── 指纹一致且有效 ────→ [返回；--output 则落盘 JSON]
 ```
 
 ## 工作流（唯一执行契约）
 
-步骤 1–4 适用于交付审查；步骤 5–8 适用于独立审查，共用 [Review 协议](reviewer-protocol.md)。
+步骤 1–4 为交付 overlay；步骤 5–8 为只读旁路。审阅核与 [Review 协议](reviewer-protocol.md) 共用。
 外部报告须核对固定范围、rule、冻结份数和覆盖；不符时仅作补充，不凭 CI pass 自动勾选。
 
-仅交付模式按以下边界读取并执行本阶段；独立模式只读取本页「独立输入与只读边界」。
+交付模式读取 `references/common.md` 与 `references/delivery-contract.md`；涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
+只读旁路只核 Git 根并执行「只读旁路输入」条款，不跑交付前置。
 
-- 读取 `references/common.md` 与 `references/delivery-contract.md`；涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
 - 读取 [项目阶段 rule 契约](project-rules.md)，本阶段按 merge 后规则执行，冲突时 project 优先。
-- CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
+- CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`；只读旁路用 `python3 -B`。
 - 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 - close-out 内部委托时返回 close-out；需要 smart 时返回待主链外续办，不在该调用内补验或 fact。
 - 主链 verify 内部委托时返回原 verify 的步骤 5；不接管父阶段的 branch/smart 勾选。
@@ -106,46 +121,36 @@ Codex 与 Cursor 使用同一 intent，由执行该 intent 的 Agent 加载 Skil
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | 先分流，再核交付前置与续办 | 参数或范围、rule、报告 | against参数5；verify待修绿返回；漏勾4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
-| 2 | Review | Subagent | 按本轮应派人数启动严格只读 subagent 覆盖本轮 | N 份静态审查、范围与证据 | 3 | 停止并报告 |
+| 1 | Check | 约束 | clean、分流、交付前置与续办 | 参数或范围、rule、报告 | 只读旁路5；verify待修绿返回；漏勾4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
+| 2 | Review | Subagent | 按本轮应派人数启动严格只读 subagent | N 份静态审查、范围与证据 | 3 | 停止并报告 |
 | 3 | Repair | 约束 | 主 Agent 裁定、修复、整理 tests 并复核 | 裁定、修复与 suite 验证，无阻断项 | 4 | 可修则留在 3；否则保留现场并报告 |
-| 4 | Record | 约束 | 按需 smart；裁定收口则洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 结束 | close-out 需 smart 返回待续办；可修则 3；否则停 |
-| 5 | Resolve | 约束 | 核 Git 根、against 参数与仓外日志；拒绝交付与增量参数 | 根、参数、日志目录 | 6 | 停止并报告 |
-| 6 | Context | 脚本 | 调用下方 review-context，日志置于 checkout 外 | context.result、范围与规则 | 7 | 读日志，报告缺项并停止 |
-| 7 | Review | 约束 | 按固定 context.rules 与 Review 协议静态审查全部 paths | findings、覆盖、incomplete | 8 | 未完成标 needs-review；工具失败标 error，转8 |
-| 8 | Report | 约束 | 复核 context 未变，生成并校验 JSON | 两次 context 指纹、校验结果 | 有效则返回 | 变化回6；格式可修留8；其余报 error |
+| 4 | Record | 约束 | 按需 smart；洗成无 commit 终稿并勾选；可选 JSON | 终稿、smart、提交 | 结束 | close-out 需 smart 返回待续办；可修则 3；否则停 |
+| 5 | Resolve | 约束 | clean、左端点、仓外日志；拒绝交付混参 | 根、参数、日志目录 | 6 | 停止并报告 |
+| 6 | Context | 脚本 | `review-context --against <左端点>` | context.result、范围与规则 | 7 | 读日志，报告缺项并停止 |
+| 7 | Review | 约束 | 按固定 context.rules 静态审查全部 paths | findings、覆盖、incomplete | 8 | 未完成标 needs-review；工具失败标 error，转8 |
+| 8 | Report | 约束 | 复核指纹，校验 JSON；可选 `--output` 落盘 | 两次 context 指纹、校验结果 | 有效则返回 | 变化回6；格式可修留8；其余报 error |
 
 close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左端点时，按该范围开启增量新一轮。
 旧终稿或目标主线已包含都不代替此轮；进行中草稿只存范围和审查证据，进度仍看 objectives。
 
 ## 术语与数据结构
 
-### 独立输入与只读边界
+### 只读旁路输入
 
-步骤 6 在当前 worktree 调用 `review-context --repo <repo> --against <commit>`。
-步骤 7 由执行该 intent 的 Agent 读取仓库，步骤 8 写出报告。
-CLI 只提供确定性 context；MDF 不包装额外 Agent，也不把 context 作为 stdin 审阅材料。
-CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在 checkout 外。
-步骤 7 使用 [Review 协议](reviewer-protocol.md) 的独立模式，步骤 8 使用
+步骤 6 调用 `review-context --repo <repo> --against <commit>`；步骤 7 审阅；步骤 8 出报告。
+CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告在 checkout 外。
+步骤 7 用 [Review 协议](reviewer-protocol.md) 独立模式；步骤 8 用
 [独立报告 schema](../assets/templates/against-review-report.schema.json)。
 
-- against 解析为固定 SHA，直接比较该版本与当前工作区，不计算 merge-base。
-- 包含 staged、unstaged 和未被 Git ignore 的 untracked 普通文件；同一路径以磁盘内容为准。
-- rules、sourceset 和 module ignore 均读取当前工作区 snapshot，MDF 协议来自当前安装位置。
-- 实现变更先与当前 sourceset 并集求交，再应用 module ignore；文档和交付材料独立按契约纳入。
-- 不接受交付、review-base、previous-report 或 backend 参数；无需 ready 或本地交付材料。
-- snapshot 在仓外构建并清理，不修改原仓库 HEAD、index、refs、objects，不运行项目 hooks 或 filters。
-- 全程只读，不修复、不运行 tests、不 commit、不勾 objectives，不进入交付 Repair/Record。
-- findings 提供位置、触发条件、影响、证据与 P0–P3；未完成写 incomplete。
-- context/report 记录 against、worktree_sha256、rules_sha256 与 context_sha256。
-- 步骤 6 保存 CLI 的 `result` 为 context.json；所有输入、日志和报告均置于 checkout 外。
-- 步骤 8 先用原 context.against 的完整 SHA 重跑同一 review-context 命令，核对 context_sha256。
-  - 一致才生成报告；不一致则以新 context 回6，再完整审阅；不重新解析原符号 ref，也不复用旧通过结论。
-  - 命令失败或无法解析时读取日志并报告 error；没有有效 context 时不伪造 schema 所需字段。
-- 调用 `review-report-check --context-file <context.json> --report-file <report.json>` 校验最终报告。
-  - 退出 0 且 result.valid 为 true 才返回；格式可修则留8，无法修正则报告 error，不伪造证据。
-  - 返回的 decision 原样保留；校验通过不等于语义 pass。
-- 经校验的 JSON 通过会话返回，调用方按需保存；不直接 approve 或 merge。
+- against 为固定 SHA，与当前 HEAD 直接比较，不算 merge-base；worktree 必须 clean。
+- rules / sourceset / module ignore 读当前 HEAD；强制 paths = sourceset ∩ ¬module-ignore。
+- 不接受交付、review-base、previous-report 或 backend；无需 ready 或本地交付材料。
+- 不改 HEAD/index/refs/objects；不跑 hooks/filters/tests；不修、不 commit、不勾 objectives。
+- findings 含位置、触发、影响、证据与 P0–P3；未完成写 incomplete。
+- context/report 记录 against、head、rules_sha256 与 context_sha256。
+- 步骤 6 保存 context.json；步骤 8 用原 against 重跑 review-context，核对 context_sha256 与 head。
+  - 一致才出报告；否则回 6 重审；不复用旧通过结论；失败读日志报 error。
+- `review-report-check` 校验最终报告；valid 才返回；`--output` 另存路径；不直接 approve/merge。
 
 
 ### 项目 rule 的阶段接入
@@ -164,14 +169,15 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
 ### 范围与前置条件
 
 进入步骤 2 前，objectives 的 lint 项须已勾选并提交；增量轮核对最近验证中的 lint 结果。
+worktree 必须 clean；相关未提交改动先按公共规则提交，无法隔离则停止。
 
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
 无账本 adhoc 按 code-review-adhoc.md 执行；不套用本节的账本、roster 配置或勾选前置。
-独立 against 审查始终执行步骤 5–8。
+只读旁路（`--read-only` 或独立 against）始终执行步骤 5–8。
 
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
-- 先确认目标仓库 ready，读取已有审查记录，识别相关未提交改动并按公共规则提交。
+- 先确认目标仓库 ready，读取已有审查记录；脏库不得进入 Review。
 - 审查人数取冻结 roster.reviewers：
   - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
   - 本轮应派人数默认同 roster.reviewers。
@@ -240,11 +246,12 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
   - 不取 master 合回 develop 的合并提交，也不使用移动的 master/develop HEAD 代替发布基线。
   - 首次发布没有上一版本时，须用户明确确认初始基线。
   - 基线缺失、歧义或对象不可解析时停止询问。
-- 默认交付基线及增量操作左端点必须是 review_head 的祖先；against 模式不受此限制。
+- 默认交付基线及增量操作左端点必须是 review_head 的祖先；显式 `--against` 不受此限制。
 - 审查内容：
-  - 首轮：`git diff <base_commit> <review_head>`，按步骤 3 的 sourceset 与 ignore 过滤。
+  - 首轮：`git diff <base_commit> <review_head>`，按 sourceset ∩ ¬module-ignore 过滤。
   - 增量：`git diff <操作左端点> <review_head>`（操作左端点按上方规则，不读终稿
     hash）。
+  - 强制覆盖仅为实现变更；文档/交付材料不进 paths，可读不禁。
   - 并读取必要上下文，不能仅按提交标题或文件名审查。
 - release 首轮覆盖上一版本以来的完整变化：
   - 不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过其代码。
@@ -300,16 +307,15 @@ CLI 前缀为 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告保存在
   - close-out 集成增量轮（1 人）只使用该已汇总清单，
     不得把上轮多份独立报告交给本轮 reviewer 自行合并。
 - 已记载的当前行为以事实页为回归基线：与本次目标无关的行为变化按问题报告。
-- 每份任务均包含 `repository-documents.md` 的体积与 `modules.md` 的 ignore 条款以及 lint 工具报告；涉及文档时另含 `doc-structure.md`。
-  - 本地与 against 按当前配置、交付 CI context 按 source 配置，将实现变更与 sourceset 并集求交，再排除 module ignore。
-  - paths 与 diff 同步过滤；未归属实现不审阅，项目文档和交付材料仍按契约检查。
+- 每份任务均包含 `modules.md` 的 ignore 条款以及 lint 工具报告；体积上限按实现变更核对。
+  - 本地、against 与交付 CI 均将实现变更与 sourceset 求交，再排除 module ignore。
+  - paths 与 diff 同步过滤；未归属实现不进入强制覆盖；文档与交付材料不进 paths。
   - 读取 lint 报告，按 `sourceset` 核对全部适用 module 的 `size_limits`；各字段默认 1000/50/70，未归属文件用默认策略。
   - 单文件行数与触及 package 的完整同类成员数分别满足各配置；package 实现/测试不相加。
-  - 源代码/package 超限按各触发配置的 `split_percent` 向下取整验收；文档仍按角色上限及 70%。
-  - 文件拆分按职责、依赖与适用设计模式审代码，按角色、主题、读者与导航审文档。
-    不得把 `part1`、`part2` 或仅改名的机械切分验收为通过。
+  - 源代码/package 超限按各触发配置的 `split_percent` 向下取整验收。
+  - 文件拆分按职责、依赖与适用设计模式审代码；不得把 `part1`、`part2` 或仅改名的机械切分验收为通过。
   - 合理设计可迁移入口；不得仅因入口改变或未在原位置保留 facade、re-export、转发壳而提出问题。
-    核对设计依据、明确的对外契约，以及调用方、测试、文档和链接是否同步更新。
+    核对设计依据、明确的对外契约，以及调用方、测试是否同步更新。
 - 📌 reviewer 严格只读，不修改实现、tests、配置或报告，不运行 tests，不建立角色 worktree。
   - main Agent 在派发前核对 owner 与 review_head，完整传入规则与范围；reviewer 不调用会落盘日志的 MDF CLI。
   - reviewer 通过会话返回报告；main Agent 负责各份独立报告落盘，报告齐全前不修改审查对象。
