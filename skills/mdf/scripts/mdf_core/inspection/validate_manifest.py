@@ -76,6 +76,7 @@ def implementation_roots(
 def validate_manifest(
     repo: Path,
     findings: list[Finding],
+    *, documents: set[Path] | None = None,
 ) -> dict[str, Any] | None:
     path = manifest_path(repo)
     if not path.is_file():
@@ -262,6 +263,8 @@ def validate_manifest(
                     ".mdf/manifest.yaml",
                 )
                 resolved = False
+                continue
+            if documents is not None and candidate not in documents:
                 continue
             if not candidate.is_file():
                 add_finding(

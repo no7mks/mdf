@@ -74,8 +74,8 @@ def test_quick_passes_after_document_revalidation(python_exe, tmp_path):
     fact.write_text(fact.read_text() + "\n已复核当前实现。\n")
     git(repo, "add", FACT)
     git(repo, "commit", "-m", "docs: 复核事实")
-    # 共用契约校验仍报告其他尚未复核的事实页。
-    assert quick(python_exe, repo, "--scope", "paths", "--document-path", FACT).returncode == 2
+    # paths 只验证选中页，full 仍报告其他尚未复核的事实页。
+    assert_ok(quick(python_exe, repo, "--scope", "paths", "--document-path", FACT))
     assert quick(python_exe, repo, "--scope", "full").returncode == 2
     for doc in (repo / "docs").rglob("*.md"):
         if "path: src/service.py" in doc.read_text():
@@ -144,18 +144,20 @@ def test_quick_respects_document_ignore(python_exe, tmp_path):
     assert [row["path"] for row in json.loads(result.stdout)["ignored"]] == [FACT]
 
 
-def test_quick_explicit_document_keeps_shared_contract_validation(python_exe, tmp_path):
+def test_quick_explicit_document_excludes_unrelated_contract_findings(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     (repo / "docs/system/data/model.md").write_text("缺少 frontmatter\n")
     init_git(repo)
     result = quick(python_exe, repo, "--scope", "paths", "--document-path", FACT)
-    assert result.returncode == 2
+    assert_ok(result)
     data = json.loads(result.stdout)
     full = json.loads(mdf(python_exe, "fact-audit", "--repo", str(repo),
                           "--scope", "paths", "--document-path", FACT).stdout)
     assert data["document_paths"] == [FACT]
     assert data["findings"] == full["findings"]
-    assert "fact.frontmatter" in {f["code"] for f in data["findings"]}
+    assert "fact.frontmatter" not in {f["code"] for f in data["findings"]}
+    whole = json.loads(quick(python_exe, repo, "--scope", "full").stdout)
+    assert "fact.frontmatter" in {f["code"] for f in whole["findings"]}
 
 
 @pytest.mark.parametrize("args", [

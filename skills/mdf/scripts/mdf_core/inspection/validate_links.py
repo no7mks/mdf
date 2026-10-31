@@ -123,7 +123,8 @@ def document_link_target(path: Path, raw: str) -> str:
 
 
 def collect_local_link_findings(
-    repo: Path, path: Path, findings: list[Finding]
+    repo: Path, path: Path, findings: list[Finding], *, targets: set[Path] | None = None,
+    check_anchors: bool = False,
 ) -> None:
     try:
         text = path.read_text(encoding="utf-8")
@@ -131,8 +132,14 @@ def collect_local_link_findings(
         return
     for _, _, raw in document_link_spans(path, text):
         target = document_link_target(path, raw)
+        href = raw.strip()
+        href = href[1:href.index(">") ] if href.startswith("<") and ">" in href else (
+            href if path.suffix == ".html" else href.split(maxsplit=1)[0] if href else "")
+        fragment = unquote(href.split("#", 1)[1]) if "#" in href else ""
+        if not target and fragment:
+            target = path.name
         if not target:
-            if raw and not raw.strip():
+            if targets is None and raw and not raw.strip():
                 add_finding(
                     findings,
                     "link.broken",
@@ -143,6 +150,8 @@ def collect_local_link_findings(
         if is_external_link(target):
             continue
         resolved = resolve_local_link(path, target)
+        if targets is not None and resolved not in targets:
+            continue
         if not path_stays_in_repo(repo, resolved):
             add_finding(
                 findings,
@@ -151,7 +160,8 @@ def collect_local_link_findings(
                 relative(repo, path),
             )
             continue
-        if not resolved.exists():
+        if not resolved.exists() or (check_anchors and fragment and resolved.suffix in {".md", ".html"}
+                                     and resolved.is_file() and fragment not in document_anchors(resolved)):
             add_finding(
                 findings,
                 "link.broken",
@@ -175,3 +185,44 @@ def require_existing_local_links(repo: Path, paths: Iterable[Path]) -> None:
             code="broken_link",
             details={"findings": serialize_findings(findings)},
         )
+
+
+def document_anchors(path: Path) -> set[str]:
+    """本地 Markdown heading slug 与显式 HTML id/name。"""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return set()
+    if path.suffix != ".md":
+        return set(re.findall(r'(?:id|name)=["\']([^"\']+)["\']', text))
+    lines = text.splitlines()
+    if lines and lines[0].strip() == "---":
+        for index in range(1, len(lines)):
+            if lines[index].strip() == "---":
+                lines = lines[index + 1:]
+                break
+    anchors: set[str] = set()
+    counts: dict[str, int] = {}
+    fenced = False
+    previous = ""
+    for line in lines:
+        if re.match(r"^\s*(```|~~~)", line):
+            fenced = not fenced
+            previous = ""
+            continue
+        if fenced:
+            continue
+        anchors.update(re.findall(r'(?:id|name)=["\']([^"\']+)["\']', line))
+        match = re.match(r"^ {0,3}#{1,6}\s+(.+?)(?:\s+#+)?$", line)
+        setext = bool(previous and re.fullmatch(r" {0,3}(?:=+|-+)\s*", line))
+        title = match.group(1) if match else previous if setext else None
+        previous = "" if (match or setext or re.match(r"^\s*(?:[-*+]|\d+[.)]|>|\|)", line)) else line.strip()
+        if title is None:
+            continue
+        title = re.sub(r"!?\[([^]]*)\]\([^)]*\)", r"\1", title)
+        title = re.sub(r"<[^>]*>", "", title)
+        slug = "".join(c for c in html.unescape(title).lower() if c.isalnum() or c in "_ -").replace(" ", "-")
+        number = counts.get(slug, 0)
+        anchors.add(f"{slug}-{number}" if number else slug)
+        counts[slug] = number + 1
+    return anchors

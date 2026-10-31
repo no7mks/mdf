@@ -201,11 +201,11 @@ def audit_payload(
     ignore_paths: list[str] | None = None,
     scope_changes: list[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
-    plan = ProgressPlan("fact-audit", ("全量契约校验", "解析范围", "检查文档结构", "映射 evidence 与覆盖"),
+    plan = ProgressPlan("fact-audit", ("解析范围", "全量契约校验" if scope == "full" else "影响集契约校验",
+                                       "检查文档结构", "映射 evidence 与覆盖"),
                         groups=("契约检查", "事实文档", "文档结构检查"))
+    findings: list[Finding] = []
     with plan.stage(1):
-        findings = doctor.collect_findings(repo, full=True)
-    with plan.stage(2):
         from mdf_core.foundation.paths import load_manifest
         roots = implementation_roots(repo, load_manifest(repo), [])
         facts = set(fact_documents(repo))
@@ -277,6 +277,13 @@ def audit_payload(
             "fact-audit 范围",
             f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
         )
+    with plan.stage(2):
+        if scope == "full":
+            findings.extend(doctor.collect_findings(repo, full=True))
+        else:
+            from mdf_core.inspection.impact import collect_impact_findings
+            changes = _changed_paths(repo, resolved_base) if resolved_base else sources + sized
+            findings.extend(collect_impact_findings(repo, changes, documents, resolved_base))
     with plan.stage(3):
         findings.extend(collect_parallel([
             ("文档体积", partial(size_findings, repo, sized)),

@@ -19,7 +19,9 @@ from mdf_core.foundation.paths import path_stays_in_repo
 from mdf_core.execution.verification import DEFAULT_BUDGETS, SUITES
 
 
-def validate_modules(repo: Path, findings: list[Finding]) -> ModulesConfig | None:
+def validate_modules(
+    repo: Path, findings: list[Finding], *, paths: set[Path] | None = None,
+) -> ModulesConfig | None:
     path = modules_path(repo)
     if not path.is_file():
         add_finding(
@@ -42,11 +44,12 @@ def validate_modules(repo: Path, findings: list[Finding]) -> ModulesConfig | Non
     except MDFError as exc:
         add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
         return None
-    tracked = _tracked_relpaths(repo)
+    tracked = _tracked_relpaths(repo) if paths is None or path in paths else []
     for module in config.modules.values():
-        _validate_sourceset(module, findings)
-        _validate_named_docs(repo, module, findings)
-        _validate_suite_inclusion(module, tracked, findings)
+        if paths is None or path in paths:
+            _validate_sourceset(module, findings)
+            _validate_suite_inclusion(module, tracked, findings)
+        _validate_named_docs(repo, module, findings, paths=paths)
     return config
 
 
@@ -180,7 +183,7 @@ def _validate_sourceset(module: Module, findings: list[Finding]) -> None:
 
 
 def _validate_named_docs(
-    repo: Path, module: Module, findings: list[Finding]
+    repo: Path, module: Module, findings: list[Finding], *, paths: set[Path] | None = None,
 ) -> None:
     from mdf_core.foundation.yamlutil import read_frontmatter
     from mdf_core.execution.verification import parse_named_commands
@@ -188,6 +191,8 @@ def _validate_named_docs(
     for suite in module.named:
         rel = f"{SUITE_DOC_DIR}/{suite}.md"
         path = repo / rel
+        if paths is not None and path not in paths and modules_path(repo) not in paths:
+            continue
         if not path.is_file() or path.is_symlink():
             add_finding(
                 findings,

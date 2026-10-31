@@ -62,7 +62,8 @@ def fact_context(repo, against):
                             if not config.is_ignored(p) and (p in changed or any(
                                 e == '.' or c == e or c.startswith(e.rstrip('/') + '/')
                                 for raw in old.get(p, []) + new.get(p, [])
-                                for e in [posixpath.normpath(raw)] for c in implementations))})
+                                for e in [posixpath.normpath(raw)] for c in changed if c not in ignored
+                                and (config.owns(c) or review_document(c) or c.startswith(".mdf/"))))})
         audit, _ = audit_payload(after, 'branch', [], [], base,
                                  extra_documents=documents, ignore_modules=config, ignore_paths=validation_paths,
                                  scope_changes=[p for p in changed if config.owns(p) or review_document(p)])

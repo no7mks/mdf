@@ -49,7 +49,7 @@ def test_pr_audit_after_upgrade_excludes_install_but_keeps_project_facts(python_
     data = audit()
     assert not any(p.startswith('.codex/skills/mdf/') for p in data['implementation_paths'])
     assert (document in data['document_paths']) == (scope != 'branch')
-    assert any(f['code'] == 'evidence.stale' and f['path'] == document for f in data['findings'])
+    assert any(f['code'] == 'evidence.stale' and f['path'] == document for f in data['findings']) == (scope != 'branch')
     assert data['ignored'] == []
 
     if scope == 'branch':

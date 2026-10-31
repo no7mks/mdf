@@ -46,3 +46,13 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - report-check 校验指纹与覆盖；输入变化则用原 against 回步骤 2，不复用旧通过结论。
 - 完整覆盖三类范围、处置 warnings、无 finding/incomplete 才能 pass。
 - 报告由会话返回；调用方保存到 checkout 外；不直接 approve/merge。
+
+### 确定性校验范围
+
+- against 与解析为 against 的 branch 先解析 diff，再执行影响集契约校验。
+- evidence 仅校验已选事实页及 evidence / generated 路径覆盖 diff 的事实页。
+- 链接校验 diff 来源页的出链，以及其他页指向 diff 路径的入链；Markdown/HTML
+  目标的 anchor 缺失也报 `link.broken`。
+- 对象与发布记录校验变更来源及受影响的引用约束；读取 inventory 不代表全库校验。
+- 范围外事实页不注册 evidence 进度组，也不进入本轮失败结果。
+- 显式 full 入口保留全库 doctor；不通过 base/after finding 差集裁定影响集。

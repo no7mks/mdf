@@ -109,8 +109,10 @@ def validate_release_history(
     repo: Path,
     manifest: dict[str, Any] | None,
     findings: list[Finding],
+    *, paths: set[Path] | None = None,
 ) -> None:
-    changelog = changelog_versions(repo, findings)
+    global_history = paths is None or bool(paths & {repo / "CHANGELOG.md", repo / ".mdf/manifest.yaml"})
+    changelog = changelog_versions(repo, findings if global_history else [])
     changelog_set = set(changelog)
     release_root = repo / "changes"
     release_dirs = (
@@ -129,7 +131,8 @@ def validate_release_history(
     )
     release_versions = [path.name for path in release_dirs]
     for version in release_versions:
-        if version not in changelog_set:
+        if version not in changelog_set and (global_history or any(
+                p == repo / "changes" / version or repo / "changes" / version in p.parents for p in paths)):
             add_finding(
                 findings,
                 "release.changelog_missing",
@@ -147,7 +150,7 @@ def validate_release_history(
         for version in (*changelog, *release_versions)
         if stable_semver(version) is not None
     }
-    if latest_release is None and known_versions:
+    if global_history and latest_release is None and known_versions:
         add_finding(
             findings,
             "manifest.latest_release_history",
@@ -155,7 +158,7 @@ def validate_release_history(
             "exist",
             ".mdf/manifest.yaml",
         )
-    elif stable_semver(latest_release) is not None:
+    elif global_history and stable_semver(latest_release) is not None:
         if not known_versions:
             add_finding(
                 findings,
@@ -184,6 +187,8 @@ def validate_release_history(
         changelog_set, key=lambda version: stable_semver(version)
     )
     for release_dir in release_dirs:
+        if not global_history and not any(p == release_dir or release_dir in p.parents for p in paths):
+            continue
         version = release_dir.name
         release_file = release_dir / "CHANGE.md"
         if not release_file.is_file():

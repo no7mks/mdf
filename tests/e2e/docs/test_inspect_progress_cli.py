@@ -17,7 +17,7 @@ def test_inspect_progress_keeps_json_and_is_logged(command, python_exe, tmp_path
     assert "契约：事实文档与 evidence" in result.stderr
     assert "[事实文档] 已检查 0/" in result.stderr
     assert "[evidence：docs/system/interfaces/api.md] 已检查 1/1" in result.stderr
-    total, stage = {"doctor": (3, 2), "validate": (1, 1), "fact-audit": (4, 1)}[command]
+    total, stage = {"doctor": (3, 2), "validate": (1, 1), "fact-audit": (4, 2)}[command]
     assert f"[{command}] 全局共 {total} 个阶段：" in result.stderr.splitlines()[0]
     evidence_lines = [line for line in result.stderr.splitlines() if "[evidence：" in line]
     assert evidence_lines

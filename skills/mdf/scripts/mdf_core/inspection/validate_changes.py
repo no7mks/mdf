@@ -8,7 +8,7 @@ from mdf_core.inspection.validate_change_schema import validate_change_file, val
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
-def validate_changes(repo: Path, findings: list[Finding]) -> None:
+def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None) -> None:
     root = repo / "changes"
     if (
         not root.is_dir()
@@ -23,6 +23,8 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
         and not path.is_symlink()
         and path_stays_in_repo(repo, path)
     ):
+        if paths is not None and not any(p == directory or directory in p.parents for p in paths):
+            continue
         if directory.name == "unreleased":
             for change_dir in sorted(
                 path
@@ -31,6 +33,8 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             ):
+                if paths is not None and not any(p == change_dir or change_dir in p.parents for p in paths):
+                    continue
                 semver = stable_semver(change_dir.name) is not None
                 if not semver and not re.fullmatch(
                     r"[a-z0-9][a-z0-9-]*", change_dir.name
@@ -176,13 +180,16 @@ def validate_changes(repo: Path, findings: list[Finding]) -> None:
         ):
             change = change_dir / "CHANGE.md"
             if not change.is_file():
-                add_finding(
-                    findings,
-                    "change.missing",
-                    "已发布 Change 快照需要 CHANGE.md",
-                    relative(repo, change_dir),
-                )
-            else:
+                if paths is None or release in paths or any(
+                    p == change_dir or change_dir in p.parents for p in paths
+                ):
+                    add_finding(
+                        findings,
+                        "change.missing",
+                        "已发布 Change 快照需要 CHANGE.md",
+                        relative(repo, change_dir),
+                    )
+            elif paths is None or change in paths:
                 validate_change_file(
                     repo,
                     change,

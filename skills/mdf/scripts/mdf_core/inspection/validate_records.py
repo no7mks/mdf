@@ -8,7 +8,7 @@ from mdf_core.inspection.validate_objects import iter_object_files
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
-def validate_adrs(repo: Path, findings: list[Finding]) -> None:
+def validate_adrs(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None) -> None:
     root = repo / ADR_ROOT
     if (
         not root.is_dir()
@@ -17,6 +17,8 @@ def validate_adrs(repo: Path, findings: list[Finding]) -> None:
     ):
         return
     for path in sorted(root.glob("*.md")):
+        if paths is not None and path not in paths:
+            continue
         if path.is_symlink() or not path_stays_in_repo(repo, path):
             continue
         rel = relative(repo, path)
@@ -73,7 +75,18 @@ def validate_adrs(repo: Path, findings: list[Finding]) -> None:
             )
 
 
-def validate_record_references(repo: Path, findings: list[Finding]) -> None:
+def validate_record_references(
+    repo: Path, findings: list[Finding], *, paths: set[Path] | None = None,
+    touched_ids: set[str] | None = None,
+) -> None:
+    def selected(path, metadata):
+        if paths is None or path in paths:
+            return True
+        values = [metadata.get(key) for key in ("depends_on", "replaced_by", "duplicate_of",
+                  "proposals", "fixed", "closed", "deferred", "adrs")]
+        return any(item in (touched_ids or set()) for value in values
+                   for item in (value if isinstance(value, list) else [value]) if isinstance(item, str))
+
     known: set[str] = set()
     identifier_paths: dict[str, Path] = {}
     slug_paths: dict[str, Path] = {}
@@ -85,7 +98,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
             match = OBJECT_FILE_RE.fullmatch(path.name)
             if match and len(path.relative_to(repo / "docs").parts) == 2:
                 slug = match.group(2)
-                if slug in slug_paths:
+                if slug in slug_paths and (paths is None or path in paths or slug_paths[slug] in paths):
                     add_finding(
                         findings,
                         "object.slug_duplicate",
@@ -103,7 +116,7 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
                 continue
             identifier = metadata.get("id")
             if isinstance(identifier, str):
-                if identifier in identifier_paths:
+                if identifier in identifier_paths and (paths is None or path in paths or identifier_paths[identifier] in paths):
                     add_finding(
                         findings,
                         "object.id_duplicate",
@@ -133,6 +146,8 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
         proposals,
         identifier_paths,
         findings,
+        selected={ident for ident, meta in proposals.items() if selected(identifier_paths[ident], meta)},
+        paths=paths, touched_ids=touched_ids,
     )
 
     replacements = {}
@@ -141,10 +156,14 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
         if not isinstance(values, list):
             continue
         replacements[identifier] = {value for value in values if isinstance(value, str)}
-        if any(value not in proposals or value == identifier for value in replacements[identifier]):
+        relevant = replacements[identifier] if paths is None or identifier_paths[identifier] in paths else (
+            replacements[identifier] & (touched_ids or set()))
+        if any(value not in proposals or value == identifier for value in relevant):
             add_finding(findings, "proposal.replaced_by", "替代关系引用无效",
                         relative(repo, identifier_paths[identifier]))
     for identifier in cyclic_proposals(replacements):
+        if not selected(identifier_paths[identifier], proposals[identifier]):
+            continue
         add_finding(findings, "proposal.replacement_cycle", "替代关系不得成环",
                     relative(repo, identifier_paths[identifier]))
 
@@ -152,6 +171,10 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
         try:
             metadata, _ = read_frontmatter(path)
         except MDFError:
+            continue
+        primary = metadata.get("duplicate_of")
+        if paths is not None and path not in paths and (
+                not isinstance(primary, str) or primary not in (touched_ids or set())):
             continue
         if (
             metadata.get("status") == "rejected"
@@ -220,6 +243,9 @@ def validate_record_references(repo: Path, findings: list[Finding]) -> None:
             if not isinstance(values, list):
                 continue
             for identifier in values:
+                if paths is not None and path not in paths and (
+                        not isinstance(identifier, str) or identifier not in (touched_ids or set())):
+                    continue
                 if (
                     not isinstance(identifier, str)
                     or not identifier.startswith(prefix)
@@ -314,6 +340,8 @@ def validate_proposal_dependencies(
     proposals: dict[str, dict],
     identifier_paths: dict[str, Path],
     findings: list[Finding],
+    *, selected: set[str] | None = None, paths: set[Path] | None = None,
+    touched_ids: set[str] | None = None,
 ) -> None:
     groups = proposal_milestones(proposals)
     dependencies: dict[str, set[str]] = {}
@@ -325,9 +353,11 @@ def validate_proposal_dependencies(
             continue
         dependencies[identifier] = set()
         for dependency in depends_on:
+            target_findings = findings if paths is None or path in paths or (
+                isinstance(dependency, str) and dependency in (touched_ids or set())) else []
             if not isinstance(dependency, str):
                 add_finding(
-                    findings,
+                    target_findings,
                     "proposal.depends_on_type",
                     "Proposal depends_on entries must be Proposal IDs or "
                     "milestone names",
@@ -336,7 +366,7 @@ def validate_proposal_dependencies(
                 continue
             if dependency == identifier:
                 add_finding(
-                    findings,
+                    target_findings,
                     "proposal.depends_on_self",
                     "A Proposal cannot depend on itself",
                     rel,
@@ -348,7 +378,7 @@ def validate_proposal_dependencies(
                 released = status in SATISFIED
                 if status not in {"draft", "ready"} and not released:
                     add_finding(
-                        findings,
+                        target_findings,
                         "proposal.depends_on_unreleased",
                         "Proposal dependency must be active or released: "
                         f"{dependency}",
@@ -370,13 +400,15 @@ def validate_proposal_dependencies(
                 else "proposal.depends_on_type"
             )
             add_finding(
-                findings,
+                target_findings,
                 code,
                 "Proposal dependency must be an active Proposal or existing "
                 f"milestone: {dependency}",
                 rel,
             )
     for identifier in sorted(cyclic_proposals(dependencies)):
+        if selected is not None and identifier not in selected:
+            continue
         add_finding(
             findings,
             "proposal.depends_on_cycle",
