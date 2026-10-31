@@ -30,6 +30,7 @@
   - 长期复用的脚本移入项目正式目录并纳入 Git，结论和证据归入相应文档或报告。
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（不得省略前缀或只写序号/短码/slug）。
 - MDF 的调用与续办按 Skill 入口规则执行。
+- 不允许直接改动 MDF Skill 及其文件。
 - 直接在 develop 上改动时，按事项创建 `changes/unreleased/<slug>/`，至少留存 `CHANGE.md`。
   - `CHANGE.md` 参照 [MDF Change 模板]($MDF_ROOT/assets/templates/change.md) 编写。
 
