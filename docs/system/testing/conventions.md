@@ -12,6 +12,12 @@
 - `tests/e2e/<功能块>/`：在临时 Git 仓库中以子进程调用 `mdf.py` 或 `mdf-deploy.sh`
   的 CLI E2E。
 - 全部测试 hermetic：只依赖 Python 标准库、Git、pytest 与 pytest-xdist，不访问网络。
+- macOS 的 PATH 命中 `/usr/bin/git` 时，测试启动阶段用 `xcrun --find git` 定位当前 toolchain，
+  将其目录置于本次测试进程的 PATH 首位，省去每次 Git 调用的启动器开销。
+  - 仍执行真实 Git；自选 Git 与其他平台保持原 PATH。解析失败或目标不可执行时保持原 PATH。
+- pytest 临时目录按 checkout 路径隔离在系统临时目录的 `mdf-pytest-<路径摘要>/` 下。
+  - 保留 pytest 原有的保留数量与清理策略，避免跨项目清理临时仓库。
+  - 显式 `--basetemp` 或 `PYTEST_DEBUG_TEMPROOT` 优先；不改用户的全局环境。
 - 共用 helper：
   - `mdf_test_support.py`：fixture 仓库与 CLI 调用。
   - `support_delivery.py`、`support_upgrade.py`、`support_planning.py`、`support_routes.py`：
@@ -42,7 +48,9 @@
 
 ## 入口
 
-在仓库根执行；pytest 默认 `-n auto --dist worksteal` 并行。用时为本机并行实测。
+在仓库根执行；pytest 默认 `-n auto --maxprocesses=4 --dist worksteal` 并行。
+并发上限为 4，减少大量 Git 子进程并发时的资源竞争；如需提高，须同时指定 `-n N --maxprocesses=N`。
+用时为本机并行实测。
 
 | 入口 | 命令 | 预算 | 实测 | 何时跑 |
 | --- | --- | --- | --- | --- |

@@ -25,7 +25,7 @@ named suite 指 gitflow、planning 等具体的自定义 suite，不是一个聚
 改动某功能块时须验证相应 suite；smoke 或 release 已完整覆盖时不重复运行，从同一份 JUnit 提取结果。
 smoke 未覆盖的 release_only 成员不得声称通过；确需验证时只补跑缺失范围。成员、复用规则与预算见
 [docs/system/testing/conventions.md](docs/system/testing/conventions.md)。
-`pytest.ini` 默认 `-n auto` 并行，只在点名调试时用 `-n0`。
+`pytest.ini` 默认 `-n auto --maxprocesses=4` 并行，只在点名调试时用 `-n0`。
 
 ## 发布与安装
 

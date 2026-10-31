@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from _support import REPO_ROOT, Skill, discover_skills
+from _support import REPO_ROOT, Skill, discover_skills, isolate_test_temp_root, prefer_direct_git
 
 sys.path.insert(0, str(REPO_ROOT / "skills" / "mdf" / "scripts"))
 from mdf_core.execution.run_logs import prune  # noqa: E402
@@ -57,6 +57,8 @@ def pytest_configure(config: pytest.Config) -> None:
     """每次运行都写 JUnit XML（优先 MDF_REPORT_DIR），并清理 .test-reports/ 中 7 天前的内容。"""
     if hasattr(config, "workerinput"):
         return
+    prefer_direct_git()
+    isolate_test_temp_root()
     reports = REPO_ROOT / ".test-reports"
     prune(reports)
     prune(reports / "mdf-logs")
