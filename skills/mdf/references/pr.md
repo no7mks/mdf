@@ -136,16 +136,16 @@ closeout:
   - 命令异常不能当作未包含或已通过；先读日志定位。
 - 集成前确认 owner clean、无已有 MERGE_HEAD，并保存下节格式的「PR 返工」备注。
   - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”，不伪造 PR ID，也不提前创建 finish 记录。
-  - 固定集成前 HEAD 为增量审查左端点、远端 tip 与原验证请求；退勾 lint、code-review、verify、fact 和 pr。
+  - 固定集成前 HEAD 为 `catch-up 基线`（增量审查左端点）、远端 tip 与原验证请求；仅退勾 `catch-up` 和 `pr`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`）。
   - 提交备注后先按 [squash](squash.md#pr-模式与-planning-land-的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
   - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
   - 禁止 rebase、force push、整侧覆盖或削弱测试；语义不明时保留现场并询问。
-- 只要进行了上述集成，就结束 pr 内部调用栈，由当前 Agent 在主链外依次完成 lint、增量 code-review、verify 和 fact。
-  - 无冲突、空树差异或仅非本交付 docs 改动均不豁免；不套用 local 模式的跳过判定。
-  - 有有效上轮审查时按 1 人增量新一轮覆盖集成与冲突修复，复核上轮问题；否则按 code-review 首轮规则执行。
-  - 普通交付执行 verify branch；人工 feature 执行 verify smoke；adhoc 执行 verify smart；并补原验证请求所需检查。
-  - 随后完成 fact audit，必要时 fact update 并复核；人工 feature 保持 fact update 要求。
-  - 审查或验证引发修复时按原主链补审补测，直到全部通过；同步报告、objectives 与交付材料并提交。
+- 只要进行了上述集成，就结束 pr 内部调用栈，由当前 Agent 在主链外委托 `references/catch-up.md` 对改动文件执行增量补检。
+  - ❌ 严禁因远端集成退勾已通过的基线步骤，严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release`、从 `start_commit` 起全分支审查或全量 `fact audit`。
+  - 有有效上轮审查时按 1 人增量新一轮仅覆盖 `<catch_up_base>..HEAD` 改动文件与冲突修复，复核上轮问题。
+  - 验证只跑 `verify --scope smart --paths <本次改动文件>`；事实只按 `--scope paths` 补检改动文件关联的事实页。
+  - 即使 `catch-up` 此前已勾选，再次触发远端集成也只退勾 `catch-up` 与 `pr` 并回到 `catch-up`。
+  - 补检引发修复时在 `catch-up` 内对改动文件增量复检，直到通过并自勾 `catch-up`，同步材料并提交。
 - 全部完成后再次 pr；独立调用也持续续办，不只报告待办。release/hotfix 候选目录沿用下方返工规则。
   - 创建或更新 PR/MR 前再次 fetch 并检查最新远端 tip；未包含则重复本节，不复用集成前的通过记录。
   - 清除返工备注和恢复候选勾选按下方规则执行；存在未完成返工时不得调用 pr 提交源分支。
@@ -228,16 +228,16 @@ closeout:
 可修问题交回主链外处理，保持当前任务持续推进；独立 pr 和 deliver 委托均适用。
 
 - 步骤 4 的返工入口：核对反馈对应当前 PR/MR 与 head；读取完整 review、CI 日志和失败报告，定位问题，不为查看输出重复运行。
-- 修改前先保存「PR 返工」非 checklist 备注，并按实际影响退勾 objectives 的受影响项及后续项，落盘后再修复。
+- 修改前先保存「PR 返工」非 checklist 备注（含 `catch-up 基线`），仅退勾 objectives 的 `catch-up` 与 `pr`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`），落盘后再修复。
    - 备注位于本次材料目录的 objectives，记录父 intent 与调用方、原 PR/MR 身份、source/owner/common dir/主路径。
    - 原调用方为 deliver 时保留其有效 until、yolo 与已有授权依据；新调用有显式边界或用户限制时以本次要求为准。
    - 同时记录反馈对应的旧 head、修复前左端点、原验证请求（scope/模块/选题或 suite/完整命令）及返回 PR 的位置。
    - 进度仍只由 checklist 决定；备注只恢复父流程与参数，不另加 gate 或状态协议，不改写人工工作勾选来源。
    - 冲突通过 merge 最新远端目标分支解决；不 rebase、不 force push，不覆盖他人现场。
    - CI 暂时故障仅在证据支持时重试；不降低测试、审批或 branch protection 要求。
-- 结束 pr 内部调用栈，在主链外按影响恢复 lint、增量 code-review、原验证范围及 fact。
-   - code-review 与 verify 可相互退回修复，直到问题解决、所需审查和验证通过；同步材料并提交。
-   - 独立 pr 也由当前 Agent 续办上述阶段，不仅报告待办后结束；deliver 返回 Select 按原阶段推进。
+- 结束 pr 内部调用栈，在主链外委托 `references/catch-up.md`，仅对修复改动文件增量完成 lint、1 人 code-review、`verify --scope smart --paths` 及 paths 事实补检。
+   - ❌ 严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release` 或全分支审查；再次触发更新同样只回到 `catch-up`。
+   - 独立 pr 也由当前 Agent 续办 `catch-up`，不仅报告待办后结束；deliver 返回 Select 按 `catch-up` 推进。
 - 全部补审补测与 fact 完成后，复核候选材料、恢复 pr 候选勾选，在更新 PR/MR 前的材料提交中移除该备注。
    - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与 finish 记录的差异恢复更新，不重做首次材料准备。
    - 恢复 pr，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。

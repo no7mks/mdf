@@ -76,7 +76,7 @@ def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():
         assert rule in text
     table = text.split("| 交付路径 |", 1)[1].split("\n\n", 1)[0]
     assert "start（联调时内部 integrate）→ design → write-tests / implement → converge" in table
-    assert "code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ [pr（仅 PR mode）] → close-out" in table
+    assert "code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ catch-up → [pr（仅 PR mode）] → close-out" in table
     assert "多词 intent 须作为单个值传入" in text
     assert "until fact update 可完成前置 audit，需要 update 时先停住" in text
     assert "audit 无须修复时也在 update 的顺序位置停住" in text
@@ -195,3 +195,38 @@ def test_deliver_requires_separate_user_confirmation_before_pr_and_closeout():
         assert rule in policy
     assert "核 pr 入口确认（yolo 跳过）" in workflow("pr")
     assert "不能复用 pr 的入口确认" in workflow("close-out")
+
+
+def test_catch_up_contract_forbids_full_reruns_and_reticking_baseline():
+    catch_up = workflow("catch-up")
+    for rule in (
+        "## 强硬禁令（严禁全量重跑）",
+        "严禁退勾已通过的基线步骤",
+        "严禁触发全量验证",
+        "严禁触发全分支或全员代码审查",
+        "严禁触发全量事实审阅",
+        "再次触发更新只回 `catch-up`",
+        "--scope smart --paths",
+        "只审 `<catch_up_base>..HEAD` 的改动文件",
+    ):
+        assert rule in catch_up
+    assert "fact 已勾、catch-up 未勾" in workflow("deliver")
+    assert "仅退勾 `catch-up` 和 `pr`" in workflow("pr")
+    assert "仅将 `catch-up` 退回 `[ ]`" in workflow("close-out")
+    assert "仅退勾 `catch-up`" in workflow("adhoc-close-out")
+
+
+def test_catch_up_examples_match_cli_arguments():
+    import shlex
+    from mdf_core.cli import build_parser
+
+    text = workflow("catch-up")
+    commands = re.findall(r"```bash\n(.*?)\n```", text, re.S)
+    verify, audit = [build_parser().parse_args(shlex.split(command.replace("\\\n", ""))[2:])
+                     for command in commands]
+    assert verify.command == "verify" and verify.scope == "smart"
+    assert len(verify.paths) == 2 and verify.test and verify.report_file
+    assert audit.command == "fact-audit" and audit.scope == "paths"
+    assert audit.implementation_path and audit.document_path
+    assert "PR/CI 反馈中的失败用例" in text
+    assert "quick 已完整覆盖所需回归" in text

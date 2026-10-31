@@ -192,6 +192,8 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 - adhoc smart：成败均保存 `verification-report.json`；主链前置为工作、lint 与 code-review 已勾。
   必要复审完成且通过后，在步骤 6 自勾 verify smart 并提交；其他 smart/named 不勾主链项。
   通过读 stdout，失败读 stderr JSON；失败不宣称通过。
+- smart 可用 `--report-file <仓库内路径>` 将成败结果改写到独立文件，保留默认报告；路径不得越出仓库或含符号链接。
+  catch-up 必须使用独立报告；branch/named 不接受该参数。
 - quick 复现结论只在 branch 已绿写入 `verification-report.md` 时一并记录。
   - 不写 `code-review.md`（审查轮次的 quick 复现仍由 code-review 自记）。
 

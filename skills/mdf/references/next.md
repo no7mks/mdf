@@ -146,9 +146,10 @@ PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
-  - 主线后半：lint → code-review → verify branch → fact audit → [pr（仅 PR mode）] → close-out。
+  - 主线后半：lint → code-review → verify branch → fact audit → catch-up → [pr（仅 PR mode）] → close-out。
     进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
+    fact 已通过后，远端合入或收尾返工一律只退勾 `catch-up`（PR mode 另退勾 `pr`），严禁退勾基线四项。
   - 无对应未勾项则跳过。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；

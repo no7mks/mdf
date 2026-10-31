@@ -61,6 +61,7 @@ disable-model-invocation: true
                  ├──── verify ────────────────────────────────────────────→ references/verify.md
                  ├──── fact update ───────────────────────────────────────→ references/fact-update.md
                  ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
+                 ├──── catch-up ──────────────────────────────────────────→ references/catch-up.md
                  ├──── prp split ─────────────────────────────────────────→ references/prp-split.md
                  ├──── pr ────────────────────────────────────────────────→ references/pr.md
                  ├──── close-out ─────────────────────────────────────────→ references/close-out.md
@@ -141,9 +142,10 @@ disable-model-invocation: true
   `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
   - start 的 `--name` 仅用于人工 feature；已有交付直接按 delivery.json 续办。
-- `$mdf adhoc [<工作描述>]` 直接生成 slug 与六项 objectives，在独立 worktree 完成临时工作。
+- `$mdf adhoc [<工作描述>]` 直接生成 slug 与七项 objectives，在独立 worktree 完成临时工作。
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
+- `$mdf catch-up` 在基线 `lint`、`code-review`、`verify`、`fact` 已通过后，仅对改动文件执行增量补检；严禁全量重跑。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - code-review 要求 clean worktree；可带：
   - `--against <commit>`：只覆盖本轮左端点，与当前 HEAD 比较；不跳过修复；
@@ -172,7 +174,8 @@ disable-model-invocation: true
 - init 可按其契约内部转入 bootstrap 或 migrate；`$mdf init migrate` 与 `$mdf migrate` 执行同一流程。
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托截止点之前从 start 起的剩余交付阶段；默认无截止点。
-- adhoc 可内部委托其六项清单的剩余阶段直到 close-out。
+- adhoc 可内部委托其七项清单的剩余阶段直到 close-out。
+- `$mdf catch-up` 执行 `references/catch-up.md`，在 `pr` / `close-out` 前仅增量补检改动文件，再次触发更新也只回到 `catch-up`。
 - `$mdf pr` 执行 `references/pr.md`，只适用于 PR mode。
   - 创建/更新 PR、等待 CI/review、修复并持续等待；merged 且核验通过后完成 pr Goal。
 - `$mdf close-out` 执行 `references/close-out.md`。

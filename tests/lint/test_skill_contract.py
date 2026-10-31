@@ -41,7 +41,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "bug create",
         "prp create",
         "prp review",
-        "archive", "pr", "close-out", "squash [--dry-run]",
+        "archive", "catch-up", "pr", "close-out", "squash [--dry-run]",
         "fact audit",
         "prettify",
         "fact update",

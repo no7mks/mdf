@@ -85,3 +85,34 @@ def test_smart_keeps_module_configuration_errors(python_exe, tmp_path):
     )
     assert result.returncode != 0
     assert "modules_invalid" in result.stderr
+
+
+@pytest.mark.parametrize("command,passed", [("true", True), ("exit 42", False)])
+def test_smart_separate_report_preserves_baseline_and_runs_selected_test(
+    python_exe, tmp_path, command, passed,
+):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    git(repo, "checkout", "-b", "adhoc/catch-up")
+    args = ("verify", "smart", "--repo", str(repo), "--paths", "src/service.py")
+    assert_ok(mdf(python_exe, *args))
+    baseline = repo / "changes/unreleased/catch-up/verification-report.json"
+    original = baseline.read_bytes()
+    output = "changes/unreleased/catch-up/catch-up-verification-report.json"
+    result = mdf(python_exe, *args, "--test", command, "--report-file", output)
+    assert (result.returncode == 0) is passed
+    assert baseline.read_bytes() == original
+    report = json.loads((repo / output).read_text())
+    assert report["all_passed"] is passed
+    selected = next(item for item in report["results"] if item["id"] == "test:1")
+    assert selected["command"] == command and selected["passed"] is passed
+
+
+@pytest.mark.parametrize("scope", ["branch", "quick"])
+def test_separate_report_is_only_available_for_smart(python_exe, tmp_path, scope):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+    result = mdf(python_exe, "verify", scope, "--repo", str(repo),
+                 "--report-file", "catch-up.json")
+    assert result.returncode != 0 and "invalid_verify_scope" in result.stderr
+    assert not (repo / "catch-up.json").exists()

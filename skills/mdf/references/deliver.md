@@ -272,8 +272,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
-| fact 已勾、PR mode 且 pr 尚未完成 | 委托 `references/pr.md`，等待 merged、合并核验与关联 CI 收尾通过；完成后回 Select |
-| fact 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
+| fact 已勾、catch-up 未勾 | 委托 `references/catch-up.md`（仅对改动文件做增量补检；严禁退勾已过基线四项或全量重跑） |
+| catch-up 已勾、PR mode 且 pr 尚未完成 | 委托 `references/pr.md`，等待 merged、合并核验与关联 CI 收尾通过；完成后回 Select |
+| catch-up 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
 | close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
 
 剩余工作与失败处理：
@@ -283,8 +284,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - close-out 返回「待主链外续办」时结束该调用栈并返回 Select；保留已齐审查与修复窗。
-  - 在 close-out 外恢复 code-review、原验证与 fact 后再续办收口，不在 close-out 内绕跑 verify。
-  - PR/MR 轮询收到可修 review/CI 反馈或冲突时同样返回 Select；修复并补审补测后更新原 PR/MR，继续轮询。
+  - 只退勾 `catch-up`（PR mode 另退勾 `pr`），在 close-out 外委托 `catch-up` 增量补检改动文件后再续办收口；不在 close-out 内绕跑 verify，严禁退勾已过基线四项。
+  - PR/MR 轮询收到可修 review/CI 反馈或冲突时同样只退勾 `catch-up` 与 `pr` 并返回 Select；经 `catch-up` 增量补检后更新原 PR/MR，继续轮询。
 
 - 内部委托到 until 时逐层返回截止点与未完成子步骤，直接进入 5；不把截止当作失败或自动重试。
 - fact audit 的可修 finding 交回 Select；外部阻塞、缺证据或低 confidence 待确认不擅自启动 fact update。

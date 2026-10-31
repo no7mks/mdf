@@ -43,7 +43,7 @@
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
-命中时未 merged 恢复父 pr，已 merged 续办 close-out，不先要求 adhoc-status 通过；无 PR 恢复时才执行下表与六项账本选型。
+命中时未 merged 恢复父 pr，已 merged 续办 close-out，不先要求 adhoc-status 通过；无 PR 恢复时才执行下表与七项账本选型。
 
 读取 `references/common.md` 与 `references/delivery-contract.md`；本页专用条款优先于普通交付主线。
 不执行 start 的 clarify、PRP 选择或 roster 确认。
@@ -73,13 +73,13 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 - 新工作描述取自本次参数或已明确的对话上下文；既有工作从 `delivery.json.work` 恢复。
   - 描述写实际工作与已有约束、验收，不只写 slug；无需再次确认。
   - 当前未完工作与新描述不一致时询问归属，不覆盖原目标。
-- 显式 adhoc 授权完成六项步骤及必要本地提交、集成和收口。
+- 显式 adhoc 授权完成七项步骤及必要本地提交、集成和收口。
   - PR mode 由 pr 提交并等待 merged；随后执行 close-out 的合并后续办。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更与测试门槛批准仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
   - 当前为无账本 adhoc 时保留真实分支与工作区；步骤 3 按 status.next_step 选择 pr 或 close-out，不重新 start。
-  - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方六项账本与勾选条款。
+  - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方七项账本与勾选条款。
   - detached 现场必须有上下文已知 slug；缺失或不能证明收口时停止，不猜测身份或重新 start。
   - 用户明确发起不同新工作且旧工作已完成时，用返回的 primary_worktree 新建。
     不复用旧目标或工作区。
@@ -96,7 +96,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - 固定 roster `0,0,1`，`needs_design: false`；不建立 qa/dev 角色树。
 - CLI 写入并提交 `changes/unreleased/<slug>/delivery.json` 与 `objectives.md`。
   - delivery 的 `work` 保存实际工作描述；跨会话续办及 code-review 均以此为准。
-  - 账本直接使用 `assets/templates/adhoc-objectives.md`，初始六项均未勾。
+  - 账本直接使用 `assets/templates/adhoc-objectives.md`，初始七项均未勾。
   - 不要求 design、converge、人工工作确认或额外的 start checklist 项。
 - start 返回的 command hook 已由 Core 执行。pending rule 由 Agent 在返回的 cwd 读取 path 并执行。
   - 使用返回的 new_worktree、old_worktree 上下文；执行前后记录名称、路径、cwd、结果及日志。
@@ -110,7 +110,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 
 - 运行 `mdf.py adhoc-status --repo <owner> [--slug <已知slug>]`，回读 `result`。
   - 活跃分支可省略 slug；detached 时必须显式传入，不从目录名或其他任务猜测。
-  - `delivery` 含 work、roster、start_commit；`next_step` 来自原有六项账本。
+  - `delivery` 含 work、roster、start_commit；`next_step` 来自原有七项账本。
   - CLI 拒绝缺失工作描述、非 solo、绑定对象、design 或越序勾选，具体差异报告后停止。
 - `completed: true` 须同时满足：
   - 账本全勾，源分支已删除。
@@ -120,11 +120,11 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - 账本全勾且仍在源分支时：local 返回 close-out；PR mode 未核验 merged 返回 pr，已核验则 close-out。
 - 状态只读原有材料与 Git，不创建 gate 或新的 workflow 状态文件。
 
-### 六项账本与续办
+### 七项账本与续办
 
 本节用唯一 checklist 决定下一项工作。
 
-objectives 的六项必须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
+objectives 的七项必须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
 
 | 清单项 | 执行与完成证据 |
 | --- | --- |
@@ -133,6 +133,7 @@ objectives 的六项必须同序、完整，已勾项形成连续前缀；工作
 | code-review | 委托 `references/code-review.md`；1 人独立审查，终稿与自勾 |
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
 | fact audit/update | 按下节审阅，必要时更新；报告结论、自勾与提交 |
+| catch-up | 委托 `references/catch-up.md`；仅对改动文件增量补检（严禁全量重跑），自勾与提交 |
 | pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged 且核验通过才结束 |
 | close-out | 仅此项读取并执行 `references/adhoc-close-out.md`；Change 与实际 Git 完成证据 |
 

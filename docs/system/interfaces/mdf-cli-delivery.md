@@ -125,6 +125,9 @@
 - adhoc 例外：smart 成败均保存 `verification-report.json`，scope 仍为 smart。
   - 只跑涉及 module 的 lint/build/quick 与选题，不要求 smoke 或 branch scope。
   - 包括无账本分支；使用 adhoc-status 的材料目录，允许独立 slug，不创建 delivery/objectives。
+- `--report-file <路径>`：smart 成败结果仅写入指定文件，替代上述默认写入位置；用于 catch-up 保留基线报告。
+  - 相对路径以 repo 为根；必须留在仓库内且不含符号链接，执行验证前检查路径。
+  - branch/named 使用该参数返回 `invalid_verify_scope`。
 
 **named**
 

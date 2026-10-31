@@ -98,7 +98,7 @@ local 先运行 adhoc-status；`material_mode: change` 时委托 [无账本 Adho
   - 恢复仍遵守外层 until 与 decision 策略；source 不明时停止，不从 detached 目录猜测。
 - 运行 `mdf.py adhoc-status --repo <owner> --slug <已知slug>`；completed 时直接到 7。
 - 未 completed 但 merge_commit 已存在时，直接到 4。只续办清理，不改材料或重做集成。
-- 未完成时运行 doctor，要求 ready；核对工作、lint、code-review、verify smart、fact audit/update 已勾。
+- 未完成时运行 doctor，要求 ready；核对工作、lint、code-review、verify smart、fact audit/update、catch-up 已勾。
 - 任何退勾或提交前先只读检查 owner clean；有本地改动时保留现场并停止。
 - 只查 report 已交且声称通过，不做 commit 对齐审判。
   - code-review 终稿无 commit hash、无未解决项；fact-audit 报告结论通过。
@@ -123,8 +123,8 @@ PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr.md#提交前
   - 本次冲突按既定目标尝试解决后提交；语义不明或无法解决时保留现场并交接。
 - 只在增量全部为非本交付 docs 路径时跳过补审补测，并在终稿追加无 hash 的跳过说明。
   - 本交付 docs 为 start_commit 到集成前 HEAD 已改过的 docs 路径；路径不明不可跳过。
-  - 其余增量退勾 code-review 及后续项。草稿保存集成前左端点，提交后交接 code-review。
-  - 增量 review 为 1 人；由外层按六项账本完成补审、smart 与 fact 后再续办本流程。
+  - 其余增量记录 `catch-up 基线：<集成前HEAD>` 并仅退勾 `catch-up`（❌ 严禁退勾基线五项或全量重跑），提交后交接 `catch-up`。
+  - 增量 review 为 1 人；由外层按七项账本通过 `catch-up` 完成改动文件的增量补审、smart 与 fact 后再续办本流程。
 - 用 `assets/templates/change.md` 补齐同目录 CHANGE.md。
   记录实际结果、outcomes、事实更新与证据。
   - `change_kind: adhoc` 或 `fix`、`source_branch: adhoc/<slug>`、`proposals: []`。

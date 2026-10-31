@@ -46,6 +46,7 @@ def write_release_objectives(
         "- [ ] code-review\n"
         "- [ ] verify branch\n"
         "- [ ] fact audit\n"
+        "- [ ] catch-up\n"
         "- [ ] close-out\n\n"
         "## 工作线\n\n不联调\n\n"
         "本版收口与预发布验收。\n",

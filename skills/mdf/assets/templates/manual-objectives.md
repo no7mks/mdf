@@ -10,6 +10,7 @@
 - [ ] code-review
 - [ ] verify smoke
 - [ ] fact update
+- [ ] catch-up
 - [ ] close-out
 
 ## 工作范围

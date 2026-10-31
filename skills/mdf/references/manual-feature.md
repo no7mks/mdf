@@ -32,7 +32,7 @@
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：调用方先按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
-命中时未 merged 恢复父 pr，已 merged 续办 close-out，不运行下表的 delivery status；没有 PR 恢复时才按人工七项清单续办。
+命中时未 merged 恢复父 pr，已 merged 续办 close-out，不运行下表的 delivery status；没有 PR 恢复时才按人工八项清单续办。
 
 仅 next / deliver 在 `delivery.json` 的 `manual` 为 true 时内部执行本工作流。
 start 与各阶段 intent 只读取下文对应条款，不执行本续办工作流。
@@ -41,7 +41,7 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check delivery | 脚本 | 先核 PR 恢复；否则核身份与七项清单 | 记录或 status、账本 | PR 委托并返回；其余2 | 停止并报告 |
+| 1 | Check delivery | 脚本 | 先核 PR 恢复；否则核身份与八项清单 | 记录或 status、账本 | PR 委托并返回；其余2 | 停止并报告 |
 | 2 | Select step | 约束 | 先核 start 续办，再核人工工作与剩余步骤 | 准备说明、勾选、平台 | start 续办或阶段3；已收口返回 | 人工未勾交接；不符停止 |
 | 3 | Delegate | 约束 | 按阶段表执行一个原 intent 并交接 | 原 intent 产物与勾选 | 返回调用方 | 按原 intent 交接 |
 
@@ -63,7 +63,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 - start 通过 clarify 确认工作范围及 slug；独立调用先询问再建议，deliver 按其 confidence 策略裁定。
 - 从 develop 创建 `feature/<slug>` 与独立 owner worktree；roster 固定为 `0,0,1`。
 - objectives 使用 `assets/templates/manual-objectives.md`。
-  - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → [pr（仅 PR mode）] → close-out。
+  - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → catch-up → [pr（仅 PR mode）] → close-out。
 - start 自勾 start；人工工作仅由用户显式勾选，Agent 不得代勾。
   - 用户可要求 Agent 介入实现与测试；介入不代表人工工作已完成。
   - next / deliver 先恢复未完成的 start 步骤 5；完成后人工工作未勾才交接给用户，不代勾或越过。
@@ -75,6 +75,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - deliver 的 until 排除内部 fact audit 时，fact update 返回截止点与未完成步骤，不代勾 fact update。
   - 进入前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；仅文档继续，
     其他改动先补 code-review 与 verify smoke；失败仅汇报，续办不重跑。
+- catch-up 仅对事实后增量改动文件执行补检（严禁退勾基线四项或全量重跑），通过后自勾 catch-up。
 - close-out 核对上述前置项及报告；不要求 design、converge 或独立 fact audit 项。
   - Change 的 `proposals: []`；无 PRP 状态更新。
   - local 模式沿用 feature 的 no-ff 合入 develop、源分支删除及 worktree 保留规则。
@@ -105,6 +106,7 @@ PR mode 尚未 merged 时，即使 pr 候选项已勾仍选 pr；merged 后选�
 | code-review | `references/code-review.md` | 1 人审查终稿、勾选与提交 |
 | verify smoke | `references/verify.md`，branch scope | 通过的 branch 报告、必要增量复审、勾选与提交 |
 | fact update | 先可选 hook，再 `references/fact-update.md` | 适用补审补测、事实同步、内部审阅、勾选与提交 |
+| catch-up | `references/catch-up.md` | 增量改动文件的补检（无增量直通）、勾选与提交 |
 | pr（仅 PR mode） | `references/pr.md` | 实际 merged 且核验通过 |
 | close-out | `references/close-out.md` | Change、实际 Gitflow 结果 |
 

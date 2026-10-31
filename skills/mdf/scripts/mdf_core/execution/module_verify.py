@@ -185,6 +185,8 @@ def command_verify(args) -> None:
             "verify 需要 scope 或 named suite 名",
             code="invalid_verify_scope",
         )
+    if getattr(args, "report_file", None) and scope != "smart":
+        raise MDFError("--report-file 仅用于 smart", code="invalid_verify_scope")
     if scope == "named":
         _verify_named(repo, args)
         return
@@ -277,7 +279,9 @@ def _verify_smart(repo, args) -> None:
     if parse_role_branch(branch) or branch.startswith("codex/backmerge/"):
         kind = "unsupported"
     report_path = None
-    if kind == "adhoc":
+    if getattr(args, "report_file", None):
+        report_path = safe(repo, args.report_file)
+    elif kind == "adhoc":
         from mdf_core.lifecycle.adhoc_context import material
         report_path = material(repo, branch)[0] / "verification-report.json"
     modules = list(args.module or [])

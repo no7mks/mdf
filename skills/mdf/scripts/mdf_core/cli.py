@@ -317,6 +317,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         help="smart 额外 test/testcase 命令（Agent+Jev 选题后传入）",
     )
+    verify.add_argument("--report-file", help="smart 结果另存到仓库内路径，替代默认报告")
     verify.set_defaults(func=command_verify)
 
     pull = subparsers.add_parser("pr")

@@ -28,7 +28,7 @@ objectives 按 manifest.closeout.mode 固定收尾结构，local 使用原有 ch
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
 `$mdf integrate` 只读「补覆盖」。规则持续适用。
 人工 feature 先读取 [专用契约](manual-feature.md) 的当前阶段条款，优先于下文普通主线。
-adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其六项账本、smart report 与对应模式的收口规则。
+adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其七项账本、smart report 与对应模式的收口规则。
 应用条款不重新进入这两个文件的入口或续办工作流；仅由原调用方按已声明条件委托。
 ### 身份与材料
 
@@ -120,7 +120,8 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 7. code-review
 8. verify branch
 9. fact audit（必要时 fact update 后重审）；进入前执行可选 pre-gitflow-finish hook
-10. close-out
+10. catch-up（仅对事实后增量改动文件补检；严禁退勾基线四项或全量重跑）
+11. close-out
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。

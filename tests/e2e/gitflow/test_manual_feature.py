@@ -2,7 +2,7 @@
 from mdf_test_support import *  # noqa: F403
 from support_delivery import local_repo, commit
 
-STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "close-out")
+STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "catch-up", "close-out")
 
 
 def objectives(done=False):

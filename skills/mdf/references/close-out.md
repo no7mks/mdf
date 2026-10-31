@@ -104,7 +104,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 
 - 读取 `references/common.md`、`references/repository-contract.md`：
   - 另读 `references/object-contract.md` 与 `references/delivery-contract.md`。
-- 入口前置：主链 verify branch、fact audit 已完成；配置 hook 时确认已执行及必要补审补测已完成。
+- 入口前置：主链 verify branch、fact audit、catch-up 已完成；配置 hook 时确认已执行及必要补审补测已完成。
   hook 尚未执行或状态不明时交接主链，不在本 intent 或 `finish-gitflow` 内补跑；不要求独立执行记录文档。
 - 步骤 2 需要审查时读取并内部执行 `references/code-review.md`。
 - 步骤 2 可选 squash：先执行 `references/squash.md` 的 dry-run，由 Agent 裁定并执行完整流程。
@@ -195,9 +195,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
     - 当前对象文件：feature 的 PRP、bugfix/hotfix 的 Bug、release 的全部 child 对象。
   - 路径不明则不可跳过。
 - 不可跳过时：
-  - code-review 退回 `[ ]`；草稿记录集成前左端点与 tip，未完成不作终稿，范围不是进度账本。
-  - 引入实现/测试/验证配置改动时，另将分支验证与 fact 项退回 `[ ]`。
-    人工 feature 对应 verify smoke / fact update；其余对应 verify branch / fact audit。
+  - 在 `objectives.md` 记录 `catch-up 基线：<集成前HEAD>`，仅将 `catch-up` 退回 `[ ]`（❌ 严禁退勾基线四项或全量重跑 `verify --scope branch`）。
+  - 引入实现/测试/验证配置改动时，提交备注与退勾后停止并交接 `references/catch-up.md`，由主链外仅对改动文件增量补检。
   - 本轮增量 code-review：
     - feature：普通交付的 converge 项须已勾；人工交付的人工工作须已由用户勾选。
     - owner 已汇总上轮采纳/未解清单；不得把上轮多份原文交给本轮唯一 reviewer 去合并。
@@ -209,8 +208,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
     - 不复用集成前终稿充当增量差，也不将集成当作旧审查的修复续办。
     - 无有效上轮（无终稿或清单残缺）时按首轮从交付起点审到集成后 HEAD，不得跳过，
       人数仍为 roster.reviewers。
-  - 补审完成后，适用的分支验证或 fact 项未勾，或 branch 报告缺失/未声称 `all_passed:true` 时：
-    - 停止并交接，由本 intent 之外的主链完成 branch 验证与 fact audit 后续办。
+  - 补审完成后，适用的分支验证、fact 或 catch-up 项未勾，或 branch 报告缺失/未声称 `all_passed:true` 时：
+    - 停止并交接，由本 intent 之外的主链完成对应项后续办。
       本 intent 不委托、不执行 verify（含 branch / smart / named），不做 commit 对齐审判。
 - 主线已包含且 objectives 的 code-review 已勾、没有未完成补审时，才可不重复合并或审查。
   - 续办时 code-review 未勾则用草稿保存的左端点先补审；缺少可验证范围时停止询问，不沿用旧终稿。
@@ -229,9 +228,9 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 存在 `verification-report.json` 且 `all_passed: true`（只认声称通过，不做 commit 对齐）。
   - 存在 `fact-audit.md`（或等价审阅报告）表明审阅通过。
     报告须有实际范围、复核证据和结论；空文件或仅写 CLI clear 不满足要求。
-  - 普通交付 objectives 中 verify branch / fact audit 已勾；人工交付勾 verify smoke / fact update。
+  - 普通交付 objectives 中 verify branch / fact audit / catch-up 已勾；人工交付勾 verify smoke / fact update / catch-up。
   - 缺失则停止并报告账本/产物不一致；由主链在本 intent 外补 `$mdf verify` /
-    `$mdf fact audit`，❌ 本 intent 不委托补跑。
+    `$mdf fact audit` / `$mdf catch-up`，❌ 本 intent 不委托补跑。
 - ❌ 本 intent 不内嵌、不委托 verify branch / smart / named，也不内嵌 fact update /
   fact audit；不做 commit 对齐审判。bug close（步骤 7）不算 verify 族，可留。
 - 调用方提交材料与证据。
@@ -265,8 +264,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
   - `verification-report.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
   - fact 审阅报告存在且结论通过。
-  - objectives：普通交付勾 converge、lint、code-review、verify branch、fact audit 及开发依赖。
-    人工交付勾人工工作、lint、code-review、verify smoke、fact update。
+  - objectives：普通交付勾 converge、lint、code-review、verify branch、fact audit、catch-up 及开发依赖。
+    人工交付勾人工工作、lint、code-review、verify smoke、fact update、catch-up。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
 - 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
   - 用 `git log -1 --format=%H -- …/code-review.md` 定位终稿落盘提交。
@@ -309,8 +308,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 委托 bug close：
   - 待关闭/重验清单非空时执行 `references/bug-close.md`，传 ID 与 --fixed-in 当前版本；空则跳过。
   - 未通过则本步失败，不准备 closures，不关闭对象。
-  - 「实现已变更」：提交后回步骤 4（不 closures、不 `release-closeout`）；
-    步骤 4 收到此信号即停止交接，不以旧的通过报告继续；主链在外补验与增量审查后续办。
+  - 「实现已变更」：记录 `catch-up 基线` 并仅退勾 `catch-up`（严禁退勾基线四项或全量重跑），提交后回步骤 4（不 closures、不 `release-closeout`）；
+    步骤 4 收到此信号即停止交接 `catch-up`，不以旧的通过报告继续；主链在外完成 `catch-up` 增量补检后续办。
     改动未完成外部补验前，不关闭本轮 fixed Bug、不准备 closures。
 - 准备 `--closures-json`，覆盖每个 child Change outcome，并可补录未写 child Change 的对象；本步不写对象。
 - 准备 `--deferred-acceptance-json`：对象，键为 Bug ID。

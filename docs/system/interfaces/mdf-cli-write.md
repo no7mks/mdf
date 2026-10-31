@@ -383,7 +383,7 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 
 - `--manual` 仅支持 feature，与 `--proposal`、`--bug`、`--version` 互斥。
 - `--name` 为已确认的 kebab-case slug；roster 固定 `0,0,1`。
-- objectives 七项依次为 start、人工工作、lint、code-review、verify smoke、fact update、close-out。
+- objectives 八项依次为 start、人工工作、lint、code-review、verify smoke、fact update、catch-up、close-out。
   start 时仅 start 已勾；人工工作由用户显式勾选。
 - 创建 owner worktree，写入 `manual: true` 与 `needs_design: false`，不写 proposal。
 - finish-gitflow 要求清单全部完成，Change 不引用 PRP；合入 develop 不更新 PRP。
