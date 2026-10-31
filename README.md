@@ -116,12 +116,13 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 ### code-review 与 roster
 
 code-review 支持 feature、bugfix、hotfix、release 和 adhoc；worktree 必须 clean。
-共用审阅核：`clean → resolve-base → diff → 过滤 → 派工 → 汇总 → [Repair/Record] → [JSON]`。
+审查是一条链。有 roster 按 roster 派发。没有 roster 时用总行数定人数，每 1000 行一人。
+切开按模块相近度，不按行数切。派不出则主 Agent 审查。
 执行方式见 [code-review](skills/mdf/references/code-review.md)；以下 roster 规则仅用于交付模式。
 
 - `$mdf code-review --against <commit>`：覆盖左端点，与当前 HEAD 比较（仍须 clean）。
-- `$mdf code-review --read-only`：跳过修复与勾选；`--output <path>`：额外写 JSON report。
-- 普通无账本 branch 可直接执行 `$mdf code-review`，完成 lint、1 人审查与修复，不自动收口。
+- `$mdf code-review --read-only`：跳过修复与返工。`--output <path>`：把结论再写入文件；没有则只在会话中给出结论。
+- 普通无账本 branch 可直接执行 `$mdf code-review`，完成 lint、按无 roster 规则派发并修复，不自动收口。
 - 手动创建的 `feature/*` 等专用 branch 仍检查对应交付材料，不因缺账本转为 adhoc。
 - 首轮按冻结的 roster.reviewers 个 subagent 覆盖起点到当轮 tip。
 - 后续增量只审相对上轮闭环 tip 以来的改动，并复核上轮问题；裁定收口时洗成无

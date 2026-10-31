@@ -11,7 +11,7 @@ from support_routes import *  # noqa: F403
 def test_review_resume_routes_to_repair_without_replacing_initial_head():
     from conftest import skill_dir
     text = (skill_dir("mdf") / "references/code-review.md").read_text()
-    assert "修复续办 3；无新则结束；否则 2" in text
+    assert "修复续办 3；无新则5；否则 2" in text
     assert "已齐审查且修复续办" in text
     assert "保留原 review_head，不覆盖原报告" in text
     assert "首轮未齐时进入 2 补齐" in text
@@ -337,14 +337,16 @@ def test_delivery_forces_worktrees_and_shared_design_base():
 def test_code_review_requires_three_full_reviews_before_owner_repairs():
     text = workflow("code-review")
     table = rows(text)
-    assert table[1][2] == "Subagent"
-    assert "按本轮应派人数启动严格只读 subagent" in table[1][3]
-    assert table[1][5] == "3"
+    assert table[1][2] == "约束"
+    assert "派不出则主 Agent 审" in table[1][3]
+    assert table[1][5] == "只读5；否则3"
+    assert table[1][6] == "未覆盖留在2"
     assert table[3][6] == "close-out 需 smart 返回待续办；可修则 3；否则停"
     for rule in (
         "不安排分工", "不共享其他审查者结论", "reviewer 严格只读",
         "报告齐全前不修改", "以证据裁定，不按票数决定",
-        "不强制再次启动审查 subagent", "不足本轮应派人数", "无法补齐则停止",
+        "不强制再次启动审查 subagent", "主 Agent 补审未覆盖范围",
+        "不得把未审查写成结论",
     ):
         assert rule in text
 

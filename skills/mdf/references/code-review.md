@@ -2,19 +2,36 @@
 
 ## 审阅核与参数
 
-所有调用共用同一审阅核：
+同一次审查走同一条链。`--read-only` 跳过修复与返工。没有 `--output` 时不写结论文件，会话里的结论仍要给出。
 
-`ensure clean → resolve-base → diff → 过滤 sourceset → 派工 → 审查 → 汇总 → [Repair/Record] → [JSON]`
+`ensure clean → resolve-base → 统计 diff 行数 → 派发 → 审查 → [Repair] → [Record] → 结论 → [文件]`
+
+拒绝审查、不审查、以及因 subagent、diff 大小或 path 数量停住，都不是合法结果。
 
 - worktree **必须 clean**；脏库停止，先提交或隔离无关改动。
 - 右端点固定为当前 `HEAD`（即本轮 `review_head`）。
 - 强制覆盖 paths = sourceset ∩ ¬module-ignore 的实现变更；文档/配置/交付材料不进覆盖清单，reviewer 可读不禁。
 - `$mdf code-review --against <commit>`：用该 commit 覆盖本轮左端点（完整 SHA），仍要求 clean。
-- `$mdf code-review --read-only`：跳过 Repair/Record/勾选；汇总后出结论即返回（CI/旁路常用）。
-- `$mdf code-review --output <path>`：在正常产出之外，额外写入经校验的 JSON report（仓外路径优先）。
+- `$mdf code-review --read-only`：不进入 Repair 与 Record，不修、不返工、不勾 objectives。
+- `$mdf code-review --output <path>`：把已经给出的结论再写入该文件。没有该参数则不写文件。
 - `--against` / `--read-only` / `--output` 可组合；未传 `--against` 时按下方 resolve-base 自动选左端点。
-- 无账本普通 branch（含独立调用）执行 [无账本审查](code-review-adhoc.md) 并返回；有账本走步骤 1–4。
-- `--read-only` 或显式独立 against 旁路（无交付续办）执行步骤 5–8，不进入交付 Repair/Record。
+- 无账本且没有 `--read-only` 时执行 [无账本审查](code-review-adhoc.md) 并返回。单独 `--against` 只覆盖左端点，不因此跳过修复。
+
+### 派发
+
+有冻结 roster 时按 roster.reviewers 与 review_strategy。close-out 集成增量轮与主链 verify 修绿轮为 1。
+
+没有 roster 时只统计 diff 行数，不输出 diff 正文。
+行数是过滤后 paths 的 `git diff --numstat` 新增与删除之和。
+人数为 `ceil(行数 / 1000)`；行数为 0 且 paths 为空则不派发，结论为 pass。
+paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 paths。人数只决定派几个。
+没有 roster 且人数大于 1 时才切开：按 `.mdf/modules.yaml` 的模块归属分组，同模块不拆开。
+其次按目录相近合并或分开。组数少于人数时少派，不拆模块去凑人数。每人只审自己那组，并集必须盖住全部 paths。
+
+人数优先级：人工 feature、有账本 adhoc，以及指定为 1 的增量轮，然后冻结 roster，然后无 roster 的行数。
+有账本但 roster 未冻结则停止。`--read-only` 读不到冻结 roster 时改按行数，不停止。
+
+派不出 subagent（当前已是 subagent、没有工具或环境限制）时，由主 Agent 审查尚未覆盖的 paths。已经是 subagent 的执行者就地审完自己的一组，不再向下派发。不得因派发失败拒绝审查。
 
 ### resolve-base
 
@@ -29,19 +46,19 @@
 
 ## 决策树
 
-步骤 1 按参数分流；步骤 5–8 仅由只读旁路进入。
+一条链。`--read-only` 不进入步骤 3 和 4。没有 `--output` 时步骤 5 不写文件。
 
 ```text
 ┌──────────────────────────────────┐
 │ 1 Check                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 只读旁路             ────→ 5 Resolve
+                 ├──── 只读                 ────→ 2 Review
                  ├──── 无账本 adhoc         ────→ [无账本审查并返回]
                  ├──── 来源 verify 且待修绿 ────→ [返回原 verify；独立调用报告待续办]
                  ├──── 已齐审查且修复续办   ────→ 3 Repair
                  ├──── 已齐审查但勾选未完成 ────→ 4 Record
-                 ├──── 已齐审查且无新改动   ────→ [结束]
+                 ├──── 已齐审查且无新改动   ────→ 5 Report
                  ├──── 失败或缺失           ────→ [停止并报告]
                  │
                  ▼ 新审查、增量新一轮或首轮未齐
@@ -49,9 +66,10 @@
 │ 2 Review                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 审查未完成 ────→ [停止并报告]
+                 ├──── 未覆盖           ────→ [留在 2，主 Agent 补审]
+                 ├──── 只读             ────→ 5 Report
                  │
-                 ▼ 本轮审查完成
+                 ▼ 交付审查完成
 ┌──────────────────────────────────┐
 │ 3 Repair                         │
 └────────────────┬─────────────────┘
@@ -69,87 +87,64 @@
                  ├──── smart 失败且可修         ────→ 3 Repair
                  ├──── 其他失败或缺失           ────→ [停止并报告]
                  │
-                 ▼ 通过（可选 --output JSON）
-                 [结束]
-
-步骤 5 仅由步骤 1 的只读旁路进入。
-
-┌──────────────────────────────┐
-│ 5 Resolve                    │
-└──────────────┬───────────────┘
-               │
-               ├──── dirty / 参数不符 ────→ [停止并报告]
-               │
-               ▼ clean 且左端点已定
-┌──────────────────────────────┐
-│ 6 Context                    │
-└──────────────┬───────────────┘
-               │
-               ├──── 失败或缺失 ────→ [报告缺项，不继续审查]
-               │
-               ▼ 上下文完整
-┌──────────────────────────────┐
-│ 7 Review                     │
-└──────────────┬───────────────┘
-               │
-               ├──── 未完成或工具失败 ────→ 8 Report
-               │
-               ▼ findings 齐全
-┌──────────────────────────────┐
-│ 8 Report                     │
-└──────────────┬───────────────┘
-               │
-               ├──── context 已变化 ────→ 6 Context
-               ├──── 格式可修       ────→ 8 Report
-               └──── 指纹一致且有效 ────→ [返回；--output 则落盘 JSON]
+                 ▼ 通过
+┌──────────────────────────────────┐
+│ 5 Report                         │
+└────────────────┬─────────────────┘
+                 │
+                 ├──── 只读且 context 已变化 ────→ 2 Review
+                 ├──── 有 --output ──────────────→ [写入文件后结束]
+                 └──── 无 --output ──────────────→ [结束；会话结论已给出]
 ```
+
+步骤 2 先取左端点、过滤 paths，并用 `git diff --numstat` 只统计行数。
+仅 `--read-only` 或显式 `--against` 再调用 `review-context`，日志在 checkout 外。
+派发按「派发」。未覆盖留在步骤 2，由主 Agent 补审。只读从步骤 2 进入步骤 5。交付审查完成后进入步骤 3。
 
 ## 工作流（唯一执行契约）
 
-步骤 1–4 为交付 overlay；步骤 5–8 为只读旁路。审阅核与 [Review 协议](reviewer-protocol.md) 共用。
+步骤 1–5 是同一条链。审查规则见 [Review 协议](reviewer-protocol.md)。派发只在步骤 2。
 外部报告须核对固定范围、rule、冻结份数和覆盖；不符时仅作补充，不凭 CI pass 自动勾选。
 
 交付模式读取 `references/common.md` 与 `references/delivery-contract.md`；涉及 PRP 或 Bug 时读取 `references/object-contract.md`。
-只读旁路只核 Git 根并执行「只读旁路输入」条款，不跑交付前置。
+`--read-only` 只核 Git 根并执行「上下文与报告」，不跑交付前置，审查仍走步骤 2。显式 `--against` 只覆盖左端点，不跳过修复。
 
 - 读取 [项目阶段 rule 契约](project-rules.md)，本阶段按 merge 后规则执行，冲突时 project 优先。
-- CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`；只读旁路用 `python3 -B`。
+- CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`；`--read-only` 或显式 `--against` 的 review-context 用 `python3 -B`。
 - 独立调用只推进当前 intent；deliver 内部委托时完成后返回调用方，由其选择下一阶段。
 - close-out 内部委托时返回 close-out；需要 smart 时返回待主链外续办，不在该调用内补验或 fact。
-- 主链 verify 内部委托时返回原 verify 的步骤 5；不接管父阶段的 branch/smart 勾选。
+- 主链 verify 内部委托时，本 intent 走完步骤 5 Report 后返回原 verify 的修绿步骤（verify 步骤 5）；不接管父阶段的 branch/smart 勾选。
 - 覆盖终稿时不得删除 objectives 中父 verify 的非 checklist 续办备注。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | clean、分流、交付前置与续办 | 参数或范围、rule、报告 | 只读旁路5；verify待修绿返回；漏勾4；修复续办 3；无新则结束；否则 2 | 停止并报告 |
-| 2 | Review | Subagent | 按本轮应派人数启动严格只读 subagent | N 份静态审查、范围与证据 | 3 | 停止并报告 |
+| 1 | Check | 约束 | clean、分流；只读记下跳过修复 | 参数或范围、rule、报告 | 只读仍2；verify待修绿返回；漏勾4；修复续办 3；无新则5；否则 2 | 停止并报告 |
+| 2 | Review | 约束 | 按派发规则审完全部 paths；派不出则主 Agent 审 | 覆盖全部 paths | 只读5；否则3 | 未覆盖留在2 |
 | 3 | Repair | 约束 | 主 Agent 裁定、修复、整理 tests 并复核 | 裁定、修复与 suite 验证，无阻断项 | 4 | 可修则留在 3；否则保留现场并报告 |
-| 4 | Record | 约束 | 按需 smart；洗成无 commit 终稿并勾选；可选 JSON | 终稿、smart、提交 | 结束 | close-out 需 smart 返回待续办；可修则 3；否则停 |
-| 5 | Resolve | 约束 | clean、左端点、仓外日志；拒绝交付混参 | 根、参数、日志目录 | 6 | 停止并报告 |
-| 6 | Context | 脚本 | `review-context --against <左端点>` | context.result、范围与规则 | 7 | 读日志，报告缺项并停止 |
-| 7 | Review | 约束 | 按固定 context.rules 静态审查全部 paths | findings、覆盖、incomplete | 8 | 未完成标 needs-review；工具失败标 error，转8 |
-| 8 | Report | 约束 | 复核指纹，校验 JSON；可选 `--output` 落盘 | 两次 context 指纹、校验结果 | 有效则返回 | 变化回6；格式可修留8；其余报 error |
+| 4 | Record | 约束 | 按需 smart；洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 5 | close-out 需 smart 返回待续办；可修则 3；否则停 |
+| 5 | Report | 约束 | 会话给出结论；有 `--output` 才写入经校验的 JSON | 结论、可选文件 | 结束 | 只读 context 变回2；交付不回2；无 `--output` 不写文件 |
 
 close-out 或主链 verify 已将 code-review 退回 `[ ]` 且传入或保存左端点时，按该范围开启增量新一轮。
 旧终稿或目标主线已包含都不代替此轮；进行中草稿只存范围和审查证据，进度仍看 objectives。
 
 ## 术语与数据结构
 
-### 只读旁路输入
+### 上下文与报告
 
-步骤 6 调用 `review-context --repo <repo> --against <commit>`；步骤 7 审阅；步骤 8 出报告。
+仅 `--read-only` 或显式 `--against` 在步骤 2 调用 `review-context --repo <repo> --against <commit>`。步骤 5 在会话中给出结论。
 CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`；日志与报告在 checkout 外。
-步骤 7 用 [Review 协议](reviewer-protocol.md) 独立模式；步骤 8 用
-[独立报告 schema](../assets/templates/against-review-report.schema.json)。
+步骤 2 按「派发」审完全部 paths。派不出 subagent 时主 Agent 补审。拒绝审查不是结果。
+步骤 5 在 `--read-only` 时用 [独立报告 schema](../assets/templates/against-review-report.schema.json)。`--read-only` 不进入 Repair，也不读「Findings 与裁定」做 owner 裁定。
 
 - against 为固定 SHA，与当前 HEAD 直接比较，不算 merge-base；worktree 必须 clean。
 - rules / sourceset / module ignore 读当前 HEAD；强制 paths = sourceset ∩ ¬module-ignore。
 - 不接受交付、review-base、previous-report 或 backend；无需 ready 或本地交付材料。
-- 不改 HEAD/index/refs/objects；不跑 hooks/filters/tests；不修、不 commit、不勾 objectives。
-- findings 含位置、触发、影响、证据与 P0–P3；未完成写 incomplete。
+- `--read-only` 不改 HEAD/index/refs/objects；不跑 hooks/filters/tests；不修、不 commit、不勾 objectives。单独 `--against` 仍可进入 Repair。
+- findings 含位置、触发、影响、证据与 P0–P3。未审查不得写入 incomplete，也不得把 decision 写成 needs-review。
 - context/report 记录 against、head、rules_sha256 与 context_sha256。
-- 步骤 6 保存 context.json；步骤 8 用原 against 重跑 review-context，核对 context_sha256 与 head。
-  - 一致才出报告；否则回 6 重审；不复用旧通过结论；失败读日志报 error。
+- `--read-only` 在步骤 2 保存 context.json；步骤 5 用原 against 重跑 review-context，核对 context_sha256 与 head。
+  - 一致才出报告；否则回 2 重审；不复用旧通过结论；失败读日志报 error。
+  - 交付进入过步骤 3 或 4 后，步骤 5 不再重跑 review-context，也不回步骤 2。
 - `review-report-check` 校验最终报告；valid 才返回；`--output` 另存路径；不直接 approve/merge。
 
 
@@ -174,13 +169,13 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
 无账本 adhoc 按 code-review-adhoc.md 执行；不套用本节的账本、roster 配置或勾选前置。
-只读旁路（`--read-only` 或独立 against）始终执行步骤 5–8。
+只有 `--read-only` 跳过步骤 3 与 4。显式 `--against` 不跳过修复。
 
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
 - 先确认目标仓库 ready，读取已有审查记录；脏库不得进入 Review。
-- 审查人数取冻结 roster.reviewers：
-  - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；未冻结则停止。
-  - 本轮应派人数默认同 roster.reviewers。
+- 审查人数见「派发」。有账本时读取冻结 roster：
+  - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；有账本但未冻结则停止。
+  - 本轮应派人数在有 roster 时默认同 roster.reviewers。
   - close-out 集成或主链 verify 修绿产生的增量新一轮为 1，不改冻结 roster。
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
@@ -280,8 +275,8 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
 
 ### 独立审查
 
-主 Agent 向每个审查 subagent 派发任务时，必须以以下文字作为提示词 opening，
-随后提供本次审查上下文及现有执行与输出约束：
+本节是步骤 2 的派发与审查，只读同样适用。`--read-only` 只跳过步骤 3 与 4。
+主 Agent 派发 subagent 时，以下文为提示词 opening，并附上本次上下文与输出约束：
 
 > 以最严苛的白盒测试专家视角审查实现代码和测试用例，主动挑战实现逻辑与测试的充分性，
 > 寻找隐藏缺陷和覆盖盲区。以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
@@ -289,7 +284,8 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
 
 派发：
 
-- 步骤 2 按本轮应派人数启动独立 subagent。默认为冻结的 roster.reviewers；close-out 集成增量轮与主链 verify 修绿轮为 1。
+- 步骤 2 按「派发」的人数优先级启动 subagent。指定为 1 的轮次不为冻结 roster 让路。
+  只有没有 roster 且人数大于 1 时才按模块相近度切开，不按行数切。replicate 不按模块拆分。派不出则主 Agent 审，不得停止。
 - `review_strategy` 默认 `replicate`：
   - 各审查者收到相同的交付 base_commit、本轮左端点、review_head、工作目录、目标、验收、
     适用设计材料与相关当前事实页。
@@ -383,10 +379,10 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
   才验收为完整报告。
 - reviewer 提供位置、触发条件、影响、静态证据和建议优先级即可完成 finding 报告。
   - 证据或范围不足时退回补齐；复现是 main Agent 的职责，不能据此将 reviewer 报告列为未完成。
-- 范围声明缺失、端点不一致或存在未完成项时，要求补齐或重新独立审查；无法补齐则停止。
-- 不足本轮应派人数、启动失败、结果缺失或未覆盖本轮范围时，补齐独立审查；
-  无法补齐则停止，不记录通过。
-- 续办只复用同一左端点与 review_head 的完整报告；本轮未凑齐应派份数时不得进入修复或收口。
+- 范围声明缺失、端点不一致或存在未完成项时，要求补齐；仍缺则主 Agent 重审该范围，不得因此结束。
+- 不足应派人数、启动失败或结果缺失时，主 Agent 补审未覆盖范围。
+  不得停止，不得把未审查写成结论。
+- 续办只复用同一左端点与 review_head 的完整报告。未覆盖的 paths 不得进入修复；主 Agent 已补审的范围算已覆盖。
   - 增量新一轮不复用上轮分报告去覆盖新 diff；收口终稿另见步骤 4。
 
 ### 汇总、修复与复核

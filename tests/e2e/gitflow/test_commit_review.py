@@ -80,7 +80,7 @@ def test_commit_report_cannot_forge_pass(python_exe, tmp_path, damage):
 
 
 @pytest.mark.parametrize('decision,priority,incomplete', [
-    ('changes_requested', 1, []), ('pass', 2, []), ('needs-review', 1, ['待核实']), ('error', 1, ['执行失败'])])
+    ('changes_requested', 1, []), ('pass', 2, []), ('needs-review', 1, []), ('error', 1, ['执行失败'])])
 def test_commit_report_accepts_supported_outcomes(tmp_path, decision, priority, incomplete):
     repo, source, target = repository(tmp_path)
     from mdf_core.reviewing.context import context

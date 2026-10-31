@@ -5,6 +5,52 @@ from conftest import skill_dir
 from support_routes import workflow, rows
 
 
+def test_read_only_skips_repair_inside_one_review_chain():
+    review = workflow("code-review")
+    protocol = workflow("reviewer-protocol")
+    skill = workflow("entry")
+    readme = (skill_dir("mdf").parents[1] / "README.md").read_text(encoding="utf-8")
+    kernel = review.split("## 审阅核与参数", 1)[1].split("## ", 1)[0]
+    dispatch = review.split("### 派发", 1)[1].split("### ", 1)[0]
+    assert "同一次审查走同一条链" in kernel
+    assert "拒绝审查、不审查" in kernel
+    assert "ceil(行数 / 1000)" in dispatch
+    assert "没有 roster 且人数大于 1 时才切开" in dispatch
+    assert ".mdf/modules.yaml" in dispatch and "不按行数切" in review
+    assert "有账本但 roster 未冻结则停止" in dispatch
+    assert "有账本但未冻结则停止" in review
+    assert "不输出 diff 正文" in dispatch
+    assert "不得因派发失败拒绝审查" in dispatch
+    assert "单独 `--against` 只覆盖左端点，不因此跳过修复" in review
+    assert "交付进入过步骤 3 或 4 后，步骤 5 不再重跑 review-context，也不回步骤 2" in review
+    adhoc = workflow("code-review-adhoc")
+    assert "不固定 1 人" in adhoc and "派 1 个严格只读 reviewer" not in adhoc
+    assert "仍为 1 人" not in adhoc
+    assert "人数仍按无 roster 的行数规则" in adhoc
+    assert "未覆盖留在 2" in adhoc
+    assert "不得写入尚未读完的 path" in protocol
+    assert "incomplete 仅在 decision 为 error 时可以非空" in protocol
+    assert "进入过 Repair 或 Record 后不重建" in protocol
+    assert "证据不足或未完成时 needs-review" not in protocol
+    assert "不按文件、模块或领域拆分" in review
+    assert "指定为 1 的轮次不为冻结 roster 让路" in review
+    assert "有 roster 时用冻结人数" not in review
+    option = next(line for line in kernel.splitlines() if line.startswith("- `$mdf code-review --read-only`"))
+    assert "不进入 Repair 与 Record" in option
+    output = next(line for line in kernel.splitlines() if line.startswith("- `$mdf code-review --output"))
+    assert "没有该参数则不写文件" in output
+    table = rows(review)
+    assert [row[1] for row in table] == ["Check", "Review", "Repair", "Record", "Report"]
+    assert table[1][6] == "未覆盖留在2"
+    assert "只读5；否则3" in table[1][5]
+    assert "未审查不得写入 incomplete" in review
+    assert "未审查不是合法 decision" in protocol
+    assert "派不出 subagent 时由主 Agent 审查" in protocol
+    assert "--read-only`：跳过 Repair 与 Record" in skill
+    assert "每 1000 行一人" in readme and "模块相近度" in readme
+    assert "不派 subagent" not in kernel
+
+
 def test_review_findings_are_reproduced_only_after_readonly_reports_are_complete():
     review = workflow("code-review")
     assert "reviewer 严格只读" in review

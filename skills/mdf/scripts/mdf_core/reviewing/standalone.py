@@ -55,10 +55,12 @@ def validate_against_report(context, report):
         require(finding['id'] not in identifiers, 'finding id 重复')
         identifiers.add(finding['id'])
     decision = report['decision']
-    if context['incomplete'] or report['incomplete']:
-        require(decision in {'needs-review', 'error'}, '未完成时不能批准或拒绝')
+    if report['incomplete'] or context['incomplete']:
+        require(decision == 'error', '未审查不得作为报告结束')
     elif any(f['priority'] <= 1 for f in report['findings']):
         require(decision in {'changes_requested', 'needs-review', 'error'}, '阻断项不能批准')
+    if decision == 'needs-review':
+        require(bool(report['findings']), 'needs-review 必须有已审 finding')
     if decision == 'changes_requested':
         require(bool(report['findings']), 'request changes 需要 findings')
     return {'valid': True, 'decision': decision, 'against': context['against'], 'head': context['head']}

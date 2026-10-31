@@ -2,15 +2,18 @@
 
 ## 执行边界
 
-本协议供本地 code-review 的独立审查与 CI 外部复核共同使用。
+本协议供步骤 2 的审查与 CI 外部复核使用。派不出 subagent 时由主 Agent 审查，不得拒绝审查。
 
 - 以最严苛的白盒测试专家视角审查实现代码和测试用例，主动挑战实现逻辑与测试的充分性。
 - 以证据核实逻辑正确性与测试有效性，不因测试通过就认定实现正确。
-- 严格只读，不修改文件，不运行 tests，不调用会落盘的 MDF CLI；通过回复返回报告。
+- 交付步骤 2 的 reviewer subagent 与 CI reviewer 不修改审查对象，不运行 tests，不调用会落盘的 MDF CLI。
+- 主 Agent 在 `--read-only` 或显式 `--against` 时调用 `review-context` 与 `review-report-check`。日志和报告在 checkout 外。subagent 不调用这些命令。
+- 交付 reviewer 通过回复返回报告。派不出下一级 subagent 时就地审完，不得把未审查交回。
 - reviewer 可以读取和搜索项目文件、读取 Git 对象；权限由调用方落实。
 - 交付 controller 在派发前准备 lint、测量、验证报告，全部独立审查返回前不修改审查对象。
-- 只读旁路（`--read-only` / 独立 `--against`）由当前 Agent 直接执行，不要求本地审查、交付材料或 roster，不勾 objectives；worktree 必须 clean。
-- 下方 reviewers、owner、增量与 delivery 字段仅适用于交付模式；只读旁路使用独立报告 schema。
+- `--read-only` 跳过修复与返工，不要求交付材料，不勾 objectives；worktree 必须 clean。有冻结 roster 时按 roster。没有 roster 则按总行数定人数；人数大于 1 才按模块相近度切开。
+- 未审查不得写入 incomplete，也不得因此把 decision 写成 needs-review。diff 体积、path 数量、任务大小与派发失败同样不得。
+- 下方 reviewers、owner、增量与 delivery 字段仅适用于交付模式；`--read-only` 使用独立报告 schema。
 - 本地完整流程及修复窗继续按 [code-review](code-review.md) 执行。
 
 ## 上下文与范围
@@ -28,9 +31,9 @@
 | artifacts、incomplete | 现有交付证据与缺项；缺项不能默认为通过 |
 
 - 实现审查与 sourceset 求交后再应用 module ignore；文档与交付材料不进强制 paths，可读不禁。
-- 只读 against 模式直接比较历史版本与当前 HEAD；worktree 必须 clean；配置与规则均来自当前 HEAD。
+- 显式 `--against` 与 `--read-only` 直接比较历史版本与当前 HEAD；worktree 必须 clean；配置与规则均来自当前 HEAD。
   - against 为完整基线 SHA，head 为当前 HEAD 完整 SHA；paths 与 diff 已过滤。
-  - 复核前核对 HEAD 与 context 指纹未变；变化后重建 context。
+  - 仅 `--read-only` 在复核前核对 HEAD 与 context 指纹；变化后重建 context 并回步骤 2。进入过 Repair 或 Record 后不重建。
 - 交付 CI 模式继续使用固定 source 配置和 target policy，保留 target 上下文与旧 findings。
 - 同时读取必要上下文，不仅审 diff、标题或文件名。
 - 审查正确性、验收覆盖、测试质量、code smell、架构合理性与非必要复杂度。
@@ -46,14 +49,15 @@ mode=against 使用 [独立报告 schema](../assets/templates/against-review-rep
 
 - 完整覆盖 paths，记录 against、head、rules_sha256 与 context_sha256。
 - findings 仅列有静态证据支持的问题，包含 id、path、line、priority、trigger、impact、evidence。
-- 审查完整且无 P0/P1 时可 pass；有阻断问题时 changes_requested；证据不足或未完成时 needs-review。
+- 必须审完全部 paths 才能出结论。无 P0/P1 为 pass；有阻断问题为 changes_requested。已审 finding 仍须人工判断时为 needs-review，且 findings 不得为空。
 - 工具失败使用 error；changes_requested 必须有 finding；不因未运行 tests 自动降低优先级。
-- incomplete 明确记录实际缺项；不将不存在的 MDF 交付材料列为缺项，不要求补齐 delivery。
+- incomplete 仅在 decision 为 error 时可以非空，且只记工具失败。不得写入尚未读完的 path。不将不存在的 MDF 交付材料列为缺项。
+- 未审查不是合法 decision。diff 体积、path 数量、任务大小与派发失败都不得作为 incomplete 或 needs-review。
 - 不要求独立 reviewer 份数、owner 裁定或旧 finding 表；修复后须 clean 提交，再重新完整审查。
 
 ## Findings 与裁定
 
-本节区分静态发现、owner 裁定与平台动作。
+本节只约束步骤 3 与 CI owner 的裁定。`--read-only` 不进入本节。未审查不得写成 needs-review。
 
 1. reviewer 返回 id、path、line、priority、trigger、impact、evidence。
 2. CI owner 汇总去重，逐项说明 accepted、rejected 或 needs-review 的证据和理由。
@@ -64,7 +68,7 @@ mode=against 使用 [独立报告 schema](../assets/templates/against-review-rep
 | --- | --- |
 | pass | 全部审查完整，已完成裁定，无采纳的 P0/P1 阻断项 |
 | changes_requested | 存在已核实采纳的问题，等待开发侧处理 |
-| needs-review | 缺证据、待复现、覆盖未完或需要人工决定 |
+| needs-review | 已审项缺证据或需要人工决定。覆盖未完不是此结论 |
 | error | reviewer、工具或报告处理失败 |
 
 - CI owner 不按票数裁定；未完成裁定或等待复现不得 approve/merge。
@@ -77,7 +81,7 @@ mode=against 使用 [独立报告 schema](../assets/templates/against-review-rep
 
 ## 输出与执行器
 
-本节规定报告传输和平台授权的边界。
+本节只约束项目 CI controller 的启动方式。`code-review` 命令按「派发」执行；启动不了 reviewer 时由主 Agent 审查，不得未审完结束。
 
 - schema 见 [CI 报告 schema](../assets/templates/ci-review-report.schema.json)。
 - 交付 controller 先执行 `review-context`，再独立启动冻结人数份 Codex/Cursor CLI。

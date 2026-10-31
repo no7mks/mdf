@@ -146,9 +146,9 @@ disable-model-invocation: true
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - code-review 要求 clean worktree；可带：
-  - `--against <commit>`：覆盖本轮左端点，与当前 HEAD 比较；
-  - `--read-only`：跳过 Repair/Record/勾选；
-  - `--output <path>`：额外写入经校验的 JSON report。
+  - `--against <commit>`：只覆盖本轮左端点，与当前 HEAD 比较；不跳过修复；
+  - `--read-only`：跳过 Repair 与 Record，不修、不返工、不勾选；
+  - `--output <path>`：把经校验的 JSON 结论再写入文件；没有该参数则不写文件。
 - start、design、deliver、交付模式的 code-review 可带下列参数，由对应 intent 解析并写入 roster：
   - `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
   - `--write-tests-model`、`--implement-model`、`--code-review-model`。
@@ -186,11 +186,11 @@ disable-model-invocation: true
   - help intent 经 CLI 检查后同样执行该流程。
   - 不读取其他 intent、不检查仓库、不写入。
 - **MDF_ROOT**：本文件所在目录的绝对路径。
-  - code-review 或 fact audit 带 `--against` 时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
+  - code-review 的 `--read-only` 或 `--against`，以及 fact audit 带 `--against` 时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
     后续复用该根与日志目录；目录无法安全确认则停止，不在被审 checkout 落盘。
   - 确认 `scripts/mdf.py` 后运行 `python3 -B "$MDF_ROOT/scripts/mdf.py" info`；
     协议、工具与 schema 版本均须为数字 `3`。
-  - 独立审查的后续 Core 调用同样使用 `python3 -B`，避免在 checkout 内的安装副本生成 bytecode。
+  - 上述调用的后续 Core 调用同样使用 `python3 -B`，避免在 checkout 内的安装副本生成 bytecode。
   - ❌ 工具缺失或检查失败时停止，不得模拟 CLI。
 
 步骤 3 的执行顺序：
@@ -199,8 +199,8 @@ disable-model-invocation: true
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-- code-review 的 `--read-only` / 独立 `--against` 与 fact audit 的 against / `--quick` 旁路只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。
-- 除上述独立审查、quick 模式及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
+- code-review 的 `--read-only` 与 fact audit 的 against / `--quick` 只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。单独 `--against` 仍读 common.md。
+- 除上述只读调用、quick 模式及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
   - `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
 
