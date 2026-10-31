@@ -65,10 +65,14 @@ def ignored_dir(path):
 
 def prune(root, days=RETENTION_DAYS):
     root = Path(root)
-    if root.is_symlink() or not root.is_dir():
+    try:
+        if root.is_symlink() or not root.is_dir():
+            return
+        entries = list(root.iterdir())
+    except OSError:
         return
     limit = time.time() - days * 86400
-    for entry in root.iterdir():
+    for entry in entries:
         if entry.name == ".gitignore":
             continue
         try:
@@ -102,26 +106,56 @@ def _main_repo(repo):
     return Path(common).parent
 
 
-def _log_root(argv):
-    """日志放主仓库的 .mdf/logs，交付 worktree 被 finish 删除后仍在；未接入 MDF 的目录用用户级目录。"""
+def _is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
+def _is_real_dir(path: Path) -> bool:
+    try:
+        return path.is_dir() and not path.is_symlink()
+    except OSError:
+        return False
+
+
+def _log_candidates(argv):
     standalone = bool(argv and (argv[0] == "fact-audit-report-check" or (
         argv[0] in {"review-context", "fact-audit"} and any(
             token.split("=", 1)[0] == "--against" for token in argv))))
     hint = None if standalone else _repo_hint(argv)
-    if hint and Path(hint).is_dir():
+    candidates = []
+    if hint and _is_dir(Path(hint)):
         repo = Path(hint).resolve()
         main = _main_repo(repo)
-        metadata = repo / ".mdf"
-        if metadata.is_dir() and not metadata.is_symlink():
+        if _is_real_dir(repo / ".mdf"):
             prune(repo / REPORTS)
-        main_metadata = main / ".mdf"
-        logs = main / LOGS
-        if main_metadata.is_dir() and not main_metadata.is_symlink():
-            prune(logs)
-            return ignored_dir(logs)
-    fallback = os.environ.get(FALLBACK_ENV) or str(Path.home() / ".mdf" / "logs")
-    prune(fallback)
-    return ignored_dir(fallback)
+        if _is_real_dir(main / ".mdf"):
+            candidates.append(main / LOGS)
+    fallback = Path(os.environ.get(FALLBACK_ENV) or (Path.home() / ".mdf" / "logs")).expanduser()
+    if fallback not in candidates:
+        candidates.append(fallback)
+    return candidates
+
+
+def _new_log_dir(argv):
+    """日志放主仓库的 .mdf/logs，交付 worktree 被 finish 删除后仍在；不可写或未接入 MDF 时回退。"""
+    name = _argv_name(argv)
+    candidates = _log_candidates(argv)
+    last_error = None
+    for root in candidates:
+        try:
+            target = ignored_dir(root)
+            prune(target)
+            return unique_dir(target, name)
+        except OSError as exc:
+            last_error = exc
+    raise MDFError(
+        f"日志目录不可写: {last_error}",
+        code="log_dir_unwritable",
+        details={"candidates": [str(path) for path in candidates]},
+    ) from last_error
 
 
 def _argv_name(argv):
@@ -227,7 +261,7 @@ class RunLog:
     """把一次 CLI 调用的完整 stdout、stderr 与退出信息写入 <日志根>/<时间戳>-<命令>/。"""
 
     def __init__(self, argv):
-        self.path = unique_dir(_log_root(argv), _argv_name(argv))
+        self.path = _new_log_dir(argv)
         self.argv = list(argv)
         self.started = time.time()
 

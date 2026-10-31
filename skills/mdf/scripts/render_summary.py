@@ -103,7 +103,12 @@ def render_summary(args):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    log = RunLog(["render-summary", *argv])
+    try:
+        log = RunLog(["render-summary", *argv])
+    except MDFError as exc:
+        return _failure(exc.code, str(exc), exc.details)
+    except OSError as exc:
+        return _failure("log_dir_unwritable", str(exc), None)
     code = 1
     with log:
         try:

@@ -37,7 +37,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - 调用日志：
   - 每次调用在主仓库 `.mdf/logs/<时间戳>-<命令>/` 写日志；参数错误也记录。
     内容为 `stdout.log`、`stderr.log` 与 `meta.json`（argv、cwd、退出码、用时）。
-  - 尚无 `.mdf/` 时写到 `MDF_LOG_DIR` 或 `~/.mdf/logs/`。
+  - 尚无 `.mdf/` 或主仓库日志目录不可写时回退到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
+  - 所有候选日志目录均不可写时以 `log_dir_unwritable` 失败（`log` 为 `null`）。
   - 失败 JSON 带 `log` 路径；内部异常先把 traceback 写入 stderr。
   - 每次调用清理 `.mdf/logs/` 与当前仓库 `.mdf/reports/` 中 7 天前的条目。
 - suite 预算：

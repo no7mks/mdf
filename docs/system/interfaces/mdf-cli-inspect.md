@@ -296,7 +296,7 @@ python3 skills/mdf/scripts/mdf.py run --repo /path [--name pytest] -- \
 
 - 只要求 `--repo` 是目录；不要求 Git 根、manifest 或 clean worktree。
 - 子进程原文写到终端 stderr；结果 JSON 在 stdout。
-- 日志目录为 `.mdf/logs/<时间戳>-<名称>/`；无 `.mdf/` 时见调用约定。
+- 日志目录为 `.mdf/logs/<时间戳>-<名称>/`；无 `.mdf/` 或不可写时见调用约定。
 - 设置 `MDF_REPORT_DIR` 与 `NO_COLOR=1`。pytest 等应把 JUnit 写进该目录。
 - `--name` 默认 `run`，只用于日志目录名。
 - 子进程非 0 时失败，details 含 `exit_code`、`log`、`command`。

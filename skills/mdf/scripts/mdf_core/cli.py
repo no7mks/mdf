@@ -378,7 +378,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _failure(code: str, message: str, details, log: RunLog) -> int:
+def _failure(code: str, message: str, details, log: RunLog | None = None) -> int:
     print(
         json.dumps(
             {
@@ -386,7 +386,7 @@ def _failure(code: str, message: str, details, log: RunLog) -> int:
                 "error": code,
                 "message": message,
                 "details": details,
-                "log": str(log.path),
+                "log": str(log.path) if log is not None else None,
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -414,7 +414,12 @@ def _run(argv: list[str], log: RunLog) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    log = RunLog(argv)
+    try:
+        log = RunLog(argv)
+    except MDFError as exc:
+        return _failure(exc.code, str(exc), exc.details)
+    except OSError as exc:
+        return _failure("log_dir_unwritable", str(exc), None)
     code = 1
     with log:
         try:

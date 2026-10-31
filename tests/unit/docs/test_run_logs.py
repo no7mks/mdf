@@ -1,8 +1,10 @@
 """运行日志目录的过期清理，以及 run 代跑。"""
+import errno
 import json
 import os
 import sys
 import time
+from pathlib import Path
 
 from mdf_test_support import *  # noqa: F403
 
@@ -104,3 +106,174 @@ def test_local_artifact_symlink_allows_writes_and_skips_pruning(tmp_path, name):
     assert (outside / ".gitignore").read_text() == "*\n"
     prune(link)
     assert old.read_text() == "keep"
+
+
+@pytest.mark.parametrize("err_no", [errno.EROFS, errno.EACCES])
+@pytest.mark.parametrize("existing_logs", [False, True])
+@pytest.mark.parametrize("use_env", [True, False])
+def test_run_log_falls_back_when_main_log_dir_is_unwritable(
+    tmp_path, monkeypatch, err_no, existing_logs, use_env
+):
+    load_core_module()
+    import mdf_core.execution.run_logs as run_logs
+
+    main = tmp_path / "main"
+    worktree = tmp_path / "worktree"
+    (main / ".mdf").mkdir(parents=True)
+    (worktree / ".mdf").mkdir(parents=True)
+    main_logs = (main / ".mdf" / "logs").resolve()
+    if existing_logs:
+        run_logs.ignored_dir(main_logs)
+
+    home = tmp_path / "home"
+    fallback = (tmp_path / "env-logs") if use_env else (home / ".mdf" / "logs")
+    monkeypatch.setenv("HOME", str(home))
+    if use_env:
+        monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
+    else:
+        monkeypatch.delenv("MDF_LOG_DIR", raising=False)
+    monkeypatch.setattr(run_logs, "_main_repo", lambda repo: main.resolve())
+
+    orig_ignored_dir = run_logs.ignored_dir
+    orig_unique_dir = run_logs.unique_dir
+
+    def fake_ignored_dir(path):
+        target = Path(path).resolve()
+        if not existing_logs and target == main_logs:
+            raise OSError(err_no, os.strerror(err_no), str(path))
+        return orig_ignored_dir(path)
+
+    def fake_unique_dir(root, name):
+        target = Path(root).resolve()
+        if existing_logs and target == main_logs:
+            raise OSError(err_no, os.strerror(err_no), str(root))
+        return orig_unique_dir(root, name)
+
+    monkeypatch.setattr(run_logs, "ignored_dir", fake_ignored_dir)
+    monkeypatch.setattr(run_logs, "unique_dir", fake_unique_dir)
+
+    log = run_logs.RunLog(["validate", "--repo", str(worktree)])
+    with log:
+        print("ok")
+        log.finish(0)
+
+    assert log.path.parent == fallback.resolve()
+    assert log.path.name.endswith("-validate")
+    assert (log.path / "stdout.log").read_text(encoding="utf-8") == "ok\n"
+    assert json.loads((log.path / "meta.json").read_text(encoding="utf-8"))["exit_code"] == 0
+
+
+@pytest.mark.parametrize("err_no", [errno.EROFS, errno.EACCES])
+def test_prune_oserror_does_not_abort_or_block_fallback(tmp_path, monkeypatch, err_no):
+    load_core_module()
+    import mdf_core.execution.run_logs as run_logs
+
+    root = run_logs.ignored_dir(tmp_path / "logs")
+    stale_dir = root / "old-dir"
+    stale_dir.mkdir()
+    stale_file = root / "old.log"
+    stale_file.write_text("x", encoding="utf-8")
+    stale = time.time() - 8 * 86400
+    for item in (stale_dir, stale_file):
+        os.utime(item, (stale, stale))
+
+    def fail_rmtree(path):
+        raise OSError(err_no, os.strerror(err_no), str(path))
+
+    monkeypatch.setattr(run_logs.shutil, "rmtree", fail_rmtree)
+    run_logs.prune(root)
+
+    orig_iterdir = Path.iterdir
+
+    def fail_iterdir(self):
+        if self == root:
+            raise OSError(err_no, os.strerror(err_no), str(self))
+        return orig_iterdir(self)
+
+    monkeypatch.setattr(Path, "iterdir", fail_iterdir)
+    run_logs.prune(root)
+
+
+def test_run_log_preserves_symlink_security_error_without_fallback(tmp_path, monkeypatch):
+    load_core_module()
+    import mdf_core.execution.run_logs as run_logs
+    from mdf_core.foundation.errors import MDFError
+
+    repo = tmp_path / "repo"
+    (repo / ".mdf" / "logs").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (repo / ".mdf" / "logs" / ".gitignore").symlink_to(outside / "ignore")
+    fallback = tmp_path / "fallback"
+    monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
+
+    with pytest.raises(MDFError) as error:
+        run_logs.RunLog(["validate", "--repo", str(repo)])
+
+    assert error.value.code == "managed_symlink"
+    assert not fallback.exists()
+
+
+@pytest.mark.parametrize("err_no", [errno.EROFS, errno.EACCES])
+def test_run_log_and_cli_fail_explicitly_when_all_candidates_unwritable(
+    tmp_path, monkeypatch, capsys, err_no
+):
+    load_core_module()
+    import mdf_core.cli as cli
+    import mdf_core.execution.run_logs as run_logs
+    from mdf_core.foundation.errors import MDFError
+
+    repo = tmp_path / "repo"
+    (repo / ".mdf").mkdir(parents=True)
+    fallback = tmp_path / "unwritable-fallback"
+    home = tmp_path / "home"
+    monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
+    monkeypatch.setenv("HOME", str(home))
+
+    def fail_ignored_dir(path):
+        raise OSError(err_no, os.strerror(err_no), str(path))
+
+    monkeypatch.setattr(run_logs, "ignored_dir", fail_ignored_dir)
+
+    with pytest.raises(MDFError) as error:
+        run_logs.RunLog(["validate", "--repo", str(repo)])
+
+    assert error.value.code == "log_dir_unwritable"
+    assert error.value.details["candidates"] == [
+        str(repo.resolve() / ".mdf" / "logs"),
+        str(fallback),
+    ]
+    assert not (home / ".mdf" / "logs").exists()
+
+    code = cli.main(["validate", "--repo", str(repo)])
+    assert code == 1
+    err = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert err["ok"] is False
+    assert err["error"] == "log_dir_unwritable"
+    assert err["log"] is None
+    assert err["details"]["candidates"] == [
+        str(repo.resolve() / ".mdf" / "logs"),
+        str(fallback),
+    ]
+
+
+@pytest.mark.parametrize(
+    "argv_prefix",
+    [
+        ["fact-audit-report-check"],
+        ["review-context", "--against", "HEAD~1"],
+        ["fact-audit", "--against=HEAD~1"],
+    ],
+)
+def test_standalone_review_commands_never_touch_repo_logs(tmp_path, monkeypatch, argv_prefix):
+    load_core_module()
+    import mdf_core.execution.run_logs as run_logs
+
+    repo = tmp_path / "repo"
+    (repo / ".mdf").mkdir(parents=True)
+    fallback = tmp_path / "fallback"
+    monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
+
+    log = run_logs.RunLog([*argv_prefix, "--repo", str(repo)])
+    assert log.path.parent == fallback.resolve()
+    assert not (repo / ".mdf" / "logs").exists()

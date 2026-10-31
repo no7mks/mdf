@@ -301,7 +301,7 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
     （含 stdout/stderr、JUnit、`summary.json`）。
   - 工具按本次调用参数自己写的日志或报告（如 `--junitxml`、`--log`）。
 - Core CLI 日志位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
-  - 尚无 `.mdf/` 的目录写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
+  - 尚无 `.mdf/` 或主仓库日志目录不可写时写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
 - 调用有日志能力的工具时打开其落盘参数，读那份产物。
   - pytest / JUnit 写 `$MDF_REPORT_DIR` 或 `--junitxml`，不 tee。
 - Agent 直接运行、且没有任何落盘产物时，用 Core `run` 代跑，不要 tee。
