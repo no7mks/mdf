@@ -143,6 +143,10 @@ def branch_details(name: str) -> dict[str, Any]:
     match = re.fullmatch(r"(release|hotfix)/(.+)", name)
     if match:
         version = match.group(2)
+        if (match.group(1) == "hotfix" and stable_semver(version) is None
+                and re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", version)):
+            return {"name": name, "kind": "hotfix", "slug": version,
+                    "version": None, "supported": True}
         if stable_semver(version) is None:
             raise MDFError(
                 f"{match.group(1)} branch requires a stable SemVer",
@@ -171,6 +175,8 @@ def branch_details(name: str) -> dict[str, Any]:
 
 def unreleased_slug(details: dict[str, Any]) -> str:
     kind = details.get("kind")
+    if kind == "hotfix" and details.get("version") is None:
+        return details["slug"]
     if kind in {"release", "hotfix"}:
         version = details.get("version")
         if not isinstance(version, str) or stable_semver(version) is None:

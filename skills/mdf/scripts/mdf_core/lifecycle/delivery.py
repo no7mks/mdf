@@ -193,7 +193,14 @@ def command_delivery(args):
         emit({"ok": True, "operation": "delivery-roster", "result": result})
         return
     root, data = locate(repo)
-    if args.action == "record":
+    if args.action == "resolve-version":
+        from mdf_core.lifecycle.hotfix_version import freeze_version
+        from mdf_core.workspace.gitutil import ensure_clean
+        ensure_clean(repo)
+        if current_branch(repo) != data["branch"]:
+            raise MDFError("仅 owner 可固定 hotfix 版本", code="stage_branch")
+        result = freeze_version(repo, root, data, args.version)
+    elif args.action == "record":
         result = record_stage(repo, root, data, args)
     elif args.action == "check":
         result = check(repo, root, data, args.stage)

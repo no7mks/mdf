@@ -182,7 +182,8 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
   - PR mode 的 release/hotfix 若已准备 `changes/<version>/delivery.json`，本轮使用该版本目录的材料、objectives 和报告。
     PR/MR 合并前可补审修订；不另建 unreleased 副本。候选流程见 [PR](pr.md)。
   - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
-    release/hotfix 用该分支的稳定 SemVer，不用 slugify。
+    release 与 SemVer hotfix 用分支版本；slug hotfix 用原 slug。
+     已归档 hotfix 使用 `delivery status` 返回的版本目录，见 [Hotfix 版本](hotfix-version.md)。
   - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
     commit 终稿。branch 验证证据是主链 `verification-report.json`，不写
     `code-review.verification.json`。

@@ -112,6 +112,8 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
   - post-start hook 处理完成后，Agent 必须检查材料是否齐全，明确需要用户提供的配置、credential 等。
     执行与缺项处理见 [Start](skills/mdf/references/start.md#post-start-check)。
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
+- hotfix 接受稳定 SemVer 或 kebab-case slug；slug 可在 start 约定版本，也可在收口时自动 patch 定版。
+  - 命名、tag、材料与重试规则见 [Hotfix 版本](skills/mdf/references/hotfix-version.md)。
 
 ### code-review 与 roster
 

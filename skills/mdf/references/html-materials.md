@@ -63,7 +63,8 @@ depends_on: []
 - 使用 [总结正文模板](../assets/templates/delivery-summary.html)，涵盖所有交付 kind 与人工 feature。
   - 填写实际内容后套用上述文档模板，保存完整 HTML；不得把正文 fragment 当作最终文件。
 - feature / bugfix：`changes/unreleased/<slug>/delivery-summary.html`。
-- release / hotfix：先写 `changes/unreleased/<semver>/delivery-summary.html`。
+- release / SemVer hotfix：先写 `changes/unreleased/<semver>/delivery-summary.html`。
+- slug hotfix：先写 `changes/unreleased/<slug>/delivery-summary.html`，归档后沿用版本目录。
   - `release-closeout` 随材料搬入 `changes/<semver>/delivery-summary.html`。
 - feature / bugfix 的总结随 child Change 进入 `changes/<version>/<slug>/`。
   - HTML 链接由 CLI 随材料与对象 archive 改写；搬迁后核对链接仍有效。

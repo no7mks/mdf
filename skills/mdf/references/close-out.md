@@ -142,7 +142,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - ❌ 不得为 clean 而 abort、reset、restore、stash、自动 Commit 或清理他人改动；无关脏分支不检查。
   - 源工作区已有 merge 同样须停；冲突已解决、已 add 或 diff 为空仍须保留 `MERGE_HEAD`。
 - 验收：实际收口授权；manifest `ready`、非 detached。
-  Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>` 或 `hotfix/<semver>`。
+  Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>`、`hotfix/<semver>` 或 `hotfix/<slug>`。
 
 **范围** <a id="s2"></a>
 先识别本次相关未提交改动，按公共规则复核并提交后确定交付范围；范围不明时先澄清。
@@ -286,6 +286,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 
 **输入** <a id="s5"></a>
 
+- hotfix 先按 [Hotfix 版本](hotfix-version.md) 固定版本并提交身份，再准备 Bug close 与收口输入。
 - 只读准备收口输入：release 读全部 unreleased child Change（移动留给步骤 8）；
   hotfix 无 child Change 且提供实际结果 JSON；两者均提供规范 `--release-date`。
 - 验收：完整版本收口输入。通过：release→7，hotfix→6。异常：停止。
@@ -416,6 +417,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 
 release/hotfix 首次发布前，CLI 保存发布进度记录：
 - 位置：Git common dir 的 `mdf/finish/<完整分支名>.json`；含源提交、origin、目标起点与进度。
+  - slug hotfix 使用 `mdf/finish/<完整分支名>/<start_commit>.json`，避免同名新交付复用旧记录。
 - 源 worktree 已 detached、已删除或已切分支时，从主 worktree 续办：
   `finish-gitflow --repo <主路径> --source <原分支>`。
 - 脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag。

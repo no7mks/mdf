@@ -80,7 +80,7 @@ def apply_version_closeout(
                 "to": relative(repo, destination),
             }
         )
-    review_source = repo / "changes" / "unreleased" / context["version"]
+    review_source = repo / "changes" / "unreleased" / context["review_slug"]
     if review_source.is_dir() and not review_source.is_symlink():
         for path in sorted(review_source.iterdir()):
             if not path.is_file() or path.is_symlink():
@@ -127,6 +127,13 @@ def apply_version_closeout(
         review_source.rmdir()
 
     release_dir.mkdir(parents=True, exist_ok=True)
+    if context["mode"] == "hotfix":
+        from mdf_core.lifecycle.delivery_state import read_json, write_json
+        record = release_dir / "delivery.json"
+        if record.is_file():
+            data = read_json(record)
+            data["version"] = context["version"]
+            write_json(record, data)
     found_in_transitions: list[str] = []
     for closure in closures:
         identifier = closure["id"]
@@ -169,6 +176,7 @@ def apply_version_closeout(
             release_notes=notes,
             evidence=root_evidence,
             verify_command_results=context.get("verify_command_results") or [],
+            source_branch=context["source_branch"],
         ),
         encoding="utf-8",
     )

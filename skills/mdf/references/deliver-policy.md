@@ -108,7 +108,7 @@
 
 - CLI/Git/工具不可恢复失败。
 - 无可启动目标（未指定人工 feature，且无合格 ready PRP、无合格 open Bug，
-  也未指定合法 release/hotfix 版本）。
+  也未指定合法 release 版本或 hotfix 名称）。
 - 已有交付缺少 worktree。
   - 仅指仍需 owner 修改或提交的交付；PR 已合并后的清理、发布或 backmerge 可按原操作记录从主路径恢复。
 - 用户明确只读或禁止提交/推送且与完成条件冲突。

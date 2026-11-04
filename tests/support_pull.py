@@ -16,8 +16,9 @@ class Platform:
             item['head'] = git(self.remote, 'rev-parse', item['source']).stdout.strip()
         return deepcopy(self.pulls[number - 1])
 
-    def find(self, source, target):
-        return next((deepcopy(p) for p in self.pulls if p['source'] == source and p['target'] == target), None)
+    def find(self, source, target, *, head=None):
+        return next((deepcopy(p) for p in self.pulls if p['source'] == source and p['target'] == target
+                     and (head is None or p['state'] == 'open' or p['head'] == head)), None)
 
     def create(self, source, target, title, description):
         head = git(self.repo, 'rev-parse', source).stdout.strip()
@@ -36,7 +37,7 @@ class Platform:
         return pull['merge_commit']
 
 
-def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix'):
+def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix', *, hotfix_name=None):
     repo, remote = start_repo(tmp_path)
     manifest = repo / '.mdf/manifest.yaml'
     manifest.write_text(manifest.read_text() + '\ncloseout:\n  mode: pr\n  provider: github\n')
@@ -50,6 +51,8 @@ def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix'):
     monkeypatch.setattr(pull_finish, 'origin', lambda *_: identity)
     monkeypatch.setattr(pull_finish, 'Forge', lambda *_: platform)
     arguments = ['--proposal', 'prp-0001', '--roster', 'solo'] if kind == 'feature' else ['--version', '1.2.1']
+    if hotfix_name is not None:
+        arguments += ['--name', hotfix_name]
     if kind == 'adhoc':
         arguments = ['--name', 'service-health', '--work', '更新说明']
     else:

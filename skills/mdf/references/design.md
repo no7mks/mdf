@@ -73,7 +73,7 @@
   - 不得把计划写进既有事实页，事实更新由主链 fact update（verify branch 之后）完成。
 - 提交前 Agent 自检 objectives.md 与 design.md 的本地链接目标存在。
 - 步骤 1 按 kind 核对依据：feature 为 PRP；bugfix 为 Bug；release 为版本与 objectives；
-  hotfix 只核对版本，热修复范围在步骤 2 确认。
+  hotfix 核对分支名称与版本约定，热修复范围在步骤 2 确认；定版见 [Hotfix 版本](hotfix-version.md)。
 - 四种 kind 的 objectives 均由 start 写入，步骤 1 缺失即停止并报告。
 - `needs_design: no` 或人工 feature 不进入本 intent，不添加 design 清单项。
 - design 已勾或 design.md 已存在时（如 release/hotfix 经 target 记入新 Bug），步骤 2 确认修订。

@@ -104,6 +104,7 @@ def render_version_change(
     evidence: dict[str, list[str]] | None = None,
     *,
     verify_command_results: list[dict[str, Any]] | None = None,
+    source_branch: str | None = None,
 ) -> str:
     def yaml_list(values: Iterable[str]) -> str:
         return "[" + ", ".join(sorted(values)) + "]"
@@ -170,7 +171,7 @@ def render_version_change(
         f'previous_version: "{previous_value}"\n'
         f'date: "{release_date}"\n'
         f"change_kind: {mode}\n"
-        f"source_branch: {mode}/{version}\n"
+        f"source_branch: {source_branch or f'{mode}/{version}'}\n"
         f"proposals: {yaml_list(proposals)}\n"
         f"fixed: {yaml_list(fixed)}\n"
         f"closed: {yaml_list(closed)}\n"

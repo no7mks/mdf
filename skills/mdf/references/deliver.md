@@ -157,7 +157,7 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 - 委托前先核 until；until start 直接进入 5，只报告解析结果，不创建 worktree。
 - 已由 target 或用户指定 kind 与 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。
 - 主 Agent 按仓库证据与对话上下文选定唯一目标，按 confidence 策略裁定。
-- 不调用初始化或规划流程，不发明 release/hotfix 版本。
+- 不调用初始化或规划流程，不发明 release 版本；hotfix 按 [版本规则](hotfix-version.md) 定版。
 - start 成功后回到 1；collab-mode 尚待接手由步骤 2 交接；start 失败或停止则按其交接结束，不回 1。
   - start 内部到 until 时直接进入 5，不重复委托 start；已完成的启动产物如实保留。
 

@@ -269,7 +269,12 @@ def _finish(repo, source, settings, *, phase):
                  "retained_worktree": str(worktree_map(repo).get(source, repo))}
         write_json(path, state)
     git(repo, "fetch", "origin", "--prune")
-    pull = forge.get(state["pull"]["id"]) if state.get("pull") else forge.find(source, target)
+    if state.get("pull"):
+        pull = forge.get(state["pull"]["id"])
+    elif details["kind"] == "hotfix" and details["version"] is None:
+        pull = forge.find(source, target, head=state["head"])
+    else:
+        pull = forge.find(source, target)
     confirm_pull(state, pull)
     write_json(path, state)
     if phase == "close-out" and (pull is None or pull["state"] != "merged"):
@@ -323,6 +328,9 @@ def _finish(repo, source, settings, *, phase):
         ready = True
         if target == "master":
             from mdf_core.lifecycle.pull_publish import publish
+            if details["kind"] == "hotfix" and details["version"] is None:
+                from mdf_core.lifecycle.hotfix_version import source_version
+                details["version"] = source_version(repo, source, ref=state["head"])
             ready = publish(repo, state, details["version"], path)
         if ready:
             cleanup_remote(repo, state, path)

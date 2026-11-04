@@ -96,7 +96,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 一次只要求一个分支的类型和必要标识：
 
 - 普通 feature 要 PRP ID；人工 feature 要 `--manual` 与已确认 slug。
-  bugfix 要 Bug ID，release/hotfix 要稳定 SemVer。
+  bugfix 要 Bug ID，release 要稳定 SemVer；hotfix 接受稳定 SemVer 或 kebab-case slug。
 - 四种 kind 均须有 objectives checklist（含 `[ ]`/`[x]` 大步骤）；roster `0,0` 也写。
   - 在步骤 2 确认并写入临时文件，步骤 4 由 CLI 经 `--objectives-file` 落入 `objectives.md`。
   - hotfix 始终记录已确认的热修复范围；roster ≥1 可由 design 修订。
@@ -252,7 +252,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 | 普通 feature | `--proposal <PRP-ID> --objectives-file <步骤 2 确认文件>` | 不传 `--name`；CLI 从 PRP 文件名取出 slug |
 | bugfix | `--bug <Bug-ID> --objectives-file <checklist 文件>` | 不传 `--name`；CLI 用该 ID 作为分支名 |
 | release | `--version <semver> --objectives-file <步骤 2 确认文件>` | — |
-| hotfix | `--version <semver> --objectives-file <checklist 文件>` | — |
+| hotfix | `--version <semver>` 或 `--name <slug>`，均传 `--objectives-file` | slug 可另传 `--version` 提前定版 |
 
 - 将步骤 3 确认的 roster 传给 CLI，不得改写已确认值：
   - 选用 named 时传 `--roster`。
@@ -263,6 +263,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - CLI 仍把一侧为 0 另一侧 ≥1 的 0 抬成 1；步骤 3 展示的须是抬成后的值。
 - 未带的 `--*-model` 不写入 roster.models 对应键。
 - `--roster` 只展开为人数与策略，不写入 delivery.json。
+- hotfix 的命名、可选版本与收口定版见 [Hotfix 版本](hotfix-version.md)。
 - CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
 - 有 origin 时，开分支前用 `ls-remote` 核对基线，不更新远程跟踪分支。
   - 远程提交已在本地（相同或本地更新）才通过。

@@ -55,7 +55,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     documents = [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
     # 按文件职责识别范围，避免缺少执行表的流程从检查中消失。
     nonprocedural = {
-            "modules.md", "repository-documents.md",
+                "modules.md", "repository-documents.md", "hotfix-version.md",
             "repository-contract.md", "object-contract.md", "doc-structure.md", "html-materials.md",
                 "project-rules.md", "temporary-work.md", "reviewer-protocol.md", "ci-review.md",
     }

@@ -135,13 +135,14 @@ disable-model-invocation: true
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
   - `--yolo` 仅自动确认内部 clarify，不跳过红灯或回归验证，也不代替测试门槛批准；fix 不执行 Gitflow 收口。
 - `$mdf bug close <bug-id> --fixed-in <version>`：ID 与稳定 SemVer 必填；
-  release/hotfix 上版本须与分支一致，通过验收后关闭 Bug。
+  release 上版本须与分支一致；hotfix 须与已固定发布版本一致，通过验收后关闭 Bug。
 - 人工 feature 的 `$mdf verify smoke` 先按 `references/verify.md` 解析为 branch 主链。
 - 其他 `$mdf verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named
   suite 名解析。也可用 `--scope smart|branch|named`、`--suites`（named）、
   `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
-  - start 的 `--name` 仅用于人工 feature；已有交付直接按 delivery.json 续办。
+  - start 的 `--name` 用于人工 feature 或 hotfix slug；hotfix 可省略 `--version`，按 [版本规则](references/hotfix-version.md) 收口定版。
+  - 已有交付直接按 delivery.json 续办。
 - `$mdf adhoc [<工作描述>]` 直接生成 slug 与七项 objectives，在独立 worktree 完成临时工作。
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。

@@ -66,7 +66,8 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 
 - 解析 `REPO_ROOT` 并运行 `doctor`。验收：`normal_workflows_allowed: true`。
 - 独立调用：`$mdf bug close <bug-id> --fixed-in <version>`；Bug ID 与版本必填。
-- `--fixed-in` 只接受稳定 SemVer；release/hotfix 上须等于分支版本。
+- `--fixed-in` 只接受稳定 SemVer；release 上须等于分支版本。
+  - hotfix 须等于 [已固定发布版本](hotfix-version.md)，slug 分支未定版时先 resolve-version 并提交。
 - feature/bugfix 上传入的版本是确定的交付目标，发版时核对实际包含该修复。
 - 不切分支、不 start、不创建 worktree。写入落点按 `common.md`。
 - 运行 `list --repo "$REPO_ROOT" --type bug --status fixed`；交付内部重验另列 closed。
@@ -155,7 +156,7 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 
 | 分支 | 落点 |
 | --- | --- |
-| `release/<semver>`、`hotfix/<semver>` | `delivery status` 返回的本次材料目录下 `bug-close.md` |
+| `release/<semver>`、`hotfix/<semver>`、`hotfix/<slug>` | `delivery status` 返回的本次材料目录下 `bug-close.md` |
 | `feature/*`、`bugfix/*`（带 Bug ID） | `changes/unreleased/<当前交付 slug>/bug-close.md`，slug 同 code-review 记录 |
 | develop 或其他非交付分支 | 在 Bug 正文追加验收记录 |
 

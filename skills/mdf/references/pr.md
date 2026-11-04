@@ -266,6 +266,7 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
 - feature/bugfix 补齐 Change 与 HTML 总结；feature 的 implemented 是合入后的候选状态。
   - 按 close-out 材料规则依据修复与验证证据更新 Bug 为 `fixed`；缺少证据则停止。
   - push 前检查未发布 Change 的 `fixed` 引用均为 fixed 或 closed Bug；不凭声明自动改状态。
+- hotfix 先按 [Hotfix 版本](hotfix-version.md) 固定版本并提交，再准备 Bug closures。
 - release/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
 - adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。

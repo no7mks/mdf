@@ -17,6 +17,9 @@ def command_bug_close(args) -> None:
     if stable_semver(version) is None:
         raise MDFError("--fixed-in 必须是稳定 SemVer", code="invalid_fixed_in")
     details = branch_details(current_branch(repo))
+    if details["kind"] == "hotfix" and details["version"] is None:
+        from mdf_core.lifecycle.hotfix_version import source_version
+        details["version"] = source_version(repo, details["name"], ref="HEAD")
     if details["kind"] in {"release", "hotfix"} and details["version"] != version:
         raise MDFError("--fixed-in 必须与分支版本一致", code="invalid_fixed_in")
     record = active_objects(repo).get(args.bug_id)

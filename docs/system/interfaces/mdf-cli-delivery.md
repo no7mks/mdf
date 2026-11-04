@@ -28,6 +28,7 @@
 | record | `--stage` 与非空 `--summary`，写入配置/指纹快照；**禁止**当作进度通行证 |
 | roster-join | 按 roster strategy 合流 qa/dev；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
 | roster | 更新 strategy / 按 intent 的 models；design 完成后不能改 qa/dev strategy |
+| resolve-version | hotfix owner 固定发布版本；可传 `--version <semver>`，返回 version 与 tag |
 
 - **进度只认** `objectives.md` 勾选；Agent 主链不得用 `record/check` 选型或卡 close-out。
 - design record 需要 `--policy-file <JSON>`，必须同时给出 `protected_paths` 与 named suite 列表 `suites`。
@@ -40,6 +41,8 @@
 - `check --stage finish`：仅核对交付材料存在（objectives/delivery.json；needs_design 时另须
   design.md）；**不**读 converge 或其他 `gates/*.json`。
 - close-out 查 report 交没交（有文件且声称通过）；不做 commit 对齐审判。
+- `resolve-version` 要求 clean；写入后提交 `delivery.json`，再关闭 Bug 和生成版本材料。
+  - 自动定版、无 tag 阻断与重试规则见 [Hotfix 版本](../../../skills/mdf/references/hotfix-version.md)。
 
 ### `tree`
 
@@ -111,7 +114,7 @@
   - 预算默认 quick 30、smoke 300，可由 `verification.budgets` 覆盖。
   - lint、build 与未设预算的 release 不限时。
 - 结果写入 `changes/unreleased/<slug>/verification-report.json`，含 `suites`，不含 commit。
-  - feature/bugfix 的 `<slug>` 为交付 kebab-case；release/hotfix 为该分支稳定 SemVer。
+  - feature/bugfix 与 slug hotfix 的 `<slug>` 为交付 slug；release 与 SemVer hotfix 为分支版本。
 - 同入口多命令：默认串行；`modules.yaml` 中 quick/smoke/release 可设
   `parallel: true`（命令数 >5 返回 `too_many_parallel_commands`）。
 
@@ -174,6 +177,7 @@
   - 重复调用核验同一合流后只完成剩余清理。
   - 角色引用改变或无法证明已合流时停止。
 - release/hotfix 的 `finish-gitflow` 在 Git common dir 的 `mdf/finish/<分支>.json` 保存发布进度。
+  - slug hotfix 按 `mdf/finish/<分支>/<start_commit>.json` 保存；同名分支的新交付使用独立记录。
   - 重试核对实际引用，跳过已完成的合并/tag；推送响应丢失时查询远端后继续。
   - 源 worktree 已移除时，可从主 worktree 使用 `--source <原release/hotfix分支>` 恢复清理。
   - 本地/远端被其他操作改变时拒绝恢复；不会强制对齐或覆盖既有 tag。

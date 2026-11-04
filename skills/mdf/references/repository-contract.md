@@ -32,7 +32,7 @@
 ├── GLOSSARY.md
 ├── CHANGELOG.md
 ├── changes/
-│   ├── unreleased/<slug>/              # feature/bugfix 材料；release/hotfix 用 <semver>/
+│   ├── unreleased/<slug>/              # 交付材料；release 与 SemVer hotfix 用 <semver>/
 │   └── <major.minor.patch>/
 │       ├── CHANGE.md
 │       └── <slug>/                    # 材料与 CHANGE.md 同级
@@ -74,7 +74,8 @@
   - hotfix 仅 roster ≥1 时写入 delivery.json。
 - code-review 终稿写在对应 `changes/unreleased/<slug>/code-review.md`（无 commit
   hash；进行中草稿同路径，收口时覆盖）：
-  - feature/bugfix/adhoc 用交付 kebab-case slug；release/hotfix 用该分支稳定 SemVer。
+  - feature/bugfix/adhoc 与 slug hotfix 用交付 slug；release 与 SemVer hotfix 用分支版本。
+    hotfix 的版本与材料目录见 [Hotfix 版本](hotfix-version.md)。
 - 📌 每个稳定版本目录始终只有一个根 `CHANGE.md`。
 
 `docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量 metadata。

@@ -53,7 +53,8 @@ adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其七项
   - 三种联调强制 Goal；Goal 完成前用户没让停就持续推进；双端验收且确认冻结、integrate 已勾才允许 code-review。
 - start 后四种工作分支均须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
   - bugfix / hotfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
-  - hotfix 始终在 `changes/unreleased/<semver>/objectives.md` 记录已确认的热修复范围。
+  - hotfix 在 `delivery status` 返回的材料目录记录已确认的热修复范围。
+    名称、目录与定版见 [Hotfix 版本](hotfix-version.md)。
 
 身份字段：
 

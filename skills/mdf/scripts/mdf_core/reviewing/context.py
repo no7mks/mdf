@@ -72,6 +72,12 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
     folder = publication["version"] if publication else unreleased_slug(details)
     artifact_ref = publication["merge_commit"] if publication else head
     root = f"changes/unreleased/{folder}"
+    if details["kind"] == "hotfix" and details["version"] is None:
+        from mdf_core.lifecycle.hotfix_version import delivery_record
+        record = delivery_record(repo, source, ref=artifact_ref)
+        if record is None:
+            raise MDFError("hotfix 交付身份缺失", code="invalid_review_context")
+        root = record[0].rsplit("/", 1)[0]
     if (details["kind"] in {"release", "hotfix", "backmerge"}
             and blob(repo, artifact_ref, f"changes/{folder}/delivery.json", required=False)):
         root = f"changes/{folder}"
@@ -82,7 +88,8 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         raise MDFError("交付身份或 roster 缺失", code="invalid_review_context") from exc
     if publication:
         published = branch_details(delivery.get("branch", ""))
-        if published["kind"] not in {"release", "hotfix"} or published["version"] != publication["version"]:
+        if (published["kind"] not in {"release", "hotfix"}
+                or (published["version"] or delivery.get("version")) != publication["version"]):
             raise MDFError("发布 tag 的交付身份与回合版本不符", code="invalid_review_context")
         publication["source"] = delivery["branch"]
     elif delivery.get("branch") != source:

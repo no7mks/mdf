@@ -75,6 +75,32 @@ def test_provider_uses_stdin_json_and_explicit_hostname(monkeypatch, tmp_path, p
     assert json.loads(arguments['input'])['title'] == '含 `字面量` 的标题'
 
 
+@pytest.mark.parametrize("provider", ["github", "gitlab"])
+@pytest.mark.parametrize("state", ["open", "merged", "closed"])
+def test_find_hotfix_ignores_completed_other_heads_but_keeps_current_pull(monkeypatch, tmp_path, provider, state):
+    forge = Forge(tmp_path, {"provider": provider, "host": "internal", "project": "team/repo"})
+
+    def raw(number, head, status):
+        if provider == "github":
+            return {"number": number, "html_url": "https://internal/pull", "merge_commit_sha": "merge",
+                    "state": "closed" if status == "merged" else status,
+                    "merged_at": "today" if status == "merged" else None,
+                    "head": {"ref": "hotfix/fix-login", "sha": head, "repo": {"full_name": "team/repo"}},
+                    "base": {"ref": "master", "repo": {"full_name": "team/repo"}}}
+        return {"iid": number, "web_url": "https://internal/mr", "merge_commit_sha": "merge",
+                "state": "opened" if status == "open" else status,
+                "source_branch": "hotfix/fix-login", "target_branch": "master", "sha": head,
+                "source_project_id": 1, "target_project_id": 1}
+
+    rows = [raw(1, "previous-head", "merged")]
+    monkeypatch.setattr(forge, "api", lambda endpoint: rows if "?" in endpoint else rows[int(endpoint.rsplit("/", 1)[1]) - 1])
+    assert forge.find("hotfix/fix-login", "master", head="current-head") is None
+    rows.append(raw(2, "current-head", state))
+    assert forge.find("hotfix/fix-login", "master", head="current-head")["id"] == 2
+    with pytest.raises(MDFError, match="多个 PR/MR"):
+        forge.find("hotfix/fix-login", "master")
+
+
 @pytest.mark.parametrize("patterns", [None, "docs/*", [1], [""]])
 def test_invalid_trivial_patterns(patterns):
     with pytest.raises(MDFError, match="trivial_paths"):

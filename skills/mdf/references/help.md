@@ -330,7 +330,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf bug close <bug-id> --fixed-in <version>`
   - 用法：`$mdf bug close <bug-id> --fixed-in <version>`
   - 用途：验证与审查已 `fixed` 的 Bug，通过后关闭并写入版本。
-  - 说明：版本必填且为稳定 SemVer；release/hotfix 上须与分支版本一致。
+  - 说明：版本必填且为稳定 SemVer；release 须与分支版本一致，hotfix 须与已固定发布版本一致。
     验证与审查通过后写 closed 与 fixed_in；close-out 内部委托时传入发布版本。
 - `$mdf verify [arg]`
   - shortcut：arg 为 smart/branch/named 时按 scope 解析，否则按 named suite 名解析。

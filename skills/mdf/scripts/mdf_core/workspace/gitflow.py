@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from mdf_core.lifecycle.adhoc import prepare, validate_start
 from mdf_core.foundation.errors import MDFError, emit
@@ -197,13 +198,19 @@ def command_start(args) -> None:
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     else:
-        suffix = _require_version(args.version)
+        if args.name:
+            if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", args.name):
+                raise MDFError("hotfix --name 必须为 kebab-case slug", code="invalid_slug")
+            suffix = args.name
+            if args.version is not None:
+                _require_version(args.version)
+        else:
+            suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     from mdf_core.workspace.merge_policy import configured
     pr_mode = configured(repo)["mode"] == "pr"
     if pr_mode:
-        import re
         continuation = "- close-out（pr merged 后必须续办；不设 checkbox）"
         has_pr = re.search(r"(?m)^- \[.\] pr[ \t]*$", objectives)
         tail = continuation if has_pr else "- [ ] pr\n" + continuation
@@ -272,6 +279,8 @@ def command_start(args) -> None:
                 "start_commit": start_commit, "needs_design": needs_design,
                 **({"work": args.work.strip()} if adhoc else {}),
             }
+            if args.kind == "hotfix" and args.name and args.version:
+                identity["version"] = args.version
             if manual:
                 identity["manual"] = True
             elif args.kind == "feature":
@@ -296,8 +305,11 @@ def command_start(args) -> None:
             elif args.kind == "bugfix":
                 message = f"docs(delivery): 确认 {args.bug} 修复目标"
             else:
-                message = f"docs(delivery): 确认 {args.version} 热修复目标"
+                message = f"docs(delivery): 确认 {suffix} 热修复目标"
             _git(work, "commit", "-m", message)
+            if args.kind == "hotfix" and args.name:
+                # 分支配置会随清理删除；保留最新交付起点供无源分支时恢复。
+                _git(work, "config", "--local", f"mdf.hotfix-{suffix}", start_commit)
     except MDFError:
         _discard(repo, created)
         raise
@@ -413,6 +425,9 @@ def command_finish_gitflow(args) -> None:
         merge_into("develop", source, complete_feature)
     else:
         from mdf_core.lifecycle.publish import publish as publish_release
+        if kind == "hotfix" and details["version"] is None:
+            from mdf_core.lifecycle.hotfix_version import source_version
+            details["version"] = source_version(repo, source)
         publish_release(repo, source, details["version"])
     remaining = worktree_map(primary)
     source_wt = remaining.get(source)

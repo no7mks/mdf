@@ -10,7 +10,20 @@ def state_path(repo, source):
     from mdf_core.workspace.gitflow import _git
     common = Path(_git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
     from mdf_core.workspace.gitutil import branch_details
-    if branch_details(source)["kind"] == "adhoc":
+    details = branch_details(source)
+    if details["kind"] == "hotfix" and details["version"] is None:
+        from mdf_core.lifecycle.hotfix_version import delivery_record
+        source_ref = f"refs/heads/{source}"
+        if _git(repo, "rev-parse", "--verify", "--quiet", source_ref, check=False).returncode == 0:
+            record = delivery_record(repo, source, ref=source_ref)
+            start = record[1].get("start_commit") if record else None
+        else:
+            start = _git(repo, "config", "--local", "--get", f"mdf.hotfix-{details['slug']}",
+                         check=False).stdout.strip()
+        if not isinstance(start, str) or len(start) != 40 or any(c not in "0123456789abcdef" for c in start):
+            raise MDFError("hotfix 缺少固定交付起点，不能选择恢复记录", code="invalid_delivery")
+        return safe(common, common / "mdf/finish" / source / f"{start}.json")
+    if details["kind"] == "adhoc":
         import hashlib
         return safe(common, common / "mdf/finish" / f"adhoc-{hashlib.sha256(source.encode()).hexdigest()}.json")
     return safe(common, common / "mdf/finish" / f"{source}.json")

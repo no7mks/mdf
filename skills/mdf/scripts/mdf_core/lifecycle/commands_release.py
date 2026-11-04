@@ -81,11 +81,14 @@ def derive_closeout_spec(
     details = branch_details(current_branch(repo))
     if details["kind"] not in {"release", "hotfix"}:
         raise MDFError(
-            "release closeout 只接受 release/<version> 或 hotfix/<version>",
+            "release closeout 只接受 release/<version>、hotfix/<version> 或 hotfix/<slug>",
             code="unsupported_branch",
         )
     mode = details["kind"]
     version = details["version"]
+    if mode == "hotfix" and version is None:
+        from mdf_core.lifecycle.hotfix_version import source_version
+        version = source_version(repo, details["name"], ref="HEAD", auto=True)
     manifest = load_manifest(repo)
     versioning = manifest.get("versioning")
     previous = (
@@ -125,7 +128,7 @@ def derive_closeout_spec(
                 "hotfix 必须显式提供 --hotfix-change-json",
                 code="invalid_closeout_spec",
             )
-        hotfix_change = normalize_hotfix_change(raw_hotfix, version)
+        hotfix_change = normalize_hotfix_change(raw_hotfix, version, source=details["name"])
         proposals = set(hotfix_change["proposals"])
         fixed = set(hotfix_change["fixed"])
         closed = set(hotfix_change["closed"])
@@ -199,7 +202,7 @@ def derive_closeout_spec(
     return {
         "schema_version": SCHEMA_VERSION,
         "mode": mode,
-        "expected_branch": f"{mode}/{version}",
+        "expected_branch": details["name"],
         "version": version,
         "previous_version": previous,
         "release_date": release_date,

@@ -108,7 +108,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
   --repo /path/to/repository --release-date 2026-08-04 --dry-run
 ```
 
-仅接受 `release/<version>` 或 `hotfix/<version>` 当前分支。
+仅接受 `release/<version>`、`hotfix/<version>` 或 `hotfix/<slug>` 当前分支。
 
 - 要求 Git 根、clean worktree、`manifest.state: ready` 与 strict validation 零 error。
 - 必须提供 `--release-date`。
@@ -125,9 +125,9 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 1. 验证：
    - 复用条件：已有 `verification-report.json` 声称通过，且命令序列与当前 lint、build、quick、
-     release 一致（不对照 HEAD）。
+     所需 smoke/release suite 一致（不对照 HEAD）。
    - 满足时直接复用其结果，输出 `verification.reused` 为证据路径。
-   - 否则依次执行这些命令，`reused` 为 null。
+   - 否则返回 `verification_report_not_reusable`；不在 closeout 内运行验证命令。
 2. 随后保持 worktree clean 后写入版本 Change、归档对象和链接重写。
 3. 在最后再次执行 strict validation；后校验失败时 details 含 `findings` 与已写入路径 `written`。
 
@@ -147,7 +147,7 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 | `feature` | `--proposal` 与 `--objectives-file`；slug 由 PRP 文件名决定 | `--name` | 本地 `develop` |
 | `bugfix` | `--bug <Bug ID>`；分支名为 `bugfix/<Bug ID>` | `--name` | 本地 `develop` |
 | `release` | 稳定 SemVer 的 `--version` 与 `--objectives-file` | — | 本地 `develop` |
-| `hotfix` | 稳定 SemVer 的 `--version` | `--objectives-file` | 本地 `master` |
+| `hotfix` | `--version <semver>` 或 `--name <slug>`；slug 可另传 `--version` | `--objectives-file` | 本地 `master` |
 | `adhoc` | `--name <名称>`；自动生成六项 objectives | PRP、Bug、版本、manual、objectives 文件 | 本地 `develop` |
 
 命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
@@ -374,7 +374,7 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 `bug close <bug-id> --fixed-in <version> --repo <仓库>` 是 bug close intent 验收完成后的状态写入。
 
 - intent 先完成复现验证与修复代码审查；Core 不执行这些语义验收。
-- 要求 ready、active fixed Bug、稳定 SemVer；release/hotfix 上版本须与分支一致。
+- 要求 ready、active fixed Bug、稳定 SemVer；release 上须与分支版本一致，hotfix 须与已固定发布版本一致。
 - 写入 status: closed 与 fixed_in，保留 found_in，不提交或归档。
 
 ## 无 PRP 的人工 feature

@@ -112,7 +112,7 @@ def _hotfix_evidence(raw: Any) -> dict[str, list[str]]:
     return normalized
 
 
-def normalize_hotfix_change(raw: Any, version: str) -> dict[str, Any]:
+def normalize_hotfix_change(raw: Any, version: str, *, source: str | None = None) -> dict[str, Any]:
     """Validate user JSON and add only Core-owned hotfix identity fields."""
     change = require_exact_keys(
         raw,
@@ -140,7 +140,7 @@ def normalize_hotfix_change(raw: Any, version: str) -> dict[str, Any]:
         )
     normalized: dict[str, Any] = {
         "change_kind": "hotfix",
-        "source_branch": f"hotfix/{version}",
+        "source_branch": source or f"hotfix/{version}",
         "body": body,
         "proposals": _string_list(
             change.get("proposals", []),

@@ -5,7 +5,7 @@ from typing import Any
 from mdf_core.lifecycle.closeout_validate import CLOSURE_RESOLUTIONS, require_exact_keys, require_spec_key
 from mdf_core.foundation.constants import SCHEMA_VERSION
 from mdf_core.foundation.errors import MDFError
-from mdf_core.workspace.gitutil import current_branch
+from mdf_core.workspace.gitutil import branch_details, current_branch, unreleased_slug
 from mdf_core.foundation.paths import load_manifest, relative
 from mdf_core.foundation.textutil import stable_semver
 
@@ -57,10 +57,11 @@ def validate_closeout_shape(
             "closeout version 必须是稳定 SemVer",
             code="invalid_closeout_spec",
         )
-    expected_branch = f"{mode}/{version}"
-    if spec.get("expected_branch") != expected_branch:
+    expected_branch = spec.get("expected_branch")
+    details = branch_details(expected_branch or "")
+    if details["kind"] != mode or (details["version"] is not None and details["version"] != version):
         raise MDFError(
-            f"expected_branch must equal {expected_branch}",
+            "expected_branch 必须匹配收口种类与版本",
             code="invalid_closeout_spec",
         )
     actual_branch = current_branch(repo)
@@ -116,6 +117,14 @@ def validate_closeout_shape(
         )
 
     actual_slugs = unreleased_change_slugs(repo, version)
+    review_slug = unreleased_slug(details)
+    if mode == "hotfix" and details["version"] is None:
+        from mdf_core.lifecycle.hotfix_version import source_version
+        if source_version(repo, expected_branch, ref="HEAD", auto=True) != version:
+            raise MDFError("hotfix 收口版本与交付身份不符", code="hotfix_version_changed")
+        if (repo / "changes/unreleased" / review_slug / "CHANGE.md").exists():
+            raise MDFError("hotfix 不接受 child Change", code="hotfix_unreleased_present")
+        actual_slugs = [slug for slug in actual_slugs if slug != review_slug]
     release_items = [
         {"slug": slug, "source": f"changes/unreleased/{slug}"}
         for slug in actual_slugs
@@ -186,6 +195,8 @@ def validate_closeout_shape(
         )
     return {
         "mode": mode,
+        "source_branch": expected_branch,
+        "review_slug": review_slug,
         "version": version,
         "candidate": candidate,
         "previous": previous,

@@ -15,6 +15,7 @@ def core():
     ("adhoc/Update_README", "adhoc", "update-readme", None),
     ("release/1.3.0", "release", "1-3-0", "1.3.0"),
     ("hotfix/1.2.1", "hotfix", "1-2-1", "1.2.1"),
+    ("hotfix/fix-login", "hotfix", "fix-login", None),
     ("fix/readme", "adhoc", "fix-readme", None),
     ("scratch", "adhoc", "scratch", None),
 ])
@@ -32,7 +33,10 @@ def test_other_branches_are_unsupported(name):
     assert gitutil.branch_details(name)["kind"] == "unsupported"
 
 
-@pytest.mark.parametrize("name", ["release/1.3", "hotfix/1.3.0-rc.1", "release/v1.3.0"])
+@pytest.mark.parametrize("name", [
+    "release/1.3", "hotfix/1.3.0-rc.1", "release/v1.3.0",
+    "hotfix/Fix-Login", "hotfix/fix_login", "hotfix/fix--login", "hotfix/fix/login", "hotfix/fix-",
+])
 def test_release_branches_require_stable_semver(name):
     gitutil, MDFError = core()
     with pytest.raises(MDFError) as error:

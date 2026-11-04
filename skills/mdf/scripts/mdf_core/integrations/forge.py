@@ -75,7 +75,7 @@ class Forge:
     def get(self, number):
         return self.normalize(self.api(f"{self.endpoint}/{int(number)}"))
 
-    def find(self, source, target):
+    def find(self, source, target, *, head=None):
         query = ({"state": "all", "head": self.identity["project"].split("/")[0] + ":" + source, "base": target}
                  if self.github else {"state": "all", "source_branch": source, "target_branch": target, "scope": "all"})
         found = []
@@ -86,6 +86,8 @@ class Forge:
                 raise MDFError("PR/MR 列表无效", code="forge_invalid_response")
             for row in rows:
                 item = self.normalize(row)
+                if head is not None and item["state"] != "open" and item["head"] != head:
+                    continue
                 if item["source"] == source and item["target"] == target:
                     found.append(item)
             if len(rows) < 100:
