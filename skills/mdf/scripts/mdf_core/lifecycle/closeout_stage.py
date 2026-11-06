@@ -90,12 +90,22 @@ def apply_closeout(
         if context["mode"] == "on-demand-release":
             from mdf_core.lifecycle.delivery_state import read_json
             record = read_json(repo / "changes/unreleased" / context["review_slug"] / "delivery.json")
+            from mdf_core.lifecycle.odr_acceptance import source_contexts
+            for source, (folder, child) in source_contexts(repo, context["version"]).items():
+                evidence["artifacts"].append(f"changes/{context['version']}/{folder.name}/delivery.json")
+                if not child.get("manual"):
+                    proposal_ids.add(child["proposal"])
+                if not (folder / "CHANGE.md").is_file():
+                    notes["Changed"].append(f"纳入 {source}")
+            evidence["artifacts"].extend(f"changes/{context['version']}/{name}"
+                                         for name in ("code-review.md", "verification-report.json", "fact-audit.md"))
             for item in record.get("scope", []):
                 notes["Changed"].append(item["scope"])
                 breaking = breaking or item.get("breaking") is True
                 evidence["artifacts"].extend(
                     path.replace(f"changes/unreleased/{context['version']}/", f"changes/{context['version']}/", 1)
-                    for path in (item["evidence"][key] for key in ("review", "tests", "fact"))
+                    for path in (item.get("evidence", {}).get(key) for key in ("review", "tests", "fact"))
+                    if isinstance(path, str) and path
                 )
     if (
         fixed_ids & closed_ids

@@ -188,6 +188,10 @@ def command_delivery(args):
     ensure_safe_managed_paths(repo)
     if load_manifest(repo).get("state") != "ready":
         raise MDFError("当前操作需要 ready 仓库", code="manifest_not_ready")
+    if args.action == "accept":
+        from mdf_core.lifecycle.odr_acceptance import accept
+        emit({"ok": True, "result": accept(repo)})
+        return
     if args.action == "scope":
         from mdf_core.lifecycle.odr_scope import update_scope
         emit({"ok": True, "result": update_scope(repo, args.scope_file)})

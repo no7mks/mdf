@@ -19,11 +19,13 @@ def preflight(repo, source):
     if current_branch(repo) != source:
         raise MDFError("首次提交或更新 PR/MR 必须在源 worktree 执行", code="stage_branch")
     from mdf_core.inspection.validate_records import require_fixed_outcomes
-    require_fixed_outcomes(repo, source)
     kind = branch_details(source)["kind"]
+    from mdf_core.lifecycle.late_decision import target_for
+    if not (kind == "feature" and target_for(repo, source).startswith("on-demand-release/")):
+        require_fixed_outcomes(repo, source)
     if kind == "on-demand-release":
         from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-        checkpoint(repo, required=True)
+        checkpoint(repo, required=True, release=True)
         require_independent(repo, source)
     if kind == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source

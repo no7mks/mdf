@@ -237,7 +237,7 @@ def build_parser() -> argparse.ArgumentParser:
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",
-        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope"),
+        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope", "accept"),
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--version")

@@ -62,7 +62,7 @@ def apply_version_closeout(
     release_dir = repo / "changes" / context["version"]
     moves: dict[Path, Path] = {}
     move_records: list[dict[str, Any]] = []
-    for item in context["release_items"]:
+    for item in [*context["release_items"], *context.get("source_items", [])]:
         source = repo / item["source"]
         destination = release_dir / item["slug"]
         broken = opaque_links_survive_move(repo, source, destination)

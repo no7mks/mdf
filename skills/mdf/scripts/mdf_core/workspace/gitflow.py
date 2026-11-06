@@ -215,6 +215,11 @@ def command_start(args) -> None:
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     if args.kind == "on-demand-release":
+        from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
+        objectives = re.sub(r"(?m)^(- \[[ x]\] (?:pr|close-out)\s*)$",
+                            "- [ ] " + ACCEPTANCE + r"\n\1", objectives, count=1)
+        if ACCEPTANCE not in objectives:
+            objectives += "\n- [ ] " + ACCEPTANCE + "\n"
         objectives = objectives.replace("- [x] 确认工作线与范围（start）",
                                         "- [x] 确认工作线与范围（start）\n- [ ] " + CHECKPOINT)
         if "- [ ] " + CHECKPOINT not in objectives:
@@ -405,21 +410,21 @@ def command_finish_gitflow(args) -> None:
         from mdf_core.lifecycle.adhoc_finish import finish
         finish(repo, source, recovering=bool(args.source))
         return
-    if not args.source:
+    kind = details["kind"]
+    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
+    target = target_for(repo, source) if kind == "feature" else "develop"
+    if not args.source and not (kind == "feature" and target.startswith("on-demand-release/")):
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         require_fixed_outcomes(repo, source)
-    kind = details["kind"]
     if kind == "on-demand-release":
         from mdf_core.lifecycle.publish import state_path
         if not state_path(repo, source).exists():
             if source != current_branch(repo):
                 raise MDFError("首次 ODR 发布须在 owner 执行，--source 仅恢复已开始的发布", code="invalid_delivery")
             from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-            checkpoint(repo, required=True)
+            checkpoint(repo, required=True, release=True)
             require_independent(repo, source)
     publish = kind in {"release", "on-demand-release", "hotfix"}
-    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
-    target = target_for(repo, source) if kind == "feature" else "develop"
     if kind == "feature":
         require_feature_target(repo, source, target)
     targets = [target] if kind in {"feature", "bugfix"} else ["master", "develop"]

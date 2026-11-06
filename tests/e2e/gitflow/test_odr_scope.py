@@ -63,7 +63,9 @@ def test_direct_work_requires_scope_and_evidence(python_exe, tmp_path):
     accept(python_exe, work, tmp_path, entries)
     assert payload(checkpoint(python_exe, work))["result"]["ready"]
     (work / entries[0]["evidence"]["tests"]).write_text("")
-    assert not payload(checkpoint(python_exe, work))["result"]["ready"]
+    commit(work)
+    assert payload(checkpoint(python_exe, work))["result"]["ready"]
+    assert "odr_acceptance_pending" in mdf(python_exe, "delivery", "accept", "--repo", str(work)).stderr
 
 
 def test_develop_history_requires_cherry_pick(python_exe, tmp_path):
@@ -108,7 +110,8 @@ def test_direct_only_release_archives_evidence_and_preserves_commits(python_exe,
     obj = work / "changes/unreleased/1.3.0/objectives.md"
     obj.write_text(obj.read_text().replace("[ ]", "[x]"))
     commit(work)
-    seed_verify_branch(python_exe, work)
+    from test_odr_acceptance import accept_release
+    accept_release(python_exe, work)
     result = payload(mdf(python_exe, "release-closeout", "--repo", str(work), "--release-date", "2026-11-06"))
     assert result["release_set"] == []
     for key in ("review", "tests", "fact"):

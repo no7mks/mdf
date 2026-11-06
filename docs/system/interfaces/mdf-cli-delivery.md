@@ -233,10 +233,14 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 - start 新增 `--from-master`（仅 feature，含 manual）、`--target` 与可重复 `--feature`（仅 ODR）。
 - `--kind on-demand-release --version <semver> --feature feature/<slug>` 从 master 创建发布分支。
 - `delivery target --repo <owner> --target <develop|on-demand-release/version>` 写入已确认具体目标；调用方提交。
-- `delivery checkpoint --repo <ODR>` 返回 ready、pending 与 features，不修改 checklist。
+- `delivery checkpoint --repo <ODR>` 返回纳入 ready、pending 与 features，不修改 checklist；不代表发布就绪。
 - feature 的 delivery.json 记录 base_branch、target；ODR 记录 features 与 scope 纳入清单。
 - 完整执行规则见 [Late-decision](../../../skills/mdf/references/late-decision.md)。
 
 - `delivery scope --repo <ODR> --scope-file <JSON>`：clean owner 上替换非 feature 范围。
 - `start --kind on-demand-release` 接受 `--feature` 和/或 `--scope-file`。
 - scope 字段、来源限制与 checkpoint 行为见 [Late-decision](../../../skills/mdf/references/late-decision.md)。
+
+- `delivery accept --repo <ODR>`：clean owner 上核对整版验收，更新所选 PRP 为 implemented 并勾选 ODR 统一验收。
+  - 要求 ODR 的 lint、code-review、verify branch、fact audit 已勾，整版报告齐全且 release suite 通过。
+  - feature → ODR 不要求补齐 source Change 或验收报告，不修改 source checklist。

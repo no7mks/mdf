@@ -104,10 +104,10 @@ def derive_closeout_spec(
         )
     if mode == "on-demand-release":
         from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-        checkpoint(repo, required=True)
+        checkpoint(repo, required=True, release=True)
         require_independent(repo, "HEAD")
     if mode in {"release", "on-demand-release"}:
-        slugs = unreleased_change_slugs(repo, version)
+        slugs = unreleased_change_slugs(repo, version, odr=mode == "on-demand-release")
         proposals: set[str] = set()
         fixed: set[str] = set()
         closed: set[str] = set()
@@ -120,6 +120,10 @@ def derive_closeout_spec(
             fixed.update(metadata.get("fixed", []))
             closed.update(metadata.get("closed", []))
             deferred.update(metadata.get("deferred", []))
+        if mode == "on-demand-release":
+            from mdf_core.lifecycle.odr_acceptance import source_contexts
+            proposals.update(record["proposal"] for _folder, record in source_contexts(repo, version).values()
+                             if not record.get("manual"))
         hotfix_change = None
     else:
         raw_hotfix = _json_argument(

@@ -7,7 +7,7 @@ from mdf_core.workspace.gitutil import branch_details, current_branch, ensure_cl
 from mdf_core.workspace.merge_policy import git
 
 ODR = "on-demand-release"
-CHECKPOINT = "核对发布范围与来源验收"
+CHECKPOINT = "核对发布范围纳入"
 
 
 def validate_target(target, *, concrete=False):
@@ -103,7 +103,7 @@ def set_target(repo, target):
     return {"target": target, "path": str(root / "delivery.json")}
 
 
-def checkpoint(repo, *, required=False):
+def checkpoint(repo, *, required=False, release=False):
     source = current_branch(repo)
     if branch_details(source)["kind"] != ODR:
         raise MDFError("checkpoint 仅适用于 ODR", code="invalid_arguments")
@@ -124,7 +124,6 @@ def checkpoint(repo, *, required=False):
     parents = [row.split()[1:] for row in git(repo, "log", "--first-parent", "--format=%H %P", "HEAD").stdout.splitlines()]
     for source in expected:
         folder = unreleased_slug(branch_details(source))
-        change = safe(repo, (archived if root == archived else repo / "changes/unreleased") / folder / "CHANGE.md")
         merged = False
         for pair in parents:
             if len(pair) != 2:
@@ -133,15 +132,13 @@ def checkpoint(repo, *, required=False):
                 child = identity_at(repo, source, pair[1])
             except MDFError:
                 continue
-            child_change = f"changes/unreleased/{folder}/CHANGE.md"
-            included = git(repo, "cat-file", "-e", f"{pair[1]}:{child_change}", check=False)
-            if child.get("target") == data["branch"] and included.returncode == 0:
+            if child.get("target") == data["branch"] and child.get("base_branch") == "master":
                 merged = True
                 from mdf_core.lifecycle.odr_scope import ancestors
                 covered.update(ancestors(repo, pair[1], data["start_commit"])
                                - ancestors(repo, pair[0], data["start_commit"]))
                 # 后续 feature 会继承本 feature 的材料；继续累计较早的实际合入。
-        if not change.is_file() or not merged:
+        if not merged:
             pending.append(source)
     from mdf_core.foundation.yamlutil import read_frontmatter
     container = archived if root == archived else repo / "changes/unreleased"
@@ -154,6 +151,9 @@ def checkpoint(repo, *, required=False):
     result = {"ready": not pending, "pending": pending, "features": expected}
     if required and pending:
         raise MDFError("等待发布范围纳入与验收", code="features_pending", details=result)
+    if release:
+        from mdf_core.lifecycle.odr_acceptance import require_acceptance
+        require_acceptance(repo, root, data)
     return result
 
 

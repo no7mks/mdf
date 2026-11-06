@@ -235,7 +235,7 @@ fact audit 对文档结构的语义审阅：
 
 ## Proposal 状态
 
-draft 为待评审，ready 为可交付，implemented 为已验收合入选定目标（develop 或 ODR），released 为已发布。
+draft 为待评审，ready 为可交付，implemented 为已验收合入 develop 或已通过 ODR 统一验收，released 为已发布。
 rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由拆分出的 PRP 承接。
 
 - draft 使用 Markdown；评审定稿前展示详细 HTML 并取得用户确认，定稿保存为唯一 HTML。

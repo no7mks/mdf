@@ -10,7 +10,7 @@ from mdf_core.foundation.paths import load_manifest, relative
 from mdf_core.foundation.textutil import stable_semver
 
 
-def unreleased_change_slugs(repo: Path, version: str) -> list[str]:
+def unreleased_change_slugs(repo: Path, version: str, *, odr=False) -> list[str]:
     unreleased = repo / "changes" / "unreleased"
     if not unreleased.is_dir():
         return []
@@ -29,7 +29,12 @@ def unreleased_change_slugs(repo: Path, version: str) -> list[str]:
             code="unexpected_review_dir",
             details={"unexpected": unexpected, "version": version},
         )
-    return [name for name in names if stable_semver(name) is None]
+    contexts = set()
+    if odr:
+        from mdf_core.lifecycle.odr_acceptance import source_contexts
+        contexts = {folder.name for folder, _ in source_contexts(repo, version).values()
+                    if not (folder / "CHANGE.md").is_file()}
+    return [name for name in names if stable_semver(name) is None and name not in contexts]
 
 
 def validate_closeout_shape(
@@ -116,7 +121,7 @@ def validate_closeout_shape(
             code="collision",
         )
 
-    actual_slugs = unreleased_change_slugs(repo, version)
+    actual_slugs = unreleased_change_slugs(repo, version, odr=mode == "on-demand-release")
     review_slug = unreleased_slug(details)
     if mode == "hotfix" and details["version"] is None:
         from mdf_core.lifecycle.hotfix_version import source_version
@@ -129,6 +134,12 @@ def validate_closeout_shape(
         {"slug": slug, "source": f"changes/unreleased/{slug}"}
         for slug in actual_slugs
     ]
+    source_items = []
+    if mode == "on-demand-release":
+        from mdf_core.lifecycle.odr_acceptance import source_contexts
+        source_items = [{"slug": folder.name, "source": str(folder.relative_to(repo))}
+                        for folder, _ in source_contexts(repo, version).values()
+                        if not (folder / "CHANGE.md").is_file()]
     slugs = actual_slugs
     if mode in {"release", "on-demand-release"}:
         if not slugs and mode == "release":
@@ -203,6 +214,7 @@ def validate_closeout_shape(
         "previous_tuple": previous_tuple,
         "release_date": release_date.isoformat(),
         "release_items": release_items,
+        "source_items": source_items,
         "hotfix": None,
         "hotfix_change": spec.get("hotfix_change"),
         "closures": closures,

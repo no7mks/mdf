@@ -122,6 +122,7 @@ feature 可使用 `$mdf start --from-master`，支持 `--manual`。
 
 - 目标为 develop 或具体 `on-demand-release/<version>`。
 - ODR 从 master 创建，支持 MDF feature、master 起点的非 MDF 分支、cherry-pick 与直接工作；按范围及证据验收。
+- ODR 对所有来源统一 review、verify 与 fact audit；feature 纳入不补齐来源交付材料，PRP 验收后才为 implemented。
 - ODR 最终发布到 master，并必须合回 develop；支持 local 与 PR mode。
 - 规则与 CLI 参数见 [Late-decision](skills/mdf/references/late-decision.md)。
 - `deliver --yolo` 在入口集中确认未决事项，开始自动推进后不再询问流程决策。

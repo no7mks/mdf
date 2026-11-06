@@ -26,6 +26,11 @@ def feature_completion(repo, source, *, allow_candidate=False):
     from mdf_core.foundation.yamlutil import read_frontmatter
 
     root, data = locate(repo)
+    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
+    target = target_for(repo, source, data=data)
+    if target.startswith("on-demand-release/"):
+        require_feature_target(repo, source, target)
+        return None, data["roster"]
     require_finish(repo, root, data)
     change = root / "CHANGE.md"
     if not change.is_file():

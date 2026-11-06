@@ -62,7 +62,11 @@ def test_feature_enters_odr_checkpoint_then_publishes_and_backmerges(python_exe,
     result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["targets"] == ["on-demand-release/1.3.0"]
     assert payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]["ready"]
-    assert 'status: "implemented"' in (odr / "docs/proposals" / PRP_NAME).read_text()
+    from mdf_core.foundation.yamlutil import read_frontmatter
+    assert read_frontmatter(odr / "docs/proposals" / PRP_NAME)[0]["status"] == "ready"
+    from test_odr_acceptance import accept_release
+    accept_release(python_exe, odr)
+    assert read_frontmatter(odr / "docs/proposals" / PRP_NAME)[0]["status"] == "implemented"
     write_changelog_release(odr, "1.3.0")
     commit(odr)
     published = payload(mdf(python_exe, "finish-gitflow", "--repo", str(odr)))
@@ -137,7 +141,8 @@ def test_odr_full_version_materials_and_publication(python_exe, tmp_path, monkey
     obj = odr / "changes/unreleased/1.3.0/objectives.md"
     obj.write_text(obj.read_text().replace("[ ]", "[x]"))
     commit(odr)
-    seed_verify_branch(python_exe, odr)
+    from test_odr_acceptance import accept_release
+    accept_release(python_exe, odr)
     result = payload(mdf(python_exe, "release-closeout", "--repo", str(odr), "--release-date", "2026-11-06"))
     assert result["release_set"] == ["service-health"]
     root = odr / "changes/1.3.0"
@@ -234,14 +239,13 @@ def test_source_argument_cannot_bypass_pending_odr(python_exe, tmp_path):
     assert git(remote, "rev-parse", "master").stdout == before
 
 
-def test_checkpoint_requires_change_in_merged_feature(python_exe, tmp_path):
+def test_checkpoint_accepts_merged_feature_without_change(python_exe, tmp_path):
     repo = local_repo(tmp_path)
     odr = start_odr(python_exe, repo, tmp_path)
     work = start_feature(python_exe, repo, tmp_path, "--target", "on-demand-release/1.3.0")
     git(odr, "merge", "--no-ff", "--no-edit", "feature/service-health")
-    feature_change(odr)
     state = payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]
-    assert not state["ready"] and state["pending"] == ["feature/service-health"]
+    assert state["ready"] and state["pending"] == []
     assert not (work / "changes/unreleased/service-health/CHANGE.md").exists()
 
 

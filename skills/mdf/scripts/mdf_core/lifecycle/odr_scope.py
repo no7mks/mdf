@@ -88,6 +88,10 @@ def update_scope(repo, filename):
     entries = load_scope(repo, filename)
     if not entries and not data.get("features"):
         fail("ODR 范围不得为空")
+    if entries != data.get("scope", []):
+        from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
+        objectives = safe(repo, root / "objectives.md")
+        objectives.write_text(objectives.read_text().replace(f"- [x] {ACCEPTANCE}", f"- [ ] {ACCEPTANCE}"))
     data["scope"] = entries
     write_json(safe(repo, root / "delivery.json"), data)
     return {"scope": entries, "path": str(root / "delivery.json")}
@@ -121,18 +125,7 @@ def check_scope(repo, data, covered):
                     # 冲突解决必须显式记录差异及复核，不假装 patch 相同。
                     if not item.get("resolution"):
                         fail("cherry-pick patch 不同，须记录 resolution 并补审补验")
-        evidence = item.get("evidence", {})
-        accepted = item.get("result") == "passed" and isinstance(evidence, dict)
-        for key in ("review", "tests", "fact"):
-            path = evidence.get(key) if isinstance(evidence, dict) else None
-            accepted = accepted and isinstance(path, str) and bool(path)
-            if accepted:
-                version = data["branch"].split("/", 1)[1]
-                if (repo / "changes" / version / "delivery.json").is_file():
-                    path = path.replace(f"changes/unreleased/{version}/", f"changes/{version}/", 1)
-                artifact = safe(repo, repo / path)
-                accepted = artifact.is_file() and bool(artifact.read_text().strip())
-        if not included or not accepted:
+        if not included:
             pending.append(item["id"])
         covered.update(commits)
     # release 材料提交由原 release 契约验收；其余提交必须有来源记录。

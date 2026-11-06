@@ -97,10 +97,11 @@ local close-out 与 PR mode 的 pr 均须在 catch-up 目标前应用本节；�
 
 - feature → develop：catch-up develop 后合入 develop；不自动创建 release。
 - feature → ODR：目标 ODR 必须已 start，且本 feature 在其纳入清单内。
-  - catch-up 当前 ODR，验证与已纳入 feature 的组合；不能只验证 master 上的单独功能。
+  - 纳入只核对 master 来源、实际提交、依赖与已确认范围；组合验收在 ODR 执行。
   - local close-out no-ff 合入具体 ODR；PR mode 的 PR 以具体 ODR 为 base。
   - PR mode 在首次 feature PR 前确保目标 ODR 分支已非 force push 到 origin；不得隐式创建 ODR。
-  - feature 合入后为 implemented，按自身流程清理；不在此打 tag 或宣称发布完成。
+  - feature 合入后 PRP 仍为 ready；ODR 统一验收通过后才改为 implemented。
+  - 按原规则清理分支并保留 worktree；不在 feature 侧打 tag 或宣称发布完成。
 - 已包含 develop 尚未进入 master 的历史，禁止整条 feature 转入 ODR；不 rebase 或自动 cherry-pick。
   - 如果相关历史后来全部进入 master，可重新核对；不是永久按“曾 merge develop”禁止。
   - Git 历史检查不替代代码与业务依赖检查。
@@ -112,7 +113,7 @@ local close-out 与 PR mode 的 pr 均须在 catch-up 目标前应用本节；�
 从 master 创建 `on-demand-release/<version>`；版本与 release/hotfix 共用 tag 空间。
 start 确认版本、范围、release 工作线与 roster；不要求把所有工作包装成 feature。
 
-- MDF feature 用 `--feature feature/<slug>`，可以重复；继续核验其 delivery、Change 与合入证据。
+- MDF feature 用 `--feature feature/<slug>`，可以重复；核验已有 delivery 身份与实际合入证据。
 - 其他来源使用 `--scope-file <JSON>`，可以与 `--feature` 同时使用。
 - 非 MDF 分支必须基于 master；登记 source 分支名、固定 base 与 tip。
   - base 必须属于 master 历史且为 tip 的 ancestor；不得包含 develop 未发布历史。
@@ -124,7 +125,7 @@ start 确认版本、范围、release 工作线与 roster；不要求把所有�
 - ODR 可直接完成 adhoc、修复与预发布工作；使用 direct 记录范围、来源与实际 commits。
 - 先记录计划范围；commits 可以暂为空。完成后用 `delivery scope --repo <owner> --scope-file <JSON>`
   替换非 feature 范围，再提交 delivery.json；该操作不修改 features。
-- 已有 MDF 材料必须按原契约处理；不能用 branch 条目绕过 feature 验收。
+- 已有 MDF 材料保留作开发上下文，身份和内容须真实；不要求为纳入而补齐材料或完成原 checklist。
 - 非 MDF 来源无需补建 child delivery/Change；其范围与证据随 ODR delivery.json 归档。
 
 JSON 顶层为数组，每项字段如下：
@@ -138,33 +139,53 @@ JSON 顶层为数组，每项字段如下：
 | commits | cherry-pick/direct 的实际提交数组；空数组表示尚未完成 |
 | resolution | cherry-pick patch 不同时必填的差异与复核说明 |
 | breaking | 可选 boolean；true 按 breaking change 定版 |
-| result | 验收完成写 passed；不能用声明替代真实检查 |
-| evidence | review、tests、fact 三项指向仓库内非空证据文件 |
+| result、evidence | 可选来源说明与已有证据；不作为纳入前置，也不替代 ODR 统一验收 |
 
 证据建议保存在 `changes/unreleased/<version>/`，checkpoint 自动解析版本归档后的路径。
 ODR 证据子目录随版本归档；版本根 evidence 引用的非 child 目录按证据目录核验，不要求补建 Change。
 Agent 须核对证据覆盖实际 diff、测试结果与 fact audit；CLI 只核验记录、文件和 Git 关系。
 
-### Checkpoint 与推进
+### Feature → ODR 纳入路径
 
-objectives 使用「核对发布范围与来源验收」checkpoint。
-start 完成 hook 与 Post-start check 后交接；next / deliver 读取 pending，推进已确认的范围内工作。
+请求把 feature 纳入 ODR 时，本节优先于 feature 的普通收口链；目标 develop 不变。
+
+- next / deliver / close-out / pr 先读取已确认 target；ODR 路径不因 source checklist 未完成而补跑阶段。
+- 核对 clean、来源、依赖、确认范围及角色分支已集成；有未完成的范围应明确交接给 ODR，不声称验收通过。
+- 不要求 source 的 design、converge、lint、code-review、verify、fact 或 close-out 项勾选。
+- 不补建 source 的 CHANGE.md、设计、HTML 总结、review 或 verification/fact 报告。
+- 不改动 source objectives 的勾选，不提前更新 PRP 为 implemented。
+- local 在 feature owner 执行 `finish-gitflow`，no-ff 合入目标 ODR；不执行普通 feature 材料准备步骤。
+- PR mode 在 feature owner 执行 `pr`，base 为指定 ODR；遵守平台 CI/review 与 merge commit 要求。
+  - 不执行普通 feature 的 Prepare 材料与 MDF 验收链；仓库平台保护仍须满足。
+  - merged 后按原 pr-close-out 完成同步、分支清理；不补做来源验收或虚假勾选。
+- 原有材料随 ODR 版本归档；缺少 Change 的来源目录作为上下文保留，不计为 child Change。
+- 来源开发仍可按需运行测试与审查；这些检查不是 ODR 纳入的重复前置门槛。
+
+### 纳入 checkpoint 与统一验收
+
+objectives 分别记录「核对发布范围纳入」与「ODR 统一验收」。
+前者核对来源纳入，不表示发布就绪；后者在整版验收通过后勾选。
 
 - `delivery checkpoint --repo <owner>` 返回 ready、pending 与 features，不修改 checklist。
-- pending 允许继续来源纳入、直接工作及其 review、测试、fact audit，不允许宣称发布就绪。
-- MDF feature 仍由 feature 侧交付；核对 Change 在合入源提交中已存在，不接受事后复制材料。
-- 非 MDF 来源核对固定 tip 或 commits 已纳入，并检查验收记录；不要求 feature 名称或 no-ff 历史。
-- checkpoint 检查起点以来未登记的提交，包括 merge 冲突解决产生的额外改动。
-  - master 已发布历史可正常 catch-up；仍须补审补验集成产生的改动。
-  - ODR 自身版本材料、CHANGELOG.md 与 manifest 发布维护由 release 契约检查。
-  - 不把这些路径例外解释为允许夹带无关范围；Agent 仍审阅完整 diff。
-- 范围外变更、缺失来源与未发布依赖均停止；新增工作先确认并更新范围。
-- ready 后勾选 checkpoint，执行 release 后续流程；源级证据不替代整版 review、release suite 与 fact audit。
-- 审查和事实核验可先用显式 against 执行来源验收，避免等待整版 checkpoint 形成循环。
+  - ready 仅表示范围已完整纳入；MDF feature 不要求 merge 源提交中存在 Change。
+  - 非 MDF 来源检查固定 tip 或 commits 已纳入，不要求来源独立提供 review、tests、fact 证据。
+  - 检查起点以来未登记提交，包括 merge 冲突解决的额外改动；master 已发布历史可正常 catch-up。
+  - ODR 自身材料、发布元数据与归档链接维护由 release 契约检查，Agent 仍审阅完整 diff。
+- pending 允许继续范围内工作；范围外变更、来源缺失与未发布依赖必须先处理。
+- ready 后在 ODR 对最终组合执行 lint、code-review、verify branch（release suite）与 fact audit。
+  - 审查与 audit 覆盖全部来源及其相互影响，并逐项核对已确认范围的验收结果。
+  - 各阶段保存真实报告并自勾 ODR objectives；不回填 feature 的完成状态。
+- 全部通过且材料提交后，在 clean ODR owner 执行 `delivery accept --repo <owner>`。
+  - CLI 核纳入、ODR 阶段勾选、review/fact 报告、通过的 release suite 及 PRP 依赖。
+  - Agent 负责确认报告中的语义结论与每项范围验收；文件存在不等于验收通过。
+  - 成功后仅更新所选 PRP 为 implemented，并勾选 ODR 统一验收；提交后进入发布准备。
+- 发布就绪另核统一验收；release-closeout、ODR → master PR 与首次发布均不能仅凭纳入 ready 通过。
+- 范围或集成结果变化后，取消 ODR 统一验收勾选，补做适用的审查、验证与 audit，再执行 accept。
 
 ### 发布与恢复
 
 ODR 复用 release 的审查、验证、材料归档、SemVer、tag、发布及恢复要求。
+无 child Change 的 feature 由版本根记录 PRP、release notes 与来源证据，不补造独立交付成果。
 首次发布必须在 owner 核对 checkpoint；`--source` 不能跳过，已有发布记录才可在其他 checkout 恢复。
 
 - branch 验证执行 release suite；首轮审查基线为上一正式发布版本。
