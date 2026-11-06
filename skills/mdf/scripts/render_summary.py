@@ -46,7 +46,7 @@ def render_summary(args):
     if (common / "mdf/finish" / f"{branch}.json").exists():
         raise MDFError("已开始发布，不得改写交付总结", code="publish_state_changed")
     root = repo / "changes/unreleased" / unreleased_slug(details)
-    if details["kind"] in {"release", "hotfix"}:
+    if details["kind"] in {"release", "on-demand-release", "hotfix"}:
         released = repo / "changes" / details["version"]
         if (released / "CHANGE.md").is_file():
             metadata, _ = read_frontmatter(released / "CHANGE.md")

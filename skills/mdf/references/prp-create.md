@@ -153,7 +153,7 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 - 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
   - 回读对象并对照模板、确认事实与完整 diff。
   - 核对 schema、必填章节、`draft` 状态和依赖。
-- 通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+- 通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
 
 验收：draft Proposal、校验退出 0 且零 finding、回读结果与 diff。
 

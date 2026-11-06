@@ -184,7 +184,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" prp-format ready --repo "$REPO_ROOT" --propos
 
 - 该 CLI 删除对应 Markdown 与临时 preview，并改写仓内引用；Agent 回读结果，不再手动重复这些写入。
 
-回读确认状态为 `ready` 后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+回读确认状态为 `ready` 后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
 
 验收：validation 通过；回读 HTML 对象确认 `ready`，对应 Markdown 已不存在，引用仍有效。
 

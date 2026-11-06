@@ -45,9 +45,9 @@ def validate_closeout_shape(
             code="invalid_closeout_spec",
         )
     mode = require_spec_key(spec, "mode")
-    if mode not in {"release", "hotfix"}:
+    if mode not in {"release", "on-demand-release", "hotfix"}:
         raise MDFError(
-            "closeout mode 必须是 release 或 hotfix",
+            "closeout mode 必须是 release、on-demand-release 或 hotfix",
             code="invalid_closeout_spec",
         )
     version = require_spec_key(spec, "version")
@@ -130,8 +130,8 @@ def validate_closeout_shape(
         for slug in actual_slugs
     ]
     slugs = actual_slugs
-    if mode == "release":
-        if not slugs:
+    if mode in {"release", "on-demand-release"}:
+        if not slugs and mode == "release":
             raise MDFError(
                 "release 模式至少需要一个 unreleased feature/bugfix/adhoc Change",
                 code="invalid_closeout_spec",

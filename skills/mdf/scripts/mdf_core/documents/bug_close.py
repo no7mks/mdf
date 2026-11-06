@@ -20,7 +20,7 @@ def command_bug_close(args) -> None:
     if details["kind"] == "hotfix" and details["version"] is None:
         from mdf_core.lifecycle.hotfix_version import source_version
         details["version"] = source_version(repo, details["name"], ref="HEAD")
-    if details["kind"] in {"release", "hotfix"} and details["version"] != version:
+    if details["kind"] in {"release", "on-demand-release", "hotfix"} and details["version"] != version:
         raise MDFError("--fixed-in 必须与分支版本一致", code="invalid_fixed_in")
     record = active_objects(repo).get(args.bug_id)
     if record is None or record[0] != "bug":

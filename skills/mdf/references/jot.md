@@ -215,7 +215,8 @@
 - 该条须已在此 checkout 的 `HEAD` 提交，且工作区未改动。
 - 不满足（Jot 只在其他分支或尚未提交）时不写对象，保留 Jot 并停止。
 - 报告缺失位置，并提示先提交或合入该 Jot 再重新执行 `$mdf jot promote`：
-  - Proposal 须先让 Jot 合入 develop，由 `planning ensure` 带入 planning；
+  - Proposal 须先 `planning ensure`，仅将已确认的该条 Jot 带入 planning 并独立提交。
+    先 planning land，使 master 与 develop 共有该条 Jot，再继续提升；不得为取材料 merge develop。
   - Bug 须先在写入分支提交该 Jot。
 
 核对通过后生成 ID：
@@ -250,6 +251,6 @@
 
 - 两种失败均保留对象与原 Jot，并报告 findings。
 - 成功时将本次创建与移除作为同一个独立 commit 提交。
-- 提交或 `planning land` 失败时不恢复 Jot，保留现场并报告是否已提交、是否已合入 develop。
-- 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+- 提交或 `planning land` 失败时不恢复 Jot，保留现场并报告是否已提交、是否已合入 master 并同步 develop。
+- 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
   - 然后提示用户显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。

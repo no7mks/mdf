@@ -471,7 +471,7 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "release-objectives.md" in start and "Open integrate" in start
     assert "needs_design" in start and "Confirm roster" in start
     assert "member、strategy 与 models" in start
-    assert "no-ff 合并到本地 develop" in finish
+    assert "no-ff 合并到本地已确定目标" in finish
     assert "no-ff 合并到" in finish and "master" in finish
     assert "原子 push" in finish
     assert "v<semver>" in finish

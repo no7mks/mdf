@@ -22,8 +22,8 @@ Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
 状态为 draft、ready、implemented、released、rejected、replaced。
 
 - 正常路径 draft → ready → implemented → released。
-  - implemented 表示验收后合入 develop。
-    PR mode 允许在源分支准备 implemented 候选状态，合入 develop 后才算实际交付。
+- implemented 表示已验收合入选定的 develop 或 ODR；进入 ODR 后尚未发布。
+  - PR mode 允许在源分支准备 implemented 候选状态，合入选定目标后才算实际交付。
   - released 必须记录稳定 SemVer released_in；其他状态不得使用 released_in。
 - rejected 必须有 reject-reason: wont-do/obsolete/duplicate。
   - duplicate 还须有 duplicate_of，直接指向同类型的 canonical 非 duplicate PRP，
@@ -52,7 +52,7 @@ Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
   - 数字允许 `0` 至 `9`，包括前导零；例如 `prp-01A2`、`prp-012A`、`prp-0001`。
   - 生成时避开当前 checkout 的 `docs/proposals/`（含 archive）已有 ID 及本批 ID。
   - 本地生成不预占 ID；合入后须校验唯一性，跨 checkout 的重复仍须解决。
-  - 新建 Proposal 只能在 planning 工作区分配 ID、写入并提交，再合入 develop。
+  - 新建 Proposal 只能在 planning 工作区分配 ID、写入并提交，再合入 master 并同步 develop。
 - 已有数字 Proposal ID（`prp-001` 至 `prp-999`、`prp-1000` 起不补零）继续有效，无需改名。
 - Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 0 至 9。
 - 📌 沟通、引用与展示时必须写完整 ID，如 `prp-0001`、`bug-C4D5`、`jot-E6F7`、`adr-use-sqlite`。
@@ -104,10 +104,10 @@ Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。
 | `closed` | 由 bug close 二次验证与修复审查通过后转入 |
 | `rejected` | 终态，必须有 `reject-reason` |
 
-- 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release 或 hotfix 交付。
+- 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release、ODR 或 hotfix 交付。
 - 存在 test 临时移除时，标为 `fixed` 前须恢复原 suite 成员并验证通过；不等待 `closed`。
   记录与状态不变量见 [已知 Bug test 契约](known-bug-tests.md)。
-- release 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change。
+- release、ODR 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change。
   - 该 Bug 进入版本根 Change 或 hotfix 结果的 `fixed` outcome。
   - 独立修复不写 child Change。
 - `reject-reason` 取值：`wont-fix`、`not-a-bug`、`cannot-reproduce`、`obsolete` 或 `duplicate`。
@@ -155,7 +155,7 @@ evidence:
 - `source_branch: feature/<slug>` / `bugfix/<bug-id>` / `adhoc/<slug>`：独立分支交付；
   feature/bugfix 的目录 slug 必须与分支后缀的 kebab 形式对齐，change_kind 与分支类型一致。
   - adhoc 分支也允许 `change_kind: fix`；两种类型均要求 `proposals: []`。
-- 除四类 Gitflow 及 master/main/develop/planning 外的合法分支均归 adhoc，source_branch 保留真实名称。
+- 除五类 Gitflow 及 master/main/develop/planning 外的合法分支均归 adhoc，source_branch 保留真实名称。
   - adhoc 材料目录可独立命名；按 source 精确定位，冲突不覆盖；内部角色与 backmerge 仍走所属 workflow。
   - 无账本 adhoc 不要求 delivery/objectives；规范 Change 可独立进入 pr / close-out 与后续 release 聚合。
 - `source_branch: develop`：无独立交付分支的直合 Change；目录自选 kebab slug，
@@ -176,7 +176,7 @@ evidence:
 `changes/<version>/CHANGE.md` 包含：
 
 - 字段：
-  - `change_kind: release|hotfix`、`source_branch`、`version`、`previous_version`；
+  - `change_kind: release|on-demand-release|hotfix`、`source_branch`、`version`、`previous_version`；
   - `included_changes`、Proposal/Bug outcomes、release notes、`evidence`、审阅记录。
 - 章节：“结果”“包含的 Change”“收口结果”“found-in 转换”、
   “SemVer 决策”“审计”“验证命令”等。

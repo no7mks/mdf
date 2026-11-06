@@ -118,5 +118,5 @@
   - 原对象无该字段时子对象也省略，不生成 `null`。
   - 需要调整阶段归属时，在用户确认依据后修订子 PRP；milestone 不参与依赖分配。
 - 已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
-- 非预览写入成功后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+- 非预览写入成功后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
   - 提交或 `planning land` 失败时已写入的拆分保留在工作区，不回滚；保留现场并报告实际状态。

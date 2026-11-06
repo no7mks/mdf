@@ -208,7 +208,7 @@ findings 后停止。
      - 多项时从返回的 `items` 取 ID 与 filename；仅一项时取顶层 `id` 与 `filename`。
      - ❌ 不得逐项取 ID 后再写入，也不得先写占位对象。
   4. 把确认清单中的 `new:<slug>` 替换为对应 ID，以模板写入 `docs/proposals/`。
-  5. 完成下方写入校验与回读核对后提交，再运行 `planning land --repo "$REPO_ROOT"` 合入 develop。
+  5. 完成下方写入校验与回读核对后提交，再运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
 - 清单同时含两类时，先按归属完成 Bug 并提交，再切换 planning 完成 Proposal。
 
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。

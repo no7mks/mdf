@@ -7,6 +7,7 @@ def test_to_plan_creates_planning_and_develop_reuses_primary(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     created = payload(mdf(
         python_exe, "to", "--repo", str(repo), "--target", "plan",
@@ -33,6 +34,7 @@ def test_to_plan_creates_planning_and_develop_reuses_primary(
 def test_to_existing_branch_adds_sibling_worktree(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     git(repo, "branch", "topic/demo")
     created = payload(mdf(
@@ -53,6 +55,7 @@ def test_to_existing_branch_adds_sibling_worktree(python_exe, tmp_path):
 def test_to_unknown_target_lists_aliases(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     result = mdf(python_exe, "to", "--repo", str(repo), "--target", "missing")
     assert result.returncode != 0

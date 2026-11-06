@@ -1,5 +1,8 @@
 # Close-out
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 ## 决策树
 
 ```text
@@ -138,7 +141,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - 其余首次调用继续下列 doctor、branch 与现场检查。委托前仍应用外层 until 和 decision 策略。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
 - 写入前只读检查目标 worktree；有未提交改动或 `MERGE_HEAD` 即停止并报告路径与状态。
-  - feature/bugfix 检查 develop；release/hotfix 检查 master、develop；未 checkout 时查实际合并目录。
+  - feature 检查已选目标，bugfix 检查 develop；release/ODR/hotfix 检查 master、develop；未 checkout 时查实际合并目录。
   - ❌ 不得为 clean 而 abort、reset、restore、stash、自动 Commit 或清理他人改动；无关脏分支不检查。
   - 源工作区已有 merge 同样须停；冲突已解决、已 add 或 diff 为空仍须保留 `MERGE_HEAD`。
 - 验收：实际收口授权；manifest `ready`、非 detached。
@@ -151,7 +154,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - feature/bugfix/hotfix 为分支 start_commit 到 HEAD。
   - release 为上一正式发布版本的固定 commit 到 HEAD，另核对全部 child Change。
 - 检查代码、配置、schema、测试、当前事实、Proposal、Bug、Change，识别应更新文档。
-- release/hotfix 同时检查 `changes/<version>/CHANGE.md` 与 manifest：
+- release/ODR/hotfix 同时检查 `changes/<version>/CHANGE.md` 与 manifest：
   - 版本根不存在，且 latest_release 为 null 或按稳定 SemVer 比较小于目标版本时，判为待收口。
   - 版本根已跟踪、已提交，且 version、change_kind、source_branch 与当前分支完全一致、
     latest_release 等于目标版本时：
@@ -174,8 +177,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
-  - local 模式的 feature/bugfix 使用本地 develop，不 fetch、不 push。
-  - local 模式的 release/hotfix 使用 master，先 fetch origin 并核对本地 master 与远端一致，不自动覆盖分歧。
+  - local 模式的 feature 使用已确定的本地目标，bugfix 使用本地 develop，不 fetch、不 push。
+  - local 模式的 release/ODR/hotfix 使用 master，先 fetch origin 并核对本地 master 与远端一致，不自动覆盖分歧。
 - 集成：
   - 确认 clean，记录目标主线的完整 commit 与当前 HEAD。
   - 若它尚不是当前 HEAD 的祖先，运行：
@@ -217,7 +220,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - feature：普通交付须勾 converge；人工交付须用户勾人工工作；审查看 `code-review.md`（report）。
 - 即使没有新 merge，适用的分支验证或 fact 项仍未勾时也停止交接，不能凭旧报告直接收口。
 - 📌 四种分支均须有完整的各轮应派份数独立审查、主 Agent 裁定、修复复核与 smart 记录。
-- 已收口 release/hotfix 只核对已有集成与审查报告。
+- 已收口 release/ODR/hotfix 只核对已有集成与审查报告。
   - 若需要新集成或实现修改，停止报告收口状态不一致，不得覆盖版本目录或改写已开始发布的源提交。
 - 验收：精确实现与文档路径、目标主线已包含、集成后的审查与验证报告、版本状态。
 - 通过条件：待收口或 feature/bugfix 到 3，已收口到 4。
@@ -249,12 +252,12 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - hotfix：不创建 child Change，实际结果 JSON 留给步骤 6 校验。
 - 对象状态：
   - feature/bugfix 不建版本目录。
-  - local 模式的普通 feature PRP 在成功合入 develop 的 merge commit 中转换为 implemented。
-    PR mode 在源分支准备候选状态，随 PR/MR 合入 develop 后生效。
+  - local 模式的普通 feature PRP 在成功合入选定目标的 merge commit 中转换为 implemented。
+    PR mode 在源分支准备候选状态，随 PR/MR 合入选定目标后生效。
   - 准备 Change 的 `fixed` outcome 前，依据修复与验证证据把对应 open Bug 更新为 `fixed`。
     缺少证据则停止；已 closed 的 Bug 保持状态，不得仅凭 Change 声明自动改写。
     validate 与合入前检查拒绝未发布 Change 的 `fixed` 引用 open 或 rejected Bug。
-  - release/hotfix 按后续收口步骤管理版本与对象。
+  - release/ODR/hotfix 按后续收口步骤管理版本与对象。
 - 验收：事实一致性、所需 report 已交、规范 Change 和链接检查。
 - 异常与交接：保留现场；缺少前置阶段时报告，不自动执行被跳过的主线 intent。
 
@@ -262,12 +265,12 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 
 - 四种 kind：核对 report 交没交（存在且声称通过），**不**复验对不对。
   - `code-review.md` 终稿存在、声称通过，且无 commit hash。
-  - `verification-report.json` 存在且 `all_passed: true`（已收口 release/hotfix 看版本目录归档件）。
+  - `verification-report.json` 存在且 `all_passed: true`（已收口 release/ODR/hotfix 看版本目录归档件）。
   - fact 审阅报告存在且结论通过。
   - objectives：普通交付勾 converge、lint、code-review、verify branch、fact audit、catch-up 及开发依赖。
     人工交付勾人工工作、lint、code-review、verify smoke、fact update、catch-up。
 - ❌ 不运行 `delivery check --stage finish`；不做 verify 报告的 commit 对齐审判。
-- 已收口 release/hotfix：核对 `changes/<semver>/` 归档 report；
+- 已收口 release/ODR/hotfix：核对 `changes/<semver>/` 归档 report；
   - 用 `git log -1 --format=%H -- …/code-review.md` 定位终稿落盘提交。
   - 自该提交到 HEAD 只允许以下路径：
     `changes/`、`CHANGELOG.md`、`.mdf/manifest.yaml` 与 `docs/`。
@@ -279,7 +282,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 其他失败走本步骤的失败去向。
 - ❌ 不在本步重新委托 fact audit / fact update；仅确认主链前置已满足。
 - 验收：各分支 `code-review.md` 结论可用；objectives 前置已勾；主链 fact 审阅报告已提交。
-- 通过条件：已收口 release/hotfix 或 feature/bugfix 到 9；待收口 release/hotfix 到 5。
+- 通过条件：已收口 release/ODR/hotfix 或 feature/bugfix 到 9；待收口 release/ODR/hotfix 到 5。
   - 本次是否写入不改变该分流；相关材料先按公共规则提交，再继续收口。
 
 ### 版本收口输入与执行
@@ -364,19 +367,19 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
 - 按分支：
   - feature/bugfix 核对 objectives 与所需 report 已交；local 模式不 push，进入本地 Gitflow 合并。
     PR mode 由 pr 提交，close-out 仅合并后续办。
-  - release/hotfix 仍需已提交收口结果，close-out 将发版推送到 origin。
+  - release/ODR/hotfix 仍需已提交收口结果，close-out 将发版推送到 origin。
   - feature/bugfix 必须有规范 child Change。
 - 再次核对 report 仍已交（存在且声称通过）；收口期间若改了实现或 report 失效：
   **停止并交接**，须在本 intent 外补 verify / code-review 后再续办；
   ❌ 不回委托 verify branch。不做 commit 对齐审判。
-  - release/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
+  - release/ODR/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
 - 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
   - PR mode 没有 close-out checkbox；pr 只勾自己的候选项，close-out 按实际结果完成。
 - PR mode 的提交前远端集成、补审补测属于 pr，见 [pr](pr.md)。
 - local 模式再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
-  - release/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。
+  - release/ODR/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。
 - 验收：必要提交、当前证据、源与全部目标 worktree clean；有脏状态或已有 merge 即停止，不处理无关改动。
 
 **合并** <a id="s10"></a>
@@ -391,14 +394,14 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - yolo 无 confidence 限制；无截止点阻断且步骤 9 通过后直接执行本步骤。
   - 独立 `$mdf close-out` 沿用调用授权，不增加 deliver 的评分或截止点。
 - 调用 `finish-gitflow --repo "$REPO_ROOT"`：
-  - feature/bugfix 不 fetch、不 push；no-ff 合并到本地 develop；角色分支仍在则失败。
-  - release/hotfix 要求 origin；首次调用 fetch 后要求本地 master 与远端一致。
+  - feature/bugfix 不 fetch、不 push；no-ff 合并到本地已确定目标（bugfix 为 develop）；角色分支仍在则失败。
+  - release/ODR/hotfix 要求 origin；首次调用 fetch 后要求本地 master 与远端一致。
     - no-ff 合并到 master，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
       精简条目），再 no-ff 合并 master 到 develop。
     - 原子 push `master` 与 tag；develop 仅在本地合回，要求 clean，不核对远端。
       不推送、不删除远端 `develop`、`release/*`、`hotfix/*`。
   - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
-- 验收：合并、源分支删除、保留工作区的 detached 状态、tag 与（release/hotfix 的）推送结果。
+- 验收：合并、源分支删除、保留工作区的 detached 状态、tag 与（release/ODR/hotfix 的）推送结果。
 - 异常与交接：停止并报告当前分支、已完成合并、tag 与推送状态。
   - CLI 仅 abort 本次新产生的 merge；保留调用前已有 merge；不得声称此前已完成的合并也被回退。
   - 不继续推送或删分支；询问用户是否继续。继续或未决回步骤 10，用户停止则停止。
@@ -415,14 +418,14 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 从主 worktree 启动，作为最后一次 tool call；成功后只报告删除结果并结束本对话。
   - 不加 `--force`；失败则保留现场并报告，不重跑 close-out。
 
-release/hotfix 首次发布前，CLI 保存发布进度记录：
+release/ODR/hotfix 首次发布前，CLI 保存发布进度记录：
 - 位置：Git common dir 的 `mdf/finish/<完整分支名>.json`；含源提交、origin、目标起点与进度。
   - slug hotfix 使用 `mdf/finish/<完整分支名>/<start_commit>.json`，避免同名新交付复用旧记录。
 - 源 worktree 已 detached、已删除或已切分支时，从主 worktree 续办：
   `finish-gitflow --repo <主路径> --source <原分支>`。
 - 脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag。
   - 推送结果丢失时先查询远端，完全一致则仅继续清理。
-- release/hotfix 分支存在期间 develop 可继续前进：
+- release/ODR/hotfix 分支存在期间 develop 可继续前进：
   - 续办时若 develop 尚无合并记录，以当前本地 develop 刷新合并基线，再 no-ff 合并 master。
   - 精确匹配原基线与 master 双亲的未记录合并直接恢复，不重复合并。
   - master 仍严格核对原基线；最终原子推送前只核对远端 master 与 tag。

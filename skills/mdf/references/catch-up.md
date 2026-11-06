@@ -1,5 +1,8 @@
 # catch-up
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 ## 决策树
 
 ```text

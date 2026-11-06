@@ -1,5 +1,8 @@
 # PR
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 ## 决策树
 
 ```text
@@ -82,10 +85,10 @@ closeout:
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
-  - release/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
+  - release/ODR/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 已有 Git common dir `mdf/finish/` 操作记录时先按下方恢复路由续办，不重新执行整套材料准备。
-  - 四类 Gitflow 使用 `<source>.json`；adhoc 使用 `adhoc-<source 的 SHA256>.json`，内容保存真实 source。
+  - 五类 Gitflow 使用 `<source>.json`；adhoc 使用 `adhoc-<source 的 SHA256>.json`，内容保存真实 source。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
@@ -129,7 +132,7 @@ closeout:
 首次创建及未合并 PR/MR 的源提交更新，都必须先完成本节；已 merged 的恢复不重新集成。
 本 intent 的 Prepare 执行本节；local close-out 不使用本节。
 
-- fetch origin 的目标分支并固定最新远端 tip；feature/bugfix/adhoc 对应 `origin/develop`，release/hotfix 对应 `origin/master`。
+- fetch origin 的目标分支并固定最新远端 tip；feature 对应已确定目标的 origin 分支，bugfix/adhoc 对应 `origin/develop`，release/ODR/hotfix 对应 `origin/master`。
   - 以远端 tip 为准，不用本地 trunk 或平台的无冲突标记替代；fetch 失败或目标缺失时停止并报告。
 - 用 `git merge-base --is-ancestor <远端tip> HEAD` 检查包含关系；“父节点”指 ancestor，不要求直接 parent。
   - 已包含且没有未完成返工时继续核材料；未包含则必须集成，即使试合并完全无冲突。
@@ -146,7 +149,7 @@ closeout:
   - 验证只跑 `verify --scope smart --paths <本次改动文件>`；事实只按 `--scope paths` 补检改动文件关联的事实页。
   - 即使 `catch-up` 此前已勾选，再次触发远端集成也只退勾 `catch-up` 与 `pr` 并回到 `catch-up`。
   - 补检引发修复时在 `catch-up` 内对改动文件增量复检，直到通过并自勾 `catch-up`，同步材料并提交。
-- 全部完成后再次 pr；独立调用也持续续办，不只报告待办。release/hotfix 候选目录沿用下方返工规则。
+- 全部完成后再次 pr；独立调用也持续续办，不只报告待办。release/ODR/hotfix 候选目录沿用下方返工规则。
   - 创建或更新 PR/MR 前再次 fetch 并检查最新远端 tip；未包含则重复本节，不复用集成前的通过记录。
   - 清除返工备注和恢复候选勾选按下方规则执行；存在未完成返工时不得调用 pr 提交源分支。
   - 检查后远端仍可能并发前进；本节不保证未来 CI 必过，平台 CI 与合并约束仍须针对最终合并结果核验。
@@ -242,9 +245,9 @@ closeout:
    - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与 finish 记录的差异恢复更新，不重做首次材料准备。
    - 恢复 pr，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。
    - 保留 finish 操作记录；不删除或篡改记录以绕过 CLI 核验。
-   - release/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
+   - release/ODR/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
 
-release/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并时仍是候选发布材料。
+release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并时仍是候选发布材料。
 
 - 在同一版本目录退勾 objectives、更新 code-review、verification-report、fact 与交付总结，不另建 unreleased 副本。
 - CLI 的 delivery 与 verify branch 共用候选目录；不得重复 release-closeout、搬回目录或删除 finish 记录。
@@ -261,13 +264,13 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
 
 - 普通交付与人工 feature 读取 [close-out 的材料规则](close-out.md#s3) 至步骤 9 的材料条款。
   这里只复用材料规则，不执行 close-out intent、local 集成或 Finish Gitflow。
-- release/hotfix 的 bug close 返回「实现已变更」时回本页步骤 2，先补审补测与 fact。
+- release/ODR/hotfix 的 bug close 返回「实现已变更」时回本页步骤 2，先补审补测与 fact。
   Bug 状态保持，补验通过后恢复 closures；不得回到合并后 close-out。
 - feature/bugfix 补齐 Change 与 HTML 总结；feature 的 implemented 是合入后的候选状态。
   - 按 close-out 材料规则依据修复与验证证据更新 Bug 为 `fixed`；缺少证据则停止。
   - push 前检查未发布 Change 的 `fixed` 引用均为 fixed 或 closed Bug；不凭声明自动改状态。
 - hotfix 先按 [Hotfix 版本](hotfix-version.md) 固定版本并提交，再准备 Bug closures。
-- release/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
+- release/ODR/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
 - adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
   - dev-pr 接管的 source 沿用 [dev-pr](dev-pr.md) 的 smoke 要求，包括集成和返工后的补验。

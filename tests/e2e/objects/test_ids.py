@@ -15,6 +15,7 @@ _ID_DIGITS = set("0123456789")
 def develop_repo(tmp_path: Path) -> Path:
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     return repo
 
@@ -178,6 +179,7 @@ def test_make_id_proposal_uses_random_id_and_normalized_slug(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     data = payload(

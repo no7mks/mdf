@@ -91,7 +91,8 @@ def planning_only(repo, before, after):
 
 
 def require_merge(repo, source, target):
-    if (target not in {"master", "develop"} or not manifest_path(repo).is_file()
+    if ((target not in {"master", "develop"} and not target.startswith("on-demand-release/"))
+            or not manifest_path(repo).is_file()
             or configured(repo, "HEAD")["mode"] != "pr"):
         return
     incoming = sha(repo, source)
@@ -100,7 +101,7 @@ def require_merge(repo, source, target):
     master = git(repo, "rev-parse", "--verify", "refs/heads/master", check=False)
     if target == "develop" and not master.returncode and ancestor(repo, incoming, master.stdout.strip()):
         return
-    if (target == "develop" and source in {"planning", "refs/heads/planning"}
+    if (target == "master" and source in {"planning", "refs/heads/planning"}
             and planning_only(repo, "HEAD", incoming)):
         return
     raise MDFError(f"PR mode 禁止直接合入 {target}；请创建 PR/MR", code="pr_required")

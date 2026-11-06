@@ -1,5 +1,8 @@
 # Deliver
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 ## 决策树
 
 ```text
@@ -122,8 +125,8 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 
 完成范围：
 
-- 无截止点时，local 模式的 feature/bugfix/adhoc 完成本地 develop 合并；
-  PR mode 核对远端目标合并与清理。release/hotfix 包含 close-out 规定的 tag 与发版推送。
+- 无截止点时，local 模式的 feature 完成本地已选目标合并，bugfix/adhoc 完成本地 develop 合并；
+  PR mode 核对远端目标合并与清理。release/ODR/hotfix 包含 close-out 规定的 tag 与发版推送。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 close-out 完成条件冲突时说明并询问，不能声称完成。
@@ -157,7 +160,7 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 - 委托前先核 until；until start 直接进入 5，只报告解析结果，不创建 worktree。
 - 已由 target 或用户指定 kind 与 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。
 - 主 Agent 按仓库证据与对话上下文选定唯一目标，按 confidence 策略裁定。
-- 不调用初始化或规划流程，不发明 release 版本；hotfix 按 [版本规则](hotfix-version.md) 定版。
+- 不调用初始化或规划流程，不发明 release/ODR 版本；hotfix 按 [版本规则](hotfix-version.md) 定版。
 - start 成功后回到 1；collab-mode 尚待接手由步骤 2 交接；start 失败或停止则按其交接结束，不回 1。
   - start 内部到 until 时直接进入 5，不重复委托 start；已完成的启动产物如实保留。
 
@@ -281,7 +284,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 
 - fact 前的 hook 读取 [pre-gitflow-finish](pre-gitflow-finish.md)；失败仅汇报，
   非文档改动退勾后回到本表补审补测；已执行的 hook 不因补测或 fact 重审而重跑。
-- release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
+- release/ODR/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - close-out 返回「待主链外续办」时结束该调用栈并返回 Select；保留已齐审查与修复窗。
   - 只退勾 `catch-up`（PR mode 另退勾 `pr`），在 close-out 外委托 `catch-up` 增量补检改动文件后再续办收口；不在 close-out 内绕跑 verify，严禁退勾已过基线四项。
@@ -377,7 +380,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
   - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
 - 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
-  - 按分支核对合并、源分支删除，以及 release/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
+  - 按分支核对合并、源分支删除，以及 release/ODR/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
   - PR mode 另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
   - owner 已被外部删除时如实报告，以操作记录与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。

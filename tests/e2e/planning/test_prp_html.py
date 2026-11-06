@@ -5,6 +5,7 @@ from mdf_test_support import *  # noqa: F403
 def draft_repo(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     payload(mdf(python_exe, "prp-format", "draft", "--repo", str(work), "--proposal", PRP_ID))
@@ -114,6 +115,7 @@ def test_existing_markdown_still_requires_valid_content(python_exe, tmp_path):
 
 def test_existing_ready_markdown_can_be_reviewed_into_html(python_exe, tmp_path):
     repo, _ = markdown_repo(tmp_path)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     draft = work / "docs/proposals" / Path(PRP_NAME).with_suffix(".md")

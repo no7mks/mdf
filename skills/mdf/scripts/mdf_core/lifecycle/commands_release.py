@@ -79,9 +79,9 @@ def derive_closeout_spec(
     repo: Path, args: argparse.Namespace
 ) -> dict[str, Any]:
     details = branch_details(current_branch(repo))
-    if details["kind"] not in {"release", "hotfix"}:
+    if details["kind"] not in {"release", "on-demand-release", "hotfix"}:
         raise MDFError(
-            "release closeout 只接受 release/<version>、hotfix/<version> 或 hotfix/<slug>",
+            "release closeout 只接受 release/<version>、on-demand-release/<version>、hotfix/<version> 或 hotfix/<slug>",
             code="unsupported_branch",
         )
     mode = details["kind"]
@@ -102,7 +102,11 @@ def derive_closeout_spec(
             "必须显式提供 --release-date",
             code="invalid_closeout_spec",
         )
-    if mode == "release":
+    if mode == "on-demand-release":
+        from mdf_core.lifecycle.late_decision import checkpoint, require_independent
+        checkpoint(repo, required=True)
+        require_independent(repo, "HEAD")
+    if mode in {"release", "on-demand-release"}:
         slugs = unreleased_change_slugs(repo, version)
         proposals: set[str] = set()
         fixed: set[str] = set()

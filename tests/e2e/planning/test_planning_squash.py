@@ -12,12 +12,14 @@ from mdf_core.foundation.errors import MDFError
 def prepare(python_exe, tmp_path, mode):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     if mode == 'pr':
         manifest = repo / '.mdf/manifest.yaml'
         manifest.write_text(manifest.read_text() + '\ncloseout:\n  mode: pr\n  provider: github\n')
         git(repo, 'add', '.')
         git(repo, 'commit', '-m', 'test: 启用 PR mode')
+        git(repo, 'branch', '-f', 'master', 'develop')
     work = planning_worktree(python_exe, repo)
     return repo, work
 

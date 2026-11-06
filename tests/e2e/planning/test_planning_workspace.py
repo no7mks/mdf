@@ -19,6 +19,7 @@ def test_planning_ensure_reuses_one_worktree_and_keeps_develop(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     first = payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
     work = Path(first["worktree"])
@@ -37,6 +38,7 @@ def test_planning_land_updates_develop_without_stealing_checkout(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     (work / "planning-note.txt").write_text("草稿\n")
@@ -89,16 +91,18 @@ def test_dirty_planning_does_not_block_feature_finish(python_exe, tmp_path):
 def test_empty_land_does_not_leave_merge_head_on_develop(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     (repo / "develop-only.txt").write_text("b\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs: develop 新提交")
     payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
-    assert parent_count(work) == 1
+    assert parent_count(work) == 0
     assert git(work, "rev-parse", "HEAD").stdout == git(
-        repo, "rev-parse", "HEAD"
+        repo, "rev-parse", "master"
     ).stdout
+    assert not (work / "develop-only.txt").exists()
     result = payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
     assert result["landed"] is False
     assert not has_merge_head(repo)
@@ -111,6 +115,7 @@ def test_empty_land_does_not_leave_merge_head_on_develop(python_exe, tmp_path):
 def test_git_is_clean_treats_sequencer_heads_as_dirty(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     (repo / "develop-only.txt").write_text("b\n")
@@ -147,6 +152,7 @@ def test_git_is_clean_treats_sequencer_heads_as_dirty(python_exe, tmp_path):
 def test_diverged_planning_land_and_ensure_stay_no_ff(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     (work / "planning-note.txt").write_text("草稿\n")
@@ -159,29 +165,31 @@ def test_diverged_planning_land_and_ensure_stay_no_ff(python_exe, tmp_path):
     assert result["landed"] is True
     assert parent_count(repo) == 2
     assert git(repo, "log", "-1", "--format=%s").stdout.strip() == (
-        "chore(planning): 合并 planning 到 develop"
+        "chore(planning): 合并 master 到 develop"
     )
     assert git(repo, "show", "HEAD:planning-note.txt").stdout == "草稿\n"
     assert git(repo, "show", "HEAD:develop-only.txt").stdout == "b\n"
     (work / "again.txt").write_text("p\n")
     git(work, "add", "--all")
     git(work, "commit", "-m", "docs: 再次规划")
-    (repo / "again-dev.txt").write_text("d\n")
-    git(repo, "add", "--all")
-    git(repo, "commit", "-m", "docs: 再次 develop")
+    master = repo.parent / f"{repo.name}-worktrees" / "master"
+    (master / "again-master.md").write_text("d\n")
+    git(master, "add", "--all")
+    git(master, "commit", "-m", "docs: 再次 master")
     ensured = payload(
         mdf(python_exe, "planning", "ensure", "--repo", str(repo))
     )
     assert ensured["synced"] is True
     assert parent_count(work) == 2
     assert git(work, "log", "-1", "--format=%s").stdout.strip() == (
-        "chore(planning): 合并 develop 到 planning"
+        "chore(planning): 合并 master 到 planning"
     )
 
 
 def test_merge_reports_unfinished_merge_not_conflict(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     (work / "planning-note.txt").write_text("草稿\n")
@@ -205,11 +213,13 @@ def test_merge_reports_unfinished_merge_not_conflict(python_exe, tmp_path):
 def test_planning_ensure_aborts_real_conflict(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     work = planning_worktree(python_exe, repo)
     (work / "note.txt").write_text("planning\n")
     git(work, "add", "--all")
     git(work, "commit", "-m", "docs: planning")
+    git(repo, "checkout", "master")
     (repo / "note.txt").write_text("develop\n")
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "docs: develop")
@@ -218,3 +228,47 @@ def test_planning_ensure_aborts_real_conflict(python_exe, tmp_path):
     assert "merge_conflict" in result.stderr
     assert "unfinished_merge" not in result.stderr
     assert not has_merge_head(work)
+
+
+@pytest.mark.parametrize("mode", ["local", "pr"])
+def test_planning_ff_both_trunks_and_keeps_develop_out_of_planning(python_exe, tmp_path, mode):
+    from support_delivery import local_repo, commit
+    repo = local_repo(tmp_path)
+    if mode == "pr":
+        manifest = repo / ".mdf/manifest.yaml"
+        manifest.write_text(manifest.read_text() + "\ncloseout:\n  mode: pr\n  provider: github\n")
+        commit(repo)
+        git(repo, "branch", "-f", "develop", "master")
+    work = planning_worktree(python_exe, repo)
+    (work / "docs/plan.md").write_text("规划\n")
+    commit(work)
+    planned = git(work, "rev-parse", "HEAD").stdout
+    payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
+    for branch in ("master", "develop", "planning"):
+        assert git(repo, "rev-parse", branch).stdout == planned
+    develop = repo.parent / f"{repo.name}-worktrees" / "develop"
+    (develop / "pending.py").write_text("unreleased = True\n")
+    commit(develop)
+    (work / "docs/plan.md").write_text("新增规划\n")
+    commit(work)
+    payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
+    assert parent_count(develop) == 2
+    assert not (work / "pending.py").exists() and not (repo / "pending.py").exists()
+    git(repo, "merge-base", "--is-ancestor", "master", "develop")
+    assert git(repo, "rev-parse", "master").stdout == git(repo, "rev-parse", "planning").stdout
+
+
+def test_planning_diverged_same_tree_still_lands_history(python_exe, tmp_path):
+    from support_delivery import local_repo, commit
+    repo = local_repo(tmp_path)
+    work = planning_worktree(python_exe, repo)
+    (work / "docs/same.md").write_text("同一内容\n")
+    commit(work, "docs: 规划内容")
+    planned = git(work, "rev-parse", "HEAD").stdout.strip()
+    (repo / "docs/same.md").write_text("同一内容\n")
+    commit(repo, "docs: 主线内容")
+    assert git(repo, "rev-parse", "HEAD^{tree}").stdout == git(work, "rev-parse", "HEAD^{tree}").stdout
+    result = payload(mdf(python_exe, "planning", "land", "--repo", str(work)))
+    assert result["landed"] and parent_count(repo) == 2
+    for branch in ("master", "develop", "planning"):
+        git(repo, "merge-base", "--is-ancestor", planned, branch)

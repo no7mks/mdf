@@ -38,7 +38,7 @@ def _is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
 
 
 def merge_branch(repo: Path, source: str) -> bool:
-    """develop 与 planning：能 fast-forward 则 ff，已分叉则 no-ff。"""
+    """master、develop 与 planning：能 fast-forward 则 ff，已分叉则 no-ff。"""
     if git_in_progress_head(repo) == "MERGE_HEAD":
         raise MDFError(
             "未结束的合并（MERGE_HEAD 仍在）；"
@@ -47,9 +47,9 @@ def merge_branch(repo: Path, source: str) -> bool:
         )
     if _is_ancestor(repo, source, "HEAD"):
         return False
-    from mdf_core.workspace.merge_policy import configured, require_merge
+    from mdf_core.workspace.merge_policy import require_merge
     require_merge(repo, source, current_branch(repo))
-    if _is_ancestor(repo, "HEAD", source) and configured(repo)["mode"] != "pr":
+    if _is_ancestor(repo, "HEAD", source):
         _git(repo, "merge", "--ff-only", source)
         return True
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
@@ -69,9 +69,8 @@ def merge_branch(repo: Path, source: str) -> bool:
             "merge was aborted",
             code="merge_conflict",
         )
-    if not _git(repo, "status", "--porcelain").stdout.strip():
-        if git_in_progress_head(repo) == "MERGE_HEAD":
-            _git(repo, "merge", "--abort", check=False)
+    # 分叉历史即使 tree 相同，也必须提交 merge，才能把规划与主线真正对齐。
+    if git_in_progress_head(repo) != "MERGE_HEAD":
         return False
     target = current_branch(repo)
     _git(repo, "commit", "-m",
@@ -92,8 +91,8 @@ def command_planning_ensure(args) -> None:
 
 def ensure_planning(repo: Path) -> dict:
     require_git_root(repo)
-    if not _exists(repo, "refs/heads/develop"):
-        raise MDFError("Branch develop must exist", code="missing_branch")
+    if not _exists(repo, "refs/heads/master"):
+        raise MDFError("Branch master must exist", code="missing_branch")
     primary = primary_worktree(repo)
     path = sibling_worktree(repo, BRANCH)
     trees = worktree_map(primary)
@@ -113,12 +112,12 @@ def ensure_planning(repo: Path) -> dict:
         if _exists(repo, f"refs/heads/{BRANCH}"):
             _git(primary, "worktree", "add", str(path), BRANCH)
         else:
-            _git(primary, "worktree", "add", "-b", BRANCH, str(path), "develop")
+            _git(primary, "worktree", "add", "-b", BRANCH, str(path), "master")
         created = True
         work = path
     synced = False
     if git_is_clean(work):
-        merge_branch(work, "develop")
+        merge_branch(work, "master")
         synced = True
     return {
         "ok": True,
@@ -137,31 +136,38 @@ def command_planning_land(args) -> None:
         raise MDFError("Branch planning must exist", code="missing_branch")
     primary = primary_worktree(repo)
     trees = worktree_map(primary)
-    occupant = trees.get("develop")
-    if occupant is None:
-        raise MDFError(
-            "需要主 worktree 占用 develop 才能合入规划",
-            code="develop_unoccupied",
-        )
     planning_wt = trees.get(BRANCH)
-    if planning_wt is not None and occupant.resolve() == planning_wt.resolve():
-        raise MDFError(
-            "develop 不能占用 planning worktree",
-            code="planning_occupied",
-        )
-    ensure_clean(occupant)
-    if planning_wt is not None:
-        ensure_clean(planning_wt)
+    # 在任何写入前检查全部已占用目标，避免 land 后才发现脏 develop。
+    for branch in (BRANCH, "master", "develop"):
+        if not _exists(repo, f"refs/heads/{branch}"):
+            raise MDFError(f"Branch {branch} must exist", code="missing_branch")
+        if branch in trees:
+            ensure_clean(trees[branch])
     from mdf_core.workspace.squash import require_ready
     require_ready(planning_wt or primary, BRANCH)
-    landed = merge_branch(occupant, BRANCH)
+
+    def checkout(branch):
+        if branch in trees:
+            return trees[branch]
+        path = sibling_worktree(repo, branch)
+        if path.exists():
+            raise MDFError("目标 worktree 路径已存在", code="collision")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _git(primary, "worktree", "add", str(path), branch)
+        trees[branch] = path
+        return path
+
+    master, develop = checkout("master"), checkout("develop")
+    landed = merge_branch(master, BRANCH)
+    backmerged = merge_branch(develop, "master")
     synced = False
-    if planning_wt is not None and git_is_clean(planning_wt):
-        merge_branch(planning_wt, "develop")
+    if planning_wt is not None:
+        merge_branch(planning_wt, "master")
         synced = True
     emit({
         "ok": True,
         "operation": "planning-land",
         "landed": landed,
+        "backmerged": backmerged,
         "synced": synced,
     })

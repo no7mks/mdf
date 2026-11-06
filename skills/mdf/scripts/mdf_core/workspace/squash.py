@@ -26,7 +26,7 @@ def inspect(repo, branch=None, *, refresh=True):
             # 显式获取所有分支，不依赖可能只覆盖一个分支的 fetch refspec。
             git(repo, 'fetch', remote, f'+refs/heads/*:refs/remotes/{remote}/*', '--tags')
     if branch == 'planning':
-        target = 'refs/heads/develop'
+        target = 'refs/heads/master'
         if (not git(repo, 'cat-file', '-e', f'{target}:.mdf/manifest.yaml', check=False).returncode
                 and configured(repo, target)['mode'] == 'pr' and not planning_only(repo, target, head)):
             raise MDFError('planning 须先通过完整文档历史检查，不得用 squash 隐藏代码改动', code='pr_required')
@@ -74,6 +74,17 @@ def inspect(repo, branch=None, *, refresh=True):
                 if not isinstance(fixed, dict) or not fixed.get('source_head'):
                     raise MDFError('Change 固定范围无效', code='squash_boundary_unknown')
                 protected.add(sha(repo, fixed['source_head']))
+    if branch_details(owner)['kind'] == 'on-demand-release':
+        version = branch_details(owner)['version']
+        for folder in (f'changes/{version}', f'changes/unreleased/{version}'):
+            raw = git(repo, 'show', f'{head}:{folder}/delivery.json', check=False)
+            if raw.returncode == 0:
+                record = json.loads(raw.stdout)
+                for item in record.get('scope', []):
+                    protected.update(item.get('commits', []))
+                    if item.get('tip'):
+                        protected.add(item['tip'])
+                break
     start = git(repo, 'config', '--get', f'branch.{owner}.mdf-start-commit', check=False)
     if start.returncode == 0:
         protected.add(sha(repo, start.stdout.strip()))

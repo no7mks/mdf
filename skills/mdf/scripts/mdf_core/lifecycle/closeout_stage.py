@@ -87,6 +87,16 @@ def apply_closeout(
             evidence,
         ) = aggregate_release_changes(repo, all_slugs)
         hotfix_body = None
+        if context["mode"] == "on-demand-release":
+            from mdf_core.lifecycle.delivery_state import read_json
+            record = read_json(repo / "changes/unreleased" / context["review_slug"] / "delivery.json")
+            for item in record.get("scope", []):
+                notes["Changed"].append(item["scope"])
+                breaking = breaking or item.get("breaking") is True
+                evidence["artifacts"].extend(
+                    path.replace(f"changes/unreleased/{context['version']}/", f"changes/{context['version']}/", 1)
+                    for path in (item["evidence"][key] for key in ("review", "tests", "fact"))
+                )
     if (
         fixed_ids & closed_ids
         or fixed_ids & deferred_ids

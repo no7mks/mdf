@@ -90,7 +90,7 @@ def material_root(repo, slug, *, owner=None):
         record = delivery_record(repo, owner)
         if record and configured(repo)["mode"] == "pr":
             return safe(repo, repo / record[0]).parent
-    if details["kind"] in {"release", "hotfix"} and details["version"] == slug:
+    if details["kind"] in {"release", "on-demand-release", "hotfix"} and details["version"] == slug:
         from mdf_core.workspace.merge_policy import configured
         candidate = safe(repo, repo / "changes" / slug)
         record = safe(repo, candidate / "delivery.json")
