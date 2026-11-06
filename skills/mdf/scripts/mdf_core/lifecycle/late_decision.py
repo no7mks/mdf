@@ -153,7 +153,7 @@ def checkpoint(repo, *, required=False, release=False):
         raise MDFError("等待发布范围纳入与验收", code="features_pending", details=result)
     if release:
         from mdf_core.lifecycle.odr_acceptance import require_acceptance
-        require_acceptance(repo, root, data)
+        require_acceptance(repo, root, data, included=covered)
     return result
 
 

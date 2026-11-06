@@ -180,7 +180,31 @@ objectives 分别记录「核对发布范围纳入」与「ODR 统一验收」�
   - Agent 负责确认报告中的语义结论与每项范围验收；文件存在不等于验收通过。
   - 成功后仅更新所选 PRP 为 implemented，并勾选 ODR 统一验收；提交后进入发布准备。
 - 发布就绪另核统一验收；release-closeout、ODR → master PR 与首次发布均不能仅凭纳入 ready 通过。
-- 范围或集成结果变化后，取消 ODR 统一验收勾选，补做适用的审查、验证与 audit，再执行 accept。
+- 验收时在 ODR objectives 记录已纳入范围的 Git 基线；不是报告 fingerprint 或新的 gate 文件。
+  - local 纳入新提交时取消统一验收勾选；PR 同步后也须核对新来源是否超出该基线。
+  - 超出已验收纳入范围时，即使旧报告仍在且原 checkbox 已勾，也不能发布。
+  - 基线受 squash 保护；纯版本材料归档不要求重复验收。
+- 范围或集成结果变化后，补做适用的审查、验证与 audit，再执行 accept。
+- PR 候选已经归档时，允许重新验收本候选 Change 引用且 released_in 为本版本的 released PRP。
+  - 保留 released 状态；不降回 implemented，不接受其他版本或已有发布 tag 的 PRP。
+
+### ODR 发布声明
+
+无 child Change 的来源或 ODR scope 工作，在 ODR 材料目录保存 `release-notes.json`，统一描述发布语义。
+该文件必须在统一验收前提交，随版本归档；不回填 source Change。
+
+```json
+{
+  "release_notes": {"Fixed": ["修复健康检查超时"]},
+  "breaking": false
+}
+```
+
+- 分类沿用 Keep a Changelog；每个已写分类须包含非空说明列表，breaking 必须为 boolean。
+- Removed 要求 breaking 为 true；不自动把 feature 或直接工作归成 Changed。
+- 声明覆盖没有 child Change 的贡献，和已有 child Change 的 notes 合并；不得降低已有 breaking 声明。
+- 分类与 breaking 参与 SemVer 校验；缺失或非法声明阻止统一验收。
+- 已归档候选修改声明后，先对齐版本根 Change 并核对 SemVer，再补审、补验及重新 accept。
 
 ### 发布与恢复
 

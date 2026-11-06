@@ -368,6 +368,7 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
         _git(repo, "checkout", target)
     from mdf_core.workspace.merge_policy import require_merge
     require_merge(repo, source, target)
+    new_inclusion = _git(repo, "merge-base", "--is-ancestor", source, "HEAD", check=False).returncode != 0
     result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
     if result.returncode:
         if result.returncode != 1:
@@ -380,6 +381,9 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
             f"Merge conflict: {source} -> {target}; merge was aborted",
             code="merge_conflict",
         )
+    if new_inclusion and target.startswith("on-demand-release/"):
+        from mdf_core.lifecycle.odr_acceptance import invalidate
+        invalidate(repo, target)
     if before_commit is not None:
         before_commit(repo)
     message = f"chore(gitflow): 合并 {source} 到 {target}"

@@ -80,6 +80,9 @@ def inspect(repo, branch=None, *, refresh=True):
             raw = git(repo, 'show', f'{head}:{folder}/delivery.json', check=False)
             if raw.returncode == 0:
                 record = json.loads(raw.stdout)
+                from mdf_core.lifecycle.odr_acceptance import INCLUSION_BASE
+                objectives = git(repo, 'show', f'{head}:{folder}/objectives.md').stdout
+                protected.update(INCLUSION_BASE.findall(objectives))
                 for item in record.get('scope', []):
                     protected.update(item.get('commits', []))
                     if item.get('tip'):

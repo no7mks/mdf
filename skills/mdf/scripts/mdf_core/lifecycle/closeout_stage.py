@@ -95,12 +95,18 @@ def apply_closeout(
                 evidence["artifacts"].append(f"changes/{context['version']}/{folder.name}/delivery.json")
                 if not child.get("manual"):
                     proposal_ids.add(child["proposal"])
-                if not (folder / "CHANGE.md").is_file():
-                    notes["Changed"].append(f"纳入 {source}")
+
             evidence["artifacts"].extend(f"changes/{context['version']}/{name}"
                                          for name in ("code-review.md", "verification-report.json", "fact-audit.md"))
+            from mdf_core.lifecycle.odr_acceptance import release_summary
+            summary_path = repo / "changes/unreleased" / context["review_slug"]
+            summary_notes, summary_breaking = release_summary(repo, summary_path, record)
+            for category, values in summary_notes.items():
+                notes[category].extend(values)
+            breaking = breaking or summary_breaking
+            if (summary_path / "release-notes.json").is_file():
+                evidence["artifacts"].append(f"changes/{context['version']}/release-notes.json")
             for item in record.get("scope", []):
-                notes["Changed"].append(item["scope"])
                 breaking = breaking or item.get("breaking") is True
                 evidence["artifacts"].extend(
                     path.replace(f"changes/unreleased/{context['version']}/", f"changes/{context['version']}/", 1)

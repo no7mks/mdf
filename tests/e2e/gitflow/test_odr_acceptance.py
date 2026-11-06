@@ -4,8 +4,14 @@ from support_delivery import start_repo, commit
 from test_late_decision import start_odr, start_feature
 
 
-def accept_release(python_exe, odr):
-    root = odr / "changes/unreleased/1.3.0"
+def accept_release(python_exe, odr, *, summary=None):
+    version = git(odr, "branch", "--show-current").stdout.strip().split("/", 1)[1]
+    root = odr / "changes/unreleased" / version
+    data = json.loads((root / "delivery.json").read_text())
+    if summary is None:
+        notes = [item["scope"] for item in data.get("scope", [])] or ["本版功能更新"]
+        summary = {"release_notes": {"Changed": notes}, "breaking": False}
+    (root / "release-notes.json").write_text(json.dumps(summary, ensure_ascii=False))
     objectives = root / "objectives.md"
     text = objectives.read_text()
     for step in ("lint", "code-review", "verify branch", "fact audit"):

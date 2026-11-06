@@ -244,3 +244,7 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 - `delivery accept --repo <ODR>`：clean owner 上核对整版验收，更新所选 PRP 为 implemented 并勾选 ODR 统一验收。
   - 要求 ODR 的 lint、code-review、verify branch、fact audit 已勾，整版报告齐全且 release suite 通过。
   - feature → ODR 不要求补齐 source Change 或验收报告，不修改 source checklist。
+
+- ODR 没有 child Change 的贡献由材料目录的 `release-notes.json` 提供 release_notes 分类与 boolean breaking。
+  - `delivery accept` 验证声明并在 objectives 记录已纳入 Git 基线；新来源提交不能沿用旧验收。
+  - PR 候选重新验收保留本候选 PRP 的 released 状态；已发布或其他版本不能复用。
