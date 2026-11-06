@@ -235,16 +235,15 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   - 不在当前目录开分支，不占用 develop checkout。
   - 调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
     按「切换工作区」规则切过去，重新解析目标根。
-  - 提交后运行 `planning land --repo "$REPO_ROOT"`，在占用 develop 的
-    worktree（须 clean）上合入；local 模式可 fast-forward 时用 ff，已分叉时 no-ff。
-    PR mode 按 [PR Close-out](pr-close-out.md) 的文档白名单核对，并使用 no-ff。
+  - 提交后运行 `planning land --repo "$REPO_ROOT"`，先合入 master，再将 master 合回 develop。
+    两种模式均 no-PR、优先 fast-forward；分叉时产生 merge commit；PR mode 核完整文档白名单。
     所有模式合入前按 [squash](squash.md) 检查 planning；squash_required 时自主分析执行后重试，不逐次确认。
   - 新建 Proposal 的 ID 在该工作区随机生成，并避开当前 checkout 的 `docs/proposals/`（含 archive）及本批已有 ID；
-    合入 develop 后才对 `$mdf start` 可见。
+    合入 master 并同步 develop 后对 `$mdf start` 可见。
 - 与当前交付分支工作无关、且不属于规划工作区的文档在 develop 更新；独立记录和公共
   文档维护也按此规则处理。develop 不存在时先明确创建基线，不擅自从未交付分支创建。
 - 已有 Proposal 的修改若属于当前交付分支工作，仍在该交付分支更新；否则在 planning
-  工作区更新并合入 develop。
+  工作区更新并合入 master，再同步 develop。
 - 归属不明确时先询问。需改用 develop 或 planning 时，在写入前选择安全切换或独立
   worktree，重新解析目标根并复查前置条件；不得自动搬运、暂存或提交已有改动来切换
   分支。无法安全准备目标时保留现场并停止。detached HEAD 下不写入或提交。
@@ -356,17 +355,17 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
   `master` / `develop` / `planning` 执行 merge 与 push；
   不授权删分支或 force-push。
 - ❌ 禁止 rebase，不擅自改写已有历史；异名分支使用 no-ff。
-  - local 模式的 `develop` 与 `planning` 互相同步允许 fast-forward；已分叉仍 no-ff。
-    PR mode 的例外与禁止项按 [PR Close-out](pr-close-out.md) 核对。
+  - planning ↔ master 及 planning land 的 master → develop 均优先 fast-forward，分叉时 merge。
+    local 与 PR mode 均 no-PR；其他异名交付分支保持 no-ff。
 - 阶段基线和集成要求见 `references/delivery-contract.md`。
 - 规划 intent 在本次规划提交后运行 `planning land --repo "$REPO_ROOT"`，
-  把 `planning` 合入占用 develop 的 worktree。
-  - local 模式可 fast-forward 时用 ff；已分叉时 no-ff；PR mode 始终 no-ff。
+  把 planning 合入 master，再把 master 合回 develop，并将 master 同步回 planning。
+  - 两种模式均优先 fast-forward、分叉时 merge，始终 no-PR。
   - 无新提交则该命令为 no-op。
   - 合入前检查 planning 未共享尾段；须整理时按 `squash.md` 自主执行，保留共享历史。
   - squash_required 的专用恢复先于调用方的一般失败分支；整理后仅重试原 planning land，不重新生成 ID、写对象或删除 Jot。
   - 无法完成整理或 land 仍有其他错误时，按调用方的失败分支保留现场并报告。
-  - develop 或 planning 占用者 dirty 时停止并报告，不改 checkout。
+  - master、develop 或 planning 占用者 dirty 时停止并报告，不改 checkout。
 
 **返回与委托**
 

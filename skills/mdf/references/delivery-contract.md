@@ -1,5 +1,8 @@
 # 交付契约
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 树形：not-tree。本流程核对当前交付阶段的共同契约，阶段仍由原 intent 的编号工作流承办。
 
 ## 工作流（唯一执行契约）
@@ -95,7 +98,7 @@ close-out 用固定脚本生成总结外框、目录及样式，不现场拼装�
 python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <正文HTML文件>
 ```
 
-- 脚本按当前 kind 选择 unreleased 目录；已收口 release/hotfix 使用版本根。
+- 脚本按当前 kind 选择 unreleased 目录；已收口 release/ODR/hotfix 使用版本根。
   - 已开始 Gitflow 发布时停止，不改写源提交；读取已有归档总结继续核对。
 - 退出 0 后回读 JSON `path`，打开实际 HTML，核对详细内容与证据，再提交。
   - 静态校验不替代语义审阅；不得把未执行的 merge、tag、push 写成成功。
@@ -140,11 +143,11 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
   - PR mode 的提交与恢复见 [PR](pr.md)；创建 PR/MR 不代表完成。
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。
-    bug close 不算 verify 族，release/hotfix 收口步骤可委托。
+    bug close 不算 verify 族，release/ODR/hotfix 收口步骤可委托。
   - `release-closeout` 只复用可复用的 `verification-report.json`，永不执行验证命令。
   - PR 模式每次 roster merge、远端主线 merge 与 push 前强制执行 `references/squash.md` 的检查；local 模式可选。
 - 开发迭代只用 `$mdf verify --scope smart`；branch 只用于交付验收。
-- release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
+- release/ODR/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` 不走交付主线，也不由 deliver 内部委托。
 - `$mdf bug close` 不作为 deliver 的直接阶段；close-out 可按本契约内部委托，不改变独立调用的边界。
 - code-review 份数取冻结的 roster.reviewers；close-out 与主链 verify 修绿的增量新一轮为 1。

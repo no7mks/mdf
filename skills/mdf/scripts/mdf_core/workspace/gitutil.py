@@ -140,7 +140,7 @@ def branch_details(name: str) -> dict[str, Any]:
             "version": None,
             "supported": True,
         }
-    match = re.fullmatch(r"(release|hotfix)/(.+)", name)
+    match = re.fullmatch(r"(release|on-demand-release|hotfix)/(.+)", name)
     if match:
         version = match.group(2)
         if stable_semver(version) is None:
@@ -171,7 +171,7 @@ def branch_details(name: str) -> dict[str, Any]:
 
 def unreleased_slug(details: dict[str, Any]) -> str:
     kind = details.get("kind")
-    if kind in {"release", "hotfix"}:
+    if kind in {"release", "on-demand-release", "hotfix"}:
         version = details.get("version")
         if not isinstance(version, str) or stable_semver(version) is None:
             raise MDFError(

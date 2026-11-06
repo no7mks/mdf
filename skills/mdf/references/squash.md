@@ -70,7 +70,7 @@ PR 模式共享动作及所有模式的 planning land 前强制检查；local �
 本节的强制检查时机适用于 PR 模式与 planning land；安全 floor 与计划规则也适用于 local 交付。
 squash 按交付目标分析逻辑边界，默认合并同一目标的提交；有明确理由时保留多笔 Conventional Commit。
 
-- 所有模式的 `planning land` 在合入 develop 前检查 planning，不整理 develop。
+- 所有模式的 `planning land` 在合入 master 并同步 develop 前检查 planning，不整理 develop。
   - planning worktree 须 clean；无占用者时可检查 branch，实际执行须先在 planning worktree checkout。
   - 不使用交付材料或 start_commit；计划的 start_commit 取检查返回的安全 floor。
   - PR mode 在 squash 前核对完整文档历史，禁止通过压缩隐藏代码修改或 revert；不符合时走 PR/MR。

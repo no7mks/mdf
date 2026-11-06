@@ -33,6 +33,7 @@ def classify(repo, commit, branch, evidence, source_prefix):
         if branch == "develop":
             if _source(repo, parents[1], "master", evidence, source_prefix) and not changed:
                 return "pass", "master_backmerge", changed
+        if branch == "master":
             if (_source(repo, parents[1], "planning", evidence, source_prefix)
                     and planning_only(repo, parents[0], parents[1])
                     and all(document(p) for p in paths(repo, parents[0], commit))):
@@ -40,6 +41,9 @@ def classify(repo, commit, branch, evidence, source_prefix):
         return "needs-review", "missing_merge_evidence", changed
     if len(parents) > 2:
         return "needs-review", "unsupported_merge", changed
+    if (branch in {"master", "develop"} and all(document(p) for p in changed)
+            and _source(repo, commit, "planning", evidence, source_prefix)):
+        return "pass", "planning_documents", changed
     if branch == "develop" and all(trivial(repo, p) for p in changed):
         return "pass", "maintenance", changed
     return "violation", "direct_trunk_commit", changed

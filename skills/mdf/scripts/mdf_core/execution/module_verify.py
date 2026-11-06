@@ -45,7 +45,7 @@ def _delivery_slug(repo: Path) -> tuple[str, str, str]:
     branch = current_branch(repo)
     details = branch_details(branch)
     kind = details["kind"]
-    if kind not in {"feature", "bugfix", "hotfix", "release"}:
+    if kind not in {"feature", "bugfix", "hotfix", "release", "on-demand-release"}:
         raise MDFError("verify 需要 Gitflow 交付分支", code="stage_branch")
     return branch, kind, unreleased_slug(details)
 
@@ -245,6 +245,9 @@ def _run_entry_groups(repo: Path, kind: str | None = None) -> list[dict[str, Any
 def _verify_branch(repo, branch, kind, slug) -> None:
     path = evidence_file(repo, slug)
     ensure_clean(repo)
+    if kind == "on-demand-release":
+        from mdf_core.lifecycle.late_decision import checkpoint
+        checkpoint(repo, required=True)
     if kind == "bugfix" and not associated_suites(repo, slug):
         raise MDFError(
             "bugfix 必须在 suites.json 关联 named suite",

@@ -1,5 +1,8 @@
 # Integrate
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 release 联调四选一，objectives 正文只写选定的一种；checklist **必须含** integrate 项。
 不联调：start 写入时勾掉该项，不进入本 intent。其余模式由本 intent 收口自勾。
 

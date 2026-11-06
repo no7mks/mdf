@@ -143,6 +143,7 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
         replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []",
                 f'depends_on: []\nmilestone: "{milestone}"')
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))
@@ -190,6 +191,7 @@ def test_invalid_split_has_no_partial_writes(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     spec = split_spec(repo)
     spec["children"][0]["depends_on"] = ["prp-0005"]
@@ -284,6 +286,7 @@ def test_split_rejects_branch_record_even_when_current_tree_has_no_changes(pytho
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
+    git(repo, "branch", "master")
     git(repo, "checkout", "-b", "feature/started")
     folder = repo / "changes/unreleased/started"
     folder.mkdir(parents=True)
@@ -304,6 +307,7 @@ def test_split_write_failure_restores_all_original_files(python_exe, tmp_path, m
     repo = copy_fixture(tmp_path).resolve()
     add_prp(repo, "prp-0005", ["prp-0001"])
     init_git(repo)
+    git(repo, "branch", "master")
     checkout_develop(repo)
     spec = tmp_path / "split.json"
     spec.write_text(json.dumps(split_spec(repo)))

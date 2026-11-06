@@ -188,6 +188,11 @@ def command_delivery(args):
     ensure_safe_managed_paths(repo)
     if load_manifest(repo).get("state") != "ready":
         raise MDFError("当前操作需要 ready 仓库", code="manifest_not_ready")
+    if args.action in {"target", "checkpoint"}:
+        from mdf_core.lifecycle.late_decision import set_target, checkpoint
+        result = set_target(repo, args.target) if args.action == "target" else checkpoint(repo)
+        emit({"ok": True, "operation": f"delivery-{args.action}", "result": result})
+        return
     if args.action == "roster":
         result = update_roster(repo, args)
         emit({"ok": True, "operation": "delivery-roster", "result": result})

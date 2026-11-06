@@ -111,6 +111,23 @@ def _scope_paths(
 
 def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str | None:
     if base is None:
+        from mdf_core.workspace.gitutil import branch_details
+        from mdf_core.lifecycle.delivery_state import locate, read_json
+        from mdf_core.workspace.merge_policy import manifest_at
+        branch = run(["git", "branch", "--show-current"], cwd=repo, check=False).stdout.strip()
+        details = branch_details(branch)
+        if details["kind"] == "feature":
+            record = repo / "changes/unreleased" / details["slug"] / "delivery.json"
+            if record.is_file() and read_json(record).get("base_branch") == "master":
+                _, data = locate(repo)
+                base = data["start_commit"]
+        elif details["kind"] == "on-demand-release":
+            previous = manifest_at(repo, "master").get("versioning", {}).get("latest_release")
+            if previous is None:
+                add_finding(findings, "audit.base", "首次 ODR 需要显式 --base")
+                return None
+            base = f"refs/tags/v{previous}"
+    if base is None:
         result = run(["git", "merge-base", "develop", "HEAD"], cwd=repo, check=False)
         if result.returncode:
             add_finding(

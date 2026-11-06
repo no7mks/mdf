@@ -32,12 +32,14 @@ KIND_ROSTER = {
     "feature": "min-tdd",
     "bugfix": "solo",
     "release": "solo",
+    "on-demand-release": "solo",
     "hotfix": "solo",
     "adhoc": "solo",
 }
 # 未点名 roster 时按 kind 覆盖默认组合；release 审查面最大，默认 3 人分片审查。
 KIND_DEFAULTS = {
     "release": {"reviewers": 3, "review_strategy": "partition"},
+    "on-demand-release": {"reviewers": 3, "review_strategy": "partition"},
 }
 
 QA_DEV_STRATEGIES = ("best-of-n", "partition")
@@ -55,7 +57,7 @@ FINGERPRINT_KEYS = (*COUNT_KEYS, "qa_strategy", "dev_strategy")
 
 _ROLE = re.compile(
     r"^(?P<role>qa|dev)(?:/(?P<index>[1-9]\d*))?/"
-    r"(?P<owner>(?:feature|bugfix|release|hotfix)/.+)$"
+    r"(?P<owner>(?:feature|bugfix|release|on-demand-release|hotfix)/.+)$"
 )
 
 
@@ -190,6 +192,8 @@ def fingerprint_roster(roster):
 
 def fingerprint_data(data):
     payload = dict(data)
+    # 发布去向不改变已确认的设计；late-decision 可在设计完成后选择目标。
+    payload.pop("target", None)
     payload["roster"] = fingerprint_roster(data["roster"])
     return payload
 

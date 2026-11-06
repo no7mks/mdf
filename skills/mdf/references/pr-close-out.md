@@ -1,5 +1,8 @@
 # PR 合并后续办
 
+涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
+ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+
 ## 决策树
 
 ```text
@@ -54,7 +57,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 - source 已删除、owner detached 或外部删除时，仍从同一 Git common dir 的主 worktree 恢复。
 - `completed=true` 须同时核对 merge_commit、远端目标、remote_deleted=true 与本地 source 删除。
   owner 存在时核 detached；owner 已外部删除时如实报告，不重建。
-- release/hotfix 还须核 tag 指向固定 M、远端 develop 包含已确认 backmerge HEAD。
+- release/ODR/hotfix 还须核 tag 指向固定 M、远端 develop 包含已确认 backmerge HEAD。
 - 部分成功只补剩余动作，不重复发布；finish_busy 等持锁调用结束，不删除 lock。
 - close-out 完成后返回 deliver / adhoc；更大范围 Goal 的其他工作仍须保留。
 - 工作区清理按 [close-out](close-out.md) 的清理授权执行；CLI 始终保留 owner worktree。
@@ -74,7 +77,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 
 ### 远端交付分支清理
 
-本节只清理原 PR/MR 的 feature、bugfix、adhoc、release 或 hotfix source，不清理 master、develop、planning 或 tag。
+本节只清理原 PR/MR 的 feature、bugfix、adhoc、release、ODR 或 hotfix source，不清理 master、develop、planning 或 tag。
 
 - 合并核验与所需发布动作完成后，先清理远端 source，再 detach owner、删除本地 source；远端失败时保留本地现场。
 - 删除前直接 ls-remote 查询精确 ref，tip 必须等于已确认 PR head；以显式 expected SHA 的 lease 条件删除，不依赖 tracking ref。
@@ -86,7 +89,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
   - 已确认 deleted 后再次出现同名分支，返回 pull_state_changed 并保留，不论其 SHA 是否相同。
 - 删除结果不确定时报告原 PR、source、expected head 与实际远端事实；不得清空或修改操作记录绕过保护。
   - 核实同名分支归属后，由用户或其明确授权的操作清理远端，再次 close-out 根据缺失事实继续；不自动降低保护。
-- release/hotfix 在确认 tag/backmerge 均完成后、集成本地 develop 前持久化 publication_completed。
+- release/ODR/hotfix 在确认 tag/backmerge 均完成后、集成本地 develop 前持久化 publication_completed。
   本地集成或远端清理重试只核固定 M 和已交付 backmerge head。
   不再采用保留的 backmerge 工作区中后续新增提交，也不因该临时工作区已删除而重新发布。
 - CLI 的 remote_deleted 独立表示已确认远端 source 删除，deleted 仍表示本地 source；全部清理完成后才能 completed=true。
@@ -99,7 +102,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 
 | CLI 动作 | 证据 | 失败/缺失去向 |
 | --- | --- | --- |
-| 核 release/hotfix 平台合并 | master 第一父链中的双亲 M | 停止并保留现场 |
+| 核 release/ODR/hotfix 平台合并 | master 第一父链中的双亲 M | 停止并保留现场 |
 | 在 M 创建 annotated `v<version>`，正文取 CHANGELOG，只 push tag | 远端 tag 指向 M | 读日志，按记录恢复；不覆盖 tag |
 | 独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
 | 清理远端及本地 source，保留临时回合目录 | remote_deleted、deleted、owner 状态 | 步骤 3 核清理记录；不删除主目录 |
@@ -135,8 +138,8 @@ close-out 要求本地 develop 包含远端交付结果，不要求本地与远�
 
 | 操作 | PR mode |
 | --- | --- |
-| feature/bugfix/adhoc → develop；release/hotfix → master | PR/MR |
-| planning → develop | 完整文档白名单才允许 no-ff |
+| feature → 已确定目标；bugfix/adhoc → develop；release/ODR/hotfix → master | PR/MR |
+| planning → master → develop；master → planning | no-PR，优先 ff；分叉时 merge；planning 入 master 核完整文档历史 |
 | master → develop | 允许固定 master 历史提交 no-ff 回合 |
 | develop 上纯 MDF/宿主维护 | 允许直接提交和 push |
 | close-out 中 origin/develop → 本地 develop | 允许 no-ff 集成；不 push 本地独有 commits |

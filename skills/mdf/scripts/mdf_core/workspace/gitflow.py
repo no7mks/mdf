@@ -148,7 +148,9 @@ def command_start(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
     ensure_clean(repo)
-    base = _target(args.kind)
+    from mdf_core.lifecycle.late_decision import start_options, CHECKPOINT
+    from_master, delivery_target, features = start_options(args)
+    base = "master" if from_master else _target(args.kind)
     if not _exists(repo, f"refs/heads/{base}"):
         raise MDFError(f"Branch {base} must exist", code="missing_branch")
     _require_base_covers_origin(repo, base)
@@ -192,7 +194,7 @@ def command_start(args) -> None:
         from mdf_core.documents.bugs import bug_id_on_ref, require_startable_bug
         suffix = bug_id_on_ref(repo, args.bug, base)
         _unreleased_collision(repo, base, slugify(suffix))
-    elif args.kind == "release":
+    elif args.kind in {"release", "on-demand-release"}:
         suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
@@ -200,6 +202,11 @@ def command_start(args) -> None:
         suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
+    if features:
+        objectives = objectives.replace("- [x] 确认工作线与范围（start）",
+                                        "- [x] 确认工作线与范围（start）\n- [ ] " + CHECKPOINT)
+        if "- [ ] " + CHECKPOINT not in objectives:
+            objectives += "\n- [ ] " + CHECKPOINT + "\n"
     from mdf_core.workspace.merge_policy import configured
     pr_mode = configured(repo)["mode"] == "pr"
     if pr_mode:
@@ -235,8 +242,12 @@ def command_start(args) -> None:
             "roster ≥1 时 needs_design 必须为 yes",
             code="invalid_needs_design",
         )
-    if args.kind == "release":
+    if args.kind in {"release", "on-demand-release"}:
         parse_has_dev(objectives)
+    if args.kind in {"release", "on-demand-release", "hotfix"}:
+        for kind in ("release", "on-demand-release", "hotfix"):
+            if kind != args.kind and _exists(repo, f"refs/heads/{kind}/{suffix}"):
+                raise MDFError("该版本已有在途发布分支", code="version_in_progress")
     names = start_branches(branch, roster)
     for name in names:
         if _exists(repo, f"refs/heads/{name}"):
@@ -272,6 +283,10 @@ def command_start(args) -> None:
                 "start_commit": start_commit, "needs_design": needs_design,
                 **({"work": args.work.strip()} if adhoc else {}),
             }
+            if args.kind == "feature":
+                identity.update(base_branch=base, target=delivery_target if from_master else "develop")
+            if features:
+                identity["features"] = features
             if manual:
                 identity["manual"] = True
             elif args.kind == "feature":
@@ -291,7 +306,7 @@ def command_start(args) -> None:
                 message = f"docs(delivery): 建立 {suffix} 临时任务"
             elif args.kind == "feature":
                 message = f"docs(delivery): 确认 {suffix if manual else args.proposal} 交付目标"
-            elif args.kind == "release":
+            elif args.kind in {"release", "on-demand-release"}:
                 message = f"docs(delivery): 确认 {args.version} 发布目标"
             elif args.kind == "bugfix":
                 message = f"docs(delivery): 确认 {args.bug} 修复目标"
@@ -378,12 +393,24 @@ def command_finish_gitflow(args) -> None:
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         require_fixed_outcomes(repo, source)
     kind = details["kind"]
-    publish = kind in {"release", "hotfix"}
-    targets = ["develop"] if kind in {"feature", "bugfix"} else ["master", "develop"]
+    if kind == "on-demand-release":
+        from mdf_core.lifecycle.publish import state_path
+        if not state_path(repo, source).exists():
+            if source != current_branch(repo):
+                raise MDFError("首次 ODR 发布须在 owner 执行，--source 仅恢复已开始的发布", code="invalid_delivery")
+            from mdf_core.lifecycle.late_decision import checkpoint, require_independent
+            checkpoint(repo, required=True)
+            require_independent(repo, source)
+    publish = kind in {"release", "on-demand-release", "hotfix"}
+    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
+    target = target_for(repo, source) if kind == "feature" else "develop"
+    if kind == "feature":
+        require_feature_target(repo, source, target)
+    targets = [target] if kind in {"feature", "bugfix"} else ["master", "develop"]
     if args.source and not publish:
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
-    if not publish and not _exists(repo, "refs/heads/develop"):
-        raise MDFError("Branch develop must exist", code="missing_branch")
+    if not publish and not _exists(repo, f"refs/heads/{target}"):
+        raise MDFError(f"Branch {target} must exist", code="missing_branch")
     complete_feature = None
     if kind == "feature":
         from mdf_core.lifecycle.manual import feature_completion
@@ -410,7 +437,7 @@ def command_finish_gitflow(args) -> None:
         return merge_at
 
     if kind in {"feature", "bugfix"}:
-        merge_into("develop", source, complete_feature)
+        merge_into(target, source, complete_feature)
     else:
         from mdf_core.lifecycle.publish import publish as publish_release
         publish_release(repo, source, details["version"])

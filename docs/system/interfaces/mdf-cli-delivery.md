@@ -223,3 +223,12 @@ python3 skills/mdf/scripts/mdf.py integrate status --repo /path/to/repository
 
 - 支持 module 定义与 repo 级完整覆写；未配置返回 configured: false。
 - 代码规模检查统一进入 lint；所有 lint 路径保存工具 summary 与完整输出。
+
+## 延迟选择与 ODR
+
+- start 新增 `--from-master`（仅 feature，含 manual）、`--target` 与可重复 `--feature`（仅 ODR）。
+- `--kind on-demand-release --version <semver> --feature feature/<slug>` 从 master 创建发布分支。
+- `delivery target --repo <owner> --target <develop|on-demand-release/version>` 写入已确认具体目标；调用方提交。
+- `delivery checkpoint --repo <ODR>` 返回 ready、pending 与 features，不修改 checklist。
+- feature 的 delivery.json 记录 base_branch、target；ODR 记录 features 纳入清单。
+- 完整执行规则见 [Late-decision](../../../skills/mdf/references/late-decision.md)。

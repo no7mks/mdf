@@ -44,15 +44,23 @@ def test_planning_code_revert_cannot_hide_in_final_diff(python_exe, tmp_path):
     assert failed.returncode != 0 and 'pr_required' in failed.stderr
 
 
-def test_planning_sync_merge_does_not_count_existing_develop_code(python_exe, tmp_path):
+@pytest.mark.parametrize("source", ["master", "develop"])
+def test_planning_sync_only_accepts_published_code(python_exe, tmp_path, source):
     repo = configured_repo(tmp_path)
     planning = tmp_path / 'planning'
     git(repo, 'worktree', 'add', '-b', 'planning', str(planning))
     (planning / 'docs/new.md').write_text('文档\n')
     commit(planning)
-    (repo / 'src/service.py').write_text('develop_change = True\n')
+    git(repo, 'checkout', source)
+    before_master = git(repo, 'rev-parse', 'master').stdout
+    (repo / 'src/service.py').write_text('published_or_pending = True\n')
     commit(repo)
-    git(planning, 'merge', '--no-ff', '--no-edit', 'develop')
+    git(planning, 'merge', '--no-ff', '--no-edit', source)
+    if source == 'develop':
+        failed = mdf(python_exe, 'planning', 'land', '--repo', str(repo))
+        assert 'pr_required' in failed.stderr
+        assert git(repo, 'rev-parse', 'master').stdout == before_master
+        return
     result = payload(mdf(python_exe, 'planning', 'land', '--repo', str(repo)))
     assert result['landed']
     assert len(git(repo, 'show', '-s', '--format=%P', 'HEAD').stdout.split()) == 2

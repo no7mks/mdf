@@ -21,6 +21,10 @@ def preflight(repo, source):
     from mdf_core.inspection.validate_records import require_fixed_outcomes
     require_fixed_outcomes(repo, source)
     kind = branch_details(source)["kind"]
+    if kind == "on-demand-release":
+        from mdf_core.lifecycle.late_decision import checkpoint, require_independent
+        checkpoint(repo, required=True)
+        require_independent(repo, source)
     if kind == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
@@ -234,7 +238,16 @@ def _finish(repo, source, settings, *, phase):
     identity = origin(repo, settings["provider"])
     forge = Forge(repo, identity)
     details = branch_details(source)
-    target = "master" if details["kind"] in {"release", "hotfix"} else "develop"
+    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
+    target = (state.get("target") if state and details["kind"] == "feature"
+              else target_for(repo, source))
+    if details["kind"] == "feature":
+        from mdf_core.lifecycle.late_decision import validate_target
+        validate_target(target, concrete=True)
+    if details["kind"] == "feature" and (state is None or not state.get("merge_commit")):
+        if state and target_for(repo, source) != target:
+            raise MDFError("PR 已锁定目标", code="target_locked")
+        require_feature_target(repo, source, target)
     if state and (state.get("mode") != "pr" or state.get("identity") != identity
                   or state.get("source") != source or state.get("target") != target):
         raise MDFError("PR/MR 恢复记录与当前配置不符", code="pull_state_changed")
@@ -315,7 +328,7 @@ def _finish(repo, source, settings, *, phase):
                   "completed": True, "status": "merged", "pull_request": pull,
                   "merge_commit": merged, "next_intent": "close-out"})
             return
-        for branch in (["master", "develop"] if target == "master" else ["develop"]):
+        for branch in (["master", "develop"] if target == "master" else [target]):
             occupant = worktree_map(repo).get(branch)
             if occupant:
                 ensure_clean(occupant)

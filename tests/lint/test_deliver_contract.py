@@ -17,7 +17,7 @@ def test_deliver_continues_within_scope_and_preserves_evidence():
         "只完成当前一个交付", "阶段完成 ─", "2 Select",
         "不结束 deliver", "需要用户决定时暂停", "已有有效确认继续适用",
         "步骤 5 必须取得 close-out 的实际成功结果", "不会被 close-out 删除的主 worktree",
-        "不重放已经发生的发布操作", "release/hotfix 包含 close-out 规定的 tag 与发版推送",
+        "不重放已经发生的发布操作", "release/ODR/hotfix 包含 close-out 规定的 tag 与发版推送",
         "角色已集成并清理时读取 owner 的两路证据",
         "尚未存在本次交付时委托", "references/start.md",
         "不可恢复的死硬阻塞仍停止", "位置参数至多一个", "自动分辨",

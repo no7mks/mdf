@@ -113,6 +113,17 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
     执行与缺项处理见 [Start](skills/mdf/references/start.md#post-start-check)。
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
 
+### 延迟选择发布路径
+
+feature 可使用 `$mdf start --from-master`，支持 `--manual`。
+显式 `--target` 不重复确认；未指定时询问，可暂不决定，但须在 catch-up 前确定。
+
+- 目标为 develop 或具体 `on-demand-release/<version>`。
+- ODR 从 master 创建，start 后等待选定 feature 从各自一侧完成合入，再执行 release 流程。
+- ODR 最终发布到 master，并必须合回 develop；支持 local 与 PR mode。
+- 规则与 CLI 参数见 [Late-decision](skills/mdf/references/late-decision.md)。
+- `deliver --yolo` 在入口集中确认未决事项，开始自动推进后不再询问流程决策。
+
 ### code-review 与 roster
 
 code-review 支持 feature、bugfix、hotfix、release 和 adhoc；worktree 必须 clean。
@@ -160,14 +171,14 @@ pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问
 完整交付继续执行 close-out；默认 deliver 走完 close-out，非 yolo 在 pr、close-out 前分别取得用户确认，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 
-PR 模式在创建或更新 PR/MR 前 fetch 远端目标：develop（feature/bugfix/adhoc）或 master（release/hotfix）。
+PR 模式在创建或更新 PR/MR 前 fetch 远端目标：feature 已确定目标、develop（bugfix/adhoc）或 master（release/ODR/hotfix）。
 PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共享提交并按逻辑分段 squash；
 可以保留多笔 commit，无可压缩区间则 no-op，保留 merge commit，禁止 force push。
 所有模式的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
 只要远端 tip 不是当前 HEAD 的 ancestor，就先 no-ff merge 到本分支；无冲突也必须重新完成
 lint、增量 code-review、verify 与 fact，再次 close-out；提交前远端再次前进则重复此流程。
 
-local 模式先在交付分支集成 develop（feature/bugfix）或 master（release/hotfix），冲突自动尝试解决。
+local 模式先在 feature 集成已确定目标；bugfix 集成 develop，release/ODR/hotfix 集成 master，冲突自动尝试解决。
 以下本地合并与发布行为适用于默认 local 模式。
 
 - 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。
@@ -175,7 +186,7 @@ local 模式先在交付分支集成 develop（feature/bugfix）或 master（rel
 - 集成产生新提交后：
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
-- release/hotfix 的 close-out 包含 tag 与发版推送。
+- release/ODR/hotfix 的 close-out 包含 tag 与发版推送。
   - 仅原子 push master 与 tag；master 合回本地 develop，不检查或推送远端 develop。
 - deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
   - 验证其已有 qa/dev worktree 身份，等待交接后再收敛。
@@ -211,9 +222,9 @@ local 模式先在交付分支集成 develop（feature/bugfix）或 master（rel
   - 提交不代表验收通过，也不替代用户确认。
   - 不夹带无关改动，远端与集成操作按各自流程授权。
 - ❌ 正常工作不在 master 直接修改或提交。
-- 规划写入在唯一的 `planning` 工作区进行，合入 develop。
+- 规划写入在唯一的 `planning` 工作区进行，合入 master 并同步 develop。
   - 与当前交付分支工作相关的文档在该分支更新。
-- 新建 Proposal 只能在 planning 上分配 ID、写入并提交，再合入 develop。
+- 新建 Proposal 只能在 planning 上分配 ID、写入并提交，再合入 master 并同步 develop。
 - 初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
 - 材料自 start 起位于 `changes/unreleased/<slug>/`。
   - CHANGE.md 在同级目录于交付完成时补齐，再随版本归档。
@@ -304,7 +315,7 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 `$mdf adhoc <工作描述>` 从 develop 创建 `adhoc/<slug>` 与独立临时 worktree。
 
 已有普通分支也可直接执行 `$mdf pr` 或 `$mdf close-out`；无账本时按实际成果生成 Change 并收口。
-四类 Gitflow 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
+五类 Gitflow 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
 无账本 adhoc 保留真实分支与工作区，不补造 delivery/objectives。
 
 - slug 由 Agent 自定；直接生成六项 objectives，不另确认目标文本或 roster，不绑定 PRP。

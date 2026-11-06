@@ -71,7 +71,7 @@ def check_proposals(repo):
 
 
 def started_ids(repo):
-    """收集当前工作区与全部 feature 分支的开工记录所指向的 Proposal ID。"""
+    """收集当前工作区、开发主线及全部 feature/发布分支的开工记录所指向的 Proposal ID。"""
     found = set()
     root = repo / "changes"
     if root.exists():
@@ -87,7 +87,8 @@ def started_ids(repo):
             if isinstance(data.get("proposal"), str):
                 found.add(data["proposal"])
     refs = run(["git", "for-each-ref", "--format=%(refname)",
-                "refs/heads/feature/", "refs/remotes/origin/feature/"], cwd=repo).stdout.splitlines()
+                *[f"{prefix}/{name}" for prefix in ("refs/heads", "refs/remotes/origin")
+                  for name in ("feature/", "develop", "release/", "on-demand-release/")]], cwd=repo).stdout.splitlines()
     for ref in refs:
         paths = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "changes"],
                     cwd=repo).stdout.splitlines()
