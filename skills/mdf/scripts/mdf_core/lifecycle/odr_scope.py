@@ -155,14 +155,24 @@ def check_scope(repo, data, covered):
 def release_document_changes(repo, commit):
     """只豁免发布状态、元数据引号与归档链接重写，不豁免任意文档改动。"""
     import re
-    from collections import Counter
     raw = git(repo, "show", "--format=", "--remerge-diff", "--find-renames", commit, "--", "docs/").stdout
     removed, added = [], []
     object_path = False
     for line in raw.splitlines():
         if line.startswith("diff --git "):
+            if removed != added:
+                return False
+            removed, added = [], []
             object_path = " b/docs/proposals/" in line or " b/docs/bugs/" in line
-        if line.startswith(("---", "+++")) or not line.startswith(("-", "+")):
+        if line.startswith(("new file mode", "deleted file mode", "old mode", "new mode", "Binary files")):
+            return False
+        if line.startswith("rename from "):
+            renamed_from = re.sub(r"/(bugs|proposals)/archive/[^/]+/", r"/\1/", line[len("rename from "):])
+        if line.startswith("rename to "):
+            renamed_to = re.sub(r"/(bugs|proposals)/archive/[^/]+/", r"/\1/", line[len("rename to "):])
+            if renamed_from != renamed_to:
+                return False
+        if line.startswith(("---", "+++")) or not line.startswith(("-", "+", " ")):
             continue
         value = line[1:]
         if object_path and re.match(r"^(status|released_in|fixed_in|found_in):", value):
@@ -170,5 +180,8 @@ def release_document_changes(repo, commit):
         if object_path and re.match(r"^(id|type):", value):
             value = value.replace('"', "")
         value = re.sub(r"/(bugs|proposals)/archive/[^/]+/", r"/\1/", value)
-        (added if line[0] == "+" else removed).append(value)
-    return Counter(removed) == Counter(added)
+        if line[0] != "-":
+            added.append(value)
+        if line[0] != "+":
+            removed.append(value)
+    return removed == added

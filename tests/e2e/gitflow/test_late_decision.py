@@ -212,6 +212,7 @@ def test_odr_waits_for_all_selected_manual_features(python_exe, tmp_path):
         (root / "objectives.md").write_text(objectives(done=True))
         (root / "CHANGE.md").write_text(
             f"---\nchange_kind: feature\nsource_branch: feature/{name}\nproposals: []\n---\n")
+        (work / f"{name}.py").write_text(f"{name} = True\n")
         commit(work)
         git(work, "merge", "--no-ff", "--no-edit", created["branch"])
         payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))

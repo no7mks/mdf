@@ -83,9 +83,12 @@ def apply_version_closeout(
     review_source = repo / "changes" / "unreleased" / context["review_slug"]
     if review_source.is_dir() and not review_source.is_symlink():
         for path in sorted(review_source.iterdir()):
-            if not path.is_file() or path.is_symlink():
+            odr_directory = context["mode"] == "on-demand-release" and path.is_dir()
+            if path.is_symlink() or not (path.is_file() or odr_directory):
                 continue
             destination = release_dir / path.name
+            if destination in moves.values():
+                raise MDFError("版本证据目录与 child Change 重名", code="collision")
             moves[path] = destination
             move_records.append(
                 {

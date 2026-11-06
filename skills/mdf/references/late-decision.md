@@ -142,6 +142,7 @@ JSON 顶层为数组，每项字段如下：
 | evidence | review、tests、fact 三项指向仓库内非空证据文件 |
 
 证据建议保存在 `changes/unreleased/<version>/`，checkpoint 自动解析版本归档后的路径。
+ODR 证据子目录随版本归档；版本根 evidence 引用的非 child 目录按证据目录核验，不要求补建 Change。
 Agent 须核对证据覆盖实际 diff、测试结果与 fact audit；CLI 只核验记录、文件和 Git 关系。
 
 ### Checkpoint 与推进

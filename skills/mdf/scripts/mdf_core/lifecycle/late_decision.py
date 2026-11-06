@@ -140,7 +140,7 @@ def checkpoint(repo, *, required=False):
                 from mdf_core.lifecycle.odr_scope import ancestors
                 covered.update(ancestors(repo, pair[1], data["start_commit"])
                                - ancestors(repo, pair[0], data["start_commit"]))
-                break
+                # 后续 feature 会继承本 feature 的材料；继续累计较早的实际合入。
         if not change.is_file() or not merged:
             pending.append(source)
     from mdf_core.foundation.yamlutil import read_frontmatter

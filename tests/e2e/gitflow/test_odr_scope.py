@@ -12,10 +12,11 @@ def start_scope(python_exe, repo, tmp_path, entries):
     return Path(result["worktree"])
 
 
-def accept(python_exe, work, tmp_path, entries):
+def accept(python_exe, work, tmp_path, entries, *, evidence_dir=""):
     evidence = {}
     for key in ("review", "tests", "fact"):
-        path = f"changes/unreleased/1.3.0/{key}.md"
+        path = f"changes/unreleased/1.3.0/{evidence_dir}{key}.md"
+        (work / path).parent.mkdir(parents=True, exist_ok=True)
         (work / path).write_text(f"{key}: 已核对本项 diff，通过。\n")
         evidence[key] = path
     if git(work, "status", "--porcelain").stdout.strip():
@@ -86,7 +87,8 @@ def test_develop_history_requires_cherry_pick(python_exe, tmp_path):
     assert not (work / "unselected.py").exists()
 
 
-def test_direct_only_release_archives_evidence_and_preserves_commits(python_exe, tmp_path):
+@pytest.mark.parametrize("evidence_dir", ["", "evidence/reports/"])
+def test_direct_only_release_archives_evidence_and_preserves_commits(python_exe, tmp_path, evidence_dir):
     from support_delivery import start_repo
     from mdf_core.workspace.squash import inspect
     repo, _remote = start_repo(tmp_path)
@@ -100,7 +102,7 @@ def test_direct_only_release_archives_evidence_and_preserves_commits(python_exe,
     commit(work)
     applied = git(work, "rev-parse", "HEAD").stdout.strip()
     entries[0]["commits"] = [applied]
-    accept(python_exe, work, tmp_path, entries)
+    accept(python_exe, work, tmp_path, entries, evidence_dir=evidence_dir)
     plan = inspect(work, refresh=False)
     assert applied not in plan["commits"] and plan["floor"] == applied
     obj = work / "changes/unreleased/1.3.0/objectives.md"
@@ -109,6 +111,9 @@ def test_direct_only_release_archives_evidence_and_preserves_commits(python_exe,
     seed_verify_branch(python_exe, work)
     result = payload(mdf(python_exe, "release-closeout", "--repo", str(work), "--release-date", "2026-11-06"))
     assert result["release_set"] == []
+    for key in ("review", "tests", "fact"):
+        assert (work / f"changes/1.3.0/{evidence_dir}{key}.md").is_file()
+    assert not (work / "changes/unreleased/1.3.0").exists()
     assert "修正健康检查" in (work / "CHANGELOG.md").read_text()
     commit(work)
     assert payload(checkpoint(python_exe, work))["result"]["ready"]
@@ -155,3 +160,27 @@ def test_master_catchup_is_not_unselected_work(python_exe, tmp_path):
     commit(repo)
     git(work, "merge", "--no-ff", "--no-edit", "master")
     assert payload(checkpoint(python_exe, work))["result"]["ready"]
+
+
+@pytest.mark.parametrize("change", ["swap", "reorder", "rename"])
+def test_document_changes_cannot_cancel_out_of_scope(python_exe, tmp_path, change):
+    repo = local_repo(tmp_path)
+    (repo / "docs/a.md").write_text("alpha\nbeta\n")
+    (repo / "docs/b.md").write_text("gamma\ndelta\n")
+    commit(repo)
+    entries = [dict(id="fix", kind="direct", scope="修复", source="ODR 修复")]
+    work = start_scope(python_exe, repo, tmp_path, entries)
+    (work / "fix.py").write_text("fixed = True\n")
+    commit(work)
+    entries[0]["commits"] = [git(work, "rev-parse", "HEAD").stdout.strip()]
+    accept(python_exe, work, tmp_path, entries)
+    if change == "swap":
+        (work / "docs/a.md").write_text("gamma\ndelta\n")
+        (work / "docs/b.md").write_text("alpha\nbeta\n")
+    elif change == "reorder":
+        (work / "docs/a.md").write_text("beta\nalpha\n")
+    else:
+        (work / "docs/a.md").rename(work / "docs/renamed.md")
+    commit(work)
+    result = checkpoint(python_exe, work)
+    assert result.returncode != 0 and "unexpected_changes" in result.stderr
