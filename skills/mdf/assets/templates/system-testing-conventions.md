@@ -38,6 +38,7 @@ test case 不属于某 suite 时由成员选择规则排除，不在运行时 sk
 - 入口命令：须把 JUnit XML 写进 `$MDF_REPORT_DIR`
 - 成员选择规则、预算与环境
 - 点名执行 test case / test 的命令模板
+- release 与 named suite 若含 `tests/playbooks/` 的 playbook，写明其前置环境；归属以 playbook frontmatter 为准
 
 ### quick
 

@@ -17,6 +17,7 @@
   可用顶层 `verification` 覆写其中一项或多项为单命令。
 - `验证 suite`：test case 的具名集合。全局 suite 由 modules 声明并由 Core 执行；
   named suite 隶属 module，每个 suite 必须有 `docs/system/testing/<name>.md`。
+  - release 与 named suite 可另含 `tests/playbooks/**/*.md` 的 playbook，规则见 delivery-contract「Playbook」。
 - `module`：`.mdf/modules.yaml` 中的交付单元，含 sourceset、ignore 与分套件命令。
 - `initializing`：`manifest.state` 的初始化态，表示初始化尚未完成。
 - `ready`：`manifest.state` 的就绪态，表示仓库已完成初始化。

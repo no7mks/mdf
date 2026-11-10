@@ -205,7 +205,7 @@ def parse_budgets(raw):
 
 
 def parse_named_commands(meta: dict) -> tuple[list[str], bool]:
-    """从 named suite 文档 frontmatter 解析 commands 与 parallel。"""
+    """从 named suite 文档 frontmatter 解析 commands 与 parallel；无命令时返回空列表。"""
     parallel = meta.get("parallel", False)
     if not isinstance(parallel, bool):
         raise MDFError(
@@ -236,7 +236,4 @@ def parse_named_commands(meta: dict) -> tuple[list[str], bool]:
                 code="invalid_named_suite",
             )
         return [value.strip()], parallel
-    raise MDFError(
-        "named suite 文档 frontmatter 需要 commands 或 command",
-        code="invalid_named_suite",
-    )
+    return [], parallel

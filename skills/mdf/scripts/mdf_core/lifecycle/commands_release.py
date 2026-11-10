@@ -20,7 +20,7 @@ from mdf_core.workspace.gitutil import (
     run,
 )
 from mdf_core.foundation.paths import ensure_safe_managed_paths, load_manifest
-from mdf_core.execution.verification import recorded_suites, repo_verification, required_suite
+from mdf_core.execution.verification import recorded_suites
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
@@ -44,8 +44,9 @@ def manifest_verification_commands(manifest: dict[str, Any]) -> list[str]:
 
 
 def repo_branch_commands(repo: Path, kind: str) -> list[str]:
-    suite = required_suite(kind)
-    return [item["command"] for item in repo_verification(repo).plan(suite)]
+    from mdf_core.execution.module_verify import plan_branch
+
+    return [item["command"] for item in plan_branch(repo, kind)]
 
 
 def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:

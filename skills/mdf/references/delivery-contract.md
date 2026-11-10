@@ -292,6 +292,9 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
 - 层级：test 是含若干断言的最小测试项，通常为函数；test case 是服务于同一目标的
   一组 test，通常为类或文件；suite 是 test case 的集合。suite 成员粒度是
   test case，归属写在代码里（marker、目录等），文档只写选择规则，不逐条列举。
+- suite 成员有两种来源，可只用一种或两者都用：
+  - command：运行器收集的 test case。
+  - playbook：Agent 执行的测试手册，一个文件是一个 test case，见下文「Playbook」。
 - kind 按测试对象划分：UT 测内部单元；IT 测产品真实开放的接口（lib 的函数、
   服务的 API 等），一般不用 mock；E2E 走用户最终入口（浏览器、模拟器、命令行
   调用、使用 lib 的 demo-app）。PT 是生成输入并断言不变式的手法，可用于任一层级。
@@ -380,6 +383,50 @@ bugfix 的 `suites.json` 在 verify branch 前关联已文档化 named suite（�
 verify branch 中非 quick 失败时尝试补 quick 复现；结论写入
 `changes/unreleased/<slug>/verification-report.md`。code-review 本轮触及的非 quick 失败另在
 `code-review.md` 记「quick 复现」字段（各记各的，不互替）。
+#### Playbook
+
+playbook 是 `tests/playbooks/**/*.md` 下 Git 已跟踪的测试手册，由 Agent 执行。
+
+- 一个文件是一个 test case；每个 `## S<两位数> <标题>` 步骤是一个 test，步骤 id 在文件内唯一。
+- 每步写目的、操作（可含命令）与判定标准；文件开头写前置环境、凭据与数据。
+- 归属写在 frontmatter 的 `suites`：非空、不重复。
+  - 只接受 `release` 与已声明的 named suite；quick、smoke 只含 command。
+  - release 仍须有 command，以包含 smoke 的全部成员。
+  - named suite 有归属的 playbook 时，其文档可省略 `command` / `commands`。
+
+```markdown
+---
+suites: [release, billing]
+---
+
+# 发布后真实环境冒烟
+
+前置：……
+
+## S01 启动服务
+
+- 操作：……
+- 判定：……
+```
+
+执行分两段：
+
+1. Core 跑完全部 command；均通过且所需 suite 有 playbook 时返回 `verify-pending`。
+   - 结果含报告目录 `report_dir` 与 playbook 清单；`all_passed` 为 false。
+2. Agent 逐个执行 playbook，写入 JUnit，再以 `verify ... --record <report_dir>` 收录。
+   - Core 按「测试报告」判定，并核对每个步骤恰有一个 testcase。
+
+执行与日志约定：
+
+- 步骤中的命令都用 `mdf.py run --name <playbook 名>-<步骤 id>` 代跑，不另 tee。
+- 每个 playbook 写 `<report_dir>/<playbook 名>.xml`：
+  - `<testsuite name="<suite>">`，每步一个 `<testcase classname="<playbook 路径>" name="<步骤 id>" time="…">`。
+  - 未通过写 `<failure message="结论">`；`<system-out>` 写观察摘要与本步 `mdf.py run` 的 log 路径。
+  - 环境未就绪或无法判定时写 failure，不写 skipped。
+- 子命令自带的 JUnit 留在其 run 日志目录，不复制进 `report_dir`。
+- 续办只依赖 `report_dir` 内的 `pending.json` 与已写 XML，不在 tracked 文件中记录进度。
+- `--record` 前 HEAD 变化则丢弃本轮 pending，重跑验证。
+- 步骤标题只认 fenced code block（反引号或波浪号）之外的行；手册内的示例写进 code block。
 ### 可选历史整理（squash）
 
 PR 模式共享动作前必须读取 `references/squash.md` 并执行安全边界检查与分析后的分段整理；无可压缩区间则 no-op。

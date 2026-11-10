@@ -45,12 +45,26 @@ def validate_modules(
         add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
         return None
     tracked = _tracked_relpaths(repo) if paths is None or path in paths else []
+    playbook_suites = _validate_playbooks(repo, config, findings)
     for module in config.modules.values():
         if paths is None or path in paths:
             _validate_sourceset(module, findings)
             _validate_suite_inclusion(module, tracked, findings)
-        _validate_named_docs(repo, module, findings, paths=paths)
+        _validate_named_docs(repo, module, findings, paths=paths, playbook_suites=playbook_suites)
     return config
+
+
+def _validate_playbooks(repo: Path, config: ModulesConfig, findings: list[Finding]) -> set[str]:
+    from mdf_core.execution.playbooks import _tracked, parse_playbook
+
+    named = set(config.named_owner())
+    suites: set[str] = set()
+    for rel in _tracked(repo):
+        try:
+            suites.update(parse_playbook(repo, rel, named)["suites"])
+        except MDFError as exc:
+            add_finding(findings, "playbooks.invalid", str(exc), rel)
+    return suites
 
 
 def render_modules_yaml(
@@ -184,6 +198,7 @@ def _validate_sourceset(module: Module, findings: list[Finding]) -> None:
 
 def _validate_named_docs(
     repo: Path, module: Module, findings: list[Finding], *, paths: set[Path] | None = None,
+    playbook_suites: set[str] = frozenset(),
 ) -> None:
     from mdf_core.foundation.yamlutil import read_frontmatter
     from mdf_core.execution.verification import parse_named_commands
@@ -203,7 +218,12 @@ def _validate_named_docs(
             continue
         try:
             meta, body = read_frontmatter(path)
-            parse_named_commands(meta)
+            commands, _ = parse_named_commands(meta)
+            if not commands and suite not in playbook_suites:
+                raise MDFError(
+                    "frontmatter 需要 commands 或 command，或有归属该 suite 的 playbook",
+                    code="invalid_named_suite",
+                )
         except MDFError as exc:
             add_finding(
                 findings,

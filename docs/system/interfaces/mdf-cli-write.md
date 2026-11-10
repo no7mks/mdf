@@ -125,7 +125,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 1. 验证：
    - 复用条件：已有 `verification-report.json` 声称通过，且命令序列与当前 lint、build、quick、
-     所需 smoke/release suite 一致（不对照 HEAD）。
+     所需 smoke/release suite 一致（不对照 HEAD）。release 序列含 `playbook:<路径>` 条目。
    - 满足时直接复用其结果，输出 `verification.reused` 为证据路径。
    - 否则返回 `verification_report_not_reusable`；不在 closeout 内运行验证命令。
 2. 随后保持 worktree clean 后写入版本 Change、归档对象和链接重写。

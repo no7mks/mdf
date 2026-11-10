@@ -54,7 +54,13 @@ def plan_branch(repo: Path, kind: str) -> list[dict[str, Any]]:
     from mdf_core.execution.verification import repo_verification
 
     suite = required_suite(kind)
-    return repo_verification(repo).plan(suite)
+    return repo_verification(repo).plan(suite) + branch_playbooks(repo, suite)
+
+
+def branch_playbooks(repo: Path, suite: str) -> list[dict[str, Any]]:
+    from mdf_core.execution.playbooks import PLAYBOOK_SUITES, playbook_items
+
+    return playbook_items(repo, suite) if suite in PLAYBOOK_SUITES else []
 
 
 def plan_smart(repo: Path, modules: list[str]) -> list[dict[str, Any]]:
@@ -111,6 +117,14 @@ def resolve_named_suite(repo: Path, name: str) -> tuple[list[dict[str, Any]], bo
         )
     meta, _ = read_frontmatter(path)
     commands, parallel = parse_named_commands(meta)
+    if not commands:
+        from mdf_core.execution.playbooks import playbooks_for
+
+        if not playbooks_for(repo, name):
+            raise MDFError(
+                f"named suite {name} 既无 command 也无 playbook",
+                code="invalid_named_suite",
+            )
     targets = [
         {
             "id": name if len(commands) == 1 else f"{name}:{index}",
@@ -187,6 +201,8 @@ def command_verify(args) -> None:
         )
     if getattr(args, "report_file", None) and scope != "smart":
         raise MDFError("--report-file 仅用于 smart", code="invalid_verify_scope")
+    if getattr(args, "record", None) and scope == "smart":
+        raise MDFError("--record 仅用于 branch 或 named", code="invalid_verify_scope")
     if scope == "named":
         _verify_named(repo, args)
         return
@@ -202,7 +218,10 @@ def command_verify(args) -> None:
         )
     if scope == "branch":
         branch, kind, slug = _delivery_slug(repo)
-        _verify_branch(repo, branch, kind, slug)
+        if getattr(args, "record", None):
+            _record_branch(repo, branch, kind, slug, args.record)
+        else:
+            _verify_branch(repo, branch, kind, slug)
     elif scope == "smart":
         _verify_smart(repo, args)
     else:
@@ -253,10 +272,42 @@ def _verify_branch(repo, branch, kind, slug) -> None:
             "bugfix 必须在 suites.json 关联 named suite",
             code="missing_delivery_suite",
         )
+    from mdf_core.execution.playbooks import PLAYBOOK_SUITES, create_pending, playbooks_for
+
+    suite = required_suite(kind)
+    playbooks = playbooks_for(repo, suite) if suite in PLAYBOOK_SUITES else []
     results = _run_entry_groups(repo, kind)
+    result = _branch_result(repo, branch, kind, results)
+    if playbooks and all(item["passed"] for item in results):
+        result["pending"] = create_pending(
+            repo, scope="branch", suite=suite, branch=branch, playbooks=playbooks, results=results,
+        )
+        write_json(path, result)
+        emit({"ok": True, "operation": "verify-pending", "result": result})
+        return
+    _finish_branch(path, result)
+
+
+def _record_branch(repo, branch, kind, slug, raw) -> None:
+    from mdf_core.execution.playbooks import load_pending, record_playbooks
+
+    evidence = evidence_file(repo, slug)
+    report_dir, state = load_pending(
+        repo, raw, scope="branch", evidence=str(evidence.relative_to(repo)),
+    )
+    if state.get("branch") != branch or state.get("suite") != required_suite(kind):
+        raise MDFError(
+            "pending 的分支或 suite 与当前交付不一致",
+            code="invalid_playbook_report",
+        )
+    results = state["results"] + record_playbooks(repo, report_dir, state)
+    _finish_branch(evidence, _branch_result(repo, branch, kind, results))
+
+
+def _branch_result(repo, branch, kind, results) -> dict[str, Any]:
     expected = {item["id"] for item in plan_branch(repo, kind)}
     passed = {item["id"] for item in results if item["passed"]}
-    result = {
+    return {
         "scope": "branch",
         "branch": branch,
         "kind": kind,
@@ -265,6 +316,9 @@ def _verify_branch(repo, branch, kind, slug) -> None:
         "results": results,
         "all_passed": passed == expected,
     }
+
+
+def _finish_branch(path: Path, result: dict[str, Any]) -> None:
     write_json(path, result)
     if not result["all_passed"]:
         raise MDFError(
@@ -390,18 +444,53 @@ def _verify_named(repo, args) -> None:
             "named 不接受 --test",
             code="invalid_verify_scope",
         )
+    from mdf_core.execution.playbooks import (
+        PLAYBOOK_SUITES, create_pending, load_pending, playbooks_for, record_playbooks,
+    )
+
     names = parse_suites_arg(getattr(args, "suites", None))
     results: list[dict[str, Any]] = []
-    for name in names:
-        targets, parallel = resolve_named_suite(repo, name)
-        results.extend(run_targets(repo, targets, parallel=parallel))
-    all_passed = all(item["passed"] for item in results)
+    pending: list[dict[str, Any]] = []
+    if getattr(args, "record", None):
+        if len(names) != 1:
+            raise MDFError("--record 只接受单个 suite", code="invalid_verify_scope")
+        report_dir, state = load_pending(repo, args.record, scope="named")
+        if state.get("suite") != names[0]:
+            raise MDFError(
+                f"pending 的 suite 为 {state.get('suite')}，与 --suites 不一致",
+                code="invalid_playbook_report",
+            )
+        results = state["results"] + record_playbooks(repo, report_dir, state)
+    else:
+        runs = []
+        for name in names:
+            targets, parallel = resolve_named_suite(repo, name)
+            playbooks = (
+                playbooks_for(repo, name)
+                if name not in ALL_ENTRIES or name in PLAYBOOK_SUITES else []
+            )
+            runs.append((name, playbooks, run_targets(repo, targets, parallel=parallel)))
+        results = [item for _, _, suite_results in runs for item in suite_results]
+        if all(item["passed"] for item in results):
+            pending = [
+                create_pending(
+                    repo, scope="named", suite=name, branch=None,
+                    playbooks=playbooks, results=suite_results,
+                )
+                for name, playbooks, suite_results in runs
+                if playbooks
+            ]
+    all_passed = not pending and all(item["passed"] for item in results)
     result = {
         "scope": "named",
         "suites": names,
         "results": results,
         "all_passed": all_passed,
     }
+    if pending:
+        result["pending"] = pending
+        emit({"ok": True, "operation": "verify-pending", "result": result})
+        return
     if names == ["coverage"]:
         result["configured"] = bool(results)
     if not all_passed:

@@ -80,8 +80,11 @@ module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置
 
 - **test**：含若干断言的最小测试项，通常为函数。
 - **test case**：服务于同一目标的一组 test，通常为类或文件；suite 成员的粒度。
-- **suite**：test case 的集合。
+- **suite**：test case 的集合；成员来自 command、playbook，或两者都有。
   - 每个 suite 都有自己的名称；quick、smoke、release 是有固定用途的保留名称。
+- **playbook**：`tests/playbooks/` 下由 Agent 执行的 Markdown 测试手册；一个文件是一个 test case，
+  每个 `## S<两位数>` 步骤是一个 test。
+  - frontmatter `suites` 声明归属，只能是 release 或 named suite；Agent 写 JUnit 后由 `verify --record` 收录。
   - named suite 指其余项目自定义 suite，如 gitflow、planning，不是名为 named 的大集合。
 
 ## 验证 suite

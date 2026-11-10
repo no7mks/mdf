@@ -346,6 +346,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：branch 写 `verification-report.json`（feature/bugfix/hotfix→smoke，
     release/ODR→release；不含 commit）；smart/named 不写 branch 报告，运行日志与 JUnit 仍落盘；named 命令来自
     testing 文档 frontmatter。
+  - playbook：release 与 named 可含 `tests/playbooks/` 下由 Agent 执行的测试手册；
+    结果为 pending 时执行手册、写 JUnit，再用 `--record <report_dir>` 收录。
 - `$mdf code-review`
   - 要求 clean；同一条链，`--read-only` 跳过修复：`$mdf code-review --against <commit> [--read-only] [--output <path>]`。
   - 交付用法：`$mdf code-review`；可带 `--review-strategy` / `--code-review-model`

@@ -140,6 +140,28 @@
 - 真 named：命令来自 `docs/system/testing/<name>.md` frontmatter 的
   `commands`（或简写 `command`）；可选 `parallel: true`（>5 报错）。
 - suite 之间按 `--suites` 顺序串行；suite 内可并行。
+- 真 named 有归属的 playbook 时可省略命令；命令与 playbook 都没有时返回 `invalid_named_suite`。
+
+**playbook pending 与 `--record`**
+
+- release 与真 named 可含 `tests/playbooks/` 下的 playbook。
+  - 归属与格式见 delivery-contract「Playbook」；格式错误返回 `invalid_playbook`，`validate` 记 `playbooks.invalid`。
+- 全部命令通过且所需 suite 有 playbook 时，输出 `operation: verify-pending`，`all_passed: false`。
+  - 为每个此类 suite 新建 `.mdf/reports/<时间戳>-<suite>-playbooks/`，写 `pending.json`：
+    scope、suite、branch、HEAD、playbook 步骤清单与命令结果。
+  - 结果 `pending` 含 `report_dir` 与 playbook 路径；branch 同时写入未通过的 `verification-report.json`。
+  - 命令失败时照常返回 `verify_command_failed`，不生成 pending。
+- `--record <report_dir>` 仅用于 branch 与 named（named 只接受单个 suite），smart 返回 `invalid_verify_scope`。
+- 以下情况返回 `invalid_playbook_report`：
+  - 目录不在 `.mdf/reports/` 下、为符号链接或缺 `pending.json`。
+  - scope、suite 或分支与 pending 不一致。
+  - HEAD 已变化。
+  - testcase 与 playbook 步骤不能一一对应。
+- branch 收录时，worktree 除本交付的 `verification-report.json` 外须干净。
+- 通过后按「测试报告」解析并写 `summary.json`。
+  - 每个 playbook 记为 `id` 与 `command` 都是 `playbook:<路径>` 的结果，接在命令结果之后。
+  - branch 重写 `verification-report.json`。
+- branch 的期望结果序列为 lint、build、quick、release 命令，再接 release 的 playbook（按路径排序）。
 
 ### 测试报告
 

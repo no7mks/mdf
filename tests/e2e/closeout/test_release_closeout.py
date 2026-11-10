@@ -312,6 +312,26 @@ def test_closeout_reuses_valid_verify_branch_evidence(python_exe: str, tmp_path:
     )
 
 
+def test_closeout_reuses_evidence_with_recorded_playbook(python_exe: str, tmp_path: Path):
+    repo = copy_fixture(tmp_path)
+    rel = "tests/playbooks/live.md"
+    (repo / "tests/playbooks").mkdir(parents=True)
+    (repo / rel).write_text("---\nsuites: [release]\n---\n\n# live\n\n## S01 冒烟\n\n- 判定：通过。\n")
+    prepare_release(repo)
+    seed = payload(mdf(python_exe, "verify", "branch", "--repo", str(repo)))
+    report_dir = seed["result"]["pending"]["report_dir"]
+    (repo / report_dir / "live.xml").write_text(
+        f'<testsuite name="release"><testcase classname="{rel}" name="S01"/></testsuite>'
+    )
+    payload(mdf(python_exe, "verify", "branch", "--record", report_dir, "--repo", str(repo)))
+    review = repo / "changes/unreleased/1.3.0/code-review.md"
+    review.write_text("# 审查记录\n\n无未解决问题。\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 提交验证证据")
+    applied = payload(mdf(python_exe, *release_arguments(repo)))
+    assert applied["verification"]["results"][-1]["command"] == f"playbook:{rel}"
+
+
 def test_closeout_reuses_after_impl_change_when_report_still_green(
     python_exe: str, tmp_path: Path
 ):
