@@ -38,7 +38,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：调用方先按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
-命中时未 merged 恢复父 pr，已 merged 续办 close-out，不运行下表的 delivery status；没有 PR 恢复时才按人工八项清单续办。
+命中时按 PR 实际状态选择 pr 或 close-out，跳过下表的 delivery status；没有 PR 恢复时才按人工清单续办。
 
 仅 next / deliver 在 `delivery.json` 的 `manual` 为 true 时内部执行本工作流。
 start 与各阶段 intent 只读取下文对应条款，不执行本续办工作流。
@@ -47,19 +47,19 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check delivery | 脚本 | 先核 PR 恢复；否则核身份与八项清单 | 记录或 status、账本 | PR 委托并返回；其余2 | 停止并报告 |
+| 1 | Check delivery | 脚本 | 先核 PR 恢复；否则核身份与固定清单 | 记录或 status、账本 | PR 委托并返回；其余2 | 停止并报告 |
 | 2 | Select step | 约束 | 先核 start 续办，再核人工工作与剩余步骤 | 准备说明、勾选、平台 | start 续办或阶段3；已收口返回 | 人工未勾交接；不符停止 |
 | 3 | Delegate | 约束 | 按阶段表执行一个原 intent 并交接 | 原 intent 产物与勾选 | 返回调用方 | 按原 intent 交接 |
 
 ## 术语与数据结构
 
-PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺序。
+PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
 
 ### 身份与启动
 
@@ -104,16 +104,16 @@ objectives 须与模式对应的固定顺序一致且没有缺项；不符则报
 无上述未完成记录时核对 start 已勾；未勾或人工工作勾选来源不明时停止并询问。
 人工工作未勾时返回用户交接，不委托开发，也不自动勾选。
 人工工作已勾后，先核 PR 与实际收口状态，再按以下阶段表选择；各项前置必须已勾。
-PR mode 尚未 merged 时，即使 pr 候选项已勾仍选 pr；merged 后选无 checkbox 的 close-out。
+PR mode 前置全勾后进入 pr 的 Prepare 或恢复阶段；合并核验与关联 CI 收尾通过后进入 close-out。
 
-| 清单项 | 委托 intent | 完成证据 |
+| 阶段 | 委托 intent | 完成证据 |
 | --- | --- | --- |
 | lint | `references/lint.md` | 全部 module lint 通过、勾选与提交 |
 | code-review | `references/code-review.md` | 1 人审查终稿、勾选与提交 |
 | verify smoke | `references/verify.md`，branch scope | 通过的 branch 报告、必要增量复审、勾选与提交 |
 | fact update | 先可选 hook，再 `references/fact-update.md` | 适用补审补测、事实同步、内部审阅、勾选与提交 |
 | catch-up | `references/catch-up.md` | 增量改动文件的补检（无增量直通）、勾选与提交 |
-| pr（仅 PR mode） | `references/pr.md` | 实际 merged 且核验通过 |
+| pr（仅 PR mode） | `references/pr.md` | 实际 merged、合并核验与关联 CI 收尾通过 |
 | close-out | `references/close-out.md` | Change、实际 Gitflow 结果 |
 
 步骤 3 完整读取所选 intent 后执行；不同时委托多个阶段。

@@ -7,12 +7,12 @@ STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact u
 
 
 def require_manual_objectives(text, *, starting=False, finishing=False, pr_mode=False):
-    steps = (*STEPS[:-1], "pr") if pr_mode else STEPS
+    steps = STEPS[:-1] if pr_mode else STEPS
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
     if tuple(name for _, name in items) != steps:
         raise MDFError("人工 feature 必须按配置对应的固定顺序填写步骤", code="invalid_manual_objectives")
     checked = tuple(mark == "x" for mark, _ in items)
-    if starting and checked != (True, False, False, False, False, False, False, False):
+    if starting and (not checked[0] or any(checked[1:])):
         raise MDFError("start 仅勾选 start，人工工作必须由用户显式勾选", code="invalid_manual_objectives")
     if finishing and not all(checked):
         raise MDFError("人工 feature 尚有未完成步骤", code="manual_work_pending")

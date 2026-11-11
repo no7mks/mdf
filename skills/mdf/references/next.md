@@ -48,7 +48,7 @@ PR 恢复优先：按 [PR 的恢复路由](pr.md) 只读核已锁定 source 的�
 merged 但关联 CI 未收尾或缺少证据时先恢复 pr；先应用仍在协调的 deliver 边界。
 不先调用普通身份检查，不因 detached 或 source 已删除而另选任务。
 
-adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次只完成一个账本项。
+adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次只完成一个阶段。
 
 无账本 adhoc 没有账本项；确认本次工作归属后，按模式委托 pr 或 close-out，由所选 intent 调用 adhoc-change.md。
 本次仅完成所选 intent；pr 返回后不自动串联 close-out。
@@ -71,7 +71,7 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 
 ## 术语与数据结构
 
-PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
 选择 close-out 前须按 [PR 轮询](pr.md#当前调用内轮询) 确认关联 CI 收尾通过。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
@@ -155,8 +155,9 @@ PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续
   - 主线后半：lint → code-review → verify branch → fact audit → catch-up → [pr（仅 PR mode）] → close-out。
     进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
-    fact 已通过后，远端合入或收尾返工一律只退勾 `catch-up`（PR mode 另退勾 `pr`），严禁退勾基线四项。
-  - 无对应未勾项则跳过。
+    fact 已通过后，远端合入或收尾返工一律只退勾 `catch-up`，严禁退勾基线四项。
+  - PR mode 的 ODR 在 fact 后先完成 [统一验收](late-decision.md#纳入-checkpoint-与统一验收)，再进入 catch-up。
+  - checklist 阶段只在有对应未勾项时进入；PR mode 前置全勾时按 PR 恢复路由续办。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；
     ❌ 不因 roster `0,0` 强行进入 owner 开发或 converge。

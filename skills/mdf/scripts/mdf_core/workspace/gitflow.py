@@ -214,31 +214,29 @@ def command_start(args) -> None:
             suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
+    from mdf_core.workspace.merge_policy import configured
+    pr_mode = configured(repo)["mode"] == "pr"
+    if pr_mode:
+        objectives = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", objectives)
     if args.kind == "on-demand-release":
         from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
-        objectives = re.sub(r"(?m)^(- \[[ x]\] (?:pr|close-out)\s*)$",
+        before = r"catch-up(?:（[^\n]*）)?[ \t]*" if pr_mode else r"close-out\s*"
+        objectives = re.sub(rf"(?m)^(- \[[ x]\] {before})$",
                             "- [ ] " + ACCEPTANCE + r"\n\1", objectives, count=1)
         if ACCEPTANCE not in objectives:
             objectives += "\n- [ ] " + ACCEPTANCE + "\n"
         objectives = objectives.replace("- [x] 确认工作线与范围（start）",
                                         "- [x] 确认工作线与范围（start）\n- [ ] " + CHECKPOINT)
         if "- [ ] " + CHECKPOINT not in objectives:
-            objectives += "\n- [ ] " + CHECKPOINT + "\n"
-    from mdf_core.workspace.merge_policy import configured
-    pr_mode = configured(repo)["mode"] == "pr"
+            if pr_mode:
+                objectives = re.sub(r"(?m)^- \[[ x]\] ", "- [ ] " + CHECKPOINT + "\n" + r"\g<0>", objectives, count=1)
+            else:
+                objectives += "\n- [ ] " + CHECKPOINT + "\n"
     if pr_mode:
-        continuation = "- close-out（pr merged 后必须续办；不设 checkbox）"
-        has_pr = re.search(r"(?m)^- \[.\] pr[ \t]*$", objectives)
-        tail = continuation if has_pr else "- [ ] pr\n" + continuation
-        if re.search(r"(?m)^- \[.\] close-out[ \t]*$", objectives):
-            objectives = re.sub(r"(?m)^- \[.\] close-out[ \t]*$", tail, objectives)
-        elif not has_pr:
-            objectives = objectives.rstrip() + "\n" + tail + "\n"
-        elif continuation not in objectives:
-            objectives = objectives.rstrip() + "\n" + continuation + "\n"
-        items = re.findall(r"(?m)^- \[([ x])\] (.+?)[ \t]*$", objectives)
-        if items[-1] != (" ", "pr") or sum(name == "pr" for _, name in items) != 1:
-            raise MDFError("PR mode 的最后一个 checkbox 必须是未勾选的 pr", code="invalid_objectives")
+        items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", objectives)
+        steps = [item.split("（", 1)[0] for item in items]
+        if not steps or steps[-1] != "catch-up" or "pr" in steps:
+            raise MDFError("PR mode 的 checklist 必须止于 catch-up，且不包含 pr", code="invalid_objectives")
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
         args.kind, args.qa, args.dev, args.reviewers,

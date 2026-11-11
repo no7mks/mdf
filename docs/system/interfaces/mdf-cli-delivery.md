@@ -30,7 +30,7 @@
 | roster | 更新 strategy / 按 intent 的 models；design 完成后不能改 qa/dev strategy |
 | resolve-version | hotfix owner 固定发布版本；可传 `--version <semver>`，返回 version 与 tag |
 
-- **进度只认** `objectives.md` 勾选；Agent 主链不得用 `record/check` 选型或卡 close-out。
+- `objectives.md` 记录 checklist 进度。PR mode 的 pr 与 close-out 按实际状态续办；主链不使用 `record/check` 选型。
 - design record 需要 `--policy-file <JSON>`，必须同时给出 `protected_paths` 与 named suite 列表 `suites`。
   - 例如 `{"protected_paths":["tests/"],"suites":["billing"]}`。
   - suite 名不得为 lint/build/quick/smoke/release/full。

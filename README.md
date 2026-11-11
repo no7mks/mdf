@@ -100,7 +100,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 
 统一骨架：
 
-`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact → [pr（仅 PR mode）] → close-out`
+`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact → catch-up → [pr（仅 PR mode）] → close-out`
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
 - converge 做 smart 验收；实际执行的 feature/release converge 另验可选 coverage。
@@ -168,7 +168,7 @@ fact audit 共用核：`resolve-base → diff → must-cover → stale → uncov
 ### close-out 与 deliver
 
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
-PR mode 的 objectives 末尾为 pr checkbox，之后是无 checkbox 的必执行 close-out 续办。
+PR mode 的 objectives checklist 止于 catch-up；pr 与 close-out 按实际状态续办。
 pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
 实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；close-out 只负责后续发布、backmerge、清理与最终核验。
 完整交付继续执行 close-out；默认 deliver 走完 close-out，非 yolo 在 pr、close-out 前分别取得用户确认，显式 until 仍生效。

@@ -61,7 +61,7 @@ def write_work_objectives(
     path = tmp_path / name
     path.write_text(
         "# 目标\n\n- needs_design: no\n\n"
-        "- [ ] 修复\n- [ ] converge\n- [ ] verify branch\n- [ ] fact audit\n",
+        "- [ ] 修复\n- [ ] converge\n- [ ] verify branch\n- [ ] fact audit\n- [ ] catch-up\n",
         encoding="utf-8",
     )
     return path

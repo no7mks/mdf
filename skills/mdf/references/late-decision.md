@@ -178,7 +178,7 @@ objectives 分别记录「核对发布范围纳入」与「ODR 统一验收」�
 - 全部通过且材料提交后，在 clean ODR owner 执行 `delivery accept --repo <owner>`。
   - CLI 核纳入、ODR 阶段勾选、review/fact 报告、通过的 release suite 及 PRP 依赖。
   - Agent 负责确认报告中的语义结论与每项范围验收；文件存在不等于验收通过。
-  - 成功后仅更新所选 PRP 为 implemented，并勾选 ODR 统一验收；提交后进入发布准备。
+  - 成功后仅更新所选 PRP 为 implemented，并勾选 ODR 统一验收。PR mode 提交后进入 catch-up；local 进入发布准备。
 - 发布就绪另核统一验收；release-closeout、ODR → master PR 与首次发布均不能仅凭纳入 ready 通过。
 - 验收时在 ODR objectives 记录已纳入范围的 Git 基线；不是报告 fingerprint 或新的 gate 文件。
   - local 纳入新提交时取消统一验收勾选；PR 同步后也须核对新来源是否超出该基线。

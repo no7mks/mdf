@@ -43,7 +43,7 @@
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
-命中时未 merged 恢复父 pr，已 merged 续办 close-out，不先要求 adhoc-status 通过；无 PR 恢复时才执行下表与七项账本选型。
+命中时按 PR 实际状态选择 pr 或 close-out，跳过 adhoc-status；无 PR 恢复时执行下表与账本选型。
 
 读取 `references/common.md` 与 `references/delivery-contract.md`；本页专用条款优先于普通交付主线。
 不执行 start 的 clarify、PRP 选择或 roster 确认。
@@ -57,13 +57,13 @@ PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的操作记录�
 
 ## 术语与数据结构
 
-PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺序。
+PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
 
 ### 范围与启动
 
@@ -73,13 +73,13 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 - 新工作描述取自本次参数或已明确的对话上下文；既有工作从 `delivery.json.work` 恢复。
   - 描述写实际工作与已有约束、验收，不只写 slug；无需再次确认。
   - 当前未完工作与新描述不一致时询问归属，不覆盖原目标。
-- 显式 adhoc 授权完成七项步骤及必要本地提交、集成和收口。
+- 显式 adhoc 授权完成交付步骤及必要本地提交、集成和收口。
   - PR mode 由 pr 提交并等待 merged；随后执行 close-out 的合并后续办。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更与测试门槛批准仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
   - 当前为无账本 adhoc 时保留真实分支与工作区；步骤 3 按 status.next_step 选择 pr 或 close-out，不重新 start。
-  - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方七项账本与勾选条款。
+  - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方账本与勾选条款。
   - detached 现场必须有上下文已知 slug；缺失或不能证明收口时停止，不猜测身份或重新 start。
   - 用户明确发起不同新工作且旧工作已完成时，用返回的 primary_worktree 新建。
     不复用旧目标或工作区。
@@ -96,7 +96,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - 固定 roster `0,0,1`，`needs_design: false`；不建立 qa/dev 角色树。
 - CLI 写入并提交 `changes/unreleased/<slug>/delivery.json` 与 `objectives.md`。
   - delivery 的 `work` 保存实际工作描述；跨会话续办及 code-review 均以此为准。
-  - 账本直接使用 `assets/templates/adhoc-objectives.md`，初始七项均未勾。
+  - 账本使用 `assets/templates/adhoc-objectives.md`，按模式写入固定清单，初始均未勾。
   - 不要求 design、converge、人工工作确认或额外的 start checklist 项。
 - start 返回的 command hook 已由 Core 执行。pending rule 由 Agent 在返回的 cwd 读取 path 并执行。
   - 使用返回的 new_worktree、old_worktree 上下文；执行前后记录名称、路径、cwd、结果及日志。
@@ -110,7 +110,7 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
 
 - 运行 `mdf.py adhoc-status --repo <owner> [--slug <已知slug>]`，回读 `result`。
   - 活跃分支可省略 slug；detached 时必须显式传入，不从目录名或其他任务猜测。
-  - `delivery` 含 work、roster、start_commit；`next_step` 来自原有七项账本。
+  - `delivery` 含 work、roster、start_commit；`next_step` 由账本与实际合并记录给出；进入 PR mode 的 close-out 前由外层 intent 核关联 CI。
   - CLI 拒绝缺失工作描述、非 solo、绑定对象、design 或越序勾选，具体差异报告后停止。
 - `completed: true` 须同时满足：
   - 账本全勾，源分支已删除。
@@ -120,13 +120,11 @@ PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺
   - 账本全勾且仍在源分支时：local 返回 close-out；PR mode 未核验 merged 返回 pr，已核验则 close-out。
 - 状态只读原有材料与 Git，不创建 gate 或新的 workflow 状态文件。
 
-### 七项账本与续办
+### 账本与续办
 
-本节用唯一 checklist 决定下一项工作。
+objectives 的固定清单须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
 
-objectives 的七项必须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
-
-| 清单项 | 执行与完成证据 |
+| 阶段 | 执行与完成证据 |
 | --- | --- |
 | 工作 | owner 完成本次范围，核对成果与必要测试，提交并自勾 |
 | lint | 委托 `references/lint.md`；全部 module 工具报告与自勾 |
@@ -134,17 +132,17 @@ objectives 的七项必须同序、完整，已勾项形成连续前缀；工作
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
 | fact audit/update | 按下节审阅，必要时更新；报告结论、自勾与提交 |
 | catch-up | 委托 `references/catch-up.md`；仅对改动文件增量补检（严禁全量重跑），自勾与提交 |
-| pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged 且核验通过才结束 |
+| pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged、合并核验与关联 CI 收尾通过后结束 |
 | close-out | 仅此项读取并执行 `references/adhoc-close-out.md`；Change 与实际 Git 完成证据 |
 
 - 默认从首个未勾项执行到实际收口；有效的已完成项不重复执行。
-- `$mdf next` 在已启动 adhoc 上仅执行本页步骤 3–4 的一个账本项，然后返回。
+- `$mdf next` 在已启动 adhoc 上仅执行本页步骤 3–4 的一个阶段，然后返回。
   - 不新建 adhoc，不升级为连续执行。
 - `$mdf deliver` 在已有 adhoc 上以本表替代普通选择表，每次完成一项返回其 Select。
   - 每次只委托 until 边界内的当前 intent，decision 与完成核验遵守 deliver；无 target 时不凭空新建 adhoc。
 - 直调在当前项完成或须补前置时回 3；next / deliver 委托则返回调用方，不在本页继续循环。
   - next 本次报告完成项或返工项后结束；deliver 回自己的 Select，依账本再选下一项。
-- 清单全勾仍须核对 close-out 实际成功；PR mode 先核 merged；未 merged 继续 pr，已 merged 或 local 的收尾继续 close-out。
+- 清单全勾后按本页收口规则续办；PR mode 须等合并核验与关联 CI 收尾通过才进入 close-out。
   - 不凭全勾宣称完成，不因正常 detached 状态重新 start。
 
 ### Smart 与事实

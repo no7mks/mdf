@@ -36,13 +36,13 @@ def prepare(args):
 
 
 def require_objectives(text, *, starting=False, finishing=False, pr_mode=False):
-    steps = (*STEPS[:-1], "pr") if pr_mode else STEPS
+    steps = STEPS[:-1] if pr_mode else STEPS
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
     if tuple(name for _, name in items) != steps:
         raise MDFError("adhoc 必须按配置对应的固定顺序填写步骤", code="invalid_adhoc_objectives")
     checked = [mark == "x" for mark, _ in items]
     if starting and any(checked):
-        raise MDFError("adhoc 启动时七项步骤均须未勾选", code="invalid_adhoc_objectives")
+        raise MDFError("adhoc 启动时所有步骤均须未勾选", code="invalid_adhoc_objectives")
     if any(checked[index] and not checked[index - 1] for index in range(1, len(checked))):
         raise MDFError("adhoc 步骤须顺序完成，返工须退勾后续项", code="invalid_adhoc_objectives")
     if finishing and not all(checked):
@@ -140,7 +140,7 @@ def command_status(args):
             raise MDFError("PR 操作记录与 adhoc 身份不符", code="pull_state_changed")
         if state.get("merge_commit") and state.get("head") != head:
             raise MDFError("已合并 PR 之外仍有源提交", code="pull_state_changed")
-        # 候选勾选不是合并证据；只有 pr 已核验并记录实际 M 后才交接收尾。
+        # 此处只读 Git 核验结果；外层 intent 在交接收尾前还须核关联 CI。
         if pending is None:
             next_step = "close-out" if state.get("merge_commit") else "pr"
     if not branch:
