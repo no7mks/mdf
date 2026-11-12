@@ -11,7 +11,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
   - 进度认 objectives 勾选；报告为落盘证据，不以 commit 对齐审判。
 - **named**：按 `--suites` 跑指定 suite（五个必选入口、可选 coverage 或真 named）；不写 branch 证据。
   - 真 named 命令来自 testing 文档 frontmatter；可多命令，默串行，可 `parallel`。
-- release 与 named 可含 playbook（Agent 执行的测试手册），按 delivery-contract「Playbook」两段执行。
+- release 与 named 可含 playbook（Agent 执行的测试手册），pending 时读取 [Playbook 执行](verify-playbooks.md)。
 
 ## 决策树
 
@@ -34,7 +34,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 │ 3 Run                            │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 运行前缺前置 ────→ [停止并报告]
+                 ├──── 前置缺失或 pending 失效 ────→ [停止并报告]
                  │
                  ▼ 本轮命令已执行（含失败）
 ┌──────────────────────────────────┐
@@ -98,7 +98,7 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve modules | 约束 | 解析范围、主链身份与已有续办上下文 | scope、调用方、module、适用 objectives | 2 | 停止并报告 |
 | 2 | Select | 约束 | 保存原范围与左端点，核对现有排除并选命令 | 选题、排除核验、左端点 | 3 | 停止并报告 |
-| 3 | Run | 脚本 | 执行 `mdf.py verify`；pending 时执行 playbook 并 `--record`；成败均交回 4 | 退出状态、CLI 运行结果 | 4 | 运行前缺前置则停止 |
+| 3 | Run | 脚本 | 执行 `mdf.py verify`；pending 时委托 Playbook 执行，测试成败均返回 | 退出状态、CLI 运行结果 | 4 | 前置或 pending 失效则停止 |
 | 4 | Record | 约束 | 分诊 Bug 并处理新豁免 | 报告、关联、diff | 新豁免 3；主链绿 5；非主链按实际结果返回 | 主链可修/获批 3；其余停止 |
 | 5 | Recheck | 约束 | 判净变化；必要时委托 1 人增量 code-review | 增量范围、复审及修复结果 | 无新业务改动且报告匹配 6；修复改业务或报告不符 3 | 缺范围或复审未完成则停止 |
 | 6 | Tick | 约束 | 核原验证通过与必要复审完成，自勾并提交 | 通过报告、复审证据、勾选与提交 | 返回调用方 | 保留现场并报告 |
@@ -129,9 +129,9 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 - smart：当前 checkout 须为 branch；无需 `delivery.json`、`objectives.md` 或交付 slug。
   - 非交付 branch 的结果 `kind: unsupported`；Git、detached HEAD、版本命名或配置错误仍停止。
 - named：从 suite shortcut 或 `--suites` 取得 suite 名；固定入口与可选 coverage 由 modules 解析，
-  真 named 按其 testing 文档 frontmatter 解析。名称未知、文档或命令缺失则停止。
+  真 named 按其 testing 文档 frontmatter 解析。名称未知、文档缺失或 command/playbook 均缺失则停止。
 - smart：`--paths` 命中 sourceset（非 ignore）并与 `--module` 合并。
-- branch：全部 module；执行前 worktree 必须干净。
+- branch：全部 module；新一轮验证前 worktree 必须干净；收录 pending 时允许 Core 的本交付报告改动。
 - bugfix 的 branch 验证：须已有 `suites.json` 关联 ≥1 已文档化 named suite。
   缺失则 `missing_delivery_suite`。
 
@@ -169,13 +169,9 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 临时移除仅限 quick、smoke；其余检查通过后视为 verify 通过，并明确记录豁免项。
 
 - CLI：`mdf.py verify --scope smart|branch|named ...`
-- 结果为 `verify-pending` 时，按 [delivery-contract](delivery-contract.md)「Playbook」执行 `pending` 中的每个 playbook。
-  - 全部写完 JUnit 后执行 `mdf.py verify --scope branch|named [--suites <名>] --record <report_dir>`；named 每个 suite 收录一次。
-  - 收录前不改动、不提交任何 tracked 文件（含 objectives）；branch 仅允许 Core 写的 `verification-report.json`。
-  - 新会话续办：branch 读 `verification-report.json` 的 `pending.report_dir`；named 读最新的
-    `.mdf/reports/<时间戳>-<suite>-playbooks/pending.json`。
-    - 未执行的 playbook 为 `pending.json` 清单中尚无对应 XML 的项。
-  - HEAD 变化后丢弃该 pending，重跑原验证；pending 不算通过，不得勾选。
+- 结果为 `verify-pending`，或恢复已有 pending 时，读取并执行 [Playbook 执行](verify-playbooks.md)。
+  - 子流程成功或测试失败均回步骤 4；材料缺失或失效时保留现场并停止，不勾选。
+  - 多个 named suite 须全部完成；单个 suite 的 `all_passed` 不代表原请求整体通过。
 - 遵守「测试失败工作流」：框架报告 → 单用例复测 → 修一个复测一个 → 再继续。
 - 📌 本轮命令**无论成败**都进入 4 Record；不在本步内「修到绿才进 4」。
   - 已知 Bug 的精确成员移除与恢复按专门契约执行；其他需改测试门槛：先在 4 保存失败结果，再等待批准；确认后回 3 修复重跑。

@@ -50,3 +50,54 @@ def test_parse_playbook_rejects_invalid(tmp_path, text):
     with pytest.raises(MDFError) as error:
         _parse(tmp_path, text)
     assert error.value.code == "invalid_playbook"
+
+
+def test_scoped_module_validation_does_not_report_unrelated_playbooks(tmp_path):
+    load_core_module()
+    from mdf_core.execution.modules_check import validate_modules
+
+    repo = copy_fixture(tmp_path)
+    path = repo / "tests/playbooks/invalid.md"
+    path.parent.mkdir(parents=True)
+    path.write_text("---\nsuites: [unknown]\n---\n\n## S01 Step\n")
+    init_git(repo)
+    for scope, expected in [
+        ({repo / "docs/system/testing/quick.md"}, False),
+        ({path}, True), ({repo / ".mdf/modules.yaml"}, True), (None, True),
+    ]:
+        findings = []
+        validate_modules(repo, findings, paths=scope)
+        assert any(item.code == "playbooks.invalid" for item in findings) is expected
+
+
+@pytest.mark.parametrize("content, diagnostic_kind", [
+    ("---\nsuites: [billing]\n---\n\n# Missing steps\n", "归属 playbook 解析失败"),
+    ("---\nsuites: [billing]\n\n# Unterminated frontmatter\n", "归属未知"),
+    ("---\nsuites: [other]\n---\n\n# Missing steps\n", None),
+])
+def test_scoped_named_doc_points_to_unusable_playbook(tmp_path, content, diagnostic_kind):
+    load_core_module()
+    from mdf_core.execution.modules_check import validate_modules
+
+    repo = copy_fixture(tmp_path)
+    modules = repo / ".mdf/modules.yaml"
+    modules.write_text(modules.read_text().replace("named: []", "named: [billing]"))
+    doc = repo / "docs/system/testing/billing.md"
+    doc.write_text("---\ntitle: billing\n---\n\n# Billing\n\n目的：测试。\n\ntestcase：playbook。\n")
+    book = repo / "tests/playbooks/billing.md"
+    book.parent.mkdir(parents=True)
+    book.write_text(content)
+    init_git(repo)
+    findings = []
+    validate_modules(repo, findings, paths={doc})
+    diagnostic = next(item for item in findings if item.code == "modules.named_doc_command")
+    if diagnostic_kind:
+        assert diagnostic_kind in diagnostic.message
+        assert "tests/playbooks/billing.md" in diagnostic.message
+    else:
+        assert "playbook 解析失败" not in diagnostic.message
+        assert "tests/playbooks/billing.md" not in diagnostic.message
+    assert not any(item.code == "playbooks.invalid" for item in findings)
+    findings = []
+    validate_modules(repo, findings)
+    assert any(item.code == "playbooks.invalid" for item in findings)

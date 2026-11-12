@@ -409,24 +409,15 @@ suites: [release, billing]
 - 判定：……
 ```
 
-执行分两段：
+执行时由 verify 在 `verify-pending` 条件下读取 [Playbook 执行](verify-playbooks.md)。
 
-1. Core 跑完全部 command；均通过且所需 suite 有 playbook 时返回 `verify-pending`。
-   - 结果含报告目录 `report_dir` 与 playbook 清单；`all_passed` 为 false。
-2. Agent 逐个执行 playbook，写入 JUnit，再以 `verify ... --record <report_dir>` 收录。
-   - Core 按「测试报告」判定，并核对每个步骤恰有一个 testcase。
-
-执行与日志约定：
-
-- 步骤中的命令都用 `mdf.py run --name <playbook 名>-<步骤 id>` 代跑，不另 tee。
-- 每个 playbook 写 `<report_dir>/<playbook 名>.xml`：
-  - `<testsuite name="<suite>">`，每步一个 `<testcase classname="<playbook 路径>" name="<步骤 id>" time="…">`。
-  - 未通过写 `<failure message="结论">`；`<system-out>` 写观察摘要与本步 `mdf.py run` 的 log 路径。
-  - 环境未就绪或无法判定时写 failure，不写 skipped。
-- 子命令自带的 JUnit 留在其 run 日志目录，不复制进 `report_dir`。
-- 续办只依赖 `report_dir` 内的 `pending.json` 与已写 XML，不在 tracked 文件中记录进度。
-- `--record` 前 HEAD 变化则丢弃本轮 pending，重跑验证。
+- Core 先跑 command；全部通过后生成 pending，`all_passed` 为 false。
+- Agent 记录实际观察，由 `scripts/playbook_junit.py` 生成 JUnit，再由 `verify --record` 收录。
+- JUnit 的 classname 为完整 playbook 路径，name 为步骤 id；每个步骤恰有一个 testcase。
+- 环境未就绪或无法判定也记 failure，不写 skipped；命令日志使用 `mdf.py run` 的产物。
+- 子命令自带的 JUnit 留在其 run 日志目录，不复制进 pending 报告目录。
 - 步骤标题只认 fenced code block（反引号或波浪号）之外的行；手册内的示例写进 code block。
+
 ### 可选历史整理（squash）
 
 PR 模式共享动作前必须读取 `references/squash.md` 并执行安全边界检查与分析后的分段整理；无可压缩区间则 no-op。

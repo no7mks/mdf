@@ -45,26 +45,41 @@ def validate_modules(
         add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
         return None
     tracked = _tracked_relpaths(repo) if paths is None or path in paths else []
-    playbook_suites = _validate_playbooks(repo, config, findings)
+    playbook_suites, playbook_errors = _validate_playbooks(repo, config, findings, paths=paths)
     for module in config.modules.values():
         if paths is None or path in paths:
             _validate_sourceset(module, findings)
             _validate_suite_inclusion(module, tracked, findings)
-        _validate_named_docs(repo, module, findings, paths=paths, playbook_suites=playbook_suites)
+        _validate_named_docs(
+            repo, module, findings, paths=paths, playbook_suites=playbook_suites, playbook_errors=playbook_errors,
+        )
     return config
 
 
-def _validate_playbooks(repo: Path, config: ModulesConfig, findings: list[Finding]) -> set[str]:
+def _validate_playbooks(
+    repo: Path, config: ModulesConfig, findings: list[Finding], *, paths: set[Path] | None,
+) -> tuple[set[str], dict[str, list[str]]]:
     from mdf_core.execution.playbooks import _tracked, parse_playbook
+    from mdf_core.foundation.yamlutil import read_frontmatter
 
     named = set(config.named_owner())
     suites: set[str] = set()
+    errors: dict[str, list[str]] = {}
     for rel in _tracked(repo):
         try:
             suites.update(parse_playbook(repo, rel, named)["suites"])
         except MDFError as exc:
-            add_finding(findings, "playbooks.invalid", str(exc), rel)
-    return suites
+            try:
+                declared = read_frontmatter(repo / rel)[0].get("suites")
+            except MDFError:
+                declared = None
+            if not isinstance(declared, list) or not declared or any(not isinstance(s, str) for s in declared):
+                declared = [""]  # 归属无法解析，不推断属于哪个 suite。
+            for suite in set(declared):
+                errors.setdefault(suite, []).append(rel)
+            if paths is None or repo / MODULES_PATH in paths or repo / rel in paths:
+                add_finding(findings, "playbooks.invalid", str(exc), rel)
+    return suites, errors
 
 
 def render_modules_yaml(
@@ -199,6 +214,7 @@ def _validate_sourceset(module: Module, findings: list[Finding]) -> None:
 def _validate_named_docs(
     repo: Path, module: Module, findings: list[Finding], *, paths: set[Path] | None = None,
     playbook_suites: set[str] = frozenset(),
+    playbook_errors: dict[str, list[str]] | None = None,
 ) -> None:
     from mdf_core.foundation.yamlutil import read_frontmatter
     from mdf_core.execution.verification import parse_named_commands
@@ -220,8 +236,14 @@ def _validate_named_docs(
             meta, body = read_frontmatter(path)
             commands, _ = parse_named_commands(meta)
             if not commands and suite not in playbook_suites:
+                errors = playbook_errors or {}
+                detail = "frontmatter 需要 commands 或 command，或有归属该 suite 的 playbook"
+                if errors.get(suite):
+                    detail += "；归属 playbook 解析失败: " + ", ".join(errors[suite])
+                if errors.get(""):
+                    detail += "；另有 playbook 解析失败且归属未知，请核对: " + ", ".join(errors[""])
                 raise MDFError(
-                    "frontmatter 需要 commands 或 command，或有归属该 suite 的 playbook",
+                    detail,
                     code="invalid_named_suite",
                 )
         except MDFError as exc:

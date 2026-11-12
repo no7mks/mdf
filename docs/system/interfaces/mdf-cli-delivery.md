@@ -148,20 +148,24 @@
   - 归属与格式见 delivery-contract「Playbook」；格式错误返回 `invalid_playbook`，`validate` 记 `playbooks.invalid`。
 - 全部命令通过且所需 suite 有 playbook 时，输出 `operation: verify-pending`，`all_passed: false`。
   - 为每个此类 suite 新建 `.mdf/reports/<时间戳>-<suite>-playbooks/`，写 `pending.json`：
-    scope、suite、branch、HEAD、playbook 步骤清单与命令结果。
+    scope、suite、branch、HEAD、playbook 步骤清单与命令结果；named 另保存 tracked 状态摘要。
   - 结果 `pending` 含 `report_dir` 与 playbook 路径；branch 同时写入未通过的 `verification-report.json`。
   - 命令失败时照常返回 `verify_command_failed`，不生成 pending。
 - `--record <report_dir>` 仅用于 branch 与 named（named 只接受单个 suite），smart 返回 `invalid_verify_scope`。
 - 以下情况返回 `invalid_playbook_report`：
   - 目录不在 `.mdf/reports/` 下、为符号链接或缺 `pending.json`。
   - scope、suite 或分支与 pending 不一致。
-  - HEAD 已变化。
+  - HEAD 已变化，或 named 的 tracked 状态与创建 pending 时不同。
   - testcase 与 playbook 步骤不能一一对应。
 - branch 收录时，worktree 除本交付的 `verification-report.json` 外须干净。
 - 通过后按「测试报告」解析并写 `summary.json`。
   - 每个 playbook 记为 `id` 与 `command` 都是 `playbook:<路径>` 的结果，接在命令结果之后。
   - branch 重写 `verification-report.json`。
 - branch 的期望结果序列为 lint、build、quick、release 命令，再接 release 的 playbook（按路径排序）。
+- 独立脚本：`python3 skills/mdf/scripts/playbook_junit.py --report-dir <目录> --playbook <仓库相对路径> --results <观察JSON>`。
+  - 三个参数均必填；读取目录内 `pending.json`，按完整 playbook 路径的 SHA-256 命名 XML，stdout 输出 `{"report": "路径"}`。
+  - 退出码 `0` 表示报告生成成功（可含测试 failure）；参数、输入或文件读写错误为 `2`，stderr 说明原因。
+  - 观察 JSON 格式与执行规则见 [Playbook 执行](../../../skills/mdf/references/verify-playbooks.md)。
 
 ### 测试报告
 

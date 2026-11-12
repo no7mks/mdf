@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 from pathlib import Path
 from typing import Any
@@ -96,6 +97,12 @@ def _head(repo: Path) -> str:
     return run(["git", "rev-parse", "HEAD"], cwd=repo).stdout.strip()
 
 
+def _tracked_state(repo: Path) -> str:
+    parts = [run(["git", "diff", "--binary", "--no-ext-diff", *args], cwd=repo).stdout
+             for args in (("HEAD",), ("--cached",))]
+    return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
+
+
 def create_pending(
     repo: Path, *, scope: str, suite: str, branch: str | None, playbooks: list[dict[str, Any]],
     results: list[dict[str, Any]],
@@ -109,6 +116,8 @@ def create_pending(
         "playbooks": [{"path": item["path"], "steps": item["steps"]} for item in playbooks],
         "results": results,
     }
+    if scope == "named":
+        state["tracked_state"] = _tracked_state(repo)
     (path / PENDING_FILE).write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n")
     return {"suite": suite, "report_dir": rel, "playbooks": [item["path"] for item in playbooks]}
 
@@ -129,11 +138,18 @@ def load_pending(
     pending = path / PENDING_FILE
     if not pending.is_file():
         raise _invalid_report(f"报告目录缺少 {PENDING_FILE}: {raw}")
-    state = json.loads(pending.read_text(encoding="utf-8"))
+    try:
+        state = json.loads(pending.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise _invalid_report(f"无法读取 pending: {raw}") from exc
+    if not isinstance(state, dict):
+        raise _invalid_report("pending 必须为 JSON object")
     if state.get("scope") != scope:
         raise _invalid_report(f"pending scope 为 {state.get('scope')}，与本次 {scope} 不一致")
     if state.get("head") != _head(repo):
         raise _invalid_report("HEAD 已变化；丢弃本轮 pending 并重跑验证")
+    if scope == "named" and state.get("tracked_state") != _tracked_state(repo):
+        raise _invalid_report("tracked 文件已变化；丢弃本轮 pending 并重跑验证")
     if evidence is not None:
         status = run(["git", "status", "--porcelain", "-z", "--untracked-files=all"], cwd=repo).stdout
         dirty = [entry[3:] for entry in status.split("\0") if entry]

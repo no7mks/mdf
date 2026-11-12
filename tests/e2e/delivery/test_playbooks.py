@@ -96,6 +96,26 @@ def test_named_record_requires_exact_steps(python_exe, tmp_path, cases, code):
     assert code in _record_named(python_exe, repo, report_dir).stderr
 
 
+@pytest.mark.parametrize("staged", [False, True])
+def test_named_record_rejects_tracked_changes(python_exe, tmp_path, staged):
+    repo, result = _named_pending(python_exe, tmp_path)
+    report_dir = result["result"]["pending"][0]["report_dir"]
+    _write_junit(repo, report_dir, "smoke-env", [(PLAYBOOK, "S01", False), (PLAYBOOK, "S02", False)])
+    (repo / PLAYBOOK).write_text((repo / PLAYBOOK).read_text() + "\nChanged assertion\n")
+    if staged:
+        git(repo, "add", PLAYBOOK)
+    assert "tracked 文件已变化" in _record_named(python_exe, repo, report_dir).stderr
+
+
+def test_named_pending_can_preserve_initial_dirty_state(python_exe, tmp_path):
+    repo, _ = _named_pending(python_exe, tmp_path)
+    (repo / PLAYBOOK).write_text((repo / PLAYBOOK).read_text() + "\nInitial edit\n")
+    result = payload(mdf(python_exe, "verify", "smoke-env", "--repo", str(repo)))
+    report_dir = result["result"]["pending"][0]["report_dir"]
+    _write_junit(repo, report_dir, "smoke-env", [(PLAYBOOK, "S01", False), (PLAYBOOK, "S02", False)])
+    assert payload(_record_named(python_exe, repo, report_dir))["result"]["all_passed"] is True
+
+
 def test_record_rejects_foreign_dir_head_change_and_smart(python_exe, tmp_path):
     repo, result = _named_pending(python_exe, tmp_path)
     report_dir = result["result"]["pending"][0]["report_dir"]

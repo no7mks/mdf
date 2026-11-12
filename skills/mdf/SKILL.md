@@ -140,6 +140,7 @@ disable-model-invocation: true
 - 其他 `$mdf verify [arg]`：arg 为 smart/branch/named 时按 scope 解析，否则按 named
   suite 名解析。也可用 `--scope smart|branch|named`、`--suites`（named）、
   `--module`、`--paths`、`--test`；位置参数不与 `--scope` 同用；仅 `named` 可带 `--suites`。
+  - branch/named 可带 `--record <report_dir>` 收录 playbook；按 verify 的 pending 子流程执行。
 - start、deliver 可带 `--from-master`、`--target`；ODR 使用 `--kind on-demand-release`、`--version` 与重复 `--feature`。
   - 仅命中这些参数或续办该类交付时，按 [Late-decision](references/late-decision.md) 解析，不当作未知 option。
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
