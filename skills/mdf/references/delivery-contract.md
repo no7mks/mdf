@@ -19,10 +19,9 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 objectives 按 manifest.closeout.mode 固定收尾结构，local 使用原有 checklist。
 
-- PR mode 将末尾 close-out checkbox 替换为 `- [ ] pr`。
-- pr 后写普通步骤 `- close-out（pr merged 后必须续办；不设 checkbox）`。
-- pr 仅勾自己的候选项；提交后仍持续等待实际 merged，不凭勾选结束 Goal。
-- close-out 没有 tick，以发布、backmerge、source 清理与最终核验判定完成。
+- PR mode 的 checklist 止于 `catch-up`，记录仓内前置工作与验收。
+- pr 按实际 merged、合并核验与关联 CI 收尾判定完成。
+- close-out 按适用的发布、backmerge、source 清理与最终核验判定完成。
 - 完整交付在 pr 完成后继续 close-out；until、暂停与普通 next 的单步边界仍有效。
 
 
@@ -31,7 +30,7 @@ objectives 按 manifest.closeout.mode 固定收尾结构，local 使用原有 ch
 由 deliver 与各交付 intent（含 verify、fact、close-out）读取。
 `$mdf integrate` 只读「补覆盖」。规则持续适用。
 人工 feature 先读取 [专用契约](manual-feature.md) 的当前阶段条款，优先于下文普通主线。
-adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其七项账本、smart report 与对应模式的收口规则。
+adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其固定账本、smart report 与对应模式的收口规则。
 应用条款不重新进入这两个文件的入口或续办工作流；仅由原调用方按已声明条件委托。
 ### 身份与材料
 
@@ -129,8 +128,8 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。
-- **进度**：唯一账本是 `objectives.md` 步骤 checklist；各 intent 成功后**自勾**。
-  - deliver / next 只读勾选与依赖决定下一 intent，**不**读 stage gate、**不**对 report 做过期审判。
+- **进度**：checklist 项成功后由对应 intent 自勾；PR mode 的收尾按本页的实际结果续办。
+  - deliver / next 按勾选与依赖选择 checklist 内的阶段，**不**读 stage gate、**不**对 report 做过期审判。
   - roster `0,0` 只表示无 qa/dev 角色；不自动要求 owner 开发或 converge。
 - **converge**：仅当 checklist 的 converge 项仍为 `[ ]` 时进入；核对前置已勾，跑
   **verify smart**，修到达成后自勾。
@@ -241,9 +240,9 @@ Git 约束：
 - 禁止 rebase，异名分支使用 no-ff；合并冲突保留现场。
 ### 进度与 Report
 
-**进度唯一账本**：`objectives.md` 步骤 checklist。各 intent 成功收尾必须自勾对应项并提交。
+`objectives.md` 是 checklist 项的唯一账本。各 intent 完成对应项后自勾并提交。
 
-- deliver / next / 人工续办：只读勾选决定下一 intent。
+- deliver / next / 人工续办按勾选推进 checklist。PR mode 的 pr 与 close-out 按实际平台与 Git 证据续办。
 - write-tests 写完可编译或可加载执行的测试即完成，**不要求全绿**；完成后自勾 objectives。
 - ❌ 不以 `gates/<stage>.json`、`verification-report.json`、fact 审阅报告、`code-review.md` 当阶段通行证。
 - ❌ 不对 report 做「相对 HEAD / 相对上游 intent」的过期 gatekeeping。

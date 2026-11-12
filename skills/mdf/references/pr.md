@@ -126,7 +126,7 @@ closeout:
 - 宿主不提供 Goal 时仍按本页轮询与恢复规则推进，并如实说明缺少跨 turn 自动续办保障。
   Goal 不替代平台合并授权，也不越过 deliver 的 until、只读限制或用户暂停。
 
-- pr Goal 完成后返回 objectives 的下一项 close-out；它有独立完成判据，不属于 pr Goal。
+- pr Goal 完成后交回调用方续办 close-out；它有独立完成判据，不属于 pr Goal。
   独立 pr、deliver / adhoc 按该步骤继续 close-out；显式 until、用户停止或暂停仍须遵守。
 - 普通 next 保持单步语义：本次若选择 pr，完成后报告 close-out 为下一步，不升级为 deliver。
 
@@ -142,7 +142,7 @@ closeout:
   - 命令异常不能当作未包含或已通过；先读日志定位。
 - 集成前确认 owner clean、无已有 MERGE_HEAD，并保存下节格式的「PR 返工」备注。
   - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”，不伪造 PR ID，也不提前创建 finish 记录。
-  - 固定集成前 HEAD 为 `catch-up 基线`（增量审查左端点）、远端 tip 与原验证请求；仅退勾 `catch-up` 和 `pr`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`）。
+  - 固定集成前 HEAD 为 `catch-up 基线`（增量审查左端点）、远端 tip 与原验证请求；仅退勾 `catch-up`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`）。
   - 提交备注后先按 [squash](squash.md#pr-模式与-planning-land-的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
   - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
   - 禁止 rebase、force push、整侧覆盖或削弱测试；语义不明时保留现场并询问。
@@ -150,11 +150,11 @@ closeout:
   - ❌ 严禁因远端集成退勾已通过的基线步骤，严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release`、从 `start_commit` 起全分支审查或全量 `fact audit`。
   - 有有效上轮审查时按 1 人增量新一轮仅覆盖 `<catch_up_base>..HEAD` 改动文件与冲突修复，复核上轮问题。
   - 验证只跑 `verify --scope smart --paths <本次改动文件>`；事实只按 `--scope paths` 补检改动文件关联的事实页。
-  - 即使 `catch-up` 此前已勾选，再次触发远端集成也只退勾 `catch-up` 与 `pr` 并回到 `catch-up`。
+  - 即使 `catch-up` 此前已勾选，再次触发远端集成也只退勾 `catch-up` 并回到 `catch-up`。
   - 补检引发修复时在 `catch-up` 内对改动文件增量复检，直到通过并自勾 `catch-up`，同步材料并提交。
 - 全部完成后再次 pr；独立调用也持续续办，不只报告待办。release/ODR/hotfix 候选目录沿用下方返工规则。
   - 创建或更新 PR/MR 前再次 fetch 并检查最新远端 tip；未包含则重复本节，不复用集成前的通过记录。
-  - 清除返工备注和恢复候选勾选按下方规则执行；存在未完成返工时不得调用 pr 提交源分支。
+  - 按下方规则清除返工备注；存在未完成返工时不得调用 pr 提交源分支。
   - 检查后远端仍可能并发前进；本节不保证未来 CI 必过，平台 CI 与合并约束仍须针对最终合并结果核验。
 
 ### 恢复路由与返工上下文
@@ -182,7 +182,7 @@ closeout:
 
 ### 生命周期
 
-本节以平台实际状态判断 pr 完成，不凭退出码或候选 checklist 判断。
+本节核对平台实际状态、合并结果和关联 CI，判定 pr 是否完成。
 
 | 状态 | 操作 |
 | --- | --- |
@@ -234,17 +234,17 @@ closeout:
 可修问题交回主链外处理，保持当前任务持续推进；独立 pr 和 deliver 委托均适用。
 
 - 步骤 4 的返工入口：核对反馈对应当前 PR/MR 与 head；读取完整 review、CI 日志和失败报告，定位问题，不为查看输出重复运行。
-- 修改前先保存「PR 返工」非 checklist 备注（含 `catch-up 基线`），仅退勾 objectives 的 `catch-up` 与 `pr`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`），落盘后再修复。
+- 修改前先保存「PR 返工」非 checklist 备注（含 `catch-up 基线`），仅退勾 objectives 的 `catch-up`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`），落盘后再修复。
    - 备注位于本次材料目录的 objectives，记录父 intent 与调用方、原 PR/MR 身份、source/owner/common dir/主路径。
    - 原调用方为 deliver 时保留其有效 until、yolo 与已有授权依据；新调用有显式边界或用户限制时以本次要求为准。
    - 同时记录反馈对应的旧 head、修复前左端点、原验证请求（scope/模块/选题或 suite/完整命令）及返回 PR 的位置。
-   - 进度仍只由 checklist 决定；备注只恢复父流程与参数，不另加 gate 或状态协议，不改写人工工作勾选来源。
+   - checklist 记录前置验收；备注恢复父流程与参数，保留人工工作勾选来源。
    - 冲突通过 merge 最新远端目标分支解决；不 rebase、不 force push，不覆盖他人现场。
    - CI 暂时故障仅在证据支持时重试；不降低测试、审批或 branch protection 要求。
 - 结束 pr 内部调用栈，在主链外委托 `references/catch-up.md`，仅对修复改动文件增量完成 lint、1 人 code-review、`verify --scope smart --paths` 及 paths 事实补检。
    - ❌ 严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release` 或全分支审查；再次触发更新同样只回到 `catch-up`。
    - 独立 pr 也由当前 Agent 续办 `catch-up`，不仅报告待办后结束；deliver 返回 Select 按 `catch-up` 推进。
-- 全部补审补测与 fact 完成后，复核候选材料、恢复 pr 候选勾选，在更新 PR/MR 前的材料提交中移除该备注。
+- 全部补审补测与 fact 完成后，复核候选材料，在更新 PR/MR 前的材料提交中移除该备注。
    - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与 finish 记录的差异恢复更新，不重做首次材料准备。
    - 恢复 pr，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。
    - 保留 finish 操作记录；不删除或篡改记录以绕过 CLI 核验。
@@ -263,7 +263,10 @@ release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合�
 
 ### 候选材料准备
 
-Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重复发布准备。
+Prepare 在首次提交前完成交付材料。前置已全勾且无 finish 记录时同样进入 Prepare。
+
+- 按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项。无 finish 记录也须按 source/target 查回平台 PR/MR。
+- release/ODR/hotfix 已提交 `changes/<version>/` 候选时，复用原版本与材料，不重复 release-closeout 或归档。
 
 - 普通交付与人工 feature 读取 [close-out 的材料规则](close-out.md#s3) 至步骤 9 的材料条款。
   这里只复用材料规则，不执行 close-out intent、local 集成或 Finish Gitflow。
@@ -280,19 +283,16 @@ Prepare 在首次提交前完成交付材料；恢复已有候选材料时不重
   - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
 - 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。
 - 提交前重核远端 ancestor 与 squash；目标前进则回本页集成、补审补测循环。
-- 候选材料与 checkbox 提交、必要 squash 完成后，push 前执行
+- 候选材料提交、必要 squash 完成后，push 前执行
   [PR 最终候选复核](fact-audit-delivery.md#pr-最终候选复核)。首次与更新 PR 均适用。
   未通过不 push；本轮 JSON 留在仓外，不再写回报告或产生候选提交。
 
-### 勾选与交接
+### 完成与交接
 
-pr 只维护自己的 checkbox，close-out 是其后无 checkbox 的必执行步骤。
-无账本 adhoc 不创建 checkbox；pr 与 close-out 的完成仍分别核实际平台与清理结果。
+PR mode 的 checklist 止于 `catch-up`。pr 和 close-out 都按实际结果续办。
 
-- 提交候选材料前将 pr 项勾选并提交；这只表示已准备候选，不表示 intent 或 Goal 完成。
-- 创建 PR、CI 全绿与候选勾选均不能结束 pr；必须等待实际 merged、合并核验与关联 CI 收尾通过。
-- merged 后不追加仅为勾选的源提交；返回调用方执行 close-out，无须额外文档 PR。
-- close-out 只核实际结果，不预勾、不补勾；完整交付不能因 checklist 全勾跳过续办。
+- 实际 merged、合并核验与关联 CI 收尾均通过后，pr 完成并交回调用方选择 close-out。
+- close-out 按 [合并后续办](pr-close-out.md) 核发布、backmerge 与清理结果。
 
 ### 调用边界与提交裁定
 

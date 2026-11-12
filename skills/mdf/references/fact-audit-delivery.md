@@ -38,7 +38,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## PR 最终候选复核
 
-PR Prepare 在候选材料提交、checkbox 更新和必要 squash 完成后、push 前执行。
+PR Prepare 在候选材料提交和必要 squash 完成后、push 前执行。
 
 1. 再核 CI base 与远端集成；目标变化时返回 pr 的集成与补审补测。
 2. 对最终候选跑共用核，覆盖候选 Change、HTML 总结及报告中的事实声明。

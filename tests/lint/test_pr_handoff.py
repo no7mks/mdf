@@ -32,6 +32,14 @@ def test_pr_prepare_resumes_repairs_before_finish_or_polling():
         assert rule in text
 
 
+def test_pr_prepare_reuses_committed_candidate_without_finish_record():
+    text = workflow('pr').split('### 候选材料准备', 1)[1].split('### 完成与交接', 1)[0]
+    assert '前置已全勾且无 finish 记录时同样进入 Prepare' in text
+    assert '按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项' in text
+    assert '无 finish 记录也须按 source/target 查回平台 PR/MR' in text
+    assert '复用原版本与材料，不重复 release-closeout 或归档' in text
+
+
 def test_parent_closeout_survives_nested_review_and_verify():
     for name in ('code-review', 'verify'):
         assert '不得删除父 PR 返工备注' in workflow(name)
@@ -122,10 +130,10 @@ def test_pr_mode_default_completion_and_mandatory_unticked_continuation():
     assert '默认 local 与 PR mode 均无截止点，直到 close-out 完成' in policy
     assert '显式 `--until close-out` 允许 pr 等到 merged 后停止' in policy
     contract = workflow('delivery-contract')
-    assert '- close-out（pr merged 后必须续办；不设 checkbox）' in contract
+    assert 'checklist 止于 `catch-up`' in contract
     for name in ('deliver', 'next', 'manual-feature', 'adhoc'):
-        assert 'merged 后必选无 checkbox 的 close-out' in workflow(name)
-    assert 'close-out 只核实际结果，不预勾、不补勾' in workflow('pr')
+        assert '前置全勾后按 [PR 恢复路由]' in workflow(name)
+    assert '实际 merged、合并核验与关联 CI 收尾均通过后，pr 完成' in workflow('pr')
 
 
 def test_pr_repairs_return_to_pr_and_submission_preserves_deliver_boundaries():

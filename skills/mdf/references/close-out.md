@@ -377,8 +377,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   ❌ 不回委托 verify branch。不做 commit 对齐审判。
   - release/ODR/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
-- 成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
-  - PR mode 没有 close-out checkbox；pr 只勾自己的候选项，close-out 按实际结果完成。
+- local 模式在成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
 - PR mode 的提交前远端集成、补审补测属于 pr，见 [pr](pr.md)。
 - local 模式再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。

@@ -74,8 +74,9 @@ def closeout(python_exe, work, *extra):
                "--hotfix-change-json", hotfix_input(), *extra)
 
 
-@pytest.mark.parametrize("pr_mode", [False, True])
-def test_closeout_auto_version_archives_slug_and_keeps_real_source(python_exe, tmp_path, monkeypatch, pr_mode):
+@pytest.mark.parametrize("mode", ["local", "new_pr", "existing_pr"])
+def test_closeout_auto_version_resumes_committed_candidate(python_exe, tmp_path, monkeypatch, mode):
+    pr_mode = mode != "local"
     repo, remote = start_repo(tmp_path)
     bug = repo / "docs/bugs" / BUG_NAME
     bug.write_text(bug.read_text().replace("status: open", "status: closed\nfixed_in: 1.2.1"))
@@ -87,6 +88,10 @@ def test_closeout_auto_version_archives_slug_and_keeps_real_source(python_exe, t
     git(repo, "push", "origin", "master")
     work = start(python_exe, tmp_path, repo)
     seed_verify_branch(python_exe, work)
+    if pr_mode:
+        objectives = work / "changes/unreleased/fix-login/objectives.md"
+        objectives.write_text(objectives.read_text().replace("[ ]", "[x]"))
+        commit(work)
     before = git(work, "status", "--porcelain").stdout
     assert payload(closeout(python_exe, work, "--dry-run"))["summary"]["version"] == "1.2.1"
     assert git(work, "status", "--porcelain").stdout == before
@@ -117,7 +122,22 @@ def test_closeout_auto_version_archives_slug_and_keeps_real_source(python_exe, t
         monkeypatch.setattr(pull_finish, "origin", lambda *_: identity)
         monkeypatch.setattr(pull_finish, "Forge", lambda *_: platform)
         squash_pending(work)
+        source = "hotfix/fix-login"
+        head = git(work, "rev-parse", "HEAD").stdout.strip()
+        git(work, "show", "HEAD:changes/1.2.1/CHANGE.md")
+        assert not state_path(repo, source).exists()
+        if mode == "existing_pr":
+            git(work, "push", "origin", source)
+            platform.create(source, "master", "恢复候选发布", "候选已提交")
+
         first = payload(mdf(python_exe, "pr", "--repo", str(work)))
+        assert first["status"] == "waiting_for_merge" and not first["completed"]
+        assert len(platform.pulls) == 1 and first["pull_request"]["id"] == 1
+        assert first["pull_request"]["head"] == head
+        assert git(work, "rev-parse", "HEAD").stdout.strip() == head
+        assert not git(work, "status", "--porcelain").stdout
+        assert not objectives.exists()
+        assert json.loads(state_path(repo, source).read_text())["head"] == head
         merged = platform.merge(1, tmp_path)
         done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
         assert done["completed"] and done["tag"] == "v1.2.1"

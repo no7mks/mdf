@@ -1,4 +1,4 @@
-"""Adhoc 七步账本不接受缺项、越序或虚报完成。"""
+"""Adhoc 固定账本不接受缺项、越序或虚报完成。"""
 import pytest
 from mdf_core.lifecycle.adhoc import objectives, require_objectives
 from mdf_core.foundation.errors import MDFError
@@ -33,10 +33,13 @@ def test_adhoc_rejects_changed_or_reordered_steps(old, new):
         require_objectives(objectives().replace(old, new))
 
 
-def test_pr_adhoc_uses_pr_as_last_checkbox():
-    text = objectives().replace("close-out", "pr")
+def test_pr_adhoc_requires_catch_up_and_no_pr_checkbox():
+    text = objectives().replace("- [ ] close-out\n", "")
     require_objectives(text, starting=True, pr_mode=True)
-    assert require_objectives(text.replace("[ ]", "[x]", 6), pr_mode=True) == "pr"
-    require_objectives(text.replace("[ ]", "[x]"), finishing=True, pr_mode=True)
-    with pytest.raises(MDFError):
-        require_objectives(text, starting=True)
+    assert require_objectives(text.replace("[ ]", "[x]", 5), pr_mode=True) == "catch-up"
+    checked = text.replace("[ ]", "[x]")
+    assert require_objectives(checked, finishing=True, pr_mode=True) is None
+    with pytest.raises(MDFError, match="未完成"):
+        require_objectives(checked.replace("[x] catch-up", "[ ] catch-up"), finishing=True, pr_mode=True)
+    with pytest.raises(MDFError, match="固定顺序"):
+        require_objectives(checked + "\n- [x] pr", finishing=True, pr_mode=True)

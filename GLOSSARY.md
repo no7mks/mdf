@@ -253,8 +253,8 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 
 ## Objectives、Report 与收敛
 
-- **objectives**：本次交付的目标、验收与**进度唯一账本**
-  （步骤 checklist；各 intent 自勾）。
+- **objectives**：本次交付的目标、验收与 checklist 进度账本。各 intent 自勾对应项。
+  PR mode 的 checklist 止于 catch-up，pr 与 close-out 按实际状态续办。
   - feature 引用单个 PRP 的目标、非目标、约束与可验证验收。
   - release 写已选定工作线、本版收口范围、预发布工作、是否联调、
     非目标与可验证验收。

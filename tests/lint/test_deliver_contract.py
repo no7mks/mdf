@@ -211,7 +211,7 @@ def test_catch_up_contract_forbids_full_reruns_and_reticking_baseline():
     ):
         assert rule in catch_up
     assert "fact 已勾、catch-up 未勾" in workflow("deliver")
-    assert "仅退勾 `catch-up` 和 `pr`" in workflow("pr")
+    assert "仅退勾 objectives 的 `catch-up`" in workflow("pr")
     assert "仅将 `catch-up` 退回 `[ ]`" in workflow("close-out")
     assert "仅退勾 `catch-up`" in workflow("adhoc-close-out")
 

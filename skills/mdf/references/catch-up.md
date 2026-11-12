@@ -64,7 +64,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 - ❌ **严禁触发全量验证**：严禁调用 `$mdf verify --scope branch`；严禁重跑顶层整仓 `smoke` 或 `release`；严禁清空、重置或覆盖已通过的 `verification-report.json`。
 - ❌ **严禁触发全分支或全员代码审查**：严禁从 `start_commit` 或上一发布版本重审整条分支；严禁按 `roster.reviewers` 全员重派，固定只派 1 名 reviewer 审 `<catch_up_base>..HEAD`。
 - ❌ **严禁触发全量事实审阅**：严禁重跑整分支 `fact audit` 或 `--scope full`；未触及业务实现与事实页时直接跳过步骤 4。
-- ❌ **再次触发更新只回 `catch-up`**：`catch-up` 已勾 `[x]` 后，若 `pr` 或 `close-out` 再次引入远端合入或返工，只退勾 `catch-up`（PR mode 另退勾 `pr`），绝不回退更早步骤。
+- ❌ **再次触发更新只回 `catch-up`**：`catch-up` 已勾 `[x]` 后，若 `pr` 或 `close-out` 再次引入远端合入或返工，只退勾 `catch-up`，绝不回退更早步骤。
 
 ## 增量基线与范围判定
 

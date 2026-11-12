@@ -89,7 +89,7 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-PR mode 末尾为 pr checkbox 与无 checkbox 的 close-out；local 保持原顺序。
+PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
 
 ### 分支参数
 
@@ -168,7 +168,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
   - 精简 checklist 至少含：修复/范围、converge、lint、code-review、verify branch、
-    fact audit、catch-up、close-out；并含 `needs_design`。
+    fact audit、catch-up，以及 local 模式的 close-out；并含 `needs_design`。
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
 

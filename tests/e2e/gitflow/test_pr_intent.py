@@ -1,9 +1,11 @@
 """pr 与 close-out 的独立完成边界。"""
+import json
+import re
 from pathlib import Path
 
 import pytest
 
-from mdf_test_support import git, mdf, payload
+from mdf_test_support import git, mdf, payload, write_release_objectives
 from support_pull import prepare
 from support_delivery import start_repo, commit
 
@@ -13,9 +15,9 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     from mdf_core.lifecycle.delivery_state import locate
     text = (locate(work)[0] / "objectives.md").read_text()
-    assert ("- [x] pr" if kind == "adhoc" else "- [ ] pr") in text
-    assert "- [ ] close-out" not in text
-    assert "- close-out（pr merged 后必须续办；不设 checkbox）" in text
+    steps = re.findall(r"(?m)^- \[[ x]\] (.+)$", text)
+    assert steps[-1] == "catch-up"
+    assert "pr" not in steps and "close-out" not in steps
     if kind == "adhoc":
         status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
         assert status["next_step"] == "pr" and not status["completed"]
@@ -46,7 +48,6 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
     assert finished["completed"] and finished["remote_deleted"]
     assert not git(work, "branch", "--show-current").stdout.strip()
     if kind == "adhoc":
-        import json
         from mdf_core.lifecycle.publish import state_path
         status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work), "--slug", "service-health"))["result"]
         assert status["completed"] and status["next_step"] is None
@@ -59,7 +60,7 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
 
 
 @pytest.mark.parametrize("mode", ["local", "pr"])
-@pytest.mark.parametrize("kind", ["manual", "adhoc"])
+@pytest.mark.parametrize("kind", ["manual", "adhoc", "on-demand-release"])
 def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path, mode, kind):
     repo, _ = start_repo(tmp_path)
     if mode == "pr":
@@ -76,12 +77,21 @@ def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path
             text = text.replace("{{MDF_" + marker + "}}", "本次仅更新文档，保留现有行为。")
         obj.write_text(text)
         args = ["--kind", "feature", "--manual", "--objectives-file", str(obj)]
-    result = payload(mdf(python_exe, "start", "--repo", str(repo), "--name", "test-tail", *args))
+    name = ["--name", "test-tail"]
+    slug = "test-tail"
+    if kind == "on-demand-release":
+        slug, name = "1.2.1", []
+        args = ["--kind", kind, "--version", slug, "--feature", "feature/service-health",
+                "--objectives-file", str(write_release_objectives(tmp_path))]
+    result = payload(mdf(python_exe, "start", "--repo", str(repo), *name, *args))
     work = Path(result["worktree"])
-    text = (work / "changes/unreleased/test-tail/objectives.md").read_text()
+    text = (work / "changes/unreleased" / slug / "objectives.md").read_text()
     if mode == "pr":
-        assert "- [ ] pr" in text and "- [ ] close-out" not in text
-        assert text.index("- [ ] pr") < text.index("- close-out（pr merged 后必须续办；不设 checkbox）")
+        steps = re.findall(r"(?m)^- \[[ x]\] (.+)$", text)
+        assert steps[-1] == "catch-up"
+        assert "pr" not in steps and "close-out" not in steps
+        if kind == "on-demand-release":
+            assert steps[-2] == "ODR 统一验收"
     else:
         assert "- [ ] close-out" in text and "- [ ] pr" not in text
         result = mdf(python_exe, "pr", "--repo", str(work))

@@ -113,7 +113,7 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 ## 术语与数据结构
 
-PR mode 的 pr 候选项已勾时仍先核平台实际状态；未 merged 继续 pr，merged 后必选无 checkbox 的 close-out。
+PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
 merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验，通过后才选择 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
@@ -278,6 +278,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
+| PR mode 的 ODR 已完成 fact、统一验收未勾 | 按 [统一验收](late-decision.md#纳入-checkpoint-与统一验收) 执行 `delivery accept`，返回 Select |
 | fact 已勾、catch-up 未勾 | 委托 `references/catch-up.md`（仅对改动文件做增量补检；严禁退勾已过基线四项或全量重跑） |
 | catch-up 已勾、PR mode 且 pr 尚未完成 | 委托 `references/pr.md`，等待 merged、合并核验与关联 CI 收尾通过；完成后回 Select |
 | catch-up 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
@@ -290,8 +291,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - release/ODR/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - close-out 返回「待主链外续办」时结束该调用栈并返回 Select；保留已齐审查与修复窗。
-  - 只退勾 `catch-up`（PR mode 另退勾 `pr`），在 close-out 外委托 `catch-up` 增量补检改动文件后再续办收口；不在 close-out 内绕跑 verify，严禁退勾已过基线四项。
-  - PR/MR 轮询收到可修 review/CI 反馈或冲突时同样只退勾 `catch-up` 与 `pr` 并返回 Select；经 `catch-up` 增量补检后更新原 PR/MR，继续轮询。
+  - 只退勾 `catch-up`，在 close-out 外委托 `catch-up` 增量补检改动文件后再续办收口；不在 close-out 内绕跑 verify，严禁退勾已过基线四项。
+  - PR/MR 轮询收到可修 review/CI 反馈或冲突时同样只退勾 `catch-up` 并返回 Select；经 `catch-up` 增量补检后更新原 PR/MR，继续轮询。
 
 - 内部委托到 until 时逐层返回截止点与未完成子步骤，直接进入 5；不把截止当作失败或自动重试。
 - fact audit 的可修 finding 交回 Select；外部阻塞、缺证据或低 confidence 待确认不擅自启动 fact update。
