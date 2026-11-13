@@ -65,7 +65,8 @@ def require_identity(data):
 def merged_commit(repo, head):
     from mdf_core.lifecycle.delivery_state import git
 
-    merges = git(repo, "rev-list", "--parents", "--merges", "--first-parent", "refs/heads/develop")
+    from mdf_core.workspace.workflow_policy import integration_branch
+    merges = git(repo, "rev-list", "--parents", "--merges", "--first-parent", f"refs/heads/{integration_branch(repo)}")
     for line in merges.stdout.splitlines():
         fields = line.split()
         if head in fields[2:]:
@@ -128,6 +129,7 @@ def command_status(args):
     merge_commit = merged_commit(repo, head)
     if merge_commit and pending is not None:
         raise MDFError("已合并的 adhoc 账本仍有未完成项，保留现场", code="invalid_delivery")
+    from mdf_core.workspace.workflow_policy import integration_branch
     next_step = pending or "close-out"
     state = {}
     if pr_mode:
@@ -136,7 +138,7 @@ def command_status(args):
         path = state_path(repo, owner)
         state = read_json(path) if path.exists() else {}
         if state and (state.get("mode") != "pr" or state.get("source") != owner
-                      or state.get("target") != "develop"):
+                      or state.get("target") != integration_branch(repo)):
             raise MDFError("PR 操作记录与 adhoc 身份不符", code="pull_state_changed")
         if state.get("merge_commit") and state.get("head") != head:
             raise MDFError("已合并 PR 之外仍有源提交", code="pull_state_changed")

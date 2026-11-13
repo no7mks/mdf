@@ -20,6 +20,7 @@ from mdf_core.workspace.gitutil import (
     unreleased_slug,
     worktree_map,
 )
+from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
 from mdf_core.lifecycle.roster import (
     freeze_roster,
     models_from_args,
@@ -118,8 +119,11 @@ def require_trunk_default(repo: Path, trunk: str = "master") -> None:
         )
 
 
-def _target(kind: str) -> str:
-    return "develop" if kind in {"feature", "bugfix", "release", "adhoc"} else "master"
+def _target(repo: Path, kind: str) -> str:
+    from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
+    if kind in {"feature", "bugfix", "release", "adhoc"}:
+        return integration_branch(repo)
+    return trunk_branch(repo)
 
 
 def _discard(repo: Path, created: list[tuple[str, Path]]) -> None:
@@ -150,15 +154,34 @@ def command_start(args) -> None:
     require_git_root(repo)
     ensure_clean(repo)
     from mdf_core.lifecycle.late_decision import start_options, CHECKPOINT
+    from mdf_core.workspace.workflow_policy import require_gitflow
+    trunk, github = trunk_branch(repo), is_github_flow(repo)
+    if github:
+        if getattr(args, "from_master", False):
+            require_gitflow(repo, "start --from-master")
+        if args.kind == "on-demand-release":
+            require_gitflow(repo, "start --kind on-demand-release")
     from_master, delivery_target, features = start_options(args)
     from mdf_core.lifecycle.odr_scope import load_scope
     scope = load_scope(repo, args.scope_file) if getattr(args, "scope_file", None) else []
     if args.kind == "on-demand-release" and not (features or scope):
         raise MDFError("ODR 范围不得为空", code="missing_features")
-    base = "master" if from_master else _target(args.kind)
-    if not _exists(repo, f"refs/heads/{base}"):
+    base = trunk if from_master else _target(repo, args.kind)
+    support = None
+    if github and args.kind == "hotfix":
+        from mdf_core.lifecycle.support_line import hotfix_base
+        base, support = hotfix_base(repo, args)
+    cutpoint = None
+    if getattr(args, "from_commit", None):
+        if not github or args.kind != "release":
+            raise MDFError("--from-commit 仅适用于 github-flow 的 release", code="invalid_arguments")
+        from mdf_core.lifecycle.cutpoint import resolve_cutpoint
+        cutpoint = resolve_cutpoint(repo, args.from_commit, trunk)
+    creating_support = bool(support and support.get("create_from"))
+    if not creating_support and not _exists(repo, f"refs/heads/{base}"):
         raise MDFError(f"Branch {base} must exist", code="missing_branch")
-    _require_base_covers_origin(repo, base)
+    if not creating_support:
+        _require_base_covers_origin(repo, base)
     objectives = None
     manual, adhoc = getattr(args, "manual", False), args.kind == "adhoc"
     if manual:
@@ -268,10 +291,13 @@ def command_start(args) -> None:
             raise MDFError(f"Branch already exists: {name}",
                            code="branch_exists")
     created: list[tuple[str, Path]] = []
+    if creating_support:
+        from mdf_core.lifecycle.support_line import ensure_support_branch
+        ensure_support_branch(repo, support, trunk)
     try:
         for name in names:
             path = sibling_worktree(repo, name)
-            add_linked_worktree(repo, name, path, base)
+            add_linked_worktree(repo, name, path, cutpoint or base)
             created.append((name, path))
         work = created[0][1]
         if args.kind == "feature" and not manual:
@@ -299,7 +325,13 @@ def command_start(args) -> None:
             }
             if args.kind == "hotfix" and args.name and args.version:
                 identity["version"] = args.version
-            if args.kind == "feature":
+            if cutpoint:
+                identity.update(frozen_cutpoint=True, cutpoint_commit=cutpoint)
+            if github:
+                identity["target"] = base
+                if support:
+                    identity.update(base_branch=base, support=support)
+            elif args.kind == "feature":
                 identity.update(base_branch=base, target=delivery_target if from_master else "develop")
             if args.kind == "on-demand-release":
                 identity.update(features=features or [], scope=scope)
@@ -414,7 +446,8 @@ def command_finish_gitflow(args) -> None:
         return
     kind = details["kind"]
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
-    target = target_for(repo, source) if kind == "feature" else "develop"
+    github = is_github_flow(repo)
+    target = target_for(repo, source) if kind == "feature" or github else "develop"
     if not args.source and not (kind == "feature" and target.startswith("on-demand-release/")):
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         require_fixed_outcomes(repo, source)
@@ -429,7 +462,7 @@ def command_finish_gitflow(args) -> None:
     publish = kind in {"release", "on-demand-release", "hotfix"}
     if kind == "feature":
         require_feature_target(repo, source, target)
-    targets = [target] if kind in {"feature", "bugfix"} else ["master", "develop"]
+    targets = [target] if kind in {"feature", "bugfix"} or github else [trunk_branch(repo), "develop"]
     if args.source and not publish:
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
     if not publish and not _exists(repo, f"refs/heads/{target}"):
@@ -447,7 +480,6 @@ def command_finish_gitflow(args) -> None:
         ensure_clean(trees.get(target) or (primary if publish else repo))
     if publish:
         _fetch(repo)
-        from mdf_core.workspace.workflow_policy import trunk_branch
         require_trunk_default(repo, trunk_branch(repo))
     for name in role_branches(source, finish_roster):
         if _exists(repo, f"refs/heads/{name}") or name in trees:

@@ -76,6 +76,23 @@ def written_paths(repo: Path) -> list[str]:
     return sorted(_status_paths(raw))
 
 
+def _apply_trunk_first(repo: Path, source: str, version: str, change: dict[str, Any]) -> dict[str, Any]:
+    """github-flow 的 support/* hotfix 必须登记 Trunk-First 处置；其他线不接受 trunk_fixes。"""
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.lifecycle.support_line import is_support_branch, normalize_trunk_fixes, verify_trunk_first
+    target = None
+    if is_github_flow(repo):
+        from mdf_core.lifecycle.late_decision import target_for
+        target = target_for(repo, source)
+    if target is None or not is_support_branch(target):
+        if change.get("trunk_fixes"):
+            raise MDFError("trunk_fixes 仅适用于 github-flow 的 support/* hotfix", code="invalid_closeout_spec")
+        change.pop("trunk_fixes", None)
+        return change
+    fixes = normalize_trunk_fixes(change.get("trunk_fixes"), change["fixed"])
+    return {**change, "trunk_fixes": verify_trunk_first(repo, fixes, version)}
+
+
 def derive_closeout_spec(
     repo: Path, args: argparse.Namespace
 ) -> dict[str, Any]:
@@ -138,6 +155,7 @@ def derive_closeout_spec(
                 code="invalid_closeout_spec",
             )
         hotfix_change = normalize_hotfix_change(raw_hotfix, version, source=details["name"])
+        hotfix_change = _apply_trunk_first(repo, details["name"], version, hotfix_change)
         proposals = set(hotfix_change["proposals"])
         fixed = set(hotfix_change["fixed"])
         closed = set(hotfix_change["closed"])

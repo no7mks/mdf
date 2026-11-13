@@ -26,7 +26,8 @@ def inspect(repo, branch=None, *, refresh=True):
             # 显式获取所有分支，不依赖可能只覆盖一个分支的 fetch refspec。
             git(repo, 'fetch', remote, f'+refs/heads/*:refs/remotes/{remote}/*', '--tags')
     if branch == 'planning':
-        target = 'refs/heads/master'
+        from mdf_core.workspace.workflow_policy import trunk_branch
+        target = f'refs/heads/{trunk_branch(repo)}'
         if (not git(repo, 'cat-file', '-e', f'{target}:.mdf/manifest.yaml', check=False).returncode
                 and configured(repo, target)['mode'] == 'pr' and not planning_only(repo, target, head)):
             raise MDFError('planning 须先通过完整文档历史检查，不得用 squash 隐藏代码改动', code='pr_required')

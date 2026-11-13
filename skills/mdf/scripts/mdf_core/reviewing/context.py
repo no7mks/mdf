@@ -156,8 +156,9 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
                 or any(r.get("incomplete") for r in previous.get("reviewers", []))):
             raise MDFError("上轮规则已变化或报告不完整；需要完整首轮审查", code="invalid_previous_review")
     from mdf_core.lifecycle.late_decision import target_for
-    delivery_target = (delivery.get("target") if details["kind"] == "feature" and delivery.get("base_branch") == "master"
-                       else "develop" if publication else target_for(repo, source, data=delivery))
+    from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
+    delivery_target = (delivery.get("target") if details["kind"] == "feature" and delivery.get("base_branch") == trunk_branch(repo)
+                       else integration_branch(repo) if publication else target_for(repo, source, data=delivery))
     result = {"schema_version": 3, "source": source, "kind": details["kind"],
               "delivery_base": base, "review_base": left, "review_head": head, "policy_ref": policy_ref,
               "scope": "delivery", "merge_base": merge_base,

@@ -50,6 +50,7 @@ HOTFIX_OPTIONAL_FIELDS = {
     "deferred",
     "adrs",
     "breaking",
+    "trunk_fixes",
 }
 
 
@@ -157,6 +158,8 @@ def normalize_hotfix_change(raw: Any, version: str, *, source: str | None = None
         "breaking": breaking,
         "evidence": _hotfix_evidence(change["evidence"]),
     }
+    if "trunk_fixes" in change:
+        normalized["trunk_fixes"] = change["trunk_fixes"]
     closed = normalized["closed"]
     if len(closed) != len(set(closed)):
         raise MDFError(

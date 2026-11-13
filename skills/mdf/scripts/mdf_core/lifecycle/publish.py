@@ -29,9 +29,27 @@ def state_path(repo, source):
     return safe(common, common / "mdf/finish" / f"{source}.json")
 
 
+def _is_ancestor(repo, older, newer):
+    from mdf_core.workspace.gitflow import _git
+    return _git(repo, "merge-base", "--is-ancestor", older, newer, check=False).returncode == 0
+
+
+def publish_targets(repo, source):
+    """(发布分支, 依次合入的目标)：gitflow 为 trunk→develop，github-flow 仅 trunk 或 support/*。"""
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    trunk = trunk_branch(repo)
+    if is_github_flow(repo):
+        from mdf_core.lifecycle.late_decision import target_for
+        branch = target_for(repo, source)
+        return branch, (branch,)
+    return trunk, (trunk, "develop")
+
+
 def publish(repo, source, version):
     from mdf_core.workspace.gitflow import _git, _exists, _merge, _synced
     primary = primary_worktree(repo)
+    master, targets = publish_targets(repo, source)
+    github = len(targets) == 1
     path = state_path(repo, source)
     state = read_json(path) if path.exists() else None
     tag = f"v{version}"
@@ -40,14 +58,19 @@ def publish(repo, source, version):
     if state is None:
         if head.returncode:
             raise MDFError("发布源分支不存在", code="missing_branch")
-        _synced(repo, "master")
+        if github and master.startswith("support/") and not _exists(repo, f"refs/remotes/origin/{master}"):
+            # 惰性切出的维护线首次发布：先把分支本身推到 origin，再按常规核验同步。
+            _git(repo, "push", "origin", master)
+        _synced(repo, master)
         remote_tag = _git(repo, "ls-remote", "--tags", "origin", f"refs/tags/{tag}").stdout
         if _exists(repo, f"refs/tags/{tag}") or remote_tag.strip():
             raise MDFError("版本 tag 已存在", code="tag_exists")
         state = {"source": source, "head": head.stdout.strip(), "tag": tag,
                  "origin": _git(repo, "remote", "get-url", "origin").stdout.strip(),
-                 "before": {target: _git(repo, "rev-parse", target).stdout.strip()
-                            for target in ("master", "develop")}, "merged": {}, "pushed": False}
+                 "before": {target: _git(repo, "rev-parse", target).stdout.strip() for target in targets},
+                 "merged": {}, "pushed": False, "publish_branch": master}
+        if github:
+            state["release_head"] = state["head"]
         write_json(path, state)
     elif (state.get("source") != source or state.get("tag") != tag
           or state.get("origin") != _git(repo, "remote", "get-url", "origin").stdout.strip()
@@ -55,11 +78,13 @@ def publish(repo, source, version):
           or (head.returncode and not state.get("pushed"))):
         raise MDFError("发布现场与恢复记录不一致", code="publish_state_changed")
 
-    for target in ("master", "develop"):
-        incoming = state["head"] if target == "master" else state["merged"]["master"]
+    if state.get("publish_branch", master) != master:
+        raise MDFError("发布目标与恢复记录不一致", code="publish_state_changed")
+    for target in targets:
+        incoming = state["head"] if target == master else state["merged"][master]
         before = state["before"][target]
         current = _git(repo, "rev-parse", target).stdout.strip()
-        remote = _git(repo, "rev-parse", "origin/master").stdout.strip() if target == "master" else None
+        remote = _git(repo, "rev-parse", f"origin/{master}").stdout.strip() if target == master else None
         recorded = state["merged"].get(target)
         if target == "develop" and recorded is None and current != before:
             parents = _git(repo, "show", "-s", "--format=%P", current).stdout.split()
@@ -69,7 +94,7 @@ def publish(repo, source, version):
                 state["before"][target] = before
                 write_json(path, state)
         if current == before and recorded is None:
-            if target == "master" and remote != before:
+            if target == master and remote != before:
                 raise MDFError("远端分支已变化", code="publish_state_changed")
             occupant = worktree_map(primary).get(target)
             # 目标没有 checkout 时在主 worktree 合并，保留源 worktree 的分支身份。
@@ -80,21 +105,29 @@ def publish(repo, source, version):
         elif recorded is None:
             # 合并成功但写记录前中断：只接受精确的双亲合并提交。
             parents = _git(repo, "show", "-s", "--format=%P", current).stdout.split()
-            if parents != [before, incoming] or (target == "master" and remote not in (before, current)):
+            # github-flow 允许冲突解决后的集成提交：只要仍包含 before 与 release_head 即可。
+            integrated = github and _is_ancestor(repo, before, current) and _is_ancestor(repo, incoming, current)
+            if (parents != [before, incoming] and not integrated) or (
+                    target == master and remote not in (before, current)):
                 raise MDFError("未记录的分支变化，不能自动恢复", code="publish_state_changed")
-        elif current != recorded or (target == "master" and remote not in (before, recorded)):
+        elif current != recorded or (target == master and remote not in (before, recorded)):
             raise MDFError("发布分支被其他操作改变", code="publish_state_changed")
         state["merged"][target] = current
         write_json(path, state)
-        if target == "master":
+        if target == master:
+            # github-flow 的 tag 固定在 release_head；绝不由合并提交的父链下标反推。
+            tag_commit = state["release_head"] if github else current
+            if github and not _is_ancestor(repo, tag_commit, current):
+                raise MDFError("release_head 不是发布分支的祖先，不能标记发布完成",
+                               code="release_head_unreachable")
             if _exists(repo, f"refs/tags/{tag}"):
                 kind = _git(repo, "cat-file", "-t", f"refs/tags/{tag}").stdout.strip()
                 tagged = _git(repo, "rev-parse", f"refs/tags/{tag}^{{commit}}").stdout.strip()
-                if kind != "tag" or tagged != current:
+                if kind != "tag" or tagged != tag_commit:
                     raise MDFError("发布 tag 与已合并提交不符", code="publish_state_changed")
             else:
                 shown = _git(
-                    repo, "show", f"{current}:CHANGELOG.md", check=False
+                    repo, "show", f"{tag_commit}:CHANGELOG.md", check=False
                 )
                 if shown.returncode:
                     raise MDFError(
@@ -111,23 +144,23 @@ def publish(repo, source, version):
                     "tag",
                     "-a",
                     tag,
-                    current,
+                    tag_commit,
                     "--cleanup=verbatim",
                     "-m",
                     message,
                 )
 
     remote_refs = dict(line.split()[::-1] for line in _git(
-        repo, "ls-remote", "origin", "refs/heads/master",
+        repo, "ls-remote", "origin", f"refs/heads/{master}",
         f"refs/tags/{tag}").stdout.splitlines())
     tag_object = _git(repo, "rev-parse", f"refs/tags/{tag}").stdout.strip()
-    expected = {"refs/heads/master": state["merged"]["master"], f"refs/tags/{tag}": tag_object}
+    expected = {f"refs/heads/{master}": state["merged"][master], f"refs/tags/{tag}": tag_object}
     if remote_refs != expected:
         if (remote_refs.get(f"refs/tags/{tag}") not in (None, tag_object)
-                or remote_refs.get("refs/heads/master") not in
-                (state["before"]["master"], state["merged"]["master"])):
+                or remote_refs.get(f"refs/heads/{master}") not in
+                (state["before"][master], state["merged"][master])):
             raise MDFError("远端发布状态有冲突", code="publish_state_changed")
-        _git(primary, "push", "--atomic", "origin", "master", f"refs/tags/{tag}")
+        _git(primary, "push", "--atomic", "origin", master, f"refs/tags/{tag}")
     state["pushed"] = True
     write_json(path, state)
     return state

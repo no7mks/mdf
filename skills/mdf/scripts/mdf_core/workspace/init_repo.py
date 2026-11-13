@@ -125,13 +125,8 @@ def render_manifest(
         lines.extend(render_workflow_lines(parse_workflow({"workflow": workflow})))
     if closeout is not None:
         from mdf_core.workspace.merge_policy import config
-        entry = config({"closeout": closeout})
-        lines.extend(["closeout:", f"  mode: {entry['mode']}"])
-        if "provider" in entry:
-            lines.append(f"  provider: {entry['provider']}")
-        if "trivial_paths" in entry:
-            import json
-            lines.append("  trivial_paths: " + json.dumps(entry["trivial_paths"], ensure_ascii=False))
+        from mdf_core.workspace.workflow_policy import render_closeout_lines
+        lines.extend(render_closeout_lines(config({"closeout": closeout})))
     return "\n".join(lines) + "\n"
 
 

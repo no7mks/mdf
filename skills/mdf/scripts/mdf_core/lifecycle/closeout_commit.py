@@ -22,6 +22,14 @@ from mdf_core.foundation.semver import bump_kind, required_bump
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
+def _trunk_fixes_yaml(context: dict[str, Any]) -> str:
+    fixes = (context.get("hotfix_change") or {}).get("trunk_fixes")
+    if not fixes:
+        return ""
+    from mdf_core.lifecycle.support_line import render_trunk_fixes
+    return render_trunk_fixes(fixes)
+
+
 def apply_version_closeout(
     repo: Path,
     context: dict[str, Any],
@@ -180,6 +188,7 @@ def apply_version_closeout(
             evidence=root_evidence,
             verify_command_results=context.get("verify_command_results") or [],
             source_branch=context["source_branch"],
+            trunk_fixes=_trunk_fixes_yaml(context),
         ),
         encoding="utf-8",
     )

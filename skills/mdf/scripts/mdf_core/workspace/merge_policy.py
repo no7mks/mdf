@@ -90,18 +90,29 @@ def planning_only(repo, before, after):
     return all(all(document(p) for p in commit_paths(repo, commit)) for commit in commits)
 
 
+def protected_target(repo, target):
+    """PR mode 下禁止本地直接合入的分支：gitflow 的 trunk/develop/ODR，github-flow 的 trunk 与 support/*。"""
+    from mdf_core.workspace.workflow_policy import GITHUB_FLOW, workflow_config
+    cfg = workflow_config(repo, "HEAD")
+    if cfg["model"] == GITHUB_FLOW:
+        return target == cfg["trunk"] or target.startswith("support/")
+    return target in {cfg["trunk"], "develop"} or target.startswith("on-demand-release/")
+
+
 def require_merge(repo, source, target):
-    if ((target not in {"master", "develop"} and not target.startswith("on-demand-release/"))
-            or not manifest_path(repo).is_file()
-            or configured(repo, "HEAD")["mode"] != "pr"):
+    if (not manifest_path(repo).is_file() or configured(repo, "HEAD")["mode"] != "pr"
+            or not protected_target(repo, target)):
         return
     incoming = sha(repo, source)
     if ancestor(repo, incoming, "HEAD"):
         return
-    master = git(repo, "rev-parse", "--verify", "refs/heads/master", check=False)
-    if target == "develop" and not master.returncode and ancestor(repo, incoming, master.stdout.strip()):
-        return
-    if (target == "master" and source in {"planning", "refs/heads/planning"}
-            and planning_only(repo, "HEAD", incoming)):
-        return
+    from mdf_core.workspace.workflow_policy import GITFLOW, workflow_config
+    cfg = workflow_config(repo, "HEAD")
+    if cfg["model"] == GITFLOW:
+        trunk = git(repo, "rev-parse", "--verify", f"refs/heads/{cfg['trunk']}", check=False)
+        if target == "develop" and not trunk.returncode and ancestor(repo, incoming, trunk.stdout.strip()):
+            return
+        if (target == cfg["trunk"] and source in {"planning", "refs/heads/planning"}
+                and planning_only(repo, "HEAD", incoming)):
+            return
     raise MDFError(f"PR mode 禁止直接合入 {target}；请创建 PR/MR", code="pr_required")

@@ -35,6 +35,15 @@ def identity_at(repo, branch, ref=None):
 
 def target_for(repo, source, *, data=None):
     kind = branch_details(source)["kind"]
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    if is_github_flow(repo):
+        if kind == "hotfix":
+            if data is None:
+                from mdf_core.lifecycle.hotfix_version import delivery_record
+                record = delivery_record(repo, source, ref=f"refs/heads/{source}")
+                data = record[1] if record else {}
+            return data.get("base_branch") or trunk_branch(repo)
+        return trunk_branch(repo)
     if kind in {"release", ODR, "hotfix"}:
         return "master"
     if kind != "feature":
@@ -55,7 +64,8 @@ def require_independent(repo, source):
 
 
 def require_feature_target(repo, source, target):
-    if target == "develop":
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    if target == "develop" or is_github_flow(repo):
         return
     data = identity_at(repo, source)
     if data.get("base_branch") != "master":
@@ -159,6 +169,12 @@ def checkpoint(repo, *, required=False, release=False):
 
 def guard_catch_up(repo, incoming):
     source = current_branch(repo)
+    if branch_details(source)["kind"] == "release":
+        folder = unreleased_slug(branch_details(source))
+        if (repo / "changes/unreleased" / folder / "delivery.json").is_file():
+            from mdf_core.lifecycle.cutpoint import require_not_frozen_catch_up
+            require_not_frozen_catch_up(identity_at(repo, source), repo, incoming)
+        return
     if branch_details(source)["kind"] != "feature":
         return
     folder = unreleased_slug(branch_details(source))

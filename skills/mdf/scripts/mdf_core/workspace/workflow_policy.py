@@ -93,6 +93,12 @@ def permanent_trunks(repo: Path, ref: str | None = None) -> tuple[str, ...]:
     return (config["trunk"], "planning") if pr else (config["trunk"],)
 
 
+def sync_trunks(repo: Path) -> tuple[str, ...]:
+    """sync 对齐的常驻分支；github-flow 的 planning 短命，不参与。"""
+    config = workflow_config(repo)
+    return permanent_trunks(repo) if config["model"] == GITFLOW else (config["trunk"],)
+
+
 def require_gitflow(repo: Path, entry: str, ref: str | None = None) -> None:
     """github-flow 下 gitflow 专属入口一律明确报错。"""
     config = workflow_config(repo, ref)
@@ -106,6 +112,31 @@ def require_gitflow(repo: Path, entry: str, ref: str | None = None) -> None:
 
 def render_workflow_lines(config: dict[str, str]) -> list[str]:
     return ["workflow:", f"  model: {config['model']}", f"  trunk: {config['trunk']}"]
+
+
+def render_closeout_lines(entry: dict[str, Any]) -> list[str]:
+    import json
+    lines = ["closeout:", f"  mode: {entry['mode']}"]
+    if "provider" in entry:
+        lines.append(f"  provider: {entry['provider']}")
+    if "trivial_paths" in entry:
+        lines.append("  trivial_paths: " + json.dumps(entry["trivial_paths"], ensure_ascii=False))
+    return lines
+
+
+def set_manifest_block(text: str, key: str, block: list[str], *, before: str = "implementation_roots:") -> str:
+    """替换（或在 `before` 之前插入）manifest 顶层 `key:` 块，其他内容原样保留。"""
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith(f"{key}:")), None)
+    if start is None:
+        anchor = next((i for i, line in enumerate(lines) if line.startswith(before)), len(lines))
+        lines[anchor:anchor] = block
+    else:
+        end = start + 1
+        while end < len(lines) and (lines[end].startswith((" ", "\t")) or not lines[end].strip()):
+            end += 1
+        lines[start:end] = block
+    return "\n".join(lines) + "\n"
 
 
 def support_branch(major_minor: str) -> str:

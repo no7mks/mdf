@@ -188,6 +188,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--bug")
     start.add_argument("--objectives-file")
     start.add_argument("--version")
+    start.add_argument("--from-commit", help="github-flow release 的历史切点 SHA；创建即冻结")
+    start.add_argument("--support", help="github-flow hotfix 的维护线 <major.minor>")
     start.add_argument("--qa", type=int)
     start.add_argument("--dev", type=int)
     start.add_argument("--reviewers", type=int)
@@ -280,6 +282,11 @@ def build_parser() -> argparse.ArgumentParser:
     dev_pr.add_argument("--repo", required=True)
     dev_pr.add_argument("--slug")
     dev_pr.set_defaults(func=command_dev_pr)
+    from mdf_core.workspace.dev_pr import command_trunk_pr
+    trunk_pr = subparsers.add_parser("trunk-pr")
+    trunk_pr.add_argument("--repo", required=True)
+    trunk_pr.add_argument("--slug")
+    trunk_pr.set_defaults(func=command_trunk_pr)
 
     from mdf_core.workspace.sync import command_sync
     sync_cmd = subparsers.add_parser("sync")

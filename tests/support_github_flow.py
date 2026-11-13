@@ -35,3 +35,8 @@ def github_flow_repo(tmp_path: Path, *, trunk: str = "master", origin: bool = Fa
 def error_of(result) -> dict:
     assert result.returncode != 0, result.stdout
     return json.loads(result.stderr.strip().splitlines()[-1])
+
+
+def has_ref(repo: Path, ref: str) -> bool:
+    from _support import run as _run
+    return _run(["git", "rev-parse", "--verify", "--quiet", ref], cwd=repo).returncode == 0

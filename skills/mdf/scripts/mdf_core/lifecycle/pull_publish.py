@@ -6,7 +6,7 @@ from mdf_core.workspace.merge_policy import ancestor, git, sha
 
 
 def tag_release(repo, state, version, path):
-    tag, merged = f"v{version}", state["merge_commit"]
+    tag, merged = f"v{version}", state.get("release_head") or state["merge_commit"]
     ref = f"refs/tags/{tag}"
     local = git(repo, "rev-parse", "--verify", ref, check=False)
     if local.returncode:
@@ -26,8 +26,24 @@ def tag_release(repo, state, version, path):
     write_json(path, state)
 
 
+def _publish_github_flow(repo, state, version, path):
+    """github-flow：tag 固定在 release_head，并核验其已进入目标远端；不回合 develop。"""
+    head = state["head"]
+    git(repo, "fetch", "origin", "--prune")
+    if not ancestor(repo, head, f"refs/remotes/origin/{state['target']}"):
+        raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
+    state["release_head"] = head
+    tag_release(repo, state, version, path)
+    state["publication_completed"] = True
+    write_json(path, state)
+    return True
+
+
 def publish(repo, state, version, path):
     from mdf_core.lifecycle.pull_finish import sync_local
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    if is_github_flow(repo):
+        return _publish_github_flow(repo, state, version, path)
     tag_release(repo, state, version, path)
     merged = state["merge_commit"]
     git(repo, "fetch", "origin", "--prune")

@@ -21,6 +21,7 @@ from mdf_core.workspace.workflow_policy import (
     ci_branches,
     parse_workflow,
     render_workflow_lines,
+    set_manifest_block,
     workflow_config,
 )
 
@@ -93,18 +94,8 @@ def switch(repo: Path, model: str | None, trunk: str | None) -> dict:
     if wanted["model"] == GITFLOW and not _exists(repo, "refs/heads/develop"):
         raise MDFError("切换到 gitflow 需要已有 develop 分支", code="missing_branch")
     path = manifest_path(repo)
-    lines = path.read_text(encoding="utf-8").splitlines()
-    block = render_workflow_lines(wanted)
-    start = next((i for i, line in enumerate(lines) if line.startswith("workflow:")), None)
-    if start is None:
-        anchor = next((i for i, line in enumerate(lines) if line.startswith("implementation_roots:")), len(lines))
-        lines[anchor:anchor] = block
-    else:
-        end = start + 1
-        while end < len(lines) and (lines[end].startswith((" ", "\t")) or not lines[end].strip()):
-            end += 1
-        lines[start:end] = block
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    path.write_text(set_manifest_block(path.read_text(encoding="utf-8"), "workflow",
+                                       render_workflow_lines(wanted)), encoding="utf-8")
     parse_workflow(parse_yaml(path.read_text(encoding="utf-8")), repo)
     _git(repo, "add", "--", ".mdf/manifest.yaml")
     _git(repo, "commit", "-m", f"chore(workflow): 切换到 {wanted['model']}（trunk {wanted['trunk']}）")

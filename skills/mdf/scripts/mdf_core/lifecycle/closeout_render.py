@@ -105,6 +105,7 @@ def render_version_change(
     *,
     verify_command_results: list[dict[str, Any]] | None = None,
     source_branch: str | None = None,
+    trunk_fixes: str = "",
 ) -> str:
     def yaml_list(values: Iterable[str]) -> str:
         return "[" + ", ".join(sorted(values)) + "]"
@@ -181,6 +182,7 @@ def render_version_change(
         + notes_yaml()
         + f"breaking: {'true' if breaking else 'false'}\n"
         + evidence_yaml()
+        + trunk_fixes
         + "audit: passed\n"
         + "---\n\n"
         f"# {mode.title()} {version}\n\n"
