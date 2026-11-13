@@ -282,6 +282,11 @@ def build_parser() -> argparse.ArgumentParser:
     dev_pr.add_argument("--repo", required=True)
     dev_pr.add_argument("--slug")
     dev_pr.set_defaults(func=command_dev_pr)
+    from mdf_core.lifecycle.release_integration import command_release_integrate
+    integrate = subparsers.add_parser("release-integrate")
+    integrate.add_argument("--repo", required=True)
+    integrate.add_argument("--source")
+    integrate.set_defaults(func=command_release_integrate)
     from mdf_core.workspace.dev_pr import command_trunk_pr
     trunk_pr = subparsers.add_parser("trunk-pr")
     trunk_pr.add_argument("--repo", required=True)

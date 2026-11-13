@@ -99,6 +99,16 @@ def sync_trunks(repo: Path) -> tuple[str, ...]:
     return permanent_trunks(repo) if config["model"] == GITFLOW else (config["trunk"],)
 
 
+def forbid_support_to_trunk(repo: Path, source: str, target: str | None = None) -> None:
+    """github-flow 下任何 support/* → trunk 的合并或 PR 一律阻断。"""
+    name = source.removeprefix("refs/heads/")
+    config = workflow_config(repo)
+    if (config["model"] == GITHUB_FLOW and name.startswith("support/")
+            and target in (None, config["trunk"])):
+        raise MDFError("support/* 不得合入 trunk；修复必须 Trunk-First", code="support_to_trunk_forbidden",
+                       details={"source": name, "trunk": config["trunk"]})
+
+
 def require_gitflow(repo: Path, entry: str, ref: str | None = None) -> None:
     """github-flow 下 gitflow 专属入口一律明确报错。"""
     config = workflow_config(repo, ref)

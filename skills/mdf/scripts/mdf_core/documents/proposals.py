@@ -86,9 +86,11 @@ def started_ids(repo):
                 raise MDFError("工作记录必须是 JSON 对象", code="invalid_delivery")
             if isinstance(data.get("proposal"), str):
                 found.add(data["proposal"])
+    from mdf_core.workspace.workflow_policy import integration_branch
+    names = ("feature/", integration_branch(repo), "release/", "on-demand-release/", "support/")
     refs = run(["git", "for-each-ref", "--format=%(refname)",
                 *[f"{prefix}/{name}" for prefix in ("refs/heads", "refs/remotes/origin")
-                  for name in ("feature/", "develop", "release/", "on-demand-release/")]], cwd=repo).stdout.splitlines()
+                  for name in names]], cwd=repo).stdout.splitlines()
     for ref in refs:
         paths = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "changes"],
                     cwd=repo).stdout.splitlines()

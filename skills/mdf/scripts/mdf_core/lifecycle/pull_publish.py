@@ -28,7 +28,7 @@ def tag_release(repo, state, version, path):
 
 def _publish_github_flow(repo, state, version, path):
     """github-flow：tag 固定在 release_head，并核验其已进入目标远端；不回合 develop。"""
-    head = state["head"]
+    head = state.get("release_head") or state["head"]
     git(repo, "fetch", "origin", "--prune")
     if not ancestor(repo, head, f"refs/remotes/origin/{state['target']}"):
         raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")

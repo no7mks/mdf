@@ -100,6 +100,9 @@ def protected_target(repo, target):
 
 
 def require_merge(repo, source, target):
+    from mdf_core.workspace.workflow_policy import forbid_support_to_trunk
+    if manifest_path(repo).is_file():
+        forbid_support_to_trunk(repo, source, target)
     if (not manifest_path(repo).is_file() or configured(repo, "HEAD")["mode"] != "pr"
             or not protected_target(repo, target)):
         return

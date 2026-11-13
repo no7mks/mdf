@@ -110,7 +110,10 @@ def current_branch(repo: Path) -> str:
 
 
 def require_planning(repo: Path) -> None:
-    if current_branch(repo) != "planning":
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    from mdf_core.workspace.merge_policy import configured
+    expected = trunk_branch(repo) if is_github_flow(repo) and configured(repo)["mode"] != "pr" else "planning"
+    if current_branch(repo) != expected:
         raise MDFError(
             "规划写入只能在 planning 分支上分配或写入",
             code="proposal_not_on_planning",

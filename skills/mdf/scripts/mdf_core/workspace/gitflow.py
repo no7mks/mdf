@@ -20,6 +20,7 @@ from mdf_core.workspace.gitutil import (
     unreleased_slug,
     worktree_map,
 )
+from mdf_core.workspace.planning import on_base_or_pending
 from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
 from mdf_core.lifecycle.roster import (
     freeze_roster,
@@ -207,7 +208,7 @@ def command_start(args) -> None:
                 code="missing_proposal",
             )
         from mdf_core.documents.proposals import proposal_slug_on_ref, require_startable
-        suffix = proposal_slug_on_ref(repo, args.proposal, base)
+        suffix = on_base_or_pending(repo, proposal_slug_on_ref, args.proposal, base)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     elif args.kind == "bugfix":
@@ -220,7 +221,7 @@ def command_start(args) -> None:
             raise MDFError("bugfix 需要 --bug", code="missing_bug")
         objectives = _read_objectives(args.objectives_file)
         from mdf_core.documents.bugs import bug_id_on_ref, require_startable_bug
-        suffix = bug_id_on_ref(repo, args.bug, base)
+        suffix = on_base_or_pending(repo, bug_id_on_ref, args.bug, base)
         _unreleased_collision(repo, base, slugify(suffix))
     elif args.kind in {"release", "on-demand-release"}:
         suffix = _require_version(args.version)
@@ -426,14 +427,17 @@ def command_finish_gitflow(args) -> None:
     ensure_clean(repo)
     source = args.source or current_branch(repo)
     details = branch_details(source)
-    if not details["supported"]:
+    from mdf_core.workspace.workflow_policy import forbid_support_to_trunk
+    forbid_support_to_trunk(repo, source)
+    from mdf_core.workspace.merge_policy import configured
+    settings = configured(repo)
+    planning_pr = source == "planning" and is_github_flow(repo) and settings["mode"] == "pr"
+    if not details["supported"] and not planning_pr:
         raise MDFError("finish requires a Gitflow delivery branch",
                        code="unsupported_branch")
     if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
-    from mdf_core.workspace.merge_policy import configured
-    settings = configured(repo)
     if settings["mode"] == "pr":
         from mdf_core.lifecycle.pull_finish import finish
         finish(repo, source, settings, phase=getattr(args, "phase", "close-out"))
