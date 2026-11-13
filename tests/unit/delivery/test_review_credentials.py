@@ -90,3 +90,30 @@ def test_zero_reviewer_report_is_valid_only_with_full_reuse(repo, monkeypatch):
         report.validate(ctx, rep, None)
     with pytest.raises(MDFError):
         report.validate({**ctx, "kind": "feature"}, rep, {"zero_reviewers_allowed": True})
+
+
+def _release_files(tmp_path, repo, paths):
+    ctx = {**_context("release"), "round": "initial", "source": "release/1.0.0", "delivery_base": "b",
+           "review_base": "b", "review_head": "h", "policy_ref": "p", "rules_sha256": "r1", "paths": paths,
+           "credential": identity(repo, paths, "r1")}
+    ctx["context_sha256"] = fingerprint(ctx)
+    rep = {k: ctx[k] for k in ("source", "delivery_base", "review_base", "review_head", "policy_ref",
+                                "rules_sha256", "context_sha256")}
+    rep.update(schema_version=3, decision="pass", incomplete=[], reviewers=[])
+    (tmp_path / "c.json").write_text(json.dumps(ctx))
+    (tmp_path / "r.json").write_text(json.dumps(rep))
+    return ["review-report-check", "--repo", str(repo), "--context-file", str(tmp_path / "c.json"),
+            "--report-file", str(tmp_path / "r.json")]
+
+
+def test_cli_accepts_zero_reviewers_only_when_children_cover_release(repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(schema, "check", lambda *a, **k: None)
+    record(repo, "feature/a", ["a.py"])
+    covered = mdf("python", *_release_files(tmp_path, repo, ["a.py"]))
+    assert covered.returncode == 0, covered.stderr
+    result = json.loads(covered.stdout)["result"]
+    assert result["reviewers"] == 0 and result["reuse"]["zero_reviewers_allowed"] is True
+    uncovered = mdf("python", *_release_files(tmp_path, repo, ["a.py", "b.py"]))
+    assert uncovered.returncode != 0 and "冻结 roster" in uncovered.stderr
+    # 0 reviewer 的通过不写新凭证：release 自身不能成为子交付证据
+    assert not [r for r in credentials.records(repo, "code-review") if r["source"] == "release/1.0.0"]
