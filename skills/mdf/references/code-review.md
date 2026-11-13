@@ -100,7 +100,9 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
                  └──── 无 --output ──────────────→ [结束；会话结论已给出]
 ```
 
-步骤 2 先取左端点、过滤 paths，并用 `git diff --numstat` 只统计行数。
+步骤 2 先运行 `review-prepare --repo <repo> [--against <commit>] [--force]`。
+一次取得左端点、扣除已有通过凭证后的未审净增量 `net_increment`、上游交互文件集、`numstat` 行数、人数 `size.reviewers` 与生效 project rule。
+`skip_review` 为 true 时无需派发；`--force` 忽略凭证，按过滤后的 paths 全量审查。
 仅 `--read-only` 或显式 `--against` 再调用 `review-context`，日志在 checkout 外。
 派发按「派发」。未覆盖留在步骤 2，由主 Agent 补审。只读从步骤 2 进入步骤 5。交付审查完成后进入步骤 3。
 

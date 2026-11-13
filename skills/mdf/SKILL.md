@@ -79,6 +79,7 @@ disable-model-invocation: true
                  ├──── upgrade ───────────────────────────────────────────→ references/upgrade.md
                  ├──── to <target> ───────────────────────────────────────→ references/to.md
                  ├──── dev-pr [<slug>] ───────────────────────────────────→ references/dev-pr.md
+                 ├──── trunk-pr [<slug>] ─────────────────────────────────→ references/trunk-pr.md
                  ├──── sync ──────────────────────────────────────────────→ references/sync.md
                  └──── integrate ─────────────────────────────────────────→ references/integrate.md
 ```

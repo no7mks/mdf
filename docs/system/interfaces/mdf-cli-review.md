@@ -38,7 +38,8 @@
 | --- | --- | --- |
 | audit-push | --repo --branch --before --after；可选 --evidence-file 或 --collect-evidence | result.verdict 为 pass/violation/needs-review，退出 0 不代表合规 |
 | review-context | --repo --source --head --policy-ref；可选 --review-base --previous-report | result 为固定上下文，缺身份或基线失败，材料缺项写 incomplete |
-| review-report-check | --context-file --report-file | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
+| review-report-check | --context-file --report-file；可选 --repo | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
+| review-prepare | --repo；可选 --against --force | 左端点、净增量、交互文件集、numstat、体积结论与生效 project rule；要求 clean |
 
 - audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
@@ -53,6 +54,14 @@
 - release 首轮使用 policy_ref 的上一正式发布 tag，首次无版本需显式 --review-base。
 - report-check 支持 Cursor JSON result envelope；不会修补不符合 schema 的模型文本。
 - report-check 不是语义裁定，也不是交付 gate；不写 objectives 或 code-review.md。
+- 传 `--repo` 且 context 含 credential 时，通过的报告写入 code-review 内容凭证（Git common dir，不依赖 commit SHA）。
+  - release/on-demand-release 另按子交付凭证做复用分析：净代码增量与未覆盖组合影响面均为空才接受 `reviewers: []`。
+  - 组合影响面含 ≥2 个子交付共同修改的文件、release 自身改动、冲突解决、规则或基线变化；否则仍须冻结份数的 reviewer。
+- review-prepare 默认左端点为交付 start_commit，非交付分支须 `--against`；缺失为 `missing_review_base`。
+  - `net_increment` 为过滤后 paths 扣除已有通过凭证（内容与规则均一致）后的路径；`--force` 不扣除。
+  - `size.reviewers` 按 numstat 新增与删除之和 `ceil(lines / 1000)`；`skip_review` 要求净增量与交互文件集均空。
+- fact-audit 的 `--against` 结果附带 `reuse`：存在覆盖范围超集、摘要一致且 semantic_reviewed 的 pass 凭证时非空。
+  - 输入身份与 HEAD SHA 解耦；`--quick` 永不返回可替代语义审阅的凭证，`fact-audit-report-check` 通过后才写入凭证。
 
 ## 接入与运行证据
 
@@ -63,7 +72,11 @@
 - [共用 Review 协议](../../../skills/mdf/references/reviewer-protocol.md)：只读 reviewers 和 owner 裁定。
 - [CI 接入](../../../skills/mdf/references/ci-review.md)：Codex/Cursor、workflow、报告和平台发布示例。
 
-## Develop 接管
+## Develop 与 Trunk 接管
+
+github-flow 下由 `mdf.py trunk-pr --repo <root> [--slug <slug>]` 完成同样的本地准备，目标为 `origin/<trunk>`；
+非 github-flow 或非 PR mode 拒绝。见 [trunk-pr 契约](../../../skills/mdf/references/trunk-pr.md)。
+
 
 `mdf.py dev-pr --repo <root> [--slug <slug>]` 仅准备本地现场：fetch、保全 develop HEAD
 到 adhoc worktree、reset develop 到固定 origin/develop。返回 source、worktree 与 next_intent。

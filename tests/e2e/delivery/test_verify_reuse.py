@@ -43,7 +43,7 @@ def test_second_run_reuses_without_starting_process(python_exe, tmp_path):
     second = verify(python_exe, repo)
     item = quick_item(second)
     assert runs(counter) == 1 and item["passed"] and item["report"]["tests"] == 1
-    assert item["reused_from"]["key"] and item["check_duration_s"] <= item["original_duration_s"] + 5
+    assert item["reused"] is True and item["reused_from"]["key"] and item["check_duration_s"] < 5
     assert item["original_duration_s"] == quick_item(first)["original_duration_s"]
     assert Path(item["reused_from"]["evidence"]).is_dir()
 

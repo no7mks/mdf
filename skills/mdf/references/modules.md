@@ -31,7 +31,7 @@ budgets:
 
 - 每个 module 必须声明 `sourceset`、`lint`、`build`、以及
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
-  - 可选 `ignore`、`named`、`size_limits` 与 `coverage`。
+  - 可选 `ignore`、`named`、`size_limits`、`coverage`、`depends_on` 与 `build_artifacts`。
 - **ignore**：`pattern` + `reason`，路径与 pattern 均相对 repo 根；可排除源代码、测试源代码与文档。
   - `modules.<name>.ignore` 仅在自身 `sourceset` 内生效，不能排除其他 module 或未归属文件。
   - 重叠 `sourceset` 中仍有 module 未忽略该文件时，保留该 module 的验证与检查。
@@ -54,6 +54,14 @@ budgets:
     可选 `parallel: true`（并行时命令数须 ≤5，否则 Core 报错）。
   - 正文写明目的与 testcase 构成；testcase 本身靠代码 frontmatter/stringdoc。
 - `quick`/`smoke`/`release` mapping 可选 `parallel: true`（按 module 展开的多命令）。
+- **depends_on**：module 名列表，表示本 module 依赖这些 module；名称必须存在且不得成环。
+  - `catch-up-plan` 据此把受影响 module 沿依赖反向扩展；未声明时只取实际触及的 module。
+- **verify 内容指纹**（命中则复用已通过结果，不启动子进程；`verify --force` 忽略）：
+  - 入口 mapping（quick/smoke/release/named）可选 `extra_inputs`（额外参与指纹的 glob）与 `external_state: true`（外部状态不可核验，永不复用）。
+  - 显式输入（命令、`.mdf/modules.yaml`、`docs/system/testing/**`、sourceset、`tests` 与 `extra_inputs`）一律计入；
+    默认生成物（报告、`CHANGELOG.md`、交付材料）仅在不属于显式输入时才排除。
+  - module 的 `build_artifacts`（glob 列表）声明 build 产物；当前工作区产物存在且摘要一致才可跳过 build。
+  - 同指纹最新一次实跑失败会写入 tombstone，阻断旧成功凭证直至重新实跑通过；平台、Python 版本与 lockfile 变化均使凭证失效。
 - 初始化仍可通过 CLI 传入 `--lint` 等，写入默认 module。
 - 占位命令必然失败：不得用恒成功的空命令冒充真实 lint/build/suite。
 

@@ -251,7 +251,7 @@ def record_result(repo: Path, item: dict, fp: dict | None, detail: dict | None, 
 
 def reuse_detail(record: dict, check_seconds: float) -> dict[str, Any]:
     result = {"command": record["command"], "exit_code": record.get("exit_code", 0), "log": record["log"],
-              "original_duration_s": record["original_duration_s"], "check_duration_s": round(check_seconds, 3),
+              "reused": True, "original_duration_s": record["original_duration_s"], "check_duration_s": round(check_seconds, 3),
               "reused_from": {"key": record["key"], "evidence": record["evidence"],
                               "recorded_at": record["recorded_at"]}}
     if record.get("report") is not None:

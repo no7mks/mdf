@@ -78,6 +78,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
 | `$mdf dev-pr [<slug>]` | 将 develop 未共享工作移到 adhoc，检查通过后创建 PR |
+| `$mdf trunk-pr [<slug>]` | github-flow 下对 trunk 做同样的接管与 PR |
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
 | `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
@@ -114,6 +115,24 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
   - write-tests 与 implement 在 roster ≥1 时强制独立 worktree，`0,0` 时在 owner 上做。
 - hotfix 接受稳定 SemVer 或 kebab-case slug；slug 可在 start 约定版本，也可在收口时自动 patch 定版。
   - 命名、tag、材料与重试规则见 [Hotfix 版本](skills/mdf/references/hotfix-version.md)。
+
+### 分支模型
+
+manifest 的 `workflow: {model, trunk}` 选择 `gitflow`（默认，trunk 为 master）或 `github-flow`（任意合法 trunk，无 develop）。
+github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--from-master`、to develop 与 `dev-pr`。
+
+- release 可用 `--from-commit` 冻结历史切点；发布以固定 `release_head` 打 tag，并核验其为 trunk 的 ancestor。
+- 多条发布线并存时 hotfix 须 `--support <major.minor>`；support hotfix 只发布到 `support/<major.minor>`，每个 Bug 须记录 Trunk-First 处置。
+- PR mode 的 planning 为短命分支；release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
+- `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。
+
+### 内容指纹复用与确定性规划
+
+- `verify`、`code-review`、`fact-audit` 的通过结果按内容指纹记入 Git common dir 的 `mdf/attestations/`，跨分支与 worktree 命中时不重跑。
+  - 指纹含显式输入、环境与 lockfile；同指纹失败写入 tombstone；`verify --force` 强制冷跑。
+  - release 仅在净代码增量与未覆盖组合影响面均为空时可用 0 reviewer；`--quick` 的事实审阅不可替代语义审阅。
+- `catch-up-plan` 按 merge 拓扑独立给出 review、verify、fact 三路动作；`review-prepare` 给出审查左端点、未审净增量与体积。
+- `delivery route` 返回等待状态；`delivery complete-stage` 只自动完成 verify 与 catch-up，且不连带提交无关暂存内容。
 
 ### 延迟选择发布路径
 
