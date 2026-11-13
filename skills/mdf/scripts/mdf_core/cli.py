@@ -144,6 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     from mdf_core.reviewing.report import command_report_check
     report_check = subparsers.add_parser("review-report-check")
+    report_check.add_argument("--repo", help="提供时记录 pass 凭证并复核 0 reviewer 复用结论")
     report_check.add_argument("--context-file", required=True)
     report_check.add_argument("--report-file", required=True)
     report_check.set_defaults(func=command_report_check)

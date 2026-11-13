@@ -366,6 +366,15 @@ def audit_payload(
     return payload, 0 if not has_errors(findings) else 2
 
 
+def _reuse(repo, result, quick):
+    """已有覆盖超集且 semantic_reviewed 的 pass 凭证；quick 永不返回可替代语义审阅的凭证。"""
+    if quick:
+        return None
+    from mdf_core.reviewing.fact_identity import find_fact_credential
+    return find_fact_credential(repo, result['input_identity'], result['implementation_paths'],
+                                result['document_paths'])
+
+
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -381,8 +390,11 @@ def command_audit(args: argparse.Namespace) -> None:
         result = fact_context(repo, args.against)
         # --quick 只跳过 LLM，不换 against 工作对象。
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
+        if args.quick and not exit_code:
+            from mdf_core.reviewing.fact_identity import record_fact_credential
+            record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick'})
+              'mode': 'against' if not args.quick else 'quick', 'reuse': _reuse(repo, result, args.quick)})
         if exit_code:
             raise SystemExit(exit_code)
         return
@@ -400,8 +412,11 @@ def command_audit(args: argparse.Namespace) -> None:
         from mdf_core.reviewing.fact_context import fact_context
         result = fact_context(repo, base)
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
+        if args.quick and not exit_code:
+            from mdf_core.reviewing.fact_identity import record_fact_credential
+            record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick'})
+              'mode': 'against' if not args.quick else 'quick', 'reuse': _reuse(repo, result, args.quick)})
         if exit_code:
             raise SystemExit(exit_code)
         return
