@@ -221,7 +221,7 @@ def command_verify(args) -> None:
         if getattr(args, "record", None):
             _record_branch(repo, branch, kind, slug, args.record)
         else:
-            _verify_branch(repo, branch, kind, slug)
+            _verify_branch(repo, branch, kind, slug, bool(getattr(args, "force", False)))
     elif scope == "smart":
         _verify_smart(repo, args)
     else:
@@ -231,7 +231,7 @@ def command_verify(args) -> None:
         )
 
 
-def _run_entry_groups(repo: Path, kind: str | None = None) -> list[dict[str, Any]]:
+def _run_entry_groups(repo: Path, kind: str | None = None, force: bool = False) -> list[dict[str, Any]]:
     """branch：按 lint→build→quick→smoke|release 分组，组内可并行。"""
     from mdf_core.execution.verification import repo_verification
 
@@ -244,24 +244,23 @@ def _run_entry_groups(repo: Path, kind: str | None = None) -> list[dict[str, Any
         if entry == "lint":
             items = [{**item, "lint_modules": None} for item in items]
         groups.append((items, entry_parallel(repo, entry)))
+    return _run_groups(repo, groups, force)
+
+
+def _run_groups(repo, groups, force) -> list[dict[str, Any]]:
+    """按组顺序执行；后续组作为 build 免跑判定的 downstream。"""
     grand_total = sum(len(items) for items, _ in groups)
     results: list[dict[str, Any]] = []
     offset = 0
-    for items, parallel in groups:
-        results.extend(
-            run_targets(
-                repo,
-                items,
-                parallel=parallel,
-                index_base=offset,
-                grand_total=grand_total,
-            )
-        )
+    for index, (items, parallel) in enumerate(groups):
+        downstream = [item for later, _ in groups[index + 1:] for item in later]
+        results.extend(run_targets(repo, items, parallel=parallel, index_base=offset,
+                                   grand_total=grand_total, force=force, downstream=downstream))
         offset += len(items)
     return results
 
 
-def _verify_branch(repo, branch, kind, slug) -> None:
+def _verify_branch(repo, branch, kind, slug, force=False) -> None:
     path = evidence_file(repo, slug)
     ensure_clean(repo)
     if kind == "on-demand-release":
@@ -276,7 +275,7 @@ def _verify_branch(repo, branch, kind, slug) -> None:
 
     suite = required_suite(kind)
     playbooks = playbooks_for(repo, suite) if suite in PLAYBOOK_SUITES else []
-    results = _run_entry_groups(repo, kind)
+    results = _run_entry_groups(repo, kind, force)
     result = _branch_result(repo, branch, kind, results)
     if playbooks and all(item["passed"] for item in results):
         result["pending"] = create_pending(
@@ -351,24 +350,11 @@ def _verify_smart(repo, args) -> None:
     config = load_modules(repo)
     if not modules:
         raise MDFError("smart 必须指定至少一个 module", code="verify_modules")
-    results: list[dict[str, Any]] = []
     groups: list[tuple[list[dict[str, Any]], bool]] = []
     for entry in (*STEPS, "quick"):
         items = module_commands(config, modules, entry)
         groups.append((items, entry_parallel(repo, entry)))
-    grand_total = sum(len(items) for items, _ in groups)
-    offset = 0
-    for items, parallel in groups:
-        results.extend(
-            run_targets(
-                repo,
-                items,
-                parallel=parallel,
-                index_base=offset,
-                grand_total=grand_total,
-            )
-        )
-        offset += len(items)
+    results = _run_groups(repo, groups, bool(getattr(args, "force", False)))
     extra = list(args.test or [])
     for index, command in enumerate(extra, 1):
         from mdf_core.execution.verify_run import run_verify_command
@@ -469,7 +455,8 @@ def _verify_named(repo, args) -> None:
                 playbooks_for(repo, name)
                 if name not in ALL_ENTRIES or name in PLAYBOOK_SUITES else []
             )
-            runs.append((name, playbooks, run_targets(repo, targets, parallel=parallel)))
+            runs.append((name, playbooks, run_targets(repo, targets, parallel=parallel,
+                                                      force=bool(getattr(args, "force", False)))))
         results = [item for _, _, suite_results in runs for item in suite_results]
         if all(item["passed"] for item in results):
             pending = [

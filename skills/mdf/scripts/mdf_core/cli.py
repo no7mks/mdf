@@ -348,6 +348,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="smart 额外 test/testcase 命令（Agent+Jev 选题后传入）",
     )
     verify.add_argument("--report-file", help="smart 结果另存到仓库内路径，替代默认报告")
+    verify.add_argument("--force", action="store_true", help="忽略内容指纹凭证，强制冷跑全部命令")
     verify.add_argument("--record", help="branch/named：收录 pending 报告目录中 Agent 写的 playbook JUnit")
     verify.set_defaults(func=command_verify)
 
