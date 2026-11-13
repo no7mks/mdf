@@ -70,6 +70,8 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("lint", "build", "quick", "smoke", "release"):
         init.add_argument(f"--{name}", required=True)
     init.add_argument("--budget", action="append", default=[])
+    init.add_argument("--workflow", choices=("gitflow", "github-flow"))
+    init.add_argument("--trunk")
     init.add_argument(
         "--implementation-root", action="append", default=[]
     )
@@ -251,6 +253,15 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--dev-branch")
     add_strategy_arguments(delivery)
     delivery.set_defaults(func=command_delivery)
+
+    from mdf_core.workspace.workflow_switch import command_workflow
+    workflow = subparsers.add_parser("workflow")
+    workflow.add_argument("action", choices=("switch", "ci"))
+    workflow.add_argument("--repo", required=True)
+    workflow.add_argument("--model", choices=("gitflow", "github-flow"))
+    workflow.add_argument("--trunk")
+    workflow.add_argument("--provider", choices=("github", "gitlab"), default="github")
+    workflow.set_defaults(func=command_workflow)
 
     from mdf_core.workspace.planning import command_planning
     planning = subparsers.add_parser("planning")

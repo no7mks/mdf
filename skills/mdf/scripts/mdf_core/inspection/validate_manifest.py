@@ -115,6 +115,11 @@ def validate_manifest(
         config(manifest)
     except MDFError as exc:
         add_finding(findings, "manifest.closeout", str(exc), ".mdf/manifest.yaml")
+    from mdf_core.workspace.workflow_policy import parse_workflow
+    try:
+        parse_workflow(manifest, repo)
+    except MDFError as exc:
+        add_finding(findings, "manifest.workflow", str(exc), ".mdf/manifest.yaml")
     try:
         validate_hooks(manifest)
     except MDFError as exc:

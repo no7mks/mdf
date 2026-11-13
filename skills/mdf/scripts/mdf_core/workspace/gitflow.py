@@ -104,16 +104,16 @@ def default_branch(repo: Path) -> str | None:
     return value.removeprefix(prefix) if value.startswith(prefix) else None
 
 
-def require_master_default(repo: Path) -> None:
+def require_trunk_default(repo: Path, trunk: str = "master") -> None:
     branch = default_branch(repo)
-    if branch == "main":
+    if branch == "main" and trunk != "main":
         raise MDFError(
-            "Repository default branch is main; rename it to master first",
+            f"Repository default branch is main; rename it to {trunk} first",
             code="main_default_branch",
         )
-    if branch is not None and branch != "master":
+    if branch is not None and branch != trunk:
         raise MDFError(
-            f"Repository default branch must be master, got {branch}",
+            f"Repository default branch must be {trunk}, got {branch}",
             code="invalid_default_branch",
         )
 
@@ -447,7 +447,8 @@ def command_finish_gitflow(args) -> None:
         ensure_clean(trees.get(target) or (primary if publish else repo))
     if publish:
         _fetch(repo)
-        require_master_default(repo)
+        from mdf_core.workspace.workflow_policy import trunk_branch
+        require_trunk_default(repo, trunk_branch(repo))
     for name in role_branches(source, finish_roster):
         if _exists(repo, f"refs/heads/{name}") or name in trees:
             raise MDFError("角色分支尚未集成", code="roles_pending")

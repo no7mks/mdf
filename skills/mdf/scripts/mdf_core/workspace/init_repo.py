@@ -82,6 +82,7 @@ def render_manifest(
     hooks: dict | None = None,
     rules: dict | None = None,
     closeout: dict | None = None,
+    workflow: dict | None = None,
 ) -> str:
     lines = [
         f"schema_version: {SCHEMA_VERSION}",
@@ -119,6 +120,9 @@ def render_manifest(
         lines.append("rules:" if rules else "rules: {}")
         for stage, path in rules.items():
             lines.append(f"  {stage}: {yaml_quote(path)}")
+    if workflow is not None:
+        from mdf_core.workspace.workflow_policy import parse_workflow, render_workflow_lines
+        lines.extend(render_workflow_lines(parse_workflow({"workflow": workflow})))
     if closeout is not None:
         from mdf_core.workspace.merge_policy import config
         entry = config({"closeout": closeout})
@@ -169,6 +173,7 @@ def init_files(
     latest_release: str | None,
     verification: dict[str, Any],
     implementation_roots: list[str],
+    workflow: dict[str, str] | None = None,
 ) -> dict[Path, str]:
     from mdf_core.execution.modules_check import render_modules_yaml
 
@@ -186,6 +191,7 @@ def init_files(
             hooks=manifest.get("hooks"),
             rules=manifest.get("rules"),
             closeout=manifest.get("closeout"),
+            workflow=workflow if workflow is not None else manifest.get("workflow"),
         )
     }
     modules = repo / ".mdf" / "modules.yaml"
