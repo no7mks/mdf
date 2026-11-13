@@ -151,6 +151,7 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
   - 一致才出报告；否则回 2 重审；不复用旧通过结论；失败读日志报 error。
   - 交付进入过步骤 3 或 4 后，步骤 5 不再重跑 review-context，也不回步骤 2。
 - `review-report-check` 校验最终报告；valid 才返回；`--output` 另存路径；不直接 approve/merge。
+  - 交付审查带 `--repo <repo>` 调用，通过的报告才写入内容凭证；release 复用子交付证据时以 `reviewers: []` 提交，须由该命令核验。
 
 
 ### 项目 rule 的阶段接入
