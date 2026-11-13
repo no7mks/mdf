@@ -142,6 +142,19 @@ def build_parser() -> argparse.ArgumentParser:
     review_context.add_argument("--previous-report")
     review_context.set_defaults(func=command_context)
 
+    from mdf_core.reviewing.prepare import command_review_prepare
+    review_prepare = subparsers.add_parser("review-prepare")
+    review_prepare.add_argument("--repo", required=True)
+    review_prepare.add_argument("--against")
+    review_prepare.add_argument("--force", action="store_true", help="忽略 code-review 凭证，不扣除已覆盖路径")
+    review_prepare.set_defaults(func=command_review_prepare)
+
+    from mdf_core.lifecycle.catchup_plan import command_catch_up_plan
+    catch_up_plan = subparsers.add_parser("catch-up-plan")
+    catch_up_plan.add_argument("--repo", required=True)
+    catch_up_plan.add_argument("--base", help="缺省取 objectives 记录的 catch-up 基线")
+    catch_up_plan.set_defaults(func=command_catch_up_plan)
+
     from mdf_core.reviewing.report import command_report_check
     report_check = subparsers.add_parser("review-report-check")
     report_check.add_argument("--repo", help="提供时记录 pass 凭证并复核 0 reviewer 复用结论")
@@ -242,11 +255,13 @@ def build_parser() -> argparse.ArgumentParser:
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",
-        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope", "accept"),
+        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope", "accept",
+                 "route", "complete-stage"),
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--version")
-    delivery.add_argument("--stage", choices=(*STAGES, "finish"))
+    delivery.add_argument("--stage", choices=(*STAGES, "finish", "verify", "catch-up"))
+    delivery.add_argument("--yolo", action="store_true", help="route：pr/close-out 入口无需确认")
     delivery.add_argument("--summary")
     delivery.add_argument("--target")
     delivery.add_argument("--scope-file")

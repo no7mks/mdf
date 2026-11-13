@@ -1,0 +1,148 @@
+"""catch-up-plan：按 base..HEAD 的拓扑图（0/1/多次 merge）独立判定 review/verify/fact 动作；只读。"""
+import re
+
+from mdf_core.execution.modules import load_modules
+from mdf_core.foundation.errors import MDFError, emit
+from mdf_core.lifecycle.delivery_state import locate, safe
+from mdf_core.workspace.gitutil import repo_path, require_git_root
+from mdf_core.workspace.merge_policy import ancestor, git, sha
+from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
+
+MATERIAL_NAMES = {"objectives.md", "code-review.md", "fact-audit.md", "CHANGE.md", "catch-up-verification-report.json"}
+CONTRACTS = {".mdf/manifest.yaml", ".mdf/modules.yaml", "AGENTS.md"}
+BASELINE = re.compile(r"catch-up 基线：([0-9a-f]{40})")
+REWORK = re.compile(r"PR 返工：([0-9a-f]{40})\.\.[0-9a-f]{40}")
+
+
+def classify(path):
+    """fact：事实页；material：账本/文档；code：其余（是否被 module 拥有另判）。"""
+    if path == "GLOSSARY.md" or (path.endswith(".md") and path.startswith(("docs/user-guide/", "docs/system/"))):
+        return "fact"
+    name = path.rsplit("/", 1)[-1]
+    if (name in MATERIAL_NAMES or path.startswith(("changes/", "docs/")) or ("/" not in path and name.endswith(".md"))):
+        return "material"
+    return "code"
+
+
+def _lines(repo, *args):
+    return [x for x in git(repo, *args).stdout.split("\0") if x]
+
+
+def commit_paths(repo, commit):
+    return set(_lines(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "--no-renames", "-z", commit))
+
+
+def resolve_base(repo, root, explicit):
+    if explicit:
+        return sha(repo, explicit)
+    objectives = safe(repo, root / "objectives.md").read_text(encoding="utf-8")
+    for pattern in (BASELINE, REWORK):
+        found = pattern.findall(objectives)
+        if found:
+            return found[-1]
+    relative = (root / "objectives.md").relative_to(repo).as_posix()
+    first = git(repo, "log", "--reverse", "--format=%H", "-G^- \\[[xX]\\] fact", "--", relative).stdout.split()
+    if not first:
+        raise MDFError("无法确定 catch-up 基线，请用 --base 指定", code="missing_catch_up_base")
+    return first[0]
+
+
+def target_refs(repo, target):
+    names = {target, integration_branch(repo), trunk_branch(repo)} - {None}
+    refs = [f"refs/{kind}/{name}" for name in sorted(names) for kind in ("remotes/origin", "heads")]
+    return [r for r in refs if git(repo, "rev-parse", "--verify", "-q", r, check=False).returncode == 0]
+
+
+def upstream_merge(repo, parents, refs):
+    return len(parents) > 1 and all(any(ancestor(repo, p, ref) for ref in refs) for p in parents[1:])
+
+
+def graph(repo, left, refs):
+    """left..HEAD 的 merge 与普通提交划分：上游并入集、本分支自身提交、各 merge 冲突解决净改动。"""
+    merges, incoming = [], set()
+    for line in git(repo, "rev-list", "--merges", "--reverse", "--parents", f"{left}..HEAD").stdout.splitlines():
+        commit, *parents = line.split()
+        kind = "upstream" if upstream_merge(repo, parents, refs) else "internal"
+        if kind == "upstream":
+            incoming |= set(git(repo, "rev-list", "--no-merges", commit, f"^{parents[0]}").stdout.split())
+        merged = git(repo, "show", "--remerge-diff", "--format=", "--name-only", "--no-renames", "-z", commit, check=False)
+        resolution = sorted(x for x in merged.stdout.split("\0") if x) if not merged.returncode else None
+        merges.append({"commit": commit, "kind": kind, "parents": len(parents),
+                       "resolution_known": resolution is not None and len(parents) == 2,
+                       "resolution_paths": resolution or []})
+    own = [c for c in git(repo, "rev-list", "--no-merges", "--reverse", f"{left}..HEAD").stdout.split()
+           if c not in incoming]
+    return merges, own, incoming
+
+
+def surface(repo, commits):
+    found = set()
+    for commit in commits:
+        found |= commit_paths(repo, commit)
+    return found
+
+
+def rule_paths(repo):
+    from mdf_core.foundation.paths import load_manifest
+    rules = load_manifest(repo).get("rules") or {}
+    return CONTRACTS | {v for v in rules.values() if isinstance(v, str)}
+
+
+def dependents(config, touched):
+    """沿 depends_on 反向传递；未声明任何依赖图时只返回 touched。"""
+    result, changed = set(touched), True
+    while changed:
+        changed = False
+        for module in config.modules.values():
+            if module.name not in result and result & set(module.depends_on):
+                result.add(module.name)
+                changed = True
+    return sorted(result)
+
+
+def build_plan(repo, root, data, explicit_base=None):
+    config = load_modules(repo)
+    base, head = resolve_base(repo, root, explicit_base), sha(repo, "HEAD")
+    if not ancestor(repo, base, "HEAD"):
+        raise MDFError("catch-up 基线不是 HEAD 的祖先", code="invalid_catch_up_base")
+    refs = target_refs(repo, data.get("target"))
+    merges, own, incoming = graph(repo, base, refs)
+    start = data.get("start_commit") or base
+    _, branch_own, _ = graph(repo, start, refs) if start != base else (None, own, None)
+
+    def owned_code(paths):
+        return sorted(p for p in paths if classify(p) == "code" and config.modules_for_paths(repo, [p]))
+
+    own_paths, up_paths = surface(repo, own), surface(repo, incoming)
+    resolution = sorted({p for m in merges for p in m["resolution_paths"]} - MATERIAL_NAMES)
+    unknown = [m["commit"] for m in merges if not m["resolution_known"]]
+    branch_paths = surface(repo, branch_own)
+    own_code, res_code, up_code = owned_code(own_paths), owned_code(resolution), owned_code(up_paths)
+    shared = sorted(set(owned_code(branch_paths)) & set(up_code))
+    contract = sorted(up_paths & rule_paths(repo))
+    reasons = [name for name, hit in (("conflict_resolution", resolution or unknown), ("post_base_code", own_code),
+                                      ("interaction", shared), ("rules_or_contract_changed", contract)) if hit]
+    review = {"action": "skip" if not reasons else "focused", "reasons": reasons, "diff_range": f"{base}..HEAD",
+              "paths": sorted(set(own_code) | set(res_code) | set(shared)), "unknown_merges": unknown}
+    upstream_and_branch = bool(up_code) and bool(owned_code(branch_paths))
+    touched_paths = sorted(set(own_code) | set(res_code) | set(up_code))
+    smart = bool(own_code or res_code or upstream_and_branch or ".mdf/modules.yaml" in up_paths)
+    modules = config.modules_for_paths(repo, touched_paths)
+    verify = {"action": "smart" if smart else "skip",
+              "modules": sorted(config.modules) if ".mdf/modules.yaml" in up_paths else dependents(config, modules),
+              "paths": touched_paths if smart else [], "depends_on_declared": any(m.depends_on for m in config.modules.values())}
+    facts = sorted(p for p in own_paths | up_paths | set(resolution) if classify(p) == "fact")
+    implementation = sorted(set(own_code) | set(res_code) | set(up_code))
+    conflicting_facts = sorted(set(facts) & ({p for p in resolution if classify(p) == "fact"}
+                                              | (set(p for p in branch_paths if classify(p) == "fact") & up_paths)))
+    action = "skip" if not facts and not implementation else "update_required" if conflicting_facts else "audit"
+    fact = {"action": action, "implementation": implementation, "facts": facts, "conflicting_facts": conflicting_facts}
+    return {"base": base, "head": head, "target_refs": refs, "merges": merges, "own_commits": own,
+            "incoming_commits": sorted(incoming), "review": review, "verify": verify, "fact": fact}
+
+
+def command_catch_up_plan(args):
+    repo = repo_path(args.repo)
+    require_git_root(repo)
+    root, data = locate(repo)
+    emit({"ok": True, "operation": "catch-up-plan", "result": build_plan(repo, root, data, args.base)})

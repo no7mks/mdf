@@ -217,6 +217,12 @@ def command_delivery(args):
         result = record_stage(repo, root, data, args)
     elif args.action == "check":
         result = check(repo, root, data, args.stage)
+    elif args.action == "route":
+        from mdf_core.lifecycle.stage_route import route
+        result = route(repo, root, data, args.yolo)
+    elif args.action == "complete-stage":
+        from mdf_core.lifecycle.stage_route import complete_stage
+        result = complete_stage(repo, root, data, args.stage)
     elif args.action == "roster-join":
         from mdf_core.lifecycle.delivery_git import roster_join
         result = roster_join(
