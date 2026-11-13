@@ -55,7 +55,7 @@ budgets:
   - 正文写明目的与 testcase 构成；testcase 本身靠代码 frontmatter/stringdoc。
 - `quick`/`smoke`/`release` mapping 可选 `parallel: true`（按 module 展开的多命令）。
 - **depends_on**：module 名列表，表示本 module 依赖这些 module；名称必须存在且不得成环。
-  - `catch-up-plan` 据此把受影响 module 沿依赖反向扩展；未声明时只取实际触及的 module。
+  - `catch-up-plan` 据此把受影响 module 沿依赖反向扩展并判定审查交互；未声明时 verify 并入本分支触及的 module。
 - **verify 内容指纹**（命中则复用已通过结果，不启动子进程；`verify --force` 忽略）：
   - 入口 mapping（quick/smoke/release/named）可选 `extra_inputs`（额外参与指纹的 glob）与 `external_state: true`（外部状态不可核验，永不复用）。
   - 显式输入（命令、`.mdf/modules.yaml`、`docs/system/testing/**`、sourceset、`tests` 与 `extra_inputs`）一律计入；

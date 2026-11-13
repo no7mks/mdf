@@ -119,11 +119,13 @@ def command_report_check(args):
     require(isinstance(report, dict), "报告必须是 JSON object")
     reuse, tracked = None, bool(getattr(args, "repo", None) and "credential" in context)
     if tracked:
+        from mdf_core.execution.modules import load_modules
         from mdf_core.reviewing import credentials
         from mdf_core.workspace.gitutil import repo_path
         repo = repo_path(args.repo)
         if context.get("kind") in {"release", "on-demand-release"}:
-            reuse = credentials.reuse_analysis(repo, context["source"], context["credential"])
+            reuse = credentials.reuse_analysis(repo, context["source"], context["credential"],
+                                              load_modules(repo))
     result = validate(context, report, reuse)
     if reuse is not None:
         result["reuse"] = reuse

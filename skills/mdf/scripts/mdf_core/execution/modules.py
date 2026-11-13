@@ -118,6 +118,23 @@ class ModulesConfig:
                     hit.add(module.name)
         return sorted(hit)
 
+    def interacting(self, left: list[str], right: list[str]) -> list[str]:
+        """两组 module 间构成交互的 module：同名，或一方沿 depends_on 传递依赖另一方。"""
+        def closure(name: str) -> set[str]:
+            seen, pending = set(), [name]
+            while pending:
+                for dep in self.modules[pending.pop()].depends_on:
+                    if dep not in seen:
+                        seen.add(dep)
+                        pending.append(dep)
+            return seen
+        found: set[str] = set()
+        for m in left:
+            for n in right:
+                if m == n or n in closure(m) or m in closure(n):
+                    found |= {m, n}
+        return sorted(found)
+
     def owns(self, rel: str) -> bool:
         return any(match(rel, pattern) for module in self.modules.values() for pattern in module.sourceset)
 

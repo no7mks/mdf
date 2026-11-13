@@ -118,3 +118,13 @@ def test_build_without_artifacts_is_skipped_only_when_downstream_all_hit(python_
     (repo / "src/service.py").write_text("changed = True\n")
     verify(python_exe, repo)
     assert builds() == 2 and runs(counter) == 2
+
+
+def test_same_inputs_on_another_branch_and_worktree_hit_the_shared_store(python_exe, tmp_path):
+    repo, counter, _ = prepare(tmp_path)
+    verify(python_exe, repo)
+    git(repo, "checkout", "-q", "-b", "feature/other")
+    assert "reused_from" in quick_item(verify(python_exe, repo)) and runs(counter) == 1
+    tree = tmp_path / "worktree"
+    git(repo, "worktree", "add", "-q", "-b", "feature/third", str(tree), "HEAD")
+    assert "reused_from" in quick_item(verify(python_exe, tree)) and runs(counter) == 1

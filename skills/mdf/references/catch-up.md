@@ -78,11 +78,13 @@ python3 "$MDF_ROOT/scripts/mdf.py" catch-up-plan --repo "$REPO_ROOT"
   - 每个 merge 的冲突解决净改动取 `--remerge-diff`；无法取得（含 octopus）一律视为未知，不得 skip。
 - 三路动作各自独立判定，不互相推导：
   - `review = skip` 须同时满足：所有冲突解决净改动为空、基线后无新增代码改动、上游对本分支既有改动的交互面为空、规则与契约未变。
-    交互面为双方都改的文件；上游改 `.mdf/manifest.yaml`、`.mdf/modules.yaml`、`AGENTS.md` 或阶段 rule 视为规则/契约变化。
+    交互面为双方都改的文件，或双方改动所属 module 同名、一方沿 `depends_on` 依赖另一方（module 接口层）。
+    上游改 `.mdf/manifest.yaml`、`.mdf/modules.yaml`、`AGENTS.md` 或阶段 rule 视为规则/契约变化。
     任一不满足输出 `focused` 与 `review.paths`，仍只派 1 名 reviewer。
   - `verify`：上游与本分支都有非忽略代码变更，或本分支基线后/冲突解决有代码变更时输出 `smart`。
-    受影响 module 沿 `.mdf/modules.yaml` 的可选 `depends_on` 反向扩展；未声明依赖时只取实际触及的 module，不因 module 名不相交而 skip。
-  - `fact`：无实现与事实页增量为 `skip`；冲突解决触及事实页，或双方改了同一事实页为 `update_required`；其余为 `audit`。
+    配置（lockfile、`.mdf/*.yaml`、`docs/system/testing/**`、`tests/playbooks/**`）变更同样触发，modules 取全部。
+    其余沿 `.mdf/modules.yaml` 的可选 `depends_on` 反向扩展；未声明依赖时并入本分支触及的 module。
+  - `fact`：无实现、事实页与规则变化为 `skip`；冲突解决触及事实页，或双方改了同一事实页为 `update_required`；其余为 `audit`。
 - 材料文件（`objectives.md`、`code-review.md`、`fact-audit.md`、`CHANGE.md`、`catch-up-verification-report.json`）不计入增量。
 
 `delivery route` 在下一步为 catch-up 时用 `auto_completable` 指示三路是否全部 skip；

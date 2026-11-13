@@ -76,26 +76,34 @@ def code_identity(repo, head, paths, rules_sha256, objectives, delivery):
     return {**base, 'key': key_of(base), 'files': files}
 
 
-def reuse_analysis(repo, source, identity):
-    """release 复用子交付 code-review 证据；净增量与未覆盖组合影响面均空才允许 0 reviewer。"""
+def reuse_analysis(repo, source, identity, config):
+    """release 复用子交付 code-review 证据；净增量与未覆盖组合影响面（文件或 module 接口层）均空才允许 0 reviewer。"""
     children = [r for r in records(repo, 'code-review')
                 if r.get('decision') == 'pass' and r.get('source') != source
-                and r.get('kind') not in {'release', 'on-demand-release'}
+                and r.get('delivery_kind') not in {'release', 'on-demand-release'}
                 and r.get('rules_sha256') == identity['rules_sha256']]
     covered = {p for p in identity['paths'] if any(
         identity['files'][p] is not None and r['files'].get(p) == identity['files'][p] for r in children)}
     net = [p for p in identity['paths'] if p not in covered]
-    touched = {p: sorted(r['key'] for r in children if p in r['paths']) for p in identity['paths']}
-    combined = [p for p, keys in touched.items() if len(keys) >= 2]
-    return {'net_increment': net, 'combined_impact': combined,
-            'child_credentials': sorted(r['key'] for r in children if set(r['paths']) & set(identity['paths'])),
-            'zero_reviewers_allowed': not net and not combined}
+    touched = {p: sorted({r['source'] for r in children if p in r['paths']}) for p in identity['paths']}
+    combined = [p for p, sources in touched.items() if len(sources) >= 2]
+    own = set(identity['paths'])
+    by_source = {}
+    for r in children:
+        by_source.setdefault(r['source'], set()).update(set(r['paths']) & own)
+    modules = {s: config.modules_for_paths(repo, sorted(paths)) for s, paths in by_source.items() if paths}
+    names = sorted(modules)
+    combined_modules = sorted({m for i, a in enumerate(names) for b in names[i + 1:]
+                               for m in config.interacting(modules[a], modules[b])})
+    return {'net_increment': net, 'combined_impact': combined, 'combined_modules': combined_modules,
+            'child_credentials': sorted(r['key'] for r in children if set(r['paths']) & own),
+            'zero_reviewers_allowed': not net and not combined and not combined_modules}
 
 
 def record_code_credential(repo, context, reviewers):
     identity = context['credential']
-    return write(repo, 'code-review', identity['key'], {
-        'source': context['source'], 'kind': context['kind'], 'decision': 'pass', 'reviewers': reviewers,
+    return write(repo, 'code-review', key_of({'identity': identity['key'], 'source': context['source']}), {
+        'source': context['source'], 'delivery_kind': context['kind'], 'decision': 'pass', 'reviewers': reviewers,
         'rules_sha256': identity['rules_sha256'], 'code_digest': identity['code_digest'],
         'requirements_digest': identity['requirements_digest'], 'paths': identity['paths'],
         'files': identity['files']})

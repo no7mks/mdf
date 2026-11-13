@@ -6,11 +6,22 @@ from support_delivery import commit, local_repo
 SPACED = "".join(f"line{i} = {i}\n" for i in range(1, 9))
 
 
-def started(python_exe, tmp_path, seed=None):
+def lib_module(depends=""):
+    return ("  lib:\n    sourceset:\n      - \"lib/**\"\n    ignore: []\n    lint: \"true\"\n    build: \"true\"\n"
+            + "".join(f"    {s}:\n      command: \"true\"\n      tests:\n        - \"tests/**\"\n"
+                      for s in ("quick", "smoke", "release"))
+            + "    named: []\n" + (f"    depends_on: [{depends}]\n" if depends else ""))
+
+
+def started(python_exe, tmp_path, seed=None, extra_module=""):
     repo = local_repo(tmp_path)
-    if seed:
+    if seed or extra_module:
         git(repo, "checkout", "-q", "develop")
-        (repo / "src/shared.py").write_text(seed)
+        if seed:
+            (repo / "src/shared.py").write_text(seed)
+        if extra_module:
+            path = repo / ".mdf/modules.yaml"
+            path.write_text(path.read_text() + extra_module)
         commit(repo, "feat: 共享文件")
         git(repo, "checkout", "-q", "master")
         git(repo, "merge", "-q", "--ff-only", "develop")
@@ -71,7 +82,22 @@ def test_zero_merge_rework_requires_focused_review_and_smart_verify(python_exe, 
     assert result["fact"]["action"] == "audit" and result["fact"]["implementation"] == ["src/service.py"]
 
 
-def test_clean_upstream_merge_on_disjoint_files_skips_review_but_not_verify(python_exe, tmp_path):
+def test_clean_upstream_merge_on_disjoint_modules_skips_review_but_not_verify(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
+    (work / "src/own.py").write_text("own = 1\n")
+    commit(work, "feat: 本分支代码")
+    tick_fact(work, root)
+    upstream(repo, "lib/other.py", "other = 1\n")
+    merge(work)
+    result = plan(python_exe, work)
+    assert [m["kind"] for m in result["merges"]] == ["upstream"] and len(result["incoming_commits"]) == 1
+    assert result["review"]["action"] == "skip" and result["review"]["reasons"] == []
+    assert result["verify"]["action"] == "smart" and result["verify"]["paths"] == ["lib/other.py"]
+    assert result["verify"]["modules"] == ["default", "lib"]
+    assert result["fact"]["action"] == "audit"
+
+
+def test_same_module_on_disjoint_files_is_a_module_interface_interaction(python_exe, tmp_path):
     repo, work, root = started(python_exe, tmp_path)
     (work / "src/own.py").write_text("own = 1\n")
     commit(work, "feat: 本分支代码")
@@ -79,10 +105,22 @@ def test_clean_upstream_merge_on_disjoint_files_skips_review_but_not_verify(pyth
     upstream(repo, "src/other.py", "other = 1\n")
     merge(work)
     result = plan(python_exe, work)
-    assert [m["kind"] for m in result["merges"]] == ["upstream"] and len(result["incoming_commits"]) == 1
-    assert result["review"]["action"] == "skip" and result["review"]["reasons"] == []
-    assert result["verify"]["action"] == "smart" and result["verify"]["paths"] == ["src/other.py"]
-    assert result["fact"]["action"] == "audit"
+    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["module_interaction"]
+    assert result["review"]["paths"] == ["src/other.py"]
+    assert result["review"]["interaction"] == {"files": [], "modules": ["default"], "branch_paths": ["src/own.py"]}
+
+
+def test_depends_on_between_modules_is_an_interaction_in_either_direction(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module("default"))
+    (work / "src/own.py").write_text("own = 1\n")
+    commit(work, "feat: 本分支代码")
+    tick_fact(work, root)
+    upstream(repo, "lib/other.py", "other = 1\n")
+    merge(work)
+    result = plan(python_exe, work)
+    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["module_interaction"]
+    assert result["review"]["interaction"]["modules"] == ["default", "lib"]
+    assert result["verify"]["modules"] == ["lib"] and result["verify"]["depends_on_declared"] is True
 
 
 def test_upstream_touching_branch_file_is_an_uncovered_interaction(python_exe, tmp_path):
@@ -110,17 +148,17 @@ def test_conflict_resolution_is_net_change_that_blocks_review_skip(python_exe, t
 
 
 def test_consecutive_merges_aggregate_all_incoming_commits(python_exe, tmp_path):
-    repo, work, root = started(python_exe, tmp_path)
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
     (work / "src/own.py").write_text("own = 1\n")
     commit(work, "feat: 本分支代码")
     tick_fact(work, root)
-    upstream(repo, "src/one.py", "one = 1\n")
+    upstream(repo, "lib/one.py", "one = 1\n")
     merge(work)
-    upstream(repo, "src/two.py", "two = 1\n")
+    upstream(repo, "lib/two.py", "two = 1\n")
     merge(work)
     result = plan(python_exe, work)
     assert len(result["merges"]) == 2 and len(result["incoming_commits"]) == 2
-    assert result["verify"]["paths"] == ["src/one.py", "src/two.py"]
+    assert result["verify"]["paths"] == ["lib/one.py", "lib/two.py"]
     assert result["review"]["action"] == "skip"
 
 
@@ -154,3 +192,77 @@ def test_explicit_base_and_read_only(python_exe, tmp_path):
     assert plan(python_exe, work, "--base", head)["review"]["action"] == "skip"
     assert plan(python_exe, work, "--base", "HEAD~1")["review"]["action"] == "focused"
     assert (git(work, "status", "--porcelain").stdout, git(work, "rev-parse", "HEAD").stdout.strip()) == before
+
+
+def test_without_depends_on_verify_also_covers_modules_the_branch_touched(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
+    (work / "src/own.py").write_text("own = 1\n")
+    commit(work, "feat: 本分支代码")
+    tick_fact(work, root)
+    upstream(repo, "lib/other.py", "other = 1\n")
+    merge(work)
+    assert plan(python_exe, work, "--base", git(work, "rev-parse", "HEAD~2").stdout.strip())["verify"]["modules"] \
+        == ["default", "lib"]
+
+
+def test_upstream_lockfile_or_testing_doc_with_branch_code_triggers_smart_for_all_modules(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
+    (work / "src/own.py").write_text("own = 1\n")
+    commit(work, "feat: 本分支代码")
+    tick_fact(work, root)
+    upstream(repo, "uv.lock", "locked = 1\n")
+    merge(work)
+    result = plan(python_exe, work)
+    assert result["verify"]["action"] == "smart" and result["verify"]["modules"] == ["default", "lib"]
+    assert result["verify"]["paths"] == ["uv.lock"]
+
+
+def test_upstream_lockfile_alone_does_not_trigger_verify(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path)
+    tick_fact(work, root)
+    upstream(repo, "uv.lock", "locked = 1\n")
+    merge(work)
+    assert plan(python_exe, work)["verify"]["action"] == "skip"
+
+
+def test_material_only_conflict_does_not_block_review_skip(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
+    (work / "src/own.py").write_text("own = 1\n")
+    commit(work, "feat: 本分支代码")
+    tick_fact(work, root)
+    (work / "docs/notes.md").parent.mkdir(parents=True, exist_ok=True)
+    (work / "docs/notes.md").write_text("branch\n")
+    commit(work, "docs: 分支笔记")
+    base = git(work, "rev-parse", "HEAD").stdout.strip()
+    upstream(repo, "docs/notes.md", "upstream\n")
+    merge(work, resolve={"docs/notes.md": "both\n"})
+    result = plan(python_exe, work, "--base", base)
+    assert result["merges"][0]["resolution_paths"] == ["docs/notes.md"]
+    assert result["review"]["action"] == "skip" and result["fact"]["action"] == "skip"
+
+
+def test_octopus_merge_is_unknown_and_keeps_verify_and_fact_conservative(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
+    tick_fact(work, root)
+    git(repo, "checkout", "-q", "-b", "side", "develop")
+    (repo / "lib/x.py").parent.mkdir(exist_ok=True)
+    (repo / "lib/x.py").write_text("x = 1\n")
+    commit(repo, "feat: 侧支")
+    git(repo, "checkout", "-q", "develop")
+    upstream(repo, "lib/y.py", "y = 1\n")
+    git(repo, "checkout", "-q", "master")
+    assert run(["git", "merge", "--no-edit", "develop", "side"], cwd=work).returncode == 0
+    result = plan(python_exe, work)
+    assert result["merges"][0]["resolution_known"] is False
+    assert result["review"]["action"] == "focused" and result["review"]["unknown_merges"]
+    assert result["verify"]["action"] == "smart" and "lib/x.py" in result["verify"]["paths"]
+    assert result["fact"]["action"] == "audit"
+
+
+def test_upstream_manifest_change_alone_requires_fact_audit(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path)
+    tick_fact(work, root)
+    upstream(repo, "AGENTS.md", (repo / "AGENTS.md").read_text() + "\n新增约束\n")
+    merge(work)
+    fact = plan(python_exe, work)["fact"]
+    assert fact["action"] == "audit" and fact["rules_changed"] == ["AGENTS.md"]

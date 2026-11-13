@@ -1,7 +1,8 @@
 """catch-up-plan：按 base..HEAD 的拓扑图（0/1/多次 merge）独立判定 review/verify/fact 动作；只读。"""
 import re
 
-from mdf_core.execution.modules import load_modules
+from mdf_core.execution.attestations import FIXED_INPUTS, LOCKFILES
+from mdf_core.execution.modules import load_modules, match
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import locate, safe
 from mdf_core.workspace.gitutil import repo_path, require_git_root
@@ -66,10 +67,11 @@ def graph(repo, left, refs):
         if kind == "upstream":
             incoming |= set(git(repo, "rev-list", "--no-merges", commit, f"^{parents[0]}").stdout.split())
         merged = git(repo, "show", "--remerge-diff", "--format=", "--name-only", "--no-renames", "-z", commit, check=False)
-        resolution = sorted(x for x in merged.stdout.split("\0") if x) if not merged.returncode else None
+        known = not merged.returncode and len(parents) == 2
+        resolution = _lines(repo, "diff", "--name-only", "--no-renames", "-z", f"{commit}^1", commit) \
+            if not known else [x for x in merged.stdout.split("\0") if x]
         merges.append({"commit": commit, "kind": kind, "parents": len(parents),
-                       "resolution_known": resolution is not None and len(parents) == 2,
-                       "resolution_paths": resolution or []})
+                       "resolution_known": known, "resolution_paths": sorted(resolution)})
     own = [c for c in git(repo, "rev-list", "--no-merges", "--reverse", f"{left}..HEAD").stdout.split()
            if c not in incoming]
     return merges, own, incoming
@@ -86,6 +88,12 @@ def rule_paths(repo):
     from mdf_core.foundation.paths import load_manifest
     rules = load_manifest(repo).get("rules") or {}
     return CONTRACTS | {v for v in rules.values() if isinstance(v, str)}
+
+
+def config_paths(paths):
+    """影响验证环境的配置：固定输入、lockfile、requirements*.txt。"""
+    return sorted(p for p in paths if any(match(p, f) for f in FIXED_INPUTS) or p.rsplit("/", 1)[-1] in LOCKFILES
+                  or (p.rsplit("/", 1)[-1].startswith("requirements") and p.endswith(".txt")))
 
 
 def dependents(config, touched):
@@ -114,29 +122,47 @@ def build_plan(repo, root, data, explicit_base=None):
         return sorted(p for p in paths if classify(p) == "code" and config.modules_for_paths(repo, [p]))
 
     own_paths, up_paths = surface(repo, own), surface(repo, incoming)
-    resolution = sorted({p for m in merges for p in m["resolution_paths"]} - MATERIAL_NAMES)
+    resolution = sorted({p for m in merges for p in m["resolution_paths"] if classify(p) != "material"})
     unknown = [m["commit"] for m in merges if not m["resolution_known"]]
     branch_paths = surface(repo, branch_own)
     own_code, res_code, up_code = owned_code(own_paths), owned_code(resolution), owned_code(up_paths)
-    shared = sorted(set(owned_code(branch_paths)) & set(up_code))
+    branch_code = owned_code(branch_paths)
+    shared = sorted(set(branch_code) & set(up_code))
+    interaction_modules = config.interacting(config.modules_for_paths(repo, branch_code),
+                                             config.modules_for_paths(repo, up_code))
+    module_files = sorted(p for p in up_code if set(config.modules_for_paths(repo, [p])) & set(interaction_modules))
     contract = sorted(up_paths & rule_paths(repo))
     reasons = [name for name, hit in (("conflict_resolution", resolution or unknown), ("post_base_code", own_code),
-                                      ("interaction", shared), ("rules_or_contract_changed", contract)) if hit]
+                                      ("interaction", shared), ("module_interaction", interaction_modules),
+                                      ("rules_or_contract_changed", contract)) if hit]
     review = {"action": "skip" if not reasons else "focused", "reasons": reasons, "diff_range": f"{base}..HEAD",
-              "paths": sorted(set(own_code) | set(res_code) | set(shared)), "unknown_merges": unknown}
-    upstream_and_branch = bool(up_code) and bool(owned_code(branch_paths))
-    touched_paths = sorted(set(own_code) | set(res_code) | set(up_code))
-    smart = bool(own_code or res_code or upstream_and_branch or ".mdf/modules.yaml" in up_paths)
-    modules = config.modules_for_paths(repo, touched_paths)
+              "paths": sorted(set(own_code) | set(res_code) | set(shared) | set(module_files)),
+              "interaction": {"files": shared, "modules": interaction_modules,
+                              "branch_paths": sorted(p for p in branch_code if set(config.modules_for_paths(repo, [p]))
+                                                     & set(interaction_modules))},
+              "unknown_merges": unknown}
+    own_config, up_config = config_paths(own_paths | set(resolution)), config_paths(up_paths)
+    upstream_and_branch = bool(up_code or up_config) and bool(branch_code or config_paths(branch_paths))
+    config_hit = bool(own_config) or (bool(up_config) and upstream_and_branch)
+    touched_paths = sorted(set(own_code) | set(res_code) | set(up_code) | set(own_config)
+                           | (set(up_config) if config_hit else set()))
+    smart = bool(own_code or res_code or upstream_and_branch or config_hit or ".mdf/modules.yaml" in up_paths)
+    declared = any(m.depends_on for m in config.modules.values())
+    touched_modules = set(config.modules_for_paths(repo, touched_paths))
+    if upstream_and_branch and not declared:
+        touched_modules |= set(config.modules_for_paths(repo, branch_code))
     verify = {"action": "smart" if smart else "skip",
-              "modules": sorted(config.modules) if ".mdf/modules.yaml" in up_paths else dependents(config, modules),
-              "paths": touched_paths if smart else [], "depends_on_declared": any(m.depends_on for m in config.modules.values())}
+              "modules": sorted(config.modules) if config_hit or ".mdf/modules.yaml" in up_paths
+              else dependents(config, touched_modules),
+              "paths": touched_paths if smart else [], "depends_on_declared": declared}
     facts = sorted(p for p in own_paths | up_paths | set(resolution) if classify(p) == "fact")
     implementation = sorted(set(own_code) | set(res_code) | set(up_code))
     conflicting_facts = sorted(set(facts) & ({p for p in resolution if classify(p) == "fact"}
                                               | (set(p for p in branch_paths if classify(p) == "fact") & up_paths)))
-    action = "skip" if not facts and not implementation else "update_required" if conflicting_facts else "audit"
-    fact = {"action": action, "implementation": implementation, "facts": facts, "conflicting_facts": conflicting_facts}
+    action = ("skip" if not facts and not implementation and not contract
+              else "update_required" if conflicting_facts else "audit")
+    fact = {"action": action, "implementation": implementation, "facts": facts,
+            "conflicting_facts": conflicting_facts, "rules_changed": contract}
     return {"base": base, "head": head, "target_refs": refs, "merges": merges, "own_commits": own,
             "incoming_commits": sorted(incoming), "review": review, "verify": verify, "fact": fact}
 

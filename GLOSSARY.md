@@ -113,6 +113,14 @@ hermetic UT 或 PT；原慢用例保留。
   - 有系统或工具自带日志/报告时读那份，不另 tee。
   - 其他命令用 Core `run` 代跑。
 
+## 内容凭证与 tombstone
+
+凭证存于 Git common dir 的 `mdf/attestations/<kind>/`，按内容摘要而非 commit SHA 匹配，各 worktree 与分支共享。
+
+- **verify 凭证**：同一入口、命令、输入指纹与环境指纹下的通过记录；命中时不启动子进程。
+- **code-review / fact-audit 凭证**：内容、规则与需求摘要一致的已通过审查，供净增量扣除与 release 复用子交付证据。
+- **tombstone**：同指纹的最新实跑失败时写入，覆盖旧成功凭证，直到重新实跑通过。
+
 ## Hermetic
 
 测试进程能自行拉起全部依赖，不需要预先存在的环境、凭据或网络。依赖第三方资源

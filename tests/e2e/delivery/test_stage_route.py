@@ -21,8 +21,8 @@ def complete(python_exe, work, stage):
     return mdf(python_exe, "delivery", "complete-stage", "--repo", str(work), "--stage", stage)
 
 
-def passing_report(root, branch="feature/service-health"):
-    (root / "verification-report.json").write_text(json.dumps({"all_passed": True, "branch": branch}))
+def passing_report(root, branch="feature/service-health", scope="branch"):
+    (root / "verification-report.json").write_text(json.dumps({"all_passed": True, "branch": branch, "scope": scope}))
 
 
 @pytest.mark.parametrize("steps,yolo,state", [
@@ -68,6 +68,36 @@ def test_complete_verify_commits_only_stage_files_and_is_idempotent(python_exe, 
     head = git(work, "rev-parse", "HEAD").stdout.strip()
     again = payload(complete(python_exe, work, "verify"))["result"]
     assert again["already_completed"] is True and git(work, "rev-parse", "HEAD").stdout.strip() == head
+
+
+def test_verify_requires_matching_scope_branch_and_earlier_steps(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    set_steps(work, root, [("code-review", False), ("verify branch", False)])
+    passing_report(root, scope="smart")
+    assert route(python_exe, work)["auto_completable"] is False
+    error = error_of(complete(python_exe, work, "verify"))
+    assert error["error"] == "stage_evidence_missing"
+    assert error["details"]["expected_scope"] == "branch" and error["details"]["actual_scope"] == "smart"
+    (root / "verification-report.json").write_text(json.dumps({"all_passed": True, "scope": "branch"}))
+    assert error_of(complete(python_exe, work, "verify"))["details"]["actual_branch"] is None
+    passing_report(root)
+    prerequisite = error_of(complete(python_exe, work, "verify"))
+    assert prerequisite["error"] == "stage_prerequisite" and prerequisite["details"]["pending"] == ["code-review"]
+
+
+def test_verify_smart_needs_smart_scope_and_branch_summary_is_committed_when_present(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    set_steps(work, root, [("verify smart", False)])
+    passing_report(root)
+    assert error_of(complete(python_exe, work, "verify"))["details"]["expected_scope"] == "smart"
+    passing_report(root, scope="smart")
+    assert payload(complete(python_exe, work, "verify"))["result"]["completed"]
+    set_steps(work, root, [("verify branch", False)])
+    passing_report(root)
+    (root / "verification-report.md").write_text("架构审视要点\n")
+    done = payload(complete(python_exe, work, "verify"))["result"]
+    assert sorted(Path(p).name for p in done["paths"]) == ["objectives.md", "verification-report.json",
+                                                            "verification-report.md"]
 
 
 def test_unrelated_staged_changes_abort_and_preserve_the_scene(python_exe, tmp_path):

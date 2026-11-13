@@ -24,24 +24,33 @@ def _objectives(repo, root):
     return path, path.read_text(encoding="utf-8")
 
 
-def _verify_evidence(repo, root, data):
+def _verify_evidence(repo, root, data, item):
     path = safe(repo, root / "verification-report.json")
     if not path.is_file():
-        return None, "缺少 verification-report.json"
+        return None, ("缺少 verification-report.json", {"missing": "verification-report.json"})
     report = read_json(path)
-    if report.get("all_passed") is not True or report.get("branch") not in {None, data["branch"]}:
-        return None, "verification-report.json 未声称本分支全部通过"
-    return {"report": path.relative_to(repo).as_posix()}, None
+    expected = {"stage": "verify", "expected_scope": "smart" if item["name"] == "verify smart" else "branch",
+                "expected_branch": data["branch"], "actual_scope": report.get("scope"),
+                "actual_branch": report.get("branch")}
+    if (report.get("all_passed") is not True or report.get("scope") != expected["expected_scope"]
+            or report.get("branch") != data["branch"]):
+        return None, ("verification-report.json 未声称本分支本 scope 全部通过", expected)
+    found = {"report": path.relative_to(repo).as_posix()}
+    if report["scope"] == "branch":
+        summary = safe(repo, root / "verification-report.md")
+        if summary.is_file():
+            found["summary"] = summary.relative_to(repo).as_posix()
+    return found, None
 
 
-def evidence(repo, root, data, stage):
-    """返回 (证据, 缺失原因)；证据为空表示该阶段不可自动完成。"""
+def evidence(repo, root, data, item, stage):
+    """返回 (证据, (原因, details))；证据为空表示该阶段不可自动完成。"""
     if stage == "verify":
-        return _verify_evidence(repo, root, data)
+        return _verify_evidence(repo, root, data, item)
     plan = build_plan(repo, root, data)
     pending = {k: plan[k]["action"] for k in ("review", "verify", "fact") if plan[k]["action"] != "skip"}
     if pending:
-        return None, f"catch-up 仍有待补检动作: {pending}"
+        return None, (f"catch-up 仍有待补检动作: {pending}", {"stage": stage, "pending": pending})
     return {"baseline": plan["head"]}, None
 
 
@@ -62,7 +71,7 @@ def route(repo, root, data, yolo=False):
         return {**result, "state": "awaiting_decision_confirmation"}
     stage = next((s for s in AUTO if _is(head, s)), None)
     if stage:
-        found, _ = evidence(repo, root, data, stage)
+        found, _ = evidence(repo, root, data, head, stage)
         result["auto_completable"] = found is not None
     return {**result, "state": "ready"}
 
@@ -100,18 +109,20 @@ def complete_stage(repo, root, data, stage):
         raise MDFError(f"{stage} 不是纯证据可判定的阶段，仅支持 {', '.join(AUTO)}", code="invalid_stage")
     path, text = _objectives(repo, root)
     rel = path.relative_to(repo).as_posix()
-    item = next((i for i in parse_items(text) if _is(i, stage)), None)
+    items = parse_items(text)
+    item = next((i for i in items if _is(i, stage)), None)
     if item is None:
         raise MDFError(f"objectives 中没有 {stage} 步骤", code="invalid_stage")
-    found, reason = evidence(repo, root, data, stage)
+    found, reason = evidence(repo, root, data, item, stage)
     if found is None:
-        raise MDFError(reason, code="stage_evidence_missing")
+        raise MDFError(reason[0], code="stage_evidence_missing", details=reason[1])
     if _already_done(repo, rel, text, item, stage):
         return {"stage": stage, "completed": True, "already_completed": True, "commit": sha(repo, "HEAD")}
-    earlier = [i["name"] for i in parse_items(text) if not i["checked"]][:1]
-    if stage == "catch-up" and not item["checked"] and earlier and earlier[0] != item["name"]:
-        raise MDFError(f"catch-up 前置未完成: {earlier[0]}", code="stage_prerequisite")
-    owned = {rel, *([found["report"]] if "report" in found else [])}
+    earlier = [i["name"] for i in items[:items.index(item)] if not i["checked"]]
+    if earlier:
+        raise MDFError(f"{stage} 前置未完成: {', '.join(earlier)}", code="stage_prerequisite",
+                       details={"stage": stage, "pending": earlier})
+    owned = {rel, *(found[k] for k in ("report", "summary") if k in found)}
     unrelated = sorted(_staged(repo) - owned)
     if unrelated:
         raise MDFError("index 存在本阶段之外的已暂存改动，已保留现场未做任何修改",

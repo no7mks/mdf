@@ -39,7 +39,7 @@
 | audit-push | --repo --branch --before --after；可选 --evidence-file 或 --collect-evidence | result.verdict 为 pass/violation/needs-review，退出 0 不代表合规 |
 | review-context | --repo --source --head --policy-ref；可选 --review-base --previous-report | result 为固定上下文，缺身份或基线失败，材料缺项写 incomplete |
 | review-report-check | --context-file --report-file；可选 --repo | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
-| review-prepare | --repo；可选 --against --force | 左端点、净增量、交互文件集、numstat、体积结论与生效 project rule；要求 clean |
+| review-prepare | --repo；可选 --against --force | 左端点、净增量、交互文件与 module 集、numstat、体积结论、project rule；凭证同规则同需求；release 另给 `reuse`；要求 clean |
 
 - audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。

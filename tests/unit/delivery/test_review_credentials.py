@@ -3,15 +3,33 @@ from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 load_core_module()
+from mdf_core.execution.modules import parse_modules  # noqa: E402
 from mdf_core.foundation.errors import MDFError  # noqa: E402
+from mdf_core.foundation.yamlutil import parse_yaml  # noqa: E402
 from mdf_core.reviewing import credentials, report, schema  # noqa: E402
 from mdf_core.reviewing.context import fingerprint  # noqa: E402
+
+
+def modules_text(*, shared=False, depends=""):
+    def module(name, pattern, deps=""):
+        return (f"  {name}:\n    sourceset: ['{pattern}']\n    ignore: []\n    lint: 'true'\n    build: 'true'\n"
+                + "".join(f"    {s}:\n      command: 'true'\n      tests: ['t/**']\n" for s in ("quick", "smoke", "release"))
+                + "    named: []\n" + (f"    depends_on: [{deps}]\n" if deps else ""))
+    if shared:
+        return "modules:\n" + module("both", "*.py")
+    return "modules:\n" + module("ma", "a.py") + module("mb", "b.py", depends)
+
+
+def config(**kwargs):
+    return parse_modules(parse_yaml(modules_text(**kwargs)))
 
 
 @pytest.fixture
 def repo(tmp_path):
     root = tmp_path / "repo"
     root.mkdir()
+    (root / ".mdf").mkdir()
+    (root / ".mdf/modules.yaml").write_text(modules_text())
     (root / "a.py").write_text("a = 1\n")
     (root / "b.py").write_text("b = 1\n")
     init_git(root)
@@ -40,16 +58,16 @@ def test_identity_ignores_objective_progress_but_tracks_content(repo):
 def test_release_with_every_path_covered_by_one_child_allows_zero_reviewers(repo):
     record(repo, "feature/a", ["a.py"])
     record(repo, "feature/b", ["b.py"])
-    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py", "b.py"], "r1"))
+    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py", "b.py"], "r1"), config())
     assert analysis["net_increment"] == [] and analysis["combined_impact"] == []
     assert analysis["zero_reviewers_allowed"] is True and len(analysis["child_credentials"]) == 2
 
 
 def test_net_increment_or_changed_rules_require_reviewers(repo):
     record(repo, "feature/a", ["a.py"])
-    uncovered = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py", "b.py"]))
+    uncovered = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py", "b.py"]), config())
     assert uncovered["net_increment"] == ["b.py"] and not uncovered["zero_reviewers_allowed"]
-    other_rules = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"], rules="r2"))
+    other_rules = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"], rules="r2"), config())
     assert other_rules["net_increment"] == ["a.py"] and not other_rules["zero_reviewers_allowed"]
 
 
@@ -59,14 +77,32 @@ def test_file_touched_by_two_children_is_combined_impact(repo):
     (repo / "a.py").write_text("a = 2\n")
     git(repo, "commit", "-qam", "change")
     record(repo, "feature/d", ["a.py"])
-    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"]))
+    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"]), config())
     assert analysis["combined_impact"] == ["a.py"] and not analysis["zero_reviewers_allowed"]
+
+
+def test_combined_impact_counts_distinct_deliveries_not_rounds(repo):
+    record(repo, "feature/a", ["a.py"])
+    record(repo, "feature/a", ["a.py"], rules="r1")
+    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"]), config())
+    assert analysis["combined_impact"] == [] and analysis["zero_reviewers_allowed"] is True
+
+
+def test_children_touching_one_or_dependent_modules_are_combined_impact(repo):
+    record(repo, "feature/a", ["a.py"])
+    record(repo, "feature/b", ["b.py"])
+    both = identity(repo, ["a.py", "b.py"])
+    shared = credentials.reuse_analysis(repo, "release/1.0.0", both, config(shared=True))
+    assert shared["combined_modules"] == ["both"] and not shared["zero_reviewers_allowed"]
+    linked = credentials.reuse_analysis(repo, "release/1.0.0", both, config(depends="ma"))
+    assert linked["combined_modules"] == ["ma", "mb"] and not linked["zero_reviewers_allowed"]
+    assert linked["combined_impact"] == [] and linked["net_increment"] == []
 
 
 def test_release_and_own_credentials_are_never_child_evidence(repo):
     record(repo, "release/0.9.0", ["a.py"], kind="release")
     record(repo, "release/1.0.0", ["a.py"], kind="feature")
-    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"]))
+    analysis = credentials.reuse_analysis(repo, "release/1.0.0", identity(repo, ["a.py"]), config())
     assert analysis["child_credentials"] == [] and analysis["net_increment"] == ["a.py"]
 
 

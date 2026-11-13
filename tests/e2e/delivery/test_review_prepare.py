@@ -5,7 +5,7 @@ from support_github_flow import error_of
 from test_catch_up_plan import SPACED, merge, started, upstream
 
 load_core_module()
-from mdf_core.reviewing import credentials  # noqa: E402
+from mdf_core.reviewing import credentials, prepare as prepare_module  # noqa: E402
 
 
 def prepare(python_exe, work, *extra):
@@ -41,12 +41,18 @@ def test_large_increment_scales_reviewers_by_numstat_lines(python_exe, tmp_path)
     assert size["lines"] == 2300 and size["reviewers"] == 3
 
 
+def own_identity(work, root, first):
+    delivery = json.loads((root / "delivery.json").read_text())
+    return delivery, credentials.code_identity(work, "HEAD", first["paths"], first["rules_sha256"],
+                                               (root / "objectives.md").read_text(), delivery)
+
+
 def test_credential_covers_unchanged_content_until_forced(python_exe, tmp_path):
     _, work, root = started(python_exe, tmp_path)
     (work / "src/service.py").write_text("VALUE = 2\n")
     commit(work, "feat: 实现")
     first = prepare(python_exe, work)
-    identity = credentials.code_identity(work, "HEAD", first["paths"], first["rules_sha256"], "", {})
+    _, identity = own_identity(work, root, first)
     credentials.record_code_credential(work, {"source": "feature/service-health", "kind": "feature",
                                               "credential": identity}, 1)
     covered = prepare(python_exe, work)
@@ -57,6 +63,46 @@ def test_credential_covers_unchanged_content_until_forced(python_exe, tmp_path):
     (work / "src/service.py").write_text("VALUE = 3\n")
     commit(work, "fix: 修改后凭证失效")
     assert prepare(python_exe, work)["net_increment"] == ["src/service.py"]
+
+
+def test_credential_for_other_requirements_does_not_cover(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    (work / "src/service.py").write_text("VALUE = 2\n")
+    commit(work, "feat: 实现")
+    first = prepare(python_exe, work)
+    delivery, _ = own_identity(work, root, first)
+    other = credentials.code_identity(work, "HEAD", first["paths"], first["rules_sha256"], "- [ ] 别的需求\n", delivery)
+    credentials.record_code_credential(work, {"source": "feature/other", "kind": "feature", "credential": other}, 1)
+    assert prepare(python_exe, work)["net_increment"] == ["src/service.py"]
+
+
+def test_release_reuses_child_credentials_and_reports_combined_impact(python_exe, tmp_path, monkeypatch):
+    _, work, root = started(python_exe, tmp_path)
+    (work / "src/service.py").write_text("VALUE = 2\n")
+    commit(work, "feat: 实现")
+    first = prepare(python_exe, work)
+    delivery, identity = own_identity(work, root, first)
+    release = {**delivery, "branch": "release/1.0.0"}
+    monkeypatch.setattr(prepare_module, "delivery_of", lambda repo: (root, release))
+    child = {"kind": "feature", "credential": identity}
+    credentials.record_code_credential(work, {**child, "source": "feature/a"}, 1)
+    covered = prepare_module.build(work, None, False)
+    assert covered["net_increment"] == [] and covered["reuse"]["zero_reviewers_allowed"] is True
+    assert covered["skip_review"] is True
+    credentials.record_code_credential(work, {**child, "source": "feature/b"}, 1)
+    shared = prepare_module.build(work, None, False)
+    assert shared["reuse"]["combined_impact"] == ["src/service.py"] and shared["skip_review"] is False
+
+
+def test_same_module_files_changed_on_both_sides_block_skip(python_exe, tmp_path):
+    repo, work, _ = started(python_exe, tmp_path)
+    (work / "src/own.py").write_text("own = 1\n")
+    commit(work, "feat: 本分支")
+    upstream(repo, "src/other.py", "other = 1\n")
+    merge(work)
+    result = prepare(python_exe, work)
+    assert result["interaction"] == [] and result["interaction_modules"] == ["default"]
+    assert result["skip_review"] is False
 
 
 def test_upstream_interaction_files_are_listed_and_block_skip(python_exe, tmp_path):

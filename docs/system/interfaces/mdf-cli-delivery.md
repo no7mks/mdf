@@ -96,8 +96,12 @@
 - `route` 的 state：`awaiting_design_approval`（下一步为 design，非 yolo）、`awaiting_manual_work`（人工工作）、
   `awaiting_decision_confirmation`（非 yolo 的 pr/close-out）、`ready`、`complete`；`--yolo` 免 design 与 pr/close-out 的确认，人工工作不豁免；等待态永不自动完成。
 - `complete-stage` 仅支持纯证据可判定的阶段，其余返回 `invalid_stage`：
-  - `verify`：`verification-report.json` 声称本分支全部通过（缺失或不符为 `stage_evidence_missing`）。
-  - `catch-up`：`catch-up-plan` 三路均为 skip，勾选并写入 `catch-up 基线：<HEAD>`；前置步骤未勾为 `stage_prerequisite`。
+  - `verify`：`verification-report.json` 的 `all_passed` 为真，`branch` 等于交付分支，`scope` 与步骤一致（`verify smart` 为 `smart`，其余为 `branch`）；
+    缺失或不符为 `stage_evidence_missing`（details 含 expected/actual 的 scope 与 branch）。
+    `verification-report.md` 存在时随报告一并提交。
+  - `catch-up`：`catch-up-plan` 三路均为 skip，勾选并写入 `catch-up 基线：<HEAD>`。
+  - 两者的前置步骤未全部勾选时为 `stage_prerequisite`（details.pending）。
+  - lint、code-review、fact 需要外部执行或 LLM 判断，不属于纯证据阶段，返回 `invalid_stage`。
   - 执行前 index 含本阶段文件之外的暂存改动，立即返回 `unrelated_staged_changes`（details.paths），不改工作区与 index。
   - 仅暂存并提交本阶段白名单（objectives，verify 另含报告）；暂存集超出白名单时撤回并报错。
   - 已勾选且证据一致返回 `already_completed: true`，不产生空提交。
@@ -108,9 +112,13 @@
 
 - 缺省 base 取 `objectives.md` 的 `catch-up 基线` 或 `PR 返工` 左端点，再缺省取首次勾 fact 的提交；缺失为 `missing_catch_up_base`。
 - merges 逐个给出 kind（`upstream` 为第二父可达目标分支，其余 `internal`）与 `--remerge-diff` 冲突解决路径；无法取得（含 octopus）记为未知。
-- `review`：`skip` 须无冲突解决净改动、无基线后代码改动、无上游交互文件且规则/契约未变；否则 `focused` 并列 reasons 与 paths。
-- `verify`：`smart` 或 `skip`；modules 沿 `depends_on` 反向扩展，未声明依赖时不因 module 不相交而 skip。
-- `fact`：`skip`、`audit` 或 `update_required`（冲突解决触及事实页，或双方改了同一事实页）。
+- merges 无法取得冲突解决改动时（含 octopus），`resolution_paths` 退化为 `M^1..M` 的整段改动，三路均按保守处理。
+- `review`：`skip` 须无冲突解决净改动、无基线后代码改动、无上游交互文件、无 module 接口层交互且规则/契约未变；否则 `focused` 并列 reasons 与 paths。
+  - module 接口层交互：本分支与上游改动所属 module 同名，或一方沿 `depends_on` 传递依赖另一方（reason `module_interaction`）。
+  - `review.interaction` 给出 `files`、`modules` 与本分支落在这些 module 内的 `branch_paths`。
+- `verify`：`smart` 或 `skip`；上游与本分支都有代码或配置（lockfile、`.mdf/*.yaml`、`docs/system/testing/**`、`tests/playbooks/**`）变更时 `smart`。
+  - 配置变更时 modules 取全部；否则沿 `depends_on` 反向扩展，未声明依赖时并入本分支触及的 module。
+- `fact`：`skip`、`audit` 或 `update_required`（冲突解决触及事实页，或双方改了同一事实页）；上游规则/契约变化时至少 `audit`，并列出 `rules_changed`。
 
 ### `verify`
 
