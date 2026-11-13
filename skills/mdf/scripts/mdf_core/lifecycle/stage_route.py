@@ -54,7 +54,7 @@ def route(repo, root, data, yolo=False):
         return {**result, "state": "complete"}
     head = pending[0]
     result["next"] = head["name"]
-    if head["name"] == "design":
+    if head["name"] == "design" and not yolo:
         return {**result, "state": "awaiting_design_approval"}
     if head["name"] == "人工工作":
         return {**result, "state": "awaiting_manual_work"}

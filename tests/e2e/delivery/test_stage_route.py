@@ -27,7 +27,7 @@ def passing_report(root, branch="feature/service-health"):
 
 @pytest.mark.parametrize("steps,yolo,state", [
     ([("design", False)], False, "awaiting_design_approval"),
-    ([("design", False)], True, "awaiting_design_approval"),
+    ([("design", False)], True, "ready"),
     ([("人工工作", False)], True, "awaiting_manual_work"),
     ([("lint", True), ("close-out", False)], False, "awaiting_decision_confirmation"),
     ([("pr", False)], False, "awaiting_decision_confirmation"),

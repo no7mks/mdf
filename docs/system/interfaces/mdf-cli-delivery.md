@@ -93,8 +93,8 @@
   - `--handoff` 要求 clean 与有效阶段指纹。
   - main Agent 替审查者用 `--expected-head <hash>` 固定只读对象。
 
-- `route` 的 state：`awaiting_design_approval`（下一步为 design）、`awaiting_manual_work`（人工工作）、
-  `awaiting_decision_confirmation`（非 yolo 的 pr/close-out）、`ready`、`complete`；等待态永不自动完成。
+- `route` 的 state：`awaiting_design_approval`（下一步为 design，非 yolo）、`awaiting_manual_work`（人工工作）、
+  `awaiting_decision_confirmation`（非 yolo 的 pr/close-out）、`ready`、`complete`；`--yolo` 免 design 与 pr/close-out 的确认，人工工作不豁免；等待态永不自动完成。
 - `complete-stage` 仅支持纯证据可判定的阶段，其余返回 `invalid_stage`：
   - `verify`：`verification-report.json` 声称本分支全部通过（缺失或不符为 `stage_evidence_missing`）。
   - `catch-up`：`catch-up-plan` 三路均为 skip，勾选并写入 `catch-up 基线：<HEAD>`；前置步骤未勾为 `stage_prerequisite`。
