@@ -80,6 +80,59 @@ def test_tree_roots_order_depends_on_previous_milestone(python_exe, tmp_path):
     assert "\n↑\n" in data["diagram"] or data["diagram"].splitlines().count("↑") >= 1
 
 
+def test_tree_markdown_from_target_subdirectory(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    add_prp(repo, "prp-0003", [PRP_ID], status="draft")
+    init_git(repo)
+    data = payload(mdf(python_exe, "tree", "--repo", str(repo), "--depth", "1"))
+
+    result = mdf(python_exe, "tree", "--markdown", "--repo", str(repo / "docs"), "--depth=1")
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"```text\n{data['diagram']}\n```\n\n{data['table']}\n"
+    assert result.stdout.endswith("\nhidden: prp-0003\n")
+
+
+def test_tree_markdown_preserves_multiline_milestone_and_table_cells(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    add_prp(repo, "prp-0003", status="draft", milestone="M\\|N\r\n```\n# title")
+    init_git(repo)
+    data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
+
+    result = mdf(python_exe, "tree", "--markdown", "--repo", str(repo))
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"````text\n{data['diagram']}\n````\n\n{data['table']}\n"
+    row = next(line for line in data["table"].splitlines() if line.startswith("| prp-0003"))
+    assert row.endswith(r"| M\\\|N ``` # title |")
+
+
+@pytest.mark.parametrize("args", [("--depth",), ("--depth=abc",), ("--depth=0",), ("--dep=1",)])
+def test_tree_markdown_rejects_invalid_arguments(python_exe, tmp_path, args):
+    repo = copy_fixture(tmp_path)
+    init_git(repo)
+
+    result = mdf(python_exe, "tree", "--markdown", "--repo", str(repo), *args)
+
+    assert result.returncode != 0
+    assert not result.stdout
+    assert result.stderr
+
+
+def test_tree_markdown_empty_uses_default_depth(python_exe, tmp_path):
+    repo = copy_fixture(tmp_path)
+    replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
+    init_git(repo)
+
+    result = mdf(python_exe, "tree", "--markdown", "--repo", str(repo))
+    data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
+
+    assert result.returncode == 0, result.stderr
+    assert data["depth"] == 3
+    assert result.stdout.startswith("```text\n无 draft 且无 ready。\n```\n\n| id |")
+    assert result.stdout.endswith("\nhidden:\n")
+
+
 def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-0002", status="draft", milestone="阶段一")

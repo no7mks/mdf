@@ -21,8 +21,8 @@ disable-model-invocation: true
 │ 1 Accept call                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 裸调用、未知 intent ────────────→ [帮助并结束]
-                 ├──── 已知 intent 带未知 -- token ────→ [停止询问]
+                 ├──── 裸调用、未知 intent ───────────────────→ [帮助并结束]
+                 ├──── 已知非 tree intent 带未知 -- token ────→ [停止询问]
                  │
                  ▼ 已确定 intent
 ┌──────────────────────────────────┐
@@ -88,7 +88,7 @@ disable-model-invocation: true
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Accept call | 约束 | 解析用户指定的 intent | 选择树所列 intent | 2 | 裸或未知则帮助；带未知 -- 则停止询问 |
+| 1 | Accept call | 约束 | 解析用户指定的 intent | 选择树所列 intent | 2 | 裸或未知则帮助；非 tree 的未知 option 则询问 |
 | 2 | Check CLI | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 3 | 3 | 停止 |
 | 3 | Dispatch | 约束 | 先核目标根再按选择树执行 | 目标根或豁免、流程结果 | 按选择树返回 | 不明回 3；缺材料停止并报告 |
 
@@ -120,11 +120,11 @@ disable-model-invocation: true
 
 - 按用户指定的 intent 路由；未指定或未知 intent 按 help 执行。
 - 同一任务的澄清、确认与续办沿用已确认的 intent 与范围，无需重复命令。
-- 已知 intent 带未知 `--` token 时停止询问。
+- 已知 intent 带未知 `--` token 时停止询问。tree 的所有参数交由 CLI 解析。
 
 - `next [--depth N]` 与 `tree [--depth N]` 的深度可省略。
-  - `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`，
-    不得当未知调用送 help。
+  - `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行 `references/tree.md`。
+    识别入口后原样传递其后的参数。
   - `$mdf next` 无问号时执行 `references/next.md`。
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]` 仍是 deliver，不是独立 intent。
   - option 可在 target 前或后；`--stop-at` 是 `--until` 的别名，值不算 target。
@@ -167,7 +167,6 @@ disable-model-invocation: true
   - fact update 的 `branch`：resolve-base 后内部委托 `--against`（不得 `--quick`）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
 - upgrade 可带 `--source`。
-- ❌ 未知 `--` token 停止询问。
 - `clarify <议题>` 的议题由对应 intent 检查，`help <intent>` 的主题由 help 检查。
 - `$mdf to <target>` 仍是 to；空目标由该 intent 列出已知目标后停止。
 
@@ -202,7 +201,8 @@ disable-model-invocation: true
 
 步骤 3 的执行顺序：
 
-1. 先核对目标根（或该 intent 的豁免）；边界不明澄清后回到 3。
+1. 先核对目标根（或该 intent 的豁免）。tree 直接把当前目标目录交给 CLI 定位 Git 根。
+   其他 intent 的目标边界不明时，澄清后回到 3。
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。

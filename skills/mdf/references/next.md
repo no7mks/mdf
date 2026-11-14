@@ -61,7 +61,7 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 读取 `references/common.md`。
 续办尚未 Git 化的 init/bootstrap/migrate 时读取 `references/initialization.md`；
 续办任一交付时读取 `references/delivery-contract.md`；
-无在途时读取并执行 `references/tree.md`。
+无在途时读取并执行 `references/tree.md`，将 next 后的参数原样交给 tree CLI。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -1,29 +1,6 @@
 # Tree
 
-## 决策树
-
-```text
-┌──────────────────────────────────┐
-│ 1 Check repo                     │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 失败/缺失 ────→ [停止并报告]
-                 │
-                 ▼ 通过
-┌──────────────────────────────────┐
-│ 2 Run CLI                        │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 失败/缺失 ────→ [停止并报告]
-                 │
-                 ▼ 通过
-┌──────────────────────────────────┐
-│ 3 Render tree                    │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 通过 ─────────→ [结束]
-                 └──── 失败/缺失 ────→ [停止并报告]
-```
+树形：not-tree。此 intent 由一次 CLI 调用完成。
 
 ## 工作流（唯一执行契约）
 
@@ -31,9 +8,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check repo | 约束 | 解析目标根与 depth | 目标根、depth | 2 | 停止并报告 |
-| 2 | Run CLI | 脚本 | 运行 tree CLI（校验 depth 与 ready） | 退出状态、依赖视图 | 3 | 报告原因与所需操作，停止 |
-| 3 | Render tree | 约束 | diagram 入 text 围栏，table 原样成表格 | 树、索引、hidden | 结束 | 缺字段或格式不符则停止 |
+| 1 | Run CLI | 脚本 | 传入目标目录与用户参数，原样转发 CLI 输出 | 退出状态、stdout 或 stderr | 转发 stdout 并结束 | 转发 stderr 并停止 |
 
 `$mdf tree`、`$mdf prp tree`、`$mdf next?` 与 `$mdf next？` 执行本流程；
 也可由 next 在无在途时内部委托。可带 `--depth N`。
@@ -42,14 +17,15 @@
 
 ### 入口与计算
 
-本节规定 tree CLI 的调用方式与依赖判定。
+本节规定 tree CLI 的参数来源与依赖判定。
 
 - 只读，不要求 clean worktree，不创建或拆分 PRP。
-- 运行 `python3 "$MDF_ROOT/scripts/mdf.py" tree --repo "$REPO_ROOT" --depth <N>`。
-  - 默认 3，N 为正整数。
+- 运行 `python3 -B "$MDF_ROOT/scripts/mdf.py" tree --markdown --repo "$TARGET_DIR"`，
+  将 intent 后的用户参数逐项作为 argv 追加，保留原顺序和值。
+  - `TARGET_DIR` 取本次指定或当前绑定的目标目录，无绑定时用当前目录。
+  - CLI 定位 Git 根，解析并验证参数。`--depth` 默认 3，N 为正整数。
   - depth 只截断展示，不改变依赖判定。
-- CLI 要求 `manifest` ready 且 depth 为正整数。
-  - 步骤 2 CLI 因参数非法或仓库未就绪失败时，报告原因和所需操作，不自动初始化。
+- CLI 要求 `manifest` ready。
 - 依赖满足条件：
   - implemented/released 依赖视为满足。
   - milestone 依赖在该阶段不存在 draft 或 ready PRP 时满足。
@@ -59,17 +35,13 @@
 
 ### 展示
 
-本节规定如何原样输出 CLI 的 `diagram` 与 `table`。
+CLI 的 stdout 是完整 Markdown，Agent 原样转发。
 
-- CLI `diagram` 已含图例与按 milestone 分组的 unicode 混态树。
-  - 📌 必须把 `diagram` 放入 text 围栏块原样输出，保留换行；不得写成普通段落。
-  - 非空时 `diagram` 须含图例。组头不计入 depth。
-- CLI `table` 已是一张 Markdown 索引表，必须原样输出。
-  - ❌ 不得放入围栏块，不得改画成 json 或其他列表。
-- ❌ 不得再展示 `index` JSON。
-- 缺 `diagram`、`table` 或 `hidden` 则停止。
-- `empty` 时 `diagram` 为「无 draft 且无 ready。」，仍放入围栏块；
-  `table` 仍含表头与 `hidden:` 行。
+- tree 省略自身的阶段播报与结果摘要。宿主工作区横幅按公共规则输出。
+- `diagram` 在 `text` 围栏中显示按 milestone 分组的 unicode 混态树。
+  - 非空时含图例。组头不计入 depth。
+- `table` 直接显示为 Markdown 索引表。
+- 空结果的围栏内显示「无 draft 且无 ready。」，索引仍含表头与 `hidden:` 行。
 
 图例固定为：`● ready`、`○ draft`、`* in_progress`、`↩ 交叉引用`、
 `[milestone]`、`↑ 上一组 milestone`。

@@ -16,7 +16,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 ```
 
 - 输出与错误：
-  - 成功时命令向 stdout 输出 JSON。
+  - 成功时命令向 stdout 输出 JSON。`tree --markdown` 输出可直接展示的 Markdown。
   - 业务规则拒绝时 stderr 最后一行为 JSON 错误，并以非零状态退出。
   - `doctor`、`validate`、`fact-audit` 向 stderr 实时输出检查阶段与阶段用时。
     「检查结束」仅表示阶段执行完毕，是否通过仍以 JSON findings 为准。

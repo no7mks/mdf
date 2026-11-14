@@ -1,6 +1,8 @@
 """只读生成 draft/ready Proposal 混态依赖视图。"""
+import re
+
 from mdf_core.foundation.errors import MDFError, emit
-from mdf_core.workspace.gitutil import repo_path, require_git_root
+from mdf_core.workspace.gitutil import git_root, repo_path
 from mdf_core.documents.proposals import check_proposals, started_ids
 from mdf_core.inspection.validate_records import unsatisfied_depends_on
 
@@ -134,7 +136,8 @@ def _md_cell(value):
         text = ""
     else:
         text = str(value)
-    return text.replace("|", "\\|").replace("\n", " ")
+    text = text.replace("\\", "\\\\").replace("|", "\\|")
+    return " ".join(text.splitlines())
 
 
 def _table_row(values):
@@ -248,10 +251,18 @@ def tree_view(repo, depth):
 
 
 def command_tree(args):
-    repo = repo_path(args.repo)
-    require_git_root(repo)
+    repo = git_root(repo_path(args.repo))
+    if repo is None:
+        raise MDFError("Mars Development Flow requires a Git repository", code="not_git")
     from mdf_core.foundation.paths import load_manifest, ensure_safe_managed_paths
     ensure_safe_managed_paths(repo)
     if load_manifest(repo).get("state") != "ready":
         raise MDFError("当前操作需要 ready 仓库", code="manifest_not_ready")
-    emit(tree_view(repo, args.depth))
+    view = tree_view(repo, args.depth)
+    if args.markdown:
+        diagram = view["diagram"]
+        longest = max(map(len, re.findall(r"`+", diagram)), default=0)
+        fence = "`" * max(3, longest + 1)
+        print(f"{fence}text\n{diagram}\n{fence}\n\n{view['table']}")
+    else:
+        emit(view)

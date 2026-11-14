@@ -229,9 +229,10 @@ def build_parser() -> argparse.ArgumentParser:
     from mdf_core.lifecycle.delivery import command_delivery
     from mdf_core.lifecycle.delivery_state import STAGES
 
-    tree_parser = subparsers.add_parser("tree")
+    tree_parser = subparsers.add_parser("tree", allow_abbrev=False)
     tree_parser.add_argument("--repo", required=True)
     tree_parser.add_argument("--depth", type=int, default=3)
+    tree_parser.add_argument("--markdown", action="store_true")
     tree_parser.set_defaults(func=command_tree)
 
     listing = subparsers.add_parser("list")

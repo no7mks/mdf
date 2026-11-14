@@ -221,17 +221,14 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     assert "写入分支按 `common.md` 的归属规则检查" in entry
     assert "独立调用仅记录 `branch.invalid`" not in entry
 
-def test_tree_renders_diagram_in_fence_and_index_as_table():
+def test_tree_forwards_arguments_and_cli_output():
     text = workflow("tree")
-    table = rows(text)
-    assert table[2][1] == "Render tree"
-    assert table[2][2] == "约束"
-    assert "text 围栏" in table[2][3] and "表格" in table[2][3]
-    assert "text 围栏块" in text
-    assert "不得放入围栏块" in text
-    assert "不得改画成 json" in text
-    assert "不得再展示 `index` JSON" in text
-    assert "仍含表头与 `hidden:` 行" in text
+    assert [row[1:3] for row in rows(text)] == [["Run CLI", "脚本"]]
+    assert rows(text)[0][5:] == ["转发 stdout 并结束", "转发 stderr 并停止"]
+    assert 'tree --markdown --repo "$TARGET_DIR"' in text
+    assert "用户参数逐项作为 argv 追加" in text
+    assert "识别入口后原样传递其后的参数" in workflow("entry")
+    assert "将 next 后的参数原样交给 tree CLI" in workflow("next")
 
 def test_next_resumes_all_workflows_before_showing_blueprint():
     text = workflow("next")
@@ -269,7 +266,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
 def test_next_dispatch_allows_non_git_and_delegated_continuation():
     entry = workflow("entry")
     common = workflow("common")
-    assert "除 init/bootstrap/migrate/next 外" in common
+    assert "除 init/bootstrap/migrate/next/tree 外" in common
     assert "允许续办尚未 Git 化的初始化与无需仓库的 clarify" in common
     assert "next 可委托识别出的在途流程" in entry
     assert "一次 next 只续办一个所选 intent" in workflow("next")

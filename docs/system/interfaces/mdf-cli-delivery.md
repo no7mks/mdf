@@ -49,7 +49,10 @@
 ### `tree`
 
 `tree` CLI 不识别或推进 workflow；在途判断与原流程委托由 next intent 完成。
-`tree --repo <仓库> [--depth 3]` 输出 trees、index、hidden、diagram 与 table；只读，非法依赖失败。
+
+- `tree --repo <目标目录> [--depth N] [--markdown]` 从目标目录定位 Git 根并执行只读查询。
+  - `--depth` 默认 3，必须为正整数。非法依赖以非零状态退出。
+  - `--markdown` 把 `diagram` 放入 `text` 围栏，再附上 `table`。省略时返回下表的 JSON 字段。
 
 | 输出 | 内容 |
 | --- | --- |

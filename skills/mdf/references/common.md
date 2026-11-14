@@ -45,6 +45,7 @@ upgrade 不读取本文件。
 适用于读取本文件的 intent；进度播报描述执行现场，不替代 objectives、证据或验收。
 
 - 开始执行时说明当前 intent、scope（适用时）与第一步；进入每个工作流步骤前播报阶段。
+  tree 省略自身播报与摘要，见 `references/tree.md`。
 - 先列出工作流的固定阶段总数与完整清单；每次播报保留最外层 intent、当前阶段 i/N 与阶段名。
   - 阶段数表示流程位置，不表示耗时百分比；分支跳过的阶段标为无需执行。
   - 局部 n/m 须标明统计对象与所属阶段；各 CLI 的计数组清单与汇总由其 stderr 进度输出，Agent 只转述，不手工登记、编号或汇总计数组。
@@ -54,7 +55,8 @@ upgrade 不读取本文件。
 - 长阶段在可取得中间结果时至少每 60 秒更新一次，说明已处理范围、当前工作与剩余项。
   - 单次工具调用尚未返回时不虚构进展；可等待输出的工具使用有限等待，返回后及时播报。
 - 重审或返工说明轮次和原因；阻断时说明停在哪一步与缺项，不声称完成。
-- CLI 的 stderr 进度与最终 JSON 一同读取；stdout 保持 JSON，进度不作为通过依据。
+- CLI 的 stderr 进度与最终 JSON 一同读取；进度不作为通过依据。
+  `tree --markdown` 成功时从 stdout 返回 Markdown，其余命令按自身输出契约处理。
 
 ### Jev 可选加速
 
@@ -113,7 +115,7 @@ upgrade 不读取本文件。
 本节规定各 intent 如何确定目标仓库根。
 
 - next 先按其流程识别目标，允许续办尚未 Git 化的初始化与无需仓库的 clarify。
-- 除 init/bootstrap/migrate/next 外，执行仓库操作的 intent 在本次调用中：
+- 除 init/bootstrap/migrate/next/tree 外，执行仓库操作的 intent 在本次调用中：
   1. 用 `git -C <目标目录> rev-parse --show-toplevel` 将用户指定目标或当前目录
      解析为绝对 `REPO_ROOT`。
   2. 再读取并执行对应流程。
@@ -122,6 +124,7 @@ upgrade 不读取本文件。
 - 以下 intent 另有规则：
   - clarify 与 help 不要求 Git 仓库。
   - init/bootstrap/migrate 由 initialization 公共流程处理普通目录与父仓库边界。
+  - tree 的 CLI 从目标目录解析 Git 根，调用见 `references/tree.md`。
   - upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
   - integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
   - sync 解析 Git 根且不要求 manifest ready，规则见 `references/sync.md`。
