@@ -109,14 +109,13 @@ def test_trunk_pr_moves_project_records_to_pm_and_reuses_pr(python_exe, tmp_path
     proposal_commit = payload(pm_commit(python_exe, repo))
     review_args = ("--repo", str(repo), "--proposal", "prp-0002")
     checked = payload(mdf(python_exe, "prp-review", "check", *review_args))
-    payload(mdf(python_exe, "prp-review", "ready", *review_args, "--confirmed-sha256", checked["sha256"]))
-    git(repo, "add", "docs/proposals")
-    review_commit = payload(pm_commit(python_exe, repo))
+    ready = payload(mdf(python_exe, "prp-review", "ready", *review_args, "--confirmed-sha256", checked["sha256"]))
+    review_commit = payload(commit_review(python_exe, review_args, ready["sha256"]))
     (repo / "docs/JOTS.md").write_text("# Jots\n")
     git(repo, "add", "docs/JOTS.md")
     jot_commit = payload(pm_commit(python_exe, repo))
     head = git(repo, "rev-parse", trunk).stdout.strip()
-    assert proposal_commit["source"] == review_commit["source"] == jot_commit["source"] == trunk
+    assert proposal_commit["source"] == jot_commit["source"] == trunk
     assert jot_commit["head"] == head
     assert git(repo, "rev-parse", "HEAD^").stdout.strip() == review_commit["head"]
     assert git(repo, "rev-parse", "HEAD^^").stdout.strip() == proposal_commit["head"]
@@ -234,6 +233,11 @@ def test_release_pr_tags_release_head_and_never_backmerges(python_exe, tmp_path,
 def pm_commit(python_exe, repo):
     return mdf(python_exe, "pm", "commit", "--repo", str(repo),
                "--message", "docs(pm): 更新项目记录")
+
+
+def commit_review(python_exe, args, digest):
+    return mdf(python_exe, "prp-review", "commit", *args, "--ready-sha256", digest,
+               "--message", "docs(pm): 完成 PRP 评审")
 
 
 def trunk_pr(python_exe, repo):
@@ -438,16 +442,18 @@ def test_pm_proposal_feedback_can_review_and_update_same_pr(python_exe, tmp_path
     draft = work / payload(mdf(python_exe, "prp-review", "draft", *review_args))["path"]
     draft.write_text(draft.read_text() + "\n## 评审补充\n\n明确校验范围。\n")
     checked = payload(mdf(python_exe, "prp-review", "check", *review_args))
-    payload(mdf(python_exe, "prp-review", "ready", *review_args, "--confirmed-sha256", checked["sha256"]))
+    ready = payload(mdf(python_exe, "prp-review", "ready", *review_args, "--confirmed-sha256", checked["sha256"]))
     outside = work / "docs/outside.md"
     outside.write_text("无关记录\n")
     git(work, "add", "docs")
     assert error_of(pm_commit(python_exe, work))["error"] == "pm_paths_forbidden"
     assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "dirty_worktree"
+    git(work, "restore", "--staged", str(draft))
+    revised = payload(commit_review(python_exe, review_args, ready["sha256"]))
+    assert git(work, "diff", "--cached", "--name-only").stdout.splitlines() == ["docs/outside.md"]
     git(work, "restore", "--staged", str(outside))
     outside.unlink()
-    revised = payload(pm_commit(python_exe, work))
-    assert revised["source"] == source and revised["head"] != initial["head"]
+    assert revised["head"] != initial["head"]
     assert git(repo, "rev-parse", source).stdout.strip() == initial["head"]
     assert payload(mdf(python_exe, "pm", "finish-rework", *args))["head"] == revised["head"]
     assert not work.exists() and not has_ref(repo, f"refs/heads/{rework['branch']}")
@@ -602,6 +608,15 @@ def test_linked_proposal_review_only_changes_markdown(python_exe, tmp_path, stat
     index.write_text(links)
     commit(repo)
     args = ["--repo", str(repo), "--proposal", "prp-0002"]
+    unrelated = repo / "unrelated.txt"
+    unrelated.write_text("staged\n")
+    git(repo, "add", str(unrelated))
+    unrelated.write_text("unstaged\n")
+    repo_args = ["--repo", str(repo)]
+    assert error_of(mdf(python_exe, "pm", "prepare", *repo_args))["error"] == "dirty_worktree"
+    prepared = payload(mdf(python_exe, "pm", "prepare", *repo_args, "--for-prp-review"))
+    assert Path(prepared["worktree"]) == repo and prepared["branch"] == "main"
+    payload(mdf(python_exe, "prp-review", "prepare", *args))
     if status == "ready":
         payload(mdf(python_exe, "prp-review", "draft", *args))
     proposal.write_text(proposal.read_text() + "\n## 评审补充\n\n明确校验范围。\n")
@@ -609,7 +624,45 @@ def test_linked_proposal_review_only_changes_markdown(python_exe, tmp_path, stat
     result = payload(mdf(python_exe, "prp-review", "ready", *args, "--confirmed-sha256", checked["sha256"]))
     assert repo / result["path"] == proposal
     assert index.read_text() == links
-    assert git(repo, "status", "--porcelain").stdout.splitlines() == [f" M {result['path']}"]
+    confirmed_ready = proposal.read_text() + "\n稿件在确认后修改。\n"
+    proposal.write_text(confirmed_ready)
+    assert error_of(commit_review(python_exe, args, result["sha256"]))["error"] == "review_changed"
+    rechecked = payload(mdf(python_exe, "prp-review", "check", *args))
+    assert rechecked["status"] == "ready" and rechecked["sha256"] != result["sha256"]
+    staged = git(repo, "diff", "--cached").stdout
+    unstaged = git(repo, "diff", "--", str(unrelated)).stdout
+    committed = payload(commit_review(python_exe, args, rechecked["sha256"]))
+    assert committed["committed"] is True
+    retried = payload(commit_review(python_exe, args, rechecked["sha256"]))
+    assert retried["committed"] is False and retried["head"] == committed["head"]
+    assert git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD").stdout.splitlines() == [result["path"]]
+    assert git(repo, "show", f"HEAD:{result['path']}").stdout == confirmed_ready
+    assert git(repo, "diff", "--cached").stdout == staged
+    assert git(repo, "diff").stdout == unstaged
+
+
+def test_review_checks_target_and_git_operation_before_writing(python_exe, tmp_path):
+    repo = github_flow_repo(tmp_path)
+    proposal = add_prp(repo, "prp-0002", status="draft")
+    commit(repo)
+    args = ["--repo", str(repo), "--proposal", "prp-0002"]
+    proposal.write_text(proposal.read_text() + "\n已有改动。\n")
+    assert error_of(mdf(python_exe, "prp-review", "prepare", *args))["error"] == "review_target_dirty"
+    checked = payload(mdf(python_exe, "prp-review", "check", *args))
+    ready = ["prp-review", "ready", *args, "--confirmed-sha256", checked["sha256"]]
+    git(repo, "add", str(proposal))
+    assert error_of(mdf(python_exe, *ready))["error"] == "review_target_dirty"
+    git(repo, "restore", "--staged", str(proposal))
+    git(repo, "branch", "merge-probe")
+    git(repo, "switch", "merge-probe")
+    (repo / "merge-probe.txt").write_text("合入内容\n")
+    git(repo, "add", "merge-probe.txt")
+    git(repo, "commit", "-m", "test: 准备未完成的合并")
+    git(repo, "switch", "master")
+    git(repo, "merge", "--no-ff", "--no-commit", "merge-probe")
+    assert payload(mdf(python_exe, "prp-review", "check", *args)) == checked
+    assert error_of(mdf(python_exe, *ready))["error"] == "dirty_worktree"
+    assert payload(mdf(python_exe, "prp-review", "check", *args)) == checked
 
 
 def _audit(python_exe, repo, branch, before, after, proof=None):

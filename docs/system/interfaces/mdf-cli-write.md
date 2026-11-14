@@ -99,14 +99,19 @@ python3 skills/mdf/scripts/mdf.py prp-review draft --repo /path/to/repository --
 
 | action | 输入 | 结果 |
 | --- | --- | --- |
-| `check` | draft | 校验并返回 Markdown 的 `path` 与 `sha256` |
-| `ready` | draft、用户确认版本的 `--confirmed-sha256` | 在原文件写入 ready 状态 |
+| `prepare` | github-flow 的 active draft/ready | 检查目标 PRP 的 Git 状态及未完成的 Git 操作 |
+| `check` | draft 或 github-flow 的 ready | 校验并返回 `path` 与 `sha256`，github-flow 同时返回 `status` |
+| `ready` | draft、用户确认版本的 `--confirmed-sha256` | 在原文件写入 ready 状态，github-flow 同时返回 ready 稿的 `sha256` |
 | `draft` | ready | 在原文件写入 draft 状态 |
+| `commit` | github-flow 的 ready、`--ready-sha256`、`--message` | 提交摘要匹配的目标 PRP，返回 `head` 与 `committed` |
 
 - 要求 Git 根、manifest ready、有效对象、依赖和本地链接。
 - gitflow 在 planning 执行。github-flow 在 trunk、PR mode 的原 `pm/*` 或普通 `adhoc/*` 执行。
 - 摘要不匹配时返回 `review_changed`，保留当前稿件。
-- 状态写入保留文件路径和 Markdown 正文，由调用方按所属流程提交。
+- github-flow 允许其他路径有改动。`prepare` 和 `draft` 要求目标 PRP 无未提交改动。
+- `ready` 和 `commit` 接受本次评审的未暂存稿件。`commit` 只提交目标文件，保留其他路径的 Git 状态。
+- 目标 PRP 已与 HEAD 一致时，`commit` 返回 `committed: false`。
+- 状态写入保留文件路径和 Markdown 正文。
 
 ## `release-closeout`
 
@@ -242,6 +247,7 @@ python3 skills/mdf/scripts/mdf.py pm commit --repo /path/to/trunk --message 'doc
 ```
 
 - github-flow 专用。`prepare` 返回已检出 trunk 且干净的主 worktree。
+  `prepare --for-prp-review` 允许返回有未提交改动的主 worktree，供 `prp-review` 使用。
 - `commit` 只接收已暂存的 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` 和 `docs/context/` 改动。
 - 两种模式的新项目记录均提交到本地 trunk，返回 `source`、`target`、`head` 和 `worktree`。
   PR mode 用 [trunk-pr](../../../skills/mdf/references/trunk-pr.md) 接管未共享 commit。

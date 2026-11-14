@@ -251,10 +251,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     from mdf_core.documents.prp_review import command_prp_review
     prp_review = subparsers.add_parser("prp-review")
-    prp_review.add_argument("action", choices=("check", "ready", "draft"))
+    prp_review.add_argument("action", choices=("prepare", "check", "ready", "draft", "commit"))
     prp_review.add_argument("--repo", required=True)
     prp_review.add_argument("--proposal", required=True)
     prp_review.add_argument("--confirmed-sha256")
+    prp_review.add_argument("--ready-sha256")
+    prp_review.add_argument("--message")
     prp_review.set_defaults(func=command_prp_review)
 
     delivery = subparsers.add_parser("delivery")
@@ -297,6 +299,7 @@ def build_parser() -> argparse.ArgumentParser:
     pm_actions = pm.add_subparsers(dest="action", required=True)
     pm_prepare = pm_actions.add_parser("prepare")
     pm_prepare.add_argument("--repo", required=True)
+    pm_prepare.add_argument("--for-prp-review", action="store_true")
     pm_commit = pm_actions.add_parser("commit")
     pm_commit.add_argument("--repo", required=True)
     pm_commit.add_argument("--message", required=True)

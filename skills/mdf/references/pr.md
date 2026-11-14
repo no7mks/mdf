@@ -20,7 +20,7 @@ github-flow 的 [trunk-pr](trunk-pr.md) 把本地 trunk 的项目记录保全到
   按项目记录的校验和审查推进，跳过普通交付的 `changes/` 候选材料、objectives 备注与 catch-up。
 - 需要返工、集成 trunk 增量或响应 `squash_required` 时，从主 worktree 执行
   `mdf.py pm rework --repo <主路径> --source <原 pm 分支>`，进入返回的临时 worktree。
-  - Proposal 反馈走 [PRP Review](prp-review.md)。校验并暂存本轮路径后执行 `pm commit`。
+  - Proposal 反馈走 [PRP Review](prp-review.md)，由该流程提交评审文件。
   - 集成时用 `merge-no-ff` 合入最新远端 trunk。处理冲突后重新校验记录与完整 PR diff。
   - 整理提交时按 [squash](squash.md) 执行。路径超出白名单时保留现场，按普通交付处理整批改动。
 - 临时 worktree 干净且验收通过后，从主 worktree 执行

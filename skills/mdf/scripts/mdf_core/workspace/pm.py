@@ -73,7 +73,8 @@ def command_pm(args):
     if work != primary_worktree(repo):
         raise MDFError(f"请在主 worktree 检出 {trunk}", code="not_on_trunk")
     mode = configured(repo)["mode"]
-    ensure_clean(work)
+    if not args.for_prp_review:
+        ensure_clean(work)
     emit({"ok": True, "operation": "pm-prepare", "mode": mode,
           "branch": trunk, "worktree": str(work)})
 
