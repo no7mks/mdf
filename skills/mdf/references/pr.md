@@ -78,7 +78,7 @@ github-flow 的 [trunk-pr](trunk-pr.md) 把已在本地 trunk 提交的纯项目
   - 审查终稿保留尚未完成的父 PR 备注；补审补测及 fact 完成并提交候选材料时才清除。
   - 备注单列在审查正文之外，可保留恢复所需 SHA；不受审查终稿正文的无 commit hash 约束。
   - 备注仅恢复调用上下文，不作为第二份进度账本；缺少必要参数时停止并报告。
-- 普通无账本 source 使用 smart；dev-pr source 全程使用 named smoke，包括集成、CI 返工与 hook 后补验。
+- 无账本 source 按 [Adhoc 检查与事实](adhoc-change.md#检查与事实) 选择验证入口，集成、CI 返工与 hook 后补验也适用。
 - Prepare 仅在首次或实际改动使原证据不再适用时执行 adhoc-change 步骤 1–5；已有适用证据逐项复用。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
@@ -174,7 +174,8 @@ closeout:
   - 提交备注后先按 [squash](squash.md#pr-模式与-planning-land-的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
   - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
   - 禁止 rebase、force push、整侧覆盖或削弱测试；语义不明时保留现场并询问。
-- 只要进行了上述集成，就结束 pr 内部调用栈，由当前 Agent 在主链外委托 `references/catch-up.md` 对改动文件执行增量补检。
+- 上述集成完成后结束 pr 内部调用栈。trunk-pr 接管的无账本 source 回到 Adhoc 检查与事实，重新读取 `adhoc-status` 补验。
+- 其他 source 由当前 Agent 在主链外委托 `references/catch-up.md` 对改动文件执行增量补检。
   - ❌ 严禁因远端集成退勾已通过的基线步骤，严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release`、从 `start_commit` 起全分支审查或全量 `fact audit`。
   - 有有效上轮审查时按 1 人增量新一轮仅覆盖 `<catch_up_base>..HEAD` 改动文件与冲突修复，复核上轮问题。
   - 验证只跑 `verify --scope smart --paths <本次改动文件>`；事实只按 `--scope paths` 补检改动文件关联的事实页。
@@ -270,7 +271,8 @@ closeout:
    - checklist 记录前置验收；备注恢复父流程与参数，保留人工工作勾选来源。
    - 冲突通过 merge 最新远端目标分支解决；不 rebase、不 force push，不覆盖他人现场。
    - CI 暂时故障仅在证据支持时重试；不降低测试、审批或 branch protection 要求。
-- 结束 pr 内部调用栈，在主链外委托 `references/catch-up.md`，仅对修复改动文件增量完成 lint、1 人 code-review、`verify --scope smart --paths` 及 paths 事实补检。
+- 结束 pr 内部调用栈。trunk-pr 接管的无账本 source 回到 Adhoc 检查与事实，重新读取 `adhoc-status` 补验。
+- 其他 source 在主链外委托 `references/catch-up.md`，仅对修复改动文件增量完成 lint、1 人 code-review、`verify --scope smart --paths` 及 paths 事实补检。
    - ❌ 严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release` 或全分支审查；再次触发更新同样只回到 `catch-up`。
    - 独立 pr 也由当前 Agent 续办 `catch-up`，不仅报告待办后结束；deliver 返回 Select 按 `catch-up` 推进。
 - 全部补审补测与 fact 完成后，复核候选材料，在更新 PR/MR 前的材料提交中移除该备注。
@@ -308,7 +310,6 @@ Prepare 在首次提交前完成交付材料。前置已全勾且无 finish 记�
 - release/ODR/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
 - adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
-  - dev-pr 接管的 source 沿用 [dev-pr](dev-pr.md) 的 smoke 要求，包括集成和返工后的补验。
   - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
 - 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。
 - 提交前重核远端 ancestor 与 squash；目标前进则回本页集成、补审补测循环。

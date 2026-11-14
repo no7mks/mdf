@@ -63,7 +63,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve | 脚本 | 核 source、状态、范围与材料目录 | adhoc-status、Git、上下文 | 有增量2；合并恢复6；无增量结束 | 账本返回原流程；歧义停 |
 | 2 | Integrate | 约束 | 固定范围，必要时 no-ff 集成目标 | 固定端点与 diff | 3 | 冲突修复；语义不明询问 |
-| 3 | Check | 约束 | lint、1 人审查、普通 source smart 或 dev-pr smoke | 实际报告 | 4 | 可修回3；否则报告阻塞 |
+| 3 | Check | 约束 | lint、1 人审查，按 source 选择验证入口 | 实际报告 | 4 | 可修回3；否则报告阻塞 |
 | 4 | Facts | 约束 | hook、fact audit，必要时 update | hook 结果、审阅报告 | 5 | 修改代码回3；其他按原流程 |
 | 5 | Materials | 约束 | 完成 Change、validate 并提交 | Change 与 evidence | 6 | 修正材料后重验 |
 | 6 | Finish | 脚本 | local finish；PR 返回 pr 或合并后续办 | 实际 merge 与清理结果 | 核验后返回 | 保留现场，按记录恢复 |
@@ -107,6 +107,7 @@
   - 该子流程完成 lint、1 人审查、裁定与必要修复验证，返回后继续本页检查；不递归进入收口。
 - dev-pr 接管的 source 仅读 [dev-pr](dev-pr.md) 的「材料与验收」条款，执行 smoke 并保存 named suite 证据。
   - 替代本节 smart，不重新进入 dev-pr 工作流；恢复时按 Git common dir 的 dev-pr 记录核 source 身份。
+- trunk-pr 接管的 source 按 [Trunk PR 验收](trunk-pr.md#adhoc-验收) 执行 named quick 或 smoke。
 - 其他 source 按 `verify.md` 执行 smart；按固定范围选 module 与 test，成败均保存报告。
   - 不要求 objectives checkbox；报告须对应真实分支，`scope: smart`、`all_passed: true`。
   - 修复实现、测试或验证配置后补必要审查与验证；已有适用报告可复用，不伪造完成。

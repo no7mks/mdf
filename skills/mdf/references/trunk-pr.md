@@ -59,7 +59,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" trunk-pr --repo "$REPO_ROOT" --slug <slug>
 | 返回的 `kind` | 判定 | Source 与后续检查 |
 | --- | --- | --- |
 | `pm` | 完整 PR diff 和每笔本地独有 commit 均符合 [项目记录路径](common.md#项目记录) | `pm/<slug>-<id>`。沿用 [PM PR 流程](pr.md#pm-分支)。 |
-| `adhoc` | 其余增量，包括夹带其他路径后又 revert 的历史 | `adhoc/<slug>` 与独立 worktree。按 dev-pr 步骤 2 补 Change，执行集成、lint、审查、smoke 与 fact。 |
+| `adhoc` | 其余增量，包括夹带其他路径后又 revert 的历史 | `adhoc/<slug>` 与独立 worktree。按下节准备和检查。 |
 
 - 首次 fetch 后固定本地 head、远端 base 与唯一 merge-base。先记录 source 并从原 head 建分支，再对齐本地 trunk。
   - PM 接管使用现有干净的 trunk worktree，不创建额外 worktree。返回的 `worktree` 是 trunk worktree。
@@ -67,3 +67,13 @@ python3 "$MDF_ROOT/scripts/mdf.py" trunk-pr --repo "$REPO_ROOT" --slug <slug>
   - `adhoc` 返回 source 的独立 worktree；其余保全规则沿用 dev-pr。
 - 返回 `kind`、`source`、`worktree` 与 `next_intent`。重试沿用操作记录和同一 PR/MR，直到 close-out 完成。
 - `$mdf sync` 的已确认 PR 计划可委托本 intent，沿用同一份接管记录。
+
+## Adhoc 验收
+
+- 沿用 dev-pr 步骤 2 的 Change、集成、lint、审查与 fact，验证入口由 `adhoc-status` 的 `verification` 决定。
+  - `quick`：PR 净 diff、source 独有 commits 与 merge resolution 均只有文档路径。执行 `verify quick`。
+  - `smoke`：含其他路径或无法确认纯文档范围。执行 `verify smoke`。
+  - 文档范围包括根目录、`docs/` 与 `changes/` 下的 Markdown、HTML，以及 `changes/` 下的 JSON。
+  - 根 `AGENTS.md`、manifest 配置的 rule 文件和验证固定输入（含 `docs/system/testing/`）按配置处理。
+  - rename 同时检查原路径与新路径；source 内 revert 不抵消早先的非文档改动。
+- 集成、hook 或返工提交后重新读取 status，按最新结果补验。在 Change 中引用实际执行的 named suite 报告。

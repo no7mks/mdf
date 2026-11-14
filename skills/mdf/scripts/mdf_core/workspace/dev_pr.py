@@ -3,13 +3,14 @@ from pathlib import Path
 from uuid import uuid4
 
 from mdf_core.foundation.errors import MDFError, emit
+from mdf_core.foundation.paths import load_manifest
 from mdf_core.foundation.textutil import slugify
 from mdf_core.lifecycle.delivery_state import read_json, write_json
 from mdf_core.lifecycle.publish import state_path
 from mdf_core.workspace.gitutil import (
     ensure_clean, primary_worktree, repo_path, require_git_root, sibling_worktree, worktree_map,
 )
-from mdf_core.workspace.merge_policy import ancestor, configured, git, sha
+from mdf_core.workspace.merge_policy import ancestor, commit_paths, configured, git, paths, sha
 from mdf_core.workspace.pm import require_pm_diff
 from mdf_core.workspace.workflow_policy import integration_branch, is_github_flow
 
@@ -40,6 +41,36 @@ def source_kind(repo, github, base, head):
             raise
         return "adhoc"
     return "pm"
+
+
+def verification_for_source(repo, source, target, head):
+    state = pending(repo)
+    if not state or state["source"] != source:
+        return "smart"
+    if not is_github_flow(repo):
+        return "smoke"
+
+    from mdf_core.execution.attestations import FIXED_INPUTS
+    from mdf_core.execution.modules import match
+    from mdf_core.reviewing.scope import review_document
+    from mdf_core.workspace.project_rules import validate_rules
+
+    rules = {"AGENTS.md", *validate_rules(load_manifest(repo)).values()}
+
+    def documentation_only(changed):
+        return all(review_document(path) and path not in rules
+                   and not any(match(path, pattern) for pattern in FIXED_INPUTS) for path in changed)
+
+    bases = git(repo, "merge-base", "--all", target, head).stdout.split()
+    if len(bases) != 1 or not documentation_only(paths(repo, bases[0], head)):
+        return "smoke"
+    commits = git(repo, "rev-list", f"{target}..{head}").stdout.split()
+    try:
+        return "quick" if all(documentation_only(commit_paths(repo, commit)) for commit in commits) else "smoke"
+    except MDFError as exc:
+        if exc.code != "unknown_merge":
+            raise
+        return "smoke"
 
 
 def prepare(repo, slug=None, *, expected_head=None, expected_base=None):

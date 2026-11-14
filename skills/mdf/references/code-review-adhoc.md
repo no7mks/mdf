@@ -44,7 +44,7 @@
   不把固定 base 当作最新目标。显式 `--against` 只覆盖左端点；policy 仍取当前 HEAD。`--read-only` 不进入本页。
 - lint 修复提交后固定本轮 review_head，再派 reviewer；base 与 policy_ref 保持原值。
 - 本轮修复沿用原 review_head 与 findings；修复窗结束后新改动才进入增量复核，人数仍按无 roster 的行数规则。
-- 修复实现、测试或验证配置后，执行必要验证；普通 source 用 smart，dev-pr source 保持 named smoke。
+- 修复实现、测试或验证配置后，按 [Adhoc 检查与事实](adhoc-change.md#检查与事实) 补验。
   验证失败继续修复；无账本 local close-out 委托也由本流程完成，不套用有账本 close-out 的交接限制。
 - 未完成父 PR 的原验证请求仍须履行；本次修复验证不冒称整个 PR 返工已完成。
 

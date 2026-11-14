@@ -380,6 +380,8 @@ adhoc 的状态与恢复：
 
 - `adhoc-status --repo <owner> [--slug <slug>] [--source <source>]` 返回材料模式、目录及实际完成证据。
 - 无账本时还返回 range、paths；材料目录冲突不覆盖，smart report 使用同一目录。
+- 待合入的无账本 PR 还返回 `verification`（`smart`、`quick` 或 `smoke`）。接管来源与验收见
+  [Develop PR](../../../skills/mdf/references/dev-pr.md) 与 [Trunk PR](../../../skills/mdf/references/trunk-pr.md)。
 - local 以安全 source hash 在 Git common dir 保存最小操作记录，支持 `finish-gitflow --source <source>` 恢复。
   - 恢复核实际双亲 merge、源 tip 与目标第一父链；不重复 merge，不删除重新创建的源 ref。
 - 主 worktree 能切回 develop 时切回，否则 detach；独立 owner 保留在交付 tip。

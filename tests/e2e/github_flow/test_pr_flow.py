@@ -56,6 +56,7 @@ def test_trunk_pr_moves_mixed_history_to_adhoc(python_exe, tmp_path, monkeypatch
     assert git(repo, "rev-parse", "master").stdout.strip() == before
     assert git(repo, "rev-parse", "adhoc/trunk-work").stdout.strip() == kept
     work = Path(result["worktree"])
+    assert payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]["verification"] == "smoke"
     write_change(work, result["source"], "trunk-work")
     commit(work)
     squash_pending(work)
@@ -65,6 +66,35 @@ def test_trunk_pr_moves_mixed_history_to_adhoc(python_exe, tmp_path, monkeypatch
     assert payload(mdf(python_exe, *rescue))["result"]["source"] == result["source"]
     assert payload(mdf(python_exe, *request))["pull_request"]["id"] == first["pull_request"]["id"]
     assert len(platform.pulls) == 1
+
+
+@pytest.mark.parametrize("followup", ["rename", "test-config"])
+def test_trunk_pr_rechecks_documentation_verification_after_source_changes(python_exe, tmp_path, followup):
+    repo, remote = github_flow_repo(tmp_path, origin=True, pr=True)
+    (repo / "docs/system/notes.md").write_text("# 说明\n")
+    commit(repo)
+
+    other = tmp_path / "other"
+    git(tmp_path, "clone", str(remote), str(other))
+    (other / "remote.py").write_text("enabled = True\n")
+    commit(other)
+    git(other, "push")
+
+    result = payload(mdf(python_exe, "trunk-pr", "--repo", str(repo)))["result"]
+    assert result["kind"] == "adhoc"
+    work = Path(result["worktree"])
+    request = ("adhoc-status", "--repo", str(work))
+    assert payload(mdf(python_exe, *request))["result"]["verification"] == "quick"
+    target = result["base"]
+    git(work, "merge", "--no-ff", "--no-edit", target)
+    assert payload(mdf(python_exe, *request))["result"]["verification"] == "quick"
+
+    if followup == "rename":
+        git(work, "mv", "docs/system/notes.md", "notes.py")
+    else:
+        (work / "docs/system/testing/named.md").write_text("---\ncommand: pytest\n---\n")
+    commit(work)
+    assert payload(mdf(python_exe, *request))["result"]["verification"] == "smoke"
 
 
 @pytest.mark.parametrize("via_sync", [False, True])

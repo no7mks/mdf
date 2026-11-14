@@ -66,7 +66,7 @@ deliver 委托时先核外层 fact 的 until，再承办本表；decision 继承
 - adhoc：code-review → verify smart → 本 hook → fact audit/update → catch-up → close-out。
 - 五种 kind 共用；在 owner 上执行，不在 qa/dev 或最终 `finish-gitflow` 内执行。
 - 无账本 adhoc 以实际审查、验证报告替代本页勾选前置，不读写 objectives 或依赖 roster。
-  - 非文档改动返回 adhoc-change 步骤 3，由 1 人增量补审；普通 source 补 smart，dev-pr source 补 named smoke。
+  - 非文档改动返回 adhoc-change 步骤 3，由 1 人增量补审，再按该步要求补验。
   - 补验通过才进入 fact；已执行的 hook 不重跑。
 - deliver、next 或用户手动推进交付时，由当前 Agent 在进入 fact 阶段前承办。
   - 独立文档维护、独立 fact audit、migrate 不触发；fact update 内部 Audit 不重复触发。

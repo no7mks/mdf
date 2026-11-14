@@ -51,6 +51,9 @@ def status(repo, source, slug=None):
                   owner_worktree=str(repo), primary_worktree=str(primary_worktree(repo)))
     if not state and ancestor(repo, head, result["range"]["target_head"]):
         result.update(next_step=None, no_pending_commits=True)
+    if result["next_step"] == "pr":
+        from mdf_core.workspace.dev_pr import verification_for_source
+        result["verification"] = verification_for_source(repo, source, result["range"]["target_head"], head)
     return result
 
 

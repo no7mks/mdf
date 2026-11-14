@@ -70,8 +70,8 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步骤 6 完成验收后自勾 verify smart。
 
-无账本 adhoc 的普通 source 按 adhoc-change.md 执行 smart；dev-pr source 执行 named smoke。
-使用 adhoc-status 的材料目录，不要求或创建 checkbox；两者均在步骤 4 返回结果，由调用方完成必要补审补测。
+无账本 adhoc 按 [Adhoc 检查与事实](adhoc-change.md#检查与事实) 选择验证入口。
+使用 adhoc-status 的材料目录，不要求或创建 checkbox；步骤 4 返回结果，由调用方完成必要补审补测。
 本页下方的 adhoc 主链勾选和小 loop 条款仅适用于有账本交付。
 
 开发或 code-review 内部 smart 不勾主链项；主链验证中修改业务内容则退勾 code-review 及后续项，按下方小 loop 完成增量复审。
