@@ -98,8 +98,8 @@
 
 - `route` 的 state：`awaiting_design_approval`（下一步为 design，非 yolo）、`awaiting_manual_work`（人工工作）、
   `awaiting_decision_confirmation`（非 yolo 的 pr/close-out）、`ready`、`complete`；`--yolo` 下 design 为 `ready`，人工工作不豁免。
-  - 清单勾完后，PR mode 的 next 依次为 `pr`、`close-out`；只有收口记录 `completed` 才是 `complete`。
-  - local 还须 finish 记录已完成，或源分支已合入目标。
+  - 清单勾完后，PR mode 返回 `next: pr`，由 Agent 根据平台和收口结果决定是否需要继续。
+  - local 核对目标 Git 历史。
 - `complete-stage` 仅支持纯证据可判定的阶段，其余返回 `invalid_stage`：
   - `verify`：`all_passed` 为真，`branch` 等于交付分支，`scope` 与步骤一致。
     - `branch` 还须覆盖必选 suite；`smart` 的 `results` 须非空且逐项通过。
@@ -235,11 +235,8 @@
   winner 列表及设计指纹。
   - 重复调用核验同一合流后只完成剩余清理。
   - 角色引用改变或无法证明已合流时停止。
-- release/hotfix 的 `finish-gitflow` 在 Git common dir 的 `mdf/finish/<分支>.json` 保存发布进度。
-  - slug hotfix 按 `mdf/finish/<分支>/<start_commit>.json` 保存；同名分支的新交付使用独立记录。
-  - 重试核对实际引用，跳过已完成的合并/tag；推送响应丢失时查询远端后继续。
-  - 源 worktree 已移除时，可从主 worktree 使用 `--source <原release/hotfix分支>` 恢复清理。
-  - 本地/远端被其他操作改变时拒绝恢复；不会强制对齐或覆盖既有 tag。
+- release/hotfix 的 `finish-gitflow` 按 Git merge、annotated tag 与远端 ref 核验发布结果。
+  - 源 worktree 已移除时，可从主 worktree 使用 `--source <原分支>`。涉及同名 PR 时显式传 `--pull <id>`。
 
 ### `integrate`
 

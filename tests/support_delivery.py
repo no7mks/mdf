@@ -131,3 +131,15 @@ def converge_ready(python_exe, tmp_path):
     commit(dev)
     payload(mdf(python_exe, "delivery", "roster-join", "--repo", str(repo)))
     return repo, root
+
+
+def write_change(work, source, slug):
+    root = work / "changes/unreleased" / slug
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "CHANGE.md").write_text(
+        f"---\nchange_kind: fix\nsource_branch: {source}\nproposals: []\n"
+        "fixed: []\nclosed: []\ndeferred: []\nadrs: []\nrelease_notes: none\nbreaking: false\n"
+        'evidence:\n  tests: []\n  commands: ["true"]\n  artifacts: []\n---\n'
+        "\n# Change\n\n## 结果\n\n完成本次修正。\n\n## 已更新的当前文档\n\n无。\n\n## 已知偏差\n\n无。\n"
+    )
+    return root

@@ -8,15 +8,16 @@
 
 - manifest.closeout.mode 为 local/pr，省略为 local；pr 需 provider: github/gitlab。
 - init 保留已有 closeout，doctor 报 manifest.closeout finding；schema_version 仍为 3。
-- `pr --repo <repo> [--source <source>]` 创建/更新 PR，返回 waiting_for_merge 或 closed_without_merge。
-- `pr-watch --repo <repo> [--source <source>]` 只读轮询操作记录中的 PR/MR、review 与关联 CI。
+- `pr --repo <repo> [--source <source>] [--pull <id>]` 创建/更新 PR，返回 waiting_for_merge 或 closed_without_merge。
+- `pr-watch --repo <repo> [--source <source>] [--pull <id>] [--head <sha>]` 只读查询平台 PR/MR、review 与关联 CI。
   - 返回 `merged`、`closed_without_merge`、`changes_requested`、`ci_failed` 或 `merge_conflict`，附平台快照。
+  - `--head` 固定已确认的源 SHA。省略时取初始平台 head，轮询期间变化返回 `pull_state_changed`。
   - 每次轮询快照写入该次 CLI 日志目录的 `polls.jsonl`。
   - `--origin-run <id>` 记录在调用中已确认的发起 run/pipeline ID，可重复传入。项目允许 skipped 或 neutral 时使用 `--allow-skipped`。
   - `--handled-review <id>` 可重复传入已完成返工的 `change_requests` ID。平台 review 状态仍保留在快照。
   - `merged` 表示平台已合入且关联 CI 收尾完成。随后用 `pr` 核验 Git 合并结果。
   核验实际 merged 后返回 completed=true、status=merged、next_intent=close-out，不发布或清理。
-- `finish-gitflow --repo <repo> [--source <source>]` 在 pr 模式支持所有交付 kind 的恢复。
+- `finish-gitflow --repo <repo> [--source <source>] [--pull <id>]` 在 pr 模式支持所有交付 kind 的恢复。
 - 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted、remote_deleted 与工作区路径。
 - finish-gitflow 仅续办 merged 后的操作；未 merged 返回 pr_not_merged，不创建/更新 PR。
 - waiting_for_merge、closed_without_merge、published_pending_backmerge 都是各自 operation 的 completed=false。
@@ -27,12 +28,10 @@
 - source 清理再次检查 worktree 占用，并以已确认 head 原子删除 ref；并发前进时拒绝删除，保留分支配置。
 - PR mode 先以显式 expected SHA lease 删除 origin 的原 source，确认缺失后才清理本地 source；remote_deleted 为独立 bool。
   远端失败时保留本地 branch/worktree；不删除 trunk 或 tag。
-- remote_cleanup 记录 pending/deleted 与 head；中断后远端缺失可补记成功，pending 且仍存在时 remote_cleanup_uncertain。
-  已确认删除后同名 ref 重建则 pull_state_changed；核实归属并清理远端后续办，不清空恢复记录。
-- release/hotfix 的 publication_completed 保存 tag/backmerge 已完成事实；清理重入不发布保留工作区的后续提交。
-- PR/MR 合并前所有交付 kind 均允许保留历史的源提交更新；候选 head 经平台确认后才替换已确认 head。
-- PR 收口按 Git common dir 获取仓库级 OS lock；并发调用返回 finish_busy，不修改恢复记录或共享 Git 状态。
-  操作退出或进程中断后自动释放；lock 文件保留，不作为进度或恢复记录。
+- 清理重试直接查询远端 ref。已缺失即继续；已变更的 SHA 保留现场。
+- 发布重试核对实际 tag 及 develop 的回合拓扑。
+- 多个同源 PR/MR 需要显式传 `--pull <id>`。平台的 source、target 和 head 必须与操作相符。
+- 涉及共享工作区或 ref 的写入持有 Git common dir 的 OS lock。并发返回 `finish_busy`，进程退出自动释放。
 - PR mode 的 release/hotfix 候选材料已进入版本目录时，delivery 与 verify branch 在该目录读写，不复制回 unreleased。
 - PR mode 可能提交候选 PRP 状态、push 源分支、创建 PR/MR、tag 与回合 develop。
 - local 模式的原本地收口和发版语义保留。
@@ -83,12 +82,12 @@
 ## Develop 与 Trunk 接管
 
 `mdf.py trunk-pr --repo <root> [--slug <slug>]` 仅用于 github-flow + PR mode，接管后将本地 trunk 对齐 `origin/<trunk>`。
-返回 `kind`、`source` 与 `worktree`，重试沿用 source。见 [trunk-pr 契约](../../../skills/mdf/references/trunk-pr.md)。
+返回 `kind`、`source` 与 `worktree`。对齐后重试返回 `no_pending_commits`。见 [trunk-pr 契约](../../../skills/mdf/references/trunk-pr.md)。
 
 
 `mdf.py dev-pr --repo <root> [--slug <slug>]` 仅准备本地现场：fetch、保全 develop HEAD
 到 adhoc worktree、reset develop 到固定 origin/develop。返回 source、worktree 与 next_intent。
-恢复记录位于 Git common dir；sync 的 dev_pr_required 委托同一 intent，检查通过前不 push。
+sync 的 `dev_pr_required` 委托同一 intent。续办使用返回的 `source` 与实际平台状态。
 项目 trivial 路径覆盖见 [dev-pr 契约](../../../skills/mdf/references/dev-pr.md)。
 
 ## 审查范围

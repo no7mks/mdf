@@ -89,26 +89,16 @@ def route(repo, root, data, yolo=False):
 
 
 def _after_checklist(repo, root_data, result, yolo):
-    """清单勾完后：PR mode 走 pr → close-out → complete；local 还要核收口记录或已合入。"""
-    data = root_data
-    from mdf_core.lifecycle.publish import state_path
+    """清单完毕后，PR phase 由 Agent 核对平台与关联 CI。"""
     from mdf_core.workspace.merge_policy import ancestor, configured
-    path = state_path(repo, data["branch"])
-    state = read_json(path) if path.is_file() else None
-    mode = configured(repo)["mode"]
 
     def gated(nxt):
         return {**result, "next": nxt, "state": "ready" if yolo else "awaiting_decision_confirmation"}
 
-    if mode == "pr":
-        if not state or not state.get("merge_commit"):
-            return gated("pr")
-        if not state.get("completed"):
-            return gated("close-out")
-        return {**result, "state": "complete", "next": None}
-    target = data.get("target") or "develop"
-    merged = ancestor(repo, "HEAD", f"refs/heads/{target}")
-    if (state and state.get("completed")) or merged:
+    if configured(repo)["mode"] == "pr":
+        return gated("pr")
+    target = root_data.get("target") or "develop"
+    if ancestor(repo, "HEAD", f"refs/heads/{target}"):
         return {**result, "state": "complete", "next": None}
     return gated("close-out")
 

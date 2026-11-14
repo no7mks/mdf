@@ -82,10 +82,11 @@ def test_gitflow_only_start_entries_are_rejected(python_exe, tmp_path, entry):
     assert error_of(result)["error"] == "github_flow_unsupported"
 
 
-def test_publish_state_records_fixed_release_head(python_exe, tmp_path):
+def test_published_release_reuses_tag_and_merge(python_exe, tmp_path):
     repo, remote, work, data = finishable(python_exe, tmp_path, "release")
+    head = git(work, "rev-parse", "HEAD").stdout.strip()
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    state = Path(git(repo, "rev-parse", "--absolute-git-dir").stdout.strip()) / "mdf/finish/release/1.2.1.json"
-    stored = json.loads(state.read_text())
-    assert stored["release_head"] == stored["head"] and len(stored["release_head"]) == 40
-    assert stored["publish_branch"] == "master" and done["tag"] == "v1.2.1"
+    refs = git(remote, "show-ref").stdout
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
+    assert git(remote, "show-ref").stdout == refs
+    assert git(repo, "rev-parse", f"{done['tag']}^{{commit}}").stdout.strip() == head

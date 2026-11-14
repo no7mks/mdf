@@ -16,7 +16,6 @@ from mdf_core.workspace.gitutil import (
     git_in_progress_head,
     repo_path,
     require_git_root,
-    run,
     unreleased_slug,
 )
 from mdf_core.documents.html_documents import DocumentParser, render_document, visible_text
@@ -42,9 +41,6 @@ def render_summary(args):
     details = branch_details(branch)
     if not details["supported"]:
         raise MDFError("总结生成只用于 owner 交付分支", code="unsupported_branch")
-    common = Path(run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=repo).stdout.strip())
-    if (common / "mdf/finish" / f"{branch}.json").exists():
-        raise MDFError("已开始发布，不得改写交付总结", code="publish_state_changed")
     root = repo / "changes/unreleased" / unreleased_slug(details)
     if details["kind"] in {"release", "on-demand-release", "hotfix"}:
         released = repo / "changes" / details["version"]

@@ -152,7 +152,7 @@ def test_catch_up_refuses_when_increment_needs_work(python_exe, tmp_path):
     assert "- [ ] catch-up" in (root / "objectives.md").read_text()
 
 
-def test_pr_mode_routes_five_finish_states(python_exe, tmp_path):
+def test_pr_mode_routes_to_platform_verification(python_exe, tmp_path):
     _, work, root = started(python_exe, tmp_path)
     manifest = work / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: github\n", encoding="utf-8")
@@ -161,17 +161,13 @@ def test_pr_mode_routes_five_finish_states(python_exe, tmp_path):
     assert route(python_exe, work) == {**route(python_exe, work), "next": "pr",
                                         "state": "awaiting_decision_confirmation"}
     assert route(python_exe, work, "--yolo")["state"] == "ready"
-    from mdf_core.lifecycle.publish import state_path
-    record = state_path(work, "feature/service-health")
-    record.parent.mkdir(parents=True, exist_ok=True)
-    record.write_text(json.dumps({"pull": {"id": 1}, "completed": False}))
+    record = work / ".git"
+    assert record.is_file()  # linked worktree 的 Git 元数据由主仓共享
+    common = Path(git(work, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
+    old = common / "mdf/finish/feature/service-health.json"
+    old.parent.mkdir(parents=True)
+    old.write_text(json.dumps({"merge_commit": "a" * 40, "completed": True}))
     assert route(python_exe, work)["next"] == "pr"
-    record.write_text(json.dumps({"pull": {"id": 1}, "merge_commit": "a" * 40, "completed": False}))
-    assert route(python_exe, work)["next"] == "close-out"
-    record.write_text(json.dumps({"pull": {"id": 1}, "merge_commit": "a" * 40, "completed": True}))
-    assert route(python_exe, work)["state"] == "complete"
-    record.write_text(json.dumps({"pull": {"id": 1}, "merge_commit": "b" * 40, "completed": False}))
-    assert route(python_exe, work)["next"] == "close-out"
 
 
 def test_complete_stage_rejects_missing_suite_empty_results_merge_and_dirty_code(python_exe, tmp_path):

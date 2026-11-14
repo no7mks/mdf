@@ -1,33 +1,34 @@
-"""只读轮询已记录的 PR/MR；返回平台状态和返工证据。"""
+"""只读轮询已存在的 PR/MR；返回平台状态和返工证据。"""
 import json
+import re
 from time import sleep
 
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.integrations.pull_status import pull_status
-from mdf_core.lifecycle.delivery_state import read_json
-from mdf_core.lifecycle.publish import state_path
-from mdf_core.lifecycle.pull_finish import Forge, confirm_pull, origin
+from mdf_core.lifecycle.pull_finish import Forge, confirm_pull, lookup_pull, origin
 from mdf_core.workspace.gitutil import current_branch, repo_path, require_git_root
 from mdf_core.workspace.merge_policy import configured
 
 
-def watch(repo, source, forge, identity, origin_runs, allow_skipped, *, handled_reviews=(), report=None):
+def watch(repo, source, forge, origin_runs, allow_skipped, *, number=None, expected_head=None, handled_reviews=(), report=None):
     accepted = {"success"} | ({"skipped", "neutral"} if allow_skipped else set())
     handled = set(handled_reviews)
-    path = state_path(repo, source)
+    pull, target = lookup_pull(repo, forge, source, number=number)
+    if pull is None:
+        raise MDFError("先用 pr 创建 PR/MR，再开始轮询", code="pull_not_recorded")
+    number = pull["id"]
+    if expected_head is not None and re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
+        raise MDFError("--head 需要完整 commit SHA", code="invalid_arguments")
+    expected_head = expected_head or pull["head"]
+    confirm_pull(pull, source, target, expected_head)
     previous = None
     while True:
-        state = read_json(path) if path.is_file() else {}
-        if state.get("mode") != "pr" or state.get("identity") != identity or state.get("source") != source:
-            raise MDFError("找不到与当前 origin 和 source 匹配的 PR/MR 记录", code="pull_state_changed")
-        number = (state.get("pull") or {}).get("id")
-        if not number:
-            raise MDFError("先用 pr 创建或恢复 PR/MR，再开始轮询", code="pull_not_recorded")
         snapshot = pull_status(forge, number, origin_runs)
         pull = snapshot["pull_request"]
-        if pull["id"] != number or pull["state"] not in {"open", "closed", "merged"}:
-            raise MDFError("无法确认 PR/MR 状态", code="forge_invalid_response")
-        confirm_pull(state, pull)
+        if (pull["id"] != number or pull["source"] != source or pull["target"] != target
+                or pull["state"] not in {"open", "closed", "merged"}):
+            raise MDFError("无法确认 PR/MR 身份或状态", code="forge_invalid_response")
+        confirm_pull(pull, source, target, expected_head)
         result = {"source": source, **snapshot}
         if report is not None:
             with report.open("a", encoding="utf-8") as stream:
@@ -64,8 +65,8 @@ def command_pr_watch(args):
     identity = origin(repo, settings["provider"])
     source = args.source or current_branch(repo)
     try:
-        result = watch(repo, source, Forge(repo, identity), identity, args.origin_run, args.allow_skipped,
-                       handled_reviews=args.handled_review, report=args.log_path / "polls.jsonl")
+        result = watch(repo, source, Forge(repo, identity), args.origin_run, args.allow_skipped,
+                       number=args.pull, expected_head=args.head, handled_reviews=args.handled_review, report=args.log_path / "polls.jsonl")
     except KeyboardInterrupt:
         raise SystemExit(130) from None
     emit({"ok": True, "operation": "pr-watch", **result})

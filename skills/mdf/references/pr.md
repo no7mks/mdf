@@ -29,7 +29,7 @@ github-flow 的 [trunk-pr](trunk-pr.md) 把本地 trunk 的项目记录保全到
 - 清理失败时从主 worktree 重试。临时 worktree 有 ignored 文件时，先将要保留的文件移出该目录。
 - squash 在验证前中断时保留现场，按原计划使用 `--verify-only` 核对和记录已完成的结果。
 - 原 PR 在返工期间已合入时，先将返工提交保全到另一个本地分支。将干净的临时分支恢复到原 source tip，再完成清理与 close-out。
-- 若依赖该记录的 start 返回 `pm_pr_pending`，先对错误中返回的 source 续办 PR/MR 和 close-out，再重试 start。
+- 若依赖该记录的 start 返回 `pm_pr_pending`，先把包含该记录的提交同步到 start 的目标 ref，再重试。
 - CLI 核完整 PR diff、源分支独有提交和合并结果的路径。项目记录使用自身的校验和审查证据。
 - 合并及关联 CI 完成后，从 trunk worktree 执行 `finish-gitflow --repo <trunk 路径> --source <pm/分支>`。
   该命令同步本地 trunk，清理远端及本地 source ref，并保留 trunk worktree。
@@ -119,11 +119,9 @@ closeout:
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
   - release/ODR/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
-- 已有 Git common dir `mdf/finish/` 操作记录时先按下方恢复路由续办，不重新执行整套材料准备。
-  - 五类 Gitflow 使用 `<source>.json`；adhoc 使用 `adhoc-<source 的 SHA256>.json`，内容保存真实 source。
-- 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，不写恢复记录或 Git。
+- 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，保留 Git 现场。
   - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
-  - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程，也不手工删除恢复记录或 lock 文件。
+  - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程。
 
 ### Goal 与持续推进
 
@@ -175,7 +173,7 @@ closeout:
   - 已包含且没有未完成返工时继续核材料；未包含则必须集成，即使试合并完全无冲突。
   - 命令异常不能当作未包含或已通过；先读日志定位。
 - 集成前确认 owner clean、无已有 MERGE_HEAD，并保存下节格式的「PR 返工」备注。
-  - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”，不伪造 PR ID，也不提前创建 finish 记录。
+  - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”。
   - 固定集成前 HEAD 为 `catch-up 基线`（增量审查左端点）、远端 tip 与原验证请求；仅退勾 `catch-up`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`）。
   - 提交备注后先按 [squash](squash.md#pr-模式与-planning-land-的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
   - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
@@ -194,15 +192,14 @@ closeout:
 
 ### 恢复路由与返工上下文
 
-恢复先核调用边界，再按同一份 finish 操作记录选择 pr 或 close-out。
+恢复先核调用边界，再用 chat 中的交付身份查询 Git 和平台。
 
 - PR 恢复优先于 doctor、branch、delivery status 和 adhoc-status；先应用当前 until。
   未 merged 选 pr，已 merged 且关联 CI 收尾通过才选 close-out；显式 until pr 不进入这两个阶段。
   merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按下方轮询规则查回关联运行。
-- source 来自已锁定交付、当前完整分支或用户指定；无目标时才检查唯一未完成记录。
-  多个候选须澄清；不按时间猜测，不从历史 completed 记录自动启动任务。
-- 核 Git common dir、origin/provider、source、target；身份不符保留现场。
-- 按原 PR/MR ID 查询；创建响应丢失时按 identity/source/target 查回复用，不重复创建。
+- source 来自 chat、当前完整分支或用户指定。身份不足或多个候选时，向用户确认 source 和 PR/MR ID。
+- 核仓库、origin/provider、source、target 和 head；身份不符保留现场。
+- 已知原 PR/MR ID 时传 `--pull <id>`；创建响应丢失时按 source 查询平台并复用唯一结果。
 - open 且有未完成返工时先恢复「PR 返工」非 checklist 备注。
   保留父 intent、原验证请求、修复前左端点、未完成子步骤，全部完成后才允许更新 PR/MR 或恢复轮询。
 - 无新提交且已确认 open 时只轮询；有新 head 时先完成 Prepare 的最终候选复核。
@@ -215,7 +212,7 @@ closeout:
   此恢复容错不授权任何流程提前删除 source 或 owner；发布未完而 source 缺失须核实际证据。
 - `pr` 在 push 前执行 squash 必要检查；squash_required 时按返回范围整理后重试，不 force push。
   squash 后 HEAD 变化，须返回 Prepare 重做最终候选复核，不能直接重试 push。
-- `finish_busy` 时等待持锁调用退出；不删除 lock 或操作记录，不启动第二个写入流程。
+- `finish_busy` 时等待持锁调用退出；等待持锁进程退出后重试。
 
 ### 生命周期
 
@@ -239,10 +236,10 @@ closeout:
 当前 Agent 报告 PR/MR 链接后，运行只读 CLI：
 
 ```bash
-python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURCE"
+python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURCE" --pull "$PULL_ID" --head "$SOURCE_HEAD"
 ```
 
-- CLI 用已登录的 gh/glab 核对操作记录中的 provider、host、project、PR/MR ID、source、target 和 head，每 120 秒查询一次。
+- CLI 用已登录的 gh/glab 查询 origin 上的 PR/MR，每次核对 ID、source、target 和已确认的 head，每 120 秒查询一次。
 - 当前 Agent 保持该调用运行，使用可中断的短等待读取结果并响应用户输入。
 - 关联 CI 包含发起该 PR/MR 的 workflow run / pipeline，以及当前 head 的全部关联运行，包含非 required checks。
   - 从调用上下文或平台时间线确认发起该 PR 的 run ID，通过 `--origin-run <id>` 传入。可重复该参数。
@@ -269,7 +266,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
 - 权限不足、无法获取必要证据、身份或历史不符等无法安全自行解决的问题，报告具体阻塞并保留现场。
   - head/source/target 变化时核对来源；本轮修复产生的合法前进按修复流程处理，不覆盖他人提交或改写历史。
   - closed 未 merged 按 closed_without_merge 处理；不自动重建 PR/MR。
-- 用户要求停止或会话中断时保留恢复记录、分支与 worktree；之后再次 pr 从该记录续办。
+- 用户要求停止或会话中断时保留分支、worktree 和已有证据；续办时重新查询平台。
 
 ### 反馈修复与重新提交
 
@@ -289,15 +286,14 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
    - ❌ 严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release` 或全分支审查；再次触发更新同样只回到 `catch-up`。
    - 独立 pr 也由当前 Agent 续办 `catch-up`，不仅报告待办后结束；deliver 返回 Select 按 `catch-up` 推进。
 - 全部补审补测与 fact 完成后，复核候选材料，在更新 PR/MR 前的材料提交中移除该备注。
-   - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与 finish 记录的差异恢复更新，不重做首次材料准备。
+   - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与平台 head 的差异恢复更新，不重做首次材料准备。
    - 恢复 pr，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。
-   - 保留 finish 操作记录；不删除或篡改记录以绕过 CLI 核验。
    - release/ODR/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
 
 release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并时仍是候选发布材料。
 
 - 在同一版本目录退勾 objectives、更新 code-review、verification-report、fact 与交付总结，不另建 unreleased 副本。
-- CLI 的 delivery 与 verify branch 共用候选目录；不得重复 release-closeout、搬回目录或删除 finish 记录。
+- CLI 的 delivery 与 verify branch 共用候选目录；不得重复 release-closeout 或搬回目录。
 - 保留原版本和发布范围；按修复同步候选 CHANGE、CHANGELOG 和相关对象，检查链接及声明与实现一致。
 - release 首轮审查仍从目标 master 的上一正式发布记录确定基线，不把候选 manifest 的 latest_release 当作已发布版本。
 - fact 使用 paths 范围补齐受影响的事实页，避免把尚无正式 tag 的候选版本当作 branch 基线。
@@ -307,9 +303,9 @@ release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合�
 
 ### 候选材料准备
 
-Prepare 在首次提交前完成交付材料。前置已全勾且无 finish 记录时同样进入 Prepare。
+Prepare 在首次提交前完成交付材料。前置齐全后核对当前 Git 与平台。
 
-- 按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项。无 finish 记录也须按 source/target 查回平台 PR/MR。
+- 按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项。按 source 查回当前平台 PR/MR。
 - release/ODR/hotfix 已提交 `changes/<version>/` 候选时，复用原版本与材料，不重复 release-closeout 或归档。
 
 - 普通交付与人工 feature 读取 [close-out 的材料规则](close-out.md#s3) 至步骤 9 的材料条款。

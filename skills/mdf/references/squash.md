@@ -84,7 +84,7 @@ squash 按交付目标分析逻辑边界，默认合并同一目标的提交；�
 - 执行 `squash_execute.py --repo <当前worktree> --check`，先 fetch 所有 remote 分支与 tag，再输出安全地板、旧 tip 与候选 commits。
   - fetch 失败不能判为 no-op；工作区不 clean 或有未结束 merge 时保留现场。
   - 地板取第一父链上最近的保护边界：merge commit、他人 commit、start_commit，或已共享提交。
-  - 共享包括远端引用、其他本地分支、tag、其他 worktree HEAD，以及 PR/push 恢复记录固定的端点。
+  - 共享包括远端引用、其他本地分支、tag与其他 worktree HEAD。
   - 仅整理该边界之后的本人普通提交；不跨 merge，不重建 merge，不改写已发布或被依赖的历史。
   - 候选少于两笔时 `noop: true`，直接继续；这不是失败，也不制造新 commit。
 - 候选至少两笔时，Agent 分析完整 diff、提交意图与依赖，按下方计划格式确定几段与切法。

@@ -63,15 +63,9 @@ def require_identity(data):
 
 
 def merged_commit(repo, head):
-    from mdf_core.lifecycle.delivery_state import git
-
+    from mdf_core.lifecycle.publish import find_merge
     from mdf_core.workspace.workflow_policy import integration_branch
-    merges = git(repo, "rev-list", "--parents", "--merges", "--first-parent", f"refs/heads/{integration_branch(repo)}")
-    for line in merges.stdout.splitlines():
-        fields = line.split()
-        if head in fields[2:]:
-            return fields[0]
-    return None
+    return find_merge(repo, f"refs/heads/{integration_branch(repo)}", head)
 
 
 def command_status(args):
@@ -131,29 +125,19 @@ def command_status(args):
         raise MDFError("已合并的 adhoc 账本仍有未完成项，保留现场", code="invalid_delivery")
     from mdf_core.workspace.workflow_policy import integration_branch
     next_step = pending or "close-out"
-    state = {}
-    if pr_mode:
-        from mdf_core.lifecycle.publish import state_path
-        from mdf_core.lifecycle.delivery_state import read_json
-        path = state_path(repo, owner)
-        state = read_json(path) if path.exists() else {}
-        if state and (state.get("mode") != "pr" or state.get("source") != owner
-                      or state.get("target") != integration_branch(repo)):
-            raise MDFError("PR 操作记录与 adhoc 身份不符", code="pull_state_changed")
-        if state.get("merge_commit") and state.get("head") != head:
-            raise MDFError("已合并 PR 之外仍有源提交", code="pull_state_changed")
-        # 此处只读 Git 核验结果；外层 intent 在交接收尾前还须核关联 CI。
-        if pending is None:
-            next_step = "close-out" if state.get("merge_commit") else "pr"
+    if pr_mode and pending is None:
+        from mdf_core.lifecycle.publish import find_merge
+        merged_remote = find_merge(repo, f"refs/remotes/origin/{integration_branch(repo)}", head)
+        next_step = "close-out" if merged_remote else "pr"
     if not branch:
         ensure_clean(repo)
-        source_exists = not git(repo, "show-ref", "--verify", "--quiet", f"refs/heads/{owner}",
-                                check=False).returncode
-        if pending is not None or source_exists or merge_commit is None:
+        from mdf_core.workspace.merge_policy import local_head
+        if pending is not None or local_head(repo, owner) is not None or merge_commit is None:
             raise MDFError("缺少 adhoc 实际收口证据，保留现场", code="adhoc_not_finished")
-        if pr_mode and (state.get("completed") is not True or state.get("merge_commit") != merge_commit
-                        or (state.get("remote_cleanup") or {}).get("status") != "deleted"):
-            raise MDFError("PR 收口尚未核验完成，按原 source 续办 close-out", code="adhoc_not_finished")
+        if pr_mode:
+            from mdf_core.lifecycle.pull_finish import remote_source_head
+            if merged_remote != merge_commit or remote_source_head(repo, owner) is not None:
+                raise MDFError("按原 source 核验 close-out", code="adhoc_not_finished")
     emit({"ok": True, "operation": "adhoc-status", "result": {
         "material_mode": "ledger", "source": owner,
         "delivery": data, "path": str(root.relative_to(repo)), "head": head,

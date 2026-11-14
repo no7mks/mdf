@@ -425,16 +425,10 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 从主 worktree 启动，作为最后一次 tool call；成功后只报告删除结果并结束本对话。
   - 不加 `--force`；失败则保留现场并报告，不重跑 close-out。
 
-release/ODR/hotfix 首次发布前，CLI 保存发布进度记录：
-- 位置：Git common dir 的 `mdf/finish/<完整分支名>.json`；含源提交、origin、目标起点与进度。
-  - slug hotfix 使用 `mdf/finish/<完整分支名>/<start_commit>.json`，避免同名新交付复用旧记录。
-- 源 worktree 已 detached、已删除或已切分支时，从主 worktree 续办：
-  `finish-gitflow --repo <主路径> --source <原分支>`。
-- 脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag。
-  - 推送结果丢失时先查询远端，完全一致则仅继续清理。
-- gitflow 的 release/ODR/hotfix 分支存在期间 develop 可继续前进：
-  - 续办时若 develop 尚无合并记录，以当前本地 develop 刷新合并基线，再 no-ff 合并 master。
-  - 精确匹配原基线与 master 双亲的未记录合并直接恢复，不重复合并。
-  - master 仍严格核对原基线；最终原子推送前只核对远端 master 与 tag。
-- 记录、源提交、origin 或目标引用冲突时返回 `publish_state_changed`：
-  - 停止并报告，不重置分支、不覆盖 tag、不盲目重推。
+release、ODR 与 hotfix 的发布和续办检查：
+
+- 核对源 SHA、目标合并拓扑及实际 annotated tag。重试复用已核验的 merge 和 tag。
+- 源 worktree 已 detached、移除或切换时，可从主 worktree 传 `--source <原分支>`。
+  同一 hotfix slug 对应多个已发布版本时，加 `--version <原版本>`。
+- Gitflow 回合沿用当前本地 develop。远端发布使用原子 push 发布分支和 tag。
+- 引用或产物不一致时报告冲突并保留现场。

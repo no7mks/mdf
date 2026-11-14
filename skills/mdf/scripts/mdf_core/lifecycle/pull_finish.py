@@ -1,18 +1,16 @@
-"""PR/MR 提交、等待、核验与清理；操作记录不充当阶段 gate。"""
+"""用平台 PR/MR 与 Git refs 执行提交、合并核验与清理。"""
 from contextlib import contextmanager
 import os
 import re
 
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.integrations.forge import Forge, origin
-from mdf_core.lifecycle.delivery_state import read_json, write_json
-from mdf_core.lifecycle.publish import state_path
 from mdf_core.lifecycle.roster import resolve_roster, role_branches
 from mdf_core.workspace.gitutil import (
     branch_details, current_branch, ensure_clean, git_in_progress_head, primary_worktree, sibling_worktree, worktree_map,
 )
-from mdf_core.workspace.merge_policy import ancestor, git, sha
-from mdf_core.workspace.pm import require_pm_diff, require_pm_merge, rework_state
+from mdf_core.workspace.merge_policy import ancestor, git, local_head, sha
+from mdf_core.workspace.pm import require_pm_diff, require_pm_merge, rework_branch
 
 
 def preflight(repo, source):
@@ -121,39 +119,22 @@ def remote_source_head(repo, source):
     return rows[0].split()[0]
 
 
-def cleanup_remote(repo, state, path):
-    """已合并且发布完成后，条件删除原远端 source；不重删不确定的分支。"""
-    source, head = state["source"], state["head"]
-    record = state.get("remote_cleanup")
-    if record is not None and (not isinstance(record, dict) or record.get("head") != head
-                               or record.get("status") not in {"pending", "deleted"}):
-        raise MDFError("远端清理记录不符，保留现场", code="pull_state_changed")
+def cleanup_remote(repo, source, head):
+    """源提交须与平台已合并的 head 一致，删除时使用精确 lease。"""
     remote = remote_source_head(repo, source)
-    if record is not None and remote is not None:
-        if record["status"] == "deleted" or remote != head:
-            raise MDFError("远端 source 已变化或被重建，保留分支", code="pull_state_changed")
-        raise MDFError("上次删除结果不确定；核实并手动清理远端 source 后再续办，不得清空记录",
-                       code="remote_cleanup_uncertain")
-    if record is None and remote is not None:
-        if state.get("completed") or remote != head:
-            raise MDFError("远端 source 与本次已确认交付不符，保留分支", code="pull_state_changed")
-        record = {"head": head, "status": "pending"}
-        state["remote_cleanup"] = record
-        write_json(path, state)
-        ref = f"refs/heads/{source}"
-        result = git(repo, "push", "--no-follow-tags", f"--force-with-lease={ref}:{head}",
-                     "origin", f":{ref}", check=False)
-        if result.returncode == 0:
-            record["status"] = "deleted"
-            write_json(path, state)
-        remote = remote_source_head(repo, source)
-        if remote is not None:
-            if record["status"] == "deleted" or remote != head:
-                raise MDFError("远端 source 删除时已变化或被重建，保留分支", code="pull_state_changed")
-            raise MDFError("删除未确认；核实并手动清理远端 source 后再续办，不得清空记录",
-                           code="remote_cleanup_uncertain", details={"error": result.stderr.strip()})
-    state["remote_cleanup"] = {"head": head, "status": "deleted"}
-    write_json(path, state)
+    if remote is None:
+        return
+    if remote != head:
+        raise MDFError("远端 source 已变化，保留分支", code="pull_state_changed")
+    ref = f"refs/heads/{source}"
+    result = git(repo, "push", "--no-follow-tags", f"--force-with-lease={ref}:{head}",
+                 "origin", f":{ref}", check=False)
+    remaining = remote_source_head(repo, source)
+    if remaining not in (None, head):
+        raise MDFError("远端 source 在删除期间变化，保留现场", code="pull_state_changed")
+    if remaining is not None:
+        raise MDFError("远端 source 删除未确认，保留现场", code="remote_cleanup_uncertain",
+                       details={"error": result.stderr.strip()})
 
 
 def cleanup(repo, state):
@@ -187,18 +168,9 @@ def cleanup(repo, state):
         raise MDFError("无法读取已删除分支的配置，保留现场", code="command_failed")
 
 
-def confirm_pull(state, pull):
-    """只以平台事实确认候选提交；push 响应丢失时仍可恢复。"""
-    if pull is None:
-        return
-    if pull["source"] != state["source"] or pull["target"] != state["target"]:
-        raise MDFError("PR/MR 的来源或目标已变化", code="pull_state_changed")
-    pending = state.get("pending_head")
-    if pending and pull["head"] == pending:
-        state["head"] = pending
-        state.pop("pending_head")
-    elif pull["head"] != state["head"]:
-        raise MDFError("PR/MR 的源提交与恢复记录不符", code="pull_state_changed")
+def confirm_pull(pull, source, target, head):
+    if pull["source"] != source or pull["target"] != target or pull["head"] != head:
+        raise MDFError("PR/MR 的来源、目标或源提交已变化", code="pull_state_changed")
 
 
 def check_source(repo, state):
@@ -207,14 +179,15 @@ def check_source(repo, state):
     if occupant is not None:
         ensure_clean(occupant)
     current = git(repo, "rev-parse", "--verify", f"refs/heads/{state['source']}", check=False)
-    if (not current.returncode and current.stdout.strip() != state["head"]) or state.get("pending_head"):
+    if not current.returncode and current.stdout.strip() != state["head"]:
         raise MDFError("已合并 PR/MR 之外仍有源提交，保留现场", code="pull_state_changed")
 
 
 @contextmanager
 def finish_lock(repo):
     """锁住同一 Git common dir 的 PR 收口；进程退出时由 OS 自动释放。"""
-    path = state_path(repo, "closeout").parent / ".pr-closeout.lock"
+    from mdf_core.workspace.squash import common_dir
+    path = common_dir(repo) / "mdf/.finish.lock"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
         try:
@@ -233,142 +206,113 @@ def finish_lock(repo):
         yield
 
 
-def finish(repo, source, settings, *, phase="close-out"):
+def lookup_pull(repo, forge, source, *, number=None):
+    from mdf_core.lifecycle.late_decision import target_for
+    head = local_head(repo, source)
+    if number is not None and number <= 0:
+        raise MDFError("--pull 需要正整数 ID", code="invalid_arguments")
+    if number is not None:
+        pull = forge.get(number)
+        if pull["source"] != source:
+            raise MDFError("PR/MR 与指定的 source 不符", code="pull_state_changed")
+    else:
+        details = branch_details(source)
+        exact = head if details["kind"] == "hotfix" and details["version"] is None else None
+        pull = forge.find(source, None, head=exact)
+    if pull is None:
+        return None, target_for(repo, source) if head is not None else None
+    target = target_for(repo, source, ref=pull["head"] if pull["state"] == "merged" else head)
+    if pull["source"] != source or pull["target"] != target:
+        raise MDFError("PR/MR 与交付的来源或目标不符", code="pull_state_changed")
+    return pull, target
+
+
+def finish(repo, source, settings, *, phase="close-out", number=None):
     with finish_lock(repo):
-        _finish(repo, source, settings, phase=phase)
+        _finish(repo, source, settings, phase=phase, number=number)
 
 
-def _finish(repo, source, settings, *, phase):
-    if branch_details(source)["kind"] == "adhoc":
+def submit(repo, forge, source, target, pull, *, pm, fixed_head):
+    from mdf_core.workspace.squash import require_ready
+    head = local_head(repo, source)
+    if head is None:
+        raise MDFError("未合并的源分支不存在", code="missing_branch")
+    if pull and fixed_head and head != pull["head"]:
+        raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed",
+                       details={"release_head": pull["head"], "head": head})
+    if pull and not ancestor(repo, pull["head"], head):
+        raise MDFError("源分支历史已改写", code="pull_state_changed")
+    remote = f"refs/remotes/origin/{target}"
+    if pull is None and ancestor(repo, head, remote):
+        raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
+    if pm:
+        require_pm_diff(repo, remote, head)
+    elif pull is None or head != pull["head"]:
+        preflight(repo, source)
+        head = sha(repo, f"refs/heads/{source}")
+    require_ready(repo, source)
+    if local_head(repo, source) != head:
+        raise MDFError("源分支在提交期间变化", code="pull_state_changed")
+    remote_head = remote_source_head(repo, source)
+    if pull and remote_head is None:
+        raise MDFError("未合并 PR/MR 的远端 source 不存在", code="pull_state_changed")
+    if remote_head and (not ancestor(repo, remote_head, head) or (pull and not ancestor(repo, pull["head"], remote_head))):
+        raise MDFError("远端 source 与待提交历史不符", code="pull_state_changed")
+    git(repo, "push", "--no-follow-tags", "origin", f"{head}:refs/heads/{source}")
+    if pull is None:
+        pull = forge.create(source, target, f"chore(delivery): 合入 {source}",
+                            "MDF 交付；合并时请保留双亲 merge commit。")
+    else:
+        pull = forge.get(pull["id"])
+    confirm_pull(pull, source, target, head)
+    return pull
+
+
+def retained_owner(repo, source, head):
+    work = sibling_worktree(repo, source)
+    if work.is_dir() and git(work, "branch", "--show-current", check=False).stdout.strip() == "":
+        tip = git(work, "rev-parse", "--verify", "HEAD", check=False)
+        if tip.returncode == 0 and tip.stdout.strip() == head:
+            return work
+    return primary_worktree(repo)
+
+
+def _finish(repo, source, settings, *, phase, number):
+    details = branch_details(source)
+    if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
-    path = state_path(repo, source)
-    state = read_json(path) if path.exists() else None
-    identity = origin(repo, settings["provider"])
-    forge = Forge(repo, identity)
-    details = branch_details(source)
     from mdf_core.lifecycle.release_integration import integration_version, release_head_of
     version = integration_version(source)
     if version:
         details = {**details, "kind": "integration", "version": version}
-    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
-    target = (state.get("target") if state and details["kind"] == "feature"
-              else target_for(repo, source))
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
-    github = is_github_flow(repo)
-    trunk = trunk_branch(repo)
+    github, trunk = is_github_flow(repo), trunk_branch(repo)
     pm = details["kind"] == "pm"
     if source.startswith("pm/rework/"):
         raise MDFError("pm PR 须使用原 source ref", code="unsupported_branch")
     if pm:
         if repo != primary_worktree(repo) or current_branch(repo) != trunk or source in worktree_map(repo):
             raise MDFError("pm 的 PR 与 close-out 须在主 trunk worktree 执行", code="not_on_trunk")
-        rework = rework_state(repo)
-        if rework and rework["source"] == source:
+        if local_head(repo, rework_branch(source)) is not None:
             raise MDFError("先完成 pm finish-rework，再续办原 PR", code="pm_rework_pending")
-    if details["kind"] == "feature" and not github:
-        from mdf_core.lifecycle.late_decision import validate_target
-        validate_target(target, concrete=True)
-    if details["kind"] == "feature" and (state is None or not state.get("merge_commit")):
-        if state and target_for(repo, source) != target:
-            raise MDFError("PR 已锁定目标", code="target_locked")
-        require_feature_target(repo, source, target)
-    if state and (state.get("mode") != "pr" or state.get("identity") != identity
-                  or state.get("source") != source or state.get("target") != target):
-        raise MDFError("PR/MR 恢复记录与当前配置不符", code="pull_state_changed")
-    from mdf_core.workspace.squash import require_ready
-    if state is None and details["kind"] == "adhoc":
-        from mdf_core.lifecycle.adhoc_context import material
-        from mdf_core.lifecycle.adhoc import completion
-        work = worktree_map(repo).get(source, repo)
-        _, ledger = material(work, source)
-        if not ledger:
-            git(repo, "fetch", "origin", "--prune")
-            existing = forge.find(source, target)
-            if existing and existing["state"] == "merged":
-                ensure_clean(work)
-                if sha(work, "HEAD") != existing["head"]:
-                    raise MDFError("接管已合并 PR 须绑定原 source tip", code="pull_state_changed")
-                completion(work, source)
-                merged = verified_merge(repo, existing, source, target, existing["head"])
-                state = {"mode": "pr", "identity": identity, "source": source, "target": target,
-                         "head": existing["head"], "pull": existing, "completed": False,
-                         "merge_commit": merged, "retained_worktree": str(work)}
-                write_json(path, state)
-            elif ancestor(repo, sha(repo, source), sha(repo, f"origin/{target}")):
-                raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
-    if state is None and phase == "close-out":
-        raise MDFError("先完成 pr intent，再执行 close-out", code="pr_not_merged")
-    if state is None:
-        if pm:
-            git(repo, "fetch", "origin", "--prune")
-            remote = f"origin/{target}"
-            head = sha(repo, f"refs/heads/{source}")
-            if ancestor(repo, head, sha(repo, remote)):
-                raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
-            require_pm_diff(repo, remote, head)
-        else:
-            preflight(repo, source)
-        require_ready(repo, source)
-        state = {"mode": "pr", "identity": identity, "source": source, "target": target,
-                 "head": sha(repo, source), "pull": None, "completed": False,
-                 "retained_worktree": str(worktree_map(repo).get(source, repo))}
-        if version:
-            state["release_head"] = release_head_of(repo, source)
-        elif github and details["kind"] in {"release", "hotfix", "on-demand-release"}:
-            state["release_head"] = state["head"]
-        write_json(path, state)
+    forge = Forge(repo, origin(repo, settings["provider"]))
     git(repo, "fetch", "origin", "--prune")
-    if state.get("pull"):
-        pull = forge.get(state["pull"]["id"])
-    elif details["kind"] == "hotfix" and details["version"] is None:
-        pull = forge.find(source, target, head=state["head"])
-    else:
-        pull = forge.find(source, target)
-    confirm_pull(state, pull)
-    write_json(path, state)
+    pull, target = lookup_pull(repo, forge, source, number=number)
     if phase == "close-out" and (pull is None or pull["state"] != "merged"):
         raise MDFError("PR/MR 尚未 merged；由 pr intent 继续推进", code="pr_not_merged")
+    publishes = details["kind"] in {"release", "hotfix", "on-demand-release", "integration"} and (github or target == trunk)
     if pull is None or pull["state"] == "open":
-        current = git(repo, "rev-parse", "--verify", f"refs/heads/{source}", check=False)
-        if current.returncode:
-            raise MDFError("未合并的源分支不存在", code="missing_branch")
-        head = current.stdout.strip()
-        if pm:
-            require_pm_diff(repo, f"origin/{target}", head)
-        if github and not version and state.get("release_head") and head != state["release_head"]:
-            if state.get("pull"):
-                raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed",
-                               details={"release_head": state["release_head"], "head": head})
-            if not ancestor(repo, state["release_head"], head):
-                raise MDFError("源分支历史已改写", code="pull_state_changed")
-            state["release_head"] = head
-            state["head"] = head
-            state.pop("pending_head", None)
-            write_json(path, state)
-        elif head != state["head"] or state.get("pending_head"):
-            if not ancestor(repo, state.get("pending_head", state["head"]), head):
-                raise MDFError("源分支历史已改写", code="pull_state_changed")
-            if not pm:
-                preflight(repo, source)
-            require_ready(repo, source)
-            state["pending_head"] = sha(repo, source)
-            write_json(path, state)
-        # 非 force 精确推送本次源提交；重复 push 为 noop。
-        require_ready(repo, source)
-        pushed_head = state.get("pending_head", state["head"])
-        git(repo, "push", "--no-follow-tags", "origin", f"{pushed_head}:refs/heads/{source}")
-        if pull is None:
-            pull = forge.create(source, target, f"chore(delivery): 合入 {source}",
-                                "MDF 交付；请使用 merge commit。合并后再次执行 $mdf close-out 续办。")
-        else:
-            pull = forge.get(pull["id"])
-    confirm_pull(state, pull)
-    write_json(path, state)
-    if pull["source"] != source or pull["target"] != target or pull["head"] != state["head"]:
-        raise MDFError("PR/MR 与已准备交付不一致", code="pull_state_changed")
-    state["pull"] = pull
-    write_json(path, state)
+        if version and pull and release_head_of(repo, source) != release_head_of(repo, source, ref=pull["head"]):
+            raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed")
+        if target is None:
+            raise MDFError("源分支不存在，也未发现对应 PR/MR", code="missing_branch")
+        if details["kind"] == "feature":
+            from mdf_core.lifecycle.late_decision import require_feature_target
+            require_feature_target(repo, source, target)
+        pull = submit(repo, forge, source, target, pull, pm=pm, fixed_head=github and publishes and not version)
+    state = {"source": source, "target": target, "head": pull["head"],
+             "retained_worktree": str(worktree_map(repo).get(source) or retained_owner(repo, source, pull["head"]))}
     status = "waiting_for_merge" if pull["state"] == "open" else "closed_without_merge"
     if pull["state"] == "merged":
         check_source(repo, state)
@@ -376,17 +320,24 @@ def _finish(repo, source, settings, *, phase):
         merged = verified_merge(repo, pull, source, target, state["head"])
         if pm:
             require_pm_merge(repo, f"{merged}^1", state["head"], merged)
-        if state.get("merge_commit") not in (None, merged):
-            raise MDFError("平台合并结果已变化", code="pull_state_changed")
-        state["merge_commit"] = merged
-        write_json(path, state)
         if phase == "pr":
             emit({"ok": True, "operation": "pr", "mode": "pr", "source": source,
                   "completed": True, "status": "merged", "pull_request": pull,
                   "merge_commit": merged, "next_intent": "close-out"})
             return
-        publishes = details["kind"] in {"release", "hotfix", "on-demand-release", "integration"} and (
-            github or target == trunk)
+        state["merge_commit"] = merged
+        remote_head = remote_source_head(repo, source)
+        local = local_head(repo, source)
+        if remote_head is not None and (remote_head != state["head"] or local is None):
+            raise MDFError("远端 source 的归属或 SHA 与本次交付不符，保留现场", code="pull_state_changed")
+        if details["kind"] == "adhoc" and local is not None:
+            from mdf_core.lifecycle.adhoc_context import material
+            owner = worktree_map(repo).get(source)
+            if owner is not None:
+                _, ledger = material(owner, source)
+                if not ledger:
+                    from mdf_core.lifecycle.adhoc import completion
+                    completion(owner, source)
         for branch in ([trunk, "develop"] if publishes and not github else [target]):
             occupant = worktree_map(repo).get(branch)
             if occupant:
@@ -398,19 +349,19 @@ def _finish(repo, source, settings, *, phase):
             if details["kind"] == "hotfix" and details["version"] is None:
                 from mdf_core.lifecycle.hotfix_version import source_version
                 details["version"] = source_version(repo, source, ref=state["head"])
-            ready = publish(repo, state, details["version"], path)
+            if github:
+                state["release_head"] = release_head_of(repo, source, ref=state["head"]) if version else state["head"]
+            ready = publish(repo, state, details["version"])
         if ready:
-            cleanup_remote(repo, state, path)
+            cleanup_remote(repo, source, state["head"])
             cleanup(repo, state)
-            state["completed"] = True
             status = "completed"
         else:
             status = "published_pending_backmerge"
-        write_json(path, state)
+    completed = status == "completed"
     emit({"ok": True, "operation": "pr" if phase == "pr" else "finish-gitflow", "mode": "pr", "source": source,
-          "completed": state["completed"], "status": status, "pull_request": pull,
+          "completed": completed, "status": status, "pull_request": pull,
           "merge_commit": state.get("merge_commit"), "backmerge": state.get("backmerge"),
           "tag": state.get("tag"), "targets": [target] + (["develop"] if target == trunk and not github else []),
-          "remote_deleted": (state.get("remote_cleanup") or {}).get("status") == "deleted",
-          "deleted": source if state["completed"] else None, "pushed": True,
-          "retained_worktree": state.get("retained_worktree"), "primary_worktree": str(primary_worktree(repo))})
+          "remote_deleted": completed, "deleted": source if completed else None, "pushed": True,
+          "retained_worktree": state["retained_worktree"], "primary_worktree": str(primary_worktree(repo))})

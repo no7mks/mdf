@@ -41,6 +41,7 @@ def test_finish_rejects_inconsistent_outcome_before_side_effects(tmp_path, monke
     from mdf_core.workspace import gitflow
     from mdf_core.lifecycle import pull_finish
     from mdf_core.workspace import merge_policy
+    from contextlib import nullcontext
 
     bug, _ = write_outcome(tmp_path, status)
     before = bug.read_bytes()
@@ -48,6 +49,9 @@ def test_finish_rejects_inconsistent_outcome_before_side_effects(tmp_path, monke
     monkeypatch.setattr(gitflow, "repo_path", lambda value: tmp_path)
     monkeypatch.setattr(gitflow, "require_git_root", lambda repo: None)
     monkeypatch.setattr(gitflow, "ensure_clean", lambda repo: None)
+    monkeypatch.setattr(gitflow, "worktree_map", lambda *_: {source: tmp_path})
+    monkeypatch.setattr(merge_policy, "local_head", lambda *_: "a" * 40)
+    monkeypatch.setattr(pull_finish, "finish_lock", lambda *_: nullcontext())
     monkeypatch.setattr(gitflow, "current_branch", lambda repo: source)
     monkeypatch.setattr(pull_finish, "current_branch", lambda repo: source)
     monkeypatch.setattr(merge_policy, "configured", lambda repo: {"mode": "local"})
@@ -79,6 +83,8 @@ def test_pr_recovery_does_not_validate_current_checkout_outcomes(tmp_path, monke
     monkeypatch.setattr(gitflow, "repo_path", lambda value: tmp_path)
     monkeypatch.setattr(gitflow, "require_git_root", lambda repo: None)
     monkeypatch.setattr(gitflow, "ensure_clean", lambda repo: None)
+    monkeypatch.setattr(gitflow, "worktree_map", lambda *_: {source: tmp_path})
+    monkeypatch.setattr(pull_finish, "finish_lock", lambda *_: nullcontext())
     monkeypatch.setattr(merge_policy, "configured", lambda repo: {"mode": "pr"})
     calls = []
     monkeypatch.setattr(pull_finish, "finish",

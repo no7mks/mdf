@@ -44,6 +44,13 @@ def sha(repo, ref):
     return git(repo, "rev-parse", "--verify", f"{ref}^{{commit}}").stdout.strip()
 
 
+def local_head(repo, branch):
+    ref = git(repo, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", check=False)
+    if ref.returncode not in (0, 1):
+        raise MDFError("无法核对本地分支", code="command_failed", details={"branch": branch})
+    return ref.stdout.strip() if ref.returncode == 0 else None
+
+
 def ancestor(repo, older, newer):
     return git(repo, "merge-base", "--is-ancestor", older, newer, check=False).returncode == 0
 

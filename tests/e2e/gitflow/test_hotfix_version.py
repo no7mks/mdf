@@ -115,7 +115,6 @@ def test_closeout_auto_version_resumes_committed_candidate(python_exe, tmp_path,
         commit(work)
         from support_pull import Platform, squash_pending
         from mdf_core.lifecycle import pull_finish
-        from mdf_core.lifecycle.publish import state_path
         platform = Platform()
         platform.repo, platform.remote = repo, remote
         identity = {"provider": "github", "host": "forge.invalid", "project": "team/project", "origin": str(remote)}
@@ -125,7 +124,6 @@ def test_closeout_auto_version_resumes_committed_candidate(python_exe, tmp_path,
         source = "hotfix/fix-login"
         head = git(work, "rev-parse", "HEAD").stdout.strip()
         git(work, "show", "HEAD:changes/1.2.1/CHANGE.md")
-        assert not state_path(repo, source).exists()
         if mode == "existing_pr":
             git(work, "push", "origin", source)
             platform.create(source, "master", "恢复候选发布", "候选已提交")
@@ -137,12 +135,10 @@ def test_closeout_auto_version_resumes_committed_candidate(python_exe, tmp_path,
         assert git(work, "rev-parse", "HEAD").stdout.strip() == head
         assert not git(work, "status", "--porcelain").stdout
         assert not objectives.exists()
-        assert json.loads(state_path(repo, source).read_text())["head"] == head
         merged = platform.merge(1, tmp_path)
         done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
         assert done["completed"] and done["tag"] == "v1.2.1"
-        state = json.loads(state_path(repo, first["source"]).read_text())
-        back = state["backmerge"]
+        back = done["backmerge"]
         review = context(Path(back["worktree"]), back["source"], "HEAD", "master")
         assert review["publication"]["source"] == "hotfix/fix-login"
         assert review["publication"]["merge_commit"] == merged

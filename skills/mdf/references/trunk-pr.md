@@ -45,7 +45,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Prepare | 脚本 | 先核恢复；否则保全并对齐 trunk | 原 head、base、worktree 与记录 | 首次2；PR恢复3；清理4；无增量结束 | 保留现场并报告 |
+| 1 | Prepare | 脚本 | 按当前 Git 引用保全并对齐 trunk | 原 head、base 与 worktree | 首次2；PR恢复3；清理4；无增量结束 | 保留现场并报告 |
 | 2 | Check | 约束 | 按下表在返回的 worktree 检查 | 实际校验与审查证据 | 3 | 修复并复验 |
 | 3 | Pull request | 约束 | 用返回的 source 委托完整的 [PR 流程](pr.md)，复用同一 PR/MR 轮询与返工 | 平台状态、关联 CI 与合并核验 | 4 | 沿用 pr 等待与返工 |
 | 4 | Finish | 约束 | 委托 close-out，再返回 sync 或报告 | completed 与同步结果 | 返回调用方 | 保留现场并续办 |
@@ -61,13 +61,13 @@ python3 "$MDF_ROOT/scripts/mdf.py" trunk-pr --repo "$REPO_ROOT" --slug <slug>
 | `pm` | 完整 PR diff 和每笔本地独有 commit 均符合 [项目记录路径](common.md#项目记录) | `pm/<slug>-<id>`。沿用 [PM PR 流程](pr.md#pm-分支)。 |
 | `adhoc` | 其余增量，包括夹带其他路径后又 revert 的历史 | `adhoc/<slug>` 与独立 worktree。按下节准备和检查。 |
 
-- 首次 fetch 后固定本地 head、远端 base 与唯一 merge-base。先记录 source 并从原 head 建分支，再对齐本地 trunk。
+- 首次 fetch 后固定本地 head、远端 base 与唯一 merge-base。从原 head 建 source 分支，再对齐本地 trunk。
   - PM 接管使用检出 trunk 的干净主 worktree。只有 [PM PR 返工](pr.md#pm-分支) 需要临时 worktree。
   - 在该 worktree 用 `pr --source <source>` 创建或续办 PM PR。合并后用 `finish-gitflow --source <source>` 收口。
   - `adhoc` 返回 source 的独立 worktree；其余保全规则沿用 dev-pr。
-- 返回 `kind`、`source`、`worktree` 与 `next_intent`。重试沿用操作记录和同一 PR/MR，直到 close-out 完成。
+- 返回 `kind`、`source`、`worktree` 与 `next_intent`。续办原 PR/MR 时使用该 source；新的本地增量可独立接管。
 - `mdf.py trunk-pr` 完成 Prepare。当前 Agent 继续执行步骤 2–4；PR 创建后调用 `pr-watch`，收到可修问题后补验并更新原 PR，再恢复轮询。
-- `$mdf sync` 的已确认 PR 计划可委托本 intent，沿用同一份接管记录。
+- `$mdf sync` 的已确认 PR 计划可委托本 intent。
 
 ## Adhoc 验收
 

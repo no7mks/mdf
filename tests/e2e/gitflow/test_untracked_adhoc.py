@@ -4,19 +4,7 @@ import json
 import pytest
 
 from mdf_test_support import git, mdf, payload
-from support_delivery import commit, local_repo
-
-
-def write_change(work, source, slug):
-    root = work / "changes/unreleased" / slug
-    root.mkdir(parents=True, exist_ok=True)
-    (root / "CHANGE.md").write_text(
-        f"---\nchange_kind: fix\nsource_branch: {source}\nproposals: []\n"
-        "fixed: []\nclosed: []\ndeferred: []\nadrs: []\nrelease_notes: none\nbreaking: false\n"
-        'evidence:\n  tests: []\n  commands: ["true"]\n  artifacts: []\n---\n'
-        "\n# Change\n\n## 结果\n\n完成本次修正。\n\n## 已更新的当前文档\n\n无。\n\n## 已知偏差\n\n无。\n"
-    )
-    return root
+from support_delivery import commit, local_repo, write_change
 
 
 def manual_work(tmp_path, source="chore/readme", *, linked=False):
@@ -54,6 +42,8 @@ def test_change_only_finish_preserves_real_branch_and_worktree(python_exe, tmp_p
         assert git(work, "branch", "--show-current").stdout.strip() == "develop"
     finished = payload(mdf(python_exe, "adhoc-status", "--repo", str(work), "--source", source))["result"]
     assert finished["completed"] and finished["next_step"] is None
+    repeated = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work), "--source", source))
+    assert repeated["completed"] and repeated["merge_commit"] == result["merge_commit"]
 
 
 def test_change_only_smart_uses_resolved_material_directory(python_exe, tmp_path):
@@ -157,18 +147,6 @@ def test_fixed_range_survives_target_integration_and_protects_squash(python_exe,
     assert fixed["source_head"] in history
 
 
-def test_local_completed_record_preserves_recreated_source(python_exe, tmp_path):
-    _, work = manual_work(tmp_path)
-    write_change(work, "chore/readme", "chore-readme")
-    commit(work)
-    source_head = git(work, "rev-parse", "HEAD").stdout.strip()
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    git(work, "branch", "chore/readme", source_head)
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work), "--source", "chore/readme")
-    assert result.returncode != 0 and "finish_state_changed" in result.stderr
-    assert git(work, "rev-parse", "chore/readme").stdout.strip() == source_head
-
-
 def test_local_primary_detaches_when_develop_is_occupied_elsewhere(python_exe, tmp_path):
     repo, _ = manual_work(tmp_path)
     target = tmp_path / "develop-work"
@@ -181,17 +159,6 @@ def test_local_primary_detaches_when_develop_is_occupied_elsewhere(python_exe, t
     assert not git(repo, "branch", "--show-current").stdout.strip()
     assert git(repo, "rev-parse", "HEAD").stdout.strip() == head
     assert git(target, "branch", "--show-current").stdout.strip() == "develop"
-
-
-def test_finish_record_keys_do_not_conflict_for_valid_branch_names(tmp_path):
-    repo, _ = manual_work(tmp_path)
-    from mdf_core.lifecycle.publish import state_path
-    from mdf_core.lifecycle.delivery_state import write_json
-    for source in ("foo", "foo.json/bar"):
-        path = state_path(repo, source)
-        write_json(path, {"source": source})
-        assert json.loads(path.read_text())["source"] == source
-    assert state_path(repo, "foo").parent == state_path(repo, "foo.json/bar").parent
 
 
 @pytest.mark.parametrize("status", ["open", "rejected"])

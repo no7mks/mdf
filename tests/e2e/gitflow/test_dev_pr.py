@@ -6,7 +6,7 @@ import pytest
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace import dev_pr
 from mdf_test_support import git, mdf, payload
-from support_delivery import commit
+from support_delivery import commit, write_change
 from support_sync import prepare, sync
 
 
@@ -24,12 +24,10 @@ def test_dev_pr_preserves_work_then_reuses_adhoc_pr(python_exe, tmp_path, monkey
     assert (work / "develop-local.txt").is_file() and not (repo / "develop-local.txt").exists()
     assert git(repo, "rev-parse", "develop").stdout == git(remote, "rev-parse", "develop").stdout
     assert git(remote, "show-ref").stdout == refs and platform.pulls == []
-    assert payload(sync(python_exe, repo))["pull_requests"]["develop"]["source"] == source
-    assert payload(mdf(python_exe, "dev-pr", "--repo", str(repo)))["result"]["source"] == source
+    assert payload(mdf(python_exe, "dev-pr", "--repo", str(repo)))["result"]["status"] == "no_pending_commits"
     # 模拟 intent 已完成检查后提交真实 Change，平台和 Git 生命周期复用既有 pr。
     from mdf_core.lifecycle import pull_finish
     from support_pull import squash_pending
-    from test_untracked_adhoc import write_change
     monkeypatch.setattr(pull_finish, "origin", lambda *_: {
         "provider": provider, "host": "forge.invalid", "project": "team/project", "origin": str(remote),
     })
@@ -48,11 +46,11 @@ def test_dev_pr_preserves_work_then_reuses_adhoc_pr(python_exe, tmp_path, monkey
     assert payload(sync(python_exe, repo, pr=False))["trunks"]["develop"]["push"] == "noop"
 
 
-@pytest.mark.parametrize("boundary", ["record", "branch", "worktree", "reset"])
+@pytest.mark.parametrize("boundary", ["branch", "worktree", "reset"])
 def test_dev_pr_recovers_interruption_without_losing_commits(python_exe, tmp_path, monkeypatch, boundary):
     repo, remote, _ = prepare(tmp_path, monkeypatch, branches=("develop",))
     head = git(repo, "rev-parse", "develop").stdout.strip()
-    original_git, original_write = dev_pr.git, dev_pr.write_json
+    original_git = dev_pr.git
     fired = []
 
     def interrupt_git(where, *args, **kwargs):
@@ -62,19 +60,12 @@ def test_dev_pr_recovers_interruption_without_losing_commits(python_exe, tmp_pat
             raise MDFError("模拟 Git 操作后中断", code="test_interrupted")
         return result
 
-    def interrupt_write(path, state):
-        original_write(path, state)
-        if boundary == "record" and not fired:
-            fired.append(True)
-            raise MDFError("模拟记录后中断", code="test_interrupted")
-
     with monkeypatch.context() as patch:
         patch.setattr(dev_pr, "git", interrupt_git)
-        patch.setattr(dev_pr, "write_json", interrupt_write)
         assert mdf(python_exe, "dev-pr", "--repo", str(repo), "--slug", "rescue").returncode != 0
     assert fired
-    result = payload(mdf(python_exe, "dev-pr", "--repo", str(repo)))["result"]
-    assert result["source"] == "adhoc/rescue"
+    result = payload(mdf(python_exe, "dev-pr", "--repo", str(repo), "--slug", "rescue"))["result"]
+    assert result.get("source", "no_pending_commits") == ("no_pending_commits" if boundary == "reset" else "adhoc/rescue")
     assert git(repo, "rev-parse", "adhoc/rescue").stdout.strip() == head
     assert git(repo, "rev-parse", "develop").stdout == git(remote, "rev-parse", "develop").stdout
 
@@ -93,7 +84,7 @@ def test_dev_pr_preserves_dirty_develop(python_exe, tmp_path, monkeypatch, dirty
     assert result.returncode != 0 and "dirty_worktree" in result.stderr
     assert git(repo, "rev-parse", "HEAD").stdout == head
     assert git(repo, "status", "--porcelain").stdout == status
-    assert git(remote, "show-ref").stdout == refs and not dev_pr.record_path(repo).exists()
+    assert git(remote, "show-ref").stdout == refs
 
 
 @pytest.mark.parametrize("mixed", [False, True])
@@ -123,7 +114,6 @@ def test_dev_pr_no_pending_is_noop(python_exe, tmp_path, monkeypatch):
     before = git(repo, "show-ref").stdout
     assert payload(mdf(python_exe, "dev-pr", "--repo", str(repo)))["result"]["status"] == "no_pending_commits"
     assert git(repo, "show-ref").stdout == before
-    assert not dev_pr.record_path(repo).exists()
 
 
 def test_dev_pr_does_not_absorb_later_develop_commits(python_exe, tmp_path, monkeypatch):
@@ -133,9 +123,9 @@ def test_dev_pr_does_not_absorb_later_develop_commits(python_exe, tmp_path, monk
     commit(repo)
     later = git(repo, "rev-parse", "develop").stdout
     again = payload(sync(python_exe, repo))["pull_requests"]["develop"]
-    assert again["source"] == first["source"]
-    assert git(repo, "rev-parse", again["source"]).stdout.strip() == first["head"]
-    assert git(repo, "rev-parse", "develop").stdout == later
+    assert again["source"] != first["source"]
+    assert git(repo, "rev-parse", first["source"]).stdout.strip() == first["head"]
+    assert git(repo, "rev-parse", again["source"]).stdout == later
 
 
 @pytest.mark.parametrize("collision", ["branch", "worktree", "remote"])
@@ -187,7 +177,6 @@ def test_dev_pr_rejects_changed_confirmed_tip(tmp_path, monkeypatch):
     with pytest.raises(MDFError, match="已确认计划"):
         dev_pr.prepare(repo, expected_head=old)
     assert git(repo, "rev-parse", "develop").stdout.strip() == new
-    assert not dev_pr.record_path(repo).exists()
 
 
 def test_enabling_pr_locally_cannot_direct_push_nontrivial_series(python_exe, tmp_path, monkeypatch):
@@ -198,4 +187,4 @@ def test_enabling_pr_locally_cannot_direct_push_nontrivial_series(python_exe, tm
 
     first = payload(mdf(python_exe, "dev-pr", "--repo", str(repo)))["result"]
     again = payload(mdf(python_exe, "dev-pr", "--repo", str(repo)))["result"]
-    assert first["source"] == again["source"]
+    assert first["source"].startswith("adhoc/") and again["status"] == "no_pending_commits"

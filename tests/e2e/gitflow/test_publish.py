@@ -88,21 +88,18 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     commit(work)
     load_core_module()
     from mdf_core.workspace import gitflow
-    from mdf_core.lifecycle import publish
     from mdf_core.foundation.errors import MDFError
-    original = publish.write_json
+    original = gitflow._merge
 
-    def fail_record(path, state):
-        if "develop" in state["merged"]:
-            raise MDFError("模拟合并记录写入中断", code="test_interruption")
-        original(path, state)
+    def interrupt(repo_path, source, target, *args):
+        original(repo_path, source, target, *args)
+        if target == "develop":
+            raise MDFError("模拟合并后中断", code="test_interruption")
 
     with monkeypatch.context() as patch:
-        patch.setattr(publish, "write_json", fail_record)
-        with pytest.raises(MDFError, match="模拟合并记录写入中断"):
+        patch.setattr(gitflow, "_merge", interrupt)
+        with pytest.raises(MDFError, match="模拟合并后中断"):
             gitflow.command_finish_gitflow(SimpleNamespace(repo=str(work), source=None))
-    path = publish.state_path(work, "hotfix/1.2.1")
-    before = json.loads(path.read_text())["before"]["develop"]
     merged = git(repo, "rev-parse", "develop").stdout.strip()
     if push_develop:
         git(repo, "push", "origin", "develop")
@@ -110,7 +107,6 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))["pushed"] is True
     assert git(repo, "rev-parse", "develop").stdout.strip() == merged
     assert git(remote, "rev-parse", "develop").stdout.strip() == remote_develop
-    assert json.loads(path.read_text())["before"]["develop"] == before
 
 
 @pytest.mark.parametrize("kind", ["release", "hotfix"])
@@ -135,8 +131,6 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
     commit(work)
     load_core_module()
     from mdf_core.workspace import gitflow
-    from mdf_core.lifecycle.publish import state_path
-    path = state_path(work, f"{kind}/1.2.1")
     dirty = repo / "dirty.txt"
     original_fetch = gitflow._fetch
 
@@ -148,8 +142,7 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
     with monkeypatch.context() as patch:
         patch.setattr(gitflow, "_fetch", fetch_then_dirty)
         assert "dirty_worktree" in mdf(python_exe, "finish-gitflow", "--repo", str(work)).stderr
-    state = json.loads(path.read_text())
-    assert state["merged"] == {}
+    original_master = source_head(repo)
     dirty.unlink()
     git(repo, "checkout", advance)
     (repo / "development.txt").write_text("后续开发\n")
@@ -159,18 +152,14 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
         git(repo, "push", "origin", advance)
     remote_develop = git(remote, "rev-parse", "develop").stdout.strip()
     result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
-    if advance == "master":
+    if advance == "master" and not pushed:
         assert "publish_state_changed" in result.stderr
-        assert json.loads(path.read_text())["before"][advance] == state["before"][advance]
-        assert git(remote, "rev-parse", advance).stdout.strip() == (
-            advanced if pushed else state["before"][advance])
+        assert git(remote, "rev-parse", advance).stdout.strip() == original_master
         return
     assert payload(result)["pushed"] is True
-    state = json.loads(path.read_text())
-    assert state["before"]["develop"] == advanced
-    assert git(repo, "show", "-s", "--format=%P", "develop").stdout.split() == [
-        advanced, state["merged"]["master"]]
-    assert state["pushed"] is True
+    assert git(repo, "show", "-s", "--format=%P", "develop").stdout.split()[-1] == git(repo, "rev-parse", "master").stdout.strip()
+    if advance == "develop":
+        assert git(repo, "rev-parse", "develop^1").stdout.strip() == advanced
     for ref in ("master", "refs/tags/v1.2.1"):
         assert git(remote, "rev-parse", ref).stdout == git(repo, "rev-parse", ref).stdout
     assert git(remote, "rev-parse", "develop").stdout.strip() == remote_develop

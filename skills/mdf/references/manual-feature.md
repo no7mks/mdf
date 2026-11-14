@@ -37,7 +37,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## 工作流（唯一执行契约）
 
-PR 恢复优先：调用方先按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
+PR 恢复优先：调用方先按 [PR 的恢复路由](pr.md) 核原 source 的 Git 和平台状态与返工备注。
 命中时按 PR 实际状态选择 pr 或 close-out，跳过下表的 delivery status；没有 PR 恢复时才按人工清单续办。
 
 仅 next / deliver 在 `delivery.json` 的 `manual` 为 true 时内部执行本工作流。

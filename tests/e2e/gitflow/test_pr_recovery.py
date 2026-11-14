@@ -1,5 +1,4 @@
 """PR close-out 中断、重入与共享仓库并发恢复。"""
-import json
 import subprocess
 
 import pytest
@@ -7,7 +6,6 @@ import pytest
 from conftest import skill_dir
 from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle import pull_finish, pull_publish
-from mdf_core.lifecycle.publish import state_path
 from mdf_test_support import git, mdf, payload
 from support_delivery import commit
 from support_pull import prepare
@@ -79,13 +77,13 @@ def test_backmerge_worktree_creation_resumes_after_branch_was_created(python_exe
     git(remote, 'merge-base', '--is-ancestor', merged, 'develop')
 
 
-@pytest.mark.parametrize('boundary', ['detach', 'delete', 'completed_record'])
+@pytest.mark.parametrize('boundary', ['detach', 'delete'])
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
 def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path, monkeypatch, boundary, kind):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
-    original_git, original_write = pull_finish.git, pull_finish.write_json
+    original_git = pull_finish.git
     fired = []
     def interrupted_git(repo_path, *args, **kwargs):
         result = original_git(repo_path, *args, **kwargs)
@@ -94,21 +92,14 @@ def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path,
             fired.append(True)
             raise MDFError('模拟清理中断', code='test_interrupted')
         return result
-    def interrupted_write(path, value):
-        if boundary == 'completed_record' and value.get('completed'):
-            fired.append(True)
-            raise MDFError('模拟 completed 记录中断', code='test_interrupted')
-        return original_write(path, value)
     with monkeypatch.context() as patch:
         patch.setattr(pull_finish, 'git', interrupted_git)
-        patch.setattr(pull_finish, 'write_json', interrupted_write)
         assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
     assert fired
     snapshot = git(remote, 'show-ref').stdout
     done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert done['completed'] and git(remote, 'show-ref').stdout == snapshot
     assert not git(repo, 'for-each-ref', 'refs/heads/' + first['source']).stdout
-    assert json.loads(state_path(repo, first['source']).read_text())['completed']
 
 
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
@@ -119,8 +110,7 @@ def test_review_update_uses_owner_then_merged_cleanup_resumes_from_primary(pytho
     commit(work)
     failed = mdf(python_exe, 'pr', '--repo', str(repo), '--source', first['source'])
     assert failed.returncode != 0 and 'stage_branch' in failed.stderr
-    state = json.loads(state_path(repo, first['source']).read_text())
-    assert state['head'] == first['pull_request']['head'] and 'pending_head' not in state
+    assert platform.get(1)['head'] == first['pull_request']['head']
     updated = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert updated['status'] == 'waiting_for_merge' and not updated['completed']
     assert updated['pull_request']['head'] != first['pull_request']['head']
@@ -142,7 +132,6 @@ def test_merged_cleanup_resumes_after_owner_worktree_was_removed(python_exe, tmp
     with monkeypatch.context() as patch:
         patch.setattr(pull_finish, 'cleanup', interrupted)
         assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
-    assert not json.loads(state_path(repo, first['source']).read_text())['completed']
     snapshot = git(remote, 'show-ref').stdout
     git(repo, 'worktree', 'remove', str(work))
     done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))

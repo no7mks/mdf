@@ -78,6 +78,7 @@ class Forge:
     def find(self, source, target, *, head=None):
         query = ({"state": "all", "head": self.identity["project"].split("/")[0] + ":" + source, "base": target}
                  if self.github else {"state": "all", "source_branch": source, "target_branch": target, "scope": "all"})
+        query = {key: value for key, value in query.items() if value is not None}
         found = []
         page = 1
         while True:
@@ -88,7 +89,7 @@ class Forge:
                 item = self.normalize(row)
                 if head is not None and item["state"] != "open" and item["head"] != head:
                     continue
-                if item["source"] == source and item["target"] == target:
+                if item["source"] == source and (target is None or item["target"] == target):
                     found.append(item)
             if len(rows) < 100:
                 break

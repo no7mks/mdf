@@ -184,7 +184,7 @@ upgrade 不读取本文件。
   - 校验并暂存本次路径后执行 `pm commit --repo "$REPO_ROOT" --message <中文 Conventional Commit>`。
   - 允许路径为 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md`、`docs/context/`。混合路径整批走普通交付。
   - PR mode 可在本地连续提交。记录命令完成后报告本地提交状态，用户调用 [trunk-pr](trunk-pr.md) 或确认 sync PR 计划后再发 PR/MR。
-  - 已接管的批次按原 source 续办至 close-out，再提交下一批项目记录。PM PR/MR 修订规则见 [pm 分支](pr.md#pm-分支)。
+  - 各批项目记录独立提交；需要续办时按已知 source 核对 Git 和平台。修订规则见 [pm 分支](pr.md#pm-分支)。
   - 以 trunk 为基线的交付从已共享的历史开工。本地记录可在发 PR/MR 前继续评审或分诊。
 - 只读和预览不提交。
 

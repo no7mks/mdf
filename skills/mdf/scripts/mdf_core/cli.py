@@ -385,12 +385,15 @@ def build_parser() -> argparse.ArgumentParser:
     pull = subparsers.add_parser("pr")
     pull.add_argument("--repo", required=True)
     pull.add_argument("--source")
+    pull.add_argument("--pull", type=int)
     pull.set_defaults(func=command_finish_gitflow, phase="pr")
 
     from mdf_core.lifecycle.pull_watch import command_pr_watch
     watch = subparsers.add_parser("pr-watch")
     watch.add_argument("--repo", required=True)
     watch.add_argument("--source")
+    watch.add_argument("--pull", type=int)
+    watch.add_argument("--head")
     watch.add_argument("--origin-run", type=int, action="append", default=[])
     watch.add_argument("--handled-review", action="append", default=[])
     watch.add_argument("--allow-skipped", action="store_true")
@@ -399,6 +402,8 @@ def build_parser() -> argparse.ArgumentParser:
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)
     finish.add_argument("--source")
+    finish.add_argument("--pull", type=int)
+    finish.add_argument("--version")
     finish.set_defaults(func=command_finish_gitflow)
 
     from mdf_core.workspace.finish_hook import command_pre_gitflow_finish

@@ -85,9 +85,24 @@ def source_version(repo, source, *, ref=None, auto=False):
     if details["kind"] != "hotfix":
         raise MDFError("需要 hotfix 分支", code="unsupported_branch")
     if ref is None:
-        from mdf_core.lifecycle.publish import state_path
-        state = state_path(repo, source)
-        ref = read_json(state)["head"] if state.is_file() else f"refs/heads/{source}"
+        ref = f"refs/heads/{source}"
+        if git(repo, "rev-parse", "--verify", "--quiet", ref, check=False).returncode:
+            detached = not git(repo, "branch", "--show-current").stdout.strip()
+            if detached:
+                ref = "HEAD"
+            else:
+                versions = set()
+                for tag in git(repo, "tag", "--list", "v*").stdout.splitlines():
+                    version = tag[1:]
+                    if stable_semver(version) is None:
+                        continue
+                    record = delivery_record(repo, source, ref=f"refs/tags/{tag}")
+                    if record and record[1].get("version") == version:
+                        versions.add(version)
+                if len(versions) != 1:
+                    raise MDFError("无法确定原 hotfix 版本，请传 --version", code="invalid_delivery",
+                                   details={"versions": sorted(versions)})
+                return versions.pop()
     record = delivery_record(repo, source, ref=ref)
     if record is None:
         raise MDFError("hotfix 交付身份缺失", code="invalid_delivery")

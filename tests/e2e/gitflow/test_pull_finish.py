@@ -45,8 +45,6 @@ def test_pr_watch_reuses_original_pull_after_repair(python_exe, tmp_path, monkey
 @pytest.mark.parametrize('kind', ['release', 'hotfix'])
 @pytest.mark.parametrize('action', ['remove', 'advance'])
 def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path, monkeypatch, kind, action):
-    from pathlib import Path
-    from mdf_core.lifecycle.publish import state_path
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
@@ -55,17 +53,16 @@ def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path
     commit(repo)
     failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
     assert failed.returncode != 0 and 'merge_conflict' in failed.stderr
-    state = json.loads(state_path(repo, first['source']).read_text())
-    assert state['publication_completed'] and not state['completed']
-    back = Path(state['backmerge']['worktree'])
+    from mdf_core.workspace.gitutil import sibling_worktree
+    branch = 'codex/backmerge/1.2.1'
+    back = sibling_worktree(repo, branch)
     git(remote, 'merge-base', '--is-ancestor', merged, 'develop')
-    assert git(remote, 'rev-parse', 'develop').stdout.strip() == state['backmerge']['head']
     before = git(remote, 'rev-parse', 'develop').stdout
     (repo / 'src/service.py').write_text('local_work = True\nfixed = True\n')
     commit(repo)
     if action == 'remove':
         git(repo, 'worktree', 'remove', str(back))
-        git(repo, 'branch', '-D', state['backmerge']['source'])
+        git(repo, 'branch', '-D', branch)
     else:
         (back / 'later.py').write_text('unrelated_later_work = True\n')
         commit(back)
@@ -73,7 +70,6 @@ def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path
     result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed'] and result['merge_commit'] == merged
     assert git(remote, 'rev-parse', 'develop').stdout == before
-    assert json.loads(state_path(repo, first['source']).read_text())['backmerge']['head'] == state['backmerge']['head']
 
 
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
@@ -305,10 +301,9 @@ def test_release_candidate_updates_still_reject_rewritten_history(python_exe, tm
 
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])
 @pytest.mark.parametrize('accepted', [False, True])
-def test_pull_update_response_loss_keeps_confirmed_and_pending_heads(python_exe, tmp_path, monkeypatch, kind, accepted):
+def test_pull_update_response_loss_rechecks_platform_and_local_heads(python_exe, tmp_path, monkeypatch, kind, accepted):
     from mdf_core.foundation.errors import MDFError
     from mdf_core.lifecycle import pull_finish
-    from mdf_core.lifecycle.publish import state_path
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('review_fix = True\n')
@@ -327,9 +322,8 @@ def test_pull_update_response_loss_keeps_confirmed_and_pending_heads(python_exe,
         patch.setattr(pull_finish, 'git', interrupted)
         failed = mdf(python_exe, 'pr', '--repo', str(work))
         assert failed.returncode != 0
-    state = json.loads(state_path(work, first['source']).read_text())
-    assert state['head'] == first['pull_request']['head']
-    assert state['pending_head'] == candidate
+    assert git(work, 'rev-parse', 'HEAD').stdout.strip() == candidate
+    assert platform.get(1)['head'] == (candidate if accepted else first['pull_request']['head'])
     result = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
     if accepted:
         assert payload(result)['completed']

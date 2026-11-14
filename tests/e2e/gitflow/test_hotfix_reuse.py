@@ -96,6 +96,7 @@ def test_reuse_hotfix_slug_publishes_new_version_and_preserves_first_release(
         for previous, expected in released.items():
             assert git(remote, "rev-parse", f"v{previous}^{{commit}}").stdout.strip() == expected
         git(repo, "worktree", "remove", str(work))
-        resumed = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))
+        identity_args = ["--pull", str(index)] if pr_mode else ["--version", version]
+        resumed = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source, *identity_args))
         assert resumed["tag"] == f"v{version}"
     assert released["1.2.1"] != released["1.2.2"]

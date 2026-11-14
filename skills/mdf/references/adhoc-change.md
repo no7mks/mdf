@@ -50,7 +50,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── PR 未 merged ────→ [返回 pr 推进]
-                 ├──── 部分成功 ────────→ [按原操作记录续办]
+                 ├──── 部分成功 ────────→ [按 Git 和平台续办]
                  └──── 实际完成 ────────→ [核验并返回]
 ```
 
@@ -126,10 +126,9 @@
   - no-ff 合入 develop、按预期 SHA 删除 source ref；不 fetch、不 push、不打 tag。
   - 保留工作目录；主 worktree 能切回 develop 时切回，被其他 worktree 占用则 detach 保留。
   - 完成不以 owner detached 为唯一条件；核 completed、merge_commit 与源 ref 已删除。
-  - 部分成功按操作记录续办，可从同一仓库使用 `--source <真实source>` 恢复。
-  - 没有匹配记录不能仅靠 --source 猜测恢复；同名源分支重建或端点变化时保留现场。
+  - 部分成功按 Git 拓扑与 Change 续办，可从原 worktree 使用 `--source <真实source>` 恢复。
+  - 身份或合并端点无法核实时保留现场，向用户确认原 source。
 - PR 准备完成后返回 pr，沿用其 Goal、等待、返工与实际 merged 判据。
   - 未 merged 不清理；已 merged 的 close-out 只核平台结果并续办，不重跑本页检查。
   - 外部创建并已 merged 的 PR 可由 close-out 接管：绑定已知 source tip，核规范 Change 与平台事实。
   - 首次接管仍核 source/target/head、双亲 merge commit 及远端第一父链，不能只凭本地包含关系。
-  - 恢复记录只保存 Git/平台操作结果，不创建阶段状态机或第二份账本。

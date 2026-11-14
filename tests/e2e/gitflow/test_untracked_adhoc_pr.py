@@ -2,9 +2,8 @@
 import pytest
 
 from mdf_test_support import git, mdf, payload
-from support_delivery import commit
+from support_delivery import commit, write_change
 from support_pull import prepare, squash_pending
-from test_untracked_adhoc import write_change
 
 
 def prepare_change_only(python_exe, tmp_path, monkeypatch, source="chore/docs"):
@@ -74,8 +73,6 @@ def test_external_merge_is_verified_before_creating_recovery_record(python_exe, 
     git(work, "push", "origin", "chore/docs")
     platform.create("chore/docs", "develop", "test: 外部 PR", "")
     platform.pulls[0].update(state="merged", merge_commit=git(repo, "rev-parse", "develop").stdout.strip())
-    from mdf_core.lifecycle.publish import state_path
     result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "invalid_pull_merge" in result.stderr
-    assert not state_path(repo, "chore/docs").exists()
     assert git(work, "branch", "--show-current").stdout.strip() == "chore/docs"

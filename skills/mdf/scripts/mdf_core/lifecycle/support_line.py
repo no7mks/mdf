@@ -196,27 +196,21 @@ def forbid_bug_edits(repo: Path, source: str) -> None:
                        details={"paths": changed})
 
 
-def recheck_before_publish(repo: Path, source: str, version: str) -> None:
-    """发布前再次核验 urgent_support_first 的 trunk Bug 仍为 open。"""
-    from mdf_core.workspace.workflow_policy import is_github_flow
-    if not is_github_flow(repo):
+def recheck_before_publish(repo: Path, source: str, version: str, *, target, head) -> None:
+    """从固定发布提交核对 Change 中的 Trunk-First 要求。"""
+    if not is_support_branch(target):
         return
-    from mdf_core.lifecycle.late_decision import target_for
-    target = target_for(repo, source)
-    if not is_support_branch(str(target)):
-        return
-    from mdf_core.foundation.yamlutil import read_frontmatter
+    from mdf_core.foundation.yamlutil import frontmatter_span, parse_yaml
     from mdf_core.workspace.gitutil import branch_details, unreleased_slug
     folder = unreleased_slug(branch_details(source))
-    path = repo / "changes" / "unreleased" / folder / "CHANGE.md"
-    if not path.is_file():
-        path = repo / "changes" / version / "CHANGE.md"
-    if not path.is_file():
-        return
-    metadata, _body = read_frontmatter(path)
-    fixes = metadata.get("trunk_fixes")
-    if isinstance(fixes, list) and fixes:
-        verify_trunk_first(repo, fixes, version)
+    for path in (f"changes/{version}/CHANGE.md", f"changes/unreleased/{folder}/CHANGE.md"):
+        shown = _git(repo, "show", f"{head}:{path}", check=False)
+        if shown.returncode == 0:
+            start, end, _ = frontmatter_span(shown.stdout)
+            fixes = parse_yaml(shown.stdout[start:end]).get("trunk_fixes")
+            if isinstance(fixes, list) and fixes:
+                verify_trunk_first(repo, fixes, version)
+            return
 
 
 def verify_trunk_first(repo: Path, fixes: list[dict[str, str]], version: str) -> list[dict[str, str]]:

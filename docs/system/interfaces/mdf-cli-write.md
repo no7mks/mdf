@@ -272,6 +272,8 @@ python3 skills/mdf/scripts/mdf.py release-integrate --repo /path/to/repository [
 
 仅 github-flow 的 PR mode：release 与最新 `origin/<trunk>` 冲突时，在独立 `codex/integrate/release-<semver>` 分支合并并解决冲突，
 再以该分支走 PR。发布仍以原 release 的固定 `release_head` 打 tag；集成分支不改变 `release_head`，也不产生回合。
+- 集成提交的 `MDF-Release-Head` trailer 绑定发布 SHA，且必须与该提交的父节点一致。
+  纳入更新的 release 提交时如有冲突，解决后用 `git commit --no-edit` 保留 trailer。
 
 ## `to`
 
@@ -314,7 +316,7 @@ PR mode 的受保护增量：
 
 - 默认预览的 `pull_plan` 列出 master/develop 的 PR/MR 计划；普通确认执行返回 `pr_required`。
 - `sync --repo <repo> --pr` 预览，带同模式的 `--confirm` 才创建或恢复 PR/MR。
-  - confirmation 另绑定 PR 模式与恢复记录；恢复数据位于 Git common dir 的 `mdf/finish/sync/`。
+  - confirmation 绑定 PR 模式、目标 tip 与已有 sync source tip。
 - JSON `status: waiting_for_pr` 含各 target 的 `pull_requests`；不继续 pull/push 三大 trunk。
 - 平台 merge commit 核验后仅同名 ff 本地；所有 PR 完成返回 `ready_to_sync` 与新 `preview`。
   - 按新预览确认，再继续常规 sync；保留 source branch，无 reset 或自动合并 PR。
@@ -385,7 +387,7 @@ adhoc 的状态与恢复：
 - 无账本时还返回 range、paths；材料目录冲突不覆盖，smart report 使用同一目录。
 - 待合入的无账本 PR 还返回 `verification`（`smart`、`quick` 或 `smoke`）。接管来源与验收见
   [Develop PR](../../../skills/mdf/references/dev-pr.md) 与 [Trunk PR](../../../skills/mdf/references/trunk-pr.md)。
-- local 以安全 source hash 在 Git common dir 保存最小操作记录，支持 `finish-gitflow --source <source>` 恢复。
+- local 根据目标的双亲 merge、源 ref 和 Change 核验 `finish-gitflow --source <source>`。
   - 恢复核实际双亲 merge、源 tip 与目标第一父链；不重复 merge，不删除重新创建的源 ref。
 - 主 worktree 能切回 develop 时切回，否则 detach；独立 owner 保留在交付 tip。
 - PR mode 可接管只有规范 Change 的已合并外部 PR；先核平台 source/target/head，再续办清理。

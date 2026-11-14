@@ -44,7 +44,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check merged | 约束 | 锁定 source、模式与原 PR/MR，核实际 merged | 平台与恢复记录 | 2 | 未 merged 交接 pr；身份不符停止 |
+| 1 | Check merged | 约束 | 锁定 source、模式与原 PR/MR，核实际 merged | 平台与 Git | 2 | 未 merged 交接 pr；身份不符停止 |
 | 2 | Finish Gitflow | 脚本 | 从主 worktree 调用 finish-gitflow --source | CLI 结果与实际 Git | 3 | busy 回1；本地冲突修复验证后回2；其他报恢复位置 |
 | 3 | Report | 约束 | 核发布、本地集成、backmerge 与清理 | completed、merge_commit、remote_deleted | 完成返回 | 可修 backmerge 修复后回2；否则报告阻塞 |
 
@@ -56,8 +56,8 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 
 - 未 merged 时不能调用 finish-gitflow；返回 pr 尚未完成，不绕过 objectives 顺序。
 - merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验；通过前不发布或清理。
-- 已 merged 后不重做源分支集成、材料、审查或验证；使用固定 M 与操作记录。
-  - 无账本 adhoc 的外部 PR 没有 MDF 操作记录时，可绑定已知 source tip 后首次接管。
+- 已 merged 后不重做源分支集成、材料、审查或验证；使用平台确认的固定 M。
+  - 无账本 adhoc 可通过已知的 source 及平台 PR 核对原 tip。
   - 核规范 Change、平台 source/target/head、双亲 M 与目标远端第一父链，再记录并续办；未 merged 返回 pr。
 - source 已删除、owner detached 或外部删除时，仍从同一 Git common dir 的主 worktree 恢复。
 - `completed=true` 须同时核对 merge_commit、远端目标、remote_deleted=true 与本地 source 删除。
@@ -92,15 +92,8 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 - 删除前直接 ls-remote 查询精确 ref，tip 必须等于已确认 PR head；以显式 expected SHA 的 lease 条件删除，不依赖 tracking ref。
   - lease 仅用于删除该 source，不用于改写任何分支历史；并发前进时停止并保留新 tip。
   - 远端已由平台或用户删除时，确认缺失即复用，不重复发删除请求。
-- 操作记录的 remote_cleanup 保存本次 head 与 pending/deleted；请求前落盘 pending，删除响应成功先落盘 deleted，再核远端缺失。
-  - 请求中断、响应丢失或确认写入失败后，重入若远端已缺失则补记成功，再继续本地清理。
-  - pending 重入时远端仍存在，即使 SHA 相同也返回 remote_cleanup_uncertain；不能自动重删可能重建的分支。
-  - 已确认 deleted 后再次出现同名分支，返回 pull_state_changed 并保留，不论其 SHA 是否相同。
-- 删除结果不确定时报告原 PR、source、expected head 与实际远端事实；不得清空或修改操作记录绕过保护。
-  - 核实同名分支归属后，由用户或其明确授权的操作清理远端，再次 close-out 根据缺失事实继续；不自动降低保护。
-- release/ODR/hotfix 在确认 tag/backmerge 均完成后、集成本地 develop 前持久化 publication_completed。
-  本地集成或远端清理重试只核固定 M 和已交付 backmerge head。
-  不再采用保留的 backmerge 工作区中后续新增提交，也不因该临时工作区已删除而重新发布。
+- 中断或推送结果不明时，重新查询精确远端 ref。缺失即继续本地清理。SHA 不同，或本地 source 已缺失而同名远端 ref 仍存在时，保留现场。
+- 发布重试核对固定 M、annotated tag 与远端 develop 第一父链的双亲回合。已合入的回合以远端拓扑为准。
 - CLI 的 remote_deleted 独立表示已确认远端 source 删除，deleted 仍表示本地 source；全部清理完成后才能 completed=true。
 
 ### 发布与回合
@@ -112,9 +105,9 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 | CLI 动作 | 证据 | 失败/缺失去向 |
 | --- | --- | --- |
 | 核 release/ODR/hotfix 平台合并 | master 第一父链中的双亲 M | 停止并保留现场 |
-| 在 M 创建 annotated `v<version>`，正文取 CHANGELOG，只 push tag | 远端 tag 指向 M | 读日志，按记录恢复；不覆盖 tag |
+| 在 M 创建 annotated `v<version>`，正文取 CHANGELOG，只 push tag | 远端 tag 指向 M | 读日志并核对当前 tag |
 | 独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
-| 清理远端及本地 source，保留临时回合目录 | remote_deleted、deleted、owner 状态 | 步骤 3 核清理记录；不删除主目录 |
+| 清理远端及本地 source，保留临时回合目录 | remote_deleted、deleted、owner 状态 | 步骤 3 核对剩余 refs |
 
 - 不跟随后来前进的 master HEAD；本地 master 只做同名 ff 同步，分歧时保留现场。
 - 本地 develop 的集成遵循下节；远端 backmerge 始终以远端 develop 为 base，不夹带本地独有 commits。

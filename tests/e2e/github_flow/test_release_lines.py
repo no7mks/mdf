@@ -215,11 +215,13 @@ def test_support_option_validation(python_exe, tmp_path):
     assert not has_ref(repo, "support/1.1")
 
 
-def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_exe, tmp_path):
+@pytest.mark.parametrize("slug", [False, True])
+def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_exe, tmp_path, slug):
     repo, remote = github_flow_repo(tmp_path, origin=True)
     two_lines(repo)
     trunk_before = git(repo, "rev-parse", "master").stdout
-    data = payload(hotfix(python_exe, repo, tmp_path, "--version", "1.1.1", "--support", "1.1"))
+    name = ("--name", "fix-login") if slug else ()
+    data = payload(hotfix(python_exe, repo, tmp_path, "--version", "1.1.1", "--support", "1.1", *name))
     work = Path(data["worktree"])
     write_changelog_release(work, "1.1.1")
     (work / "src/service.py").write_text("fixed = True\n")
@@ -232,3 +234,8 @@ def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_e
     assert git(remote, "rev-parse", "master").stdout == trunk_before
     assert git(remote, "rev-parse", "support/1.1").stdout == git(repo, "rev-parse", "support/1.1").stdout
     git(repo, "merge-base", "--is-ancestor", head, "support/1.1")
+    git(repo, "worktree", "remove", str(work))
+    snapshot = git(remote, "show-ref").stdout
+    resumed = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
+    assert resumed["targets"] == ["support/1.1"] and resumed["tag"] == "v1.1.1"
+    assert git(remote, "show-ref").stdout == snapshot

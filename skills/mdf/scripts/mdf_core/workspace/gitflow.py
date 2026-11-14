@@ -383,9 +383,6 @@ def command_start(args) -> None:
             else:
                 message = f"docs(delivery): 确认 {suffix} 热修复目标"
             _git(work, "commit", "-m", message)
-            if args.kind == "hotfix" and args.name:
-                # 分支配置会随清理删除；保留最新交付起点供无源分支时恢复。
-                _git(work, "config", "--local", f"mdf.hotfix-{suffix}", start_commit)
     except MDFError:
         _discard(repo, created)
         raise
@@ -472,10 +469,19 @@ def command_finish_gitflow(args) -> None:
     if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
+    if getattr(args, "version", None) is not None and (
+            settings["mode"] == "pr" or details["kind"] != "hotfix" or details["version"] is not None):
+        raise MDFError("--version 仅用于本地 slug hotfix 的收口", code="invalid_arguments")
     if settings["mode"] == "pr":
         from mdf_core.lifecycle.pull_finish import finish
-        finish(repo, source, settings, phase=getattr(args, "phase", "close-out"))
+        finish(repo, source, settings, phase=getattr(args, "phase", "close-out"), number=getattr(args, "pull", None))
         return
+    from mdf_core.lifecycle.pull_finish import finish_lock
+    with finish_lock(repo):
+        finish_local(repo, source, details, args)
+
+
+def finish_local(repo, source, details, args):
     if getattr(args, "phase", "close-out") == "pr":
         raise MDFError("pr intent 仅适用于 PR mode", code="invalid_closeout")
     if details["kind"] == "adhoc":
@@ -485,18 +491,44 @@ def command_finish_gitflow(args) -> None:
     kind = details["kind"]
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
     github = is_github_flow(repo)
-    target = target_for(repo, source) if kind == "feature" or github else "develop"
-    if not args.source and not (kind == "feature" and target.startswith("on-demand-release/")):
+    from mdf_core.workspace.merge_policy import local_head
+    source_head = local_head(repo, source)
+    if kind == "hotfix" and details["version"] is None:
+        from mdf_core.lifecycle.hotfix_version import source_version
+        requested = getattr(args, "version", None)
+        if requested is not None and source_head is None:
+            from mdf_core.foundation.textutil import stable_semver
+            from mdf_core.lifecycle.hotfix_version import delivery_record
+            if not stable_semver(requested):
+                raise MDFError("--version 需要稳定 SemVer", code="invalid_arguments")
+            record = delivery_record(repo, source, ref=f"refs/tags/v{requested}")
+            if record is None or record[1].get("version") != requested:
+                raise MDFError("指定版本与 hotfix 的 tag 或交付材料不匹配", code="invalid_delivery")
+            details["version"] = requested
+        else:
+            details["version"] = source_version(repo, source)
+            if requested is not None and requested != details["version"]:
+                raise MDFError("指定版本与源分支不匹配", code="invalid_delivery")
+    target_head = source_head
+    if github and kind == "hotfix" and target_head is None:
+        from mdf_core.workspace.merge_policy import sha
+        target_head = sha(repo, f"refs/tags/v{details['version']}")
+    target = target_for(repo, source, ref=target_head) if kind == "feature" or github else "develop"
+    trees = worktree_map(repo)
+    owner = trees.get(source)
+    if owner is not None and not (kind == "feature" and target.startswith("on-demand-release/")):
         from mdf_core.inspection.validate_records import require_fixed_outcomes
-        require_fixed_outcomes(repo, source)
+        ensure_clean(owner)
+        require_fixed_outcomes(owner, source)
     if kind == "on-demand-release":
-        from mdf_core.lifecycle.publish import state_path
-        if not state_path(repo, source).exists():
-            if source != current_branch(repo):
-                raise MDFError("首次 ODR 发布须在 owner 执行，--source 仅恢复已开始的发布", code="invalid_delivery")
-            from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-            checkpoint(repo, required=True, release=True)
-            require_independent(repo, source)
+        from mdf_core.lifecycle.late_decision import checkpoint, require_independent
+        if owner is not None:
+            checkpoint(owner, required=True, release=True)
+            require_independent(owner, source)
+        elif _exists(repo, f"refs/heads/{source}"):
+            from mdf_core.lifecycle.publish import find_merge
+            if find_merge(repo, f"refs/heads/{trunk_branch(repo)}", _git(repo, "rev-parse", source).stdout.strip()) is None:
+                raise MDFError("首次 ODR 发布需要原 owner worktree", code="invalid_delivery")
     publish = kind in {"release", "on-demand-release", "hotfix"}
     if kind == "feature":
         require_feature_target(repo, source, target)
@@ -512,7 +544,6 @@ def command_finish_gitflow(args) -> None:
     else:
         finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)
-    trees = worktree_map(primary)
     # 先只读检查全部目标，避免部分发布后才发现别人的未提交工作或 merge。
     for target in targets:
         ensure_clean(trees.get(target) or (primary if publish else repo))
@@ -533,20 +564,22 @@ def command_finish_gitflow(args) -> None:
         return merge_at
 
     if kind in {"feature", "bugfix"}:
-        merge_into(target, source, complete_feature)
+        if source_head is None:
+            raise MDFError("源分支不存在", code="missing_branch")
+        from mdf_core.lifecycle.publish import find_merge
+        if find_merge(repo, f"refs/heads/{target}", source_head) is None:
+            merge_into(target, source, complete_feature)
     else:
         from mdf_core.lifecycle.publish import publish as publish_release
-        if kind == "hotfix" and details["version"] is None:
-            from mdf_core.lifecycle.hotfix_version import source_version
-            details["version"] = source_version(repo, source)
-        publish_release(repo, source, details["version"])
+        source_head = publish_release(repo, source, details["version"], head=source_head)
     remaining = worktree_map(primary)
     source_wt = remaining.get(source)
     retained = source_wt or (repo if repo != primary else None)
-    if retained is not None:
-        _git(retained, "checkout", "--detach")
-    if _exists(primary, f"refs/heads/{source}"):
-        _git(primary, "branch", "-D", source)
+    from mdf_core.lifecycle.pull_finish import cleanup
+    cleanup(repo, {"source": source, "head": source_head})
+    if retained is not None and source_wt is None and _git(retained, "branch", "--show-current").stdout.strip():
+        ensure_clean(retained)
+        _git(retained, "checkout", "--detach", source_head)
     tag = f"v{details['version']}" if publish else None
     emit(
         {

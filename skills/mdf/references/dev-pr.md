@@ -46,7 +46,7 @@ sync 委托时沿用已确认计划，不另要求用户重复授权。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Prepare | 脚本 | 先核恢复；否则保全并对齐 develop | 原 head、base、worktree 与记录 | 首次2；PR恢复3；清理4；无增量结束 | 保留现场并报告 |
+| 1 | Prepare | 脚本 | 按当前 Git 引用保全并对齐 develop | 原 head、base 与 worktree | 首次2；PR恢复3；清理4；无增量结束 | 保留现场并报告 |
 | 2 | Check | 约束 | 补 Change，集成、lint、审查、smoke 与 fact | 实际报告与材料 | 3 | 修复并补审补测 |
 | 3 | Pull request | 约束 | 委托 pr 创建或恢复同一 PR/MR | 平台状态与合并核验 | 4 | 沿用 pr 等待与返工 |
 | 4 | Finish | 约束 | 委托 close-out，再返回 sync 或报告 | completed 与同步结果 | 返回调用方 | 保留现场并续办 |
@@ -59,17 +59,16 @@ sync 委托时沿用已确认计划，不另要求用户重复授权。
 python3 "$MDF_ROOT/scripts/mdf.py" dev-pr --repo "$REPO_ROOT" --slug <slug>
 ```
 
-- 步骤 1 先核 Git common dir 的 dev-pr 记录，再按 pr 的恢复路由核同一 source。
-  - 已有未合并 PR 直接进入步骤 3；已 merged 待清理进入步骤 4，不重做首次检查或准备。
-  - 尚无 PR 才运行上述 CLI；恢复沿用已记录 source、worktree 与 slug，身份无法核对时停止。
-- slug 由 Agent 根据工作内容选定，也可使用 CLI 的稳定默认值；恢复沿用记录中的 slug。
+- 从 chat、当前 worktree 或用户指定的 source 核对 Git、worktree 和 PR。身份仍不明确时询问用户。
+  - 已有未合入的 PR 进入步骤 3；已合入且关联 CI 收尾通过后进入步骤 4。
+- 新接管可指定 slug，也可使用 CLI 的默认值。重试尚未对齐的接管时使用同一 slug。
 - fetch 后固定 local develop HEAD、origin/develop HEAD 和唯一 merge-base。
   - 无本地独有 commit 返回 no_pending_commits；不创建空分支或 PR。
   - 占用 develop 的 worktree 必须 clean，无未完成 merge；不 stash 或提交他人工作。
-- 先保存操作记录，再从原 HEAD 建 `adhoc/<slug>` 与独立 worktree；核对保全后才 reset。
+- 从原 HEAD 建 `adhoc/<slug>` 与独立 worktree；核对保全后才 reset。
   - reset 目标是固定 origin/develop，不是 merge-base；使用 `reset --keep` 保留意外脏改动。
   - develop 未 checkout 时使用带 expected SHA 的 update-ref。
-  - 记录在 Git common dir；重复调用恢复同一 source，不重复创建分支或 PR。
+  - 对齐前重试核对同名分支的 SHA 和 worktree；不一致时报告冲突。
 - 按返回 worktree 绑定后续操作；develop 后续新增工作不自动并入本次 source。
   - reset 前检测到新提交则停止；reset 后可在 develop 开始新的工作。
   - 本次 close-out 无法 ff 同步新 develop 时保留现场，再由 sync 判断剩余增量。
@@ -91,7 +90,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" dev-pr --repo "$REPO_ROOT" --slug <slug>
   - pr 的准备与返工继续遵守本页 smoke 要求；目标推进后重新集成、补审补测与 fact。
   - 沿用 squash、非 force push、平台等待与 merge commit 核验；不重复另建 PR。
 - merged 后委托 [close-out](pr-close-out.md) 完成清理；sync 委托时回到新的同步预览。
-  - develop 已对齐不代表 PR 已完成；CLI 持续返回 dev_pr_required，直到实际 close-out 完成。
+  - develop 已对齐时，接管 CLI 返回 `no_pending_commits`；通过已知 source 单独查回原 PR。
 
 ### Trivial policy
 

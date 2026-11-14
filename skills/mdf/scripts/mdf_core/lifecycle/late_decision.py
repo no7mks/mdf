@@ -19,9 +19,10 @@ def validate_target(target, *, concrete=False):
     raise MDFError("目标需要 develop 或 on-demand-release/<version>", code="invalid_target")
 
 
-def identity_at(repo, branch, ref=None):
+def identity_at(repo, branch, ref=None, *, archived=False):
     folder = unreleased_slug(branch_details(branch))
-    raw = git(repo, "show", f"{ref or branch}:changes/unreleased/{folder}/delivery.json", check=False)
+    path = f"changes/{folder}/delivery.json" if archived else f"changes/unreleased/{folder}/delivery.json"
+    raw = git(repo, "show", f"{ref or branch}:{path}", check=False)
     if raw.returncode:
         raise MDFError("目标或来源交付记录缺失", code="invalid_delivery")
     try:
@@ -33,14 +34,14 @@ def identity_at(repo, branch, ref=None):
     return data
 
 
-def target_for(repo, source, *, data=None):
+def target_for(repo, source, *, data=None, ref=None):
     kind = branch_details(source)["kind"]
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     if is_github_flow(repo):
         if kind == "hotfix":
             if data is None:
                 from mdf_core.lifecycle.hotfix_version import delivery_record
-                record = delivery_record(repo, source, ref=f"refs/heads/{source}")
+                record = delivery_record(repo, source, ref=ref or f"refs/heads/{source}")
                 data = record[1] if record else {}
             return data.get("base_branch") or trunk_branch(repo)
         return trunk_branch(repo)
@@ -48,7 +49,7 @@ def target_for(repo, source, *, data=None):
         return trunk_branch(repo)
     if kind != "feature":
         return "develop"
-    data = identity_at(repo, source) if data is None else data
+    data = identity_at(repo, source, ref=ref) if data is None else data
     trunk = trunk_branch(repo)
     target = data.get("target", None if data.get("base_branch") == trunk else "develop")
     if target is None or target == ODR:
@@ -110,9 +111,13 @@ def set_target(repo, target):
     if not source.startswith("feature/") or data.get("base_branch") != trunk:
         raise MDFError(f"仅 {trunk} 起点的 feature 可选择目标", code="invalid_target")
     validate_target(target, concrete=True)
-    from mdf_core.lifecycle.publish import state_path
-    if state_path(repo, source).exists():
-        raise MDFError("PR 已锁定目标，不允许改投", code="target_locked")
+    from mdf_core.workspace.merge_policy import configured
+    settings = configured(repo)
+    if settings["mode"] == "pr":
+        from mdf_core.lifecycle.pull_finish import Forge, origin
+        forge = Forge(repo, origin(repo, settings["provider"]))
+        if forge.find(source, None):
+            raise MDFError("PR 已锁定目标，不允许改投", code="target_locked")
     require_feature_target(repo, source, target)
     data["target"] = target
     write_json(safe(repo, root / "delivery.json"), data)

@@ -89,8 +89,6 @@ def test_publish_checks_dirty_develop_before_changing_master(python_exe, tmp_pat
     assert result.returncode != 0 and "dirty_worktree" in result.stderr
     assert snapshot(repo) == before
     assert git(remote, "show-ref").stdout == remote_before
-    from mdf_core.lifecycle.publish import state_path
-    assert not state_path(work, f"{kind}/1.2.1").exists()
 
 
 @pytest.mark.parametrize("kind", ["release", "hotfix"])

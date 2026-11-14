@@ -83,7 +83,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
   正常等待不属于外部阻塞；`waiting_for_merge` 时不结束当前调用、不进入步骤 5，也不要求用户再次调用。
   completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR](pr.md)。
 
-- PR 恢复优先：先核当前 until，再按 [PR 的恢复路由](pr.md) 核已锁定 source 的操作记录及返工备注。
+- PR 恢复优先：先核当前 until，再按 [PR 的恢复路由](pr.md) 核已锁定 source 的 Git 和平台状态及返工备注。
   命中时先恢复父 PR 流程；未命中才进入下方特殊身份或普通选择，不能先要求 owner 当前仍在交付分支。
 
 - 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
@@ -121,8 +121,8 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 Select 读取 `delivery route` 的 `next` 与 `state`：
 
 - `--yolo` 下 design 为 `ready`；非 yolo 的 design 为 `awaiting_design_approval`。
-- 清单勾完后，PR mode 依次进入 `pr`、`close-out`；只有收口记录 `completed` 才是 `complete`。
-- local 还须 finish 记录已完成，或源分支已合入目标；只勾 close-out 不算完成。
+- PR mode 清单勾完后，`delivery route` 返回 `pr`。Agent 以平台、关联 CI 和实际收口结果判断是否还需执行 `pr` 或 `close-out`。
+- local 通过目标合并历史、适用的 tag 和实际 source refs 核验收口。
 - `delivery complete-stage` 只自动完成 verify 与 catch-up，且须在 owner worktree、无进行中的 merge。
 
 ### 目标与持续授权
@@ -154,7 +154,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 - 截止点是本次调用的正常完成边界，不是等待确认；不得自动越过或自动续办被排除的 intent。
 
 步骤 1 先解析策略参数并只读判定路径，核对该路径的 until 合法性；随后才能委托 start 或写入。
-先只读核 PR 恢复记录；已命中者进入步骤 2 的恢复路由，不先运行普通身份检查。
+先只读核原 source 的平台 PR；已命中者进入步骤 2 的恢复路由，不先运行普通身份检查。
 未命中且已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
 其余情况解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
@@ -179,7 +179,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 已有交付与 start 返回后：
 
 - ❌ 已有交付缺少 worktree 时停止，不能重新 start、抢占 checkout 或临时创建另一套分支绕过。
-  - 该限制用于仍需 owner 写入或补验的交付；PR 已合并后的清理、发布或 backmerge 按恢复记录从主路径续办。
+  - 该限制用于仍需 owner 写入或补验的交付；PR 已合并后的清理、发布或 backmerge 核对平台和 Git 后从主路径续办。
 - start 返回后使用其 owner 与 roles，再创建 Goal。
 - 记录 owner 分支与仓库的绝对路径、Git common dir，以及不会被 close-out 删除的主 worktree 路径。
 
@@ -395,7 +395,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
   - 按分支核对合并、源分支删除，以及 release/ODR/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
   - PR mode 另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
-  - owner 已被外部删除时如实报告，以操作记录与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
+  - owner 已被外部删除时如实报告，以平台与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
 - 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。

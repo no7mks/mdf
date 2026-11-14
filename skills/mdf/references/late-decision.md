@@ -68,10 +68,10 @@ ODR 是独立发布 kind，除本页规定的起点、范围与等待 checkpoint
 - start 事件允许尚无 delivery.json；步骤 2 只准备输入，由 start 创建分支与材料。
 - feature 的 design、code-review、verify、fact 不要求具体 target；步骤 3、4 不适用。
 - feature 的 catch-up、未合并 pr、local close-out 在集成前执行步骤 3。
-  - 已合并 PR 的 close-out 只核对原 PR 与恢复记录；不重新选择目标，也不要求目标 ODR 尚在途。
+  - 已合并 PR 的 close-out 只核对原 PR 与远端合并历史；不重新选择目标，也不要求目标 ODR 尚在途。
 - ODR start 不执行步骤 4；next / deliver 恢复及后续阶段在 owner 执行步骤 4。
   - deliver 先核 until；被截止时直接返回，不勾 checkpoint 或推进后续阶段。
-  - 已开始发布的恢复遵循固定源提交和恢复记录，不重建已归档材料或重选纳入范围。
+  - 已开始发布的恢复遵循固定源提交、目标合并历史与 tag，不重建已归档材料或重选纳入范围。
 
 ### Feature 启动与目标
 

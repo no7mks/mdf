@@ -155,7 +155,7 @@ def test_switch_requires_running_on_target_trunk(python_exe, tmp_path):
 
 
 @pytest.mark.parametrize("setup,detail", [
-    ("branch", "feature/x"), ("planning", "planning"), ("finish", "feature-x.json"),
+    ("branch", "feature/x"), ("planning", "planning"),
 ])
 def test_switch_refuses_when_not_idle(python_exe, tmp_path, setup, detail):
     repo = local_gitflow(tmp_path)
@@ -166,10 +166,6 @@ def test_switch_refuses_when_not_idle(python_exe, tmp_path, setup, detail):
         (repo / "plan.txt").write_text("规划\n")
         commit(repo, "docs: 规划")
         git(repo, "checkout", "master")
-    else:
-        folder = Path(git(repo, "rev-parse", "--absolute-git-dir").stdout.strip()) / "mdf" / "finish"
-        folder.mkdir(parents=True)
-        (folder / detail).write_text(json.dumps({"completed": False}))
     failed = error_of(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "github-flow"))
     assert failed["error"] == "workflow_not_idle"
     assert "workflow:" not in (repo / ".mdf/manifest.yaml").read_text()
@@ -180,7 +176,7 @@ def _finish_dir(repo):
     return common / "mdf" / "finish"
 
 
-def test_nested_release_record_blocks_until_completed(python_exe, tmp_path):
+def test_obsolete_finish_files_do_not_block_switch(python_exe, tmp_path):
     repo = local_gitflow(tmp_path)
     folder = _finish_dir(repo)
     (folder / "release").mkdir(parents=True)
@@ -189,10 +185,6 @@ def test_nested_release_record_blocks_until_completed(python_exe, tmp_path):
     (folder / "release" / "1.2.0.json").write_text(json.dumps({"completed": False}))
     (folder / "integrate" / "1.2.0.json").write_text(json.dumps({"release_head": "abc"}))
     (folder / "sync" / "history" / "old.json").write_text(json.dumps({"completed": False}))
-    blocked = error_of(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "github-flow"))
-    assert blocked["error"] == "workflow_not_idle"
-    assert "release/1.2.0.json" in blocked["details"]["records"]
-    (folder / "release" / "1.2.0.json").write_text(json.dumps({"completed": True}))
     data = payload(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "github-flow"))
     assert data["changed"] is True
 

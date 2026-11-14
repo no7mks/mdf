@@ -43,7 +43,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## 工作流（唯一执行契约）
 
-PR 恢复优先：按 [PR 的恢复路由](pr.md) 只读核已锁定 source 的操作记录及返工备注。
+PR 恢复优先：按 [PR 的恢复路由](pr.md) 只读核已锁定 source 的 Git 和平台状态及返工备注。
 命中时未 merged 恢复父 pr，已 merged 且关联 CI 收尾通过才续办 close-out。
 merged 但关联 CI 未收尾或缺少证据时先恢复 pr；先应用仍在协调的 deliver 边界。
 不先调用普通身份检查，不因 detached 或 source 已删除而另选任务。
@@ -103,7 +103,7 @@ PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路�
 - clarify 可仅依赖已确认议题，不要求 Git 仓库。
 - 不得在识别前统一要求 manifest ready 或 clean。
 
-按需核对 manifest、当前分支、相关 worktree、产物、验证与恢复记录：
+按需核对 manifest、当前分支、相关 worktree、产物、验证与平台状态：
 
 - 四种 kind 的交付分支均读 `references/delivery-contract.md`，通过
   `delivery status` 查看身份、阶段记录和 worktree 路径。

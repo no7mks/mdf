@@ -17,8 +17,12 @@ class Platform:
         return deepcopy(self.pulls[number - 1])
 
     def find(self, source, target, *, head=None):
-        return next((deepcopy(p) for p in self.pulls if p['source'] == source and p['target'] == target
-                     and (head is None or p['state'] == 'open' or p['head'] == head)), None)
+        from mdf_core.foundation.errors import MDFError
+        found = [p for p in self.pulls if p['source'] == source and (target is None or p['target'] == target)
+                 and (head is None or p['state'] == 'open' or p['head'] == head)]
+        if len(found) > 1:
+            raise MDFError('同一来源有多个 PR/MR', code='ambiguous_pull_request')
+        return self.get(found[0]['id']) if found else None
 
     def create(self, source, target, title, description):
         head = git(self.repo, 'rev-parse', source).stdout.strip()

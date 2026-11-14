@@ -1,11 +1,8 @@
 """受保护 trunk 的 sync PR 生命周期与保留现场。"""
-import json
-
 import pytest
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle import pull_finish
-from mdf_core.lifecycle.publish import state_path
 from mdf_core.workspace import sync_pull
 from mdf_test_support import git, mdf, payload
 from support_delivery import commit
@@ -56,30 +53,22 @@ def test_both_trunks_wait_without_syncing_other_work(python_exe, tmp_path, monke
     assert git(repo, 'rev-parse', 'develop').stdout == git(remote, 'rev-parse', 'develop').stdout
 
 
-@pytest.mark.parametrize('boundary', ['record', 'push', 'create', 'ff', 'completed'])
+@pytest.mark.parametrize('boundary', ['branch', 'push', 'create', 'ff'])
 def test_sync_pr_resumes_interrupted_operations(python_exe, tmp_path, monkeypatch, boundary):
     repo, _, platform = prepare(tmp_path, monkeypatch)
-    if boundary in {'ff', 'completed'}:
+    if boundary == 'ff':
         payload(sync(python_exe, repo))
         platform.merge(1, tmp_path)
-    original_git, original_write, original_create = sync_pull.git, sync_pull.write_json, platform.create
+    original_git, original_create = sync_pull.git, platform.create
     original_ff = sync_pull.sync_local
     fired = []
 
     def interrupt_git(repo_path, *args, **kwargs):
         result = original_git(repo_path, *args, **kwargs)
-        if boundary == 'push' and args[0] == 'push' and not fired:
+        if boundary == args[0] and not fired:
             fired.append(True)
             raise MDFError('模拟 push 响应丢失', code='test_interrupted')
         return result
-
-    def interrupt_write(path, value):
-        if not fired and ((boundary == 'completed' and value.get('completed'))
-                          or (boundary == 'record' and not value.get('pull'))):
-            original_write(path, value)
-            fired.append(True)
-            raise MDFError('模拟落盘后中断', code='test_interrupted')
-        return original_write(path, value)
 
     def interrupt_create(*args):
         original_create(*args)
@@ -93,7 +82,6 @@ def test_sync_pr_resumes_interrupted_operations(python_exe, tmp_path, monkeypatc
 
     with monkeypatch.context() as patch:
         patch.setattr(sync_pull, 'git', interrupt_git)
-        patch.setattr(sync_pull, 'write_json', interrupt_write)
         if boundary == 'create':
             patch.setattr(platform, 'create', interrupt_create)
         if boundary == 'ff':
@@ -102,11 +90,10 @@ def test_sync_pr_resumes_interrupted_operations(python_exe, tmp_path, monkeypatc
     assert fired
     result = payload(sync(python_exe, repo))
     assert len(platform.pulls) == 1
-    if boundary not in {'ff', 'completed'}:
+    if boundary != 'ff':
         assert result['status'] == 'waiting_for_pr'
         platform.merge(1, tmp_path)
         result = payload(sync(python_exe, repo))
-    if boundary != 'completed':
         assert result['status'] == 'ready_to_sync'
     assert payload(sync(python_exe, repo))['trunks']['master']['push'] == 'noop'
 
@@ -140,6 +127,10 @@ def test_sync_pr_preserves_unexpected_changes(python_exe, tmp_path, monkeypatch,
     local = git(repo, 'rev-parse', 'master').stdout
     before = git(remote, 'show-ref').stdout
     result = sync(python_exe, repo)
+    if change == 'local_commit':
+        assert payload(result)['status'] == 'waiting_for_pr' and len(platform.pulls) == 2
+        assert git(repo, 'rev-parse', 'master').stdout == local
+        return
     if change == 'closed':
         assert payload(result)['pull_requests']['master']['status'] == 'closed_without_merge'
     else:
@@ -148,7 +139,7 @@ def test_sync_pr_preserves_unexpected_changes(python_exe, tmp_path, monkeypatch,
     assert git(remote, 'show-ref').stdout == before and len(platform.pulls) == 1
 
 
-def test_pr_option_and_record_are_bound_to_confirmation(python_exe, tmp_path, monkeypatch):
+def test_pr_option_and_source_ref_are_bound_to_confirmation(python_exe, tmp_path, monkeypatch):
     repo, _, platform = prepare(tmp_path, monkeypatch)
     preview = payload(mdf(python_exe, 'sync', '--repo', str(repo)))
     result = mdf(python_exe, 'sync', '--repo', str(repo), '--pr', '--confirm', preview['confirmation'])
@@ -156,10 +147,8 @@ def test_pr_option_and_record_are_bound_to_confirmation(python_exe, tmp_path, mo
     assert not platform.pulls
     payload(sync(python_exe, repo))
     preview = payload(mdf(python_exe, 'sync', '--repo', str(repo), '--pr'))
-    path = state_path(repo, 'sync/master')
-    record = json.loads(path.read_text())
-    record['pull']['id'] = 999
-    path.write_text(json.dumps(record))
+    source = preview['pull_plan']['master']['source']
+    git(repo, 'branch', '-f', source, 'planning')
     result = mdf(python_exe, 'sync', '--repo', str(repo), '--pr', '--confirm', preview['confirmation'])
     assert result.returncode != 0 and 'sync_plan_changed' in result.stderr
 
@@ -225,7 +214,7 @@ def test_sync_pr_requires_new_confirmation_if_target_advances_during_recovery(py
     assert payload(sync(python_exe, repo))['status'] == 'ready_to_sync'
 
 
-@pytest.mark.parametrize('boundary', ['record', 'push'])
+@pytest.mark.parametrize('boundary', ['lookup', 'push'])
 @pytest.mark.parametrize('continued_work', [False, True])
 def test_sync_pr_source_update_resumes_without_duplicate_pr(
         python_exe, tmp_path, monkeypatch, boundary, continued_work):
@@ -235,25 +224,25 @@ def test_sync_pr_source_update_resumes_without_duplicate_pr(
     old = git(repo, 'rev-parse', source).stdout.strip()
     new = git(repo, 'commit-tree', old + '^{tree}', '-p', old, '-m', 'test: PR 返工提交').stdout.strip()
     git(repo, 'update-ref', 'refs/heads/' + source, new, old)
-    original_write, original_git = sync_pull.write_json, sync_pull.git
+    original_find, original_git = platform.find, sync_pull.git
     fired = []
 
-    def interrupt_write(path, value):
-        original_write(path, value)
-        if boundary == 'record' and value.get('previous_head') and not fired:
+    def interrupt_find(*args, **kwargs):
+        if boundary == 'lookup' and not fired:
             fired.append(True)
-            raise MDFError('模拟更新记录后中断', code='test_interrupted')
+            raise MDFError('模拟平台查询中断', code='test_interrupted')
+        return original_find(*args, **kwargs)
 
     def interrupt_git(repo_path, *args, **kwargs):
         result = original_git(repo_path, *args, **kwargs)
-        if boundary == 'push' and args[0] == 'push' and not fired:
+        if boundary == args[0] and not fired:
             fired.append(True)
             raise MDFError('模拟更新 push 响应丢失', code='test_interrupted')
         return result
 
     with monkeypatch.context() as patch:
-        patch.setattr(sync_pull, 'write_json', interrupt_write)
         patch.setattr(sync_pull, 'git', interrupt_git)
+        patch.setattr(platform, 'find', interrupt_find)
         assert sync(python_exe, repo).returncode != 0
     assert fired
     if continued_work:
@@ -270,11 +259,11 @@ def test_sync_pr_source_update_resumes_without_duplicate_pr(
 
 def test_sync_pr_rejects_rewritten_target_even_with_platform_merge(python_exe, tmp_path, monkeypatch):
     repo, remote, platform = prepare(tmp_path, monkeypatch)
+    base = git(remote, 'rev-parse', 'master').stdout.strip()
     payload(sync(python_exe, repo))
-    state = json.loads(state_path(repo, 'sync/master').read_text())
-    git(remote, 'update-ref', 'refs/heads/master', state['base'] + '^')
+    git(remote, 'update-ref', 'refs/heads/master', base + '^')
     platform.merge(1, tmp_path)
     local = git(repo, 'rev-parse', 'master').stdout
     result = sync(python_exe, repo)
-    assert result.returncode != 0 and '目标分支历史已改写' in result.stderr
+    assert result.returncode != 0 and 'pull_state_changed' in result.stderr
     assert git(repo, 'rev-parse', 'master').stdout == local

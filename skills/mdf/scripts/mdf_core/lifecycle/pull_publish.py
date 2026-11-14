@@ -1,11 +1,10 @@
-"""PR 发布后的固定 tag 和可恢复 develop 回合。"""
+"""由已核验的 PR merge 提交发布 tag 并合回 develop。"""
 from mdf_core.foundation.errors import MDFError
-from mdf_core.lifecycle.delivery_state import write_json
 from mdf_core.workspace.gitutil import add_linked_worktree, ensure_clean, git_in_progress_head, sibling_worktree, worktree_map
-from mdf_core.workspace.merge_policy import ancestor, git, sha
+from mdf_core.workspace.merge_policy import ancestor, git, local_head, sha
 
 
-def tag_release(repo, state, version, path):
+def tag_release(repo, state, version):
     from mdf_core.workspace.workflow_policy import is_github_flow
     tag = f"v{version}"
     merged = state["release_head"] if is_github_flow(repo) else state["merge_commit"]
@@ -25,102 +24,76 @@ def tag_release(repo, state, version, path):
     if not remote:
         git(repo, "push", "--no-follow-tags", "origin", f"{ref}:{ref}")
     state["tag"] = tag
-    write_json(path, state)
 
 
-def _publish_github_flow(repo, state, version, path):
-    """github-flow：tag 固定在 release_head，并核验其已进入目标远端；不回合 develop。"""
-    from mdf_core.lifecycle.support_line import recheck_before_publish
-    recheck_before_publish(repo, state["source"], version)
-    head = state.get("release_head")
-    if not isinstance(head, str) or len(head) != 40:
-        raise MDFError("缺少已锁定的 release_head", code="release_head_missing")
-    git(repo, "fetch", "origin", "--prune")
-    if not ancestor(repo, head, f"refs/remotes/origin/{state['target']}"):
-        raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
-    state["release_head"] = head
-    tag_release(repo, state, version, path)
-    state["publication_completed"] = True
-    write_json(path, state)
-    return True
-
-
-def publish(repo, state, version, path):
+def publish(repo, state, version):
     from mdf_core.lifecycle.pull_finish import sync_local
     from mdf_core.workspace.workflow_policy import is_github_flow
-    if is_github_flow(repo):
-        return _publish_github_flow(repo, state, version, path)
-    tag_release(repo, state, version, path)
+    from mdf_core.workspace.squash import require_ready
+
     merged = state["merge_commit"]
     git(repo, "fetch", "origin", "--prune")
+    if is_github_flow(repo):
+        from mdf_core.lifecycle.support_line import recheck_before_publish
+        recheck_before_publish(repo, state["source"], version, target=state["target"], head=state["head"])
+        if not ancestor(repo, state["release_head"], f"refs/remotes/origin/{state['target']}"):
+            raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
+        tag_release(repo, state, version)
+        return True
+    tag_release(repo, state, version)
     remote = "refs/remotes/origin/develop"
-    record = state.get("backmerge")
-    if state.get("completed") or state.get("publication_completed"):
-        if not ancestor(repo, merged, remote) or (record and not ancestor(repo, record["head"], remote)):
-            raise MDFError("已完成回合的远端历史已变化，保留现场", code="pull_state_changed")
+    from mdf_core.lifecycle.publish import find_merge
+    branch = f"codex/backmerge/{version}"
+    tip = local_head(repo, branch)
+    remote_merge = find_merge(repo, remote, merged)
+    if remote_merge or (ancestor(repo, merged, remote) and (tip is None or ancestor(repo, tip, remote))):
         sync_local(repo, "develop", integrate_develop=True)
         return True
-    if ancestor(repo, merged, remote) and (record is None or (
-            record.get("head") and ancestor(repo, record["head"], remote))):
-        state["publication_completed"] = True
-        write_json(path, state)
-        sync_local(repo, "develop", integrate_develop=True)
-        return True
-    sync_local(repo, "develop", integrate_develop=True)
-    if record is None:
-        branch = f"codex/backmerge/{version}"
-        work = sibling_worktree(repo, branch)
-        record = {"source": branch, "worktree": str(work), "base": sha(repo, remote)}
-        if work.exists() or not git(repo, "show-ref", "--verify", "--quiet", f"refs/heads/{branch}", check=False).returncode:
-            raise MDFError("回合分支或 worktree 已存在", code="collision")
-        state["backmerge"] = record
-        write_json(path, state)
-    from pathlib import Path
-    work = Path(record["worktree"])
-    occupant = worktree_map(repo).get(record["source"])
-    if occupant is None and not work.exists():
-        branch = git(repo, "rev-parse", "--verify", f"refs/heads/{record['source']}", check=False)
-        if branch.returncode:
-            if record.get("head"):
-                raise MDFError("已记录的回合分支丢失，保留现场", code="pull_state_changed")
-            add_linked_worktree(repo, record["source"], work, record["base"])
-        elif branch.stdout.strip() == record.get("head", record["base"]):
-            work.parent.mkdir(parents=True, exist_ok=True)
-            git(repo, "worktree", "add", str(work), record["source"])
+    work = sibling_worktree(repo, branch)
+    occupant = worktree_map(repo).get(branch)
+    if occupant is None:
+        if work.exists():
+            raise MDFError("回合 worktree 路径已存在", code="collision")
+        if tip is None:
+            add_linked_worktree(repo, branch, work, remote)
+        elif ancestor(repo, tip, remote) or find_merge(repo, tip, merged):
+            git(repo, "worktree", "add", str(work), branch)
         else:
-            raise MDFError("回合分支与恢复记录不符，保留现场", code="pull_state_changed")
+            raise MDFError("现有回合分支缺少发布合并证据", code="pull_state_changed")
     elif occupant != work:
-        raise MDFError("回合 worktree 与记录不符", code="pull_state_changed")
+        raise MDFError("回合 worktree 与预期路径不符", code="pull_state_changed")
+    back = {"source": branch, "worktree": str(work), "base": sha(repo, remote)}
+    state["backmerge"] = back
     if git_in_progress_head(work):
         return False
     ensure_clean(work)
-    previous_head = record.get("head")
-    if previous_head and not ancestor(repo, previous_head, sha(work, "HEAD")):
-        raise MDFError("回合分支历史已改写，保留现场", code="pull_state_changed")
-    from mdf_core.workspace.squash import require_ready
-    if not ancestor(repo, merged, "refs/heads/" + record["source"]):
+    head = sha(work, "HEAD")
+    if not ancestor(repo, head, remote) and not ancestor(repo, remote, head):
+        back["push_error"] = "回合分支与远端 develop 分歧，请先集成"
+        return False
+    if not ancestor(repo, merged, head):
+        prior = git(work, "reflog", "show", "--format=%H", f"refs/heads/{branch}").stdout.splitlines()
+        if any(find_merge(repo, previous, merged) for previous in dict.fromkeys(prior) if previous != head):
+            raise MDFError("当前回合丢失已有发布合并，保留现场", code="pull_state_changed")
         require_ready(work)
         result = git(work, "merge", "--no-ff", "--no-commit", merged, check=False)
         if result.returncode:
-            record["conflicts"] = git(work, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
-            write_json(path, state)
+            back["conflicts"] = git(work, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
             if git_in_progress_head(work):
                 return False
             raise MDFError("无法开始回合 merge，保留现场", code="backmerge_failed")
         git(work, "commit", "-m", f"chore(release): 合回 {version} 到 develop")
+    back_merge = find_merge(work, "HEAD", merged)
+    if back_merge is None:
+        raise MDFError("缺少引入发布提交的双亲回合", code="pull_state_changed")
+    back["base"] = sha(work, back_merge + "^1")
     require_ready(work)
     head = sha(work, "HEAD")
-    record["head"] = head
-    write_json(path, state)
+    back["head"] = head
     result = git(work, "push", "--no-follow-tags", "origin", f"{head}:refs/heads/develop", check=False)
     git(repo, "fetch", "origin", "--prune")
     if ancestor(repo, merged, remote) and ancestor(repo, head, remote):
-        record.pop("push_error", None)
-        record.pop("conflicts", None)
-        state["publication_completed"] = True
-        write_json(path, state)
         sync_local(repo, "develop", integrate_develop=True)
         return True
-    record["push_error"] = result.stderr.strip() or "远端 develop 尚未包含回合提交"
-    write_json(path, state)
+    back["push_error"] = result.stderr.strip() or "远端 develop 尚未包含回合提交"
     return False

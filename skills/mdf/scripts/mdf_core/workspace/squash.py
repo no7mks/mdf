@@ -5,7 +5,7 @@ from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace.gitutil import branch_details, current_branch, ensure_clean, worktree_map
-from mdf_core.workspace.merge_policy import configured, git, planning_only, sha
+from mdf_core.workspace.merge_policy import ancestor, configured, git, planning_only, sha
 
 
 def common_dir(repo):
@@ -58,18 +58,12 @@ def inspect(repo, branch=None, *, refresh=True):
         rows = block.splitlines()
         if f'branch refs/heads/{branch}' not in rows:
             protected.update(row[5:] for row in rows if row.startswith('HEAD '))
-    # 已准备的 PR/push 恢复端点也不可改写，即使远端响应尚未确认。
-    finish = common_dir(repo) / 'mdf' / 'finish'
-    for path in finish.rglob('*.json') if finish.exists() else []:
-        try:
-            record = json.loads(path.read_text())
-            if record.get('source') == source:
-                protected.update(record[k] for k in ('head', 'pending_head') if record.get(k))
-            back = record.get('backmerge') or {}
-            if back.get('source') == branch:
-                protected.update(back[k] for k in ('base', 'head') if back.get(k))
-        except (ValueError, TypeError, AttributeError) as exc:
-            raise MDFError('收口记录损坏，无法确定 squash 边界', code='squash_boundary_unknown') from exc
+    from mdf_core.lifecycle.release_integration import integration_version
+    if integration_version(branch):
+        # 初始集成提交本身携带发布 SHA，禁止 squash 丢失该提交。
+        anchor = git(repo, 'log', '-1', '--first-parent', '--format=%H', '--grep=^MDF-Release-Head: ', head).stdout.strip()
+        if anchor:
+            protected.add(anchor)
     owner = branch
     from mdf_core.lifecycle.roster import parse_role_branch
     role = parse_role_branch(branch)
@@ -121,24 +115,44 @@ def inspect(repo, branch=None, *, refresh=True):
             'commits': list(reversed(commits)), 'noop': len(commits) < 2}
 
 
-def record_analysis(repo, branch, head, *, reason):
+def record_analysis(repo, branch, head, *, reason, old_tip=None):
     path = receipt_path(repo, branch)
     path.parent.mkdir(parents=True, exist_ok=True)
+    if branch.startswith('pm/rework/'):
+        from mdf_core.workspace.pm import rework_source
+        source = rework_source(repo, branch)
+        previous = analysis_receipt(repo, branch)
+        origin = previous.get('old_tip')
+        if (source and origin and ancestor(repo, f'refs/heads/{source}', origin)
+                and ancestor(repo, previous['head'], old_tip or head)):
+            old_tip = origin
     temporary = path.with_suffix('.tmp')
-    temporary.write_text(json.dumps({'branch': branch, 'head': head, 'reason': reason}, ensure_ascii=False) + '\n')
+    temporary.write_text(json.dumps({'branch': branch, 'head': head, 'reason': reason, 'old_tip': old_tip},
+                                    ensure_ascii=False) + '\n')
     temporary.replace(path)
 
 
-def analysis_reason(repo, branch, head):
+def analysis_receipt(repo, branch):
     path = receipt_path(repo, branch)
     if path.exists():
         try:
             receipt = json.loads(path.read_text())
         except ValueError as exc:
             raise MDFError('squash 检查记录损坏', code='squash_required') from exc
-        if receipt.get('branch') == branch and receipt.get('head') == head:
-            return receipt['reason']
-    return None
+        if receipt.get('branch') == branch:
+            return receipt
+    return {}
+
+
+def analysis_reason(repo, branch, head):
+    receipt = analysis_receipt(repo, branch)
+    return receipt.get('reason') if receipt.get('head') == head else None
+
+
+def verified_squash(repo, branch, old, new):
+    receipt = analysis_receipt(repo, branch)
+    return (receipt.get('old_tip') and ancestor(repo, old, receipt['old_tip'])
+            and ancestor(repo, receipt['head'], new))
 
 
 def require_ready(repo, branch=None):

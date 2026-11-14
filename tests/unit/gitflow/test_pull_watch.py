@@ -1,6 +1,4 @@
 """PR watch 的离线平台快照与退出条件。"""
-from copy import deepcopy
-
 import pytest
 
 from mdf_core.foundation.errors import MDFError
@@ -10,25 +8,32 @@ from mdf_core.lifecycle import pull_watch
 
 @pytest.mark.parametrize("conclusion, expected", [("success", "merged"), ("failure", "ci_failed")])
 def test_watch_waits_for_ci_after_merge(monkeypatch, tmp_path, conclusion, expected):
-    identity = {"provider": "github"}
     pull = {"id": 1, "state": "merged", "source": "adhoc/docs", "target": "master", "head": "tip"}
-    path = tmp_path / "state.json"
-    path.touch()
-    state = dict(mode="pr", identity=identity, source=pull["source"], target="master", head="tip", pull=pull)
     snapshots = iter([None, conclusion, conclusion])
     sleeps = []
-    monkeypatch.setattr(pull_watch, "state_path", lambda *_: path)
-    monkeypatch.setattr(pull_watch, "read_json", lambda _: deepcopy(state))
+    monkeypatch.setattr(pull_watch, "lookup_pull", lambda *args, **kwargs: (pull, pull["target"]))
     monkeypatch.setattr(pull_watch, "sleep", sleeps.append)
     monkeypatch.setattr(pull_watch, "pull_status", lambda *args: {
         "pull_request": pull, "checks": [{"conclusion": next(snapshots)}],
         "change_requests": [], "conflicts": False,
     })
 
-    result = pull_watch.watch(tmp_path, pull["source"], None, identity, [], False)
+    result = pull_watch.watch(tmp_path, pull["source"], None, [], False)
     assert result["status"] == expected
     assert sleeps == ([120, 120] if expected == "merged" else [120])
-    assert path.read_text() == ""
+
+
+def test_watch_rejects_replacement_head(monkeypatch, tmp_path):
+    pull = {"id": 1, "state": "open", "source": "adhoc/docs", "target": "master", "head": "a" * 40}
+    monkeypatch.setattr(pull_watch, "lookup_pull", lambda *args, **kwargs: (pull, pull["target"]))
+    snapshots = iter((pull, {**pull, "state": "merged", "head": "b" * 40}))
+    monkeypatch.setattr(pull_watch, "pull_status", lambda *_: {
+        "pull_request": next(snapshots), "checks": [], "change_requests": [], "conflicts": False,
+    })
+    monkeypatch.setattr(pull_watch, "sleep", lambda _: None)
+    with pytest.raises(MDFError) as exc:
+        pull_watch.watch(tmp_path, pull["source"], None, [], False, expected_head=pull["head"])
+    assert exc.value.code == "pull_state_changed"
 
 
 def test_github_snapshot_includes_originating_run_current_attempt_and_steps(monkeypatch):
@@ -123,20 +128,15 @@ def test_github_skipped_step_waits_for_running_job(monkeypatch):
 
 
 def test_handled_review_only_suppresses_the_same_request(monkeypatch, tmp_path):
-    identity = {"provider": "github"}
     pull = {"id": 1, "state": "open", "source": "adhoc/docs", "target": "master", "head": "tip"}
-    path = tmp_path / "state.json"
-    path.touch()
-    state = dict(mode="pr", identity=identity, source=pull["source"], target="master", head="tip", pull=pull)
     requests = iter([["6"], ["6", "7"]])
     sleeps = []
-    monkeypatch.setattr(pull_watch, "state_path", lambda *_: path)
-    monkeypatch.setattr(pull_watch, "read_json", lambda _: deepcopy(state))
+    monkeypatch.setattr(pull_watch, "lookup_pull", lambda *args, **kwargs: (pull, pull["target"]))
     monkeypatch.setattr(pull_watch, "sleep", sleeps.append)
     monkeypatch.setattr(pull_watch, "pull_status", lambda *args: {
         "pull_request": pull, "checks": [], "change_requests": next(requests), "conflicts": False,
     })
-    result = pull_watch.watch(tmp_path, pull["source"], None, identity, [], False, handled_reviews=["6"])
+    result = pull_watch.watch(tmp_path, pull["source"], None, [], False, handled_reviews=["6"])
     assert result["status"] == "changes_requested"
     assert result["change_requests"] == ["6", "7"]
     assert sleeps == [120]

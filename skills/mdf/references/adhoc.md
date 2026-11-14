@@ -42,7 +42,7 @@
 
 ## 工作流（唯一执行契约）
 
-PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的操作记录与返工备注。
+PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的 Git 和平台状态与返工备注。
 命中时按 PR 实际状态选择 pr 或 close-out，跳过 adhoc-status；无 PR 恢复时执行下表与账本选型。
 
 读取 `references/common.md` 与 `references/delivery-contract.md`；本页专用条款优先于普通交付主线。

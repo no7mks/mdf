@@ -32,11 +32,11 @@ def test_pr_prepare_resumes_repairs_before_finish_or_polling():
         assert rule in text
 
 
-def test_pr_prepare_reuses_committed_candidate_without_finish_record():
+def test_pr_prepare_reuses_committed_candidate():
     text = workflow('pr').split('### 候选材料准备', 1)[1].split('### 完成与交接', 1)[0]
-    assert '前置已全勾且无 finish 记录时同样进入 Prepare' in text
+    assert '前置齐全后核对当前 Git 与平台' in text
     assert '按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项' in text
-    assert '无 finish 记录也须按 source/target 查回平台 PR/MR' in text
+    assert '按 source 查回当前平台 PR/MR' in text
     assert '复用原版本与材料，不重复 release-closeout 或归档' in text
 
 

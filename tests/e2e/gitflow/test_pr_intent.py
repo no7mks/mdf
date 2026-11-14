@@ -1,5 +1,4 @@
 """pr 与 close-out 的独立完成边界。"""
-import json
 import re
 from pathlib import Path
 
@@ -48,15 +47,10 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
     assert finished["completed"] and finished["remote_deleted"]
     assert not git(work, "branch", "--show-current").stdout.strip()
     if kind == "adhoc":
-        from mdf_core.lifecycle.publish import state_path
         status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work), "--slug", "service-health"))["result"]
         assert status["completed"] and status["next_step"] is None
-        path = state_path(repo, first["source"])
-        state = json.loads(path.read_text())
-        state["completed"] = False
-        path.write_text(json.dumps(state))
-        interrupted = mdf(python_exe, "adhoc-status", "--repo", str(work), "--slug", "service-health")
-        assert interrupted.returncode != 0 and "adhoc_not_finished" in interrupted.stderr
+        assert not git(repo, "for-each-ref", f"refs/heads/{first['source']}").stdout
+
 
 
 @pytest.mark.parametrize("mode", ["local", "pr"])

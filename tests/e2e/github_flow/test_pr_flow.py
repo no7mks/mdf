@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from mdf_test_support import *  # noqa: F403
-from support_delivery import write_changelog_release
+from support_delivery import write_change, write_changelog_release
 from support_github_flow import commit, error_of, github_flow_repo, has_ref
 from support_planning import add_prp
 from support_pull import Platform, squash_pending
@@ -37,8 +37,6 @@ def test_trunk_pr_requires_pr_mode(python_exe, tmp_path):
 
 @pytest.mark.parametrize("reverted", [False, True])
 def test_trunk_pr_moves_mixed_history_to_adhoc(python_exe, tmp_path, monkeypatch, reverted):
-    from test_untracked_adhoc import write_change
-
     repo, _, platform = pr_repo(tmp_path, monkeypatch)
     before = git(repo, "rev-parse", "master").stdout.strip()
     add_prp(repo, "prp-0002")
@@ -63,7 +61,7 @@ def test_trunk_pr_moves_mixed_history_to_adhoc(python_exe, tmp_path, monkeypatch
     request = ("pr", "--repo", str(work))
     first = payload(mdf(python_exe, *request))
     assert first["status"] == "waiting_for_merge"
-    assert payload(mdf(python_exe, *rescue))["result"]["source"] == result["source"]
+    assert payload(mdf(python_exe, *rescue))["result"]["status"] == "no_pending_commits"
     assert payload(mdf(python_exe, *request))["pull_request"]["id"] == first["pull_request"]["id"]
     assert len(platform.pulls) == 1
 
@@ -172,7 +170,7 @@ def test_trunk_pr_moves_project_records_to_pm_and_reuses_pr(python_exe, tmp_path
     assert not has_ref(remote, f"refs/heads/{rework['branch']}")
     first = payload(mdf(python_exe, *request))
     assert first["status"] == "waiting_for_merge"
-    assert payload(mdf(python_exe, *rescue))["result"]["source"] == source
+    assert payload(mdf(python_exe, *rescue))["result"]["status"] == "no_pending_commits"
     assert payload(mdf(python_exe, *request))["pull_request"]["id"] == first["pull_request"]["id"]
     assert len(platform.pulls) == 1
     merged = platform.merge(1, tmp_path)
@@ -204,11 +202,10 @@ def test_trunk_pr_resumes_pm_after_interruption_following_reset(python_exe, tmp_
     with monkeypatch.context() as patch:
         patch.setattr(dev_pr, "git", interrupt_git)
         assert error_of(mdf(python_exe, *rescue))["error"] == "test_interrupted"
-    source = dev_pr.pending(repo)["source"]
+    source = git(repo, "for-each-ref", "--format=%(refname:short)", "refs/heads/pm").stdout.strip()
     assert source.startswith("pm/records-")
-    assert error_of(mdf(python_exe, *rescue[:-1], "different"))["error"] == "pull_state_changed"
     result = payload(mdf(python_exe, *rescue))["result"]
-    assert result["source"] == source and result["reset"]
+    assert result["status"] == "no_pending_commits"
     assert git(repo, "rev-parse", source).stdout.strip() == head
     assert git(repo, "rev-parse", "HEAD").stdout == git(repo, "rev-parse", "origin/master").stdout
 
@@ -285,8 +282,7 @@ def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_pa
     assert not has_ref(repo, "refs/heads/planning")
     blocked = mdf(python_exe, *start)
     assert error_of(blocked)["error"] == "pm_pr_pending"
-    pending = error_of(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))
-    assert pending["error"] == "trunk_pr_required" and pending["details"]["source"] == source
+    assert payload(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))["branch"] == "master"
     assert error_of(mdf(python_exe, "to", "--repo", str(repo), "--target", source))["error"] == "unsupported_branch"
     args = ["--repo", str(repo), "--source", source]
     request = ["pr", *args]
@@ -318,6 +314,33 @@ def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_pa
     git(repo, "add", "docs/proposals")
     assert payload(pm_commit(python_exe, repo))["source"] == "master"
     assert trunk_pr(python_exe, repo) != source
+
+
+def test_merged_pm_does_not_block_unrelated_proposal(python_exe, tmp_path, monkeypatch):
+    repo, _, platform = pr_repo(tmp_path, monkeypatch, trunk="main")
+    other = add_prp(repo, "prp-95R9", status="draft")
+    commit(repo, "docs(pm): 添加待评审提案")
+    git(repo, "push", "origin", "main")
+    add_prp(repo, "prp-0002")
+    commit(repo, "docs(pm): 添加独立提案")
+    source = trunk_pr(python_exe, repo)
+    request = ("--repo", str(repo), "--source", source)
+    first = payload(mdf(python_exe, "pr", *request))
+    platform.merge(first["pull_request"]["id"], tmp_path)
+    common = repo / ".git/mdf"
+    old = common / "finish" / f"{source}.json"
+    old.parent.mkdir(parents=True)
+    old.write_text(json.dumps({"source": source, "completed": False}))
+    (common / "dev-pr.json").write_text(json.dumps({"source": source, "reset": True}))
+    assert payload(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))["branch"] == "main"
+    review = ("--repo", str(repo), "--proposal", "prp-95R9")
+    proposal = payload(mdf(python_exe, "prp-review", "check", *review))
+    payload(mdf(python_exe, "prp-review", "ready", *review, "--confirmed-sha256", proposal["sha256"]))
+    git(repo, "add", str(other))
+    assert payload(pm_commit(python_exe, repo))["source"] == "main"
+    assert trunk_pr(python_exe, repo) != source
+    for _ in range(2):
+        assert payload(mdf(python_exe, "finish-gitflow", *request))["completed"]
 
 
 def test_pm_local_commits_directly_on_custom_trunk(python_exe, tmp_path):
@@ -505,7 +528,7 @@ def test_pm_conflict_resolution_resumes_interrupted_cleanup(python_exe, tmp_path
 def test_pm_finish_rework_requires_verified_squash(python_exe, tmp_path, monkeypatch):
     from mdf_core.foundation.errors import MDFError
     from mdf_core.lifecycle.pull_finish import finish_lock
-    from mdf_core.workspace import pm, squash
+    from mdf_core.workspace import squash
     import squash_execute
 
     repo, _, _ = pr_repo(tmp_path, monkeypatch)
@@ -528,15 +551,11 @@ def test_pm_finish_rework_requires_verified_squash(python_exe, tmp_path, monkeyp
     with finish_lock(repo), pytest.raises(MDFError) as busy:
         squash_execute.execute(work, plan, False, [])
     assert busy.value.code == "finish_busy"
-    original = pm.squash_rework
-
-    def interrupt(where, branch, old_tip, *, new_tip=None):
-        if new_tip:
-            raise MDFError("模拟 squash 验证后中断", code="test_interrupted")
-        original(where, branch, old_tip)
+    def interrupt(*args, **kwargs):
+        raise MDFError("模拟 squash 核验凭证写入前中断", code="test_interrupted")
 
     with monkeypatch.context() as patch:
-        patch.setattr(pm, "squash_rework", interrupt)
+        patch.setattr(squash, "record_analysis", interrupt)
         with pytest.raises(MDFError) as interrupted:
             squash_execute.execute(work, plan, False, [])
     assert interrupted.value.code == "test_interrupted"
@@ -688,6 +707,28 @@ def test_release_head_updates_before_pr_and_locks_after(python_exe, tmp_path, mo
     assert error_of(mdf(python_exe, "release-integrate", "--repo", str(work)))["error"] == "release_head_changed"
 
 
+def test_pm_rework_accepts_consecutive_verified_squashes(python_exe, tmp_path, monkeypatch):
+    from mdf_core.workspace import squash
+    repo, _, _ = pr_repo(tmp_path, monkeypatch)
+    for number in range(2):
+        (repo / "docs/JOTS.md").write_text(f"# Jots\n\n{number}\n")
+        commit(repo)
+    source = trunk_pr(python_exe, repo)
+    args = ["--repo", str(repo), "--source", source]
+    for round_index in range(2):
+        work = Path(payload(mdf(python_exe, "pm", "rework", *args))["worktree"])
+        if round_index == 0:
+            squash_pending(work)
+        for number in range(2, 4):
+            (work / "docs/JOTS.md").write_text(f"# Jots\n\n{round_index}-{number}\n")
+            commit(work)
+        squash_pending(work)
+        head = git(work, "rev-parse", "HEAD").stdout.strip()
+        squash.record_analysis(work, git(work, "branch", "--show-current").stdout.strip(), head, reason="复核现有分段")
+        assert payload(mdf(python_exe, "pm", "finish-rework", *args))["head"] == head
+        assert git(repo, "rev-parse", source).stdout.strip() == head
+
+
 def test_support_branch_can_never_merge_into_trunk(python_exe, tmp_path):
     repo = github_flow_repo(tmp_path)
     git(repo, "branch", "support/1.2")
@@ -723,6 +764,9 @@ def test_conflicting_release_goes_through_integration_branch_and_tags_release_he
     assert payload(mdf(python_exe, "release-integrate", "--repo", str(work)))["status"] == "up_to_date"
     first = payload(mdf(python_exe, "pr", "--repo", str(integ)))
     assert first["status"] == "waiting_for_merge" and first["source"] == "codex/integrate/release-1.3.0"
+    # 原 release ref 在 PR 已打开后改变或消失时，tag 仍绑定已合入的集成历史。
+    git(work, "checkout", "--detach", release_head)
+    git(repo, "update-ref", "refs/heads/release/1.3.0", release_head + "^", release_head)
     platform.merge(1, tmp_path)
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
     assert done["completed"] and done["tag"] == "v1.3.0"

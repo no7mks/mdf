@@ -72,7 +72,7 @@ def test_analysis_may_keep_independent_commits_without_rewriting(repo):
     squash.require_ready(repo)
 
 
-@pytest.mark.parametrize('boundary', ['branch', 'tag', 'worktree', 'remote', 'finish'])
+@pytest.mark.parametrize('boundary', ['branch', 'tag', 'worktree', 'remote'])
 def test_shared_tip_is_protected(repo, tmp_path, boundary):
     shared = commit(repo, 'a', 'shared')
     if boundary == 'branch':
@@ -87,10 +87,6 @@ def test_shared_tip_is_protected(repo, tmp_path, boundary):
         git(repo, 'remote', 'add', 'origin', str(remote))
         git(repo, 'push', 'origin', 'HEAD:refs/heads/feature/topic')
         git(repo, 'update-ref', '-d', 'refs/remotes/origin/feature/topic')
-    else:
-        path = squash.common_dir(repo) / 'mdf/finish/feature/topic.json'
-        path.parent.mkdir(parents=True)
-        path.write_text(json.dumps({'source': 'feature/topic', 'pending_head': shared}))
     commit(repo, 'a', 'next')
     commit(repo, 'a', 'last')
     body = plan(repo)
