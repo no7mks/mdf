@@ -98,7 +98,9 @@ def prepare(repo, slug=None, *, expected_head=None, expected_base=None):
                 git(repo, "update-ref", f"refs/heads/{main}", state["base"], state["head"])
         state["reset"] = True
         write_json(record_path(repo), state)
-    return {**state, "status": "dev_pr_required", "completed": False, "next_intent": "trunk-pr" if is_github_flow(repo) else "dev-pr"}
+    github = is_github_flow(repo)
+    return {**state, "status": "trunk_pr_required" if github else "dev_pr_required", "completed": False,
+            "next_intent": "trunk-pr" if github else "dev-pr"}
 
 
 def command_dev_pr(args, entry="dev-pr"):

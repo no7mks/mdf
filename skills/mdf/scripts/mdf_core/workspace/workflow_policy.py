@@ -93,10 +93,20 @@ def permanent_trunks(repo: Path, ref: str | None = None) -> tuple[str, ...]:
     return (config["trunk"], "planning") if pr else (config["trunk"],)
 
 
+def shared_support_branches(repo: Path) -> tuple[str, ...]:
+    """本地与 origin 都存在的 support/*。"""
+    def names(pattern: str, prefix: str) -> set[str]:
+        shown = run(["git", "for-each-ref", "--format=%(refname:short)", pattern], cwd=repo, check=False)
+        return {line.removeprefix(prefix) for line in shown.stdout.split() if line.removeprefix(prefix).startswith("support/")}
+    return tuple(sorted(names("refs/heads/support/*", "") & names("refs/remotes/origin/support/*", "origin/")))
+
+
 def sync_trunks(repo: Path) -> tuple[str, ...]:
-    """sync 对齐的常驻分支；github-flow 的 planning 短命，不参与。"""
+    """sync 对齐的常驻分支；github-flow 的 planning 短命，并额外对齐共有 support/*。"""
     config = workflow_config(repo)
-    return permanent_trunks(repo) if config["model"] == GITFLOW else (config["trunk"],)
+    if config["model"] == GITFLOW:
+        return permanent_trunks(repo)
+    return (config["trunk"], *shared_support_branches(repo))
 
 
 def forbid_support_to_trunk(repo: Path, source: str, target: str | None = None) -> None:

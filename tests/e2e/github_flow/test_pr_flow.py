@@ -1,5 +1,6 @@
 """github-flow 的 PR mode：trunk 为目标、无 develop 回合、tag 固定 release_head，以及短命 planning。"""
 from __future__ import annotations
+import json
 from mdf_test_support import *  # noqa: F403
 from support_delivery import write_changelog_release
 from support_github_flow import commit, error_of, github_flow_repo, has_ref
@@ -100,6 +101,71 @@ def test_local_planning_uses_clean_trunk_worktree(python_exe, tmp_path):
     (repo / "dirty.txt").write_text("未提交\n")
     git(repo, "add", "dirty.txt")
     assert error_of(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))["error"] == "dirty_worktree"
+
+
+def _audit(python_exe, repo, branch, before, after, proof=None):
+    args = ["audit-push", "--repo", str(repo), "--branch", branch, "--before", before, "--after", after]
+    if proof is not None:
+        path = repo.parent / "proof.json"
+        path.write_text(json.dumps(proof))
+        args += ["--evidence-file", str(path)]
+    return mdf(python_exe, *args)
+
+
+def test_audit_push_covers_custom_trunk_and_forbids_support_merge(python_exe, tmp_path):
+    repo, _remote = github_flow_repo(tmp_path, trunk="main", origin=True, pr=True)
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert error_of(_audit(python_exe, repo, "develop", base, base))["error"] == "invalid_audit_target"
+    (repo / "src/service.py").write_text("direct = True\n")
+    commit(repo)
+    direct = payload(_audit(python_exe, repo, "main", base, "HEAD"))["result"]
+    assert direct["verdict"] == "violation" and direct["commits"][0]["reason"] == "direct_trunk_commit"
+    git(repo, "reset", "--hard", base)
+    git(repo, "checkout", "-b", "support/1.2", base)
+    (repo / "support.txt").write_text("support = True\n")
+    commit(repo)
+    support = payload(_audit(python_exe, repo, "support/1.2", base, "HEAD"))["result"]
+    assert support["verdict"] == "violation"
+    git(repo, "checkout", "-b", "feature/x", base)
+    (repo / "src/service.py").write_text("feature = True\n")
+    commit(repo)
+    head = git(repo, "rev-parse", "HEAD").stdout.strip()
+    git(repo, "checkout", "main")
+    git(repo, "merge", "--no-ff", "--no-edit", "feature/x")
+    merged = git(repo, "rev-parse", "HEAD").stdout.strip()
+    proof = {"pull_requests": [{"id": 1, "url": "https://forge.invalid/pull/1", "state": "merged",
+                                "source": "feature/x", "target": "main", "head": head, "merge_commit": merged}]}
+    accepted = payload(_audit(python_exe, repo, "main", base, merged, proof))["result"]
+    assert accepted["verdict"] == "pass" and accepted["commits"][0]["reason"] == "platform_merge"
+    git(repo, "merge", "--no-ff", "--no-edit", "support/1.2")
+    forbidden_merge = git(repo, "rev-parse", "HEAD").stdout.strip()
+    support_head = git(repo, "rev-parse", "support/1.2").stdout.strip()
+    bad = {"pull_requests": [{"id": 2, "url": "https://forge.invalid/pull/2", "state": "merged",
+                              "source": "support/1.2", "target": "main", "head": support_head,
+                              "merge_commit": forbidden_merge}]}
+    rejected = payload(_audit(python_exe, repo, "main", merged, forbidden_merge, bad))["result"]
+    assert rejected["verdict"] == "violation" and rejected["commits"][0]["reason"] == "support_merge_forbidden"
+
+
+def test_github_flow_sync_reports_trunk_pr_and_aligns_shared_support(python_exe, tmp_path):
+    repo, remote = github_flow_repo(tmp_path, trunk="main", origin=True, pr=True)
+    git(repo, "branch", "support/1.2")
+    git(repo, "push", "-u", "origin", "support/1.2")
+    clone = tmp_path / "other"
+    git(tmp_path, "clone", "--branch", "support/1.2", str(remote), str(clone))
+    (clone / "support.txt").write_text("远端维护\n")
+    commit(clone, "fix: 远端维护线")
+    git(clone, "push", "origin", "support/1.2")
+    behind = payload(mdf(python_exe, "sync", "--repo", str(repo)))
+    assert behind["branches"]["support/1.2"]["relation"] == "behind"
+    assert "main" not in behind["pull_plan"]
+    aligned = payload(mdf(python_exe, "sync", "--repo", str(repo), "--confirm", behind["confirmation"]))
+    assert aligned["trunks"]["support/1.2"]["pull"] == "ff"
+    assert git(repo, "rev-parse", "support/1.2").stdout == git(remote, "rev-parse", "support/1.2").stdout
+    (repo / "src/service.py").write_text("ahead = True\n")
+    commit(repo, "feat: trunk 领先")
+    ahead = payload(mdf(python_exe, "sync", "--repo", str(repo)))
+    assert ahead["pull_plan"]["main"]["action"] == "trunk_pr"
 
 
 def test_support_branch_can_never_merge_into_trunk(python_exe, tmp_path):

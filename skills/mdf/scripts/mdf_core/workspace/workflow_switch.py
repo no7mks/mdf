@@ -41,23 +41,55 @@ def _in_flight_branches(repo: Path) -> list[str]:
     return sorted(name for name in names if occupies_delivery(name, trunk))
 
 
+def _load_record(path: Path) -> dict | None:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _release_finished(folder: Path, version: str) -> bool:
+    data = _load_record(folder / "release" / f"{version}.json")
+    return bool(data and (data.get("completed") or data.get("pushed")))
+
+
 def _pending_finish_records(repo: Path) -> list[str]:
     common = Path(_git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
     folder = common / "mdf" / "finish"
     pending = []
-    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            pending.append(path.name)
+    for path in sorted(folder.rglob("*.json")) if folder.is_dir() else []:
+        rel = path.relative_to(folder).as_posix()
+        if rel.startswith("sync/history/"):
             continue
-        if not (isinstance(data, dict) and (data.get("completed") or data.get("pushed"))):
-            pending.append(path.name)
+        data = _load_record(path)
+        if data is None:
+            pending.append(rel)
+            continue
+        if rel.startswith("integrate/") and _release_finished(folder, path.stem):
+            continue
+        if not (data.get("completed") or data.get("pushed")):
+            pending.append(rel)
     return pending
 
 
+def _dirty_worktrees(repo: Path) -> list[str]:
+    from mdf_core.workspace.gitutil import git_in_progress_head, git_is_clean, primary_worktree, worktree_map
+    primary = primary_worktree(repo)
+    dirty = []
+    seen: set[Path] = set()
+    for path in (*worktree_map(primary).values(), primary):
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        if not git_is_clean(path) or git_in_progress_head(path) == "MERGE_HEAD":
+            dirty.append(str(path))
+    return dirty
+
+
 def require_idle(repo: Path) -> None:
-    """无在途交付分支/worktree、无未完成收口记录、无未落地 planning 提交。"""
+    """无在途交付分支、无未完成收口记录、关联 worktree 干净、无未落地 planning 提交。"""
     branches = _in_flight_branches(repo)
     if branches:
         raise MDFError("存在在途交付分支，不能切换 workflow", code="workflow_not_idle",
@@ -66,6 +98,10 @@ def require_idle(repo: Path) -> None:
     if records:
         raise MDFError("存在未完成的收口记录，不能切换 workflow", code="workflow_not_idle",
                        details={"records": records})
+    dirty = _dirty_worktrees(repo)
+    if dirty:
+        raise MDFError("关联 worktree 不干净或存在未完成的 merge，不能切换 workflow",
+                       code="workflow_not_idle", details={"worktrees": dirty})
     if _exists(repo, "refs/heads/planning") and _git(
         repo, "merge-base", "--is-ancestor", "refs/heads/planning", "HEAD", check=False,
     ).returncode:

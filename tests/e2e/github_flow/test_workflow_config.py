@@ -129,6 +129,48 @@ def test_switch_refuses_when_not_idle(python_exe, tmp_path, setup, detail):
     assert "workflow:" not in (repo / ".mdf/manifest.yaml").read_text()
 
 
+def _finish_dir(repo):
+    common = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
+    return common / "mdf" / "finish"
+
+
+def test_nested_release_record_blocks_until_completed(python_exe, tmp_path):
+    repo = local_gitflow(tmp_path)
+    folder = _finish_dir(repo)
+    (folder / "release").mkdir(parents=True)
+    (folder / "integrate").mkdir()
+    (folder / "sync" / "history").mkdir(parents=True)
+    (folder / "release" / "1.2.0.json").write_text(json.dumps({"completed": False}))
+    (folder / "integrate" / "1.2.0.json").write_text(json.dumps({"release_head": "abc"}))
+    (folder / "sync" / "history" / "old.json").write_text(json.dumps({"completed": False}))
+    blocked = error_of(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "github-flow"))
+    assert blocked["error"] == "workflow_not_idle"
+    assert "release/1.2.0.json" in blocked["details"]["records"]
+    (folder / "release" / "1.2.0.json").write_text(json.dumps({"completed": True}))
+    data = payload(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "github-flow"))
+    assert data["changed"] is True
+
+
+def test_dirty_linked_worktree_blocks_switch(python_exe, tmp_path):
+    repo = local_gitflow(tmp_path)
+    linked = tmp_path / "develop-wt"
+    git(repo, "worktree", "add", str(linked), "develop")
+    (linked / "dirty.txt").write_text("未提交\n")
+    blocked = error_of(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "github-flow"))
+    assert blocked["error"] == "workflow_not_idle"
+    assert "workflow:" not in (repo / ".mdf/manifest.yaml").read_text()
+
+
+def test_custom_trunk_and_support_stay_idle(python_exe, tmp_path):
+    repo = local_gitflow(tmp_path)
+    git(repo, "branch", "support/1.2")
+    git(repo, "branch", "main")
+    git(repo, "checkout", "main")
+    data = payload(mdf(python_exe, "workflow", "switch", "--repo", str(repo),
+                       "--model", "github-flow", "--trunk", "main"))
+    assert data["changed"] is True and data["to"]["trunk"] == "main"
+
+
 def test_switch_to_gitflow_requires_develop(python_exe, tmp_path):
     repo = github_flow_repo(tmp_path)
     failed = error_of(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "gitflow"))

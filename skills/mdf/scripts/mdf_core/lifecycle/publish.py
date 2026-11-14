@@ -9,6 +9,12 @@ from mdf_core.workspace.gitutil import current_branch, ensure_clean, primary_wor
 def state_path(repo, source):
     from mdf_core.workspace.gitflow import _git
     common = Path(_git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
+    if source.startswith("integrate/") and source.count("/") == 1:
+        return safe(common, common / "mdf/finish/integrate" / f"{source.split('/', 1)[1]}.json")
+    if source.startswith("sync/history/"):
+        return safe(common, common / "mdf/finish/sync/history" / f"{source.removeprefix('sync/history/')}.json")
+    if source.startswith("sync/"):
+        return safe(common, common / "mdf/finish/sync" / f"{source.removeprefix('sync/')}.json")
     from mdf_core.workspace.gitutil import branch_details
     details = branch_details(source)
     if details["kind"] == "hotfix" and details["version"] is None:
