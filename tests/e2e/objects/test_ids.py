@@ -152,7 +152,7 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
 
     repo = copy_fixture(tmp_path)
     proposal = (repo / "docs/proposals" / PRP_NAME).read_text()
-    (repo / "docs/proposals" / "prp-0010-letters.html").write_text(
+    (repo / "docs/proposals" / "prp-0010-letters.md").write_text(
         proposal.replace("prp-0001", "prp-0010")
     )
     bug = (repo / "docs/bugs" / BUG_NAME).read_text()
@@ -221,7 +221,7 @@ def test_batch_prp_ids_do_not_write_or_repeat(python_exe, tmp_path):
     assert data["items"][1]["filename"] == f"{identifiers[1]}-part-two.md"
     assert source_head(work) == head
     assert not git(work, "status", "--porcelain").stdout
-    body = proposal_markdown(work / "docs/proposals" / PRP_NAME).split("---", 2)[2]
+    body = (work / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
     spec = {"source": "prp-0001", "children": [
         {"id": item["id"], "filename": item["filename"], "depends_on": [], "body": body}
         for item in data["items"]], "downstream": {}, "rationale": "用户确认分成两项"}

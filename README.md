@@ -62,7 +62,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
 | `$mdf bug create` | 按已确认的内容手动创建一个 open Bug |
 | `$mdf prp create` | 按已确认的内容手动创建一个 draft Proposal |
-| `$mdf prp review` | 修订单个 active Proposal，详细 HTML 经用户确认后保存为唯一 ready HTML |
+| `$mdf prp review` | 修订单个 active Proposal，用户确认 Markdown 后将原文件标为 ready |
 | `$mdf archive` | 归档终态 Proposal 及 closed/rejected Bug |
 | `$mdf prp split` | 拆分未开工 PRP，并完整改写依赖 |
 | `$mdf design` | 确认设计、测试策略和共享代码底座 |

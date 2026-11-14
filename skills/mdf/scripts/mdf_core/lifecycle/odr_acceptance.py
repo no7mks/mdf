@@ -61,7 +61,7 @@ def accept(repo):
     from mdf_core.lifecycle.delivery_state import locate
     from mdf_core.lifecycle.late_decision import checkpoint
     from mdf_core.documents.proposals import records
-    from mdf_core.documents.html_documents import update_metadata
+    from mdf_core.foundation.yamlutil import set_frontmatter_field
     from mdf_core.inspection.validate_records import unsatisfied_depends_on
     ensure_clean(repo)
     checkpoint(repo, required=True)
@@ -92,7 +92,9 @@ def accept(repo):
     for identifier in selected:
         proposal_path, meta, _ = proposals[identifier]
         if meta.get("status") != "released":
-            proposal_path.write_text(update_metadata(proposal_path.read_text(), {**meta, "status": "implemented"}))
+            proposal_text = proposal_path.read_bytes().decode("utf-8")
+            updated = set_frontmatter_field(proposal_text, "status", "implemented")
+            proposal_path.write_bytes(updated.encode("utf-8"))
     from mdf_core.workspace.merge_policy import git
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
     text = INCLUSION_BASE.sub("", text).rstrip()

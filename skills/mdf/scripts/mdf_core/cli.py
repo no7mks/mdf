@@ -249,13 +249,13 @@ def build_parser() -> argparse.ArgumentParser:
     split.add_argument("--dry-run", action="store_true")
     split.set_defaults(func=command_split)
 
-    from mdf_core.documents.prp_format import command_prp_format
-    prp_format = subparsers.add_parser("prp-format")
-    prp_format.add_argument("action", choices=("plan", "preview", "ready", "draft"))
-    prp_format.add_argument("--repo", required=True)
-    prp_format.add_argument("--proposal", required=True)
-    prp_format.add_argument("--confirmed", action="store_true")
-    prp_format.set_defaults(func=command_prp_format)
+    from mdf_core.documents.prp_review import command_prp_review
+    prp_review = subparsers.add_parser("prp-review")
+    prp_review.add_argument("action", choices=("check", "ready", "draft"))
+    prp_review.add_argument("--repo", required=True)
+    prp_review.add_argument("--proposal", required=True)
+    prp_review.add_argument("--confirmed-sha256")
+    prp_review.set_defaults(func=command_prp_review)
 
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(

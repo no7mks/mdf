@@ -247,8 +247,7 @@ fact audit 对文档结构的语义审阅：
 draft 为待评审，ready 为可交付，implemented 为已验收合入 develop 或已通过 ODR 统一验收，released 为已发布。
 rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由拆分出的 PRP 承接。
 
-- draft 使用 Markdown；评审定稿前展示详细 HTML 并取得用户确认，定稿保存为唯一 HTML。
-- 格式与交付 HTML 总结见 [HTML 工作材料](skills/mdf/references/html-materials.md)。
+- Proposal 全程使用同一份 Markdown 正文。评审时展示该文件，用户确认后更新状态。
 
 ## Milestone 与 MVP
 

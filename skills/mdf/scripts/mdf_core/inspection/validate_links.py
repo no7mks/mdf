@@ -98,10 +98,7 @@ def managed_markdown(repo: Path) -> Iterable[Path]:
                 path
                 for path in root.rglob("*")
                 if path.is_file()
-                and (path.suffix == ".md" or (path.suffix == ".html" and (
-                    root.name == "docs" and path.relative_to(root).parts[0] == "proposals"
-                    or root.name == "changes" and path.name == "delivery-summary.html")))
-                and not path.name.endswith(".review.html")
+                and (path.suffix == ".md" or (root.name == "changes" and path.name == "delivery-summary.html"))
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             )

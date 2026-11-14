@@ -13,8 +13,7 @@ def test_prp_format_accepts_current_ids(identifier):
 
     assert PRP_ID_RE.fullmatch(identifier)
     assert OBJECT_ID_RE.fullmatch(identifier)
-    for extension in ("md", "html"):
-        assert OBJECT_FILE_RE.fullmatch(f"{identifier}-example.{extension}")
+    assert OBJECT_FILE_RE.fullmatch(f"{identifier}-example.md")
     assert is_object_id_slug(identifier.lower())
 
 
@@ -58,7 +57,7 @@ def test_prp_allocation_avoids_active_archive_and_batch_collisions(tmp_path, mon
     root = tmp_path / "docs/proposals"
     (root / "archive").mkdir(parents=True)
     (root / "prp-01A2-active.md").touch()
-    (root / "archive/prp-012A-archived.html").touch()
+    (root / "archive/prp-012A-archived.md").touch()
     candidates = iter(["prp-01A2", "prp-012A", "prp-0101", "prp-0101", "prp-99Z9"])
     monkeypatch.setattr(proposals, "new_prp_id", lambda: next(candidates))
     assert proposals.new_prp_ids(tmp_path, 2) == ["prp-0101", "prp-99Z9"]

@@ -1,18 +1,16 @@
 # HTML 工作材料
 
-本页规定 PRP 与交付总结的 HTML 格式、信息完整性和展示检查。
+本页规定交付总结的 HTML 格式、信息完整性和展示检查。
 
 ## 格式与展示
 
 HTML 是可独立打开的完整文档，正文必须放在唯一的 `<main>` 中。
 
-- 两类材料统一使用 [深色终端文档模板](../assets/templates/document.html)。
+- 使用 [深色终端文档模板](../assets/templates/document.html)。
   - 深色背景、浅绿章节、等宽文字、章节目录；窄屏目录换行，宽表与代码独立滚动。
 - 把实际正文填入 `MDF_DOCUMENT_CONTENT`，标题填入 `MDF_DOCUMENT_TITLE`。
   - `MDF_DOCUMENT_OUTLINE` 为可见章节的锚点链接，必须与正文 `h2` 的 `id` 对齐。
-  - `MDF_METADATA_COMMENT` 在 PRP 中写下方 metadata；总结中留空。
-- `html_documents.render_document(content, title, metadata=None)` 可从 HTML 正文生成完整文件。
-  - PRP 的 `prp-format` 自动套用模板；不保留模板槽，不引入外部 stylesheet 或 script。
+- `html_documents.render_document(content, title)` 可从 HTML 正文生成完整文件。
 - 使用 `<!doctype html>`、`lang="zh-CN"`、UTF-8、viewport 与可读的内嵌 CSS。
 - 以标题、列表、表格和代码块组织信息；宽表与代码块允许滚动。
 - 不依赖网络、外部字体或 JavaScript；离线打开也能阅读全部正文。
@@ -22,39 +20,6 @@ HTML 是可独立打开的完整文档，正文必须放在唯一的 `<main>` �
 - HTML 不设文件行数上限；可见正文仍按写作规则检查结构。
 - 展示前在宿主 browser / HTML preview 打开实际文件，检查标题、完整正文、表格和链接。
   - 无可用预览时报告限制并提供文件路径；不得声称已完成视觉检查。
-
-## PRP 存储
-
-PRP 的可见 HTML 正文是唯一正文，metadata 使用 YAML comment。
-
-- draft：`docs/proposals/prp-<4 位字符>-<slug>.md`，使用原有 YAML frontmatter。
-- review：同目录 `<stem>.review.html`，由当前 draft 生成，尚不构成对象或 ready。
-- 本次 review 确认并转为 ready：同目录 `<stem>.html`；不保留对应 Markdown 副本。
-- 已有 ready / implemented / released PRP 保留原格式，含 archive 中的 PRP。
-  - doctor / validate 不按状态追溯 HTML 格式要求，不要求批量转换或补写过去的评审材料。
-- rejected / replaced 保留裁定时的原格式；archive 保留扩展名。
-- HTML metadata 位于 doctype 后，格式如下；只放对象字段，不嵌入 Markdown 正文。
-
-```html
-<!doctype html>
-<!-- MDF:METADATA
-id: prp-0001
-type: proposal
-status: ready
-depends_on: []
--->
-```
-
-- 必填章节与 scope 子节沿用 [对象契约](object-contract.md)，在可见正文用 `h2` / `h3` 表达。
-- review 前把已确认事实与依据、约束、依赖、取舍、风险和验收方法补进 draft。
-  - 对已有 PRP 补充本次变更与原稿 diff；无变更或不适用项说明理由，不留占位符。
-- 内部 CLI `prp-format preview --repo <root> --proposal <id>` 生成 review HTML。
-- 用户确认当前 HTML 后运行 `prp-format ready --repo <root> --proposal <id> --confirmed`。
-  - CLI 核对 preview 与当前 draft 一致，转换为 ready HTML，删除 Markdown 与临时 preview。
-  - 同时改写仓内指向原 Markdown 的链接；失败报告实际状态，不声称 ready。
-- 未开工 ready PRP 再次 review 时运行 `prp-format draft --repo <root> --proposal <id>`。
-  - 回到 Markdown draft 并改写引用，再修改、生成 HTML 和取得确认。
-- 后续交付只更新 metadata 并保留正文与格式；split 保留原正文并追加拆分依据。
 
 ## 设计与开发总结
 

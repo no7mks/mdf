@@ -46,7 +46,7 @@
     │   ├── adr/<slug>.md     # 已确认取舍的理由；不是当前事实
     │   └── research/
     ├── proposals/
-    │   ├── prp-<4 位字符>-<slug>.md|html  # draft 用 md；评审定稿生成 html；已有材料保留格式
+    │   ├── prp-<4 位字符>-<slug>.md
     │   └── archive/<major.minor>/
     └── bugs/
         ├── bug-<4 位字符>-<slug>.md

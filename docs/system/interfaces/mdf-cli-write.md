@@ -86,29 +86,26 @@ python3 skills/mdf/scripts/mdf.py archive --repo /path/to/repository \
 canonical 链接重写。`--dry-run` 仅返回计划；正常运行会应用移动与重写，随后再次
 strict validation。后校验失败时保留现场，供人工检查。
 
-## `prp-format`
+## `prp-review`
 
-本命令转换未开工 active PRP。生成预览后由 Agent 取得用户确认。
+本命令处理未开工的 active Markdown PRP。用户确认由 Agent 取得。
 
 ```bash
-python3 skills/mdf/scripts/mdf.py prp-format preview --repo /path/to/repository --proposal prp-0001
-python3 skills/mdf/scripts/mdf.py prp-format ready --repo /path/to/repository --proposal prp-0001 --confirmed
-python3 skills/mdf/scripts/mdf.py prp-format draft --repo /path/to/repository --proposal prp-0001
+python3 skills/mdf/scripts/mdf.py prp-review check --repo /path/to/repository --proposal prp-0001
+python3 skills/mdf/scripts/mdf.py prp-review ready --repo /path/to/repository --proposal prp-0001 --confirmed-sha256 <SHA256>
+python3 skills/mdf/scripts/mdf.py prp-review draft --repo /path/to/repository --proposal prp-0001
 ```
 
 | action | 输入 | 结果 |
 | --- | --- | --- |
-| `plan` | 未开工 active draft 或 ready | 只读返回下一次转换的 `paths` 和 `outside_pm` |
-| `preview` | Markdown draft | 生成同目录 `<stem>.review.html`，不修改对象状态 |
-| `ready` | draft、对应 preview、`--confirmed` | 保存唯一 ready HTML，删除 Markdown 与 preview，改写引用 |
-| `draft` | 未开工 ready PRP | HTML 转回 Markdown 并改写引用；Markdown 原位改为 draft |
+| `check` | draft | 校验并返回 Markdown 的 `path` 与 `sha256` |
+| `ready` | draft、用户确认版本的 `--confirmed-sha256` | 在原文件写入 ready 状态 |
+| `draft` | ready | 在原文件写入 draft 状态 |
 
-- 要求 Git 根、manifest ready、有效对象及依赖；不要求 clean，不提交。
+- 要求 Git 根、manifest ready、有效对象、依赖和本地链接。
 - gitflow 在 planning 执行。github-flow 在 trunk、PR mode 的原 `pm/*` 或普通 `adhoc/*` 执行。
-  trunk 或 pm 的转换若需改写范围外的路径，在写入前返回 `proposal_requires_delivery`。
-- preview 必须与当前 draft 一致；缺失或稿件变化以 `preview_changed` 失败。
-- 转换校验失败时恢复本次改写；其他异常保留现场并报告实际状态。
-- HTML 存储格式、详细内容与展示检查见 [HTML 工作材料](../../../skills/mdf/references/html-materials.md)。
+- 摘要不匹配时返回 `review_changed`，保留当前稿件。
+- 状态写入保留文件路径和 Markdown 正文，由调用方按所属流程提交。
 
 ## `release-closeout`
 

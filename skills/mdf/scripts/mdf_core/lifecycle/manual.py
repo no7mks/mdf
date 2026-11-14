@@ -22,8 +22,7 @@ def feature_completion(repo, source, *, allow_candidate=False):
     """验证 feature Change，返回合入时的 PRP 更新与 roster。"""
     from mdf_core.lifecycle.delivery_state import locate, require_finish, git
     from mdf_core.documents.proposals import records
-    from mdf_core.documents.html_documents import update_metadata
-    from mdf_core.foundation.yamlutil import read_frontmatter
+    from mdf_core.foundation.yamlutil import read_frontmatter, set_frontmatter_field
 
     root, data = locate(repo)
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
@@ -53,8 +52,8 @@ def feature_completion(repo, source, *, allow_candidate=False):
 
     def complete_feature(merge_repo):
         target_path = merge_repo / proposal_rel
-        merged, body = read_frontmatter(target_path)
-        target_path.write_text(update_metadata(target_path.read_text(), {**merged, "status": "implemented"}))
+        text = target_path.read_bytes().decode("utf-8")
+        target_path.write_bytes(set_frontmatter_field(text, "status", "implemented").encode("utf-8"))
         git(merge_repo, "add", "--", str(proposal_rel))
 
     return complete_feature, data["roster"]

@@ -207,7 +207,7 @@ def test_markdown_proposals_and_jots_have_no_line_limit(
     path = repo / relative_path
     if relative_path.startswith("docs/proposals/"):
         proposal = repo / "docs/proposals" / PRP_NAME
-        text = proposal_markdown(proposal).replace("prp-0001", "prp-0002")
+        text = (proposal).read_text().replace("prp-0001", "prp-0002")
         status = "rejected\nreject-reason: obsolete" if "/archive/" in relative_path else "draft"
         text = text.replace("status: ready", f"status: {status}")
     else:
@@ -259,19 +259,17 @@ def test_agents_size_counts_only_managed_block(python_exe: str, tmp_path: Path):
 
 
 @pytest.mark.parametrize("scope", ["full", "branch"])
-def test_html_proposals_have_no_line_limit(python_exe, tmp_path, scope):
+def test_proposals_have_no_line_limit(python_exe, tmp_path, scope):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
     proposal = repo / "docs/proposals" / PRP_NAME
     proposal.write_text(
-        proposal.read_text().replace(
-            "</main>", "<ul>\n" + "<li>验收细节。</li>\n" * 510 + "</ul>\n</main>"
-        ),
+        proposal.read_text() + "- 验收细节。\n" * 510,
         encoding="utf-8",
     )
     git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 扩展 HTML proposal")
+    git(repo, "commit", "-m", "test: 扩展 Proposal")
     extra = ["--base", base] if scope == "branch" else []
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     assert_ok(result)
@@ -279,11 +277,11 @@ def test_html_proposals_have_no_line_limit(python_exe, tmp_path, scope):
 
     # 免除行数限制后仍须检查可见正文结构。
     proposal.write_text(
-        proposal.read_text().replace("</main>", "<p>" + "说明" * 101 + "。</p></main>"),
+        proposal.read_text() + "\n" + "说明" * 101 + "。\n",
         encoding="utf-8",
     )
     git(repo, "add", "--all")
-    git(repo, "commit", "-m", "test: 添加 HTML 长句")
+    git(repo, "commit", "-m", "test: 添加 Proposal 长句")
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", scope, *extra)
     if scope == "branch":
         assert_ok(result)

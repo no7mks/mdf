@@ -57,7 +57,7 @@ def test_new_feature_commits_require_new_odr_acceptance(python_exe, tmp_path, mo
 @pytest.mark.parametrize("foreign", [False, "version", "membership", "published"])
 def test_archived_candidate_can_be_reaccepted_without_downgrading_prp(python_exe, tmp_path, foreign):
     from mdf_core.documents.proposals import records
-    from mdf_core.documents.html_documents import update_metadata
+    from mdf_core.foundation.yamlutil import set_frontmatter_field
     repo, _remote, odr, _work = prepare(python_exe, tmp_path)
     manifest = odr / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text() + "\ncloseout:\n  mode: pr\n  provider: github\n")
@@ -71,7 +71,7 @@ def test_archived_candidate_can_be_reaccepted_without_downgrading_prp(python_exe
     path, metadata, _ = records(odr)[PRP_ID]
     assert metadata["status"] == "released"
     if foreign == "version":
-        path.write_text(update_metadata(path.read_text(), {**metadata, "released_in": "9.9.9"}))
+        path.write_text(set_frontmatter_field(path.read_text(), "released_in", "9.9.9"))
     elif foreign == "membership":
         change = root / "CHANGE.md"
         change.write_text(change.read_text().replace("proposals: [prp-0001]", "proposals: []"))

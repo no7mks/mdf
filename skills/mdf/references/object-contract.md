@@ -6,8 +6,7 @@
 ## Proposal
 
 Proposal 字段为 id、type: proposal、status、depends_on。
-Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
-评审输出与已有材料的格式边界见 [HTML 工作材料](html-materials.md)。
+所有状态的 Proposal 均使用 Markdown 文件，字段写在 YAML frontmatter 中。
 
 ### milestone
 
@@ -57,7 +56,7 @@ Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
 - Bug 和 Jot 的 ID 仍为前缀后接四位字符，每位取自大写英文（排除 I、O）与数字 0 至 9。
 - 📌 沟通、引用与展示时必须写完整 ID，如 `prp-0001`、`bug-C4D5`、`jot-E6F7`、`adr-use-sqlite`。
   - ❌ 不得省略类型前缀或只写序号/短码/slug。
-- 文件名 `<PRP ID>-<slug>.md|html` / `bug-<4 位字符>-<slug>.md` 中的 slug 为英文 ASCII kebab-case。
+- 文件名 `<PRP ID>-<slug>.md` / `bug-<4 位字符>-<slug>.md` 中的 slug 为英文 ASCII kebab-case。
   - active（非 archive）Proposal 与 Bug 的 slug 必须全局唯一。
   - slug 不得与对象 ID 同形（如 `prp-0001`、`bug-c4d5`、`adr-use-sqlite`）。
 - 分支命名：
@@ -71,7 +70,6 @@ Markdown 使用 YAML frontmatter，HTML 使用 YAML metadata comment；
 - 一般关联只写正文；上述重复与替代字段是明确的结构关系。
 - 正文必须含“问题”“期望结果”“范围”“验收标准”四个非空章节。
   - “范围”含“包含”“不包含”非空三级子节。
-  - HTML 章节用可见 `h2` / `h3`；不得把正文只保存在 comment 或隐藏元素中。
 
 ## Bug
 

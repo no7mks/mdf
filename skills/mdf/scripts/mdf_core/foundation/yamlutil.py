@@ -183,15 +183,6 @@ def frontmatter_span(text: str) -> tuple[int, int, int]:
     ``text[body_start:]`` the document body. Both LF and CRLF line endings are
     accepted.
     """
-    if text.lower().startswith("<!doctype html>"):
-        from mdf_core.documents.html_documents import METADATA_OPEN, METADATA_CLOSE
-        if text.count(METADATA_OPEN) != 1:
-            raise MDFError("HTML 需要唯一 MDF metadata comment", code="missing_frontmatter")
-        start = text.index(METADATA_OPEN) + len(METADATA_OPEN)
-        end = text.find(METADATA_CLOSE, start)
-        if end < 0:
-            raise MDFError("HTML metadata comment 未结束", code="bad_frontmatter")
-        return start, end, end + len(METADATA_CLOSE)
     if text.startswith("---\r\n"):
         start = 5
     elif text.startswith("---\n"):
@@ -208,11 +199,19 @@ def frontmatter_span(text: str) -> tuple[int, int, int]:
 def read_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
     text = path.read_text(encoding="utf-8")
     start, end, body_start = frontmatter_span(text)
-    body = text[body_start:]
-    if path.suffix == ".html":
-        from mdf_core.documents.html_documents import visible_text
-        body = visible_text(text)
-    return parse_yaml(text[start:end]), body
+    return parse_yaml(text[start:end]), text[body_start:]
+
+
+def set_frontmatter_field(text: str, key: str, value: str) -> str:
+    """Replace a scalar field in Markdown frontmatter, preserving the rest of the document."""
+    start, end, _ = frontmatter_span(text)
+    frontmatter = text[start:end]
+    matches = list(re.finditer(rf"(?m)^([ ]*{re.escape(key)}[ ]*:)[^\r\n]*", frontmatter))
+    if matches:
+        field = matches[-1]
+        return text[:start + field.start(1)] + f"{field[1]} {value}" + text[start + field.end():]
+    newline = "\r\n" if text[:start].endswith("\r\n") else "\n"
+    return text[:end] + f"{newline}{key}: {value}" + text[end:]
 
 
 def yaml_quote(value: str) -> str:

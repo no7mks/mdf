@@ -23,13 +23,12 @@ def iter_object_files(repo: Path, kind: str) -> Iterable[Path]:
         or not path_stays_in_repo(repo, root)
     ):
         return []
-    # Validate misplaced prp-*/bug-* Markdown instead of silently ignoring it.
+    # Include HTML in the scan so invalid object files produce a filename finding.
     return sorted(
         path
         for path in root.rglob("*")
         if path.is_file()
         and path.suffix in {".md", ".html"}
-        and not path.name.endswith(".review.html")
         and not path.is_symlink()
         and path_stays_in_repo(repo, path)
     )
@@ -82,12 +81,6 @@ def validate_object(
             findings, "object.type", f"type must equal {expected_type}", rel
         )
     status = metadata.get("status")
-    if expected_type == "proposal":
-        # HTML 由 review 定稿时生成，不按当前状态追溯已有 PRP 的格式。
-        if status == "draft" and path.suffix != ".md":
-            add_finding(findings, "proposal.format", "draft PRP 必须使用 .md", rel)
-    elif path.suffix != ".md":
-        add_finding(findings, "object.filename", "Bug 必须使用 Markdown", rel)
     allowed_statuses = (
         {"draft", "ready", "implemented", "released", "rejected", "replaced"}
         if expected_type == "proposal"

@@ -1,18 +1,13 @@
-"""HTML 工作材料：可见正文为唯一正文，YAML metadata 存在指定 comment 中。"""
+"""HTML 交付总结的可见正文与离线模板。"""
 import html
-import json
 import re
 from html.parser import HTMLParser
 from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
 
-METADATA_OPEN = "<!-- MDF:METADATA\n"
-METADATA_CLOSE = "\n-->"
-
-
 class DocumentParser(HTMLParser):
-    """将 main 的可见正文投影为结构文本，供对象校验与 draft 修订使用。"""
+    """将 main 的可见正文投影为结构文本，供总结校验使用。"""
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -135,127 +130,13 @@ def visible_text(text):
     return re.sub(r"\n{3,}", "\n\n", "".join(parser.parts)).strip() + "\n"
 
 
-def inline(text):
-    """Escape first, then render the supported Markdown inline syntax."""
-    tokens = re.compile(r"`[^`]+`|!?\[[^\]]*\]\((?:<[^>]+>|[^)]+)\)|\*\*[^*]+\*\*")
-    result, cursor = [], 0
-    for match in tokens.finditer(text):
-        result.append(html.escape(text[cursor:match.start()]))
-        token = match.group()
-        if token.startswith("`"):
-            result.append("<code>" + html.escape(token[1:-1]) + "</code>")
-        elif token.startswith("**"):
-            result.append("<strong>" + html.escape(token[2:-2]) + "</strong>")
-        else:
-            label, target = token[token.index("[") + 1:].split("](", 1)
-            target = target[:-1]
-            target = target[1:target.index(">")] if target.startswith("<") else target.split()[0]
-            if token.startswith("!"):
-                result.append(f'<img alt="{html.escape(label)}" src="{html.escape(target)}">')
-            else:
-                result.append(f'<a href="{html.escape(target)}">{inline(label)}</a>')
-        cursor = match.end()
-    return "".join(result) + html.escape(text[cursor:])
-
-
-def markdown_body(body):
-    """Render headings, paragraphs, lists, tables and fenced code without dependencies."""
-    output, paragraph, lists = [], [], []
-    lines = body.splitlines()
-    index = 0
-
-    def flush():
-        if paragraph:
-            output.append("<p>" + inline(" ".join(paragraph)) + "</p>")
-            paragraph.clear()
-        while lists:
-            close_list()
-
-    def close_list():
-        _, tag = lists.pop()
-        output.append(f"</li></{tag}>")
-
-    while index < len(lines):
-        line = lines[index]
-        if line.startswith("```"):
-            flush()
-            code = []
-            index += 1
-            while index < len(lines) and not lines[index].startswith("```"):
-                code.append(lines[index])
-                index += 1
-            output.append("<pre>" + html.escape("\n".join(code)) + "</pre>")
-        elif re.match(r"^#{1,6} ", line):
-            flush()
-            level, text = line.split(" ", 1)
-            anchor = html.escape(text.strip().lower().replace(" ", "-"))
-            output.append(f'<h{len(level)} id="{anchor}">{inline(text)}</h{len(level)}>')
-        elif line.startswith("|") and index + 1 < len(lines) and re.match(
-            r"^\|[ :|\-]+\|$", lines[index + 1]
-        ):
-            flush()
-            cells = lambda row: [inline(cell.strip()) for cell in row.strip("|").split("|")]
-            output.append('<div class="table-wrap"><table><thead><tr>'
-                          + "".join(f"<th>{v}</th>" for v in cells(line)))
-            output.append("</tr></thead><tbody>")
-            index += 2
-            while index < len(lines) and lines[index].startswith("|"):
-                output.append("<tr>" + "".join(f"<td>{v}</td>" for v in cells(lines[index])) + "</tr>")
-                index += 1
-            output.append("</tbody></table></div>")
-            continue
-        elif match := re.match(r"^(\s*)([-*]|\d+\.) (.+)$", line):
-            tag = "ol" if re.match(r"^\s*\d+\.", line) else "ul"
-            indent = len(match.group(1))
-            while lists and (indent < lists[-1][0] or (indent == lists[-1][0] and tag != lists[-1][1])):
-                close_list()
-            if lists and indent == lists[-1][0]:
-                output.append("</li>")
-            else:
-                if paragraph:
-                    output.append("<p>" + inline(" ".join(paragraph)) + "</p>")
-                    paragraph.clear()
-                output.append(f"<{tag}>")
-                lists.append((indent, tag))
-            value = f' value="{int(match.group(2)[:-1])}"' if tag == "ol" else ""
-            output.append(f'<li data-indent="{indent}" data-marker="{match.group(2)}"{value}>'
-                          + inline(match.group(3)))
-        elif not line.strip():
-            flush()
-        else:
-            if lists:
-                output.append(" " + inline(line.strip()))
-            else:
-                paragraph.append(line.strip())
-        index += 1
-    flush()
-    return "\n".join(output)
-
-
-def render_document(content, title, metadata=None):
-    """给 PRP 与 HTML 总结正文套用同一份离线文档模板。"""
+def render_document(content, title):
+    """给交付总结正文套用离线文档模板。"""
     template = Path(__file__).resolve().parents[3] / "assets/templates/document.html"
     parser = DocumentParser()
     parser.feed("<main>" + content + "</main>")
     outline = "\n".join(f'<li><a href="#{html.escape(anchor)}">{html.escape(label)}</a></li>'
                         for anchor, label in parser.outline)
-    comment = ""
-    if metadata is not None:
-        fields = "\n".join(f"{key}: {json.dumps(value, ensure_ascii=False)}" for key, value in metadata.items())
-        fields = fields.replace("-->", r"\u002d\u002d\u003e")
-        comment = METADATA_OPEN + fields + METADATA_CLOSE
-    slots = {"{{MDF_METADATA_COMMENT}}": comment, "{{MDF_DOCUMENT_TITLE}}": html.escape(title),
+    slots = {"{{MDF_DOCUMENT_TITLE}}": html.escape(title),
              "{{MDF_DOCUMENT_OUTLINE}}": outline, "{{MDF_DOCUMENT_CONTENT}}": content}
     return re.sub(r"\{\{MDF_[A-Z_]+\}\}", lambda match: slots[match.group()], template.read_text())
-
-
-def render_html(metadata, body):
-    title = next((line[2:] for line in body.splitlines() if line.startswith("# ")), "MDF")
-    return render_document(markdown_body(body), title, metadata)
-
-
-def update_metadata(text, metadata):
-    from mdf_core.foundation.yamlutil import frontmatter_span
-    start, end, _ = frontmatter_span(text)
-    fields = "\n".join(f"{key}: {json.dumps(value, ensure_ascii=False)}" for key, value in metadata.items())
-    return text[:start] + fields.replace("-->", r"\u002d\u002d\u003e") + text[end:]

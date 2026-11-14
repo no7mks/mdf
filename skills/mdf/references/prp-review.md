@@ -58,7 +58,7 @@
 完整读取以下契约：
 
 - `references/common.md` 与 `references/repository-contract.md`。
-- `references/object-contract.md` 与 `references/html-materials.md`。
+- `references/object-contract.md`。
 
 步骤 4 读取并内部执行 `references/clarify.md`。
 
@@ -68,8 +68,8 @@
 | 2 | Select proposal | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
 | 3 | Check state | 脚本 | 判定未开工才转 draft | list 结果、状态检查 | 4 | 已开工保留对象；其他停止 |
 | 4 | Clarify | 约束 | 查证并内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 需补稿留 4；其余保留 draft，停止 |
-| 5 | Confirm | 约束 | 展示详细 HTML 并确认 | HTML、用户确认 | 6 | 保留 draft，停止 |
-| 6 | Validate and ready | 脚本 | 校验、转 HTML、提交、land | ready、land | 结束 | 稿变回 5；校验停；其后报状态 |
+| 5 | Confirm | 约束 | 展示 Markdown 原稿并确认 | 文件、摘要、用户确认 | 6 | 保留 draft，停止 |
+| 6 | Validate and ready | 脚本 | 校验、更新状态、提交、land | ready、land | 结束 | 稿变回 5；校验停；其后报状态 |
 
 ## 术语与数据结构
 
@@ -122,20 +122,11 @@ findings 后停止。尚未进入写入位置时留在本步。
 | --- | --- |
 | 已开工 | 报告关联分支与材料位置，保留对象和交付基线并停止；本入口不修改已开工 PRP |
 | `list` 因记录损坏失败或目标不在输出中 | 同样在写入前停止，报告缺失证据 |
-| 仅 active draft/ready 且已确认未开工 | 先检查转换范围；ready 用 `prp-format draft` 转为 Markdown draft |
-
-github-flow 在改状态或正文前运行 `prp-format plan --repo "$REPO_ROOT" --proposal <完整 PRP ID>`。
-
-- `outside_pm` 为空时，在当前写入位置继续。
-- trunk 上 `outside_pm` 非空时，用普通 [adhoc](adhoc.md) 交付。
-  PR mode 若本地 trunk 有未共享 commit，先按 [trunk-pr](trunk-pr.md) 发 PR/MR 并完成 close-out，再续办评审。
-  从当前干净 trunk 运行 `start --kind adhoc --name <slug> --work <评审目标与引用改写范围> --repo "$REPO_ROOT"`。
-  进入返回的 owner worktree，重新核对对象，再执行本次评审与完整引用改写。由 adhoc 提交和收口。
-- 已在 `pm/*` 处理反馈且范围超出白名单时，先保留现场，按 [pm 分支](pr.md#pm-分支) 处理整批变更。
+| 仅 active draft/ready 且已确认未开工 | 在当前写入位置继续；ready 用 `prp-review draft --repo "$REPO_ROOT" --proposal <PRP-ID>` 原位转为 draft |
 
 取消、暂停、未确认或 validation 失败均保持 `draft`，不恢复 ready；写回后失败按步骤 6 报告实际状态。
 
-验收：原状态、检查过的引用与材料范围、未开工结论，以及写回后的 draft 状态。
+验收：原状态、未开工结论和当前文件的 draft 状态。
 
 ### 草稿与确认
 
@@ -147,8 +138,8 @@ github-flow 在改状态或正文前运行 `prp-format plan --repo "$REPO_ROOT" 
 
 验收：完整 draft。
 
-- 按 `html-materials.md` 补齐事实依据、约束、依赖、设计取舍、风险与逐条验收方法。
-- 详细内容先写入 Markdown draft；HTML 由该稿生成，不在 preview 中单独维护另一份正文。
+- 在 Markdown draft 中写清事实依据、约束、依赖、设计取舍、风险与逐条验收方法。
+- 对已有 PRP 附上本次 diff，供用户核对。
 
 异常与交接：需要补稿时留在 4；其他失败保持 draft 并停止。
 
@@ -167,12 +158,9 @@ github-flow 在改状态或正文前运行 `prp-format plan --repo "$REPO_ROOT" 
 
 **确认**
 
-按 `html-materials.md` 生成并检查详细 HTML，展示实际文件供用户确认。
-
-1. 运行 `prp-format preview --repo "$REPO_ROOT" --proposal <完整 PRP ID>`。
-2. 打开返回的 `.review.html`，检查全部正文、表格和证据链接。
-3. 向用户展示 HTML 文件，明确确认事实、排除范围、取舍、验收方法与既有对象 diff。
-4. 取得对该 HTML 内容的明确确认；改稿后重新生成、检查并确认，不沿用旧稿确认。
+1. 运行 `prp-review check --repo "$REPO_ROOT" --proposal <PRP-ID>`，记录返回的文件路径和 `sha256`。
+2. 向用户展示该 Markdown 文件，确认事实、排除范围、取舍、验收方法及本次 diff。
+3. 取得对该文件的明确确认。改稿后重新运行 `check`，展示改稿并确认。
 
 验收：用户明确确认。
 
@@ -186,25 +174,18 @@ github-flow 在改状态或正文前运行 `prp-format plan --repo "$REPO_ROOT" 
 **就绪**
 
 - 先在 `draft` 状态运行 `basic validation`。
-- 通过后执行以下命令，把已确认内容写成唯一 ready `.html`。
+- 通过后，用步骤 5 的摘要在原 Markdown 文件中写入 ready 状态。
 
 ```bash
-python3 "$MDF_ROOT/scripts/mdf.py" prp-format ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed
+python3 "$MDF_ROOT/scripts/mdf.py" prp-review ready --repo "$REPO_ROOT" --proposal <PRP-ID> --confirmed-sha256 <SHA256>
 ```
 
-- 该 CLI 删除对应 Markdown 与临时 preview，并改写仓内引用；Agent 回读结果，不再手动重复这些写入。
-
-回读确认状态为 `ready` 后，按步骤 3 选定的项目记录或 adhoc 流程提交。原 `pm/*` 的修订使用 `pm commit`。
-
-转换会重新检查链接范围。若返回 `proposal_requires_delivery`，转换未写入，保留 draft 与确认稿。
-在 trunk 上将本次已改稿件与确认稿带入基于同一 trunk 的普通 adhoc 分支，核对完整 diff 后再执行转换；
-从干净的 trunk 启动 adhoc 时，先在仓外保存本次文件及校验结果，恢复本次文件前核对原路径与内容。
-
-验收：validation 通过；回读 HTML 对象确认 `ready`，对应 Markdown 已不存在，引用仍有效。
+回读确认状态为 `ready` 后，按步骤 1 选定的项目记录流程提交。原 `pm/*` 的修订使用 `pm commit`。
+验收：validation 通过，原路径上的 Markdown 文件状态为 `ready`。
 
 异常与交接：
 
 - `basic validation` 失败：保持 `draft` 与现场并停止。
-- `preview_changed`：保持 draft，回步骤 5 重新生成、检查 HTML 并取得本稿确认。
+- `review_changed`：保持 draft，回步骤 5 展示当前 Markdown 并取得确认。
 - 写回 `ready`、回读、提交或收口失败时保留现场，报告写回、提交及会话内已执行的合入状态。
 - 不得关闭对象或填写 `released_in`。

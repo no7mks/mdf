@@ -109,9 +109,9 @@ def test_trunk_pr_moves_project_records_to_pm_and_reuses_pr(python_exe, tmp_path
     add_prp(repo, "prp-0002", status="draft")
     git(repo, "add", "docs/proposals")
     proposal_commit = payload(pm_commit(python_exe, repo))
-    format_args = ("--repo", str(repo), "--proposal", "prp-0002")
-    payload(mdf(python_exe, "prp-format", "preview", *format_args))
-    payload(mdf(python_exe, "prp-format", "ready", *format_args, "--confirmed"))
+    review_args = ("--repo", str(repo), "--proposal", "prp-0002")
+    checked = payload(mdf(python_exe, "prp-review", "check", *review_args))
+    payload(mdf(python_exe, "prp-review", "ready", *review_args, "--confirmed-sha256", checked["sha256"]))
     git(repo, "add", "docs/proposals")
     review_commit = payload(pm_commit(python_exe, repo))
     (repo / "docs/JOTS.md").write_text("# Jots\n")
@@ -400,7 +400,7 @@ def test_concurrent_pm_commit_cannot_consume_index(python_exe, tmp_path, monkeyp
     assert not git(repo, "branch", "--list", "pm/*").stdout.strip()
 
 
-def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_path, monkeypatch):
+def test_pm_proposal_feedback_can_review_and_update_same_pr(python_exe, tmp_path, monkeypatch):
     repo, remote, platform = pr_repo(tmp_path, monkeypatch)
     proposal = add_prp(repo, "prp-0002")
     git(repo, "add", str(proposal))
@@ -411,11 +411,11 @@ def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_pa
     rework = payload(mdf(python_exe, "pm", "rework", *args))
     work = Path(rework["worktree"])
     assert payload(mdf(python_exe, "pm", "rework", *args)) == rework
-    format_args = ["--repo", str(work), "--proposal", "prp-0002"]
-    draft = work / payload(mdf(python_exe, "prp-format", "draft", *format_args))["path"]
+    review_args = ["--repo", str(work), "--proposal", "prp-0002"]
+    draft = work / payload(mdf(python_exe, "prp-review", "draft", *review_args))["path"]
     draft.write_text(draft.read_text() + "\n## 评审补充\n\n明确校验范围。\n")
-    payload(mdf(python_exe, "prp-format", "preview", *format_args))
-    payload(mdf(python_exe, "prp-format", "ready", *format_args, "--confirmed"))
+    checked = payload(mdf(python_exe, "prp-review", "check", *review_args))
+    payload(mdf(python_exe, "prp-review", "ready", *review_args, "--confirmed-sha256", checked["sha256"]))
     outside = work / "docs/outside.md"
     outside.write_text("无关记录\n")
     git(work, "add", "docs")
@@ -434,7 +434,7 @@ def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_pa
     assert git(remote, "rev-parse", source).stdout.strip() == revised["head"]
     platform.merge(1, tmp_path)
     assert payload(mdf(python_exe, "finish-gitflow", *args))["completed"]
-    assert "明确校验范围" in proposal.with_suffix(".html").read_text()
+    assert "明确校验范围" in proposal.read_text()
 
 
 def test_pm_conflict_resolution_resumes_interrupted_cleanup(python_exe, tmp_path, monkeypatch):
@@ -575,32 +575,22 @@ def test_pm_can_clean_up_preserved_rework_after_original_pr_merges(python_exe, t
 
 
 @pytest.mark.parametrize("status", ["draft", "ready"])
-def test_linked_proposal_routes_to_ordinary_delivery_before_conversion(python_exe, tmp_path, status):
+def test_linked_proposal_review_only_changes_markdown(python_exe, tmp_path, status):
     repo = github_flow_repo(tmp_path, trunk="main")
     proposal = add_prp(repo, "prp-0002", status=status)
     index = repo / "docs/README.md"
-    index.write_text(index.read_text() + f"\n[计划](proposals/{proposal.name})\n")
+    links = index.read_text() + f"\n[计划](proposals/{proposal.name})\n"
+    index.write_text(links)
     commit(repo)
     args = ["--repo", str(repo), "--proposal", "prp-0002"]
-    plan = payload(mdf(python_exe, "prp-format", "plan", *args))
-    assert plan["outside_pm"] == ["docs/README.md"]
-    assert git(repo, "status", "--porcelain").stdout == ""
-    action = "ready" if status == "draft" else "draft"
-    assert error_of(mdf(python_exe, "prp-format", action, *args))["error"] == "proposal_requires_delivery"
-    assert git(repo, "status", "--porcelain").stdout == ""
-    owner = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "adhoc",
-                        "--name", "review-linked-proposal", "--work", "评审 Proposal 并同步外部引用"))
-    work = Path(owner["worktree"])
-    work_args = ["--repo", str(work), "--proposal", "prp-0002"]
     if status == "ready":
-        payload(mdf(python_exe, "prp-format", "draft", *work_args))
-    payload(mdf(python_exe, "prp-format", "preview", *work_args))
-    result = payload(mdf(python_exe, "prp-format", "ready", *work_args, "--confirmed"))
-    assert (work / result["path"]).is_file()
-    assert f"proposals/{proposal.with_suffix('.html').name}" in (work / "docs/README.md").read_text()
-    assert proposal.is_file()
-    assert git(repo, "status", "--porcelain").stdout == ""
-    assert not git(repo, "branch", "--list", "pm/*").stdout
+        payload(mdf(python_exe, "prp-review", "draft", *args))
+    proposal.write_text(proposal.read_text() + "\n## 评审补充\n\n明确校验范围。\n")
+    checked = payload(mdf(python_exe, "prp-review", "check", *args))
+    result = payload(mdf(python_exe, "prp-review", "ready", *args, "--confirmed-sha256", checked["sha256"]))
+    assert repo / result["path"] == proposal
+    assert index.read_text() == links
+    assert git(repo, "status", "--porcelain").stdout.splitlines() == [f" M {result['path']}"]
 
 
 def _audit(python_exe, repo, branch, before, after, proof=None):

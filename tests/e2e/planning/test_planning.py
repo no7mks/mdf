@@ -174,7 +174,7 @@ def test_tree_index_includes_ready_and_groups_by_milestone(python_exe, tmp_path)
 
 
 def split_spec(repo):
-    body = proposal_markdown(repo / "docs/proposals" / PRP_NAME).split("---", 2)[2]
+    body = (repo / "docs/proposals" / PRP_NAME).read_text().split("---", 2)[2]
     return {"source": "prp-0001", "rationale": "用户确认两项共同覆盖验收，下游仅依赖第一项",
             "children": [
                 {
@@ -188,13 +188,13 @@ def split_spec(repo):
             "downstream": {"prp-0005": ["prp-0003"]}}
 
 
-@pytest.mark.parametrize("milestone", [None, "首次购买"])
+@pytest.mark.parametrize("milestone", [None, "首次购买", "首次\u2028购买"])
 def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, milestone):
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-0005", ["prp-0001"])
     if milestone is not None:
         replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []",
-                f'depends_on: []\nmilestone: "{milestone}"')
+                f"depends_on: []\nmilestone: {json.dumps(milestone)}")
     init_git(repo)
     git(repo, "branch", "master")
     checkout_develop(repo)
@@ -207,19 +207,17 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     assert len(result["files"]) == 4
     assert git(work, "status", "--porcelain").stdout == before
     payload(mdf(python_exe, *args))
-    assert 'status: "replaced"' in (work / "docs/proposals" / PRP_NAME).read_text()
+    assert "status: replaced" in (work / "docs/proposals" / PRP_NAME).read_text()
     assert 'depends_on: ["prp-0003"]' in (
-        work / "docs/proposals/prp-0005-item-0005.html"
+        work / "docs/proposals/prp-0005-item-0005.md"
     ).read_text()
-    assert 'status: "draft"' in (
+    assert "status: draft" in (
         work / "docs/proposals/prp-0003-part-0003.md"
     ).read_text()
+    from mdf_core.foundation.yamlutil import read_frontmatter
     for name in (PRP_NAME, "prp-0003-part-0003.md", "prp-0004-part-0004.md"):
-        content = (work / "docs/proposals" / name).read_text()
-        if milestone is None:
-            assert "milestone:" not in content
-        else:
-            assert f'milestone: "{milestone}"' in content
+        metadata, _ = read_frontmatter(work / "docs/proposals" / name)
+        assert metadata.get("milestone") == milestone
     assert_ok(mdf(python_exe, "validate", "--repo", str(work)))
 
 
@@ -275,7 +273,7 @@ def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(py
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     add_prp(repo, "prp-0003", ["prp-0001"])
     # add_prp copies its source; explicitly keep the dependent ready.
-    replace(repo / "docs/proposals/prp-0003-item-0003.html", "status: implemented", "status: ready")
+    replace(repo / "docs/proposals/prp-0003-item-0003.md", "status: implemented", "status: ready")
     init_git(repo)
     data = payload(mdf(python_exe, "tree", "--repo", str(repo)))
     assert [node["id"] for node in data["trees"]] == ["prp-0003"]
@@ -306,7 +304,7 @@ def test_milestone_dependency_blocks_tree_until_members_are_implemented(
     assert roots["prp-0002"]["children"] == []
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     replace(
-        repo / "docs/proposals/prp-0002-item-0002.html",
+        repo / "docs/proposals/prp-0002-item-0002.md",
         "status: ready",
         "status: implemented",
     )
@@ -319,7 +317,7 @@ def test_rejected_milestone_member_does_not_block_dependents(python_exe, tmp_pat
     repo = copy_fixture(tmp_path)
     add_prp(repo, "prp-0002", status="rejected", milestone="阶段一")
     replace(
-        repo / "docs/proposals/prp-0002-item-0002.html",
+        repo / "docs/proposals/prp-0002-item-0002.md",
         "status: rejected",
         "status: rejected\nreject-reason: wont-do",
     )
