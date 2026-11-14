@@ -105,6 +105,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
+| `pr-watch` | 只读等待 PR/MR、review 与关联 CI 状态 | [PR 与审查](mdf-cli-review.md) |
 | `release-integrate` | github-flow PR 发布的集成分支 | [仓库写入命令](mdf-cli-write.md) |
 | `workflow` | 空闲态切换分支模型/trunk、渲染 CI 分支 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
@@ -140,7 +141,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | `trunk-pr`：github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
-| `pr` | `pr --repo <repo> [--source <source>]`；merged 后完成，交给 close-out | [PR mode](mdf-cli-review.md) |
+| `pr` | `pr` 提交和核验合并，`pr-watch` 等待平台状态；通过后交给 close-out | [PR mode](mdf-cli-review.md) |
 | `close-out` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。

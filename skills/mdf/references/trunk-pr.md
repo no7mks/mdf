@@ -47,7 +47,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Prepare | 脚本 | 先核恢复；否则保全并对齐 trunk | 原 head、base、worktree 与记录 | 首次2；PR恢复3；清理4；无增量结束 | 保留现场并报告 |
 | 2 | Check | 约束 | 按下表在返回的 worktree 检查 | 实际校验与审查证据 | 3 | 修复并复验 |
-| 3 | Pull request | 约束 | 用返回的 source 委托 pr 创建或恢复 PR/MR | 平台状态与合并核验 | 4 | 沿用 pr 等待与返工 |
+| 3 | Pull request | 约束 | 用返回的 source 委托完整的 [PR 流程](pr.md)，复用同一 PR/MR 轮询与返工 | 平台状态、关联 CI 与合并核验 | 4 | 沿用 pr 等待与返工 |
 | 4 | Finish | 约束 | 委托 close-out，再返回 sync 或报告 | completed 与同步结果 | 返回调用方 | 保留现场并续办 |
 
 ## 接管与路由
@@ -66,6 +66,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" trunk-pr --repo "$REPO_ROOT" --slug <slug>
   - 在该 worktree 用 `pr --source <source>` 创建或续办 PM PR。合并后用 `finish-gitflow --source <source>` 收口。
   - `adhoc` 返回 source 的独立 worktree；其余保全规则沿用 dev-pr。
 - 返回 `kind`、`source`、`worktree` 与 `next_intent`。重试沿用操作记录和同一 PR/MR，直到 close-out 完成。
+- `mdf.py trunk-pr` 完成 Prepare。当前 Agent 继续执行步骤 2–4；PR 创建后调用 `pr-watch`，收到可修问题后补验并更新原 PR，再恢复轮询。
 - `$mdf sync` 的已确认 PR 计划可委托本 intent，沿用同一份接管记录。
 
 ## Adhoc 验收

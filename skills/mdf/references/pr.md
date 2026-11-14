@@ -68,7 +68,7 @@ github-flow 的 [trunk-pr](trunk-pr.md) 把已在本地 trunk 提交的纯项目
 
 ## 工作流（唯一执行契约）
 
-本表由 `$mdf pr`、deliver、next 或 adhoc 调用；只适用于 PR mode。
+本表由 `$mdf pr`、deliver、next、adhoc、dev-pr 或 trunk-pr 调用；只适用于 PR mode。
 读取 `references/common.md` 与 `references/delivery-contract.md`。
 
 无账本 adhoc 的专用规则适用于本页全部准备、集成、返工与恢复步骤：
@@ -228,31 +228,36 @@ closeout:
 
 ### 当前调用内轮询
 
-轮询由当前 Agent 执行，不创建 automation、定时任务或后台常驻服务。
+当前 Agent 报告 PR/MR 链接后，运行只读 CLI：
 
-- 首次返回等待时报告 PR/MR 与关联运行链接；此后每 120 秒只读查询 state、head、review/approval 与关联 CI。
-  - 使用已登录的 gh/glab 查询记录中的 provider、host、project 和 PR/MR ID；不猜测其他仓库或 PR/MR。
-  - 等待拆成不超过 60 秒的可中断调用；期间响应用户输入，累计 120 秒才再次查询平台。
+```bash
+python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURCE"
+```
+
+- CLI 用已登录的 gh/glab 核对操作记录中的 provider、host、project、PR/MR ID、source、target 和 head，每 120 秒查询一次。
+- 当前 Agent 保持该调用运行，使用可中断的短等待读取结果并响应用户输入。
 - 关联 CI 包含发起该 PR/MR 的 workflow run / pipeline，以及当前 head 的全部关联运行，包含非 required checks。
-  - 从调用上下文、PR/MR 时间线和平台运行详情核实关系，记录 provider、project、run ID、attempt、URL、head 与触发来源。
-  - 发起 PR 的运行可能使用目标分支 SHA，不能仅按 PR head SHA 查找；不把同仓库无关运行纳入等待。
-  - 保存已确认运行身份与链接到现有交接上下文；中断后查回复用，不以“PR 已合并”丢弃原运行。
-- 每轮核完整 run / pipeline 的状态、结论和全部 job 与 step；不能只看 PR checks 摘要或负责 merge 的 job。
+  - 从调用上下文或平台时间线确认发起该 PR 的 run ID，通过 `--origin-run <id>` 传入。可重复该参数。
+  - 发起 PR 的运行可能使用目标分支 SHA，不能仅按 PR head SHA 查找。恢复或 push 后继续传入已确认的发起运行 ID。
+  - 保留运行的 run ID、attempt、URL 与 head；返回状态附带关联检查证据。
+- 每轮核完整 run / pipeline 的状态、结论和全部 job 与 step，step 使用平台提供的结构化数据。
   - 查询须遍历分页；发现新 job、关联运行或 rerun attempt 时更新范围，不能复用旧 attempt 的成功结论。
   - PR 已 merged 但关联运行未结束时，保持 Goal active；queued、in_progress、waiting 等状态继续等待。
 - open 且 CI/review 仍在运行、等待审批或等待自动合并时，继续本轮询，不结束当前 pr 或 deliver。
-  - 没有新结果时不重复汇报；不设固定轮数或总等待超时。
+  - 等待无固定轮数或总超时，合入后连续两次确认相同且通过的快照才返回 `merged`。
   - 查询本身不重复调用 pr，不重复 push，也不调用 approve/merge 或修改 CI policy。
-- 确认 merged 后回步骤 3，执行 `pr --repo <主路径> --source <原分支>`。
+- CLI 返回 `merged` 后回步骤 3，执行 `pr --repo <主路径> --source <原分支>` 核验 Git 合并结果。
   - CLI 仅核验实际合并；`status=merged` 且 `completed=true` 后，关联运行也全部结束且结论通过才返回 pr 完成。
-  - skipped / neutral 仅在项目 policy 允许且无失败、未完成 job 时接受；cancelled、timed_out、action_required 不算通过。
+  - 仅在项目 policy 允许 skipped / neutral 时传 `--allow-skipped`；cancelled、timed_out、action_required 不算通过。
   - 调用方继续选择 close-out；不得将 pr 完成报告成整个交付完成。
 - 关联运行失败时读取失败 job / step 的日志与报告，按证据修复或处理阻塞；不能因 PR 已 merged 忽略失败。
   - 合并后的失败不得向已合入的 source 追加提交、重开原 PR 或改写固定 M；需要代码修改时按调用边界另行交付。
   - 仅有证据支持暂时故障且已有授权时重试；否则报告运行链接、失败 job 与恢复位置，保留未完成状态。
 - 查询失败、权限不足或关联不明不能当作没有 CI；先查明或报告阻塞，不完成 Goal 或进入清理。
   - 平台证据确认没有关联运行时可按无 CI 处理；完成前再次查询，确认没有新增运行或 attempt。
-- review 要求修改、CI checks 失败或合并冲突时，先读取已有报告与平台详情，按下方修复流程继续推进。
+- CLI 返回 `changes_requested`、`ci_failed` 或 `merge_conflict` 时，先读取已有报告与平台详情，按下方修复流程继续推进。
+  - 一份 review 的返工处理完成后，在现有交接上下文保留 `change_requests` 返回的 ID。再次轮询时每个已处理 ID 各传一次 `--handled-review <id>`。
+  - CLI 继续等待平台复审。新 ID 仍触发返工；`review_identity_unknown` 时先核平台反馈，避免把未识别的请求当成已处理。
 - 权限不足、无法获取必要证据、身份或历史不符等无法安全自行解决的问题，报告具体阻塞并保留现场。
   - head/source/target 变化时核对来源；本轮修复产生的合法前进按修复流程处理，不覆盖他人提交或改写历史。
   - closed 未 merged 按 closed_without_merge 处理；不自动重建 PR/MR。

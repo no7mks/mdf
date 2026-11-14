@@ -9,6 +9,12 @@
 - manifest.closeout.mode 为 local/pr，省略为 local；pr 需 provider: github/gitlab。
 - init 保留已有 closeout，doctor 报 manifest.closeout finding；schema_version 仍为 3。
 - `pr --repo <repo> [--source <source>]` 创建/更新 PR，返回 waiting_for_merge 或 closed_without_merge。
+- `pr-watch --repo <repo> [--source <source>]` 只读轮询操作记录中的 PR/MR、review 与关联 CI。
+  - 返回 `merged`、`closed_without_merge`、`changes_requested`、`ci_failed` 或 `merge_conflict`，附平台快照。
+  - 每次轮询快照写入该次 CLI 日志目录的 `polls.jsonl`。
+  - `--origin-run <id>` 记录在调用中已确认的发起 run/pipeline ID，可重复传入。项目允许 skipped 或 neutral 时使用 `--allow-skipped`。
+  - `--handled-review <id>` 可重复传入已完成返工的 `change_requests` ID。平台 review 状态仍保留在快照。
+  - `merged` 表示平台已合入且关联 CI 收尾完成。随后用 `pr` 核验 Git 合并结果。
   核验实际 merged 后返回 completed=true、status=merged、next_intent=close-out，不发布或清理。
 - `finish-gitflow --repo <repo> [--source <source>]` 在 pr 模式支持所有交付 kind 的恢复。
 - 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted、remote_deleted 与工作区路径。

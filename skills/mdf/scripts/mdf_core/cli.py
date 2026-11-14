@@ -383,6 +383,15 @@ def build_parser() -> argparse.ArgumentParser:
     pull.add_argument("--source")
     pull.set_defaults(func=command_finish_gitflow, phase="pr")
 
+    from mdf_core.lifecycle.pull_watch import command_pr_watch
+    watch = subparsers.add_parser("pr-watch")
+    watch.add_argument("--repo", required=True)
+    watch.add_argument("--source")
+    watch.add_argument("--origin-run", type=int, action="append", default=[])
+    watch.add_argument("--handled-review", action="append", default=[])
+    watch.add_argument("--allow-skipped", action="store_true")
+    watch.set_defaults(func=command_pr_watch)
+
     finish = subparsers.add_parser("finish-gitflow")
     finish.add_argument("--repo", required=True)
     finish.add_argument("--source")

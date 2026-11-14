@@ -8,6 +8,40 @@ from support_delivery import commit
 from support_pull import prepare, squash_pending
 
 
+def test_pr_watch_reuses_original_pull_after_repair(python_exe, tmp_path, monkeypatch):
+    from mdf_core.lifecycle import pull_watch
+    from mdf_core.lifecycle import pull_finish
+
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, "adhoc")
+    monkeypatch.setattr(pull_watch, "origin", pull_finish.origin)
+    monkeypatch.setattr(pull_watch, "Forge", lambda *_: platform)
+    monkeypatch.setattr(pull_watch, "sleep", lambda _: None)
+    submitted = payload(mdf(python_exe, "pr", "--repo", str(work)))
+    source = submitted["source"]
+    request = ("pr-watch", "--repo", str(repo), "--source", source)
+
+    def snapshot(forge, number, _):
+        pull = forge.get(number)
+        return {"pull_request": pull, "change_requests": [], "conflicts": False,
+                "checks": [{"conclusion": "failure" if pull["head"] == submitted["pull_request"]["head"]
+                            else "success"}]}
+
+    monkeypatch.setattr(pull_watch, "pull_status", snapshot)
+    before = git(remote, "show-ref").stdout
+    failed = payload(mdf(python_exe, *request))
+    assert failed["status"] == "ci_failed" and failed["pull_request"]["id"] == 1
+    assert any((repo / ".mdf/logs").glob("*-pr-watch/polls.jsonl"))
+    assert git(remote, "show-ref").stdout == before
+
+    (work / "README.md").write_text("# 修复 CI 反馈\n")
+    commit(work)
+    updated = payload(mdf(python_exe, "pr", "--repo", str(work)))
+    assert updated["pull_request"]["id"] == 1
+    assert len(platform.pulls) == 1
+    platform.merge(1, tmp_path)
+    assert payload(mdf(python_exe, *request))["status"] == "merged"
+
+
 @pytest.mark.parametrize('kind', ['release', 'hotfix'])
 @pytest.mark.parametrize('action', ['remove', 'advance'])
 def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path, monkeypatch, kind, action):
