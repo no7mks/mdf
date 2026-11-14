@@ -58,17 +58,24 @@ def _exists(repo: Path, ref: str) -> bool:
                     check=False).returncode
 
 
-def _require_base_covers_origin(repo: Path, branch: str) -> None:
+def _require_base_covers_origin(
+    repo: Path, branch: str, *, shared_trunk: bool = False, cutpoint: str | None = None,
+) -> str:
+    local_sha = _git(repo, "rev-parse", f"refs/heads/{branch}").stdout.strip()
+    start_point = cutpoint or local_sha
     if _git(repo, "remote", "get-url", ORIGIN, check=False).returncode:
-        return
+        if shared_trunk:
+            raise MDFError("PR mode 需要远端 origin", code="missing_origin")
+        return start_point
     listed = _git(repo, "ls-remote", ORIGIN, f"refs/heads/{branch}", check=False)
     if listed.returncode:
         raise MDFError(f"无法读取 {ORIGIN}/{branch}", code="remote_unavailable")
     lines = listed.stdout.strip().splitlines()
     if not lines:
-        return
+        if shared_trunk:
+            raise MDFError(f"PR mode 需要 origin/{branch}", code="missing_upstream_branch")
+        return start_point
     remote_sha = lines[0].split()[0]
-    local_sha = _git(repo, "rev-parse", f"refs/heads/{branch}").stdout.strip()
     ancestor = _git(
         repo, "merge-base", "--is-ancestor", remote_sha, local_sha, check=False,
     )
@@ -77,6 +84,12 @@ def _require_base_covers_origin(repo: Path, branch: str) -> None:
             f"本地 {branch} 缺少 {ORIGIN}/{branch} 上的提交",
             code="remote_ahead",
         )
+    if shared_trunk and start_point != remote_sha and (
+        not cutpoint or _git(repo, "merge-base", "--is-ancestor", cutpoint, remote_sha, check=False).returncode
+    ):
+        raise MDFError(f"本地 {branch} 有未共享 commit；先执行 trunk-pr 并完成 close-out",
+                       code="trunk_pr_required", details={"branch": branch})
+    return start_point
 
 
 def _synced(repo: Path, branch: str) -> None:
@@ -157,6 +170,8 @@ def command_start(args) -> None:
     from mdf_core.lifecycle.late_decision import start_options, CHECKPOINT
     from mdf_core.workspace.workflow_policy import require_gitflow
     trunk, github = trunk_branch(repo), is_github_flow(repo)
+    from mdf_core.workspace.merge_policy import configured
+    pr_mode = configured(repo)["mode"] == "pr"
     if github:
         if getattr(args, "from_master", False):
             require_gitflow(repo, "start --from-master")
@@ -181,8 +196,9 @@ def command_start(args) -> None:
     creating_support = bool(support and support.get("create_from"))
     if not creating_support and not _exists(repo, f"refs/heads/{base}"):
         raise MDFError(f"Branch {base} must exist", code="missing_branch")
-    if not creating_support:
-        _require_base_covers_origin(repo, base)
+    start_point = base if creating_support else _require_base_covers_origin(
+        repo, base, shared_trunk=github and pr_mode and base == trunk, cutpoint=cutpoint,
+    )
     objectives = None
     manual, adhoc = getattr(args, "manual", False), args.kind == "adhoc"
     if manual:
@@ -192,10 +208,10 @@ def command_start(args) -> None:
             raise MDFError("人工 feature 需要确认的 kebab-case --name", code="invalid_slug")
         suffix = args.name
         objectives = _read_objectives(args.objectives_file)
-        _unreleased_collision(repo, base, suffix)
+        _unreleased_collision(repo, start_point, suffix)
     elif adhoc:
         suffix, objectives = prepare(args)
-        _unreleased_collision(repo, base, suffix)
+        _unreleased_collision(repo, start_point, suffix)
     elif args.kind == "feature":
         if args.name:
             raise MDFError(
@@ -208,9 +224,9 @@ def command_start(args) -> None:
                 code="missing_proposal",
             )
         from mdf_core.documents.proposals import proposal_slug_on_ref, require_startable
-        suffix = on_base_or_pending(repo, proposal_slug_on_ref, args.proposal, base)
+        suffix = on_base_or_pending(repo, proposal_slug_on_ref, args.proposal, base, ref=start_point)
         objectives = _read_objectives(args.objectives_file)
-        _unreleased_collision(repo, base, suffix)
+        _unreleased_collision(repo, start_point, suffix)
     elif args.kind == "bugfix":
         if args.name:
             raise MDFError(
@@ -221,8 +237,8 @@ def command_start(args) -> None:
             raise MDFError("bugfix 需要 --bug", code="missing_bug")
         objectives = _read_objectives(args.objectives_file)
         from mdf_core.documents.bugs import bug_id_on_ref, require_startable_bug
-        suffix = on_base_or_pending(repo, bug_id_on_ref, args.bug, base)
-        _unreleased_collision(repo, base, slugify(suffix))
+        suffix = on_base_or_pending(repo, bug_id_on_ref, args.bug, base, ref=start_point)
+        _unreleased_collision(repo, start_point, slugify(suffix))
     elif args.kind in {"release", "on-demand-release"}:
         suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
@@ -238,8 +254,6 @@ def command_start(args) -> None:
             suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
-    from mdf_core.workspace.merge_policy import configured
-    pr_mode = configured(repo)["mode"] == "pr"
     if pr_mode:
         objectives = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", objectives)
     if args.kind == "on-demand-release":
@@ -298,7 +312,7 @@ def command_start(args) -> None:
     try:
         for name in names:
             path = sibling_worktree(repo, name)
-            add_linked_worktree(repo, name, path, cutpoint or base)
+            add_linked_worktree(repo, name, path, start_point)
             created.append((name, path))
         work = created[0][1]
         if args.kind == "feature" and not manual:

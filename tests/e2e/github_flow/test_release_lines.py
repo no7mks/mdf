@@ -50,6 +50,18 @@ def test_frozen_release_ignores_later_trunk_and_blocks_catch_up(python_exe, tmp_
     assert "release/1.3.0" not in git(work, "branch", "--contains", later).stdout
 
 
+def test_pr_release_accepts_shared_cutpoint_with_unpublished_trunk_commits(python_exe, tmp_path):
+    repo, _ = github_flow_repo(tmp_path, origin=True, pr=True)
+    tag_trunk(repo, "v1.2.0")
+    shared = git(repo, "rev-parse", "HEAD").stdout.strip()
+    unpublished = advance(repo, "docs/JOTS.md")
+    blocked = release_start(python_exe, repo, tmp_path, unpublished)
+    assert error_of(blocked)["error"] == "trunk_pr_required"
+    started = payload(release_start(python_exe, repo, tmp_path, shared))
+    assert started["start_commit"] == shared
+    assert git(repo, "rev-parse", "HEAD").stdout.strip() == unpublished
+
+
 def test_local_conflict_recovery_tags_the_locked_release_head(python_exe, tmp_path):
     repo, _remote = github_flow_repo(tmp_path, origin=True)
     tag_trunk(repo, "v1.2.0")

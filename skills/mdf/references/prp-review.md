@@ -128,6 +128,7 @@ github-flow 在改状态或正文前运行 `prp-format plan --repo "$REPO_ROOT" 
 
 - `outside_pm` 为空时，在当前写入位置继续。
 - trunk 上 `outside_pm` 非空时，用普通 [adhoc](adhoc.md) 交付。
+  PR mode 若本地 trunk 有未共享 commit，先按 [trunk-pr](trunk-pr.md) 发 PR/MR 并完成 close-out，再续办评审。
   从当前干净 trunk 运行 `start --kind adhoc --name <slug> --work <评审目标与引用改写范围> --repo "$REPO_ROOT"`。
   进入返回的 owner worktree，重新核对对象，再执行本次评审与完整引用改写。由 adhoc 提交和收口。
 - 已在 `pm/*` 处理反馈且范围超出白名单时，先保留现场，按 [pm 分支](pr.md#pm-分支) 处理整批变更。
@@ -205,7 +206,5 @@ python3 "$MDF_ROOT/scripts/mdf.py" prp-format ready --repo "$REPO_ROOT" --propos
 
 - `basic validation` 失败：保持 `draft` 与现场并停止。
 - `preview_changed`：保持 draft，回步骤 5 重新生成、检查 HTML 并取得本稿确认。
-- 写回 `ready`、回读、提交或收口失败：保留现场并停止。
-  - 报告对象实际状态，包括 `ready` 写回、提交及目标分支合入状态。
-  - github-flow 的 PR/MR 待合入时按 [pm 分支](pr.md#pm-分支) 续办。
+- 写回 `ready`、回读、提交或收口失败时保留现场，报告写回、提交及会话内已执行的合入状态。
 - 不得关闭对象或填写 `released_in`。

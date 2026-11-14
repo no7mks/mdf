@@ -238,16 +238,15 @@ python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
 
 ```bash
 python3 skills/mdf/scripts/mdf.py pm prepare --repo /path/to/repository
-python3 skills/mdf/scripts/mdf.py pm commit --repo /path/to/trunk --slug review-prp-0042 --message 'docs(pm): 评审 prp-0042'
+python3 skills/mdf/scripts/mdf.py pm commit --repo /path/to/trunk --message 'docs(pm): 评审 prp-0042'
 ```
 
 - github-flow 专用。`prepare` 返回已检出且干净的 trunk worktree。
 - `commit` 只接收已暂存的 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` 和 `docs/context/` 改动。
-- local mode 提交到 trunk。PR mode 在当前 worktree 创建 `pm/<slug>-<id>`、提交并切回 trunk。
-  返回 `source`、`target`、`head` 和 `worktree`。PR 修订可在同一 worktree 切到待合入的原 source 后调用，
-  此时复用该分支并切回 trunk。提交与 PR、sync 共用仓库级 OS lock，争用时返回 `finish_busy`。
-- 在 trunk worktree 用 `pr --source <pm/分支>` 发 PR，合并后用 `finish-gitflow --source <pm/分支>` 清理。
-- 目标记录还只在本地 `pm/*` 上时，依赖它的 `start` 返回 `pm_pr_pending`。
+- 两种模式均提交到本地 trunk，返回 `source`、`target`、`head` 和 `worktree`。
+  PR mode 用 [trunk-pr](../../../skills/mdf/references/trunk-pr.md) 接管未共享 commit。
+- 已接管的批次完成 close-out 前，`prepare` 与新的 trunk 提交返回 `trunk_pr_required`。
+- PR 修订可在同一 worktree 切到原 `pm/*` 后提交，同时切回 trunk。提交与 PR、sync 共用仓库级 OS lock，争用时返回 `finish_busy`。
 
 ## `workflow`
 

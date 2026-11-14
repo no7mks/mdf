@@ -173,16 +173,16 @@ upgrade 不读取本文件。
 | --- | --- | --- | --- |
 | gitflow | local / pr | `planning ensure` 返回 planning worktree | 提交后用 `planning land` 直接合入 trunk，再同步 develop 与 planning。 |
 | github-flow | local | `pm prepare` 返回已检出的干净 trunk worktree | `pm commit` 直接提交到 trunk。 |
-| github-flow | pr | `pm prepare` 返回已检出的干净 trunk worktree | `pm commit` 在同一 worktree 创建 `pm/<slug>-<id>`，提交后切回 trunk。按返回的 source 发 PR/MR 并收口。 |
+| github-flow | pr | `pm prepare` 返回已检出的干净 trunk worktree | `pm commit` 提交到本地 trunk。发 PR/MR 时由 `trunk-pr` 接管未共享提交。 |
 
 - `planning ensure` 创建或复用 `planning` 分支和仓库同级 `<repo-name>-worktrees/planning` worktree。
 - 准备命令均传 `--repo "$REPO_ROOT"`。按返回的 `branch`、`worktree` 进入写入位置，再解析根路径。
 - github-flow 全程使用现有 trunk worktree，无 develop 同步。
-  - 校验并暂存本次路径后执行 `pm commit --repo "$REPO_ROOT" --slug <操作或对象> --message <中文 Conventional Commit>`。
+  - 校验并暂存本次路径后执行 `pm commit --repo "$REPO_ROOT" --message <中文 Conventional Commit>`。
   - 允许路径为 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md`、`docs/context/`。混合路径整批走普通交付。
-  - PR mode 须先在 origin 建立同名 trunk。本地 trunk 有远端未合入的提交时，先用 [trunk-pr](trunk-pr.md) 接管。
-  - PR/MR 等待、修订、同步和清理见 [pm 分支](pr.md#pm-分支)。每次新操作分配独立 source。
-  - PR/MR 待合入时报告 source 与实际状态，沿用该 source 续办。依赖该记录的 intent 须等它进入本地 trunk。
+  - PR mode 可在本地连续提交。记录命令完成后报告本地提交状态，用户调用 [trunk-pr](trunk-pr.md) 或确认 sync PR 计划后再发 PR/MR。
+  - 已接管的批次按原 source 续办至 close-out，再提交下一批项目记录。PM PR/MR 修订规则见 [pm 分支](pr.md#pm-分支)。
+  - 以 trunk 为基线的交付从已共享的历史开工。本地记录可在发 PR/MR 前继续评审或分诊。
 - 只读和预览不提交。
 
 ### 切换工作区

@@ -298,7 +298,6 @@ def build_parser() -> argparse.ArgumentParser:
     pm_prepare.add_argument("--repo", required=True)
     pm_commit = pm_actions.add_parser("commit")
     pm_commit.add_argument("--repo", required=True)
-    pm_commit.add_argument("--slug", required=True)
     pm_commit.add_argument("--message", required=True)
     pm.set_defaults(func=command_pm)
 

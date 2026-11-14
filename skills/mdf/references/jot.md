@@ -217,7 +217,7 @@
 - 报告缺失位置，并提示先提交或合入该 Jot 再重新执行 `$mdf jot promote`：
   - gitflow 提升为 Proposal 时，仅将该条 Jot 带入规划分支并独立提交，按 [项目记录](common.md#项目记录) 落地。
     不得为取材料 merge develop。
-  - github-flow 的独立 Jot 必须先进入 trunk。已有 `pm/*` PR/MR 时，沿用原 source 等待合并并完成 close-out，再续办提升。
+  - github-flow 的独立 Jot 必须先提交到本地 trunk。已被 `trunk-pr` 接管时，等原 source 完成 close-out 后再续办提升。
   - gitflow 的 Bug 和与交付相关的 Bug 须先在对应写入分支提交该 Jot。
 
 核对通过后生成 ID：
@@ -252,5 +252,5 @@
 
 - 两种失败均保留对象与原 Jot，并报告 findings。
 - 将本次创建与移除作为同一个独立 commit，按 [项目记录](common.md#项目记录) 的模式矩阵或 Bug 的写入归属提交。
-- github-flow 的 `pm/*` 待合入时沿用同一个 source 续办。提交或收口失败时保留现场，报告提交及合入状态。
-- Proposal 已进入目标分支后，提示用户显式调用 `$mdf prp review`。
+- 提交或收口失败时保留现场，报告已完成的步骤。
+- Proposal 已提交到写入分支后，提示用户显式调用 `$mdf prp review`。

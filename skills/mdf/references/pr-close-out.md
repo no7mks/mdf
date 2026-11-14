@@ -64,6 +64,9 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
   owner 存在时核 detached；owner 已外部删除时如实报告，不重建。
 - release/ODR/hotfix 还须核 tag 指向固定 M、远端 develop 包含已确认 backmerge HEAD。
 - 部分成功只补剩余动作，不重复发布；finish_busy 等持锁调用结束，不删除 lock。
+- github-flow 的本地 trunk 有未共享 commit 时，`finish-gitflow` 返回 `upstream_diverged` 并保留现场。
+  通过显式 [trunk-pr](trunk-pr.md) 或已确认的 sync PR 计划保全这些 commit 并对齐本地 trunk。
+  对齐后用原交付 source 续办 close-out，新 PR/MR 可独立等待合并。
 - close-out 完成后返回 deliver / adhoc；更大范围 Goal 的其他工作仍须保留。
 - 工作区清理按 [close-out](close-out.md) 的清理授权执行；CLI 始终保留 owner worktree。
 

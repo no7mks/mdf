@@ -1,8 +1,5 @@
 """github-flow 项目记录的提交与路径约束。"""
 
-import re
-from uuid import uuid4
-
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.workspace.gitutil import (
     current_branch, ensure_clean, git_in_progress_head, repo_path, require_git_root, worktree_map,
@@ -35,9 +32,9 @@ def require_pm_merge(repo, first_parent, head, merged):
     require_pm_paths(paths(repo, first_parent, merged))
 
 
-def on_base_or_pending(repo, finder, identifier, base):
+def on_base_or_pending(repo, finder, identifier, base, *, ref):
     try:
-        return finder(repo, identifier, base)
+        return finder(repo, identifier, ref)
     except MDFError as exc:
         if (exc.code not in {"missing_proposal", "missing_bug"} or not is_github_flow(repo)
                 or configured(repo)["mode"] != "pr"):
@@ -56,6 +53,16 @@ def on_base_or_pending(repo, finder, identifier, base):
         raise
 
 
+def require_trunk_batch_available(repo, mode):
+    if mode == "pr":
+        from mdf_core.workspace.dev_pr import pending
+        state = pending(repo)
+        if state:
+            source = state["source"]
+            raise MDFError(f"先续办 {source} 的 trunk-pr 和 close-out，再提交下一批项目记录",
+                           code="trunk_pr_required", details={"source": source})
+
+
 def command_pm(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -70,8 +77,10 @@ def command_pm(args):
     work = worktree_map(repo).get(trunk)
     if work is None:
         raise MDFError(f"请在现有 worktree 检出 {trunk}", code="not_on_trunk")
+    mode = configured(repo)["mode"]
+    require_trunk_batch_available(repo, mode)
     ensure_clean(work)
-    emit({"ok": True, "operation": "pm-prepare", "mode": configured(repo)["mode"],
+    emit({"ok": True, "operation": "pm-prepare", "mode": mode,
           "branch": trunk, "worktree": str(work)})
 
 
@@ -86,19 +95,17 @@ def commit_pm(repo, args):
         raise MDFError(f"pm commit 须在 {trunk} 或待合入的 pm 分支执行", code="not_on_trunk")
     if revising and trunk in worktree_map(repo):
         raise MDFError("请在原 trunk worktree 修订 pm 分支", code="not_on_trunk")
+    if not revising:
+        require_trunk_batch_available(repo, mode)
     if git_in_progress_head(repo):
         raise MDFError("请先完成当前 Git 操作", code="dirty_worktree")
-    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", args.slug):
-        raise MDFError("pm 需要 kebab-case --slug", code="invalid_slug")
     staged = git(repo, "diff", "--cached", "--no-renames", "--name-only", "-z").stdout.split("\0")
     changed = [path for path in staged if path]
     require_pm_paths(changed)
     if not changed:
         raise MDFError("没有暂存的项目记录改动", code="no_pending_commits")
 
-    source = branch
-    creating = mode == "pr" and not revising
-    if mode == "pr":
+    if revising:
         unstaged = git(repo, "diff", "--no-renames", "--name-only", "-z").stdout.split("\0")
         overlap = sorted(set(changed).intersection(unstaged))
         if overlap:
@@ -107,29 +114,16 @@ def commit_pm(repo, args):
         git(repo, "fetch", "origin", "--prune")
         base = sha(repo, "HEAD")
         remote = sha(repo, f"refs/remotes/origin/{trunk}")
-        if creating:
-            if not ancestor(repo, base, remote):
-                raise MDFError(f"本地 {trunk} 含远端未合入提交；先处理现有 trunk 提交",
-                               code="upstream_diverged")
-            source = f"pm/{args.slug}-{uuid4().hex[:12]}"
-            git(repo, "switch", "-c", source)
-        else:
-            if ancestor(repo, base, remote):
-                raise MDFError("pm 分支已合入 trunk，请完成 close-out", code="no_pending_commits")
-            require_pm_diff(repo, remote, base)
-    try:
-        git(repo, "commit", "-m", args.message)
-        head = sha(repo, "HEAD")
-    except MDFError:
-        if creating and sha(repo, source) == base:
-            git(repo, "switch", "--no-overwrite-ignore", trunk)
-            git(repo, "branch", "-d", source)
-        raise
-    if mode == "pr":
+        if ancestor(repo, base, remote):
+            raise MDFError("pm 分支已合入 trunk，请完成 close-out", code="no_pending_commits")
+        require_pm_diff(repo, remote, base)
+    git(repo, "commit", "-m", args.message)
+    head = sha(repo, "HEAD")
+    if revising:
         switched = git(repo, "switch", "--no-overwrite-ignore", trunk, check=False)
         if switched.returncode:
             raise MDFError("提交已保存；处理 checkout 冲突后切回 trunk 续办",
-                           code="pm_return_blocked", details={"source": source, "target": trunk,
+                           code="pm_return_blocked", details={"source": branch, "target": trunk,
                                                               "head": head, "error": switched.stderr.strip()})
-    emit({"ok": True, "operation": "pm-commit", "mode": mode, "source": source,
+    emit({"ok": True, "operation": "pm-commit", "mode": mode, "source": branch,
           "target": trunk, "head": head, "worktree": str(repo)})

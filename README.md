@@ -122,7 +122,7 @@ github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--
 - release 可用 `--from-commit` 冻结历史切点；发布以固定 `release_head` 打 tag，并核验其为 trunk 的 ancestor。
 - 已有发布 tag 时 hotfix 走 `support/<major.minor>`；单线可省略 `--support`。无 tag 时改走 `bugfix/*`。
   - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
-- github-flow 的独立项目记录在 trunk worktree 编辑。local mode 直接提交，PR mode 每次使用独立的 `pm/*` 分支。
+- github-flow 的独立项目记录在本地 trunk 编辑并提交。PR mode 发 PR 时由 `trunk-pr` 接管整批提交。
   范围和命令见 [项目记录](skills/mdf/references/common.md#项目记录)。
 - release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
 - `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。

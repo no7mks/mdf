@@ -11,7 +11,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## pm 分支
 
-github-flow 的项目记录在 trunk worktree 提交到独立的 `pm/*` 后回到 trunk。
+github-flow 的 [trunk-pr](trunk-pr.md) 把已在本地 trunk 提交的纯项目记录保全到 `pm/*`，复用 trunk worktree。
 
 - 按现有 PR 授权和 Goal 规则，从干净的 trunk worktree 执行
   `mdf.py pr --repo <trunk 路径> --source <pm/分支>`。
@@ -26,7 +26,7 @@ github-flow 的项目记录在 trunk worktree 提交到独立的 `pm/*` 后回�
 - 返回 `squash_required` 时，在同一 worktree 切到原 source 按 [squash](squash.md) 整理，切回 trunk 后重试。
 - CLI 核完整 PR diff、源分支独有提交和合并结果的路径。项目记录使用自身的校验和审查证据。
 - 合并及关联 CI 完成后，从 trunk worktree 执行 `finish-gitflow --repo <trunk 路径> --source <pm/分支>`。
-  该命令同步本地 trunk，清理远端及本地 source ref，并保留 trunk worktree。下一次操作由 `pm commit` 创建新 source。
+  该命令同步本地 trunk，清理远端及本地 source ref，并保留 trunk worktree。
 
 ## 决策树
 

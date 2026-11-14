@@ -42,7 +42,8 @@ def test_trunk_pr_moves_mixed_history_to_adhoc(python_exe, tmp_path, monkeypatch
     repo, _, platform = pr_repo(tmp_path, monkeypatch)
     before = git(repo, "rev-parse", "master").stdout.strip()
     add_prp(repo, "prp-0002")
-    commit(repo, "docs(pm): 新增项目记录")
+    git(repo, "add", "docs/proposals")
+    payload(pm_commit(python_exe, repo))
     (repo / "local.txt").write_text("trunk 本地增量\n")
     commit(repo)
     if reverted:
@@ -75,11 +76,23 @@ def test_trunk_pr_moves_project_records_to_pm_and_reuses_pr(python_exe, tmp_path
     repo, remote, platform = pr_repo(tmp_path, monkeypatch, trunk=trunk)
     before = git(repo, "rev-parse", trunk).stdout.strip()
     trees = worktree_map(repo)
-    add_prp(repo, "prp-0002")
-    commit(repo, "docs(pm): 新增项目记录")
+    add_prp(repo, "prp-0002", status="draft")
+    git(repo, "add", "docs/proposals")
+    proposal_commit = payload(pm_commit(python_exe, repo))
+    format_args = ("--repo", str(repo), "--proposal", "prp-0002")
+    payload(mdf(python_exe, "prp-format", "preview", *format_args))
+    payload(mdf(python_exe, "prp-format", "ready", *format_args, "--confirmed"))
+    git(repo, "add", "docs/proposals")
+    review_commit = payload(pm_commit(python_exe, repo))
     (repo / "docs/JOTS.md").write_text("# Jots\n")
-    commit(repo, "docs(pm): 更新 Jots")
+    git(repo, "add", "docs/JOTS.md")
+    jot_commit = payload(pm_commit(python_exe, repo))
     head = git(repo, "rev-parse", trunk).stdout.strip()
+    assert proposal_commit["source"] == review_commit["source"] == jot_commit["source"] == trunk
+    assert jot_commit["head"] == head
+    assert git(repo, "rev-parse", "HEAD^").stdout.strip() == review_commit["head"]
+    assert git(repo, "rev-parse", "HEAD^^").stdout.strip() == proposal_commit["head"]
+    assert not git(repo, "branch", "--list", "pm/*").stdout.strip()
     rescue = ("trunk-pr", "--repo", str(repo))
     if via_sync:
         other = tmp_path / "other"
@@ -172,9 +185,35 @@ def test_release_pr_tags_release_head_and_never_backmerges(python_exe, tmp_path,
     git(remote, "merge-base", "--is-ancestor", head, "master")
 
 
-def pm_commit(python_exe, repo, slug="create-prp"):
-    return mdf(python_exe, "pm", "commit", "--repo", str(repo), "--slug", slug,
+def pm_commit(python_exe, repo):
+    return mdf(python_exe, "pm", "commit", "--repo", str(repo),
                "--message", "docs(pm): 更新项目记录")
+
+
+def trunk_pr(python_exe, repo):
+    return payload(mdf(python_exe, "trunk-pr", "--repo", str(repo), "--slug", "project-records"))["result"]["source"]
+
+
+def test_start_uses_checked_sha_when_pm_commit_advances_trunk(python_exe, tmp_path, monkeypatch):
+    from mdf_core.workspace import gitflow
+
+    repo, _ = github_flow_repo(tmp_path, origin=True, pr=True)
+    shared = git(repo, "rev-parse", "HEAD").stdout.strip()
+    original = gitflow._require_base_covers_origin
+
+    def commit_after_check(*args, **kwargs):
+        start_point = original(*args, **kwargs)
+        add_prp(repo, "prp-0002")
+        git(repo, "add", "docs/proposals")
+        payload(pm_commit(python_exe, repo))
+        return start_point
+
+    monkeypatch.setattr(gitflow, "_require_base_covers_origin", commit_after_check)
+    started = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "adhoc",
+                          "--name", "check-base", "--work", "验证交付基线"))
+    assert started["start_commit"] == shared
+    assert git(repo, "rev-parse", "HEAD").stdout.strip() != shared
+    assert not list((Path(started["worktree"]) / "docs/proposals").glob("prp-0002-*"))
 
 
 def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_path, monkeypatch):
@@ -185,15 +224,20 @@ def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_pa
     assert prepared["branch"] == "master" and Path(prepared["worktree"]).resolve() == repo.resolve()
     add_prp(repo, "prp-0002")
     git(repo, "add", "docs/proposals")
-    result = payload(pm_commit(python_exe, repo))
-    source = result["source"]
-    assert source.startswith("pm/create-prp-")
+    published_later = payload(pm_commit(python_exe, repo))
+    assert published_later["source"] == "master" and published_later["head"] != head
+    start = ("start", "--repo", str(repo), "--kind", "feature", "--proposal", "prp-0002",
+             "--objectives-file", str(write_work_objectives(tmp_path)), "--roster", "solo")
+    assert error_of(mdf(python_exe, *start))["error"] == "trunk_pr_required"
+    source = trunk_pr(python_exe, repo)
+    assert source.startswith("pm/project-records-")
     assert git(repo, "worktree", "list", "--porcelain").stdout == trees
     assert git(repo, "rev-parse", f"{source}^").stdout.strip() == head
     assert not has_ref(repo, "refs/heads/planning")
-    blocked = mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature", "--proposal", "prp-0002",
-                  "--objectives-file", str(write_work_objectives(tmp_path)), "--roster", "solo")
+    blocked = mdf(python_exe, *start)
     assert error_of(blocked)["error"] == "pm_pr_pending"
+    pending = error_of(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))
+    assert pending["error"] == "trunk_pr_required" and pending["details"]["source"] == source
     assert error_of(mdf(python_exe, "to", "--repo", str(repo), "--target", source))["error"] == "unsupported_branch"
     git(repo, "switch", source)
     (repo / "docs/context").mkdir(exist_ok=True)
@@ -221,10 +265,12 @@ def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_pa
     assert not has_ref(repo, f"refs/heads/{source}") and not has_ref(remote, f"refs/heads/{source}")
     assert git(repo, "branch", "--show-current").stdout.strip() == "master"
     assert list((repo / "docs/proposals").glob("prp-0002-*"))
+    assert payload(mdf(python_exe, *start))["base"] == "master"
 
     add_prp(repo, "prp-0003")
     git(repo, "add", "docs/proposals")
-    assert payload(pm_commit(python_exe, repo))["source"] != source
+    assert payload(pm_commit(python_exe, repo))["source"] == "master"
+    assert trunk_pr(python_exe, repo) != source
 
 
 def test_pm_local_commits_directly_on_custom_trunk(python_exe, tmp_path):
@@ -258,7 +304,8 @@ def test_pm_pr_rejects_outside_history_even_if_reverted(python_exe, tmp_path, mo
     repo, remote, _ = pr_repo(tmp_path, monkeypatch)
     add_prp(repo, "prp-0002")
     git(repo, "add", "docs/proposals")
-    source = payload(pm_commit(python_exe, repo))["source"]
+    payload(pm_commit(python_exe, repo))
+    source = trunk_pr(python_exe, repo)
     git(repo, "switch", source)
     (repo / "outside.py").write_text("value = 1\n")
     commit(repo, "chore: 添加非项目记录路径")
@@ -274,7 +321,7 @@ def test_pm_pr_rejects_outside_history_even_if_reverted(python_exe, tmp_path, mo
     assert not has_ref(remote, f"refs/heads/{source}")
 
 
-def test_concurrent_pm_commit_cannot_switch_or_consume_index(python_exe, tmp_path, monkeypatch):
+def test_concurrent_pm_commit_cannot_consume_index(python_exe, tmp_path, monkeypatch):
     import subprocess
 
     from mdf_core.workspace import pm
@@ -288,10 +335,10 @@ def test_concurrent_pm_commit_cannot_switch_or_consume_index(python_exe, tmp_pat
     concurrent = []
 
     def interleave(path, *args, **kwargs):
-        if args[:2] == ("switch", "-c"):
+        if args[0] == "commit":
             concurrent.append(subprocess.run(
                 [python_exe, str(script), "pm", "commit", "--repo", str(repo),
-                 "--slug", "concurrent", "--message", "docs(pm): 并发提交"],
+                 "--message", "docs(pm): 并发提交"],
                 capture_output=True, text=True, check=False,
             ))
         return real_git(path, *args, **kwargs)
@@ -299,9 +346,10 @@ def test_concurrent_pm_commit_cannot_switch_or_consume_index(python_exe, tmp_pat
     monkeypatch.setattr(pm, "git", interleave)
     result = payload(pm_commit(python_exe, repo))
     assert len(concurrent) == 1 and error_of(concurrent[0])["error"] == "finish_busy"
-    assert git(repo, "rev-parse", result["source"]).stdout.strip() == result["head"]
-    assert git(repo, "rev-parse", "HEAD").stdout.strip() == trunk
-    assert git(repo, "branch", "--list", "pm/*", "--format=%(refname:short)").stdout.split() == [result["source"]]
+    assert result["source"] == "master"
+    assert git(repo, "rev-parse", "HEAD").stdout.strip() == result["head"]
+    assert git(repo, "rev-parse", "HEAD^").stdout.strip() == trunk
+    assert not git(repo, "branch", "--list", "pm/*").stdout.strip()
 
 
 def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_path, monkeypatch):
@@ -309,7 +357,7 @@ def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_pa
     proposal = add_prp(repo, "prp-0002")
     git(repo, "add", str(proposal))
     initial = payload(pm_commit(python_exe, repo))
-    source = initial["source"]
+    source = trunk_pr(python_exe, repo)
     args = ["--repo", str(repo), "--source", source]
     first = payload(mdf(python_exe, "pr", *args))
     git(repo, "switch", source)
