@@ -10,8 +10,8 @@ python3 skills/mdf/scripts/mdf.py prepare-git --repo /path/to/directory
 ```
 
 目标已是 Git 根时不改写，JSON `created` 为 false。普通目录执行
-`git init --initial-branch=master`，`created` 为 true。位于其他仓库内部时
-以 `nested_git` 失败，不嵌套初始化。不提交、不配置用户身份。
+`git init --initial-branch=<trunk>`。`--trunk` 缺省为 master，`created` 为 true。
+位于其他仓库内部时以 `nested_git` 失败，不嵌套初始化。不提交、不配置用户身份。
 
 ## `merge-no-ff`
 
@@ -159,9 +159,12 @@ github-flow（manifest 的 `workflow.model`）下基线改为 `workflow.trunk`�
 - feature、bugfix、release、hotfix、adhoc 均从 trunk 建分支并回到 trunk；`--from-master`、to develop、ODR 与 `dev-pr` 被拒绝。
 - `--from-commit <sha>`：release 的历史切点。要求位于 trunk 第一父链且晚于上一发布 tag；创建即冻结，之后不随 trunk 前进，
   禁止 catch-up 引入切点之后的提交；发布以固定的 `release_head` 打 tag，并核验其为 `<trunk>` 的 ancestor。
-- `--support <major.minor>`：hotfix 的维护线。多条发布线并存时必须显式指定；首次使用惰性切出 `support/<major.minor>`
-  并同步 manifest 配置。support hotfix 只发布到 support 线、永不合入 trunk，每个已修 Bug 须记录 Trunk-First 处置
-  （`backported`、`trunk_not_affected`、`urgent_support_first`；后两者须写理由）。
+- `--support <major.minor>`：hotfix 的维护线。多条发布线并存时必须显式指定。
+  - 只有一条已发布线时可省略，自动走该 `support/<major.minor>`。
+  - 没有任何发布 tag 时返回 `missing_release_tag`，应改走 `bugfix/*`。
+  - 首次切出同步 workflow、closeout，并把 `latest_release` 对齐到切出 tag。
+  - support hotfix 只发布到 support 线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
+  - 维护线不得增删改 `docs/bugs/bug-*.md`。
 
 命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
 有 origin 时用 `ls-remote` 核对基线。远程提交必须已在本地，本地可以更新。

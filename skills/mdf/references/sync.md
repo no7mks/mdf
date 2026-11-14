@@ -96,7 +96,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT"
 
 默认只 `fetch --prune` 并输出预览，不 checkout、merge 或 push。
 
-- 三大 trunk 固定为 `master`、`develop`、`planning`；两侧 refs 都必须已存在。
+- gitflow 的同步分支为 `master`、`develop`、`planning`；两侧 refs 都必须已存在。
+- github-flow 只同步 trunk，以及本地与 origin 都有的 `support/*`；不同步 develop。
+  - trunk 领先时 `pull_plan` 动作为 `trunk_pr`；只有 gitflow 的 develop 可用 trivial 提交免 PR。
 - JSON `branches` 覆盖本地与 `origin` 分支的并集；每项含 local / remote tip SHA、
   ahead / behind（local 相对 remote）、relation、graph 与是否参与同步的 `sync`。
 - 向用户展示每个分支的 `graph`：始终包含双方 tip，路径上的 commit 用数量折叠；

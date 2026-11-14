@@ -122,14 +122,16 @@ manifest 的 `workflow: {model, trunk}` 选择 `gitflow`（默认，trunk 为 ma
 github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--from-master`、to develop 与 `dev-pr`。
 
 - release 可用 `--from-commit` 冻结历史切点；发布以固定 `release_head` 打 tag，并核验其为 trunk 的 ancestor。
-- 多条发布线并存时 hotfix 须 `--support <major.minor>`；support hotfix 只发布到 `support/<major.minor>`，每个 Bug 须记录 Trunk-First 处置。
+- 已有发布 tag 时 hotfix 走 `support/<major.minor>`；单线可省略 `--support`。无 tag 时改走 `bugfix/*`。
+  - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
 - PR mode 的 planning 为短命分支；release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
 - `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。
 
 ### 内容指纹复用与确定性规划
 
 - `verify`、`code-review`、`fact-audit` 的通过结果按内容指纹记入 Git common dir 的 `mdf/attestations/`，跨分支与 worktree 命中时不重跑。
-  - 指纹含显式输入、环境与 lockfile；同指纹失败写入 tombstone；`verify --force` 强制冷跑。
+  - 指纹含显式输入、环境、lockfile 与 MDF scripts；同指纹失败写入 tombstone。
+  - `verify --force` 与 `fact-audit --force` 都不复用旧凭证。
   - release 仅在净代码增量与未覆盖组合影响面均为空时可用 0 reviewer；`--quick` 的事实审阅不可替代语义审阅。
 - `catch-up-plan` 按 merge 拓扑独立给出 review、verify、fact 三路动作；`review-prepare` 给出审查左端点、未审净增量与体积。
 - `delivery route` 返回等待状态；`delivery complete-stage` 只自动完成 verify 与 catch-up，且不连带提交无关暂存内容。

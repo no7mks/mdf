@@ -116,8 +116,8 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
 
 - 全局固定 7 个阶段：确定范围 → Audit CLI → 事实复核 → 覆盖复核 → warning 审阅 → validation → 报告结论。
   - 开始先列完整清单；所有播报保留 `fact audit · 阶段 i/7 阶段名`。
-  - 语义审阅固定 3 组计数：文档复核、实现覆盖、warning 审阅；CLI 返回后统一列出各组总量。
-  - 局部 n/n 后说明下一组与剩余阶段；validation 结束后仍须汇总审阅结论，不提前报告整体完成。
+  - 不使用固定三组计数协议；CLI 返回后只报告 scope、实现文件数、文档数与 warning 数。
+  - validation 结束后仍须汇总审阅结论，不提前报告整体完成。
   - fact update 委托时使用父级全局阶段与本流程子阶段，保留轮次，不重置最外层进度。
 - CLI 返回后核对 state，报告 scope、实现文件数、文档数与 warning 数；范围未知时不填总数。
   - warning 数包含 `warnings` 与 `findings` 中 `severity: warning` 的项。
@@ -151,7 +151,7 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
   - 无账本 adhoc 优先使用 adhoc-status 的固定 `range.base`，显式传 `--base`，不随目标推进重算。
   - 有账本交付分支以 `delivery.json` 的 `start_commit` 为 `--base`。
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`。
-  - 都没有才由 CLI 取 `merge-base develop HEAD`。
+  - 都没有才由 CLI 取 integration 分支与 HEAD 的 merge-base：gitflow 为 develop，github-flow 为 trunk。
   - 主链 release（verify branch 之后、close-out 之前）的 `--base` 为上一正式发布；
     CLI 收成 against 时使用同一 SHA。
   - 范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
@@ -190,7 +190,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 ```
 
 - 独立调用省略时传 `--scope branch`。裸 CLI 省略时仍为 `full`，本流程不使用该默认。
-- `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 `merge-base develop HEAD`。
+- `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 integration 分支与 HEAD 的 merge-base。
+  - gitflow 的 integration 分支是 develop；github-flow 是 `workflow.trunk`。
+- `fact-audit --against <sha> --force` 返回 `reuse: null`，不复用事实凭证。
 - `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，module sourceset 内的已跟踪实现文件（含配置与测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
 - CLI 按 `repository-documents.md` 的文档体积表检查 size.hard、prose.*；命中 module ignore 时保留排除依据。

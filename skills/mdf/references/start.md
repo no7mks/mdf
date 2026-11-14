@@ -274,7 +274,8 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 远程提交已在本地（相同或本地更新）才通过。
   - 远程有本地没有的提交则停止，不创建分支。
   - 无 origin，或 origin 上没有该基线分支，则跳过。
-- feature/bugfix/release 默认从本地 develop 创建；feature --from-master、ODR 和 hotfix 从 master 创建。
+- gitflow：feature/bugfix/release 默认从本地 develop 创建；`--from-master`、ODR 和 hotfix 从 trunk 创建。
+- github-flow：交付从 `workflow.trunk` 创建并回到 trunk；不从 develop 创建。hotfix 见 [Hotfix 版本](hotfix-version.md)。
 - 本地已有同名分支则失败，不检查远端。
 - 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立 worktree：
   - 路径等于分支名，`/` 为嵌套目录。

@@ -397,11 +397,14 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 独立 `$mdf close-out` 沿用调用授权，不增加 deliver 的评分或截止点。
 - 调用 `finish-gitflow --repo "$REPO_ROOT"`：
   - feature/bugfix 不 fetch、不 push；no-ff 合并到本地已确定目标（bugfix 为 develop）；角色分支仍在则失败。
-  - release/ODR/hotfix 要求 origin；首次调用 fetch 后要求本地 master 与远端一致。
-    - no-ff 合并到 master，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
-      精简条目），再 no-ff 合并 master 到 develop。
-    - 原子 push `master` 与 tag；develop 仅在本地合回，要求 clean，不核对远端。
+  - gitflow 的 release/ODR/hotfix 要求 origin；首次调用 fetch 后要求本地 trunk 与远端一致。
+    - no-ff 合并到 trunk，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
+      精简条目），再 no-ff 合并 trunk 到 develop。
+    - 原子 push trunk 与 tag；develop 仅在本地合回，要求 clean，不核对远端。
       不推送、不删除远端 `develop`、`release/*`、`hotfix/*`。
+  - github-flow 的 local 发布 tag 等于锁定的 `release_head`，不打在 merge commit 上。
+    - 与 trunk 冲突时 CLI abort，`details.recovery` 给出手工恢复指引。
+    - 在 trunk 上执行 `git merge --no-ff <release_head>`，解决冲突并提交后重跑 `finish-gitflow`。
   - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
 - 验收：合并、源分支删除、保留工作区的 detached 状态、tag 与（release/ODR/hotfix 的）推送结果。
 - 异常与交接：停止并报告当前分支、已完成合并、tag 与推送状态。

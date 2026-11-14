@@ -4,7 +4,13 @@
 
 ## 分支名与 start
 
-Hotfix 从本地 master 创建，分支名接受稳定 SemVer 或 kebab-case slug。
+Gitflow 的 hotfix 从 trunk（默认 master）创建。分支名接受稳定 SemVer 或 kebab-case slug。
+
+github-flow 在已有发布 tag 时从 `support/<major.minor>` 创建：
+
+- 只有一条版本线时可省略 `--support`，自动解析到该 `support/<major.minor>`。
+- 多条版本线必须显式传 `--support <major.minor>`。
+- 没有任何发布 tag 时返回 `missing_release_tag`，改走 `bugfix/*` 合入 trunk。
 
 | 形式 | start 参数 | 发布版本 |
 | --- | --- | --- |

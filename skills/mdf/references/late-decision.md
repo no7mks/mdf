@@ -1,6 +1,7 @@
 # Late-decision 与按需发布
 
-本页定义 master 起点的 feature 与 on-demand-release（ODR）。其余 feature 保持 develop 起点。
+本页只适用于 gitflow：定义 trunk 起点的 feature 与 on-demand-release（ODR）。其余 feature 保持 develop 起点。
+github-flow 不支持 `--from-master` 与 ODR，交付目标就是 `workflow.trunk`。
 ODR 是独立发布 kind，除本页规定的起点、范围与等待 checkpoint 外，执行 release 的全部工作流。
 
 ## 决策树

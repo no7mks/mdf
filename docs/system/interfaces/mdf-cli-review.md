@@ -14,7 +14,8 @@
 - 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted、remote_deleted 与工作区路径。
 - finish-gitflow 仅续办 merged 后的操作；未 merged 返回 pr_not_merged，不创建/更新 PR。
 - waiting_for_merge、closed_without_merge、published_pending_backmerge 都是各自 operation 的 completed=false。
-- 发布后以固定 merge commit no-ff 回合并直接 push develop；不创建回合 PR/MR。
+- gitflow 发布后以固定 merge commit no-ff 回合并直接 push develop；不创建回合 PR/MR。
+- github-flow 的 tag 等于 `release_head`，不回合 develop。
   冲突或 push 未完成时保留 backmerge worktree；push 失败详情见 backmerge.push_error。
 - finish-gitflow 的 completed=true 后才能报告交付完成；正常等待退出 0，不重复创建远端对象。
 - source 清理再次检查 worktree 占用，并以已确认 head 原子删除 ref；并发前进时拒绝删除，保留分支配置。
@@ -41,7 +42,8 @@
 | review-report-check | --context-file --report-file；可选 --repo | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
 | review-prepare | --repo；可选 --against --force | 左端点、净增量、交互文件与 module 集、numstat、体积结论、project rule；凭证同规则同需求；release 另给 `reuse`；要求 clean |
 
-- audit-push 仅审 develop/master；默认离线，显式 collect-evidence 才 fetch 并查询平台。
+- audit-push 从 `before` 读取 workflow。gitflow 接受 trunk 与 develop；github-flow 接受 trunk 与 `support/*`。
+  - `support/*` 合入 trunk 为 `support_merge_forbidden`。默认离线，显式 collect-evidence 才访问平台。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
 - review-context 的 --against <commit> 选择独立只读模式，不接受 source/head/policy-ref。
   - mode=against，要求 worktree clean；直接比较指定历史版本与当前 HEAD，不计算 merge-base。

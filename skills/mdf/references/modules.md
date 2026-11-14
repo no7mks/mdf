@@ -31,7 +31,9 @@ budgets:
 
 - 每个 module 必须声明 `sourceset`、`lint`、`build`、以及
   `quick`/`smoke`/`release`（含 `command` 与非空 `tests` glob）。
-  - 可选 `ignore`、`named`、`size_limits`、`coverage`、`depends_on` 与 `build_artifacts`。
+  - 可选 `ignore`、`named`、`size_limits`、`coverage`、`depends_on`、`build_artifacts`、`extra_inputs` 与 `external_state`。
+  - module 级 `extra_inputs` 覆盖 lint、build 与各 suite；空匹配写入 `<MISSING>` 哨兵。
+  - module 级 `external_state: true` 时，该 module 的 verify 不复用凭证。
 - **ignore**：`pattern` + `reason`，路径与 pattern 均相对 repo 根；可排除源代码、测试源代码与文档。
   - `modules.<name>.ignore` 仅在自身 `sourceset` 内生效，不能排除其他 module 或未归属文件。
   - 重叠 `sourceset` 中仍有 module 未忽略该文件时，保留该 module 的验证与检查。

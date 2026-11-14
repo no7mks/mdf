@@ -51,7 +51,8 @@
 
 - 空目标停止，并展示 `$mdf help to`。
 - 规划别名（等价，进入 `planning`）：`plan`、`planning`、`plan-mode`。
-- `develop` 进入占用 develop 的 worktree，通常是主仓库根。
+- gitflow 的 `develop` 进入占用 develop 的 worktree，通常是主仓库根。
+- github-flow 不接受目标 `develop`，返回 `github_flow_unsupported`。
 - `deploy` 进入 `<repo-name>-worktrees/deploy`。
 - 其余写已有 worktree 的分支名或目录名，或已有本地分支名。
 
