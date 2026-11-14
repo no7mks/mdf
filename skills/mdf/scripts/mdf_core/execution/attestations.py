@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import glob
 import hashlib
 import json
@@ -98,18 +99,26 @@ def explicit_inputs(repo: Path, config, item: dict, files: dict[str, str]) -> tu
     chosen = item.get("module")
     modules = _closure(config, [chosen] if chosen in config.modules else config.names())
     patterns: list[str] = []
+    declared: list[str] = []
     external = False
     for name in modules:
         module = config.get(name)
+        declared += list(module.extra_inputs)
+        external = external or module.external_state
         if entry in SUITES:
             suite = module.suite(entry)
-            patterns += [*suite.tests, *suite.extra_inputs]
+            patterns += list(suite.tests)
+            declared += list(suite.extra_inputs)
             external = external or suite.external_state
     meta = _named_meta(repo, entry)
-    patterns += [p for p in meta.get("extra_inputs", []) if isinstance(p, str)]
+    declared += [p for p in meta.get("extra_inputs", []) if isinstance(p, str)]
     external = external or meta.get("external_state") is True
+    from mdf_core.foundation.paths import load_manifest
+    rules = load_manifest(repo).get("rules") or {}
+    declared += [value for value in rules.values() if isinstance(value, str)]
+    present, missing = _expand_declared(repo, declared)
     chosen_modules = [config.get(name) for name in modules]
-    result = set()
+    result = set(present) | missing
     for rel in files:
         base = rel.rsplit("/", 1)[-1]
         if (any(match(rel, p) for p in (*FIXED_INPUTS, *patterns)) or base in LOCKFILES
@@ -118,6 +127,24 @@ def explicit_inputs(repo: Path, config, item: dict, files: dict[str, str]) -> tu
                        for module in chosen_modules)):
             result.add(rel)
     return result, external
+
+
+def _expand_declared(repo: Path, patterns: list[str]) -> tuple[set[str], set[str]]:
+    """显式字面量或 glob；空匹配写入 `<MISSING>`，穿透 gitignore。归一化只用 removeprefix('./')。"""
+    present, missing = set(), set()
+    for pattern in patterns:
+        normalized = pattern.removeprefix("./")
+        if any(char in normalized for char in "*?["):
+            hits = [path.relative_to(repo).as_posix() for path in repo.glob(normalized)
+                    if path.is_file() and not path.is_symlink()]
+        else:
+            path = repo / normalized
+            hits = [normalized] if path.is_file() and not path.is_symlink() else []
+        if hits:
+            present.update(hits)
+        else:
+            missing.add(f"<MISSING>:{normalized}")
+    return present, missing
 
 
 def select_inputs(repo: Path, config, item: dict, files: dict[str, str]) -> tuple[dict[str, str], bool]:
@@ -135,6 +162,15 @@ def select_inputs(repo: Path, config, item: dict, files: dict[str, str]) -> tupl
             if config.is_ignored(rel) or any(any(match(rel, p) for p in module.sourceset) for module in others):
                 continue
         selected[rel] = sha
+    for rel in explicit:
+        if rel.startswith("<MISSING>:"):
+            selected[rel] = "missing"
+            continue
+        if rel in selected:
+            continue
+        path = repo / rel
+        if path.is_file() and not path.is_symlink():
+            selected[rel] = _sha_file(path)
     return selected, external
 
 
@@ -146,15 +182,28 @@ def _tool_digest(command: str) -> str:
     path = shutil.which(words[0]) if words else None
     if path is None:
         return "shell-builtin-or-missing"
-    stat = os.stat(path)
-    return f"{os.path.realpath(path)}:{stat.st_size}:{stat.st_mtime_ns}"
+    real = Path(os.path.realpath(path))
+    if real.is_symlink() or not real.is_file():
+        return "unreadable"
+    return f"{real}:{_sha_file(real)}"
+
+
+def _scripts_digest() -> str:
+    root = Path(__file__).resolve().parents[1]
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*.py")):
+        if path.is_file() and not path.is_symlink():
+            digest.update(path.relative_to(root).as_posix().encode())
+            digest.update(_sha_file(path).encode())
+    return digest.hexdigest()
 
 
 def environment(command: str, files: dict[str, str]) -> dict[str, str]:
     locks = sorted((rel, sha) for rel, sha in files.items()
                    if rel.rsplit("/", 1)[-1] in LOCKFILES or rel.rsplit("/", 1)[-1].startswith("requirements"))
     return {"platform": sys.platform, "machine": platform.machine(), "python": platform.python_version(),
-            "tool": _tool_digest(command), "lockfile_digest": hashlib.sha256(json.dumps(locks).encode()).hexdigest()}
+            "tool": _tool_digest(command), "scripts": _scripts_digest(),
+            "lockfile_digest": hashlib.sha256(json.dumps(locks).encode()).hexdigest()}
 
 
 def fingerprint(repo: Path, item: dict) -> dict[str, Any] | None:
@@ -209,14 +258,74 @@ def _artifacts(repo: Path, config, item: dict) -> dict[str, str]:
     return found
 
 
+def _hash_evidence(directory: Path) -> dict[str, str] | None:
+    if not directory.is_dir() or directory.is_symlink():
+        return None
+    root = directory.resolve()
+    found: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            return None
+        if not path.is_file():
+            continue
+        resolved = path.resolve()
+        if resolved != root and root not in resolved.parents:
+            return None
+        found[path.relative_to(root).as_posix()] = _sha_file(path)
+    return found or None
+
+
+@contextlib.contextmanager
+def verification_lock(repo: Path, key: str | None):
+    if not key:
+        yield
+        return
+    directory = _store(repo)
+    directory.mkdir(parents=True, exist_ok=True)
+    handle = (directory / f"{key}.lock").open("a+")
+    import fcntl
+    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    try:
+        yield
+    finally:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
+
+
+def _materialize(repo: Path, record: dict) -> tuple[str, dict | None] | None:
+    from mdf_core.execution.reports import new_report_dir
+    source = Path(record["evidence"])
+    dest = new_report_dir(repo, record.get("entry") or "reused")
+    dest_root = dest.resolve()
+    files = record.get("evidence_files") or {}
+    if not isinstance(files, dict):
+        return None
+    for rel, digest in sorted(files.items()):
+        src = source / rel
+        if src.is_symlink() or not src.is_file() or _sha_file(src) != digest:
+            return None
+        target = dest / rel
+        if dest_root not in target.resolve().parents and target.resolve() != dest_root:
+            return None
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(src.read_bytes())
+    report = record.get("report")
+    log = dest.relative_to(repo).as_posix()
+    if isinstance(report, dict):
+        report = {**report, "path": log}
+    return log, report
+
+
 def reusable(repo: Path, item: dict, fp: dict | None, *, downstream_hit: bool = False) -> dict | None:
     """通过凭证且信任校验全部成立才返回；失败吊销、协议/输入/环境不符、证据缺失与 build 产物破损均为 miss。"""
     if fp is None:
         return None
     record = _read(repo, fp["key"])
+    evidence = Path(record["evidence"]) if record and record.get("evidence") else None
+    hashes = _hash_evidence(evidence) if evidence is not None else None
     if (record is None or record.get("status") != "passed" or record.get("protocol") != PROTOCOL
             or record.get("inputs") != fp["inputs"] or record.get("env") != fp["env"]
-            or not record.get("evidence") or not Path(record["evidence"]).is_dir()):
+            or not hashes or hashes != record.get("evidence_files")):
         return None
     if item.get("entry") == "build":
         expected = record.get("artifacts") or {}
@@ -241,21 +350,28 @@ def record_result(repo: Path, item: dict, fp: dict | None, detail: dict | None, 
     log = detail.get("log")
     if not log:
         return
-    evidence = str((repo / log).resolve())
+    evidence = (repo / log).resolve()
+    hashes = _hash_evidence(evidence)
+    if not hashes:
+        return
     _write(repo, fp["key"], {
-        **base, "status": "passed", "exit_code": detail.get("exit_code", 0), "log": log, "evidence": evidence,
-        "report": detail.get("report"), "original_duration_s": round(elapsed, 3),
+        **base, "status": "passed", "exit_code": detail.get("exit_code", 0), "log": log,
+        "evidence": str(evidence), "evidence_files": hashes, "report": detail.get("report"),
+        "original_duration_s": round(elapsed, 3),
         "artifacts": _artifacts(repo, fp["config"], item) if item.get("entry") == "build" else {},
     })
 
 
-def reuse_detail(record: dict, check_seconds: float) -> dict[str, Any]:
-    result = {"command": record["command"], "exit_code": record.get("exit_code", 0), "log": record["log"],
+def reuse_detail(record: dict, check_seconds: float, repo: Path | None = None) -> dict[str, Any]:
+    copied = _materialize(repo, record) if repo is not None else None
+    log = copied[0] if copied else record["log"]
+    report = copied[1] if copied else record.get("report")
+    result = {"command": record["command"], "exit_code": record.get("exit_code", 0), "log": log,
               "reused": True, "original_duration_s": record["original_duration_s"], "check_duration_s": round(check_seconds, 3),
               "reused_from": {"key": record["key"], "evidence": record["evidence"],
                               "recorded_at": record["recorded_at"]}}
-    if record.get("report") is not None:
-        result["report"] = record["report"]
+    if report is not None:
+        result["report"] = report
     return result
 
 

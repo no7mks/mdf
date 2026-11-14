@@ -55,6 +55,8 @@ class Module:
     coverage: dict | None = None
     depends_on: tuple[str, ...] = ()
     build_artifacts: tuple[str, ...] = ()
+    extra_inputs: tuple[str, ...] = ()
+    external_state: bool = False
 
     def suite(self, name: str) -> SuiteEntry:
         if name == "quick":
@@ -322,6 +324,8 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         "coverage",
         "depends_on",
         "build_artifacts",
+        "extra_inputs",
+        "external_state",
     }
     extra = set(body) - allowed
     if extra:
@@ -350,6 +354,10 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
     smoke = _parse_suite(name, "smoke", body["smoke"])
     release = _parse_suite(name, "release", body["release"])
     named = _parse_named(name, body.get("named", []), seen_named)
+    module_external = body.get("external_state", False)
+    if not isinstance(module_external, bool):
+        raise MDFError(f"module {name}.external_state 必须为布尔", code="modules_invalid")
+    module_extra = tuple(_string_list(body.get("extra_inputs", []), f"module {name}.extra_inputs"))
     return Module(
         name=name,
         sourceset=tuple(sourceset),
@@ -364,6 +372,8 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         coverage=_module_coverage(name, body),
         depends_on=tuple(_string_list(body.get("depends_on", []), f"module {name}.depends_on")),
         build_artifacts=tuple(_string_list(body.get("build_artifacts", []), f"module {name}.build_artifacts")),
+        extra_inputs=module_extra,
+        external_state=module_external,
     )
 
 

@@ -46,15 +46,21 @@ def valid_evidence(repo):
 
 def _run_one(repo, item, index, total, *, force=False, downstream=()):
     from mdf_core.execution import attestations
-    entry = item.get("entry") or item["id"].split(":", 1)[0]
     checked = time.monotonic()
     fp = attestations.fingerprint(repo, item)
+    with attestations.verification_lock(repo, fp["key"] if fp else None):
+        return _run_locked(repo, item, index, total, fp, checked, force=force, downstream=downstream)
+
+
+def _run_locked(repo, item, index, total, fp, checked, *, force, downstream):
+    from mdf_core.execution import attestations
+    entry = item.get("entry") or item["id"].split(":", 1)[0]
     hit = None if force else attestations.reusable(
         repo, item, fp,
         downstream_hit=item.get("entry") == "build" and attestations.downstream_hits(repo, list(downstream)))
     if hit is not None:
         _write_progress(index, total, f"reused {item['id']}")
-        return {**item, **attestations.reuse_detail(hit, time.monotonic() - checked), "passed": True}
+        return {**item, **attestations.reuse_detail(hit, time.monotonic() - checked, repo), "passed": True}
     started = time.monotonic()
     try:
         detail = run_verify_command(
@@ -71,7 +77,9 @@ def _run_one(repo, item, index, total, *, force=False, downstream=()):
             coverage_targets=item.get("coverage_targets"),
         )
         elapsed = time.monotonic() - started
-        attestations.record_result(repo, item, fp, detail, elapsed)
+        fresh = attestations.fingerprint(repo, item)
+        if fp is None or (fresh and fresh["inputs"] == fp["inputs"]):
+            attestations.record_result(repo, item, fp, detail, elapsed)
         return {**item, **detail, "original_duration_s": round(elapsed, 3), "passed": True}
     except MDFError as exc:
         attestations.record_result(repo, item, fp, None, time.monotonic() - started)

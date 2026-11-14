@@ -58,6 +58,17 @@ def test_implementation_change_misses_but_docs_and_generated_hit(python_exe, tmp
     assert "reused_from" not in quick_item(verify(python_exe, repo)) and runs(counter) == 2
 
 
+def test_gitignored_explicit_input_misses_when_it_appears(python_exe, tmp_path):
+    repo, counter, _ = prepare(tmp_path, quick_extra='\n      extra_inputs:\n        - "secret.txt"')
+    ignore = repo / ".gitignore"
+    ignore.write_text("secret.txt\n", encoding="utf-8")
+    commit_all(repo, "test: 忽略 secret")
+    verify(python_exe, repo)
+    assert runs(counter) == 1
+    (repo / "secret.txt").write_text("appeared\n", encoding="utf-8")
+    assert "reused_from" not in quick_item(verify(python_exe, repo)) and runs(counter) == 2
+
+
 def test_explicit_inputs_override_generated_exclusion(python_exe, tmp_path):
     repo, counter, _ = prepare(tmp_path, quick_extra='\n      extra_inputs:\n        - "CHANGELOG.md"')
     verify(python_exe, repo)
