@@ -99,6 +99,12 @@ def _audit_commit(repo, base, commit, branch, evidence, source_prefix, policy):
             parents = git(repo, "show", "-s", "--format=%P", commit).stdout.split()
             if len(parents) < 2:
                 return "violation", "direct_trunk_commit", changed, policy
+            if branch == "develop" and not new_policy[1] and len(parents) == 2:
+                if (_policy(repo, parents[1]) == new_policy
+                        and _source(repo, parents[1], new_policy[0], evidence, source_prefix)
+                        and not commit_paths(repo, commit)):
+                    return "pass", "trunk_backmerge", changed, new_policy
+                return "needs-review", "missing_merge_evidence", changed, policy
             if len(parents) != 2 or new_policy[0] != branch or paths(repo, parents[1], commit):
                 return "violation", "invalid_workflow_switch", changed, policy
             pull = _platform_merge(commit, branch, parents[1], evidence)
@@ -122,9 +128,11 @@ def audit(repo, branch, before, after, evidence=None, *, source_prefix="refs/rem
         settings = configured(repo, before)
         policy = _policy(repo, before)
         trunk, github = policy
-        if not _auditable(branch, trunk, github) and (settings["mode"] != "pr" or _policy(repo, after)[0] != branch):
-            allowed = f"{trunk} 与 support/*" if github else f"{trunk} 与 develop"
-            raise MDFError(f"audit-push 仅接受 {allowed}", code="invalid_audit_target")
+        if not _auditable(branch, trunk, github):
+            after_trunk, after_github = _policy(repo, after) if settings["mode"] == "pr" else policy
+            if branch != after_trunk and (branch != "develop" or after_github):
+                allowed = f"{trunk} 与 support/*" if github else f"{trunk} 与 develop"
+                raise MDFError(f"audit-push 仅接受 {allowed}", code="invalid_audit_target")
         if settings["mode"] != "pr":
             result.update(verdict="pass", reason="local_mode")
             return result
@@ -172,10 +180,14 @@ def collect(repo, branch, before, after):
     evidence = {"sources": {}, "pull_requests": []}
     trunk, github = _policy(repo, before)
     # 新 trunk 的切换只依赖平台 Merge 证据，CI checkout 已包含 push 的 Git 对象。
-    names = (trunk, "develop", "planning") if not github and _auditable(branch, trunk, github) else ()
+    names = {trunk, "develop", "planning"} if not github and _auditable(branch, trunk, github) else set()
+    if branch == "develop":
+        next_trunk, next_github = _policy(repo, after)
+        if not next_github:
+            names.add(next_trunk)
     if names:
         git(repo, "fetch", "origin", "--prune")
-    for name in names:
+    for name in sorted(names):
         ref = git(repo, "rev-parse", "--verify", f"refs/remotes/origin/{name}", check=False)
         if not ref.returncode:
             evidence["sources"][name] = ref.stdout.strip()

@@ -111,6 +111,33 @@ def test_switch_pr_checks_origin_develop_even_without_local_branch(python_exe, t
     assert not has_ref(repo, "refs/heads/codex/workflow-switch")
 
 
+@pytest.mark.parametrize("old_model", ["gitflow", "github-flow"])
+def test_audit_accepts_workflow_backmerge_into_develop(python_exe, tmp_path, old_model):
+    repo, _ = _repo(tmp_path)
+    manifest = repo / ".mdf/manifest.yaml"
+    manifest.write_text(manifest.read_text() + f"workflow:\n  model: {old_model}\n  trunk: master\n")
+    commit(repo)
+    git(repo, "branch", "-f", "develop", "HEAD")
+    git(repo, "push", "origin", "master", "develop")
+    git(repo, "checkout", "-b", "main")
+    git(repo, "push", "origin", "main")
+    switch = payload(mdf(python_exe, "workflow", "switch", "--repo", str(repo), "--model", "gitflow", "--trunk", "main"))
+    git(repo, "checkout", "main")
+    git(repo, "merge", "--no-ff", "--no-edit", switch["source"])
+    merged = git(repo, "rev-parse", "HEAD").stdout.strip()
+    git(repo, "push", "origin", "main")
+    git(repo, "checkout", "develop")
+    before = git(repo, "rev-parse", "HEAD").stdout.strip()
+    git(repo, "merge", "--no-ff", "--no-edit", "main")
+    assert _audit(python_exe, repo, "develop", before, "HEAD")["verdict"] == "needs-review"
+    evidence = tmp_path / "backmerge-evidence.json"
+    evidence.write_text(json.dumps({"sources": {"main": merged}}))
+    result = payload(mdf(python_exe, "audit-push", "--repo", str(repo), "--branch", "develop",
+                         "--before", before, "--after", "HEAD", "--evidence-file", str(evidence)))["result"]
+    assert result["verdict"] == "pass"
+    assert result["commits"][0]["reason"] == "trunk_backmerge"
+
+
 def test_first_audit_collects_forge_evidence_for_new_trunk(python_exe, tmp_path, monkeypatch):
     repo, _ = _repo(tmp_path)
     git(repo, "checkout", "-b", "main")

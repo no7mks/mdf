@@ -28,3 +28,4 @@ git push origin codex/workflow-switch
 - 切换 PR/MR 合并后，使用实际 push 的 `before` 和 `after`。首次改名审计的 `before` 仍可声明旧 trunk。
 - `audit-push` 核对平台 Merge 证据、实际双亲与切换内容。缺平台证据返回 `needs-review`，单亲切换返回 `direct_trunk_commit`。
 - 通过校验的切换 Merge 生效后，同批后续第一父链提交按新 workflow 审计。`policy_ref` 仍报告 push 的 `before`。
+- 目标模型为 gitflow 时，将已切换的 trunk 以双亲 merge 合回 develop。Push 审计核对来源为新 trunk 的远端历史，并要求 merge 无额外改动。
