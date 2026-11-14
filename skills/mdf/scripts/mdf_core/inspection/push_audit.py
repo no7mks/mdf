@@ -8,6 +8,7 @@ from mdf_core.workspace.pm import require_pm_merge
 from mdf_core.workspace.merge_policy import (
     ancestor, commit_paths, configured, document, git, paths, planning_only, sha, trivial,
 )
+from mdf_core.workspace.workflow_switch import MANIFEST, SWITCH_BRANCH, valid_switch_source
 
 
 def _source(repo, incoming, name, evidence, source_prefix):
@@ -40,26 +41,30 @@ def _from_support(repo, commit, parents, evidence):
     return len(parents) == 2 and _support_parent(repo, parents[1])
 
 
+def _platform_merge(commit, branch, head, evidence):
+    return next((pull for pull in evidence.get("pull_requests", [])
+                 if pull.get("state") == "merged" and pull.get("target") == branch
+                 and pull.get("merge_commit") == commit and pull.get("head") == head
+                 and pull.get("source") and pull.get("id") and pull.get("url")), None)
+
+
 def classify(repo, commit, branch, evidence, source_prefix, *, trunk, github):
     parents = git(repo, "show", "-s", "--format=%P", commit).stdout.split()
     changed = commit_paths(repo, commit)
     if github and branch == trunk and _from_support(repo, commit, parents, evidence):
         return "violation", "support_merge_forbidden", changed
     if len(parents) == 2:
-        for pull in evidence.get("pull_requests", []):
-            if (pull.get("state") == "merged" and pull.get("target") == branch
-                    and pull.get("merge_commit") == commit and pull.get("head") == parents[1]
-                    and pull.get("source") and pull.get("id") and pull.get("url")):
-                if github and str(pull["source"]).startswith("pm/"):
-                    if branch != trunk:
-                        return "violation", "invalid_pm_target", changed
-                    try:
-                        require_pm_merge(repo, parents[0], parents[1], commit)
-                    except MDFError as exc:
-                        if exc.code != "pm_paths_forbidden":
-                            raise
-                        return "violation", exc.code, exc.details["paths"]
-                return "pass", "platform_merge", changed
+        if pull := _platform_merge(commit, branch, parents[1], evidence):
+            if github and str(pull["source"]).startswith("pm/"):
+                if branch != trunk:
+                    return "violation", "invalid_pm_target", changed
+                try:
+                    require_pm_merge(repo, parents[0], parents[1], commit)
+                except MDFError as exc:
+                    if exc.code != "pm_paths_forbidden":
+                        raise
+                    return "violation", exc.code, exc.details["paths"]
+            return "pass", "platform_merge", changed
         if not github and branch == "develop":
             if _source(repo, parents[1], trunk, evidence, source_prefix) and not changed:
                 return "pass", "trunk_backmerge", changed
@@ -85,30 +90,57 @@ def _auditable(branch, trunk, github):
     return branch in {trunk, "develop"}
 
 
+def _audit_commit(repo, base, commit, branch, evidence, source_prefix, policy):
+    trunk, github = policy
+    changed = paths(repo, base, commit)
+    if MANIFEST in changed:
+        new_policy = _policy(repo, commit)
+        if new_policy != _policy(repo, base):
+            parents = git(repo, "show", "-s", "--format=%P", commit).stdout.split()
+            if len(parents) < 2:
+                return "violation", "direct_trunk_commit", changed, policy
+            if len(parents) != 2 or new_policy[0] != branch or paths(repo, parents[1], commit):
+                return "violation", "invalid_workflow_switch", changed, policy
+            pull = _platform_merge(commit, branch, parents[1], evidence)
+            if pull is None:
+                return "needs-review", "missing_merge_evidence", changed, policy
+            if pull["source"] != SWITCH_BRANCH or not valid_switch_source(repo, base, parents[1], branch):
+                return "violation", "invalid_workflow_switch", changed, policy
+            return "pass", "platform_merge", changed, new_policy
+    if not _auditable(branch, trunk, github):
+        return "violation", "workflow_switch_required", changed, policy
+    return (*classify(repo, commit, branch, evidence, source_prefix, trunk=trunk, github=github), policy)
+
+
 def audit(repo, branch, before, after, evidence=None, *, source_prefix="refs/remotes/origin"):
     evidence = evidence or {}
-    trunk, github = _policy(repo, before)
-    if not _auditable(branch, trunk, github):
-        allowed = f"{trunk} 与 support/*" if github else f"{trunk} 与 develop"
-        raise MDFError(f"audit-push 仅接受 {allowed}", code="invalid_audit_target")
     result = {"schema_version": 3, "operation": "audit-push", "branch": branch,
               "push_before": before, "push_after": after, "policy_ref": before, "commits": []}
     try:
         before, after = sha(repo, before), sha(repo, after)
         result.update(push_before=before, push_after=after, policy_ref=before)
         settings = configured(repo, before)
+        policy = _policy(repo, before)
+        trunk, github = policy
+        if not _auditable(branch, trunk, github) and (settings["mode"] != "pr" or _policy(repo, after)[0] != branch):
+            allowed = f"{trunk} 与 support/*" if github else f"{trunk} 与 develop"
+            raise MDFError(f"audit-push 仅接受 {allowed}", code="invalid_audit_target")
         if settings["mode"] != "pr":
             result.update(verdict="pass", reason="local_mode")
             return result
         if before not in git(repo, "rev-list", "--first-parent", after).stdout.split():
             result.update(verdict="violation", reason="rewritten_trunk")
             return result
+        base = before
         for commit in git(repo, "rev-list", "--reverse", "--first-parent", f"{before}..{after}").stdout.split():
-            verdict, reason, changed = classify(
-                repo, commit, branch, evidence, source_prefix, trunk=trunk, github=github)
+            verdict, reason, changed, policy = _audit_commit(repo, base, commit, branch, evidence, source_prefix, policy)
             result["commits"].append({"commit": commit, "verdict": verdict, "reason": reason, "paths": changed})
-    except (MDFError, TypeError, AttributeError) as exc:
-        result.update(verdict="needs-review", reason=str(exc))
+            base = commit
+    except (MDFError, TypeError, AttributeError, ValueError) as exc:
+        if isinstance(exc, MDFError) and exc.code == "invalid_audit_target":
+            raise
+        verdict = "violation" if any(c["verdict"] == "violation" for c in result["commits"]) else "needs-review"
+        result.update(verdict=verdict, reason=str(exc))
         return result
     verdicts = {item["verdict"] for item in result["commits"]}
     result["verdict"] = "violation" if "violation" in verdicts else "needs-review" if "needs-review" in verdicts else "pass"
@@ -135,11 +167,14 @@ def collect(repo, branch, before, after):
     from mdf_core.integrations.forge import Forge, origin
     settings = configured(repo, before)
     forge = Forge(repo, origin(repo, settings["provider"]))
-    git(repo, "fetch", "origin", "--prune")
-    wanted = set(git(repo, "rev-list", "--first-parent", "--merges", f"{sha(repo, before)}..{sha(repo, after)}").stdout.split())
+    before, after = sha(repo, before), sha(repo, after)
+    wanted = set(git(repo, "rev-list", "--first-parent", "--merges", f"{before}..{after}").stdout.split())
     evidence = {"sources": {}, "pull_requests": []}
     trunk, github = _policy(repo, before)
-    names = (trunk,) if github else (trunk, "develop", "planning")
+    # 新 trunk 的切换只依赖平台 Merge 证据，CI checkout 已包含 push 的 Git 对象。
+    names = (trunk, "develop", "planning") if not github and _auditable(branch, trunk, github) else ()
+    if names:
+        git(repo, "fetch", "origin", "--prune")
     for name in names:
         ref = git(repo, "rev-parse", "--verify", f"refs/remotes/origin/{name}", check=False)
         if not ref.returncode:

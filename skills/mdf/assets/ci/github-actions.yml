@@ -7,6 +7,7 @@ on:
     branches: [develop, master]
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: mdf-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -29,18 +30,19 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: ${{ github.event_name == 'push' }}
       # 项目在此运行必需的 lint/tests，保存完整日志及报告。
       # MDF_SKILL 及脚本应由 runner 固定安装，或从 policy_ref 提取后运行。
       - name: 外部复核
         if: github.event_name == 'pull_request'
         env:
           SOURCE: ${{ github.event.pull_request.head.ref }}
+          TARGET: ${{ github.event.pull_request.base.ref }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           POLICY: ${{ github.event.pull_request.base.sha }}
         run: >-
           python3 "$MDF_SKILL/assets/ci/review.py"
-          --repo "$GITHUB_WORKSPACE" --source "$SOURCE" --head "$HEAD"
+          --repo "$GITHUB_WORKSPACE" --source "$SOURCE" --target "$TARGET" --head "$HEAD"
           --policy-ref "$POLICY" --backend "$MDF_BACKEND"
           --output-dir "$RUNNER_TEMP/mdf-review"
       - name: Push 审计

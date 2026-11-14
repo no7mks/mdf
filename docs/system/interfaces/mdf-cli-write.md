@@ -259,8 +259,9 @@ python3 skills/mdf/scripts/mdf.py workflow ci --repo /path/to/repository --provi
 ```
 
 - `switch` 只在空闲态执行：当前位于目标 trunk、worktree clean、无在途交付分支；否则拒绝并说明占用者。
-  - 新 trunk 必须包含旧 trunk 的全部历史；切回 gitflow 要求 develop 已存在。
+  - 新 trunk 必须包含旧 trunk 的全部历史。从 gitflow 切到 github-flow 时，目标 trunk 也须包含已有的 develop 历史；切回 gitflow 要求 develop 已存在。
   - 提交 manifest 的 `workflow` 及已有 `AGENTS.md` 托管区块中的推送规则更新。规则仅在 github-flow + PR mode 时生成。
+- PR mode 的切换分支、平台操作和首次审计见 [Workflow 切换](../../../skills/mdf/references/workflow/switch.md)。
 - `ci` 只读，按当前 workflow 返回需触发 CI 的分支（gitflow 为 develop 与 trunk；github-flow 为 trunk 与 `support/*`）
   及对应 provider 的渲染内容。
 

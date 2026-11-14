@@ -99,10 +99,18 @@ def test_switch_updates_trunk_push_rule_in_committed_block(python_exe, tmp_path)
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: gitlab\n")
     commit(repo)
+    remote = tmp_path / "origin.git"
+    git(tmp_path, "init", "--bare", str(remote))
+    git(repo, "remote", "add", "origin", str(remote))
+    git(repo, "push", "origin", "master", "develop")
     original = (repo / "AGENTS.md").read_text()
     switch = ("workflow", "switch", "--repo", str(repo), "--model")
-    payload(mdf(python_exe, *switch, "github-flow"))
+    forward = payload(mdf(python_exe, *switch, "github-flow"))
     assert "$mdf trunk-pr" in git(repo, "show", "HEAD:AGENTS.md").stdout
+    git(repo, "checkout", "master")
+    git(repo, "merge", "--no-ff", "--no-edit", forward["source"])
+    git(repo, "push", "origin", "master")
+    git(repo, "branch", "-d", forward["source"])
     payload(mdf(python_exe, *switch, "gitflow"))
     assert git(repo, "show", "HEAD:AGENTS.md").stdout == original
 
@@ -145,6 +153,28 @@ def test_switch_to_new_trunk_from_current_history(python_exe, tmp_path):
                        "--model", "github-flow", "--trunk", "main"))
     assert data["from"]["trunk"] == "master" and data["to"]["trunk"] == "main"
     assert git(repo, "rev-parse", "--verify", "master").returncode == 0
+
+
+@pytest.mark.parametrize("target", ["master", "main"])
+def test_switch_requires_develop_history_before_writing(python_exe, tmp_path, target):
+    repo = local_gitflow(tmp_path)
+    git(repo, "checkout", "develop")
+    (repo / "unreleased.txt").write_text("待发布\n")
+    commit(repo)
+    git(repo, "checkout", "master")
+    if target != "master":
+        git(repo, "checkout", "-b", target)
+    before = git(repo, "rev-parse", "HEAD").stdout
+    args = ("workflow", "switch", "--repo", str(repo), "--model", "github-flow", "--trunk", target)
+    failed = error_of(mdf(python_exe, *args))
+    assert failed["error"] == "develop_history_lost"
+    assert failed["details"]["branch"] == "develop"
+    assert "先合并 develop" in failed["message"]
+    assert git(repo, "rev-parse", "HEAD").stdout == before
+    assert git(repo, "status", "--porcelain").stdout == ""
+    git(repo, "merge", "--no-ff", "--no-edit", "develop")
+    assert payload(mdf(python_exe, *args))["changed"] is True
+    git(repo, "merge-base", "--is-ancestor", "develop", "HEAD")
 
 
 def test_switch_requires_running_on_target_trunk(python_exe, tmp_path):

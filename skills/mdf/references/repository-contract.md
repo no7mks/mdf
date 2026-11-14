@@ -182,6 +182,7 @@ ASD-STE100 写作约定。CLI `fact-audit` 对结构硬限制报 `prose.*` findi
 
 Manifest 可选 `workflow: {model, trunk}`：`model` 为 `gitflow`（默认）或 `github-flow`，`trunk` 为永久主干（默认 `master`）。
 缺省等同 gitflow/master；github-flow 无 develop，trunk 不得占用保留分支名。只经 `init --workflow`、`workflow switch` 改变，不得手改。
+受保护 trunk 的操作见 [Workflow 切换](workflow/switch.md)。
 `versioning.latest_release` 在 github-flow 的多条发布线（trunk 与 `support/*`）下按线记录。
 
 Manifest 控制面可选 `logo`：横幅 emoji 字符串；缺省、`null` 或空字符串用 `📍`，init 保留配置。

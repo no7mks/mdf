@@ -14,6 +14,7 @@ from mdf_core.lifecycle.delivery_state import read_json  # noqa: E402
 from mdf_core.reviewing.context import context
 from mdf_core.reviewing.report import validate  # noqa: E402
 from mdf_core.workspace.merge_policy import git, sha  # noqa: E402
+from mdf_core.workspace.workflow_switch import SWITCH_BRANCH, valid_switch_source  # noqa: E402
 
 
 def invoke(repo, backend, prompt, body, schema, prefix):
@@ -56,6 +57,17 @@ def run(args):
     if output == repo or repo in output.parents:
         raise MDFError('output-dir 必须位于 checkout 外，避免污染审查对象', code='invalid_arguments')
     output.mkdir(parents=True, exist_ok=True)
+    if args.source == SWITCH_BRANCH:
+        base, head = sha(repo, args.policy_ref), sha(repo, args.head)
+        target = args.target
+        original = snapshot(repo)
+        if (not target or original[0] != head or original[1] or original[2]
+                or not valid_switch_source(repo, base, head, target)):
+            raise MDFError('切换 PR/MR 须从目标 tip 出发，且只含 workflow 配置与托管规则更新',
+                           code='invalid_workflow_switch')
+        proof = {'source': args.source, 'target': target, 'base': base, 'head': head, 'decision': 'pass'}
+        (output / 'workflow-switch.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n')
+        return 0
     prior_path = getattr(args, 'previous_report', None)
     previous = read_json(Path(prior_path)) if prior_path else None
     ctx = context(repo, args.source, args.head, args.policy_ref, getattr(args, 'review_base', None), previous)
@@ -108,6 +120,7 @@ def main():
     for name in ('head', 'policy-ref'):
         parser.add_argument('--' + name)
     parser.add_argument('--source')
+    parser.add_argument('--target')
     parser.add_argument('--backend', choices=('codex', 'cursor'), required=True)
     parser.add_argument('--review-base', default=os.environ.get('MDF_REVIEW_BASE') or None)
     parser.add_argument('--previous-report', default=os.environ.get('MDF_PREVIOUS_REPORT') or None)

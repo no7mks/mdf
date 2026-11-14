@@ -26,6 +26,7 @@ mdf-review:
         git checkout --detach "$MDF_HEAD"
         python3 "$MDF_SKILL/assets/ci/review.py" --repo "$CI_PROJECT_DIR" \
           --source "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" --head "$MDF_HEAD" \
+          --target "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" \
           --policy-ref "$MDF_POLICY" --backend "$MDF_BACKEND" --output-dir "$MDF_OUTPUT"
       else
         python3 "$MDF_SKILL/scripts/mdf.py" audit-push --repo "$CI_PROJECT_DIR" \

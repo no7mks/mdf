@@ -122,7 +122,7 @@ python3 -B "$MDF_ROOT/assets/ci/review.py" \
 
 ### Push 审计
 
-本节审计 develop/master 的完整新增第一父链，不撤销已经接受的 push。
+本节审计受保护分支的完整新增第一父链。切换 PR/MR 见 [Workflow 切换](workflow/switch.md#首次-push-审计)。
 
 ```bash
 MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs" python3 -B "$MDF_ROOT/scripts/mdf.py" audit-push \
