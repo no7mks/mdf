@@ -15,7 +15,8 @@ def feature_records(repo, root, data):
     for source in data.get("features", []):
         folder = safe(repo, container / source.split("/", 1)[1])
         record = read_json(safe(repo, folder / "delivery.json"))
-        if (record.get("branch") != source or record.get("base_branch") != "master"
+        from mdf_core.workspace.workflow_policy import trunk_branch
+        if (record.get("branch") != source or record.get("base_branch") != trunk_branch(repo)
                 or record.get("target") != data["branch"]):
             raise MDFError("ODR 来源身份不匹配", code="invalid_delivery")
         result[source] = (folder, record)

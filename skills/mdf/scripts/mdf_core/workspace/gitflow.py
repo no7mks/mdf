@@ -106,7 +106,7 @@ def default_branch(repo: Path) -> str | None:
     return value.removeprefix(prefix) if value.startswith(prefix) else None
 
 
-def require_trunk_default(repo: Path, trunk: str = "master") -> None:
+def require_trunk_default(repo: Path, trunk: str) -> None:
     branch = default_branch(repo)
     if branch == "main" and trunk != "main":
         raise MDFError(

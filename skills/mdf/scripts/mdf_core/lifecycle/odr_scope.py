@@ -48,8 +48,10 @@ def normalize(repo, entries):
                 item[key] = commit_id(repo, item.get(key))
             from mdf_core.lifecycle.late_decision import require_independent
             require_independent(repo, item["tip"])
-            if not ancestor(repo, item["base"], "master") or not ancestor(repo, item["base"], item["tip"]):
-                fail("整分支来源必须基于 master；其他来源使用 cherry-pick")
+            from mdf_core.workspace.workflow_policy import trunk_branch
+            trunk = trunk_branch(repo)
+            if not ancestor(repo, item["base"], trunk) or not ancestor(repo, item["base"], item["tip"]):
+                fail(f"整分支来源必须基于 {trunk}；其他来源使用 cherry-pick")
             # 已有 MDF 材料不可通过 branch 来源绕过原契约。
             from mdf_core.workspace.gitutil import branch_details, unreleased_slug
             details = branch_details(item["source"])
@@ -132,7 +134,8 @@ def check_scope(repo, data, covered):
     version = data["branch"].split("/", 1)[1]
     material_prefixes = (f"changes/unreleased/{version}/", f"changes/{version}/",
                          *(f"changes/unreleased/{b.split('/', 1)[1]}/" for b in data.get("features", [])))
-    covered.update(ancestors(repo, "master", data["start_commit"]))
+    from mdf_core.workspace.workflow_policy import trunk_branch
+    covered.update(ancestors(repo, trunk_branch(repo), data["start_commit"]))
     unexpected = []
     for commit in ancestors(repo, "HEAD", data["start_commit"]) - covered:
         paths = commit_paths(repo, commit)

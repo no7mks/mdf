@@ -164,11 +164,12 @@ def on_base_or_pending(repo: Path, finder, identifier: str, base: str) -> str:
 
 def ensure_planning(repo: Path) -> dict:
     require_git_root(repo)
-    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     if is_github_flow(repo):
         return _ensure_github_flow(repo)
-    if not _exists(repo, "refs/heads/master"):
-        raise MDFError("Branch master must exist", code="missing_branch")
+    trunk = trunk_branch(repo)
+    if not _exists(repo, f"refs/heads/{trunk}"):
+        raise MDFError(f"Branch {trunk} must exist", code="missing_branch")
     primary = primary_worktree(repo)
     path = sibling_worktree(repo, BRANCH)
     trees = worktree_map(primary)
@@ -188,12 +189,12 @@ def ensure_planning(repo: Path) -> dict:
         if _exists(repo, f"refs/heads/{BRANCH}"):
             _git(primary, "worktree", "add", str(path), BRANCH)
         else:
-            _git(primary, "worktree", "add", "-b", BRANCH, str(path), "master")
+            _git(primary, "worktree", "add", "-b", BRANCH, str(path), trunk)
         created = True
         work = path
     synced = False
     if git_is_clean(work):
-        merge_branch(work, "master")
+        merge_branch(work, trunk)
         synced = True
     return {
         "ok": True,
@@ -217,17 +218,18 @@ def _land_github_flow(repo: Path) -> None:
 def command_planning_land(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
-    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     if is_github_flow(repo):
         _land_github_flow(repo)
         return
     if not _exists(repo, f"refs/heads/{BRANCH}"):
         raise MDFError("Branch planning must exist", code="missing_branch")
+    trunk = trunk_branch(repo)
     primary = primary_worktree(repo)
     trees = worktree_map(primary)
     planning_wt = trees.get(BRANCH)
     # 在任何写入前检查全部已占用目标，避免 land 后才发现脏 develop。
-    for branch in (BRANCH, "master", "develop"):
+    for branch in (BRANCH, trunk, "develop"):
         if not _exists(repo, f"refs/heads/{branch}"):
             raise MDFError(f"Branch {branch} must exist", code="missing_branch")
         if branch in trees:
@@ -246,12 +248,12 @@ def command_planning_land(args) -> None:
         trees[branch] = path
         return path
 
-    master, develop = checkout("master"), checkout("develop")
-    landed = merge_branch(master, BRANCH)
-    backmerged = merge_branch(develop, "master")
+    trunk_wt, develop = checkout(trunk), checkout("develop")
+    landed = merge_branch(trunk_wt, BRANCH)
+    backmerged = merge_branch(develop, trunk)
     synced = False
     if planning_wt is not None:
-        merge_branch(planning_wt, "master")
+        merge_branch(planning_wt, trunk)
         synced = True
     emit({
         "ok": True,

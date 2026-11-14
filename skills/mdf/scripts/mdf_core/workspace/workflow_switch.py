@@ -35,8 +35,10 @@ def _exists(repo: Path, ref: str) -> bool:
 
 
 def _in_flight_branches(repo: Path) -> list[str]:
+    from mdf_core.workspace.workflow_policy import trunk_branch
     names = _git(repo, "for-each-ref", "--format=%(refname:short)", "refs/heads").stdout.split()
-    return sorted(name for name in names if occupies_delivery(name))
+    trunk = trunk_branch(repo)
+    return sorted(name for name in names if occupies_delivery(name, trunk))
 
 
 def _pending_finish_records(repo: Path) -> list[str]:

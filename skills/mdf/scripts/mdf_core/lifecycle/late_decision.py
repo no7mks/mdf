@@ -45,11 +45,12 @@ def target_for(repo, source, *, data=None):
             return data.get("base_branch") or trunk_branch(repo)
         return trunk_branch(repo)
     if kind in {"release", ODR, "hotfix"}:
-        return "master"
+        return trunk_branch(repo)
     if kind != "feature":
         return "develop"
     data = identity_at(repo, source) if data is None else data
-    target = data.get("target", None if data.get("base_branch") == "master" else "develop")
+    trunk = trunk_branch(repo)
+    target = data.get("target", None if data.get("base_branch") == trunk else "develop")
     if target is None or target == ODR:
         raise MDFError("catch-up 前须确定具体交付目标", code="target_pending")
     return validate_target(target, concrete=True)
@@ -57,19 +58,22 @@ def target_for(repo, source, *, data=None):
 
 def require_independent(repo, source):
     """拒绝 source 已包含的 develop 未发布历史；不只相信启动参数。"""
-    pending = set(git(repo, "rev-list", "develop", "^master").stdout.split())
-    included = set(git(repo, "rev-list", source, "^master").stdout.split())
+    from mdf_core.workspace.workflow_policy import trunk_branch
+    trunk = trunk_branch(repo)
+    pending = set(git(repo, "rev-list", "develop", f"^{trunk}").stdout.split())
+    included = set(git(repo, "rev-list", source, f"^{trunk}").stdout.split())
     if pending & included:
         raise MDFError("已引入 develop 未发布历史，不能独立发布", code="unreleased_dependency")
 
 
 def require_feature_target(repo, source, target):
-    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     if target == "develop" or is_github_flow(repo):
         return
     data = identity_at(repo, source)
-    if data.get("base_branch") != "master":
-        raise MDFError("ODR 仅接受从 master 启动的 feature", code="invalid_target")
+    trunk = trunk_branch(repo)
+    if data.get("base_branch") != trunk:
+        raise MDFError(f"ODR 仅接受从 {trunk} 启动的 feature", code="invalid_target")
     require_independent(repo, source)
     selected = identity_at(repo, target).get("features", [])
     if source not in selected:
@@ -101,8 +105,10 @@ def set_target(repo, target):
     ensure_clean(repo)
     root, data = locate(repo)
     source = current_branch(repo)
-    if not source.startswith("feature/") or data.get("base_branch") != "master":
-        raise MDFError("仅 master 起点的 feature 可选择目标", code="invalid_target")
+    from mdf_core.workspace.workflow_policy import trunk_branch
+    trunk = trunk_branch(repo)
+    if not source.startswith("feature/") or data.get("base_branch") != trunk:
+        raise MDFError(f"仅 {trunk} 起点的 feature 可选择目标", code="invalid_target")
     validate_target(target, concrete=True)
     from mdf_core.lifecycle.publish import state_path
     if state_path(repo, source).exists():
@@ -142,7 +148,8 @@ def checkpoint(repo, *, required=False, release=False):
                 child = identity_at(repo, source, pair[1])
             except MDFError:
                 continue
-            if child.get("target") == data["branch"] and child.get("base_branch") == "master":
+            from mdf_core.workspace.workflow_policy import trunk_branch
+            if child.get("target") == data["branch"] and child.get("base_branch") == trunk_branch(repo):
                 merged = True
                 from mdf_core.lifecycle.odr_scope import ancestors
                 covered.update(ancestors(repo, pair[1], data["start_commit"])
@@ -181,7 +188,8 @@ def guard_catch_up(repo, incoming):
     if not (repo / "changes/unreleased" / folder / "delivery.json").is_file():
         return
     data = identity_at(repo, source)
-    if data.get("base_branch") != "master":
+    from mdf_core.workspace.workflow_policy import trunk_branch
+    if data.get("base_branch") != trunk_branch(repo):
         return
     refs = git(repo, "for-each-ref", "--format=%(refname)", f"--points-at={incoming}",
                "refs/heads/develop", "refs/remotes/origin/develop",

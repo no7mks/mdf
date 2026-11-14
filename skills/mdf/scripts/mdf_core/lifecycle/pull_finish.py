@@ -260,8 +260,9 @@ def _finish(repo, source, settings, *, phase):
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
     target = (state.get("target") if state and details["kind"] == "feature"
               else target_for(repo, source))
-    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     github = is_github_flow(repo)
+    trunk = trunk_branch(repo)
     if details["kind"] == "feature" and not github:
         from mdf_core.lifecycle.late_decision import validate_target
         validate_target(target, concrete=True)
@@ -361,8 +362,8 @@ def _finish(repo, source, settings, *, phase):
                   "merge_commit": merged, "next_intent": "close-out"})
             return
         publishes = details["kind"] in {"release", "hotfix", "on-demand-release", "integration"} and (
-            github or target == "master")
-        for branch in (["master", "develop"] if publishes and not github else [target]):
+            github or target == trunk)
+        for branch in ([trunk, "develop"] if publishes and not github else [target]):
             occupant = worktree_map(repo).get(branch)
             if occupant:
                 ensure_clean(occupant)
@@ -385,7 +386,7 @@ def _finish(repo, source, settings, *, phase):
     emit({"ok": True, "operation": "pr" if phase == "pr" else "finish-gitflow", "mode": "pr", "source": source,
           "completed": state["completed"], "status": status, "pull_request": pull,
           "merge_commit": state.get("merge_commit"), "backmerge": state.get("backmerge"),
-          "tag": state.get("tag"), "targets": [target] + (["develop"] if target == "master" and not github else []),
+          "tag": state.get("tag"), "targets": [target] + (["develop"] if target == trunk and not github else []),
           "remote_deleted": (state.get("remote_cleanup") or {}).get("status") == "deleted",
           "deleted": source if state["completed"] else None, "pushed": True,
           "retained_worktree": state.get("retained_worktree"), "primary_worktree": str(primary_worktree(repo))})

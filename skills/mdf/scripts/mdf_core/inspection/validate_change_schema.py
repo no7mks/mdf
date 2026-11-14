@@ -10,6 +10,11 @@ from mdf_core.inspection.validate_objects import required_sections
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
+def _integration_source(repo: Path) -> str:
+    from mdf_core.workspace.workflow_policy import integration_branch
+    return integration_branch(repo)
+
+
 def validate_change_file(
     repo: Path,
     path: Path,
@@ -40,7 +45,7 @@ def validate_change_file(
             "CHANGE requires source_branch",
             rel,
         )
-    elif not root and source_branch == "develop":
+    elif not root and source_branch == _integration_source(repo):
         if change_kind not in {"feature", "bugfix", "fix"}:
             add_finding(
                 findings,

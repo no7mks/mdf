@@ -66,3 +66,16 @@ def test_gitflow_helpers_keep_develop_and_planning(tmp_path):
 def test_github_flow_pr_mode_has_short_lived_planning(tmp_path):
     repo = github_flow_repo(tmp_path, pr=True)
     assert wp.permanent_trunks(repo) == ("master", "planning")
+
+
+@pytest.mark.parametrize("name", ["main", "trunk", "production", "support/1.2"])
+def test_occupies_delivery_excludes_custom_trunk_and_support(name):
+    from mdf_core.workspace.gitutil import occupies_delivery
+    assert occupies_delivery(name) is False
+
+
+@pytest.mark.parametrize("name", ["feature/x", "qa/1", "dev/1", "codex/integrate/release-1.2.0"])
+def test_occupies_delivery_keeps_explicit_delivery_prefixes(name):
+    from mdf_core.workspace.gitutil import occupies_delivery
+    assert occupies_delivery(name, "production") is True
+    assert occupies_delivery("production", "production") is False

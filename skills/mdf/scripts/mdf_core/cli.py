@@ -56,6 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     prepare_git = subparsers.add_parser("prepare-git")
     prepare_git.add_argument("--repo", required=True)
+    prepare_git.add_argument("--trunk")
     prepare_git.set_defaults(func=command_prepare_git)
 
     merge = subparsers.add_parser("merge-no-ff")

@@ -153,3 +153,90 @@ def test_ci_gitflow_keeps_develop_and_trunk(python_exe, tmp_path):
     data = payload(mdf(python_exe, "workflow", "ci", "--repo", str(repo)))
     assert data["branches"] == ["develop", "master"]
     assert "branches: [develop, master]" in data["content"]
+
+
+def _gitflow_main(tmp_path):
+    repo = copy_fixture(tmp_path)
+    set_workflow(repo, "gitflow", "main")
+    init_git(repo)
+    git(repo, "branch", "develop")
+    return repo
+
+
+def test_prepare_git_uses_requested_trunk(python_exe, tmp_path):
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    created = payload(mdf(python_exe, "prepare-git", "--repo", str(plain), "--trunk", "main"))
+    assert created["created"] is True and created["branch"] == "main"
+
+
+def test_gitflow_main_planning_lands_on_trunk(python_exe, tmp_path):
+    repo = _gitflow_main(tmp_path)
+    ensured = payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
+    plan = Path(ensured["worktree"])
+    assert ensured["branch"] == "planning"
+    (plan / "plan.txt").write_text("规划\n")
+    commit(plan, "docs: 规划")
+    landed = payload(mdf(python_exe, "planning", "land", "--repo", str(plan)))
+    assert landed["landed"] is True and landed["backmerged"] is True
+    assert git(repo, "show", "main:plan.txt").stdout == "规划\n"
+    assert git(repo, "merge-base", "--is-ancestor", "main", "develop").returncode == 0
+
+
+def test_gitflow_main_odr_starts_from_trunk(python_exe, tmp_path):
+    repo = _gitflow_main(tmp_path)
+    git(repo, "checkout", "develop")
+    feature = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "feature", "--from-master",
+        "--proposal", PRP_ID, "--roster", "solo",
+        "--objectives-file", str(write_work_objectives(tmp_path)),
+    ))
+    work = Path(feature["worktree"])
+    record = json.loads((work / "changes/unreleased/service-health/delivery.json").read_text())
+    assert record["base_branch"] == "main"
+    odr = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "on-demand-release", "--version", "1.3.0",
+        "--feature", "feature/service-health",
+        "--objectives-file", str(write_release_objectives(tmp_path)),
+    ))
+    assert odr["base"] == "main"
+
+
+def test_gitflow_main_pr_closeout_publishes_to_trunk(python_exe, tmp_path, monkeypatch):
+    repo = _gitflow_main(tmp_path)
+    remote = tmp_path / "origin.git"
+    remote.mkdir()
+    git(remote, "init", "--bare")
+    git(remote, "symbolic-ref", "HEAD", "refs/heads/main")
+    git(repo, "remote", "add", "origin", str(remote))
+    manifest = repo / ".mdf/manifest.yaml"
+    manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: github\n", encoding="utf-8")
+    commit(repo)
+    git(repo, "branch", "-f", "develop", "main")
+    git(repo, "push", "--all", "--set-upstream", "origin")
+    git(repo, "remote", "set-head", "origin", "--auto")
+    from support_pull import Platform, squash_pending
+    platform = Platform()
+    platform.repo, platform.remote = repo, remote
+    from mdf_core.lifecycle import pull_finish
+    identity = {"provider": "github", "host": "forge.invalid", "project": "team/project", "origin": str(remote)}
+    monkeypatch.setattr(pull_finish, "origin", lambda *_: identity)
+    monkeypatch.setattr(pull_finish, "Forge", lambda *_: platform)
+    started = payload(mdf(
+        python_exe, "start", "--repo", str(repo), "--kind", "release", "--version", "1.2.1",
+        "--objectives-file", str(write_release_objectives(tmp_path)),
+    ))
+    work = Path(started["worktree"])
+    from support_delivery import write_changelog_release
+    write_changelog_release(work, "1.2.1")
+    (work / "src/service.py").write_text("fixed = True\n")
+    commit(work)
+    pull_finish.preflight(work, "release/1.2.1")
+    squash_pending(work)
+    opened = payload(mdf(python_exe, "pr", "--repo", str(work)))
+    assert opened["status"] == "waiting_for_merge"
+    platform.merge(1, tmp_path)
+    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert done["completed"] is True
+    assert "main" in done["targets"] and "master" not in done["targets"]
+    assert git(remote, "rev-parse", "--verify", "refs/heads/main").returncode == 0

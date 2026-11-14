@@ -116,10 +116,11 @@ def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str 
         from mdf_core.workspace.merge_policy import manifest_at
         from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
         branch = run(["git", "branch", "--show-current"], cwd=repo, check=False).stdout.strip()
-        details = branch_details(branch)
+        trunk = trunk_branch(repo)
+        details = branch_details(branch, trunk)
         if details["kind"] == "feature":
             record = repo / "changes/unreleased" / details["slug"] / "delivery.json"
-            if record.is_file() and read_json(record).get("base_branch") == trunk_branch(repo):
+            if record.is_file() and read_json(record).get("base_branch") == trunk:
                 _, data = locate(repo)
                 base = data["start_commit"]
         elif details["kind"] == "on-demand-release":
