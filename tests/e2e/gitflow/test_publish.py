@@ -58,6 +58,7 @@ def test_publish_resumes_without_remerging_or_retagging(
     assert git(remote, "rev-parse", "master").stdout == before["master"]
     assert git(remote, "rev-parse", "develop").stdout == remote_develop
     assert git(repo, "cat-file", "-t", "v1.2.1").stdout.strip() == "tag"
+    assert git(repo, "rev-parse", "v1.2.1^{commit}").stdout.strip() == before["master"].strip()
     contents = git(
         repo, "tag", "-l", "--format=%(contents)", "v1.2.1"
     ).stdout

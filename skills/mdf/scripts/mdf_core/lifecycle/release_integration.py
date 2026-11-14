@@ -71,11 +71,19 @@ def command_release_integrate(args):
     git(repo, "fetch", "origin", "--prune")
     remote = f"refs/remotes/origin/{trunk}"
     record = read_json(path) if path.exists() else None
+    current = sha(repo, source)
     if record is None:
-        record = {"release": source, "version": version, "release_head": sha(repo, source), "branch": branch}
+        record = {"release": source, "version": version, "release_head": current, "branch": branch}
         write_json(path, record)
-    elif not ancestor(repo, record["release_head"], f"refs/heads/{source}"):
-        raise MDFError("release 源分支已偏离已固定的 release_head", code="pull_state_changed")
+    elif record.get("release_head") != current:
+        if not ancestor(repo, record["release_head"], f"refs/heads/{source}"):
+            raise MDFError("release 源分支已偏离已固定的 release_head", code="pull_state_changed")
+        opened = state_path(repo, branch)
+        if opened.exists() and read_json(opened).get("pull"):
+            raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed",
+                           details={"release_head": record["release_head"], "head": current})
+        record["release_head"] = current
+        write_json(path, record)
     work = worktree_map(repo).get(branch)
     if work is None:
         work = sibling_worktree(repo, branch)
@@ -92,6 +100,15 @@ def command_release_integrate(args):
                        details={"worktree": str(work)})
     ensure_clean(work)
     status = "up_to_date"
+    if not ancestor(work, record["release_head"], "HEAD"):
+        result = git(work, "merge", "--no-ff", "--no-commit", record["release_head"], check=False)
+        if result.returncode:
+            conflicts = git(work, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
+            raise MDFError("integration merge 冲突；在 worktree 解决后提交，再执行 $mdf pr",
+                           code="merge_conflict", details={"worktree": str(work), "conflicts": conflicts})
+        if git_in_progress_head(work):
+            git(work, "commit", "-m", f"chore(release): 纳入新的 release_head 到 release/{version}")
+        status = "merged"
     if not ancestor(work, remote, "HEAD"):
         result = git(work, "merge", "--no-ff", "--no-commit", remote, check=False)
         if result.returncode:

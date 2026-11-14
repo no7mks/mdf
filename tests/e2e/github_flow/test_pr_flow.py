@@ -168,6 +168,32 @@ def test_github_flow_sync_reports_trunk_pr_and_aligns_shared_support(python_exe,
     assert ahead["pull_plan"]["main"]["action"] == "trunk_pr"
 
 
+def test_release_head_updates_before_pr_and_locks_after(python_exe, tmp_path, monkeypatch):
+    repo, _remote, _platform = pr_repo(tmp_path, monkeypatch)
+    git(repo, "tag", "-a", "v1.2.0", "-m", "test: v1.2.0")
+    git(repo, "push", "origin", "--tags")
+    data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release", "--version", "1.3.0",
+                       "--objectives-file", str(write_release_objectives(tmp_path))))
+    work = Path(data["worktree"])
+    write_changelog_release(work, "1.3.0")
+    commit(work)
+    first = payload(mdf(python_exe, "release-integrate", "--repo", str(work)))
+    assert first["release_head"] == git(work, "rev-parse", "HEAD").stdout.strip()
+    (work / "extra.txt").write_text("追加\n")
+    commit(work)
+    new_head = git(work, "rev-parse", "HEAD").stdout.strip()
+    second = payload(mdf(python_exe, "release-integrate", "--repo", str(work)))
+    assert second["release_head"] == new_head
+    integ = Path(second["worktree"])
+    git(integ, "merge-base", "--is-ancestor", new_head, "HEAD")
+    squash_pending(integ)
+    opened = payload(mdf(python_exe, "pr", "--repo", str(integ)))
+    assert opened["status"] == "waiting_for_merge"
+    (work / "after-pr.txt").write_text("再追加\n")
+    commit(work)
+    assert error_of(mdf(python_exe, "release-integrate", "--repo", str(work)))["error"] == "release_head_changed"
+
+
 def test_support_branch_can_never_merge_into_trunk(python_exe, tmp_path):
     repo = github_flow_repo(tmp_path)
     git(repo, "branch", "support/1.2")

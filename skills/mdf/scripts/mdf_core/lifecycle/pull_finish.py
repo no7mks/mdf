@@ -308,6 +308,8 @@ def _finish(repo, source, settings, *, phase):
                  "retained_worktree": str(worktree_map(repo).get(source, repo))}
         if version:
             state["release_head"] = release_head_of(repo, source)
+        elif details["kind"] in {"release", "hotfix", "on-demand-release"}:
+            state["release_head"] = state["head"]
         write_json(path, state)
     git(repo, "fetch", "origin", "--prune")
     if state.get("pull"):
@@ -325,7 +327,17 @@ def _finish(repo, source, settings, *, phase):
         if current.returncode:
             raise MDFError("未合并的源分支不存在", code="missing_branch")
         head = current.stdout.strip()
-        if head != state["head"] or state.get("pending_head"):
+        if not version and state.get("release_head") and head != state["release_head"]:
+            if state.get("pull"):
+                raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed",
+                               details={"release_head": state["release_head"], "head": head})
+            if not ancestor(repo, state["release_head"], head):
+                raise MDFError("源分支历史已改写", code="pull_state_changed")
+            state["release_head"] = head
+            state["head"] = head
+            state.pop("pending_head", None)
+            write_json(path, state)
+        elif head != state["head"] or state.get("pending_head"):
             if not ancestor(repo, state.get("pending_head", state["head"]), head):
                 raise MDFError("源分支历史已改写", code="pull_state_changed")
             preflight(repo, source)

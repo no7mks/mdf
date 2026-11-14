@@ -408,9 +408,22 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
                 code="command_failed",
             )
         _git(repo, "merge", "--abort", check=False)
+        details = None
+        from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+        if is_github_flow(repo):
+            trunk = trunk_branch(repo)
+            details = {
+                "recovery": (
+                    f"在 {trunk} 手工执行 git merge --no-ff {source} 解决冲突并提交，"
+                    "然后重跑 finish-gitflow"
+                ),
+                "trunk": trunk,
+                "release_head": source,
+            }
         raise MDFError(
             f"Merge conflict: {source} -> {target}; merge was aborted",
             code="merge_conflict",
+            details=details,
         )
     if new_inclusion and target.startswith("on-demand-release/"):
         from mdf_core.lifecycle.odr_acceptance import invalidate

@@ -50,6 +50,29 @@ def test_frozen_release_ignores_later_trunk_and_blocks_catch_up(python_exe, tmp_
     assert "release/1.3.0" not in git(work, "branch", "--contains", later).stdout
 
 
+def test_local_conflict_recovery_tags_the_locked_release_head(python_exe, tmp_path):
+    repo, _remote = github_flow_repo(tmp_path, origin=True)
+    tag_trunk(repo, "v1.2.0")
+    cut = git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "src/service.py").write_text("trunk = True\n")
+    commit(repo, "test: trunk 并行")
+    push_all(repo)
+    data = payload(release_start(python_exe, repo, tmp_path, cut))
+    work = Path(data["worktree"])
+    write_changelog_release(work, "1.3.0")
+    (work / "src/service.py").write_text("release = True\n")
+    commit(work)
+    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    failed = error_of(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert failed["error"] == "merge_conflict" and head in failed["details"]["recovery"]
+    assert run(["git", "merge", "--no-ff", "--no-commit", head], cwd=repo).returncode != 0
+    (repo / "src/service.py").write_text("trunk = True\nrelease = True\n")
+    git(repo, "add", "src/service.py")
+    git(repo, "commit", "-m", "chore: 解决发布冲突")
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert git(repo, "rev-parse", "v1.3.0^{commit}").stdout.strip() == head
+
+
 def test_cutpoint_release_publishes_with_tag_on_release_head(python_exe, tmp_path):
     repo, remote = github_flow_repo(tmp_path, origin=True)
     tag_trunk(repo, "v1.2.0")
