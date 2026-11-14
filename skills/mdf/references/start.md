@@ -108,7 +108,8 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 - bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，不得另选 slug。
   - ⚠️ 已锁定的 release 或 hotfix 上修复 Bug 不走本 intent，不创建 bugfix 分支。
-- release 必须绑定稳定 SemVer；本版范围是 start 时已在 develop 的 child Change。
+- release 必须绑定稳定 SemVer；gitflow 的本版范围是 start 时已在 develop 的 child Change。
+  - github-flow 使用 trunk 的冻结切点及其已纳入的 child Change。
   - ODR 改用已确认的多来源范围；允许纳入分支、cherry-pick 与直接工作，验收见 Late-decision。
   - 不得把新 PRP 当作本版实现范围。
 - 普通 feature 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`：
@@ -274,7 +275,8 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 远程提交已在本地（相同或本地更新）才通过。
   - 远程有本地没有的提交则停止，不创建分支。
   - 无 origin，或 origin 上没有该基线分支，则跳过。
-- feature/bugfix/release 默认从本地 develop 创建；feature --from-master、ODR 和 hotfix 从 master 创建。
+- gitflow：feature/bugfix/release 默认从本地 develop 创建；`--from-master`、ODR 和 hotfix 从 trunk 创建。
+- github-flow：交付从 `workflow.trunk` 创建并回到 trunk；不从 develop 创建。hotfix 见 [Hotfix 版本](hotfix-version.md)。
 - 本地已有同名分支则失败，不检查远端。
 - 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立 worktree：
   - 路径等于分支名，`/` 为嵌套目录。

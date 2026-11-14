@@ -290,10 +290,10 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 
 <a id="s8"></a>
 
-确保本地 master、develop 可用：
+gitflow 确保本地 trunk 与 develop 可用；github-flow 只确保 trunk，不创建 develop：
 
-- 新仓库从包含已提交就绪结果的 master 创建 develop。
-- 已有分支保留，缺少 develop 时按确认方案从 master 创建，不重置、不强制对齐。
+- gitflow 的新仓库从包含已提交就绪结果的 trunk 创建 develop。
+- 已有分支保留。gitflow 缺少 develop 时按确认方案从 trunk 创建，不重置、不强制对齐。
 - 既有分支关系影响使用时报告具体问题并按确认方案处理，通过后才宣布完成。
 
 语义确认不因提交而省略。失败保留现场和阶段提交，不宣称已完成；同次可修复继续，

@@ -74,7 +74,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `project-rules` | 项目阶段 rule 原文加载 | [只读命令](mdf-cli-inspect.md) |
 | `audit-push` | trunk push 事后审计 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `review-context` | 固定 Git 审查上下文 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
-| `review-report-check` | 外部复核报告校验 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
+| `review-report-check` | 外部复核报告校验与通过凭证记录 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
+| `review-prepare` | 审查左端点、未审净增量、交互文件集与体积 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
+| `catch-up-plan` | 基线之后 review/verify/fact 三路动作 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `doctor` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
 | `prepare-git` | 非 Git 目录初始化为 master | [仓库写入命令](mdf-cli-write.md) |
 | `merge-no-ff` | 在当前分支 no-ff 合并指定提交 | [仓库写入命令](mdf-cli-write.md) |
@@ -102,6 +104,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
+| `trunk-pr` | github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
+| `release-integrate` | github-flow PR 发布的集成分支 | [仓库写入命令](mdf-cli-write.md) |
+| `workflow` | 空闲态切换分支模型/trunk、渲染 CI 分支 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |
 | `pre-gitflow-finish` | fact 前执行 hook 或检查其改动 | [仓库写入命令](mdf-cli-write.md) |
@@ -133,6 +138,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
+| `trunk-pr` | `trunk-pr`：github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
 | `pr` | `pr --repo <repo> [--source <source>]`；merged 后完成，交给 close-out | [PR mode](mdf-cli-review.md) |
 | `close-out` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |

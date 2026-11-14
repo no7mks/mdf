@@ -18,6 +18,19 @@ def preflight(repo, source):
     """沿用交付材料检查；由外层 intent 完成审查、验证及 fact。"""
     if current_branch(repo) != source:
         raise MDFError("首次提交或更新 PR/MR 必须在源 worktree 执行", code="stage_branch")
+    from mdf_core.lifecycle.release_integration import integration_version, release_head_of, require_direct_pr
+    if integration_version(source):
+        release_head_of(repo, source)
+        ensure_clean(repo)
+        return
+    require_direct_pr(repo, source)
+    if source == "planning":
+        from mdf_core.workspace.merge_policy import planning_only
+        from mdf_core.workspace.workflow_policy import trunk_branch
+        if not planning_only(repo, f"refs/remotes/origin/{trunk_branch(repo)}", "HEAD"):
+            raise MDFError("planning PR 只能包含文档与规划变更", code="planning_not_documents")
+        ensure_clean(repo)
+        return
     from mdf_core.inspection.validate_records import require_fixed_outcomes
     kind = branch_details(source)["kind"]
     from mdf_core.lifecycle.late_decision import target_for
@@ -240,10 +253,17 @@ def _finish(repo, source, settings, *, phase):
     identity = origin(repo, settings["provider"])
     forge = Forge(repo, identity)
     details = branch_details(source)
+    from mdf_core.lifecycle.release_integration import integration_version, release_head_of
+    version = integration_version(source)
+    if version:
+        details = {**details, "kind": "integration", "version": version}
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
     target = (state.get("target") if state and details["kind"] == "feature"
               else target_for(repo, source))
-    if details["kind"] == "feature":
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    github = is_github_flow(repo)
+    trunk = trunk_branch(repo)
+    if details["kind"] == "feature" and not github:
         from mdf_core.lifecycle.late_decision import validate_target
         validate_target(target, concrete=True)
     if details["kind"] == "feature" and (state is None or not state.get("merge_commit")):
@@ -276,12 +296,20 @@ def _finish(repo, source, settings, *, phase):
                 raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
     if state is None and phase == "close-out":
         raise MDFError("先完成 pr intent，再执行 close-out", code="pr_not_merged")
+    if state is None and source == "planning":
+        git(repo, "fetch", "origin", "--prune")
+        if ancestor(repo, sha(repo, source), sha(repo, f"origin/{target}")):
+            raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
     if state is None:
         preflight(repo, source)
         require_ready(repo, source)
         state = {"mode": "pr", "identity": identity, "source": source, "target": target,
                  "head": sha(repo, source), "pull": None, "completed": False,
                  "retained_worktree": str(worktree_map(repo).get(source, repo))}
+        if version:
+            state["release_head"] = release_head_of(repo, source)
+        elif github and details["kind"] in {"release", "hotfix", "on-demand-release"}:
+            state["release_head"] = state["head"]
         write_json(path, state)
     git(repo, "fetch", "origin", "--prune")
     if state.get("pull"):
@@ -299,7 +327,17 @@ def _finish(repo, source, settings, *, phase):
         if current.returncode:
             raise MDFError("未合并的源分支不存在", code="missing_branch")
         head = current.stdout.strip()
-        if head != state["head"] or state.get("pending_head"):
+        if github and not version and state.get("release_head") and head != state["release_head"]:
+            if state.get("pull"):
+                raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed",
+                               details={"release_head": state["release_head"], "head": head})
+            if not ancestor(repo, state["release_head"], head):
+                raise MDFError("源分支历史已改写", code="pull_state_changed")
+            state["release_head"] = head
+            state["head"] = head
+            state.pop("pending_head", None)
+            write_json(path, state)
+        elif head != state["head"] or state.get("pending_head"):
             if not ancestor(repo, state.get("pending_head", state["head"]), head):
                 raise MDFError("源分支历史已改写", code="pull_state_changed")
             preflight(repo, source)
@@ -335,13 +373,15 @@ def _finish(repo, source, settings, *, phase):
                   "completed": True, "status": "merged", "pull_request": pull,
                   "merge_commit": merged, "next_intent": "close-out"})
             return
-        for branch in (["master", "develop"] if target == "master" else [target]):
+        publishes = details["kind"] in {"release", "hotfix", "on-demand-release", "integration"} and (
+            github or target == trunk)
+        for branch in ([trunk, "develop"] if publishes and not github else [target]):
             occupant = worktree_map(repo).get(branch)
             if occupant:
                 ensure_clean(occupant)
         sync_local(repo, target, integrate_develop=True)
         ready = True
-        if target == "master":
+        if publishes:
             from mdf_core.lifecycle.pull_publish import publish
             if details["kind"] == "hotfix" and details["version"] is None:
                 from mdf_core.lifecycle.hotfix_version import source_version
@@ -358,7 +398,7 @@ def _finish(repo, source, settings, *, phase):
     emit({"ok": True, "operation": "pr" if phase == "pr" else "finish-gitflow", "mode": "pr", "source": source,
           "completed": state["completed"], "status": status, "pull_request": pull,
           "merge_commit": state.get("merge_commit"), "backmerge": state.get("backmerge"),
-          "tag": state.get("tag"), "targets": [target] + (["develop"] if target == "master" else []),
+          "tag": state.get("tag"), "targets": [target] + (["develop"] if target == trunk and not github else []),
           "remote_deleted": (state.get("remote_cleanup") or {}).get("status") == "deleted",
           "deleted": source if state["completed"] else None, "pushed": True,
           "retained_worktree": state.get("retained_worktree"), "primary_worktree": str(primary_worktree(repo))})

@@ -14,7 +14,7 @@ def require(condition, message):
         raise MDFError(message, code="invalid_review_report")
 
 
-def validate(context, report):
+def validate(context, report, reuse=None):
     from mdf_core.reviewing.schema import check
     if isinstance(context, dict) and context.get("mode") == "against":
         from mdf_core.reviewing.standalone import validate_against_report
@@ -39,6 +39,11 @@ def validate(context, report):
     require(isinstance(report.get("incomplete"), list), "报告需要 incomplete")
     reviewers = report.get("reviewers")
     require(isinstance(reviewers, list), "报告需要 reviewers")
+    if reviewers == [] and (reuse or {}).get("zero_reviewers_allowed") is True:
+        require(context.get("kind") in {"release", "on-demand-release"}, "只有 release 可复用子交付审查")
+        require(decision == "pass" and not context["incomplete"] and not report["incomplete"],
+                "0 reviewer 只能在完整通过时使用")
+        return {"valid": True, "decision": decision, "review_head": context["review_head"], "reviewers": 0}
     require(len(reviewers) == context["roster"]["reviewers"], "独立报告份数与冻结 roster 不符")
     identities, covered, findings, reopened = set(), set(), {}, set()
     previous = context.get("previous_report") or {}
@@ -112,4 +117,23 @@ def command_report_check(args):
         except (KeyError, TypeError, ValueError) as exc:
             raise MDFError("Cursor result 不是完整 JSON 报告", code="invalid_review_report") from exc
     require(isinstance(report, dict), "报告必须是 JSON object")
-    emit({"ok": True, "result": validate(context, report), "report": report})
+    reuse, tracked = None, bool(getattr(args, "repo", None) and "credential" in context)
+    if tracked:
+        from mdf_core.execution.modules import load_modules
+        from mdf_core.reviewing import credentials
+        from mdf_core.workspace.gitutil import repo_path
+        repo = repo_path(args.repo)
+        if context.get("kind") in {"release", "on-demand-release"}:
+            reuse = credentials.reuse_analysis(repo, context["source"], context["credential"],
+                                              load_modules(repo))
+    result = validate(context, report, reuse)
+    if reuse is not None:
+        result["reuse"] = reuse
+    if tracked and result["decision"] == "pass" and result.get("reviewers") != 0:
+        credentials.confirm_code_context(repo, context)
+        credentials.record_code_credential(repo, context, len(report["reviewers"]))
+    elif tracked and result["decision"] != "pass" and context.get("credential"):
+        credentials.confirm_code_context(repo, context)
+        credentials.record_code_credential(repo, context, len(report.get("reviewers") or []),
+                                           decision=result["decision"])
+    emit({"ok": True, "result": result, "report": report})

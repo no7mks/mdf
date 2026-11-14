@@ -14,6 +14,11 @@ from mdf_core.workspace.gitutil import (
 
 
 def command_prepare_git(args) -> None:
+    from mdf_core.workspace.gitutil import valid_branch_name
+    from mdf_core.workspace.workflow_policy import DEFAULT_TRUNK
+    trunk = getattr(args, "trunk", None) or DEFAULT_TRUNK
+    if not valid_branch_name(trunk):
+        raise MDFError(f"workflow.trunk 不是合法分支名：{trunk}", code="invalid_workflow")
     path = repo_path(args.repo)
     root = git_root(path)
     if root is not None and root != path:
@@ -25,7 +30,7 @@ def command_prepare_git(args) -> None:
     created = False
     if root is None:
         result = run(
-            ["git", "init", "--initial-branch=master", "--template="],
+            ["git", "init", f"--initial-branch={trunk}", "--template="],
             cwd=path,
             check=False,
         )

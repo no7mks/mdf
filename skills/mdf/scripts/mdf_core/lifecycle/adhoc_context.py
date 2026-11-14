@@ -7,6 +7,7 @@ from mdf_core.foundation.yamlutil import read_frontmatter
 from mdf_core.lifecycle.delivery_state import read_json, safe
 from mdf_core.workspace.gitutil import branch_details
 from mdf_core.workspace.merge_policy import ancestor, configured, git, sha
+from mdf_core.workspace.workflow_policy import integration_branch
 
 
 def require_source(source):
@@ -69,7 +70,8 @@ def material(repo, source, slug=None):
 def context(repo, source, slug=None, *, head=None):
     root, ledger = material(repo, source, slug)
     head = head or sha(repo, "HEAD")
-    target = "refs/remotes/origin/develop" if configured(repo)["mode"] == "pr" else "refs/heads/develop"
+    integ = integration_branch(repo)
+    target = f"refs/remotes/origin/{integ}" if configured(repo)["mode"] == "pr" else f"refs/heads/{integ}"
     target_head = sha(repo, target)
     frozen = None
     if ledger:
@@ -99,7 +101,7 @@ def context(repo, source, slug=None, *, head=None):
     paths = git(repo, "diff", "--name-only", "-z", frozen["base"], head).stdout.split("\0")
     return {"source": source, "slug": root.name, "path": str(root.relative_to(repo)),
             "material_mode": "ledger" if ledger else "change", "head": head,
-            "range": {**frozen, "target_head": target_head}, "target": "develop",
+            "range": {**frozen, "target_head": target_head}, "target": integ,
             "paths": [path for path in paths if path], "has_change": (root / "CHANGE.md").is_file()}
 
 

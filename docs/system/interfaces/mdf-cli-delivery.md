@@ -29,6 +29,8 @@
 | roster-join | 按 roster strategy 合流 qa/dev；best-of-n 且 n≥2 须 winner；partition 全合后清理角色 |
 | roster | 更新 strategy / 按 intent 的 models；design 完成后不能改 qa/dev strategy |
 | resolve-version | hotfix owner 固定发布版本；可传 `--version <semver>`，返回 version 与 tag |
+| route | 只读；按 `objectives.md` 首个未勾步骤返回 state、next、pending 与 `auto_completable`；`--yolo` 免 pr/close-out 入口确认 |
+| complete-stage | `--stage verify\|catch-up`；证据充分时自勾并只提交本阶段文件，见下 |
 
 - `objectives.md` 记录 checklist 进度。PR mode 的 pr 与 close-out 按实际状态续办；主链不使用 `record/check` 选型。
 - design record 需要 `--policy-file <JSON>`，必须同时给出 `protected_paths` 与 named suite 列表 `suites`。
@@ -91,6 +93,36 @@
   - `--handoff` 要求 clean 与有效阶段指纹。
   - main Agent 替审查者用 `--expected-head <hash>` 固定只读对象。
 
+- `route` 的 state：`awaiting_design_approval`（下一步为 design，非 yolo）、`awaiting_manual_work`（人工工作）、
+  `awaiting_decision_confirmation`（非 yolo 的 pr/close-out）、`ready`、`complete`；`--yolo` 下 design 为 `ready`，人工工作不豁免。
+  - 清单勾完后，PR mode 的 next 依次为 `pr`、`close-out`；只有收口记录 `completed` 才是 `complete`。
+  - local 还须 finish 记录已完成，或源分支已合入目标。
+- `complete-stage` 仅支持纯证据可判定的阶段，其余返回 `invalid_stage`：
+  - `verify`：`all_passed` 为真，`branch` 等于交付分支，`scope` 与步骤一致。
+    - `branch` 还须覆盖必选 suite；`smart` 的 `results` 须非空且逐项通过。
+    - 缺失或不符为 `stage_evidence_missing`。`verification-report.md` 存在时随报告一并提交。
+  - `catch-up`：三路均为 skip 才勾选并写入基线。非材料脏路径返回 `dirty_worktree`。
+  - 须在 owner worktree 执行。存在 MERGE_HEAD 时返回 `unfinished_merge`。
+  - 两者的前置步骤未全部勾选时为 `stage_prerequisite`（details.pending）。
+  - lint、code-review、fact 需要外部执行或 LLM 判断，不属于纯证据阶段，返回 `invalid_stage`。
+  - 执行前 index 含本阶段文件之外的暂存改动，立即返回 `unrelated_staged_changes`（details.paths），不改工作区与 index。
+  - 仅暂存并提交本阶段白名单（objectives，verify 另含报告）；暂存集超出白名单时撤回并报错。
+  - 已勾选且证据一致返回 `already_completed: true`，不产生空提交。
+
+### `catch-up-plan`
+
+`catch-up-plan --repo <仓库> [--base <catch_up_base>]`：只读，返回 base、head、merges、own_commits、incoming_commits 与三路动作。
+
+- 缺省 base 取 `objectives.md` 的 `catch-up 基线` 或 `PR 返工` 左端点，再缺省取首次勾 fact 的提交；缺失为 `missing_catch_up_base`。
+- merges 逐个给出 kind（`upstream` 为第二父可达目标分支，其余 `internal`）与 `--remerge-diff` 冲突解决路径；无法取得（含 octopus）记为未知。
+- merges 无法取得冲突解决改动时（含 octopus），`resolution_paths` 退化为 `M^1..M` 的整段改动，三路均按保守处理。
+- `review`：`skip` 须无冲突解决净改动、无基线后代码改动（含无 module 的根脚本、CI 与 lockfile）、无上游交互、无 module 接口层交互且规则/契约未变；否则 `focused`。
+  - module 接口层交互：本分支与上游改动所属 module 同名，或一方沿 `depends_on` 传递依赖另一方（reason `module_interaction`）。
+  - `review.interaction` 给出 `files`、`modules` 与本分支落在这些 module 内的 `branch_paths`。
+- `verify`：`smart` 或 `skip`；上游与本分支都有代码或配置（lockfile、`.mdf/*.yaml`、`docs/system/testing/**`、`tests/playbooks/**`）变更时 `smart`。
+  - 配置变更时 modules 取全部；否则沿 `depends_on` 反向扩展，未声明依赖时并入本分支触及的 module。
+- `fact`：`skip`、`audit` 或 `update_required`（冲突解决触及事实页，或双方改了同一事实页）；上游规则/契约变化时至少 `audit`，并列出 `rules_changed`。
+
 ### `verify`
 
 `verify [arg] --repo <仓库>`：arg 为 smart/branch/named 时按 scope 解析，
@@ -128,6 +160,11 @@
 - adhoc 例外：smart 成败均保存 `verification-report.json`，scope 仍为 smart。
   - 只跑涉及 module 的 lint/build/quick 与选题，不要求 smoke 或 branch scope。
   - 包括无账本分支；使用 adhoc-status 的材料目录，允许独立 slug，不创建 delivery/objectives。
+- 内容指纹凭证：命令的输入指纹与环境（平台、Python、lockfile）一致且证据完整时复用上次通过结果，不启动子进程。
+  - 凭证存于 Git common dir 的 `mdf/attestations/verify/`，跨 worktree 与分支共享。
+  - 命中项在报告中保留首次的 `original_duration_s`，另记 `check_duration_s`、`reused: true` 与 `reused_from`。
+  - `--force` 忽略凭证冷跑；同指纹实跑失败写入 tombstone，阻断旧成功凭证直到重新通过。
+  - 入口声明与产物规则见 [modules](../../../skills/mdf/references/modules.md)。
 - `--report-file <路径>`：smart 成败结果仅写入指定文件，替代上述默认写入位置；用于 catch-up 保留基线报告。
   - 相对路径以 repo 为根；必须留在仓库内且不含符号链接，执行验证前检查路径。
   - branch/named 使用该参数返回 `invalid_verify_scope`。

@@ -10,8 +10,8 @@ python3 skills/mdf/scripts/mdf.py prepare-git --repo /path/to/directory
 ```
 
 目标已是 Git 根时不改写，JSON `created` 为 false。普通目录执行
-`git init --initial-branch=master`，`created` 为 true。位于其他仓库内部时
-以 `nested_git` 失败，不嵌套初始化。不提交、不配置用户身份。
+`git init --initial-branch=<trunk>`。`--trunk` 缺省为 master，`created` 为 true。
+位于其他仓库内部时以 `nested_git` 失败，不嵌套初始化。不提交、不配置用户身份。
 
 ## `merge-no-ff`
 
@@ -56,6 +56,10 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   - quick、smoke、release 须写出 JUnit XML，占位命令会以 `missing_test_report` 失败。
 - `--budget <suite>=<秒数>` 可重复，只接受 quick、smoke、release 的正整数，
   写入 `verification.budgets`。
+- `--workflow gitflow|github-flow` 与 `--trunk <分支>` 写入 manifest 的 `workflow: {model, trunk}`。
+  - 省略 workflow 等同 `gitflow` 与 `master`，manifest 不写该块，行为不变。
+  - trunk 不得占用保留名（develop、planning、feature/、bugfix/、release/、on-demand-release/、hotfix/、support/、adhoc/ 等）。
+  - 重跑 init 不得静默改变已有 workflow；变更只经 `workflow switch`。
 
 它创建或更新 MDF 固定 scaffold：
 
@@ -150,6 +154,18 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 | `hotfix` | `--version <semver>` 或 `--name <slug>`；slug 可另传 `--version` | `--objectives-file` | 本地 `master` |
 | `adhoc` | `--name <名称>`；自动生成六项 objectives | PRP、Bug、版本、manual、objectives 文件 | 本地 `develop` |
 
+github-flow（manifest 的 `workflow.model`）下基线改为 `workflow.trunk`，没有 develop：
+
+- feature、bugfix、release、hotfix、adhoc 均从 trunk 建分支并回到 trunk；`--from-master`、to develop、ODR 与 `dev-pr` 被拒绝。
+- `--from-commit <sha>`：release 的历史切点。要求位于 trunk 第一父链且晚于上一发布 tag；创建即冻结，之后不随 trunk 前进，
+  禁止 catch-up 引入切点之后的提交；发布以固定的 `release_head` 打 tag，并核验其为 `<trunk>` 的 ancestor。
+- `--support <major.minor>`：hotfix 的维护线。多条发布线并存时必须显式指定。
+  - 只有一条已发布线时可省略，自动走该 `support/<major.minor>`。
+  - 没有任何发布 tag 时返回 `missing_release_tag`，应改走 `bugfix/*`。
+  - 首次切出同步 workflow、closeout，并把 `latest_release` 对齐到切出 tag。
+  - support hotfix 只发布到 support 线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
+  - 维护线不得增删改 `docs/bugs/bug-*.md`。
+
 命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
 有 origin 时用 `ls-remote` 核对基线。远程提交必须已在本地，本地可以更新。
 
@@ -211,6 +227,30 @@ python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
 - 两种模式均优先 fast-forward、分叉时 merge，始终 no-PR；未被占用的目标建立独立 worktree。
 - 冲突 abort。squash 检查会 fetch remote 分支与 tag 来核对共享边界；不 push。
 - `planning` 不是 Gitflow 交付分支。
+- github-flow 的 local 模式直接使用 clean 的 trunk worktree，不建 `planning` 分支。
+  PR mode 的 `planning` 是短命分支：`land` 经 PR 合入 trunk 后清理；合并前依赖它的 start 返回 `planning_pr_pending`。
+
+## `workflow`
+
+```bash
+python3 skills/mdf/scripts/mdf.py workflow switch --repo /path/to/repository --model github-flow --trunk main
+python3 skills/mdf/scripts/mdf.py workflow ci --repo /path/to/repository --provider github
+```
+
+- `switch` 只在空闲态执行：当前位于目标 trunk、worktree clean、无在途交付分支；否则拒绝并说明占用者。
+  - 新 trunk 必须包含旧 trunk 的全部历史；切回 gitflow 要求 develop 已存在。
+  - 只改 manifest 的 `workflow`，保留历史、分支与 tag；提交由调用方完成。
+- `ci` 只读，按当前 workflow 返回需触发 CI 的分支（gitflow 为 develop 与 trunk；github-flow 为 trunk 与 `support/*`）
+  及对应 provider 的渲染内容。
+
+## `release-integrate`
+
+```bash
+python3 skills/mdf/scripts/mdf.py release-integrate --repo /path/to/repository [--source release/1.2.3]
+```
+
+仅 github-flow 的 PR mode：release 与最新 `origin/<trunk>` 冲突时，在独立 `codex/integrate/release-<semver>` 分支合并并解决冲突，
+再以该分支走 PR。发布仍以原 release 的固定 `release_head` 打 tag；集成分支不改变 `release_head`，也不产生回合。
 
 ## `to`
 

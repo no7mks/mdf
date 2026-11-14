@@ -143,7 +143,8 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | `prose.section` | 一个标题下散文合计超过 15 行 |
 | `prose.emoji` | 出现 ⚠️ ✅ ❌ 💡 📌 📂 📍 ⬇️ 以外的 emoji |
 
-分支范围审计以 `--base` 指定起点 commit（省略时取 `merge-base develop HEAD`）。
+分支范围审计以 `--base` 指定起点 commit。省略时取 integration 分支与 HEAD 的 merge-base：gitflow 为 develop，github-flow 为 trunk。
+`--against <sha> --force` 返回 `reuse: null`。新增 warning 或 failed tombstone 使旧 pass 不可复用。
 
 - 实现范围是起点以来改动的实现文件。
 - 文档范围是改动到的事实页与 evidence 引用这些实现的事实页。

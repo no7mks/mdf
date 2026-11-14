@@ -222,8 +222,9 @@ def test_catch_up_examples_match_cli_arguments():
 
     text = workflow("catch-up")
     commands = re.findall(r"```bash\n(.*?)\n```", text, re.S)
-    verify, audit = [build_parser().parse_args(shlex.split(command.replace("\\\n", ""))[2:])
-                     for command in commands]
+    plan, verify, audit = [build_parser().parse_args(shlex.split(command.replace("\\\n", ""))[2:])
+                           for command in commands]
+    assert plan.command == "catch-up-plan" and plan.base is None
     assert verify.command == "verify" and verify.scope == "smart"
     assert len(verify.paths) == 2 and verify.test and verify.report_file
     assert audit.command == "fact-audit" and audit.scope == "paths"

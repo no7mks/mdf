@@ -113,6 +113,16 @@ hermetic UT 或 PT；原慢用例保留。
   - 有系统或工具自带日志/报告时读那份，不另 tee。
   - 其他命令用 Core `run` 代跑。
 
+## 内容凭证与 tombstone
+
+凭证存于 Git common dir 的 `mdf/attestations/<kind>/`，按内容摘要而非 commit SHA 匹配，各 worktree 与分支共享。
+
+- **verify 凭证**：同一入口、命令、输入指纹与环境指纹下的通过记录；命中时不启动子进程。
+- **code-review / fact-audit 凭证**：内容、规则与需求摘要一致的已通过审查，供净增量扣除与 release 复用子交付证据。
+  - 写入前对照仓库重算身份；非 pass 写 failed tombstone，吊销同 key 的旧 pass。
+  - fact 复用还要求当前 warning 集是已审 warning 集的子集。`fact-audit --force` 返回 `reuse: null`。
+- **tombstone**：同指纹的失败记录覆盖旧成功凭证，直到重新实跑通过。
+
 ## Hermetic
 
 测试进程能自行拉起全部依赖，不需要预先存在的环境、凭据或网络。依赖第三方资源
@@ -323,6 +333,6 @@ collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
 
 ## ODR 与 late-decision
 
-on-demand-release（ODR）是从 master 创建并回合 master 的按需发布分支。
-master 起点的 feature 可延迟决定进入 develop 或具体 ODR；规则见
-[Late-decision](skills/mdf/references/late-decision.md)。
+on-demand-release（ODR）只用于 gitflow：从 trunk 创建并回合 trunk 的按需发布分支。
+trunk 起点的 feature 可延迟决定进入 develop 或具体 ODR。github-flow 不使用 ODR。
+规则见 [Late-decision](skills/mdf/references/late-decision.md)。

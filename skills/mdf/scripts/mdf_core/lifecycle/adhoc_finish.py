@@ -7,12 +7,14 @@ from mdf_core.lifecycle.delivery_state import read_json, write_json
 from mdf_core.lifecycle.publish import state_path
 from mdf_core.workspace.gitutil import ensure_clean, primary_worktree, worktree_map
 from mdf_core.workspace.merge_policy import ancestor, configured, git, sha
+from mdf_core.workspace.workflow_policy import integration_branch
 
 
 def _record(repo, source):
+    integ = integration_branch(repo)
     path = state_path(repo, source)
     state = read_json(path) if path.exists() else None
-    if state and (state.get("source") != source or state.get("target") != "develop"
+    if state and (state.get("source") != source or state.get("target") != integ
                   or state.get("mode") not in {"local", "pr"}):
         raise MDFError("Adhoc 操作记录身份不符", code="finish_state_changed")
     return path, state
@@ -20,6 +22,7 @@ def _record(repo, source):
 
 def status(repo, source, slug=None):
     require_source(source)
+    integ = integration_branch(repo)
     path, state = _record(repo, source)
     branch = git(repo, "branch", "--show-current").stdout.strip()
     head = sha(repo, "HEAD")
@@ -32,7 +35,7 @@ def status(repo, source, slug=None):
         ensure_clean(repo)
         if not branch and head != state["head"]:
             raise MDFError("保留工作区已偏离原交付 tip", code="finish_state_changed")
-        first = git(repo, "rev-list", "--first-parent", "develop" if mode == "local" else "origin/develop").stdout.split()
+        first = git(repo, "rev-list", "--first-parent", integ if mode == "local" else f"origin/{integ}").stdout.split()
         parents = git(repo, "show", "-s", "--format=%P", merged).stdout.split()
         if merged not in first or len(parents) != 2 or parents[1] != state["head"]:
             raise MDFError("Adhoc 合并证据已变化", code="finish_state_changed")
@@ -64,6 +67,7 @@ def _finish(repo, source, *, recovering):
     from mdf_core.workspace.gitflow import _merge
 
     require_source(source)
+    integ = integration_branch(repo)
     path, state = _record(repo, source)
     if state and state["mode"] != "local":
         raise MDFError("本地收口记录模式不符", code="finish_state_changed")
@@ -73,17 +77,17 @@ def _finish(repo, source, *, recovering):
         trees = worktree_map(repo)
         owner = trees.get(source, repo)
         ensure_clean(owner)
-        ensure_clean(trees.get("develop", owner))
+        ensure_clean(trees.get(integ, owner))
         root, ledger = material(repo, source)
         head = sha(repo, f"refs/heads/{source}")
         merged = merged_commit(repo, head) if ledger else None
-        if ancestor(repo, head, sha(repo, "develop")) and not merged:
+        if ancestor(repo, head, sha(repo, integ)) and not merged:
             raise MDFError("没有未合入提交；不创建 Change 或删除分支", code="no_pending_commits")
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         require_fixed_outcomes(repo, source)
         completion(repo, source)
-        state = {"mode": "local", "source": source, "target": "develop", "head": head,
-                 "target_before": sha(repo, "develop"), "merge_commit": merged, "completed": False,
+        state = {"mode": "local", "source": source, "target": integ, "head": head,
+                 "target_before": sha(repo, integ), "merge_commit": merged, "completed": False,
                  "retained_worktree": str(worktree_map(repo).get(source, repo)),
                  "material_path": str(root.relative_to(repo))}
         write_json(path, state)
@@ -95,7 +99,7 @@ def _finish(repo, source, *, recovering):
         raise MDFError("源分支已变化，保留现场", code="finish_state_changed")
     owner = Path(state["retained_worktree"])
     ensure_clean(owner)
-    target = worktree_map(repo).get("develop", owner)
+    target = worktree_map(repo).get(integ, owner)
     ensure_clean(target)
     merged = state.get("merge_commit")
     if merged is None:
@@ -107,14 +111,14 @@ def _finish(repo, source, *, recovering):
                 raise MDFError("未记录的目标变化，保留现场", code="finish_state_changed")
             merged = candidate
         else:
-            if sha(repo, "develop") != state["target_before"] or current.returncode:
+            if sha(repo, integ) != state["target_before"] or current.returncode:
                 raise MDFError("目标或源分支已变化，重新核验后再收口", code="finish_state_changed")
-            _merge(target, head, "develop")
-            merged = sha(repo, "develop")
+            _merge(target, head, integ)
+            merged = sha(repo, integ)
         state["merge_commit"] = merged
         write_json(path, state)
     parents = git(repo, "show", "-s", "--format=%P", merged).stdout.split()
-    first = git(repo, "rev-list", "--first-parent", "develop").stdout.split()
+    first = git(repo, "rev-list", "--first-parent", integ).stdout.split()
     if merged not in first or len(parents) != 2 or parents[1] != head:
         raise MDFError("合并结果与源提交不符", code="finish_state_changed")
     cleanup(repo, state)
@@ -122,10 +126,10 @@ def _finish(repo, source, *, recovering):
     if owner != primary and sha(owner, "HEAD") == merged:
         git(owner, "checkout", "--detach", head)
     elif owner == primary and not git(owner, "branch", "--show-current").stdout.strip():
-        if "develop" not in worktree_map(repo):
-            git(owner, "checkout", "develop")
+        if integ not in worktree_map(repo):
+            git(owner, "checkout", integ)
     state["completed"] = True
     write_json(path, state)
     emit({"ok": True, "operation": "finish-gitflow", "mode": "local", "source": source,
-          "targets": ["develop"], "completed": True, "merge_commit": merged, "deleted": source,
+          "targets": [integ], "completed": True, "merge_commit": merged, "deleted": source,
           "retained_worktree": str(owner), "primary_worktree": str(primary), "tag": None, "pushed": False})

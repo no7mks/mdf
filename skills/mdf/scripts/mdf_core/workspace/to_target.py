@@ -16,12 +16,12 @@ from mdf_core.workspace.gitutil import (
     worktree_map,
 )
 from mdf_core.workspace.planning import ensure_planning
+from mdf_core.workspace.workflow_policy import is_github_flow, require_gitflow, trunk_branch
 
 
 PLANNING_ALIASES = frozenset({"plan", "planning", "plan-mode"})
 DEVELOP_ALIASES = frozenset({"develop"})
 DEPLOY_ALIASES = frozenset({"deploy"})
-DEPLOY_BRANCH = "master"
 
 
 def _normalize(target: str) -> str:
@@ -56,6 +56,7 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
         return _payload(raw, "planning", result["branch"],
                         Path(result["worktree"]), result["created"])
     if key in DEVELOP_ALIASES:
+        require_gitflow(repo, "to develop")
         path = trees.get("develop")
         if path is None:
             raise MDFError(
@@ -66,7 +67,7 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
         return _payload(raw, "develop", "develop", path, False)
     if key in DEPLOY_ALIASES:
         path, created = _ensure_deploy(primary, trees)
-        return _payload(raw, "deploy", DEPLOY_BRANCH, path, created)
+        return _payload(raw, "deploy", trunk_branch(primary), path, created)
     matches = _match_worktrees(trees, raw, key)
     paths = {path.resolve() for _, path in matches}
     if len(paths) == 1:
@@ -99,15 +100,16 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
 def _ensure_deploy(
     primary: Path, trees: dict[str, Path],
 ) -> tuple[Path, bool]:
+    DEPLOY_BRANCH = trunk_branch(primary)
     if not _exists(primary, f"refs/heads/{DEPLOY_BRANCH}"):
-        raise MDFError("需要已有 master 分支", code="missing_branch")
+        raise MDFError(f"需要已有 {DEPLOY_BRANCH} 分支", code="missing_branch")
     path = sibling_worktree(primary, "deploy")
     work = _worktree_at(primary, path)
     if work is None:
         occupant = trees.get(DEPLOY_BRANCH)
         if occupant is not None:
             raise MDFError(
-                "master 已被其他 worktree 占用",
+                f"{DEPLOY_BRANCH} 已被其他 worktree 占用",
                 code="master_occupied",
                 details={"worktree": str(occupant)},
             )
@@ -121,13 +123,13 @@ def _ensure_deploy(
     occupant = trees.get(DEPLOY_BRANCH)
     if occupant is not None and occupant.resolve() != work.resolve():
         raise MDFError(
-            "master 已被其他 worktree 占用",
+            f"{DEPLOY_BRANCH} 已被其他 worktree 占用",
             code="master_occupied",
             details={"worktree": str(occupant)},
         )
     if _tracked_dirty(work):
         raise MDFError(
-            "deploy worktree 有已跟踪改动，不能切回 master",
+            f"deploy worktree 有已跟踪改动，不能切回 {DEPLOY_BRANCH}",
             code="dirty_worktree",
             details={"worktree": str(work), "branch": _show_branch(work)},
         )
@@ -198,7 +200,7 @@ def _available(repo: Path) -> dict[str, Any]:
     return {
         "aliases": {
             "planning": sorted(PLANNING_ALIASES),
-            "develop": sorted(DEVELOP_ALIASES),
+            **({} if is_github_flow(repo) else {"develop": sorted(DEVELOP_ALIASES)}),
             "deploy": sorted(DEPLOY_ALIASES),
         },
         "worktrees": {branch: str(path) for branch, path in trees.items()},

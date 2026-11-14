@@ -8,11 +8,12 @@ from mdf_core.lifecycle.publish import state_path
 from mdf_core.lifecycle.pull_finish import remote_source_head, sync_local, verified_merge
 from mdf_core.workspace.gitutil import ensure_clean, worktree_map
 from mdf_core.workspace.merge_policy import ancestor, configured, git, sha
+from mdf_core.workspace.workflow_policy import integration_branch, is_github_flow, sync_trunks
 
 
 def settings(repo):
     candidates = [configured(repo)]
-    for branch in ("master", "develop"):
+    for branch in (name for name in sync_trunks(repo) if name != "planning"):
         ref = f"refs/remotes/origin/{branch}"
         if not git(repo, "cat-file", "-e", f"{ref}:.mdf/manifest.yaml", check=False).returncode:
             candidates.append(configured(repo, ref))
@@ -30,12 +31,16 @@ def plans(repo, branches):
     from mdf_core.workspace.dev_pr import pending
     from mdf_core.workspace.merge_policy import trivial_commits
     dev = pending(repo)
-    for branch in ("master", "develop"):
-        if branch == "develop" and dev:
-            result[branch] = {"action": "dev_pr", "record": dev}
+    integ = integration_branch(repo)
+    github = is_github_flow(repo)
+    protected = tuple(name for name in sync_trunks(repo) if name != "planning")
+    handoff = "trunk_pr" if github else "dev_pr"
+    for branch in protected:
+        if branch == integ and dev:
+            result[branch] = {"action": handoff, "record": dev}
             continue
         path = state_path(repo, f"sync/{branch}")
-        state = read_json(path) if branch == "master" and path.exists() else None
+        state = read_json(path) if branch != integ and path.exists() else None
         if state and not state.get("completed"):
             source = git(repo, "rev-parse", "--verify", f"refs/heads/{state['source']}", check=False)
             result[branch] = {"action": "resume_pr", "record": state,
@@ -45,18 +50,18 @@ def plans(repo, branches):
             continue
         info = branches[branch]
         report = None
-        if branch == "develop" and info["relation"] == "ahead":
+        if branch == integ and info["relation"] == "ahead" and not github:
             if trivial_commits(repo, info["remote"], info["local"]):
                 continue
         if info["relation"] == "ahead":
-            evidence = {"sources": {name: sha(repo, f"refs/heads/{name}") for name in ("master", "planning")},
+            evidence = {"sources": {name: sha(repo, f"refs/heads/{name}") for name in sync_trunks(repo) if name != integ},
                         "pull_requests": []}
             report = audit(repo, branch, info["remote"], info["local"], evidence, source_prefix="refs/heads")
             if report["verdict"] == "pass" and report.get("reason") != "local_mode":
                 continue
         elif info["relation"] != "diverged":
             continue
-        result[branch] = {"action": "dev_pr" if branch == "develop" else "create_pr", "head": info["local"], "base": info["remote"],
+        result[branch] = {"action": handoff if branch == integ else "create_pr", "head": info["local"], "base": info["remote"],
                           "provider": config["provider"], "audit": report}
     return result
 
@@ -105,7 +110,7 @@ def advance(repo, plan, remote_tips):
     config = settings(repo)
     results = {}
     for branch, item in plan.items():
-        if item["action"] == "dev_pr":
+        if item["action"] in {"dev_pr", "trunk_pr"}:
             from mdf_core.workspace.dev_pr import prepare
             results[branch] = prepare(repo, expected_head=item.get("head"), expected_base=item.get("base"))
             continue

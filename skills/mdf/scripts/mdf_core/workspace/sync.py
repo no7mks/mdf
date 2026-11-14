@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from mdf_core.foundation.errors import MDFError, emit
+from mdf_core.workspace.workflow_policy import sync_trunks
 from mdf_core.workspace.gitutil import (
     current_branch,
     ensure_clean,
@@ -20,7 +21,6 @@ from mdf_core.workspace.gitutil import (
 )
 
 ORIGIN = "origin"
-TRUNKS = ("master", "develop", "planning")
 
 
 def _git(repo: Path, *args: str, check: bool = True):
@@ -92,6 +92,7 @@ def _relationship_graph(repo: Path, name: str, info: dict[str, Any], refs: list[
 
 
 def _preview(repo: Path, *, pr: bool = False) -> dict[str, Any]:
+    TRUNKS = sync_trunks(repo)
     local = set(_local_heads(repo))
     remote = set(_remote_heads(repo))
     branches = {}
@@ -182,6 +183,7 @@ def _command_sync(args) -> None:
     require_git_root(repo)
     _require_origin(repo)
     primary = primary_worktree(repo)
+    TRUNKS = sync_trunks(primary)
     _git(primary, "fetch", ORIGIN, "--prune")
 
     for branch in TRUNKS:
@@ -224,7 +226,8 @@ def _command_sync(args) -> None:
         completed = all(item["status"] == "completed" for item in pulls.values())
         refreshed = _preview(primary, pr=args.pr)
         emit({"ok": True, "operation": "sync", "completed": False,
-              "status": ("dev_pr_required" if any(item["status"] == "dev_pr_required" for item in pulls.values())
+              "status": ("trunk_pr_required" if any(item["status"] == "trunk_pr_required" for item in pulls.values())
+                         else "dev_pr_required" if any(item["status"] == "dev_pr_required" for item in pulls.values())
                          else "ready_to_sync" if completed else "waiting_for_pr"),
               "pull_requests": pulls, "preview": refreshed,
               "extra_local": refreshed["extra_local"], "extra_remote": refreshed["extra_remote"]})

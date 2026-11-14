@@ -56,6 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     prepare_git = subparsers.add_parser("prepare-git")
     prepare_git.add_argument("--repo", required=True)
+    prepare_git.add_argument("--trunk")
     prepare_git.set_defaults(func=command_prepare_git)
 
     merge = subparsers.add_parser("merge-no-ff")
@@ -70,6 +71,8 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("lint", "build", "quick", "smoke", "release"):
         init.add_argument(f"--{name}", required=True)
     init.add_argument("--budget", action="append", default=[])
+    init.add_argument("--workflow", choices=("gitflow", "github-flow"))
+    init.add_argument("--trunk")
     init.add_argument(
         "--implementation-root", action="append", default=[]
     )
@@ -90,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--base")
     audit.add_argument("--against")
     audit.add_argument("--quick", action="store_true")
+    audit.add_argument("--force", action="store_true")
     audit.add_argument("--implementation-path", action="append", default=[])
     audit.add_argument("--document-path", action="append", default=[])
     audit.set_defaults(func=command_audit)
@@ -140,8 +144,22 @@ def build_parser() -> argparse.ArgumentParser:
     review_context.add_argument("--previous-report")
     review_context.set_defaults(func=command_context)
 
+    from mdf_core.reviewing.prepare import command_review_prepare
+    review_prepare = subparsers.add_parser("review-prepare")
+    review_prepare.add_argument("--repo", required=True)
+    review_prepare.add_argument("--against")
+    review_prepare.add_argument("--force", action="store_true", help="忽略 code-review 凭证，不扣除已覆盖路径")
+    review_prepare.set_defaults(func=command_review_prepare)
+
+    from mdf_core.lifecycle.catchup_plan import command_catch_up_plan
+    catch_up_plan = subparsers.add_parser("catch-up-plan")
+    catch_up_plan.add_argument("--repo", required=True)
+    catch_up_plan.add_argument("--base", help="缺省取 objectives 记录的 catch-up 基线")
+    catch_up_plan.set_defaults(func=command_catch_up_plan)
+
     from mdf_core.reviewing.report import command_report_check
     report_check = subparsers.add_parser("review-report-check")
+    report_check.add_argument("--repo", help="提供时记录 pass 凭证并复核 0 reviewer 复用结论")
     report_check.add_argument("--context-file", required=True)
     report_check.add_argument("--report-file", required=True)
     report_check.set_defaults(func=command_report_check)
@@ -186,6 +204,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--bug")
     start.add_argument("--objectives-file")
     start.add_argument("--version")
+    start.add_argument("--from-commit", help="github-flow release 的历史切点 SHA；创建即冻结")
+    start.add_argument("--support", help="github-flow hotfix 的维护线 <major.minor>")
     start.add_argument("--qa", type=int)
     start.add_argument("--dev", type=int)
     start.add_argument("--reviewers", type=int)
@@ -237,11 +257,13 @@ def build_parser() -> argparse.ArgumentParser:
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",
-        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope", "accept"),
+        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope", "accept",
+                 "route", "complete-stage"),
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--version")
-    delivery.add_argument("--stage", choices=(*STAGES, "finish"))
+    delivery.add_argument("--stage", choices=(*STAGES, "finish", "verify", "catch-up"))
+    delivery.add_argument("--yolo", action="store_true", help="route：pr/close-out 入口无需确认")
     delivery.add_argument("--summary")
     delivery.add_argument("--target")
     delivery.add_argument("--scope-file")
@@ -251,6 +273,15 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--dev-branch")
     add_strategy_arguments(delivery)
     delivery.set_defaults(func=command_delivery)
+
+    from mdf_core.workspace.workflow_switch import command_workflow
+    workflow = subparsers.add_parser("workflow")
+    workflow.add_argument("action", choices=("switch", "ci"))
+    workflow.add_argument("--repo", required=True)
+    workflow.add_argument("--model", choices=("gitflow", "github-flow"))
+    workflow.add_argument("--trunk")
+    workflow.add_argument("--provider", choices=("github", "gitlab"), default="github")
+    workflow.set_defaults(func=command_workflow)
 
     from mdf_core.workspace.planning import command_planning
     planning = subparsers.add_parser("planning")
@@ -269,6 +300,16 @@ def build_parser() -> argparse.ArgumentParser:
     dev_pr.add_argument("--repo", required=True)
     dev_pr.add_argument("--slug")
     dev_pr.set_defaults(func=command_dev_pr)
+    from mdf_core.lifecycle.release_integration import command_release_integrate
+    integrate = subparsers.add_parser("release-integrate")
+    integrate.add_argument("--repo", required=True)
+    integrate.add_argument("--source")
+    integrate.set_defaults(func=command_release_integrate)
+    from mdf_core.workspace.dev_pr import command_trunk_pr
+    trunk_pr = subparsers.add_parser("trunk-pr")
+    trunk_pr.add_argument("--repo", required=True)
+    trunk_pr.add_argument("--slug")
+    trunk_pr.set_defaults(func=command_trunk_pr)
 
     from mdf_core.workspace.sync import command_sync
     sync_cmd = subparsers.add_parser("sync")
@@ -325,6 +366,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="smart 额外 test/testcase 命令（Agent+Jev 选题后传入）",
     )
     verify.add_argument("--report-file", help="smart 结果另存到仓库内路径，替代默认报告")
+    verify.add_argument("--force", action="store_true", help="忽略内容指纹凭证，强制冷跑全部命令")
     verify.add_argument("--record", help="branch/named：收录 pending 报告目录中 Agent 写的 playbook JUnit")
     verify.set_defaults(func=command_verify)
 

@@ -1,7 +1,8 @@
 # Deliver
 
 feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
-不套用本文普通 feature 的材料准备、验收前置或步骤补勾；目标 develop 保持原流程。
+不套用本文普通 feature 的材料准备、验收前置或步骤补勾；gitflow 的目标 develop 保持原流程。
+github-flow 的交付目标是 `workflow.trunk`，不使用 develop。
 
 涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
 ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
@@ -117,6 +118,13 @@ PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路�
 merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验，通过后才选择 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
+Select 读取 `delivery route` 的 `next` 与 `state`：
+
+- `--yolo` 下 design 为 `ready`；非 yolo 的 design 为 `awaiting_design_approval`。
+- 清单勾完后，PR mode 依次进入 `pr`、`close-out`；只有收口记录 `completed` 才是 `complete`。
+- local 还须 finish 记录已完成，或源分支已合入目标；只勾 close-out 不算完成。
+- `delivery complete-stage` 只自动完成 verify 与 catch-up，且须在 owner worktree、无进行中的 merge。
+
 ### 目标与持续授权
 
 调用 `$mdf deliver [<target>] [--until <intent>] [--yolo]` 授权连续推进本次交付。
@@ -128,8 +136,9 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 
 完成范围：
 
-- 无截止点时，local 模式的 feature 完成本地已选目标合并，bugfix/adhoc 完成本地 develop 合并；
-  PR mode 核对远端目标合并与清理。release/ODR/hotfix 包含 close-out 规定的 tag 与发版推送。
+- 无截止点时，gitflow 的 local feature 完成本地已选目标合并，bugfix/adhoc 完成本地 develop 合并。
+  - github-flow 的 local 交付合入 `workflow.trunk`，不使用 develop。
+  - PR mode 核对远端目标合并与清理。release/ODR/hotfix 包含 close-out 规定的 tag 与发版推送。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 close-out 完成条件冲突时说明并询问，不能声称完成。

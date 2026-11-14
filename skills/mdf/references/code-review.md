@@ -100,7 +100,8 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
                  └──── 无 --output ──────────────→ [结束；会话结论已给出]
 ```
 
-步骤 2 先取左端点、过滤 paths，并用 `git diff --numstat` 只统计行数。
+步骤 2 先运行 `review-prepare --repo <repo> [--against <commit>] [--force]`，取得左端点、扣除凭证后的净增量。
+同时取得上游交互文件集、`numstat`、人数 `size.reviewers` 与 project rule；`skip_review` 为 true 时无需派发。
 仅 `--read-only` 或显式 `--against` 再调用 `review-context`，日志在 checkout 外。
 派发按「派发」。未覆盖留在步骤 2，由主 Agent 补审。只读从步骤 2 进入步骤 5。交付审查完成后进入步骤 3。
 
@@ -149,7 +150,7 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
   - 一致才出报告；否则回 2 重审；不复用旧通过结论；失败读日志报 error。
   - 交付进入过步骤 3 或 4 后，步骤 5 不再重跑 review-context，也不回步骤 2。
 - `review-report-check` 校验最终报告；valid 才返回；`--output` 另存路径；不直接 approve/merge。
-
+  交付审查带 `--repo <repo>` 才记录内容凭证；release 复用子交付证据时以 `reviewers: []` 提交，由该命令核验。
 
 ### 项目 rule 的阶段接入
 

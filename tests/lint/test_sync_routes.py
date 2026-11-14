@@ -11,7 +11,8 @@ def test_sync_pulls_trunks_then_pushes_and_reports_extras():
     ]
     assert "sync --repo" in text
     assert "master" in text and "develop" in text and "planning" in text
-    assert "先对三大分支全部 pull" in text
+    assert "先全部 pull，再全部 push" in text
+    assert "github-flow 同步 trunk 与两侧共有的 support 分支" in text
     assert "extra_local" in text and "extra_remote" in text
     assert "force-push" in text
     assert "不要求 manifest ready" in text

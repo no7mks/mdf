@@ -49,6 +49,19 @@ def backmerge_identity(repo, source, head):
     raise MDFError("无法定位引入发布提交的 no-ff 回合", code="invalid_review_base")
 
 
+def effective_rules(repo, policy_ref, head):
+    """交付审查生效的规则集合及其 module 范围配置；review-prepare 与 context 共用。"""
+    manifest = manifest_at(repo, policy_ref)
+    rule = manifest.get("rules", {}).get("code-review")
+    project = {"path": rule, "content": blob(repo, policy_ref, rule)} if rule else None
+    agents = blob(repo, policy_ref, "AGENTS.md", required=False)
+    protocol = (Path(__file__).resolve().parents[3] / "references/reviewer-protocol.md").read_text(encoding="utf-8")
+    scope_config, scope_raw = source_modules(repo, head)
+    return {"mdf": protocol, "project": project, "agents": agents,
+            "modules": blob(repo, policy_ref, ".mdf/modules.yaml", required=False),
+            "scope": {"modules": scope_raw}}, scope_config
+
+
 def context(repo, source=None, head=None, policy_ref=None, review_base=None, previous=None,
             *, against=None):
     if against is not None:
@@ -117,15 +130,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         raise MDFError("审查基线必须是 head 祖先", code="invalid_review_base")
     if review_base and left != base and previous is None:
         raise MDFError("增量复核需要 --previous-report", code="missing_previous_review")
-    rule = manifest.get("rules", {}).get("code-review")
-    project = {"path": rule, "content": blob(repo, policy_ref, rule)} if rule else None
-    agents = blob(repo, policy_ref, "AGENTS.md", required=False)
-    protocol_path = Path(__file__).resolve().parents[3] / "references/reviewer-protocol.md"
-    protocol = protocol_path.read_text(encoding="utf-8")
-    rules = {"mdf": protocol, "project": project, "agents": agents,
-             "modules": blob(repo, policy_ref, ".mdf/modules.yaml", required=False)}
-    scope_config, scope_raw = source_modules(repo, head)
-    rules["scope"] = {"modules": scope_raw}
+    rules, scope_config = effective_rules(repo, policy_ref, head)
     review_paths, review_diff = review_changes(repo, left, head, scope_config)
     target_paths, target_diff = review_changes(repo, merge_base, policy_ref, scope_config)
     artifacts, incomplete = {}, []
@@ -156,8 +161,9 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
                 or any(r.get("incomplete") for r in previous.get("reviewers", []))):
             raise MDFError("上轮规则已变化或报告不完整；需要完整首轮审查", code="invalid_previous_review")
     from mdf_core.lifecycle.late_decision import target_for
-    delivery_target = (delivery.get("target") if details["kind"] == "feature" and delivery.get("base_branch") == "master"
-                       else "develop" if publication else target_for(repo, source, data=delivery))
+    from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
+    delivery_target = (delivery.get("target") if details["kind"] == "feature" and delivery.get("base_branch") == trunk_branch(repo)
+                       else integration_branch(repo) if publication else target_for(repo, source, data=delivery))
     result = {"schema_version": 3, "source": source, "kind": details["kind"],
               "delivery_base": base, "review_base": left, "review_head": head, "policy_ref": policy_ref,
               "scope": "delivery", "merge_base": merge_base,
@@ -171,6 +177,11 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
               "target": delivery_target}
     if publication:
         result["publication"] = publication
+    else:
+        from mdf_core.reviewing import credentials
+        identity = credentials.code_identity(repo, head, review_paths, result["rules_sha256"],
+                                             artifacts.get(root + "/objectives.md", ""), delivery)
+        result["credential"] = identity
     result["context_sha256"] = fingerprint(result)
     return result
 

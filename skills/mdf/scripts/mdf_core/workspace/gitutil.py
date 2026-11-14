@@ -110,7 +110,10 @@ def current_branch(repo: Path) -> str:
 
 
 def require_planning(repo: Path) -> None:
-    if current_branch(repo) != "planning":
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    from mdf_core.workspace.merge_policy import configured
+    expected = trunk_branch(repo) if is_github_flow(repo) and configured(repo)["mode"] != "pr" else "planning"
+    if current_branch(repo) != expected:
         raise MDFError(
             "规划写入只能在 planning 分支上分配或写入",
             code="proposal_not_on_planning",
@@ -124,7 +127,15 @@ def valid_branch_name(name: str) -> bool:
             and all(not part.startswith(".") and not part.endswith(".lock") for part in name.split("/")))
 
 
-def branch_details(name: str) -> dict[str, Any]:
+def _permanent_names(trunk: str | None) -> set[str]:
+    from mdf_core.workspace.workflow_policy import DEFAULT_TRUNK
+    names = {DEFAULT_TRUNK, "main", "develop", "planning"}
+    if trunk:
+        names.add(trunk)
+    return names
+
+
+def branch_details(name: str, trunk: str | None = None) -> dict[str, Any]:
     match = re.fullmatch(r"(feature|bugfix|adhoc)/(.+)", name)
     if match:
         try:
@@ -159,7 +170,15 @@ def branch_details(name: str) -> dict[str, Any]:
             "version": version,
             "supported": True,
         }
-    supported = valid_branch_name(name) and name not in {"master", "main", "develop", "planning"}
+    if name.startswith("support/") or name in _permanent_names(trunk):
+        return {
+            "name": name,
+            "kind": "support" if name.startswith("support/") else "unsupported",
+            "slug": name.split("/", 1)[-1] if name.startswith("support/") else "",
+            "version": None,
+            "supported": False,
+        }
+    supported = valid_branch_name(name)
     try:
         slug = slugify(name) if name else ""
     except MDFError:
@@ -359,10 +378,19 @@ def sibling_worktree(repo: Path, name: str) -> Path:
     return primary.parent / f"{primary.name}-worktrees" / relative
 
 
-def occupies_delivery(branch: str) -> bool:
-    if branch.startswith(("qa/", "dev/")):
-        return True
-    return bool(branch_details(branch)["supported"])
+_DELIVERY_PREFIXES = (
+    "feature/", "bugfix/", "release/", "on-demand-release/", "hotfix/",
+    "adhoc/", "qa/", "dev/", "codex/",
+)
+
+
+def occupies_delivery(branch: str, trunk: str | None = None) -> bool:
+    """在途交付只认显式前缀；当前或目标 trunk 与 support/* 不算在途。"""
+    if branch.startswith("support/") or branch in {"develop", "planning"}:
+        return False
+    if trunk and branch == trunk:
+        return False
+    return branch.startswith(_DELIVERY_PREFIXES)
 
 
 def add_linked_worktree(

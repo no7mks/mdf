@@ -52,7 +52,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "clarify <议题>",
         "help", "help <intent>",
         "upgrade", "to <target>",
-        "sync", "dev-pr [<slug>]",
+        "sync", "dev-pr [<slug>]", "trunk-pr [<slug>]",
         "integrate",
     )
     for command in expected_commands:

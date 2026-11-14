@@ -57,13 +57,23 @@ def delivery_record(repo, source, *, ref=None):
     return selected
 
 
-def next_patch(repo):
-    """仅采用本地 master 历史可达的 v<稳定 SemVer>，按数值选最大版本。"""
-    tags = git(repo, "tag", "--merged", "refs/heads/master", "--list", "v*").stdout.splitlines()
+def _tag_base(repo, source):
+    """tag 历史所在分支：gitflow 为 trunk；github-flow 的 support 线 hotfix 为其 support 分支。"""
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    if source is not None and is_github_flow(repo):
+        from mdf_core.lifecycle.late_decision import target_for
+        return target_for(repo, source)
+    return trunk_branch(repo)
+
+
+def next_patch(repo, source=None):
+    """仅采用基线分支历史可达的 v<稳定 SemVer>，按数值选最大版本。"""
+    base = _tag_base(repo, source)
+    tags = git(repo, "tag", "--merged", f"refs/heads/{base}", "--list", "v*").stdout.splitlines()
     versions = [stable_semver(tag[1:]) for tag in tags]
     versions = [value for value in versions if value is not None]
     if not versions:
-        raise MDFError("master 没有有效发布 tag，请显式指定 --version", code="missing_release_tag")
+        raise MDFError(f"{base} 没有有效发布 tag，请显式指定 --version", code="missing_release_tag")
     major, minor, patch = max(versions)
     return f"{major}.{minor}.{patch + 1}"
 
@@ -85,7 +95,7 @@ def source_version(repo, source, *, ref=None, auto=False):
     if version is not None:
         return version
     if auto:
-        return next_patch(repo)
+        return next_patch(repo, source)
     raise MDFError("hotfix 尚未固定版本，请执行 delivery resolve-version", code="missing_hotfix_version")
 
 
@@ -100,7 +110,7 @@ def freeze_version(repo, root, data, requested=None):
         raise MDFError("--version 必须为稳定 SemVer", code="invalid_version")
     if requested is not None and fixed is not None and requested != fixed:
         raise MDFError("hotfix 已固定版本，不得重新定版", code="hotfix_version_changed")
-    version = fixed or requested or next_patch(repo)
+    version = fixed or requested or next_patch(repo, data["branch"])
     if details["version"] is None and data.get("version") is None:
         data["version"] = version
         write_json(safe(repo, root / "delivery.json"), data)

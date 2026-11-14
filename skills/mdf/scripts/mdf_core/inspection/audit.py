@@ -114,25 +114,28 @@ def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str 
         from mdf_core.workspace.gitutil import branch_details
         from mdf_core.lifecycle.delivery_state import locate, read_json
         from mdf_core.workspace.merge_policy import manifest_at
+        from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
         branch = run(["git", "branch", "--show-current"], cwd=repo, check=False).stdout.strip()
-        details = branch_details(branch)
+        trunk = trunk_branch(repo)
+        details = branch_details(branch, trunk)
         if details["kind"] == "feature":
             record = repo / "changes/unreleased" / details["slug"] / "delivery.json"
-            if record.is_file() and read_json(record).get("base_branch") == "master":
+            if record.is_file() and read_json(record).get("base_branch") == trunk:
                 _, data = locate(repo)
                 base = data["start_commit"]
         elif details["kind"] == "on-demand-release":
-            previous = manifest_at(repo, "master").get("versioning", {}).get("latest_release")
+            previous = manifest_at(repo, trunk_branch(repo)).get("versioning", {}).get("latest_release")
             if previous is None:
                 add_finding(findings, "audit.base", "首次 ODR 需要显式 --base")
                 return None
             base = f"refs/tags/v{previous}"
     if base is None:
-        result = run(["git", "merge-base", "develop", "HEAD"], cwd=repo, check=False)
+        from mdf_core.workspace.workflow_policy import integration_branch
+        result = run(["git", "merge-base", integration_branch(repo), "HEAD"], cwd=repo, check=False)
         if result.returncode:
             add_finding(
                 findings, "audit.base",
-                "branch audit needs --base or a local develop branch",
+                "branch audit needs --base or a local integration branch",
             )
             return None
         return result.stdout.strip()
@@ -364,6 +367,17 @@ def audit_payload(
     return payload, 0 if not has_errors(findings) else 2
 
 
+def _reuse(repo, result, quick, force=False):
+    """覆盖超集、warning 不扩大且未被 tombstone 吊销才复用；quick 与 --force 不复用。"""
+    if quick or force:
+        return None
+    from mdf_core.reviewing.fact_identity import find_fact_credential, warning_keys
+    audit = result.get('audit') or {}
+    return find_fact_credential(repo, result['input_identity'], result['implementation_paths'],
+                                result['document_paths'], warning_keys=warning_keys(audit.get('warnings')),
+                                rules_sha256=result.get('rules_sha256'))
+
+
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -379,8 +393,12 @@ def command_audit(args: argparse.Namespace) -> None:
         result = fact_context(repo, args.against)
         # --quick 只跳过 LLM，不换 against 工作对象。
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
+        if args.quick and not exit_code:
+            from mdf_core.reviewing.fact_identity import record_fact_credential
+            record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick'})
+              'mode': 'against' if not args.quick else 'quick',
+              'reuse': _reuse(repo, result, args.quick, getattr(args, 'force', False))})
         if exit_code:
             raise SystemExit(exit_code)
         return
@@ -398,8 +416,12 @@ def command_audit(args: argparse.Namespace) -> None:
         from mdf_core.reviewing.fact_context import fact_context
         result = fact_context(repo, base)
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
+        if args.quick and not exit_code:
+            from mdf_core.reviewing.fact_identity import record_fact_credential
+            record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick'})
+              'mode': 'against' if not args.quick else 'quick',
+              'reuse': _reuse(repo, result, args.quick, getattr(args, 'force', False))})
         if exit_code:
             raise SystemExit(exit_code)
         return

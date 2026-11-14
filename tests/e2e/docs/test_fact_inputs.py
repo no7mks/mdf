@@ -43,15 +43,17 @@ def test_report_check_reuses_context_without_snapshot_or_audit(tmp_path, monkeyp
     monkeypatch.setattr(context_module, 'fact_context', forbidden)
     monkeypatch.setattr(context_module, 'audit_payload', forbidden)
     monkeypatch.setattr(worktree, 'initialize', forbidden)
-    before = {p.relative_to(repo): p.read_bytes() for p in repo.rglob('*') if p.is_file()}
+    snapshot = lambda: {p.relative_to(repo): p.read_bytes() for p in repo.rglob('*')
+                        if p.is_file() and '.git/mdf' not in p.as_posix()}
+    before = snapshot()
     command_fact_report_check(SimpleNamespace(repo=str(repo), context_file=context_file, report_file=report_file))
     result = json.loads(capsys.readouterr().out)
     assert result['result']['decision'] == 'pass'
-    assert before == {p.relative_to(repo): p.read_bytes() for p in repo.rglob('*') if p.is_file()}
+    assert before == snapshot()
 
 
 @pytest.mark.parametrize('change', ['content', 'mode', 'delete', 'rename', 'untracked', 'staged',
-                                   'manifest', 'modules', 'agents', 'head', 'shallow'])
+                                   'manifest', 'modules', 'agents', 'shallow'])
 def test_report_cli_rejects_changed_inputs(python_exe, tmp_path, change):
     repo, base = repository(tmp_path)
     ctx = context_module.fact_context(repo, base)
@@ -74,14 +76,23 @@ def test_report_cli_rejects_changed_inputs(python_exe, tmp_path, change):
         name = {'manifest': '.mdf/manifest.yaml', 'modules': '.mdf/modules.yaml', 'agents': 'AGENTS.md'}[change]
         path = repo / name
         path.write_text(path.read_text() + '\n# changed\n')
-    elif change == 'head':
-        git(repo, 'commit', '--allow-empty', '-m', 'test: 仅更新历史')
     else:
         (repo / '.git/shallow').write_text(base + '\n')
     result = mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
                  '--context-file', context_file, '--report-file', report_file)
     assert result.returncode != 0
     assert ('须重新生成 context 并审阅' in result.stderr or 'dirty_worktree' in result.stderr)
+
+
+def test_report_check_ignores_history_only_head_change(python_exe, tmp_path):
+    """输入身份与 HEAD SHA 解耦：仅追加空提交时内容摘要不变，凭证仍可复核。"""
+    repo, base = repository(tmp_path)
+    ctx = context_module.fact_context(repo, base)
+    context_file, report_file = report_files(tmp_path, ctx)
+    git(repo, 'commit', '--allow-empty', '-m', 'test: 仅更新历史')
+    result = payload(mdf(python_exe, 'fact-audit-report-check', '--repo', str(repo),
+                         '--context-file', context_file, '--report-file', report_file))
+    assert result['result']['decision'] == 'pass' and 'head' not in ctx['input_identity']
 
 
 @pytest.mark.parametrize('area', ['scripts', 'references', 'assets'])

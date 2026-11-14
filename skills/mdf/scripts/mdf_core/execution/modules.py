@@ -20,6 +20,8 @@ class SuiteEntry:
     command: str
     tests: tuple[str, ...]
     parallel: bool = False
+    extra_inputs: tuple[str, ...] = ()
+    external_state: bool = False
 
 
 @dataclass(frozen=True)
@@ -51,6 +53,10 @@ class Module:
     named: tuple[str, ...]
     size_limits: SizeLimits = field(default_factory=SizeLimits)
     coverage: dict | None = None
+    depends_on: tuple[str, ...] = ()
+    build_artifacts: tuple[str, ...] = ()
+    extra_inputs: tuple[str, ...] = ()
+    external_state: bool = False
 
     def suite(self, name: str) -> SuiteEntry:
         if name == "quick":
@@ -113,6 +119,23 @@ class ModulesConfig:
                 if any(match(rel, pattern) for pattern in module.sourceset):
                     hit.add(module.name)
         return sorted(hit)
+
+    def interacting(self, left: list[str], right: list[str]) -> list[str]:
+        """两组 module 间构成交互的 module：同名，或一方沿 depends_on 传递依赖另一方。"""
+        def closure(name: str) -> set[str]:
+            seen, pending = set(), [name]
+            while pending:
+                for dep in self.modules[pending.pop()].depends_on:
+                    if dep not in seen:
+                        seen.add(dep)
+                        pending.append(dep)
+            return seen
+        found: set[str] = set()
+        for m in left:
+            for n in right:
+                if m == n or n in closure(m) or m in closure(n):
+                    found |= {m, n}
+        return sorted(found)
 
     def owns(self, rel: str) -> bool:
         return any(match(rel, pattern) for module in self.modules.values() for pattern in module.sourceset)
@@ -198,7 +221,25 @@ def parse_modules(raw: Any) -> ModulesConfig:
             )
         module = _parse_module(name, body, seen_named)
         modules[name] = module
+    _check_depends_on(modules)
     return ModulesConfig(modules=modules, budgets=budgets, overrides=overrides)
+
+
+def _check_depends_on(modules: dict[str, Module]) -> None:
+    for module in modules.values():
+        unknown = sorted(set(module.depends_on) - set(modules))
+        if unknown or module.name in module.depends_on:
+            raise MDFError(f"module {module.name}.depends_on 引用无效: {unknown or [module.name]}",
+                           code="modules_invalid")
+    for module in modules.values():
+        seen, pending = set(), list(module.depends_on)
+        while pending:
+            name = pending.pop()
+            if name == module.name:
+                raise MDFError(f"module {module.name}.depends_on 存在环", code="modules_invalid")
+            if name not in seen:
+                seen.add(name)
+                pending.extend(modules[name].depends_on)
 
 
 def _parse_overrides(raw: Any) -> dict[str, str | dict]:
@@ -281,6 +322,10 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         "named",
         "size_limits",
         "coverage",
+        "depends_on",
+        "build_artifacts",
+        "extra_inputs",
+        "external_state",
     }
     extra = set(body) - allowed
     if extra:
@@ -309,6 +354,10 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
     smoke = _parse_suite(name, "smoke", body["smoke"])
     release = _parse_suite(name, "release", body["release"])
     named = _parse_named(name, body.get("named", []), seen_named)
+    module_external = body.get("external_state", False)
+    if not isinstance(module_external, bool):
+        raise MDFError(f"module {name}.external_state 必须为布尔", code="modules_invalid")
+    module_extra = tuple(_string_list(body.get("extra_inputs", []), f"module {name}.extra_inputs"))
     return Module(
         name=name,
         sourceset=tuple(sourceset),
@@ -321,6 +370,10 @@ def _parse_module(name: str, body: Any, seen_named: set[str]) -> Module:
         named=tuple(named),
         size_limits=_parse_size_limits(name, body.get("size_limits", {})),
         coverage=_module_coverage(name, body),
+        depends_on=tuple(_string_list(body.get("depends_on", []), f"module {name}.depends_on")),
+        build_artifacts=tuple(_string_list(body.get("build_artifacts", []), f"module {name}.build_artifacts")),
+        extra_inputs=module_extra,
+        external_state=module_external,
     )
 
 
@@ -387,10 +440,10 @@ def _parse_suite(module: str, suite: str, raw: Any) -> SuiteEntry:
             f"{label} 必须是含 command 与 tests 的 mapping",
             code="modules_invalid",
         )
-    allowed = {"command", "tests", "parallel"}
+    allowed = {"command", "tests", "parallel", "extra_inputs", "external_state"}
     if set(raw) - allowed or "command" not in raw or "tests" not in raw:
         raise MDFError(
-            f"{label} 必须含 command 与 tests，可选 parallel",
+            f"{label} 必须含 command 与 tests，可选 parallel、extra_inputs、external_state",
             code="modules_invalid",
         )
     command = _nonempty_command(raw["command"], f"{label}.command")
@@ -403,7 +456,12 @@ def _parse_suite(module: str, suite: str, raw: Any) -> SuiteEntry:
             f"{label}.parallel 必须为布尔",
             code="modules_invalid",
         )
-    return SuiteEntry(command=command, tests=tuple(tests), parallel=parallel)
+    external = raw.get("external_state", False)
+    if not isinstance(external, bool):
+        raise MDFError(f"{label}.external_state 必须为布尔", code="modules_invalid")
+    extra = tuple(_string_list(raw.get("extra_inputs", []), f"{label}.extra_inputs"))
+    return SuiteEntry(command=command, tests=tuple(tests), parallel=parallel,
+                      extra_inputs=extra, external_state=external)
 
 
 def _parse_named(module: str, raw: Any, seen: set[str]) -> list[str]:

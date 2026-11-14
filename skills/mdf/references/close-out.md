@@ -144,7 +144,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
   - 其余首次调用继续下列 doctor、branch 与现场检查。委托前仍应用外层 until 和 decision 策略。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
 - 写入前只读检查目标 worktree；有未提交改动或 `MERGE_HEAD` 即停止并报告路径与状态。
-  - feature 检查已选目标，bugfix 检查 develop；release/ODR/hotfix 检查 master、develop；未 checkout 时查实际合并目录。
+  - 按 workflow 检查实际目标，gitflow 发布还检查 develop，github-flow hotfix 检查 support；未 checkout 时查实际合并目录。
   - ❌ 不得为 clean 而 abort、reset、restore、stash、自动 Commit 或清理他人改动；无关脏分支不检查。
   - 源工作区已有 merge 同样须停；冲突已解决、已 add 或 diff 为空仍须保留 `MERGE_HEAD`。
 - 验收：实际收口授权；manifest `ready`、非 detached。
@@ -180,8 +180,9 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 禁止 rebase / `merge --squash`。
   - 执行委托完成后须 clean，且树与 squash 前 tip 一致。
 - 目标主线：
-  - local 模式的 feature 使用已确定的本地目标，bugfix 使用本地 develop，不 fetch、不 push。
-  - local 模式的 release/ODR/hotfix 使用 master，先 fetch origin 并核对本地 master 与远端一致，不自动覆盖分歧。
+  - local 模式的 feature 使用已确定的本地目标，bugfix 使用 workflow 的本地集成分支，不 fetch、不 push。
+  - local 模式的 release/ODR/hotfix 使用已确定的发布目标。
+    先 fetch origin 并核对该本地目标与远端一致；github-flow hotfix 的目标为 support 分支。
 - 集成：
   - 确认 clean，记录目标主线的完整 commit 与当前 HEAD。
   - 若它尚不是当前 HEAD 的祖先，运行：
@@ -396,12 +397,15 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - yolo 无 confidence 限制；无截止点阻断且步骤 9 通过后直接执行本步骤。
   - 独立 `$mdf close-out` 沿用调用授权，不增加 deliver 的评分或截止点。
 - 调用 `finish-gitflow --repo "$REPO_ROOT"`：
-  - feature/bugfix 不 fetch、不 push；no-ff 合并到本地已确定目标（bugfix 为 develop）；角色分支仍在则失败。
-  - release/ODR/hotfix 要求 origin；首次调用 fetch 后要求本地 master 与远端一致。
-    - no-ff 合并到 master，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
-      精简条目），再 no-ff 合并 master 到 develop。
-    - 原子 push `master` 与 tag；develop 仅在本地合回，要求 clean，不核对远端。
+  - feature/bugfix 不 fetch、不 push；no-ff 合并到本地已确定目标（gitflow bugfix 为 develop，github-flow 为 trunk）；角色分支仍在则失败。
+  - gitflow 的 release/ODR/hotfix 要求 origin；首次调用 fetch 后要求本地 trunk 与远端一致。
+    - no-ff 合并到 trunk，创建注释 `v<semver>` tag（正文为本版 CHANGELOG
+      精简条目），再 no-ff 合并 trunk 到 develop。
+    - 原子 push trunk 与 tag；develop 仅在本地合回，要求 clean，不核对远端。
       不推送、不删除远端 `develop`、`release/*`、`hotfix/*`。
+  - github-flow 的 local 发布 tag 等于锁定的 `release_head`，不打在 merge commit 上。
+    - 与 trunk 冲突时 CLI abort，`details.recovery` 给出手工恢复指引。
+    - 在 trunk 上执行 `git merge --no-ff <release_head>`，解决冲突并提交后重跑 `finish-gitflow`。
   - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
 - 验收：合并、源分支删除、保留工作区的 detached 状态、tag 与（release/ODR/hotfix 的）推送结果。
 - 异常与交接：停止并报告当前分支、已完成合并、tag 与推送状态。
@@ -427,7 +431,7 @@ release/ODR/hotfix 首次发布前，CLI 保存发布进度记录：
   `finish-gitflow --repo <主路径> --source <原分支>`。
 - 脚本逐项核对记录与实际本地/远端引用，跳过已完成合并与 tag。
   - 推送结果丢失时先查询远端，完全一致则仅继续清理。
-- release/ODR/hotfix 分支存在期间 develop 可继续前进：
+- gitflow 的 release/ODR/hotfix 分支存在期间 develop 可继续前进：
   - 续办时若 develop 尚无合并记录，以当前本地 develop 刷新合并基线，再 no-ff 合并 master。
   - 精确匹配原基线与 master 双亲的未记录合并直接恢复，不重复合并。
   - master 仍严格核对原基线；最终原子推送前只核对远端 master 与 tag。

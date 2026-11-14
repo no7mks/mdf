@@ -20,7 +20,8 @@ from mdf_core.workspace.gitutil import (
 from mdf_core.documents.proposals import new_prp_ids
 from mdf_core.foundation.progress import ProgressPlan
 from mdf_core.workspace.init_repo import init_files, parse_baselines, write_files
-from mdf_core.workspace.gitflow import require_master_default
+from mdf_core.workspace.workflow_policy import parse_workflow, workflow_config
+from mdf_core.workspace.gitflow import require_trunk_default
 from mdf_core.documents.moves import apply_moves_and_rewrites, describe_moves, describe_rewrites, replacement_plan
 from mdf_core.foundation.paths import (
     ensure_safe_managed_paths,
@@ -102,10 +103,24 @@ def command_doctor(args: argparse.Namespace) -> None:
     emit(payload)
 
 
+def _init_workflow(repo: Path, args: argparse.Namespace) -> dict[str, str] | None:
+    """`--workflow/--trunk` 只在首次接入时定值；已有 workflow 的变更须走 workflow switch。"""
+    if args.workflow is None and args.trunk is None:
+        return None
+    current = workflow_config(repo)
+    wanted = parse_workflow({"workflow": {
+        "model": args.workflow or current["model"], "trunk": args.trunk or current["trunk"],
+    }}, repo)
+    if manifest_path(repo).is_file() and "workflow" in load_manifest(repo) and wanted != current:
+        raise MDFError("已有 workflow 配置；请用 workflow switch 在空闲态切换", code="workflow_switch_required")
+    return wanted
+
+
 def command_init(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
-    require_master_default(repo)
+    workflow = _init_workflow(repo, args)
+    require_trunk_default(repo, (workflow or workflow_config(repo))["trunk"])
     ensure_safe_managed_paths(repo)
     baselines = parse_baselines(args.baseline)
     from mdf_core.execution.verification import ENTRIES, parse_budgets, validate_verification
@@ -153,6 +168,7 @@ def command_init(args: argparse.Namespace) -> None:
         latest_release=latest_release,
         verification=verification,
         implementation_roots=implementation_roots,
+        workflow=workflow,
     )
     create = [
         relative(repo, path) for path in sorted(files) if not path.exists()
@@ -167,6 +183,7 @@ def command_init(args: argparse.Namespace) -> None:
         "baselines": baselines,
         "verification": verification,
         "implementation_roots": implementation_roots,
+        "workflow": workflow or workflow_config(repo),
         "files": [
             {
                 "path": relative(repo, path),

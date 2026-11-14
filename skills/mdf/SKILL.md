@@ -79,6 +79,7 @@ disable-model-invocation: true
                  ├──── upgrade ───────────────────────────────────────────→ references/upgrade.md
                  ├──── to <target> ───────────────────────────────────────→ references/to.md
                  ├──── dev-pr [<slug>] ───────────────────────────────────→ references/dev-pr.md
+                 ├──── trunk-pr [<slug>] ─────────────────────────────────→ references/trunk-pr.md
                  ├──── sync ──────────────────────────────────────────────→ references/sync.md
                  └──── integrate ─────────────────────────────────────────→ references/integrate.md
 ```
@@ -145,6 +146,7 @@ disable-model-invocation: true
   - 仅命中这些参数或续办该类交付时，按 [Late-decision](references/late-decision.md) 解析，不当作未知 option。
 - start、deliver 可带 `--manual`，启动无 PRP 的人工 feature；slug 经 start clarify 确认。
   - start 的 `--name` 用于人工 feature 或 hotfix slug；hotfix 可省略 `--version`，按 [版本规则](references/hotfix-version.md) 收口定版。
+  - github-flow 有发布 tag 时 hotfix 走 `support/<major.minor>`；无 tag 时改走 bugfix，不从 develop 创建。
   - 已有交付直接按 delivery.json 续办。
 - `$mdf adhoc [<工作描述>]` 直接生成 slug 与七项 objectives，在独立 worktree 完成临时工作。
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
