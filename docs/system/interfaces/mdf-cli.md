@@ -105,7 +105,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
-| `pr-watch` | 只读等待 PR/MR、review 与关联 CI 状态 | [PR 与审查](mdf-cli-review.md) |
+| `pr-watch` | 等待 PR/MR、review 与关联 CI，fetch 目标 ref 核验合并 | [PR 与审查](mdf-cli-review.md) |
 | `release-integrate` | github-flow PR 发布的集成分支 | [仓库写入命令](mdf-cli-write.md) |
 | `workflow` | 空闲态切换分支模型/trunk、渲染 CI 分支 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |

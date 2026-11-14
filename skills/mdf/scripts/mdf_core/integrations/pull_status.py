@@ -1,6 +1,7 @@
 """GitHub 和 GitLab 的 PR/MR、review 与 CI 快照。"""
 from collections import Counter
-from urllib.parse import urlencode
+import re
+from urllib.parse import urlencode, urlsplit
 
 from mdf_core.foundation.errors import MDFError
 
@@ -46,7 +47,32 @@ def github_jobs(forge, run_endpoint, attempt, *, completed):
         newer_names = names | newer_names
 
 
-def github_status(forge, endpoint, raw, origin_runs):
+def add_github_run(runs, run):
+    run_id, attempt = run["id"], run["run_attempt"]
+    if type(run_id) is not int or run_id <= 0 or type(attempt) is not int or attempt <= 0:
+        raise MDFError("GitHub run 缺少有效 ID 或 attempt", code="forge_invalid_response")
+    if run_id in runs:
+        fields = ("run_attempt", "status", "conclusion", "check_suite_id", "head_sha")
+        if any(runs[run_id].get(field) != run.get(field) for field in fields):
+            raise MDFError("同一 GitHub run 的查询结果不一致", code="forge_invalid_response")
+    runs[run_id] = run
+
+
+def github_run_from_check(forge, project, runs_endpoint, item):
+    # Actions 的 check 可能已可见，run 列表尚未更新，或 run 使用了不同的 head SHA。
+    details = urlsplit(item.get("details_url") or "")
+    path = re.fullmatch(re.escape("/" + project.removeprefix("repos/")) + r"/actions/runs/([0-9]+)(?:/job/[0-9]+)?",
+                        details.path, re.IGNORECASE)
+    if not path:
+        raise MDFError("GitHub Actions check 缺少关联 run 证据", code="forge_invalid_response")
+    run_id = int(path[1])
+    run = forge.api(f"{runs_endpoint}/{run_id}")
+    if run["id"] != run_id or run["check_suite_id"] != item["check_suite"]["id"]:
+        raise MDFError("GitHub Actions check 与 run 的身份不一致", code="forge_invalid_response")
+    return run
+
+
+def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
     number, head = raw["number"], raw["head"]["sha"]
     project = forge.endpoint.removesuffix("/pulls")
     reviews = {}
@@ -58,18 +84,44 @@ def github_status(forge, endpoint, raw, origin_runs):
             }
     runs_endpoint = f"{project}/actions/runs"
     heads = [head]
-    if ((raw.get("merged_at") or raw.get("mergeable") is True)
+    if ((raw.get("merged_at") or raw.get("merged") or raw.get("mergeable") is True)
             and raw.get("merge_commit_sha") and raw["merge_commit_sha"] != head):
         heads.append(raw["merge_commit_sha"])
-    runs = {run["id"]: run for sha in heads for run in pages(forge, runs_endpoint, "workflow_runs", head_sha=sha)}
+    runs = {}
+    for sha in heads:
+        for run in pages(forge, runs_endpoint, "workflow_runs", head_sha=sha):
+            add_github_run(runs, run)
     for event in ("pull_request", "pull_request_target"):
         for run in pages(forge, runs_endpoint, "workflow_runs", event=event, branch=raw["head"]["ref"],
                          created=f'>={raw["created_at"]}'):
             if any(pr["number"] == number and pr["head"]["sha"] == head for pr in run["pull_requests"]):
-                runs[run["id"]] = run
-    for run_id in origin_runs:
-        runs[run_id] = forge.api(f"{runs_endpoint}/{run_id}")
+                add_github_run(runs, run)
+    known_ids = {run_id for kind, _, run_id in known_runs if kind == "workflow"}
+    for run_id in sorted(set(origin_runs) | (known_ids - runs.keys())):
+        run = forge.api(f"{runs_endpoint}/{run_id}")
+        if run["id"] != run_id:
+            raise MDFError("GitHub 未返回指定的 run", code="forge_invalid_response")
+        add_github_run(runs, run)
     checks = []
+    workflow_suites = {run["check_suite_id"] for run in runs.values()}
+    for sha in heads:
+        commit = f"{project}/commits/{sha}"
+        for item in pages(forge, f"{commit}/check-runs", "check_runs"):
+            suite = (item.get("check_suite") or {}).get("id")
+            if suite not in workflow_suites and (item.get("app") or {}).get("slug") == "github-actions":
+                add_github_run(runs, github_run_from_check(forge, project, runs_endpoint, item))
+                workflow_suites.add(item["check_suite"]["id"])
+            if suite not in workflow_suites or item["status"] != "completed":
+                checks.append(github_check(item, "check"))
+        for item in pages(forge, f"{commit}/status", "statuses"):
+            status = item["state"]
+            checks.append({"kind": "commit_status", "id": item["id"], "name": item["context"],
+                           "url": item.get("target_url"), "status": status, "head": sha,
+                           "conclusion": None if status == "pending" else status})
+    if (raw.get("merged_by") or {}).get("login") == "github-actions[bot]":
+        merged_at = raw.get("merged_at")
+        if not merged_at or not any(run["created_at"] <= merged_at <= run["updated_at"] for run in runs.values()):
+            raise MDFError("GitHub Actions 已执行合并，但尚无关联 run 证据", code="forge_invalid_response")
     for run_id, run in sorted(runs.items()):
         attempt = run["run_attempt"]
         checks.append(github_check(run, "workflow", attempt=attempt))
@@ -82,17 +134,6 @@ def github_status(forge, endpoint, raw, origin_runs):
                 if check["conclusion"] == "skipped":
                     check["conclusion"] = None if job["status"] != "completed" else job["conclusion"]
                 checks.append(check)
-    workflow_suites = {run["check_suite_id"] for run in runs.values()}
-    for sha in heads:
-        commit = f"{project}/commits/{sha}"
-        for item in pages(forge, f"{commit}/check-runs", "check_runs"):
-            if (item.get("check_suite") or {}).get("id") not in workflow_suites:
-                checks.append(github_check(item, "check"))
-        for item in pages(forge, f"{commit}/status", "statuses"):
-            status = item["state"]
-            checks.append({"kind": "commit_status", "id": item["id"], "name": item["context"],
-                           "url": item.get("target_url"), "status": status, "head": sha,
-                           "conclusion": None if status == "pending" else status})
     changes = [str(review["id"]) for review in reviews.values() if review["state"] == "CHANGES_REQUESTED"]
     return {"checks": checks, "reviews": reviews, "change_requests": changes,
             "conflicts": raw.get("mergeable") is False}
@@ -111,7 +152,7 @@ def gitlab_check(item, kind):
             "status": status, "conclusion": conclusion, "head": item.get("sha")}
 
 
-def gitlab_status(forge, endpoint, raw, origin_runs):
+def gitlab_status(forge, endpoint, raw, origin_runs, known_runs=()):
     project = raw["target_project_id"]
     pipelines_endpoint = f"{forge.endpoint.removesuffix('/merge_requests')}/pipelines"
     head = raw["sha"]
@@ -125,13 +166,17 @@ def gitlab_status(forge, endpoint, raw, origin_runs):
     if head_pipeline:
         ids.add(head_pipeline["id"])
     pending = {(project, pipeline_id) for pipeline_id in ids}
+    pending.update((owner, pipeline_id) for kind, owner, pipeline_id in known_runs if kind == "pipeline")
     seen, checks = set(), []
     while pending:
         owner, pipeline_id = min(pending)
         pending.remove((owner, pipeline_id))
         seen.add((owner, pipeline_id))
         pipeline = f"projects/{owner}/pipelines/{pipeline_id}"
-        checks.append({**gitlab_check(forge.api(pipeline), "pipeline"), "project_id": owner})
+        item = forge.api(pipeline)
+        if item["id"] != pipeline_id:
+            raise MDFError("GitLab 未返回指定的 pipeline", code="forge_invalid_response")
+        checks.append({**gitlab_check(item, "pipeline"), "project_id": owner})
         for job in pages(forge, f"{pipeline}/jobs"):
             checks.append({**gitlab_check(job, "job"), "project_id": owner, "pipeline_id": pipeline_id})
         for bridge in pages(forge, f"{pipeline}/bridges"):
@@ -157,7 +202,7 @@ def gitlab_status(forge, endpoint, raw, origin_runs):
             "conflicts": raw.get("has_conflicts") is True or status == "conflict"}
 
 
-def pull_status(forge, number, origin_runs):
+def pull_status(forge, number, origin_runs, known_runs=()):
     endpoint = f"{forge.endpoint}/{number}"
     raw = forge.api(endpoint)
     try:
@@ -165,6 +210,6 @@ def pull_status(forge, number, origin_runs):
         if pull["state"] == "closed":
             return {"pull_request": pull}
         get_status = github_status if forge.github else gitlab_status
-        return {"pull_request": pull, **get_status(forge, endpoint, raw, origin_runs)}
+        return {"pull_request": pull, **get_status(forge, endpoint, raw, origin_runs, known_runs)}
     except (KeyError, TypeError, AttributeError) as exc:
         raise MDFError("平台状态响应缺少必要字段", code="forge_invalid_response") from exc

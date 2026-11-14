@@ -15,12 +15,15 @@ def test_pr_watch_reuses_original_pull_after_repair(python_exe, tmp_path, monkey
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, "adhoc")
     monkeypatch.setattr(pull_watch, "origin", pull_finish.origin)
     monkeypatch.setattr(pull_watch, "Forge", lambda *_: platform)
-    monkeypatch.setattr(pull_watch, "sleep", lambda _: None)
+    def unexpected_wait(seconds):
+        pytest.fail(f"通过的 PR 不应等待 {seconds} 秒")
+
+    monkeypatch.setattr(pull_watch, "sleep", unexpected_wait)
     submitted = payload(mdf(python_exe, "pr", "--repo", str(work)))
     source = submitted["source"]
     request = ("pr-watch", "--repo", str(repo), "--source", source)
 
-    def snapshot(forge, number, _):
+    def snapshot(forge, number, *_):
         pull = forge.get(number)
         return {"pull_request": pull, "change_requests": [], "conflicts": False,
                 "checks": [{"conclusion": "failure" if pull["head"] == submitted["pull_request"]["head"]
@@ -38,8 +41,14 @@ def test_pr_watch_reuses_original_pull_after_repair(python_exe, tmp_path, monkey
     updated = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert updated["pull_request"]["id"] == 1
     assert len(platform.pulls) == 1
-    platform.merge(1, tmp_path)
+    merged = platform.merge(1, tmp_path)
     assert payload(mdf(python_exe, *request))["status"] == "merged"
+    assert git(repo, "rev-parse", "origin/develop").stdout.strip() == merged
+    assert git(work, "branch", "--show-current").stdout.strip() == source
+
+    platform.pulls[0]["merge_commit"] = git(repo, "rev-parse", "origin/develop^1").stdout.strip()
+    invalid = mdf(python_exe, *request)
+    assert invalid.returncode != 0 and "invalid_pull_merge" in invalid.stderr
 
 
 @pytest.mark.parametrize('kind', ['release', 'hotfix'])

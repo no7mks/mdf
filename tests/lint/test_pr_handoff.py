@@ -100,19 +100,21 @@ def test_pr_goal_survives_repairs_merge_and_parent_handoff():
     assert 'pr.md#goal-与持续推进' in workflow('deliver')
 
 
-def test_pr_tracks_originating_run_and_all_jobs_after_merge():
+def test_pr_tracks_origin_and_merge_runs_and_rechecks_before_completion():
     text = workflow('pr')
     polling = text.split('### 当前调用内轮询', 1)[1].split('### 反馈修复与重新提交', 1)[0]
     for rule in (
-        '发起该 PR/MR 的 workflow run / pipeline',
+        '发起 PR/MR 和执行 merge',
         'run ID、attempt、URL',
-        '不能仅按 PR head SHA 查找',
+        '--origin-run <id>',
         '全部 job 与 step',
         '非 required checks',
         'PR 已 merged 但关联运行未结束时，保持 Goal active',
+        '目标远端第一父链，随即复查平台状态',
+        '检查证据一致时立即返回 `merged`',
         'cancelled、timed_out、action_required',
         '合并后的失败不得向已合入的 source 追加提交',
-        '查询失败、权限不足或关联不明不能当作没有 CI',
+        '平台各查询均完整返回且已确认的关联范围为空时',
     ):
         assert rule in polling
     goal = text.split('### Goal 与持续推进', 1)[1].split('### 提交前远端集成', 1)[0]

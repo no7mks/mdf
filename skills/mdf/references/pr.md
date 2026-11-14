@@ -65,7 +65,7 @@ github-flow 的 [trunk-pr](trunk-pr.md) 把本地 trunk 的项目记录保全到
 │ 4 Report                     │
 └──────────────┬───────────────┘
                │
-               ├──── 等待合并收尾 ────────→ [等待 2 分钟，只读查询 PR 与关联 CI；收尾后回 3]
+               ├──── 等待合并收尾 ────────→ [轮询 PR 与关联 CI；收尾后回 3]
                ├──── 可修问题 ────────────→ [主链外修复、补审补测后回 3]
                ├──── 关闭但未合并 ────────→ [保留现场，报告未完成]
                ├──── 完成且核验通过 ──────→ [返回调用方]
@@ -120,7 +120,7 @@ closeout:
   - release/ODR/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，保留 Git 现场。
-  - lock 只覆盖本次 CLI 操作，不覆盖 Agent 的 2 分钟等待；调用退出或中断时由 OS 释放，不删除 lock 文件。
+  - lock 只覆盖本次收口操作；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程。
 
 ### Goal 与持续推进
@@ -233,24 +233,27 @@ closeout:
 
 ### 当前调用内轮询
 
-当前 Agent 报告 PR/MR 链接后，运行只读 CLI：
+当前 Agent 报告 PR/MR 链接后，运行以下 CLI：
 
 ```bash
 python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURCE" --pull "$PULL_ID" --head "$SOURCE_HEAD"
 ```
 
-- CLI 用已登录的 gh/glab 查询 origin 上的 PR/MR，每次核对 ID、source、target 和已确认的 head，每 120 秒查询一次。
+- CLI 用已登录的 gh/glab 查询 origin 上的 PR/MR，每轮核对 ID、source、target 和已确认的 head。
 - 当前 Agent 保持该调用运行，使用可中断的短等待读取结果并响应用户输入。
-- 关联 CI 包含发起该 PR/MR 的 workflow run / pipeline，以及当前 head 的全部关联运行，包含非 required checks。
-  - 从调用上下文或平台时间线确认发起该 PR 的 run ID，通过 `--origin-run <id>` 传入。可重复该参数。
-  - 发起 PR 的运行可能使用目标分支 SHA，不能仅按 PR head SHA 查找。恢复或 push 后继续传入已确认的发起运行 ID。
+- 关联 CI 覆盖当前 head、merge commit、平台关联的运行及非 required checks，也包括发起 PR/MR 和执行 merge 的 workflow run / pipeline。
+  - GitHub 结合 PR 事件和 commit check 关联 Actions run；GitLab 查询 MR pipeline 及下游 pipeline。
+  - 从调用上下文或平台证据确认发起 PR/MR 和执行 merge 的运行 ID，通过可重复的 `--origin-run <id>` 补充平台未关联的运行。
+  - 这些运行可能使用另一个 SHA。恢复或 push 后继续传入已确认的 ID；发现补充证据时用完整 ID 列表重新轮询。
+  - GitHub Actions bot 合并时，至少要有一项关联 run 的活动时间覆盖合并时刻。项目上下文可用来确认具体执行 merge 的 run。
   - 保留运行的 run ID、attempt、URL 与 head；返回状态附带关联检查证据。
 - 每轮核完整 run / pipeline 的状态、结论和全部 job 与 step，step 使用平台提供的结构化数据。
   - 查询须遍历分页；发现新 job、关联运行或 rerun attempt 时更新范围，不能复用旧 attempt 的成功结论。
+  - 已关联运行从列表消失时，按已记录的 ID 回查。open 阶段确认的关联在同一轮询中延续到 merged。
   - PR 已 merged 但关联运行未结束时，保持 Goal active；queued、in_progress、waiting 等状态继续等待。
-- open 且 CI/review 仍在运行、等待审批或等待自动合并时，继续本轮询，不结束当前 pr 或 deliver。
-  - 等待无固定轮数或总超时，合入后连续两次确认相同且通过的快照才返回 `merged`。
-  - 查询本身不重复调用 pr，不重复 push，也不调用 approve/merge 或修改 CI policy。
+- PR/MR 已合并且 CI 通过后，fetch 目标远端 ref，核对双亲 merge commit 和目标远端第一父链，随即复查平台状态。
+  - PR/MR 身份、merge commit 及检查证据一致时立即返回 `merged`。新增 run、attempt、状态变化或已关联运行缺失时继续轮询。
+  - open、CI pending、查询失败或证据缺失时等待 120 秒重试；等待无固定轮数或总超时。
 - CLI 返回 `merged` 后回步骤 3，执行 `pr --repo <主路径> --source <原分支>` 核验 Git 合并结果。
   - CLI 仅核验实际合并；`status=merged` 且 `completed=true` 后，关联运行也全部结束且结论通过才返回 pr 完成。
   - 仅在项目 policy 允许 skipped / neutral 时传 `--allow-skipped`；cancelled、timed_out、action_required 不算通过。
@@ -258,8 +261,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
 - 关联运行失败时读取失败 job / step 的日志与报告，按证据修复或处理阻塞；不能因 PR 已 merged 忽略失败。
   - 合并后的失败不得向已合入的 source 追加提交、重开原 PR 或改写固定 M；需要代码修改时按调用边界另行交付。
   - 仅有证据支持暂时故障且已有授权时重试；否则报告运行链接、失败 job 与恢复位置，保留未完成状态。
-- 查询失败、权限不足或关联不明不能当作没有 CI；先查明或报告阻塞，不完成 Goal 或进入清理。
-  - 平台证据确认没有关联运行时可按无 CI 处理；完成前再次查询，确认没有新增运行或 attempt。
+- 查询失败和平台关联证据缺失写入 `polls.jsonl`。持续缺少权限或必要证据时报告阻塞，保留 Goal 和现场。
+  - 平台各查询均完整返回且已确认的关联范围为空时，按无 CI 处理；完成前同样立即复查。
 - CLI 返回 `changes_requested`、`ci_failed` 或 `merge_conflict` 时，先读取已有报告与平台详情，按下方修复流程继续推进。
   - 一份 review 的返工处理完成后，在现有交接上下文保留 `change_requests` 返回的 ID。再次轮询时每个已处理 ID 各传一次 `--handled-review <id>`。
   - CLI 继续等待平台复审。新 ID 仍触发返工；`review_identity_unknown` 时先核平台反馈，避免把未识别的请求当成已处理。

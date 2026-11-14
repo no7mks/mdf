@@ -9,13 +9,13 @@
 - manifest.closeout.mode 为 local/pr，省略为 local；pr 需 provider: github/gitlab。
 - init 保留已有 closeout，doctor 报 manifest.closeout finding；schema_version 仍为 3。
 - `pr --repo <repo> [--source <source>] [--pull <id>]` 创建/更新 PR，返回 waiting_for_merge 或 closed_without_merge。
-- `pr-watch --repo <repo> [--source <source>] [--pull <id>] [--head <sha>]` 只读查询平台 PR/MR、review 与关联 CI。
+- `pr-watch --repo <repo> [--source <source>] [--pull <id>] [--head <sha>]` 查询平台 PR/MR、review 与关联 CI，合并核验时 fetch 目标远端 ref。
   - 返回 `merged`、`closed_without_merge`、`changes_requested`、`ci_failed` 或 `merge_conflict`，附平台快照。
   - `--head` 固定已确认的源 SHA。省略时取初始平台 head，轮询期间变化返回 `pull_state_changed`。
   - 每次轮询快照写入该次 CLI 日志目录的 `polls.jsonl`。
-  - `--origin-run <id>` 记录在调用中已确认的发起 run/pipeline ID，可重复传入。项目允许 skipped 或 neutral 时使用 `--allow-skipped`。
+  - `--origin-run <id>` 补充已确认的发起 PR/MR 或执行 merge 的 run/pipeline ID，可重复传入。允许 skipped 或 neutral 时使用 `--allow-skipped`。
   - `--handled-review <id>` 可重复传入已完成返工的 `change_requests` ID。平台 review 状态仍保留在快照。
-  - `merged` 表示平台已合入且关联 CI 收尾完成。随后用 `pr` 核验 Git 合并结果。
+  - `merged` 表示通过 Git 合并核验和关联 CI 即时复查。随后用 `pr` 确认交付现场并交接 close-out。
   核验实际 merged 后返回 completed=true、status=merged、next_intent=close-out，不发布或清理。
 - `finish-gitflow --repo <repo> [--source <source>] [--pull <id>]` 在 pr 模式支持所有交付 kind 的恢复。
 - 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted、remote_deleted 与工作区路径。
