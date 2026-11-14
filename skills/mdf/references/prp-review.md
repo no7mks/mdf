@@ -82,7 +82,7 @@
 1. 解析 `REPO_ROOT` 并运行 `doctor`；先核对 `normal_workflows_allowed: true`。
    未通过时按下方异常规则停止。
 2. 按 [项目记录](common.md#项目记录) 的模式矩阵准备写入位置。
-   续办 [pm PR 反馈](pr.md#pm-分支) 时使用已锁定 source，复用切到该分支的 trunk worktree。
+   续办 [pm PR 反馈](pr.md#pm-分支) 时使用已锁定 source 对应的临时 worktree。
 3. 按 `references/common.md` 的「切换工作区」规则进入选定 worktree。
 4. 再重新解析目标根。
 

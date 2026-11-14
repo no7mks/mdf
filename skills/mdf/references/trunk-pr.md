@@ -62,7 +62,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" trunk-pr --repo "$REPO_ROOT" --slug <slug>
 | `adhoc` | 其余增量，包括夹带其他路径后又 revert 的历史 | `adhoc/<slug>` 与独立 worktree。按下节准备和检查。 |
 
 - 首次 fetch 后固定本地 head、远端 base 与唯一 merge-base。先记录 source 并从原 head 建分支，再对齐本地 trunk。
-  - PM 接管使用现有干净的 trunk worktree，不创建额外 worktree。返回的 `worktree` 是 trunk worktree。
+  - PM 接管使用检出 trunk 的干净主 worktree。只有 [PM PR 返工](pr.md#pm-分支) 需要临时 worktree。
   - 在该 worktree 用 `pr --source <source>` 创建或续办 PM PR。合并后用 `finish-gitflow --source <source>` 收口。
   - `adhoc` 返回 source 的独立 worktree；其余保全规则沿用 dev-pr。
 - 返回 `kind`、`source`、`worktree` 与 `next_intent`。重试沿用操作记录和同一 PR/MR，直到 close-out 完成。

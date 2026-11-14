@@ -70,7 +70,11 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
         path, created = _ensure_deploy(primary, trees)
         return _payload(raw, "deploy", trunk_branch(primary), path, created)
     if is_github_flow(repo) and key.startswith("pm/"):
-        raise MDFError("pm 分支使用现有 trunk worktree，不创建独立 worktree", code="unsupported_branch")
+        from mdf_core.workspace.pm import rework_source
+        work = trees.get(raw)
+        if work is not None and rework_source(work, raw):
+            return _payload(raw, None, raw, work, False)
+        raise MDFError("pm PR 使用源 ref；需要返工时执行 pm rework", code="unsupported_branch")
     matches = _match_worktrees(trees, raw, key)
     paths = {path.resolve() for _, path in matches}
     if len(paths) == 1:

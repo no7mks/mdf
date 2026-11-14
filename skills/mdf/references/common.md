@@ -180,7 +180,7 @@ upgrade 不读取本文件。
 
 - `planning ensure` 创建或复用 `planning` 分支和仓库同级 `<repo-name>-worktrees/planning` worktree。
 - 准备命令均传 `--repo "$REPO_ROOT"`。按返回的 `branch`、`worktree` 进入写入位置，再解析根路径。
-- github-flow 全程使用现有 trunk worktree，无 develop 同步。
+- github-flow 在现有 trunk worktree 写入新记录。
   - 校验并暂存本次路径后执行 `pm commit --repo "$REPO_ROOT" --message <中文 Conventional Commit>`。
   - 允许路径为 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md`、`docs/context/`。混合路径整批走普通交付。
   - PR mode 可在本地连续提交。记录命令完成后报告本地提交状态，用户调用 [trunk-pr](trunk-pr.md) 或确认 sync PR 计划后再发 PR/MR。

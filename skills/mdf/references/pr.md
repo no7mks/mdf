@@ -11,19 +11,25 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## pm 分支
 
-github-flow 的 [trunk-pr](trunk-pr.md) 把已在本地 trunk 提交的纯项目记录保全到 `pm/*`，复用 trunk worktree。
+github-flow 的 [trunk-pr](trunk-pr.md) 把本地 trunk 的项目记录保全到 `pm/*`。主 worktree 始终检出 trunk。
 
 - 按现有 PR 授权和 Goal 规则，从干净的 trunk worktree 执行
   `mdf.py pr --repo <trunk 路径> --source <pm/分支>`。
-- 用同一 source 创建或复用 PR/MR，等待 CI、review 与平台合并。待合入属于正常状态。
+- CLI 将确认的源提交通过 refspec 推送到远端 `pm/*`。用同一 source 创建或复用 PR/MR，等待 CI、review 与平台合并。
 - `pm/*` 采用本节的 Prepare 和返工流程。记录 PR/MR、source、原 head、反馈与验证结果到会话或 Git common dir 下的本地日志。
   按项目记录的校验和审查推进，跳过普通交付的 `changes/` 候选材料、objectives 备注与 catch-up。
-- 修订时从干净的 trunk worktree 切到原 source。Proposal 反馈走 [PRP Review](prp-review.md)，其他记录按原契约修改。
-  校验并暂存本轮路径，执行 `pm commit` 更新当前 source 并切回 trunk，再用原 PR/MR 续办。
-- trunk 前进且需要集成时，在同一 worktree 把最新目标 tip 合入原 source，处理冲突后重新校验记录及完整 PR diff，再切回 trunk。
-  路径范围超出白名单时保留现场，按普通交付处理整批改动。
+- 需要返工、集成 trunk 增量或响应 `squash_required` 时，从主 worktree 执行
+  `mdf.py pm rework --repo <主路径> --source <原 pm 分支>`，进入返回的临时 worktree。
+  - Proposal 反馈走 [PRP Review](prp-review.md)。校验并暂存本轮路径后执行 `pm commit`。
+  - 集成时用 `merge-no-ff` 合入最新远端 trunk。处理冲突后重新校验记录与完整 PR diff。
+  - 整理提交时按 [squash](squash.md) 执行。路径超出白名单时保留现场，按普通交付处理整批改动。
+- 临时 worktree 干净且验收通过后，从主 worktree 执行
+  `mdf.py pm finish-rework --repo <主路径> --source <原 pm 分支>`。
+- CLI 更新原 source ref，删除临时 worktree 和分支。完成后从 trunk 用原 source 续办同一 PR/MR。
+- 清理失败时从主 worktree 重试。临时 worktree 有 ignored 文件时，先将要保留的文件移出该目录。
+- squash 在验证前中断时保留现场，按原计划使用 `--verify-only` 核对和记录已完成的结果。
+- 原 PR 在返工期间已合入时，先将返工提交保全到另一个本地分支。将干净的临时分支恢复到原 source tip，再完成清理与 close-out。
 - 若依赖该记录的 start 返回 `pm_pr_pending`，先对错误中返回的 source 续办 PR/MR 和 close-out，再重试 start。
-- 返回 `squash_required` 时，在同一 worktree 切到原 source 按 [squash](squash.md) 整理，切回 trunk 后重试。
 - CLI 核完整 PR diff、源分支独有提交和合并结果的路径。项目记录使用自身的校验和审查证据。
 - 合并及关联 CI 完成后，从 trunk worktree 执行 `finish-gitflow --repo <trunk 路径> --source <pm/分支>`。
   该命令同步本地 trunk，清理远端及本地 source ref，并保留 trunk worktree。
@@ -199,8 +205,10 @@ closeout:
 - 按原 PR/MR ID 查询；创建响应丢失时按 identity/source/target 查回复用，不重复创建。
 - open 且有未完成返工时先恢复「PR 返工」非 checklist 备注。
   保留父 intent、原验证请求、修复前左端点、未完成子步骤，全部完成后才允许更新 PR/MR 或恢复轮询。
-- 无新提交且已确认 open 时只轮询；有新 head 时先完成 Prepare 的最终候选复核，再从原 source worktree 调用 CLI。
-  owner 缺失且仍需修改时报告阻塞，不在主 worktree 代写，不重新 start。
+- 无新提交且已确认 open 时只轮询；有新 head 时先完成 Prepare 的最终候选复核。
+  `pm/*` 按[本页修订流程](#pm-分支)清理临时 worktree 后，从 trunk 续办原 PR。
+  普通交付从原 source worktree 调用 CLI；owner 缺失且仍需修改时报告阻塞。
+  续办不重新 start。
 - merged 时调用 `mdf.py pr --repo <主路径> --source <原分支>` 核验合并，关联 CI 收尾通过后才结束 pr 并交接 close-out。
   已进入发布或清理的恢复直接执行 [合并后续办](pr-close-out.md)，不重开 pr Goal。
 - 清理前置已全部完成、detach 或删除 source 后中断时，从主 worktree 续办 close-out。

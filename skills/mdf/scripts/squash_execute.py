@@ -13,6 +13,15 @@ from mdf_core.workspace.gitutil import branch_details
 
 
 def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
+    if plan["branch"].startswith("pm/rework/"):
+        from mdf_core.lifecycle.pull_finish import finish_lock
+
+        with finish_lock(repo):
+            return execute_plan(repo, plan, verify_only, trace)
+    return execute_plan(repo, plan, verify_only, trace)
+
+
+def execute_plan(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     def git(*args: str) -> str:
         result = subprocess.run(
             ["git", "-C", str(repo), *args], capture_output=True, text=True,
@@ -39,6 +48,7 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     start = commit(plan["start_commit"])
     old_tip = commit(plan["old_tip"])
     branch = plan["branch"]
+    pm = branch.startswith("pm/rework/")
     details = branch_details(branch)
     require(git("branch", "--show-current") == branch
             and (branch == "planning"
@@ -56,7 +66,23 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
                 "tree_equal": True, "start_is_ancestor": True, "clean": True}
 
     if verify_only:
-        return verify()
+        result = verify()
+        if pm:
+            from mdf_core.workspace.pm import rework_state, squash_rework
+
+            state = rework_state(repo)
+            if state and state.get("squash_in_progress") == old_tip:
+                floor = commit(plan["floor"])
+                rebuilt = git("rev-list", "--first-parent", "--reverse", f"{floor}..HEAD").splitlines()
+                require(len(rebuilt) == len(plan["segments"]), "当前提交链与原 squash 计划不一致")
+                previous = floor
+                for segment, head in zip(plan["segments"], rebuilt):
+                    require(git("show", "-s", "--format=%P", head) == previous, "当前提交链与原 squash 计划不一致")
+                    require(not git("diff", commit(segment["tip"]), head, "--"), "当前提交树与原 squash 段界不一致")
+                    previous = head
+                squash.record_analysis(repo, branch, result["head"], reason="已按分析计划完成分段 squash")
+                squash_rework(repo, branch, old_tip, new_tip=result["head"])
+        return result
     require(git("rev-parse", "HEAD") == old_tip, "HEAD 已变化，须重新分析计划")
     require(not git("status", "--porcelain", "--untracked-files=no"),
             "已跟踪工作区不干净")
@@ -105,6 +131,10 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
         require(bool(git("diff", "--name-only", previous, segment["tip"], "--")),
                 "需要重建的每段 tree 须有变化")
         previous = segment["tip"]
+    if pm:
+        from mdf_core.workspace.pm import squash_rework
+
+        squash_rework(repo, branch, old_tip)
     git("reset", "--soft", floor)
     heads = []
     for segment in segments:
@@ -113,6 +143,8 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
         heads.append(git("rev-parse", "HEAD"))
     result = verify()
     squash.record_analysis(repo, branch, result["head"], reason="已按分析计划完成分段 squash")
+    if pm:
+        squash_rework(repo, branch, old_tip, new_tip=result["head"])
     return {**result, "commits": heads}
 
 

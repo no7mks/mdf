@@ -300,6 +300,10 @@ def build_parser() -> argparse.ArgumentParser:
     pm_commit = pm_actions.add_parser("commit")
     pm_commit.add_argument("--repo", required=True)
     pm_commit.add_argument("--message", required=True)
+    for action in ("rework", "finish-rework"):
+        pm_rework = pm_actions.add_parser(action)
+        pm_rework.add_argument("--repo", required=True)
+        pm_rework.add_argument("--source", required=True)
     pm.set_defaults(func=command_pm)
 
     from mdf_core.workspace.to_target import command_to

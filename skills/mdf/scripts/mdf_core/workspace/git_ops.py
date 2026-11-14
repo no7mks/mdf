@@ -56,8 +56,20 @@ def command_prepare_git(args) -> None:
 def command_merge_no_ff(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
+    if current_branch(repo).startswith("pm/rework/"):
+        from mdf_core.lifecycle.pull_finish import finish_lock
+        from mdf_core.workspace.pm import rework_source
+
+        with finish_lock(repo):
+            if rework_source(repo, current_branch(repo)) is None:
+                raise MDFError("需要已登记的 pm 临时 worktree", code="invalid_worktree")
+            merge_no_ff(repo, args.commit)
+        return
+    merge_no_ff(repo, args.commit)
+
+
+def merge_no_ff(repo, source):
     ensure_clean(repo)
-    source = args.commit
     from mdf_core.workspace.merge_policy import require_merge
     require_merge(repo, source, current_branch(repo))
     verified = run(

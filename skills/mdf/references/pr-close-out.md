@@ -88,7 +88,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 清理对象为已合并的 PR/MR source，包括 github-flow 的 `pm/*`。gitflow 的常驻 `planning` 不参与 PR/MR 清理。
 
 - 合并核验与所需发布动作完成后，先清理远端 source，再删除本地 source；远端失败时保留本地现场。
-  - 普通交付在删除前 detach 已检出的 owner。github-flow 的 `pm/*` 此时已切回 trunk，直接清理 source ref。
+  - 普通交付在删除前 detach 已检出的 owner。github-flow 的 `pm/*` 直接清理 source ref，主 worktree 检出 trunk。
 - 删除前直接 ls-remote 查询精确 ref，tip 必须等于已确认 PR head；以显式 expected SHA 的 lease 条件删除，不依赖 tracking ref。
   - lease 仅用于删除该 source，不用于改写任何分支历史；并发前进时停止并保留新 tip。
   - 远端已由平台或用户删除时，确认缺失即复用，不重复发删除请求。

@@ -101,8 +101,8 @@ def prepare(repo, slug=None, *, expected_head=None, expected_base=None):
         occupant = worktree_map(repo).get(main)
         kind = source_kind(repo, github, base, head)
         if kind == "pm":
-            if occupant is None:
-                raise MDFError(f"请在现有 worktree 检出 {main}", code="not_on_trunk")
+            if occupant != repo:
+                raise MDFError(f"请在主 worktree 检出 {main}", code="not_on_trunk")
             source = f"pm/{slug}-{uuid4().hex[:12]}"
             work = occupant
         else:

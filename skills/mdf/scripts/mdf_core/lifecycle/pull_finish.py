@@ -12,7 +12,7 @@ from mdf_core.workspace.gitutil import (
     branch_details, current_branch, ensure_clean, git_in_progress_head, primary_worktree, sibling_worktree, worktree_map,
 )
 from mdf_core.workspace.merge_policy import ancestor, git, sha
-from mdf_core.workspace.pm import require_pm_diff, require_pm_merge
+from mdf_core.workspace.pm import require_pm_diff, require_pm_merge, rework_state
 
 
 def preflight(repo, source):
@@ -258,8 +258,14 @@ def _finish(repo, source, settings, *, phase):
     github = is_github_flow(repo)
     trunk = trunk_branch(repo)
     pm = details["kind"] == "pm"
-    if pm and (current_branch(repo) != trunk or source in worktree_map(repo)):
-        raise MDFError("pm 的 PR 与 close-out 须在 trunk worktree 执行", code="not_on_trunk")
+    if source.startswith("pm/rework/"):
+        raise MDFError("pm PR 须使用原 source ref", code="unsupported_branch")
+    if pm:
+        if repo != primary_worktree(repo) or current_branch(repo) != trunk or source in worktree_map(repo):
+            raise MDFError("pm 的 PR 与 close-out 须在主 trunk worktree 执行", code="not_on_trunk")
+        rework = rework_state(repo)
+        if rework and rework["source"] == source:
+            raise MDFError("先完成 pm finish-rework，再续办原 PR", code="pm_rework_pending")
     if details["kind"] == "feature" and not github:
         from mdf_core.lifecycle.late_decision import validate_target
         validate_target(target, concrete=True)

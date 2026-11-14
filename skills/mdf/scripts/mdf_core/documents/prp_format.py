@@ -2,7 +2,7 @@
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.workspace.gitutil import current_branch, repo_path, require_git_root, require_planning
 from mdf_core.workspace.merge_policy import configured
-from mdf_core.workspace.pm import outside_pm_paths
+from mdf_core.workspace.pm import outside_pm_paths, rework_source
 from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
 from mdf_core.documents.html_documents import render_html, update_metadata
 from mdf_core.documents.moves import replacement_plan
@@ -18,7 +18,7 @@ def command_prp_format(args):
     github = is_github_flow(repo)
     branch = current_branch(repo)
     trunk = trunk_branch(repo)
-    pm_revision = github and branch.startswith("pm/") and configured(repo)["mode"] == "pr"
+    pm_revision = github and configured(repo)["mode"] == "pr" and rework_source(repo, branch)
     delivery = github and branch.startswith("adhoc/")
     if not (pm_revision or delivery):
         require_planning(repo)

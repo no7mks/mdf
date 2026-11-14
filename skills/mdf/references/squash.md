@@ -107,7 +107,8 @@ squash 按交付目标分析逻辑边界，默认合并同一目标的提交；�
 <a id="s1"></a>
 
 - 解析 Git 根；工作区对已跟踪改动须 clean。
-- 须在 planning、交付分支，或 PR 模式的 qa/dev、pm 分支。planning 与 pm 的起点取安全 floor。
+- 须在 planning、交付分支、PR 模式的 qa/dev 分支或 [pm 临时 worktree](pr.md#pm-分支)。
+  planning 与 pm 的起点取安全 floor。
   交付与角色分支从 owner 材料或 Git 配置取 `start_commit`；
   缺失或不是 HEAD 祖先 → 停止。
 - 仅接受可选 `--dry-run`；其它未知 `--` 停止询问。

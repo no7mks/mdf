@@ -146,11 +146,30 @@ def test_trunk_pr_moves_project_records_to_pm_and_reuses_pr(python_exe, tmp_path
     assert not has_ref(remote, f"refs/heads/{source}")
 
     request = ("pr", "--repo", str(repo), "--source", source)
-    git(repo, "switch", source)
+    rework_args = ("--repo", str(repo), "--source", source)
+    assert error_of(mdf(python_exe, *request))["error"] == "squash_required"
+    rework = payload(mdf(python_exe, "pm", "rework", *rework_args))
+    work = Path(rework["worktree"])
+    assert work != repo and git(repo, "branch", "--show-current").stdout.strip() == trunk
+    assert git(repo, "rev-parse", source).stdout.strip() == head
+    assert error_of(mdf(python_exe, *request))["error"] == "pm_rework_pending"
     if via_sync:
-        git(repo, "merge", "--no-ff", "--no-edit", f"origin/{trunk}")
-    squash_pending(repo)
-    git(repo, "switch", trunk)
+        squash_pending(work)
+        payload(mdf(python_exe, "merge-no-ff", "--repo", str(work), "--commit", f"origin/{trunk}"))
+    else:
+        from mdf_core.workspace.squash import check
+        from squash_execute import execute
+
+        plan = check(work)
+        plan.update(start_commit=plan["floor"], segments=[
+            {"tip": review_commit["head"], "message": "docs(pm): 添加并评审提案"},
+            {"tip": jot_commit["head"], "message": "docs(pm): 添加随手记录"},
+        ])
+        assert len(execute(work, plan, False, [])["commits"]) == 2
+    payload(mdf(python_exe, "pm", "finish-rework", *rework_args))
+    assert not work.exists() and not has_ref(repo, f"refs/heads/{rework['branch']}")
+    assert git(repo, "branch", "--show-current").stdout.strip() == trunk and worktree_map(repo) == trees
+    assert not has_ref(remote, f"refs/heads/{rework['branch']}")
     first = payload(mdf(python_exe, *request))
     assert first["status"] == "waiting_for_merge"
     assert payload(mdf(python_exe, *rescue))["result"]["source"] == source
@@ -269,21 +288,19 @@ def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_pa
     pending = error_of(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))
     assert pending["error"] == "trunk_pr_required" and pending["details"]["source"] == source
     assert error_of(mdf(python_exe, "to", "--repo", str(repo), "--target", source))["error"] == "unsupported_branch"
-    git(repo, "switch", source)
-    (repo / "docs/context").mkdir(exist_ok=True)
-    (repo / "docs/context/notes.md").write_text("补充项目背景\n")
-    commit(repo, "docs(pm): 补充背景")
-    git(repo, "switch", "master")
-    request = ["pr", "--repo", str(repo), "--source", source]
-    assert error_of(mdf(python_exe, *request))["error"] == "squash_required"
-    git(repo, "switch", source)
-    squash_pending(repo)
-    git(repo, "switch", "master")
+    args = ["--repo", str(repo), "--source", source]
+    request = ["pr", *args]
     assert payload(mdf(python_exe, *request))["status"] == "waiting_for_merge"
-    git(repo, "switch", source)
-    (repo / "docs/context/notes.md").write_text("修订项目背景\n")
-    commit(repo, "docs(pm): 修订背景")
-    git(repo, "switch", "master")
+    work = Path(payload(mdf(python_exe, "pm", "rework", *args))["worktree"])
+    (work / "docs/context").mkdir(exist_ok=True)
+    notes = work / "docs/context/notes.md"
+    notes.write_text("补充项目背景\n")
+    commit(work, "docs(pm): 补充背景")
+    notes.write_text("修订项目背景\n")
+    commit(work, "docs(pm): 修订背景")
+    squash_pending(work)
+    assert git(work, "rev-parse", "HEAD^").stdout.strip() == published_later["head"]
+    payload(mdf(python_exe, "pm", "finish-rework", *args))
     updated = payload(mdf(python_exe, "pr", "--repo", str(repo), "--source", source))
     assert updated["pull_request"]["id"] == 1
     merged = platform.merge(1, tmp_path)
@@ -336,16 +353,17 @@ def test_pm_pr_rejects_outside_history_even_if_reverted(python_exe, tmp_path, mo
     git(repo, "add", "docs/proposals")
     payload(pm_commit(python_exe, repo))
     source = trunk_pr(python_exe, repo)
-    git(repo, "switch", source)
-    (repo / "outside.py").write_text("value = 1\n")
-    commit(repo, "chore: 添加非项目记录路径")
-    git(repo, "revert", "--no-edit", "HEAD")
+    work = tmp_path / "invalid-source"
+    git(repo, "worktree", "add", str(work), source)
+    (work / "outside.py").write_text("value = 1\n")
+    commit(work, "chore: 添加非项目记录路径")
+    git(work, "revert", "--no-edit", "HEAD")
+    git(repo, "worktree", "remove", str(work))
     from mdf_core.foundation.errors import MDFError
-    from mdf_core.workspace.squash import check
+    from mdf_core.workspace.squash import inspect
     with pytest.raises(MDFError) as forbidden:
-        check(repo)
+        inspect(repo, source)
     assert forbidden.value.code == "pm_paths_forbidden"
-    git(repo, "switch", "master")
     result = mdf(python_exe, "pr", "--repo", str(repo), "--source", source)
     assert error_of(result)["error"] == "pm_paths_forbidden"
     assert not has_ref(remote, f"refs/heads/{source}")
@@ -390,27 +408,170 @@ def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_pa
     source = trunk_pr(python_exe, repo)
     args = ["--repo", str(repo), "--source", source]
     first = payload(mdf(python_exe, "pr", *args))
-    git(repo, "switch", source)
-    format_args = ["--repo", str(repo), "--proposal", "prp-0002"]
-    draft = repo / payload(mdf(python_exe, "prp-format", "draft", *format_args))["path"]
+    rework = payload(mdf(python_exe, "pm", "rework", *args))
+    work = Path(rework["worktree"])
+    assert payload(mdf(python_exe, "pm", "rework", *args)) == rework
+    format_args = ["--repo", str(work), "--proposal", "prp-0002"]
+    draft = work / payload(mdf(python_exe, "prp-format", "draft", *format_args))["path"]
     draft.write_text(draft.read_text() + "\n## 评审补充\n\n明确校验范围。\n")
     payload(mdf(python_exe, "prp-format", "preview", *format_args))
     payload(mdf(python_exe, "prp-format", "ready", *format_args, "--confirmed"))
-    outside = repo / "docs/outside.md"
+    outside = work / "docs/outside.md"
     outside.write_text("无关记录\n")
-    git(repo, "add", "docs")
-    assert error_of(pm_commit(python_exe, repo))["error"] == "pm_paths_forbidden"
-    git(repo, "restore", "--staged", str(outside))
+    git(work, "add", "docs")
+    assert error_of(pm_commit(python_exe, work))["error"] == "pm_paths_forbidden"
+    assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "dirty_worktree"
+    git(work, "restore", "--staged", str(outside))
     outside.unlink()
-    revised = payload(pm_commit(python_exe, repo))
+    revised = payload(pm_commit(python_exe, work))
     assert revised["source"] == source and revised["head"] != initial["head"]
+    assert git(repo, "rev-parse", source).stdout.strip() == initial["head"]
+    assert payload(mdf(python_exe, "pm", "finish-rework", *args))["head"] == revised["head"]
+    assert not work.exists() and not has_ref(repo, f"refs/heads/{rework['branch']}")
     assert git(repo, "branch", "--show-current").stdout.strip() == "master"
     updated = payload(mdf(python_exe, "pr", *args))
     assert updated["pull_request"]["id"] == first["pull_request"]["id"]
     assert git(remote, "rev-parse", source).stdout.strip() == revised["head"]
     platform.merge(1, tmp_path)
     assert payload(mdf(python_exe, "finish-gitflow", *args))["completed"]
-    assert "明确校验范围" in proposal.read_text()
+    assert "明确校验范围" in proposal.with_suffix(".html").read_text()
+
+
+def test_pm_conflict_resolution_resumes_interrupted_cleanup(python_exe, tmp_path, monkeypatch):
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.lifecycle.pull_finish import finish_lock
+    from mdf_core.workspace import pm
+
+    repo, remote, platform = pr_repo(tmp_path, monkeypatch)
+    (repo / "docs/JOTS.md").write_text("# Jots\n\n本地记录\n")
+    commit(repo, "docs(pm): 添加本地记录")
+    source = trunk_pr(python_exe, repo)
+    args = ("--repo", str(repo), "--source", source)
+    first = payload(mdf(python_exe, "pr", *args))
+    trunk_head = git(repo, "rev-parse", "HEAD").stdout.strip()
+    other = tmp_path / "other"
+    git(tmp_path, "clone", str(remote), str(other))
+    (other / "docs/JOTS.md").write_text("# Jots\n\n远端记录\n")
+    commit(other, "docs(pm): 添加远端记录")
+    git(other, "push")
+
+    rework = payload(mdf(python_exe, "pm", "rework", *args))
+    work, branch = Path(rework["worktree"]), rework["branch"]
+    merge_args = ("merge-no-ff", "--repo", str(work), "--commit", "origin/master")
+    with finish_lock(repo):
+        assert error_of(mdf(python_exe, *merge_args))["error"] == "finish_busy"
+    merge = mdf(python_exe, *merge_args)
+    assert error_of(merge)["error"] == "merge_conflict"
+    assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "dirty_worktree"
+    assert git(repo, "branch", "--show-current").stdout.strip() == "master"
+    assert git(repo, "rev-parse", "HEAD").stdout.strip() == trunk_head
+    (work / "docs/JOTS.md").write_text("# Jots\n\n本地记录\n\n远端记录\n")
+    commit(work, "docs(pm): 合并项目记录")
+    tip = git(work, "rev-parse", "HEAD").stdout.strip()
+    exclude = repo / ".git/info/exclude"
+    exclude.parent.mkdir(exist_ok=True)
+    with exclude.open("a") as stream:
+        stream.write("\nlocal-notes.txt\n")
+    ignored = work / "local-notes.txt"
+    ignored.write_text("保留本地记录\n")
+    refused = error_of(mdf(python_exe, "pm", "finish-rework", *args))
+    assert refused["error"] == "dirty_worktree" and refused["details"]["paths"] == ["local-notes.txt"]
+    assert ignored.read_text() == "保留本地记录\n"
+    assert git(repo, "rev-parse", source).stdout.strip() == rework["head"]
+    ignored.rename(tmp_path / ignored.name)
+    original_git = pm.git
+
+    def interrupt_git(where, *git_args, **kwargs):
+        result = original_git(where, *git_args, **kwargs)
+        if git_args[:2] == ("worktree", "remove"):
+            raise MDFError("模拟 worktree 删除后中断", code="test_interrupted")
+        return result
+
+    with monkeypatch.context() as patch:
+        patch.setattr(pm, "git", interrupt_git)
+        assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "test_interrupted"
+    assert not work.exists() and has_ref(repo, f"refs/heads/{branch}")
+    assert git(repo, "rev-parse", source).stdout.strip() == tip
+    assert error_of(mdf(python_exe, "pr", *args))["error"] == "pm_rework_pending"
+    assert payload(mdf(python_exe, "pm", "finish-rework", *args))["head"] == tip
+    assert not has_ref(repo, f"refs/heads/{branch}")
+    updated = payload(mdf(python_exe, "pr", *args))
+    assert updated["pull_request"]["id"] == first["pull_request"]["id"]
+    assert git(remote, "rev-parse", source).stdout.strip() == tip
+    platform.merge(1, tmp_path)
+    assert payload(mdf(python_exe, "finish-gitflow", *args))["completed"]
+
+
+def test_pm_finish_rework_requires_verified_squash(python_exe, tmp_path, monkeypatch):
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.lifecycle.pull_finish import finish_lock
+    from mdf_core.workspace import pm, squash
+    import squash_execute
+
+    repo, _, _ = pr_repo(tmp_path, monkeypatch)
+    (repo / "docs/JOTS.md").write_text("# Jots\n\n第一条\n")
+    commit(repo, "docs(pm): 添加记录")
+    (repo / "docs/JOTS.md").write_text("# Jots\n\n第一条\n\n第二条\n")
+    commit(repo, "docs(pm): 补充记录")
+    source = trunk_pr(python_exe, repo)
+    args = ("--repo", str(repo), "--source", source)
+    rework = payload(mdf(python_exe, "pm", "rework", *args))
+    work, base = Path(rework["worktree"]), rework["head"]
+    plan = squash.check(work)
+    plan.update(start_commit=plan["floor"], segments=[
+        {"tip": base, "message": "docs(pm): 整理记录"},
+    ])
+    git(work, "reset", "--hard", plan["floor"])
+    assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "pull_state_changed"
+    assert git(repo, "rev-parse", source).stdout.strip() == base
+    git(work, "reset", "--hard", base)
+    with finish_lock(repo), pytest.raises(MDFError) as busy:
+        squash_execute.execute(work, plan, False, [])
+    assert busy.value.code == "finish_busy"
+    original = pm.squash_rework
+
+    def interrupt(where, branch, old_tip, *, new_tip=None):
+        if new_tip:
+            raise MDFError("模拟 squash 验证后中断", code="test_interrupted")
+        original(where, branch, old_tip)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(pm, "squash_rework", interrupt)
+        with pytest.raises(MDFError) as interrupted:
+            squash_execute.execute(work, plan, False, [])
+    assert interrupted.value.code == "test_interrupted"
+    assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "pull_state_changed"
+    result = squash_execute.execute(work, plan, True, [])
+    assert payload(mdf(python_exe, "pm", "finish-rework", *args))["head"] == result["head"]
+    assert not work.exists()
+    assert git(repo, "branch", "--show-current").stdout.strip() == "master"
+
+
+def test_pm_can_clean_up_preserved_rework_after_original_pr_merges(python_exe, tmp_path, monkeypatch):
+    repo, remote, platform = pr_repo(tmp_path, monkeypatch)
+    (repo / "docs/JOTS.md").write_text("# Jots\n\n原记录\n")
+    commit(repo, "docs(pm): 添加原记录")
+    source = trunk_pr(python_exe, repo)
+    args = ("--repo", str(repo), "--source", source)
+    payload(mdf(python_exe, "pr", *args))
+    rework = payload(mdf(python_exe, "pm", "rework", *args))
+    work, base = Path(rework["worktree"]), rework["head"]
+    (work / "docs/JOTS.md").write_text("# Jots\n\n补充记录\n")
+    commit(work, "docs(pm): 补充记录")
+    (work / "docs/JOTS.md").write_text("# Jots\n\n修订补充记录\n")
+    commit(work, "docs(pm): 修订补充记录")
+    squash_pending(work)
+    tip = git(work, "rev-parse", "HEAD").stdout.strip()
+    platform.merge(1, tmp_path)
+    assert error_of(mdf(python_exe, "pm", "finish-rework", *args))["error"] == "pull_state_changed"
+    assert git(work, "rev-parse", "HEAD").stdout.strip() == tip
+    git(repo, "branch", "preserved-pm", tip)
+    git(work, "reset", "--hard", base)
+    assert payload(mdf(python_exe, "pm", "finish-rework", *args))["head"] == base
+    assert not work.exists()
+    assert git(repo, "rev-parse", "preserved-pm").stdout.strip() == tip
+    assert payload(mdf(python_exe, "finish-gitflow", *args))["completed"]
+    assert not has_ref(remote, f"refs/heads/{source}")
 
 
 @pytest.mark.parametrize("status", ["draft", "ready"])
