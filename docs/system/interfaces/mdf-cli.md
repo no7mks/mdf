@@ -100,7 +100,6 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `bug close` | 验收后的 Bug 关闭写入 | [仓库写入命令](mdf-cli-write.md) |
 | `verify` | module 级验证（smart / branch / named） | [交付阶段与验证](mdf-cli-delivery.md) |
-| `codewiki-runtime` | 本地 CodeWiki 运行时准备 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |

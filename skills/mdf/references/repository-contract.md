@@ -45,7 +45,6 @@
     ├── context/
     │   ├── adr/<slug>.md     # 已确认取舍的理由；不是当前事实
     │   └── research/
-    ├── repowiki/             # 可选；CodeWiki 受管生成物
     ├── proposals/
     │   ├── prp-<4 位字符>-<slug>.md|html  # draft 用 md；评审定稿生成 html；已有材料保留格式
     │   └── archive/<major.minor>/
@@ -78,11 +77,6 @@
   - feature/bugfix/adhoc 与 slug hotfix 用交付 slug；release 与 SemVer hotfix 用分支版本。
     hotfix 的版本与材料目录见 [Hotfix 版本](hotfix-version.md)。
 - 📌 每个稳定版本目录始终只有一个根 `CHANGE.md`。
-
-`docs/repowiki/` 存在时，只保存 CodeWiki 生成的仓库结构 Wiki、模块树和增量 metadata。
-
-- 它不是`当前事实文档`、工作上下文或 ADR，不填入`基线`，也不要求 fact frontmatter。
-- 该目录由 CodeWiki intent 受管，项目其他文档仍可按各自契约人工维护。
 
 ## Jots
 
@@ -151,7 +145,7 @@ ASD-STE100 写作约定。CLI `fact-audit` 对结构硬限制报 `prose.*` findi
 - `AGENTS.md` 仅面向在仓库中工作的 Agent。
   - MDF 托管区块必须项目无关：Agent 默认按维护者角色工作，第一跳是 `PROJECT.md`；
     再打开 `docs/system/overview.md`，或从 `docs/README.md` 只打开一份主题叶。
-  - 用 grep/CodeWiki 定位后只读命中的那一份。
+  - 用 grep 定位后只读命中的那一份。
   - 根 `README.md` 与 `docs/user-guide/` 是用户入口，不是 Agent 默认起点。
   - `README.md` 只用于项目定位，`GLOSSARY.md` 用于领域术语；不通读文档目录，不把根文档当作行为事实来源。
   - 不要求写项目例外；托管块外若写入栈、配置或行为契约，fact audit 记 `agents.project_content`。
@@ -237,7 +231,7 @@ Core 按解析后的 `status` 与 `found_in` 判断。因此 `status: "ready" # 
 - `overview.md`、`user-guide/README.md` 与切面 `index.md` 等路由页只做路由与边界。
   - 不复述叶子页的契约，也不为整个子系统集中承担 evidence。
 - 正文面向工作中的读者描述可观察行为。
-  - 「代码在哪里」由 `docs/repowiki/` 或短路径列表承担，不写逐文件 walkthrough。
+  - 用短路径列表指出代码位置，不写逐文件 walkthrough。
 - `user_guide` 基线为 `not_applicable` 时（如无终端用户面的后端），`docs/README.md` 不展示 user-guide；
   并写明行为参考面是 `docs/system/` 对应页面。
 

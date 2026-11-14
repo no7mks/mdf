@@ -15,7 +15,7 @@
 | `lifecycle` | 交付身份、roster、阶段、版本收口与发布 | `delivery_state`、`roster`、`closeout_stage` |
 | `execution` | module 验证配置、命令执行与测试报告 | `modules`、`module_verify`、`verify_run`、`reports` |
 | `workspace` | Git、worktree、初始化、同步、hook 与安装维护 | `gitflow`、`gitutil`、`squash`、`init_repo`、`upgrade` |
-| `integrations` | CodeWiki 运行时与跨工作区联调通道 | `codewiki_runtime`、`integrate` |
+| `integrations` | 跨工作区联调通道 | `integrate` |
 | `reviewing` | 交付 CI 与 against 工作区审阅上下文、报告契约 | `context`、`report`、`fact_context`、`fact_report` |
 
 ## 入口与依赖

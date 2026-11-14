@@ -1,6 +1,6 @@
 interface:
   display_name: "MDF"
-  short_description: "以显式意图管理仓库文档、交付与 CodeWiki Wiki"
-  default_prompt: "使用 $mdf codewiki generate，为当前仓库生成结构 Wiki。"
+  short_description: "以显式意图管理仓库文档与交付"
+  default_prompt: "使用 $mdf help 查看可用命令。"
 policy:
   allow_implicit_invocation: false

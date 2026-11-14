@@ -145,7 +145,6 @@
 | `system` | → `docs/system/` 对应切面 |
 | `adr` | → `docs/context/adr/` |
 | `research` | → `docs/context/research/` |
-| `repowiki` | 符合 CodeWiki 契约，留原处 |
 | `exception` | 顶层或布局例外，方案单列 |
 | `ask` | 无法定型 |
 
@@ -155,7 +154,6 @@
 
 - 无法分类时澄清后回到 2。
 - 不得仅凭目录名或 README 保留。
-- 符合 CodeWiki 契约的 `docs/repowiki/` 留在原处且不纳入当前事实、ADR 或调研分类。
 - 此步骤不做`事实复核`。
 
 ### 配置与确认方案

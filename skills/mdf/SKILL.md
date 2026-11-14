@@ -2,7 +2,7 @@
 name: mdf
 description: >-
   管理 Git 仓库的版本化文档与交付流程：项目起步、初始化、已有项目迁移、规划、分诊、
-  CodeWiki、随手记录、审计、收口、归档、帮助、自升级与压力测试。
+  随手记录、审计、收口、归档、帮助、自升级与压力测试。
 disable-model-invocation: true
 ---
 
@@ -72,8 +72,6 @@ disable-model-invocation: true
                  ├──── prp create ────────────────────────────────────────→ references/prp-create.md
                  ├──── prp review ────────────────────────────────────────→ references/prp-review.md
                  ├──── archive ───────────────────────────────────────────→ references/archive.md
-                 ├──── codewiki generate ─────────────────────────────────→ references/codewiki-generate.md
-                 ├──── codewiki update ───────────────────────────────────→ references/codewiki-update.md
                  ├──── jot / jot promote ─────────────────────────────────→ references/jot.md
                  ├──── help / help <intent> ──────────────────────────────→ references/help.md
                  ├──── upgrade ───────────────────────────────────────────→ references/upgrade.md
@@ -211,12 +209,11 @@ disable-model-invocation: true
 - code-review 的 `--read-only` 与 fact audit 的 against / `--quick` 只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。单独 `--against` 仍读 common.md。
 - 除上述只读调用、quick 模式及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
-  - `codewiki-runtime.md` 与 `codewiki-recovery.md` 不读 `common.md`。
 
 内部路由与 CLI 形式：
 
 - 以下调用均由选择树路由：
-  - `$mdf bug <action>`、`$mdf prp <action>`、`$mdf codewiki <action>`、`$mdf jot promote`；
+  - `$mdf bug <action>`、`$mdf prp <action>`、`$mdf jot promote`；
   - `$mdf init migrate`、`$mdf help <intent>`、`$mdf to <target>` 与 `$mdf integrate`。
   - integrate 的 init、peer、send、poll、listen、status 不是独立 intent。
 - 这些内部材料不是独立 Skill。

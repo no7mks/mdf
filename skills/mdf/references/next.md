@@ -89,7 +89,7 @@ PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路�
 在途范围包括全部 MDF workflow 及其内部委托：
 
 - 交付主线与 deliver。
-- init、bootstrap、migrate、intake、prp review、CodeWiki、clarify、fix、bug close 等尚未完成的流程。
+- init、bootstrap、migrate、intake、prp review、clarify、fix、bug close 等尚未完成的流程。
 
 结合当前对话的显式调用、已确认范围、待回答问题、失败与交接记录，以及目标现场识别。
 已经完成、取消或被用户替代的流程不算在途；draft PRP、open Bug 或待办事项本身不代表流程已启动。

@@ -32,8 +32,6 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "next？",
         "next [--depth N]",
         "deliver [<target>] [--until <intent>] [--yolo]",
-        "codewiki generate",
-        "codewiki update",
         "start",
         "adhoc [<工作描述>]",
         "jot",
@@ -77,8 +75,6 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
     assert not (skill / "references" / "doc-derive.md").exists()
     assert "references/prp-review.md" in entry
     assert "references/archive.md" in entry
-    assert "references/codewiki-generate.md" in entry
-    assert "references/codewiki-update.md" in entry
     assert "references/jot.md" in entry
     assert "references/help.md" in entry
     assert "references/upgrade.md" in entry
@@ -158,7 +154,6 @@ def test_init_and_doc_intents_load_internal_contracts() -> None:
         assert root_document in migrate
     assert "各自符合`根文档职责`" in migrate
     assert "检查项目原有的全部文档" in migrate
-    assert "符合 CodeWiki 契约的 `docs/repowiki/`" in migrate
     assert "盘点全部顶层项目项" in migrate
     assert "顶层允许清单" in migrate
     assert "仅含 `.gitkeep` 的占位目录按其未来职责迁移" in migrate
@@ -309,7 +304,6 @@ def test_repository_contract_defines_top_level_layout() -> None:
     assert "MDF 不自动迁移或删除顶层项目项" in contract
     assert "顶层允许清单、" in contract
     assert "每项的理由" in contract
-    assert "`docs/repowiki/` 存在时" in contract
     assert "不填入`基线`" in contract
     assert "## ADR" in contract
     assert "`docs/context/adr/<slug>.md`" in contract
@@ -475,37 +469,6 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "no-ff 合并到" in finish and "master" in finish
     assert "原子 push" in finish
     assert "v<semver>" in finish
-
-
-def test_codewiki_intents_use_a_managed_mcp_wiki_contract() -> None:
-    skill = skill_dir("mdf")
-    contract = (skill / "references" / "codewiki-contract.md").read_text(
-        encoding="utf-8"
-    )
-    generate = intent("codewiki-generate")
-    update = intent("codewiki-update")
-
-    assert "docs/repowiki/" in contract
-    assert "metadata.json" in contract
-    assert "module_tree.json" in contract
-    assert "first_module_tree.json" in contract
-    assert "mdf-codewiki: managed" in contract
-    assert "provider" in contract and "API key" in contract
-    assert "CodeWiki CLI" in contract
-    assert "hacks.md" in contract
-    assert "偏离同类功能的普通路径" in contract
-    assert "V2" not in contract
-    assert "analyze_repo" in generate
-    assert "save_module_tree" in generate
-    assert "close_session" in generate
-    assert "待确认" in generate
-    assert "$mdf codewiki update" in generate
-    assert "no_changes: true" in update
-    assert "不调用 `analyze_repo`" in update
-    assert "$mdf codewiki generate" in update
-    assert "MCP-only" in update
-    assert "在 `overview.md` 加入链接" in update
-    assert "V2" not in generate and "V2" not in update
 
 
 def test_common_rules_require_logs_before_truncation() -> None:

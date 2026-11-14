@@ -158,7 +158,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 只更新范围内受影响的当前事实及 evidence：
 
 - `verification` 整段是命令，或以 `# ` 开头写文字；二者不得混排。
-- 不修改 PRP、Bug、Change、objectives 或 design 的意图，不改 `docs/context/`、`docs/repowiki/`。
+- 不修改 PRP、Bug、Change、objectives 或 design 的意图，不改 `docs/context/`。
 - `user-guide` 只在对外可观察行为有变时改；
   `system/architecture` 只在内部结构或仍生效约束有变时改。
 - 范围内实现已有配置、可观测、错误、鉴权或限制与恢复的可观察契约时，

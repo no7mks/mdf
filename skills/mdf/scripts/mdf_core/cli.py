@@ -318,11 +318,6 @@ def build_parser() -> argparse.ArgumentParser:
     sync_cmd.add_argument("--pr", action="store_true", help="通过 PR/MR 同步受保护 trunk 的本地增量")
     sync_cmd.set_defaults(func=command_sync)
 
-    from mdf_core.integrations.codewiki_runtime import command_codewiki_runtime
-    runtime = subparsers.add_parser("codewiki-runtime")
-    runtime.add_argument("--directory", default="~/.local/share/codewiki")
-    runtime.set_defaults(func=command_codewiki_runtime)
-
     from mdf_core.workspace.worktree_check import command_worktree_check
     worktree = subparsers.add_parser("worktree-check")
     worktree.add_argument("--repo", required=True)

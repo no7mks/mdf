@@ -15,7 +15,7 @@
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；不强制分类目录 | 维护者默认不开；改对外行为时必开 |
 | 决策 | `docs/context/adr/` | 只经 `adr-<slug>` 或事实页链接 |
 | 工作对象 | `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` | 只经 ID 或直达链接 |
-| 调研与 Wiki | `docs/context/research/`、`docs/repowiki/` | research 按需；Wiki 搜符号 |
+| 调研 | `docs/context/research/` | 按需读取 |
 
 - `docs/system/` 组成：`overview.md` 路由；切面目录放主题叶；`deviations.md` 偏差索引；`testing/` 测试约定。
 - 切面目录为 `architecture/`、`interfaces/`、`data/`、`operations/`、`testing/`。
@@ -30,7 +30,7 @@
 
 - 维护者需要按主题找文档或打开工作对象时，再打开 `docs/README.md`，然后只打开一份主题叶或对应 ID 的文件。
 - `user_guide` 为 `not_applicable` 时，根 `README.md` 仍是用户入口，改为链到 `PROJECT.md` 或 `docs/system/`。
-- grep 与 CodeWiki 只用于定位路径，定位后只读命中的那一份。
+- grep 只用于定位路径，定位后只读命中的那一份。
 
 **唯一归属**：一条可观察契约只住一页。
 

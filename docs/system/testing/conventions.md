@@ -89,7 +89,7 @@
 | closeout | 是 | closeout_*、commands_release、semver、validate_release |
 | planning | 否 | planning、prp_split、tree_view、list_objects、proposals |
 | objects | 是 | bugs、archive、moves、jot、make-id、对象校验、yamlutil |
-| docs | 是 | audit、doctor、validate_*、doc_size、codewiki_runtime |
+| docs | 是 | audit、doctor、validate_*、doc_size |
 | init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
 | integrate | 否 | integrate、integrate_http、integrate_store |
 | deploy | 否 | `mdf-deploy.sh`、upgrade |

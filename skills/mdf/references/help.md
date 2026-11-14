@@ -119,8 +119,6 @@
 - `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
   主链在 verify branch 之后、close-out 之前
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
-- `$mdf codewiki generate`：用 CodeWiki MCP 新建仓库结构 Wiki
-- `$mdf codewiki update`：增量更新符合契约的结构 Wiki
 - `$mdf upgrade [--source <url>]`：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块
 - `$mdf to <target>`：进 worktree（`plan`/`develop`/`deploy`）
 - `$mdf dev-pr [<slug>]`：保全 develop 到 adhoc，reset 对齐远端，审查与 smoke 通过后 PR
@@ -177,8 +175,6 @@ $mdf fact audit
 $mdf prettify --scope full
 $mdf archive
 $mdf prp split
-$mdf codewiki generate
-$mdf codewiki update
 $mdf upgrade
 $mdf to plan
 $mdf to develop
@@ -195,7 +191,7 @@ $mdf clarify 要不要把缓存放到 Redis
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
   `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`catch-up`、`pr`、`close-out`
-- 维护：`archive`、`fact audit`、`prettify`、`codewiki generate`、`codewiki update`、`upgrade`；
+- 维护：`archive`、`fact audit`、`prettify`、`upgrade`；
   `to`、`dev-pr`、`trunk-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
   - 用法：`$mdf bootstrap`
@@ -394,10 +390,6 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf prettify [<path>...] [--scope branch|full|paths]`（省略为 branch）
   - 用途：按 `doc-structure.md` 改写为大列表/表格/图，不改语义。
   - 说明：`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
-- `$mdf codewiki generate` / `$mdf codewiki update`
-  - 用法：`$mdf codewiki generate` 或 `$mdf codewiki update`
-  - 用途：新建或增量更新 `docs/repowiki/` 结构 Wiki。
-  - 说明：update 无代码类变化时可报告无更新。
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
   - 用途：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块并提交（不 push），随后重读。

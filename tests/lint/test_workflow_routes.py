@@ -60,7 +60,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
                 "project-rules.md", "temporary-work.md", "reviewer-protocol.md", "ci-review.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 63
+    assert len(workflows) == 58
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -115,26 +115,6 @@ def test_init_accepts_initializing_at_entry_before_readiness_gate():
     assert "全部 finding 记入盘点清单，由步骤 3 逐项处置" in entry
     assert "非本地产物目录的纳管路径 `path.symlink`）报告后停止" in entry
     assert "依 `SKILL.md`「用户确认」接受 yes 等明确肯定答复后收口" in text
-
-def test_codewiki_requires_verified_close_and_recoverable_failure():
-    update = workflow("codewiki-update")
-    generate = workflow("codewiki-generate")
-    recovery = workflow("codewiki-recovery")
-    contract = workflow("codewiki-contract")
-    for text in (update, generate):
-        assert "references/codewiki-recovery.md" in text
-        assert "关闭前先验收" in text
-        assert "不得推进基线" in text
-    assert "关闭后Wikidiff为空" in compact(update)
-    assert "未写页面时只关闭会话并清理workspace" in compact(contract)
-    assert "已部分写入时不调用 `close_session`" in recovery
-    assert "不开始另一次增量更新" in recovery
-    assert "用户指定的仓外备份位置" in compact(recovery)
-    assert "取得针对具体源和目标的明确确认" in recovery
-    assert "搬移后不得再调用该 session 的写入或关闭工具" in recovery
-    assert "显式`$mdfcodewikigenerate`" in compact(recovery)
-    assert "不重新路由回 update" in recovery
-    assert "没有hack且无页时跳过写入" in compact(update)
 
 def test_independent_intents_resolve_the_current_target_before_dispatch():
     dispatch = workflow("common").split("## 目标根", 1)[1]
@@ -241,19 +221,6 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     assert "写入分支按 `common.md` 的归属规则检查" in entry
     assert "独立调用仅记录 `branch.invalid`" not in entry
 
-def test_codewiki_commit_failure_does_not_rebuild_verified_output():
-    for name in ("codewiki-generate", "codewiki-update"):
-        text = workflow(name)
-        final_step = rows(text)[-1]
-        assert "仅提交失败停止" in final_step[6]
-        diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-        assert re.search(r"仅提交失败 ─+→ \[保留已验收 Wiki，报告并停止\]", diagram)
-        assert "MCP 失败或输出验收失败进入 recovery" in text
-        assert "输出验收通过后仅 Git 暂存或提交失败时" in text
-        assert "不得因此进入 recovery、搬移 Wiki 或重新生成" in text
-        assert "同次续办先核对输出与 diff 未变且验收仍有效" in text
-    assert "输出已验收且仅 Git 暂存或提交失败" in workflow("codewiki-recovery")
-
 def test_tree_renders_diagram_in_fence_and_index_as_table():
     text = workflow("tree")
     table = rows(text)
@@ -277,7 +244,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert table[2][5] == "结束"
     assert "全部 MDF workflow" in text
     for name in (
-        "init", "bootstrap", "migrate", "intake", "prp review", "CodeWiki",
+        "init", "bootstrap", "migrate", "intake", "prp review",
         "clarify", "fix", "bug close",
     ):
         assert name in text
@@ -423,19 +390,6 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "提示在新会话" not in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)
-
-def test_codewiki_session_is_created_by_analyze_repo():
-    for name in ("codewiki-generate", "codewiki-update"):
-        text = workflow(name)
-        assert "通过后建立 MCP session" not in text
-        assert "再建立 MCP session" not in text
-        assert "session 由 `analyze_repo` 创建" in text
-        assert "不得另调建 session 工具" in text
-        assert "调用 `analyze_repo` 创建 session" in text
-    generate = workflow("codewiki-generate")
-    assert "读取 workspace 的 `component_index.json`、`leaf_nodes.json`、`languages.json`、`summary.json`" in generate
-    assert "save_module_tree` 并读取其写出的 `processing_order.json`" in generate
-    assert rows(workflow("codewiki-recovery"))[4][2] == "约束"  # 搬移为确认后的文件操作
 
 def test_init_dispatches_to_bootstrap_or_migrate():
     text = workflow("init")

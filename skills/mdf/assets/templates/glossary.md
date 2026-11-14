@@ -8,10 +8,6 @@
 
 Mars Development Flow；面向 Git 仓库的版本化文档与交付流程。
 
-### CodeWiki
-
-由 CodeWiki MCP 生成和更新的仓库结构 Wiki。
-
 ### ADR
 
 Architecture Decision Record；记录重要且已决定的长期架构取舍及其理由，不描述

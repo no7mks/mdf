@@ -54,8 +54,6 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf init migrate` | 将已有项目材料与布局收敛到当前 MDF 结构；也可 `$mdf migrate` |
 | `$mdf tree [--depth N]` | 按 milestone 分组画出 draft/ready PRP 依赖树；也可 `$mdf prp tree` 或 `$mdf next?` |
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
-| `$mdf codewiki generate` | 用 CodeWiki MCP 新建仓库结构 Wiki |
-| `$mdf codewiki update` | 增量更新符合 MDF 契约的结构 Wiki |
 | `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 默认推进至 close-out 完成，可显式指定截止 intent；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf adhoc [<工作描述>]` | 自动生成六项 objectives，在临时 worktree 完成小工作并收口 |
@@ -279,7 +277,6 @@ MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或�
 | 用户事实 | `docs/user-guide/`：`README.md` 路由 + 主题叶；维护者默认不打开 |
 | 决策 | `docs/context/adr/`；只记录理由，按 `adr-<slug>` 打开单份 |
 | 工作上下文 | `docs/context/research/` |
-| 代码结构 Wiki | `docs/repowiki/`；仅由 CodeWiki MCP 生成与更新，用于按需搜索 |
 | 未分诊记录 | `docs/JOTS.md` |
 | 意图与工作 | Proposal、Bug、unreleased Change |
 | 证据 | 测试、契约、生成物、配置和命令 |

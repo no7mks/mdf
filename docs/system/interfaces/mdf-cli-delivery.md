@@ -225,14 +225,6 @@
 | 不含 test | `empty_test_report` |
 | 含 failure、error 或 skipped | `test_report_failed` |
 
-### `codewiki-runtime`
-
-`codewiki-runtime [--directory <路径>]` 准备本地 CodeWiki 运行时：
-
-- 只在安装目录缺失时 clone，核对源码和 Git 状态。
-- 只补缺失 venv 并检查导入，返回宿主所需 MCP 字段。
-- 不修改宿主配置或目标仓库。
-
 ### 集成与发布恢复
 
 - `delivery roster-join` 在清理前提交 `gates/roster-join.json`，固定各角色最终提交、

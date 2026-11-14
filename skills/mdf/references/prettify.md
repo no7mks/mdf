@@ -82,7 +82,7 @@
   - 用 `git diff --name-only <base>`（含未提交改动）与 `git ls-files --others --exclude-standard` 列出改动。
   - 从中筛出仍存在、带角色且不在下方「不改」之列的 Markdown，逐个作为 `--path`。
   - 清单为空时报告「无待美化文档」并结束，不调用 `prose-check`。
-- 步骤 1 拒绝不允许的路径：`docs/JOTS.md`、`docs/repowiki/**`、非 Markdown 或仓库外路径。
+- 步骤 1 拒绝不允许的路径：`docs/JOTS.md`、非 Markdown 或仓库外路径。
   - 显式列出这类路径时停止并报告，不静默跳过。
   - full 与 branch 自动清单只选 Markdown；ready PRP 的 HTML 不进入本 intent。
 - 命中 `.mdf/modules.yaml` module `ignore` 的文件从待美化清单排除，显式指定路径时同样排除。
@@ -91,7 +91,7 @@
   - ❌ 不在 master 上直接改写。
   - 与当前交付相关的文档在该交付分支改写；其余在 develop 或 planning 按公共规则处理。
 - ✅ 可改：根文档（`AGENTS.md` 仅托管区块外）、`docs/**`。
-- ❌ 不改：`docs/JOTS.md`、`docs/repowiki/`、`AGENTS.md` MDF 托管区块、代码块内容、frontmatter 键、
+- ❌ 不改：`docs/JOTS.md`、`AGENTS.md` MDF 托管区块、代码块内容、frontmatter 键、
   `{{MDF_...}}` 槽位。
   - 托管区块由 upgrade 按上游模板覆盖；其违例记为模板问题并在报告中列出，不进入改写。
 

@@ -217,10 +217,9 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   init/bootstrap/migrate 的初始化落地及 close-out 的 Gitflow 合并按各自专门契约执行。
   upgrade 替换已安装 Skill 并提交本次路径时，可在当前分支（含 master）提交这些路径，
   不改 `.mdf/` 与 `docs/`；该例外只约束 upgrade，见 `references/upgrade.md`。
-- 与当前交付分支工作相关的文档在当前分支更新，随该分支交付；包括规划记录、事实文档
-  和 CodeWiki。当前事实文档和 CodeWiki 必须反映该 checkout 的实际状态，不把未实现
-  的计划写成事实。调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，
-  不替代任务管理。
+- 与当前交付分支工作相关的文档在当前分支更新，随该分支交付，包括规划记录和事实文档。
+  当前事实文档记录该 checkout 的实际状态，不把未实现的计划写成事实。
+  调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，不替代任务管理。
 - 规划写入使用唯一的 `planning` 分支与仓库同级 `<repo-name>-worktrees/planning` worktree。
   - 覆盖 `prp create`、`prp review`、`prp split`、intake 中的 Proposal、
     以及 `jot promote` 为 Proposal。
@@ -400,7 +399,7 @@ intent 声明读取的契约或模板缺失时停止并报告，不猜测内容�
 | 材料 | 位置 | 读取条件 |
 | --- | --- | --- |
 | 意图 | `references/` | 读取已确认 intent 的流程及其声明委托的内部流程 |
-| 公共契约 | `references/` | 按 intent 指定读取目录、对象或 CodeWiki 契约 |
+| 公共契约 | `references/` | 按 intent 指定读取目录或对象契约 |
 | 模板 | `assets/` | intent 要求写入仓库产出物时读取对应模板 |
 | 代码体积 | `references/repository-documents.md` | 写入源代码或测试源代码前读取体积条款 |
 | 文档结构与写作 | `references/doc-structure.md` | 写入或改写任何 Markdown 产出物前读取 |

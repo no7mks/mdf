@@ -128,10 +128,6 @@ hermetic UT 或 PT；原慢用例保留。
 测试进程能自行拉起全部依赖，不需要预先存在的环境、凭据或网络。依赖第三方资源
 或真实兄弟产品（如联调对端）的测试不是 hermetic；第三方资源不含待测产品与兄弟产品。
 
-## CodeWiki
-
-通过 CodeWiki MCP 生成与更新的仓库结构 Wiki。
-
 ## Jev
 
 可选的定型判断加速（MCP tool：`choice` / `noul` / `score` / `run`）。仅在 intent

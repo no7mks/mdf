@@ -289,7 +289,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   - ADR 不按实现对齐。
 - 工作对象与调研：Proposal、Bug、Jot、research 未冒充当前事实、
   未被 `docs/README.md` 当成通读清单即可。
-  - 不做拆页 refine。`docs/repowiki/` 不审、不改。
+  - 不做拆页 refine。
 - `docs/system/testing/<suite>.md` 的入口命令行（仅 command 成员）：整段是命令，或以 `# ` 开头写文字；二者不得混排。
 - 文档结构：按 `references/doc-structure.md`。
   - 硬限制由 CLI 报 `prose.*`；人工审超限后的 70% 拆分结果与内容形态，大段文字改为列表、表格或图。
