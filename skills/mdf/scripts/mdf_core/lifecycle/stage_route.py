@@ -35,6 +35,17 @@ def _verify_evidence(repo, root, data, item):
     if (report.get("all_passed") is not True or report.get("scope") != expected["expected_scope"]
             or report.get("branch") != data["branch"]):
         return None, ("verification-report.json 未声称本分支本 scope 全部通过", expected)
+    if report["scope"] == "branch":
+        from mdf_core.execution.verification import recorded_suites, required_suites, suites_cover
+        from mdf_core.workspace.gitutil import branch_details
+        kind = branch_details(data["branch"])["kind"]
+        if not suites_cover(recorded_suites(report), required_suites(kind)):
+            return None, ("branch 报告未覆盖必选 suite", {**expected, "suites": report.get("suites")})
+    else:
+        results = report.get("results")
+        if (not isinstance(results, list) or not results
+                or any(not isinstance(item, dict) or item.get("exit_code", 0) != 0 for item in results)):
+            return None, ("smart 报告需要非空且逐项通过的 results", expected)
     found = {"report": path.relative_to(repo).as_posix()}
     if report["scope"] == "branch":
         summary = safe(repo, root / "verification-report.md")
@@ -60,7 +71,7 @@ def route(repo, root, data, yolo=False):
     pending = [i for i in items if not i["checked"]]
     result = {"pending": [i["name"] for i in pending], "yolo": yolo, "next": None, "auto_completable": False}
     if not pending:
-        return {**result, "state": "complete"}
+        return _after_checklist(repo, data, result, yolo)
     head = pending[0]
     result["next"] = head["name"]
     if head["name"] == "design" and not yolo:
@@ -74,6 +85,31 @@ def route(repo, root, data, yolo=False):
         found, _ = evidence(repo, root, data, head, stage)
         result["auto_completable"] = found is not None
     return {**result, "state": "ready"}
+
+
+def _after_checklist(repo, root_data, result, yolo):
+    """清单勾完后：PR mode 走 pr → close-out → complete；local 还要核收口记录或已合入。"""
+    data = root_data
+    from mdf_core.lifecycle.publish import state_path
+    from mdf_core.workspace.merge_policy import ancestor, configured
+    path = state_path(repo, data["branch"])
+    state = read_json(path) if path.is_file() else None
+    mode = configured(repo)["mode"]
+
+    def gated(nxt):
+        return {**result, "next": nxt, "state": "ready" if yolo else "awaiting_decision_confirmation"}
+
+    if mode == "pr":
+        if not state or not state.get("merge_commit"):
+            return gated("pr")
+        if not state.get("completed"):
+            return gated("close-out")
+        return {**result, "state": "complete", "next": None}
+    target = data.get("target") or "develop"
+    merged = ancestor(repo, "HEAD", f"refs/heads/{target}")
+    if (state and state.get("completed")) or merged:
+        return {**result, "state": "complete", "next": None}
+    return gated("close-out")
 
 
 def _staged(repo):
@@ -94,6 +130,8 @@ def _tick(text, item, stage, found):
 def _already_done(repo, rel, text, item, stage):
     if not item["checked"]:
         return False
+    if git(repo, "status", "--porcelain", "--", rel).stdout.strip():
+        return False
     if stage == "verify":
         return True
     baseline = BASELINE.findall(text)
@@ -104,7 +142,27 @@ def _already_done(repo, rel, text, item, stage):
     return changed <= {rel}
 
 
+def _dirty_names(repo):
+    raw = git(repo, "status", "--porcelain", "-z").stdout.split("\0")
+    names = []
+    index = 0
+    while index < len(raw):
+        entry = raw[index]
+        index += 1
+        if len(entry) < 4:
+            continue
+        names.append(entry[3:])
+        if "R" in entry[:2]:
+            index += 1
+    return names
+
+
 def complete_stage(repo, root, data, stage):
+    from mdf_core.workspace.gitutil import current_branch, git_in_progress_head
+    if git_in_progress_head(repo):
+        raise MDFError("存在未完成的 merge、cherry-pick 或 revert", code="unfinished_merge")
+    if current_branch(repo) != data["branch"]:
+        raise MDFError("complete-stage 须在 owner worktree 执行", code="not_owner")
     if stage not in AUTO:
         raise MDFError(f"{stage} 不是纯证据可判定的阶段，仅支持 {', '.join(AUTO)}", code="invalid_stage")
     path, text = _objectives(repo, root)
@@ -127,9 +185,17 @@ def complete_stage(repo, root, data, stage):
     if unrelated:
         raise MDFError("index 存在本阶段之外的已暂存改动，已保留现场未做任何修改",
                        code="unrelated_staged_changes", details={"paths": unrelated})
+    if stage == "catch-up":
+        from mdf_core.lifecycle.catchup_plan import classify
+        foreign = sorted(p for p in _dirty_names(repo) if p != rel and classify(p) != "material")
+        if foreign:
+            raise MDFError("catch-up 不接受非材料的未提交改动", code="dirty_worktree", details={"paths": foreign})
+    desired = _tick(text, item, stage, found)
     if git(repo, "status", "--porcelain", "--", rel).stdout.strip():
-        raise MDFError("objectives.md 存在未提交改动，不代为提交", code="dirty_stage_files")
-    path.write_text(_tick(text, item, stage, found), encoding="utf-8")
+        if path.read_text(encoding="utf-8") != desired:
+            raise MDFError("objectives.md 存在未提交改动，不代为提交", code="dirty_stage_files")
+    else:
+        path.write_text(desired, encoding="utf-8")
     changed = [p for p in sorted(owned) if git(repo, "status", "--porcelain", "--", p).stdout.strip()]
     git(repo, "add", "--", *changed)
     extra = sorted(_staged(repo) - owned)

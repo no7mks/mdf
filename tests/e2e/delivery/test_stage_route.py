@@ -22,25 +22,28 @@ def complete(python_exe, work, stage):
 
 
 def passing_report(root, branch="feature/service-health", scope="branch"):
-    (root / "verification-report.json").write_text(json.dumps({"all_passed": True, "branch": branch, "scope": scope}))
+    (root / "verification-report.json").write_text(json.dumps({
+        "all_passed": True, "branch": branch, "scope": scope,
+        "suites": ["quick", "smoke"], "results": [{"command": "true", "exit_code": 0}],
+    }))
 
 
-@pytest.mark.parametrize("steps,yolo,state", [
-    ([("design", False)], False, "awaiting_design_approval"),
-    ([("design", False)], True, "ready"),
-    ([("人工工作", False)], True, "awaiting_manual_work"),
-    ([("lint", True), ("close-out", False)], False, "awaiting_decision_confirmation"),
-    ([("pr", False)], False, "awaiting_decision_confirmation"),
-    ([("close-out", False)], True, "ready"),
-    ([("lint", False)], False, "ready"),
-    ([("lint", True), ("close-out", True)], False, "complete"),
+@pytest.mark.parametrize("steps,yolo,state,nxt", [
+    ([("design", False)], False, "awaiting_design_approval", None),
+    ([("design", False)], True, "ready", None),
+    ([("人工工作", False)], True, "awaiting_manual_work", None),
+    ([("lint", True), ("close-out", False)], False, "awaiting_decision_confirmation", None),
+    ([("pr", False)], False, "awaiting_decision_confirmation", None),
+    ([("close-out", False)], True, "ready", None),
+    ([("lint", False)], False, "ready", None),
+    ([("lint", True), ("close-out", True)], False, "awaiting_decision_confirmation", "close-out"),
 ])
-def test_route_keeps_confirmation_and_manual_nodes(python_exe, tmp_path, steps, yolo, state):
+def test_route_keeps_confirmation_and_manual_nodes(python_exe, tmp_path, steps, yolo, state, nxt):
     _, work, root = started(python_exe, tmp_path)
     set_steps(work, root, steps)
     result = route(python_exe, work, *(["--yolo"] if yolo else []))
     assert result["state"] == state
-    assert result["next"] == next((n for n, done in steps if not done), None)
+    assert result["next"] == (nxt if nxt is not None else next((n for n, done in steps if not done), None))
 
 
 def test_route_marks_verify_auto_completable_only_with_passing_report(python_exe, tmp_path):
@@ -147,6 +150,57 @@ def test_catch_up_refuses_when_increment_needs_work(python_exe, tmp_path):
     error = error_of(complete(python_exe, work, "catch-up"))
     assert error["error"] == "stage_evidence_missing"
     assert "- [ ] catch-up" in (root / "objectives.md").read_text()
+
+
+def test_pr_mode_routes_five_finish_states(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    manifest = work / ".mdf/manifest.yaml"
+    manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: github\n", encoding="utf-8")
+    commit(work, "chore: 启用 pr mode")
+    set_steps(work, root, [("lint", True)])
+    assert route(python_exe, work) == {**route(python_exe, work), "next": "pr",
+                                        "state": "awaiting_decision_confirmation"}
+    assert route(python_exe, work, "--yolo")["state"] == "ready"
+    from mdf_core.lifecycle.publish import state_path
+    record = state_path(work, "feature/service-health")
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(json.dumps({"pull": {"id": 1}, "completed": False}))
+    assert route(python_exe, work)["next"] == "pr"
+    record.write_text(json.dumps({"pull": {"id": 1}, "merge_commit": "a" * 40, "completed": False}))
+    assert route(python_exe, work)["next"] == "close-out"
+    record.write_text(json.dumps({"pull": {"id": 1}, "merge_commit": "a" * 40, "completed": True}))
+    assert route(python_exe, work)["state"] == "complete"
+    record.write_text(json.dumps({"pull": {"id": 1}, "merge_commit": "b" * 40, "completed": False}))
+    assert route(python_exe, work)["next"] == "close-out"
+
+
+def test_complete_stage_rejects_missing_suite_empty_results_merge_and_dirty_code(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path)
+    set_steps(work, root, [("verify branch", False)])
+    (root / "verification-report.json").write_text(json.dumps(
+        {"all_passed": True, "branch": "feature/service-health", "scope": "branch", "suites": ["quick"]}))
+    assert route(python_exe, work)["auto_completable"] is False
+    set_steps(work, root, [("verify smart", False)])
+    (root / "verification-report.json").write_text(json.dumps(
+        {"all_passed": True, "branch": "feature/service-health", "scope": "smart", "results": []}))
+    assert route(python_exe, work)["auto_completable"] is False
+    set_steps(work, root, [("fact audit", True), ("catch-up", False)])
+    (work / "src/service.py").write_text("dirty = True\n")
+    assert error_of(complete(python_exe, work, "catch-up"))["error"] == "dirty_worktree"
+    (work / "src/service.py").unlink()
+    from test_catch_up_plan import upstream
+    upstream(repo, "later.txt", "上游\n")
+    assert run(["git", "merge", "--no-ff", "--no-commit", "develop"], cwd=work).returncode == 0
+    assert error_of(complete(python_exe, work, "catch-up"))["error"] == "unfinished_merge"
+    run(["git", "merge", "--abort"], cwd=work)
+    set_steps(work, root, [("verify branch", False)])
+    passing_report(root)
+    text = (root / "objectives.md").read_text().replace("- [ ] verify branch", "- [x] verify branch")
+    (root / "objectives.md").write_text(text)
+    git(work, "add", "changes/unreleased/service-health/objectives.md",
+        "changes/unreleased/service-health/verification-report.json")
+    done = payload(complete(python_exe, work, "verify"))["result"]
+    assert done["completed"] and not done["already_completed"]
 
 
 def test_catch_up_requires_earlier_steps(python_exe, tmp_path):

@@ -118,20 +118,21 @@ def build_plan(repo, root, data, explicit_base=None):
     start = data.get("start_commit") or base
     _, branch_own, _ = graph(repo, start, refs) if start != base else (None, own, None)
 
-    def owned_code(paths):
-        return sorted(p for p in paths if classify(p) == "code" and config.modules_for_paths(repo, [p]))
+    def counted_code(paths):
+        """无 module 的根脚本、CI 与 lockfile 同样计入 review、verify 与 fact。"""
+        return sorted(p for p in paths if classify(p) == "code")
 
     own_paths, up_paths = surface(repo, own), surface(repo, incoming)
     resolution = sorted({p for m in merges for p in m["resolution_paths"] if classify(p) != "material"})
     unknown = [m["commit"] for m in merges if not m["resolution_known"]]
     branch_paths = surface(repo, branch_own)
-    own_code, res_code, up_code = owned_code(own_paths), owned_code(resolution), owned_code(up_paths)
-    branch_code = owned_code(branch_paths)
+    own_code, res_code, up_code = counted_code(own_paths), counted_code(resolution), counted_code(up_paths)
+    branch_code = counted_code(branch_paths)
     shared = sorted(set(branch_code) & set(up_code))
     interaction_modules = config.interacting(config.modules_for_paths(repo, branch_code),
                                              config.modules_for_paths(repo, up_code))
     module_files = sorted(p for p in up_code if set(config.modules_for_paths(repo, [p])) & set(interaction_modules))
-    contract = sorted(up_paths & rule_paths(repo))
+    contract = sorted((own_paths | up_paths | set(resolution)) & rule_paths(repo))
     reasons = [name for name, hit in (("conflict_resolution", resolution or unknown), ("post_base_code", own_code),
                                       ("interaction", shared), ("module_interaction", interaction_modules),
                                       ("rules_or_contract_changed", contract)) if hit]
@@ -146,7 +147,8 @@ def build_plan(repo, root, data, explicit_base=None):
     config_hit = bool(own_config) or (bool(up_config) and upstream_and_branch)
     touched_paths = sorted(set(own_code) | set(res_code) | set(up_code) | set(own_config)
                            | (set(up_config) if config_hit else set()))
-    smart = bool(own_code or res_code or upstream_and_branch or config_hit or ".mdf/modules.yaml" in up_paths)
+    smart = bool(own_code or res_code or upstream_and_branch or config_hit or contract
+                 or ".mdf/modules.yaml" in up_paths)
     declared = any(m.depends_on for m in config.modules.values())
     touched_modules = set(config.modules_for_paths(repo, touched_paths))
     if upstream_and_branch and not declared:

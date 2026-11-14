@@ -259,6 +259,30 @@ def test_octopus_merge_is_unknown_and_keeps_verify_and_fact_conservative(python_
     assert result["fact"]["action"] == "audit"
 
 
+def test_unowned_root_script_is_not_skipped(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    tick_fact(work, root)
+    (work / "tool.py").write_text("print(1)\n")
+    commit(work, "feat: 根脚本")
+    result = plan(python_exe, work)
+    assert [result[key]["action"] for key in ("review", "verify", "fact")] != ["skip", "skip", "skip"]
+    assert "tool.py" in result["review"]["paths"]
+    assert "tool.py" in result["verify"]["paths"]
+    assert "tool.py" in result["fact"]["implementation"]
+
+
+def test_branch_agents_change_is_not_skipped(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    tick_fact(work, root)
+    (work / "AGENTS.md").write_text((work / "AGENTS.md").read_text() + "\n补充约束。\n")
+    commit(work, "docs: 本分支契约")
+    result = plan(python_exe, work)
+    assert result["review"]["action"] != "skip"
+    assert result["verify"]["action"] != "skip"
+    assert result["fact"]["action"] != "skip"
+    assert result["fact"]["rules_changed"] == ["AGENTS.md"]
+
+
 def test_upstream_manifest_change_alone_requires_fact_audit(python_exe, tmp_path):
     repo, work, root = started(python_exe, tmp_path)
     tick_fact(work, root)
