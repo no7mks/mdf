@@ -68,7 +68,7 @@
 
 ### `prp-split`
 
-`prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为 `planning`，
+`prp-split --repo <仓库> --spec-file <JSON> [--dry-run]` 要求当前分支为 gitflow 的 `planning` 或 github-flow 的 trunk，
 在完整预检后一次写入拆分结果。
 
 - 输入包含 source、children、downstream、rationale。
@@ -153,7 +153,8 @@
 **smart**
 
 - 不要求交付分支或交付材料；detached HEAD 返回 `detached_head`。
-- 结果 `branch` 保留原名；master/main/develop/planning 的 `kind` 为 `unsupported`，其他普通分支归 adhoc。
+- 结果 `branch` 保留原名；master/main/develop/planning 的 `kind` 为 `unsupported`。
+  `pm/*` 的 `kind` 为 `pm`，其他普通分支归 adhoc。
 - 须至少一个 `--module` 或可由 `--paths` 推断的 module。
 - 跑涉及 module 的 lint、build、quick；可选 `--test` 追加点名命令。
 - 不写 `verification-report.json`；stdout 返回结果 JSON。

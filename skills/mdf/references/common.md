@@ -163,6 +163,28 @@ upgrade 不读取本文件。
 - ❌ 不得在回复开头打印。
 - 对任何 agent 都生效。help、clarify、upgrade 也必须在结尾打印；规则见 `SKILL.md`。
 
+<a id="项目记录"></a>
+
+### 项目记录
+
+按 manifest 的 `workflow.model` 和 `closeout.mode` 选择流程。trunk 取 `workflow.trunk`。
+
+| workflow.model | closeout.mode | 准备写入位置 | 提交与收口 |
+| --- | --- | --- | --- |
+| gitflow | local / pr | `planning ensure` 返回 planning worktree | 提交后用 `planning land` 直接合入 trunk，再同步 develop 与 planning。 |
+| github-flow | local | `pm prepare` 返回已检出的干净 trunk worktree | `pm commit` 直接提交到 trunk。 |
+| github-flow | pr | `pm prepare` 返回已检出的干净 trunk worktree | `pm commit` 在同一 worktree 创建 `pm/<slug>-<id>`，提交后切回 trunk。按返回的 source 发 PR/MR 并收口。 |
+
+- `planning ensure` 创建或复用 `planning` 分支和仓库同级 `<repo-name>-worktrees/planning` worktree。
+- 准备命令均传 `--repo "$REPO_ROOT"`。按返回的 `branch`、`worktree` 进入写入位置，再解析根路径。
+- github-flow 全程使用现有 trunk worktree，无 develop 同步。
+  - 校验并暂存本次路径后执行 `pm commit --repo "$REPO_ROOT" --slug <操作或对象> --message <中文 Conventional Commit>`。
+  - 允许路径为 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md`、`docs/context/`。混合路径整批走普通交付。
+  - PR mode 须先在 origin 建立同名 trunk。本地 trunk 有远端未合入的提交时，先处理本地 trunk 提交。
+  - PR/MR 等待、修订、同步和清理见 [pm 分支](pr.md#pm-分支)。每次新操作分配独立 source。
+  - PR/MR 待合入时报告 source 与实际状态，沿用该 source 续办。依赖该记录的 intent 须等它进入本地 trunk。
+- 只读和预览不提交。
+
 ### 切换工作区
 
 <a id="s-switch"></a>
@@ -213,28 +235,21 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
 - deploy 工作区是仓库同级 `<repo-name>-worktrees/deploy`，`$mdf to deploy` 检出 master。
   - 只放 gitignore 的 deploy config，不在此修改或提交已跟踪文件。
   - 已跟踪改动干净才切回 master。close-out 不拆除这棵树。
-- master 不直接修改或提交内容，包括文档；hotfix 的修改也在 hotfix 分支完成。
+- gitflow 的 master 不直接修改或提交内容；hotfix 的修改在 hotfix 分支完成。
   init/bootstrap/migrate 的初始化落地及 close-out 的 Gitflow 合并按各自专门契约执行。
   upgrade 替换已安装 Skill 并提交本次路径时，可在当前分支（含 master）提交这些路径，
   不改 `.mdf/` 与 `docs/`；该例外只约束 upgrade，见 `references/upgrade.md`。
 - 与当前交付分支工作相关的文档在当前分支更新，随该分支交付，包括规划记录和事实文档。
   当前事实文档记录该 checkout 的实际状态，不把未实现的计划写成事实。
   调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，不替代任务管理。
-- 规划写入使用唯一的 `planning` 分支与仓库同级 `<repo-name>-worktrees/planning` worktree。
-  - 覆盖 `prp create`、`prp review`、`prp split`、intake 中的 Proposal、
-    以及 `jot promote` 为 Proposal。
-  - 不在当前目录开分支，不占用 develop checkout。
-  - 调用 `planning ensure --repo "$REPO_ROOT"` 创建或复用；当前根不是该 worktree 时，
-    按「切换工作区」规则切过去，重新解析目标根。
-  - 提交后运行 `planning land --repo "$REPO_ROOT"`，先合入 master，再将 master 合回 develop。
-    两种模式均 no-PR、优先 fast-forward；分叉时产生 merge commit；PR mode 核完整文档白名单。
-    所有模式合入前按 [squash](squash.md) 检查 planning；squash_required 时自主分析执行后重试，不逐次确认。
-  - 新建 Proposal 的 ID 在该工作区随机生成，并避开当前 checkout 的 `docs/proposals/`（含 archive）及本批已有 ID；
-    合入 master 并同步 develop 后对 `$mdf start` 可见。
-- 与当前交付分支工作无关、且不属于规划工作区的文档在 develop 更新；独立记录和公共
+- `prp create`、`prp review`、`prp split`、intake 中的 Proposal 与 `jot promote` 为 Proposal，
+  按 [项目记录](#项目记录) 选择写入位置与提交路径。
+- gitflow 中，与当前交付分支工作无关且不属于规划工作区的文档在 develop 更新；独立记录和公共
   文档维护也按此规则处理。develop 不存在时先明确创建基线，不擅自从未交付分支创建。
-- 已有 Proposal 的修改若属于当前交付分支工作，仍在该交付分支更新；否则在 planning
-  工作区更新并合入 master，再同步 develop。
+- 已有 Proposal 的修改若属于当前交付分支工作，仍在该交付分支更新。
+  独立修改按 [项目记录](#项目记录) 选择写入位置。
+- github-flow 的独立 Proposal、Bug、Jots 与 Context 改动走 [项目记录](#项目记录) 流程。
+  混有其他路径时走普通交付流程。
 - 归属不明确时先询问。需改用 develop 或 planning 时，在写入前选择安全切换或独立
   worktree，重新解析目标根并复查前置条件；不得自动搬运、暂存或提交已有改动来切换
   分支。无法安全准备目标时保留现场并停止。detached HEAD 下不写入或提交。
@@ -346,17 +361,15 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
   `master` / `develop` / `planning` 执行 merge 与 push；
   不授权删分支或 force-push。
 - ❌ 禁止 rebase，不擅自改写已有历史；异名分支使用 no-ff。
-  - planning ↔ master 及 planning land 的 master → develop 均优先 fast-forward，分叉时 merge。
-    local 与 PR mode 均 no-PR；其他异名交付分支保持 no-ff。
+  - gitflow 的 planning ↔ trunk 及 planning land 的 trunk → develop 优先 fast-forward，分叉时 merge。
 - 阶段基线和集成要求见 `references/delivery-contract.md`。
-- 规划 intent 在本次规划提交后运行 `planning land --repo "$REPO_ROOT"`，
-  把 planning 合入 master，再把 master 合回 develop，并将 master 同步回 planning。
-  - 两种模式均优先 fast-forward、分叉时 merge，始终 no-PR。
+- gitflow 的 `planning land --repo "$REPO_ROOT"` 在两种 closeout mode 下均按 [项目记录](#项目记录) 直接合入。
+  - PR mode 合入 trunk 前核对完整文档白名单。
   - 无新提交则该命令为 no-op。
   - 合入前检查 planning 未共享尾段；须整理时按 `squash.md` 自主执行，保留共享历史。
   - squash_required 的专用恢复先于调用方的一般失败分支；整理后仅重试原 planning land，不重新生成 ID、写对象或删除 Jot。
   - 无法完成整理或 land 仍有其他错误时，按调用方的失败分支保留现场并报告。
-  - master、develop 或 planning 占用者 dirty 时停止并报告，不改 checkout。
+  - trunk、develop 或 planning 占用者 dirty 时停止并报告，不改 checkout。
 
 **返回与委托**
 

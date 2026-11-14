@@ -2,7 +2,8 @@
 
 feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
 不套用本文普通 feature 的材料准备、验收前置或步骤补勾；gitflow 的目标 develop 保持原流程。
-github-flow 的收口目标是 `workflow.trunk`，不回合 develop。
+github-flow 的主线收口目标是 `workflow.trunk`。
+`pm/*` 从 trunk worktree 按 [pm 分支](pr.md#pm-分支) 完成收口。
 
 涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
 ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
@@ -81,9 +82,10 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 
 ### 远端交付分支清理
 
-本节只清理原 PR/MR 的 feature、bugfix、adhoc、release、ODR 或 hotfix source，不清理 master、develop、planning 或 tag。
+清理对象为已合并的 PR/MR source，包括 github-flow 的 `pm/*`。gitflow 的常驻 `planning` 不参与 PR/MR 清理。
 
-- 合并核验与所需发布动作完成后，先清理远端 source，再 detach owner、删除本地 source；远端失败时保留本地现场。
+- 合并核验与所需发布动作完成后，先清理远端 source，再删除本地 source；远端失败时保留本地现场。
+  - 普通交付在删除前 detach 已检出的 owner。github-flow 的 `pm/*` 此时已切回 trunk，直接清理 source ref。
 - 删除前直接 ls-remote 查询精确 ref，tip 必须等于已确认 PR head；以显式 expected SHA 的 lease 条件删除，不依赖 tracking ref。
   - lease 仅用于删除该 source，不用于改写任何分支历史；并发前进时停止并保留新 tip。
   - 远端已由平台或用户删除时，确认缺失即复用，不重复发删除请求。
@@ -143,7 +145,8 @@ close-out 要求本地 develop 包含远端交付结果，不要求本地与远�
 | 操作 | PR mode |
 | --- | --- |
 | feature → 已确定目标；bugfix/adhoc → develop；release/ODR/hotfix → master | PR/MR |
-| planning → master → develop；master → planning | no-PR，优先 ff；分叉时 merge；planning 入 master 核完整文档历史 |
+| gitflow 的 planning → trunk → develop、trunk → planning | 按 [项目记录](common.md#项目记录) 直接合入，planning 入 trunk 核完整文档历史 |
+| github-flow 的 pm/* → trunk | PR/MR，按 [pm 分支](pr.md#pm-分支) 检查路径 |
 | master → develop | 允许固定 master 历史提交 no-ff 回合 |
 | develop 上纯 MDF/宿主维护 | 允许直接提交和 push |
 | close-out 中 origin/develop → 本地 develop | 允许 no-ff 集成；不 push 本地独有 commits |
@@ -154,7 +157,7 @@ close-out 要求本地 develop 包含远端交付结果，不要求本地与远�
 - 宿主目录：.agents/、.claude/、.codex/、.cursor/、.kiro/、.openclaw/，不限定 skills/mdf。
 - develop 默认直接维护仅允许 .mdf/、宿主目录、根 AGENTS.md；项目可按 [dev-pr](dev-pr.md) 覆盖 trivial policy。
 - 混入其他路径须 PR/MR；master 不增加文件维护例外；禁止 rebase 或跨分支 ff-only。
-- planning 检查独有普通提交、rename/delete 原路径、merge resolution 及最终增量，防止 revert 掩盖代码修改。
+- gitflow 的 planning 检查独有普通提交、rename/delete 原路径、merge resolution 及最终增量，防止 revert 掩盖代码修改。
 - sync 的 master/develop 分叉或无法证明合规的领先增量须走 PR/MR；同名 ff 同步允许。
   - 创建、等待、核验合并及继续同步见 [Sync 的 PR 提交与恢复](sync.md#pr-提交与恢复)。
 - push 后审计与项目配置见 [CI 接入](ci-review.md)。

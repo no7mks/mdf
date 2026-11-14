@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import read_json
 from mdf_core.workspace.gitutil import repo_path, require_git_root
+from mdf_core.workspace.pm import require_pm_merge
 from mdf_core.workspace.merge_policy import (
     ancestor, commit_paths, configured, document, git, paths, planning_only, sha, trivial,
 )
@@ -49,6 +50,15 @@ def classify(repo, commit, branch, evidence, source_prefix, *, trunk, github):
             if (pull.get("state") == "merged" and pull.get("target") == branch
                     and pull.get("merge_commit") == commit and pull.get("head") == parents[1]
                     and pull.get("source") and pull.get("id") and pull.get("url")):
+                if github and str(pull["source"]).startswith("pm/"):
+                    if branch != trunk:
+                        return "violation", "invalid_pm_target", changed
+                    try:
+                        require_pm_merge(repo, parents[0], parents[1], commit)
+                    except MDFError as exc:
+                        if exc.code != "pm_paths_forbidden":
+                            raise
+                        return "violation", exc.code, exc.details["paths"]
                 return "pass", "platform_merge", changed
         if not github and branch == "develop":
             if _source(repo, parents[1], trunk, evidence, source_prefix) and not changed:
@@ -129,7 +139,7 @@ def collect(repo, branch, before, after):
     wanted = set(git(repo, "rev-list", "--first-parent", "--merges", f"{sha(repo, before)}..{sha(repo, after)}").stdout.split())
     evidence = {"sources": {}, "pull_requests": []}
     trunk, github = _policy(repo, before)
-    names = (trunk, "planning") if github else (trunk, "develop", "planning")
+    names = (trunk,) if github else (trunk, "develop", "planning")
     for name in names:
         ref = git(repo, "rev-parse", "--verify", f"refs/remotes/origin/{name}", check=False)
         if not ref.returncode:

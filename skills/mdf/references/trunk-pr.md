@@ -58,5 +58,5 @@ python3 "$MDF_ROOT/scripts/mdf.py" trunk-pr --repo "$REPO_ROOT" --slug <slug>
 
 - 返回 source、worktree 与 next_intent；记录位置、恢复与 slug 规则同 dev-pr。
 - 本地 trunk 独有提交先保全到 `adhoc/<slug>`，再以 `reset --keep` 对齐固定的 `origin/<trunk>`。
-- github-flow 的 release、hotfix、planning 同样走 PR，终点是 trunk，不存在 develop 回合。
+- github-flow 的 release、hotfix 与 `pm/*` 各走对应 PR 流程。独立项目记录见 [项目记录](common.md#项目记录)。
 - sync 对 github-flow 只同步 trunk 与 `support/*`，并把 non-trivial 的本地 trunk 增量委托给本 intent。

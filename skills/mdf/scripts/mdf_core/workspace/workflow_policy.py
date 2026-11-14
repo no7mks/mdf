@@ -16,10 +16,10 @@ MODELS = (GITFLOW, GITHUB_FLOW)
 DEFAULT_TRUNK = "master"
 DEFAULT_WORKFLOW = {"model": GITFLOW, "trunk": DEFAULT_TRUNK}
 # MDF 保留的分支名与前缀；trunk 不得与之冲突。
-RESERVED_NAMES = frozenset({"develop", "planning"})
+RESERVED_NAMES = frozenset({"develop", "planning", "pm"})
 RESERVED_PREFIXES = (
     "feature/", "bugfix/", "release/", "on-demand-release/", "hotfix/",
-    "support/", "adhoc/", "qa/", "dev/", "codex/",
+    "support/", "adhoc/", "qa/", "dev/", "codex/", "pm/",
 )
 GITHUB_FLOW_UNSUPPORTED = "github_flow_unsupported"
 
@@ -84,13 +84,11 @@ def integration_branch(repo: Path, ref: str | None = None) -> str:
 
 
 def permanent_trunks(repo: Path, ref: str | None = None) -> tuple[str, ...]:
-    """常驻分支：gitflow 为 trunk/develop/planning；github-flow 仅 trunk，PR mode 另有短命 planning。"""
+    """常驻分支：gitflow 为 trunk/develop/planning；github-flow 仅 trunk。"""
     config = workflow_config(repo, ref)
     if config["model"] == GITFLOW:
         return (config["trunk"], "develop", "planning")
-    from mdf_core.workspace.merge_policy import configured
-    pr = configured(repo, ref)["mode"] == "pr"
-    return (config["trunk"], "planning") if pr else (config["trunk"],)
+    return (config["trunk"],)
 
 
 def shared_support_branches(repo: Path) -> tuple[str, ...]:
@@ -102,7 +100,7 @@ def shared_support_branches(repo: Path) -> tuple[str, ...]:
 
 
 def sync_trunks(repo: Path) -> tuple[str, ...]:
-    """sync 对齐的常驻分支；github-flow 的 planning 短命，并额外对齐共有 support/*。"""
+    """sync 对齐的常驻分支；github-flow 额外对齐共有 support/*。"""
     config = workflow_config(repo)
     if config["model"] == GITFLOW:
         return permanent_trunks(repo)

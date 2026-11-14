@@ -18,7 +18,7 @@ def test_squash_plans_and_closeout_dry_run_before_heuristic():
     assert "不得改写已定型 message" in squash
     assert "展示建议并结束" in squash
     assert "不逐次请求用户确认" in squash
-    assert "planning land" in squash and "所有模式" in squash
+    assert "gitflow 的 `planning land` 在 local 和 PR mode" in squash
     assert "不可压或失败" in squash
     assert "references/squash.md" in finish
     assert "dry-run" in finish and "--dry-run" not in finish

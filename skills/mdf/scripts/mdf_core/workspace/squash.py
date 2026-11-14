@@ -31,6 +31,12 @@ def inspect(repo, branch=None, *, refresh=True):
         if (not git(repo, 'cat-file', '-e', f'{target}:.mdf/manifest.yaml', check=False).returncode
                 and configured(repo, target)['mode'] == 'pr' and not planning_only(repo, target, head)):
             raise MDFError('planning 须先通过完整文档历史检查，不得用 squash 隐藏代码改动', code='pr_required')
+    if branch_details(branch)['kind'] == 'pm':
+        from mdf_core.workspace.pm import require_pm_diff
+        from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+        if not is_github_flow(repo) or configured(repo)['mode'] != 'pr':
+            raise MDFError('pm 分支仅用于 github-flow 的 PR mode', code='invalid_closeout')
+        require_pm_diff(repo, f'refs/remotes/origin/{trunk_branch(repo)}', head)
     refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags').stdout.splitlines()
     protected = set()
     for ref in refs:
@@ -123,6 +129,7 @@ def require_ready(repo, branch=None):
     if branch != 'planning' and configured(repo)['mode'] != 'pr':
         return
     if not (branch == 'planning'
+            or branch_details(branch)['kind'] == 'pm'
             or branch_details(branch)['supported']
             or parse_role_branch(branch)):
         return

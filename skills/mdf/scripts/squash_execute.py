@@ -39,11 +39,13 @@ def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
     start = commit(plan["start_commit"])
     old_tip = commit(plan["old_tip"])
     branch = plan["branch"]
+    details = branch_details(branch)
     require(git("branch", "--show-current") == branch
             and (branch == "planning"
-                 or branch_details(branch)["supported"]
+                 or details["supported"]
+                 or details["kind"] == "pm"
                  or parse_role_branch(branch)),
-            "当前分支须为计划中的交付、角色或 planning 分支")
+            "当前分支须为计划中的交付、角色、pm 或 planning 分支")
 
     def verify() -> dict:
         require(not git("diff", old_tip, "HEAD", "--"), "最终 tree 与旧 tip 不一致")

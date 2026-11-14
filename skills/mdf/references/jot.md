@@ -124,10 +124,10 @@
 
 **追加**
 
-1. 调用 `make-jot-id`。
+1. github-flow 的独立 Jot 先按 [项目记录](common.md#项目记录) 准备 trunk，再调用 `make-jot-id`。
 2. 从原文压缩一句短标题（不另写生成器）。
 3. 在 `docs/JOTS.md` 末尾追加完整 marker 条目，保留原始含义和细节。
-4. 再运行 `basic validation`。
+4. 再运行 `basic validation`。github-flow 的独立 Jot 校验通过后按项目记录流程提交。
 
 验收：新增条目和 diff。
 
@@ -201,9 +201,9 @@
 先确定写入 checkout 并重新解析目标根：
 
 - 提升为 Proposal 时：
-  1. 运行 `planning ensure --repo "$REPO_ROOT"`。
-  2. 按 `references/common.md` 的「切换工作区」规则切换到 JSON `worktree`（分支 `planning`）。
-  3. 以该 worktree 重新解析 `REPO_ROOT`；其后 `make-id`、validation 与 `planning land` 均用新根。
+  1. 按 [项目记录](common.md#项目记录) 准备写入位置。
+  2. 按 `references/common.md` 的「切换工作区」规则切换到 JSON `worktree`。
+  3. 以该 worktree 重新解析 `REPO_ROOT`，后续命令均用新根。
 - 提升为 Bug 时按 `common.md` 归属确定写入分支。
   - 需切换时按同一规则切换，并重新解析 `REPO_ROOT`。
 - 尚未进入目标工作区时留在本步，按 `common.md` 进入。
@@ -215,9 +215,10 @@
 - 该条须已在此 checkout 的 `HEAD` 提交，且工作区未改动。
 - 不满足（Jot 只在其他分支或尚未提交）时不写对象，保留 Jot 并停止。
 - 报告缺失位置，并提示先提交或合入该 Jot 再重新执行 `$mdf jot promote`：
-  - Proposal 须先 `planning ensure`，仅将已确认的该条 Jot 带入 planning 并独立提交。
-    先 planning land，使 master 与 develop 共有该条 Jot，再继续提升；不得为取材料 merge develop。
-  - Bug 须先在写入分支提交该 Jot。
+  - gitflow 提升为 Proposal 时，仅将该条 Jot 带入规划分支并独立提交，按 [项目记录](common.md#项目记录) 落地。
+    不得为取材料 merge develop。
+  - github-flow 的独立 Jot 必须先进入 trunk。已有 `pm/*` PR/MR 时，沿用原 source 等待合并并完成 close-out，再续办提升。
+  - gitflow 的 Bug 和与交付相关的 Bug 须先在对应写入分支提交该 Jot。
 
 核对通过后生成 ID：
 
@@ -250,7 +251,6 @@
 异常与交接：
 
 - 两种失败均保留对象与原 Jot，并报告 findings。
-- 成功时将本次创建与移除作为同一个独立 commit 提交。
-- 提交或 `planning land` 失败时不恢复 Jot，保留现场并报告是否已提交、是否已合入 master 并同步 develop。
-- 提升为 Proposal 时再运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
-  - 然后提示用户显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。
+- 将本次创建与移除作为同一个独立 commit，按 [项目记录](common.md#项目记录) 的模式矩阵或 Bug 的写入归属提交。
+- github-flow 的 `pm/*` 待合入时沿用同一个 source 续办。提交或收口失败时保留现场，报告提交及合入状态。
+- Proposal 已进入目标分支后，提示用户显式调用 `$mdf prp review`。

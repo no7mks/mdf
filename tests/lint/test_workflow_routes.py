@@ -150,18 +150,18 @@ def test_callers_do_not_prescribe_questioning_style():
         for phrase in forbidden:
             assert phrase not in text, f"{path.name} contains {phrase!r}"
 
-def test_planning_intents_use_shared_planning_workspace():
-    for name in ("prp-create", "prp-review", "intake", "prp-split"):
+def test_record_intents_choose_workspace_by_workflow():
+    for name in ("prp-create", "prp-review", "intake", "prp-split", "jot"):
         text = workflow(name)
-        assert "planning ensure" in text
+        assert "common.md#项目记录" in text
         assert "切换工作区" in text
-    jot = workflow("jot")
-    assert "planning ensure" in jot
-    assert "切换工作区" in jot
     common = workflow("common")
-    assert "`planning` 分支" in common
+    assert "| gitflow | local / pr | `planning ensure`" in common
+    assert "| github-flow | local | `pm prepare`" in common
+    assert "| github-flow | pr | `pm prepare`" in common
     assert "planning land" in common
     assert "### 切换工作区" in common
+
 
 def test_initialization_and_init_have_explicit_reaudit_routes():
     shared = workflow("initialization")

@@ -52,6 +52,7 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
     primary = primary_worktree(repo)
     trees = worktree_map(primary)
     if key in PLANNING_ALIASES:
+        require_gitflow(repo, "to plan")
         result = ensure_planning(repo)
         return _payload(raw, "planning", result["branch"],
                         Path(result["worktree"]), result["created"])
@@ -68,6 +69,8 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
     if key in DEPLOY_ALIASES:
         path, created = _ensure_deploy(primary, trees)
         return _payload(raw, "deploy", trunk_branch(primary), path, created)
+    if is_github_flow(repo) and key.startswith("pm/"):
+        raise MDFError("pm 分支使用现有 trunk worktree，不创建独立 worktree", code="unsupported_branch")
     matches = _match_worktrees(trees, raw, key)
     paths = {path.resolve() for _, path in matches}
     if len(paths) == 1:
@@ -199,8 +202,9 @@ def _available(repo: Path) -> dict[str, Any]:
     trees = worktree_map(primary_worktree(repo))
     return {
         "aliases": {
-            "planning": sorted(PLANNING_ALIASES),
-            **({} if is_github_flow(repo) else {"develop": sorted(DEVELOP_ALIASES)}),
+            **({} if is_github_flow(repo) else {
+                "planning": sorted(PLANNING_ALIASES), "develop": sorted(DEVELOP_ALIASES),
+            }),
             "deploy": sorted(DEPLOY_ALIASES),
         },
         "worktrees": {branch: str(path) for branch, path in trees.items()},

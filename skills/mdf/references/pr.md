@@ -7,6 +7,27 @@ github-flow 的 PR 目标是 `workflow.trunk`，不使用 develop。
 涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
 ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
 
+<a id="pm-分支"></a>
+
+## pm 分支
+
+github-flow 的项目记录在 trunk worktree 提交到独立的 `pm/*` 后回到 trunk。
+
+- 按现有 PR 授权和 Goal 规则，从干净的 trunk worktree 执行
+  `mdf.py pr --repo <trunk 路径> --source <pm/分支>`。
+- 用同一 source 创建或复用 PR/MR，等待 CI、review 与平台合并。待合入属于正常状态。
+- `pm/*` 采用本节的 Prepare 和返工流程。记录 PR/MR、source、原 head、反馈与验证结果到会话或 Git common dir 下的本地日志。
+  按项目记录的校验和审查推进，跳过普通交付的 `changes/` 候选材料、objectives 备注与 catch-up。
+- 修订时从干净的 trunk worktree 切到原 source。Proposal 反馈走 [PRP Review](prp-review.md)，其他记录按原契约修改。
+  校验并暂存本轮路径，执行 `pm commit` 更新当前 source 并切回 trunk，再用原 PR/MR 续办。
+- trunk 前进且需要集成时，在同一 worktree 把最新目标 tip 合入原 source，处理冲突后重新校验记录及完整 PR diff，再切回 trunk。
+  路径范围超出白名单时保留现场，按普通交付处理整批改动。
+- 若依赖该记录的 start 返回 `pm_pr_pending`，先对错误中返回的 source 续办 PR/MR 和 close-out，再重试 start。
+- 返回 `squash_required` 时，在同一 worktree 切到原 source 按 [squash](squash.md) 整理，切回 trunk 后重试。
+- CLI 核完整 PR diff、源分支独有提交和合并结果的路径。项目记录使用自身的校验和审查证据。
+- 合并及关联 CI 完成后，从 trunk worktree 执行 `finish-gitflow --repo <trunk 路径> --source <pm/分支>`。
+  该命令同步本地 trunk，清理远端及本地 source ref，并保留 trunk worktree。下一次操作由 `pm commit` 创建新 source。
+
 ## 决策树
 
 ```text
@@ -82,7 +103,8 @@ closeout:
 - 省略 closeout 时使用 local；init 保留配置，doctor 校验。
 - origin fetch/push 地址须一致且唯一，支持 SSH/HTTPS 与自建 host；第一版只支持同仓 PR/MR。
 - 项目安装并登录 gh/glab；MDF 不自动配置账号、CI、runner 或 branch protection。
-- 首次 pr 先完成主链前置，再按下方材料准备条款生成候选材料。
+- 普通交付首次 pr 先完成主链前置，再按下方材料准备条款生成候选材料。
+  `pm/*` 使用 [pm 分支](#pm-分支) 的准备流程。
   - 无账本 adhoc 在 Prepare 委托 [无账本 Adhoc 收口](adhoc-change.md) 的步骤 1–5，再返回本页 Finish。
   - 保留真实分支与 worktree，不要求 delivery/objectives；已有损坏账本不能绕过。
 - PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入已确定目标后生效。
@@ -133,7 +155,8 @@ closeout:
 
 ### 提交前远端集成
 
-首次创建及未合并 PR/MR 的源提交更新，都必须先完成本节；已 merged 的恢复不重新集成。
+普通交付首次创建或更新 PR/MR 前执行本节。
+`pm/*` 按 [pm 分支](#pm-分支) 执行；已 merged 的恢复不重新集成。
 本 intent 的 Prepare 执行本节；local close-out 不使用本节。
 
 - fetch origin 的已确定目标分支，并固定最新远端 tip。
@@ -236,7 +259,8 @@ closeout:
 
 ### 反馈修复与重新提交
 
-可修问题交回主链外处理，保持当前任务持续推进；独立 pr 和 deliver 委托均适用。
+普通交付的可修问题交回主链外处理；独立 pr 和 deliver 委托均适用。
+`pm/*` 使用 [pm 分支](#pm-分支) 的修订流程。
 
 - 步骤 4 的返工入口：核对反馈对应当前 PR/MR 与 head；读取完整 review、CI 日志和失败报告，定位问题，不为查看输出重复运行。
 - 修改前先保存「PR 返工」非 checklist 备注（含 `catch-up 基线`），仅退勾 objectives 的 `catch-up`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`），落盘后再修复。

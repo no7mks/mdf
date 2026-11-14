@@ -89,7 +89,7 @@
   - 报告匹配 pattern 与 reason；排除后清单为空则报告并结束，不强制改写。
 - 写入分支遵守 `common.md` 的写入规则。
   - ❌ 不在 master 上直接改写。
-  - 与当前交付相关的文档在该交付分支改写；其余在 develop 或 planning 按公共规则处理。
+  - 与当前交付相关的文档在该交付分支改写；其余按公共规则选择写入位置，独立项目记录见 [项目记录](common.md#项目记录)。
 - ✅ 可改：根文档（`AGENTS.md` 仅托管区块外）、`docs/**`。
 - ❌ 不改：`docs/JOTS.md`、`AGENTS.md` MDF 托管区块、代码块内容、frontmatter 键、
   `{{MDF_...}}` 槽位。

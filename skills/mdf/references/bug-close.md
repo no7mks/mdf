@@ -69,7 +69,8 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 - `--fixed-in` 只接受稳定 SemVer；release 上须等于分支版本。
   - hotfix 须等于 [已固定发布版本](hotfix-version.md)，slug 分支未定版时先 resolve-version 并提交。
 - feature/bugfix 上传入的版本是确定的交付目标，发版时核对实际包含该修复。
-- 不切分支、不 start、不创建 worktree。写入落点按 `common.md`。
+- 不 start、不创建 worktree。独立 Bug 的关闭记录若只涉及项目记录路径，按 [项目记录](common.md#项目记录) 提交。
+- github-flow 的独立记录在已检出的 trunk worktree 执行；若需要改实现、测试或配置，按普通交付交接。
 - 运行 `list --repo "$REPO_ROOT" --type bug --status fixed`；交付内部重验另列 closed。
   不逐篇翻阅 `docs/bugs/`。
 - 待验证清单：

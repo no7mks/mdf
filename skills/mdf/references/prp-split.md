@@ -32,9 +32,9 @@
 │ 4 Apply                          │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 通过 ─────────────────────────→ [结束]
-                 ├──── 写入失败已恢复 ───────────────→ [停止并报告]
-                 └──── 提交或 planning land 失败 ────→ [保留现场并报告]
+                 ├──── 通过 ──────────────→ [结束]
+                 ├──── 写入失败已恢复 ────→ [停止并报告]
+                 └──── 提交或收口失败 ────→ [保留现场并报告]
 ```
 
 ## 工作流（唯一执行契约）
@@ -45,7 +45,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Inspect | 脚本 | 运行 doctor 与 planning ensure，切到 planning | 工作区、clean | 2 | 未切换留 1；其他停止 |
+| 1 | Inspect | 脚本 | 运行 doctor 并进入项目记录写入分支 | 工作区、clean | 2 | 未切换留 1；其他停止 |
 | 2 | Design | 约束 | 确认拆分单元，dry-run 取全量下游 | 确认、覆盖、downstream | 需拆分 3；无需结束 | 停止并报告 |
 | 3 | Preview | 脚本 | 确认 clean，预检并展示候选 | diff、非预览写入确认 | 确认写入 4；仅预览结束 | 失败或未确认则停止 |
 | 4 | Apply | 脚本 | 改写下游依赖；提交后 land | 校验、提交、land | 结束 | 写入失败已恢复则停；提交或 land 失败留现场 |
@@ -58,11 +58,11 @@
 
 本节规定拆分前必须满足的分支、工作区与对象条件。
 
-- `prp-split` CLI（包括 dry-run）操作前要求当前分支为 planning，且 clean worktree；
+- `prp-split` CLI（包括 dry-run）操作前要求当前分支符合写入归属，且 worktree clean；
   预览不提交。
-- 入口先运行 `doctor --repo "$REPO_ROOT"` 与 `planning ensure --repo "$REPO_ROOT"`。
+- 入口先运行 `doctor --repo "$REPO_ROOT"`，再按 [项目记录](common.md#项目记录) 准备写入位置。
   - 须 `normal_workflows_allowed`。
-  - 按 `references/common.md` 的「切换工作区」规则进入 planning 工作区。
+  - 按 `references/common.md` 的「切换工作区」规则进入返回的 worktree。
 - 未开工以 `list --repo "$REPO_ROOT" --type proposal` 的 `in_progress` 为准，
   判定与 `prp-review` 相同。
 - 非预览按公共规则整理本次改动；无关改动阻塞操作或相关范围不明时先澄清。
@@ -73,7 +73,7 @@
 
 子项须能独立实现与验收，共同覆盖原范围，不拆成文件/操作任务，也不额外扩张范围。
 
-- 在 planning 上一次调用
+- 在当前写入分支一次调用
   `make-id --type proposal --repo "$REPO_ROOT" --slug <子一> --slug <子二>`。
   - 用重复 --slug 提供全部子项；从返回的 items 取得随机、批内及仓库内唯一的 ID 与 filename，不要求编号连续。
   - 该调用只读、不预占编号。
@@ -118,5 +118,5 @@
   - 原对象无该字段时子对象也省略，不生成 `null`。
   - 需要调整阶段归属时，在用户确认依据后修订子 PRP；milestone 不参与依赖分配。
 - 已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
-- 非预览写入成功后提交，并运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
-  - 提交或 `planning land` 失败时已写入的拆分保留在工作区，不回滚；保留现场并报告实际状态。
+- 非预览写入成功后按 [项目记录](common.md#项目记录) 提交。
+  - 提交或收口失败时已写入的拆分保留在工作区，不回滚；保留现场并报告实际状态。

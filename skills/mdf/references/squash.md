@@ -2,7 +2,7 @@
 
 `$mdf squash [--dry-run]` 在交付、角色或 planning 分支上整理本地历史：定地板、定型切段、撰写
 message，默认由 Agent 自主执行 soft reset 多段提交，不逐次询问是否执行或确认计划。
-PR 模式共享动作及所有模式的 planning land 前强制检查；local 交付由调用方决定是否激活。
+PR 模式共享动作及 gitflow 的 planning land 前强制检查；local 交付由调用方决定是否激活。
 
 ## 决策树
 
@@ -70,7 +70,7 @@ PR 模式共享动作及所有模式的 planning land 前强制检查；local �
 本节的强制检查时机适用于 PR 模式与 planning land；安全 floor 与计划规则也适用于 local 交付。
 squash 按交付目标分析逻辑边界，默认合并同一目标的提交；有明确理由时保留多笔 Conventional Commit。
 
-- 所有模式的 `planning land` 在合入 master 并同步 develop 前检查 planning，不整理 develop。
+- gitflow 的 `planning land` 在 local 和 PR mode 都检查 planning，合入配置的 trunk 后同步 develop。
   - planning worktree 须 clean；无占用者时可检查 branch，实际执行须先在 planning worktree checkout。
   - 不使用交付材料或 start_commit；计划的 start_commit 取检查返回的安全 floor。
   - PR mode 在 squash 前核对完整文档历史，禁止通过压缩隐藏代码修改或 revert；不符合时走 PR/MR。
@@ -107,7 +107,7 @@ squash 按交付目标分析逻辑边界，默认合并同一目标的提交；�
 <a id="s1"></a>
 
 - 解析 Git 根；工作区对已跟踪改动须 clean。
-- 须在 planning、交付分支或 PR 模式的 qa/dev 角色分支；planning 的起点取安全 floor。
+- 须在 planning、交付分支，或 PR 模式的 qa/dev、pm 分支。planning 与 pm 的起点取安全 floor。
   交付与角色分支从 owner 材料或 Git 配置取 `start_commit`；
   缺失或不是 HEAD 祖先 → 停止。
 - 仅接受可选 `--dry-run`；其它未知 `--` 停止询问。

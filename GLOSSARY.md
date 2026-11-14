@@ -137,7 +137,7 @@ README「Jev 可选加速」。密钥用宿主 `jev auth set` 落盘，CLI 与 M
 
 ## Planning 工作区
 
-唯一的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree。
+gitflow 专用的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree。
 
 - 用于 Proposal 的新建、评审、拆分，以及 intake / jot promote 为 Proposal。
 - ensure 与 master 对齐；land 合入 master 后直接同步 develop。planning merge 优先 ff，分叉时 merge，始终 no-PR。

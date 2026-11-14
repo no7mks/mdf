@@ -84,7 +84,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
-| `$mdf to <target>` | 进入目标 worktree；`plan` 进 planning，`develop` 回主树，`deploy` 检出 master |
+| `$mdf to <target>` | 进入目标 worktree；gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy` 检出 trunk |
 | `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；PR mode 的受保护增量走 PR/MR；其他分支只报告 |
 | `$mdf integrate` | 按工作线联调；collab-mode 由接手 Agent 直接调度两端 worktree |
 
@@ -122,7 +122,9 @@ github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--
 - release 可用 `--from-commit` 冻结历史切点；发布以固定 `release_head` 打 tag，并核验其为 trunk 的 ancestor。
 - 已有发布 tag 时 hotfix 走 `support/<major.minor>`；单线可省略 `--support`。无 tag 时改走 `bugfix/*`。
   - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
-- PR mode 的 planning 为短命分支；release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
+- github-flow 的独立项目记录在 trunk worktree 编辑。local mode 直接提交，PR mode 每次使用独立的 `pm/*` 分支。
+  范围和命令见 [项目记录](skills/mdf/references/common.md#项目记录)。
+- release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
 - `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。
 
 ### 内容指纹复用与确定性规划
@@ -196,7 +198,7 @@ pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问
 PR 模式在创建或更新 PR/MR 前 fetch 远端目标：feature 已确定目标、develop（bugfix/adhoc）或 master（release/ODR/hotfix）。
 PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共享提交并按逻辑分段 squash；
 可以保留多笔 commit，无可压缩区间则 no-op，保留 merge commit，禁止 force push。
-所有模式的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
+gitflow 的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
 只要远端 tip 不是当前 HEAD 的 ancestor，就先 no-ff merge 到本分支；无冲突也必须重新完成
 lint、增量 code-review、verify 与 fact，再次 close-out；提交前远端再次前进则重复此流程。
 
@@ -238,15 +240,15 @@ local 模式先在 feature 集成已确定目标；bugfix 集成 develop，relea
 
 ### 写入分支与提交
 
-规划写入共用一个 `planning` 分支与 worktree。
+gitflow 的规划写入共用一个 `planning` 分支与 worktree。
 
 - 写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果。
   - 提交不代表验收通过，也不替代用户确认。
   - 不夹带无关改动，远端与集成操作按各自流程授权。
-- ❌ 正常工作不在 master 直接修改或提交。
+- gitflow 的正常工作不在 master 直接修改或提交。
 - 规划写入在唯一的 `planning` 工作区进行，合入 master 并同步 develop。
   - 与当前交付分支工作相关的文档在该分支更新。
-- 新建 Proposal 只能在 planning 上分配 ID、写入并提交，再合入 master 并同步 develop。
+- gitflow 的新建 Proposal 在 planning 上分配 ID、写入并提交，再合入 master 并同步 develop。
 - 初始化和发布合并按专门流程执行；只读操作不受写入分支限制。
 - 材料自 start 起位于 `changes/unreleased/<slug>/`。
   - CHANGE.md 在同级目录于交付完成时补齐，再随版本归档。

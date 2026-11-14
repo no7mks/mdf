@@ -12,6 +12,7 @@ from mdf_core.workspace.gitutil import (
     branch_details, current_branch, ensure_clean, git_in_progress_head, primary_worktree, sibling_worktree, worktree_map,
 )
 from mdf_core.workspace.merge_policy import ancestor, git, sha
+from mdf_core.workspace.pm import require_pm_diff, require_pm_merge
 
 
 def preflight(repo, source):
@@ -24,13 +25,6 @@ def preflight(repo, source):
         ensure_clean(repo)
         return
     require_direct_pr(repo, source)
-    if source == "planning":
-        from mdf_core.workspace.merge_policy import planning_only
-        from mdf_core.workspace.workflow_policy import trunk_branch
-        if not planning_only(repo, f"refs/remotes/origin/{trunk_branch(repo)}", "HEAD"):
-            raise MDFError("planning PR 只能包含文档与规划变更", code="planning_not_documents")
-        ensure_clean(repo)
-        return
     from mdf_core.inspection.validate_records import require_fixed_outcomes
     kind = branch_details(source)["kind"]
     from mdf_core.lifecycle.late_decision import target_for
@@ -235,7 +229,7 @@ def finish_lock(repo):
                 import fcntl
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as exc:
-            raise MDFError("另一个 PR close-out 或 sync 正在操作此仓库，请稍后重试", code="finish_busy") from exc
+            raise MDFError("另一个 PR、sync 或 pm 操作正在使用此仓库，请稍后重试", code="finish_busy") from exc
         yield
 
 
@@ -263,6 +257,9 @@ def _finish(repo, source, settings, *, phase):
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     github = is_github_flow(repo)
     trunk = trunk_branch(repo)
+    pm = details["kind"] == "pm"
+    if pm and (current_branch(repo) != trunk or source in worktree_map(repo)):
+        raise MDFError("pm 的 PR 与 close-out 须在 trunk worktree 执行", code="not_on_trunk")
     if details["kind"] == "feature" and not github:
         from mdf_core.lifecycle.late_decision import validate_target
         validate_target(target, concrete=True)
@@ -296,12 +293,16 @@ def _finish(repo, source, settings, *, phase):
                 raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
     if state is None and phase == "close-out":
         raise MDFError("先完成 pr intent，再执行 close-out", code="pr_not_merged")
-    if state is None and source == "planning":
-        git(repo, "fetch", "origin", "--prune")
-        if ancestor(repo, sha(repo, source), sha(repo, f"origin/{target}")):
-            raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
     if state is None:
-        preflight(repo, source)
+        if pm:
+            git(repo, "fetch", "origin", "--prune")
+            remote = f"origin/{target}"
+            head = sha(repo, f"refs/heads/{source}")
+            if ancestor(repo, head, sha(repo, remote)):
+                raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
+            require_pm_diff(repo, remote, head)
+        else:
+            preflight(repo, source)
         require_ready(repo, source)
         state = {"mode": "pr", "identity": identity, "source": source, "target": target,
                  "head": sha(repo, source), "pull": None, "completed": False,
@@ -327,6 +328,8 @@ def _finish(repo, source, settings, *, phase):
         if current.returncode:
             raise MDFError("未合并的源分支不存在", code="missing_branch")
         head = current.stdout.strip()
+        if pm:
+            require_pm_diff(repo, f"origin/{target}", head)
         if github and not version and state.get("release_head") and head != state["release_head"]:
             if state.get("pull"):
                 raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed",
@@ -340,7 +343,8 @@ def _finish(repo, source, settings, *, phase):
         elif head != state["head"] or state.get("pending_head"):
             if not ancestor(repo, state.get("pending_head", state["head"]), head):
                 raise MDFError("源分支历史已改写", code="pull_state_changed")
-            preflight(repo, source)
+            if not pm:
+                preflight(repo, source)
             require_ready(repo, source)
             state["pending_head"] = sha(repo, source)
             write_json(path, state)
@@ -364,6 +368,8 @@ def _finish(repo, source, settings, *, phase):
         check_source(repo, state)
         git(repo, "fetch", "origin", "--prune")
         merged = verified_merge(repo, pull, source, target, state["head"])
+        if pm:
+            require_pm_merge(repo, f"{merged}^1", state["head"], merged)
         if state.get("merge_commit") not in (None, merged):
             raise MDFError("平台合并结果已变化", code="pull_state_changed")
         state["merge_commit"] = merged

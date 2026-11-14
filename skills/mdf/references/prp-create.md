@@ -62,11 +62,11 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 运行 doctor 与 planning ensure，切换至 planning | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 1 | Check entry | 脚本 | 运行 doctor 并进入项目记录写入分支 | doctor、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | Resolve proposal | 脚本 | 用 `list` 查重单个 Proposal | list、唯一对象 | 3 | draft/ready 交接；其他状态停；留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | Confirm | 约束 | 展示边界、排除项与依赖并确认 draft | 用户明确确认 | 5 | 未确认留 4；取消停；来源变 2；事实变 3 |
-| 5 | Create draft | 脚本 | 写 draft、校验、提交并 planning land | 零 finding、diff、land | 6 | 保留现场，停止 |
+| 5 | Create draft | 脚本 | 写 draft、校验并按模型提交 | 零 finding、diff、land | 6 | 保留现场，停止 |
 | 6 | Report | 约束 | 报告 draft、事实、排除项与后续评审入口 | 结果摘要、依赖 | 结束 | 停止 |
 
 ## 术语与数据结构
@@ -78,15 +78,15 @@
 **入口**
 
 1. 解析 `REPO_ROOT` 并运行 `doctor`；先核对 `normal_workflows_allowed: true`。
-   未通过时按下方异常规则停止，不运行 `planning ensure`。
-2. 运行 `planning ensure --repo "$REPO_ROOT"`。
-3. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`（分支 `planning`）。
+   未通过时按下方异常规则停止。
+2. 按 [项目记录](common.md#项目记录) 的模式矩阵准备写入位置。
+3. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`。
 4. 再重新解析目标根。
 
-验收：`normal_workflows_allowed: true`，当前分支为 `planning`。
+验收：`normal_workflows_allowed: true`，当前分支符合写入归属。
 
 异常与交接：manifest 未就绪时提示 `$mdf init`；`normal_workflows_allowed: false` 时报告
-findings 后停止。尚未切到 planning 工作区时留在本步。
+findings 后停止。尚未进入写入位置时留在本步。
 
 <a id="s2"></a>
 
@@ -153,7 +153,7 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 - 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
   - 回读对象并对照模板、确认事实与完整 diff。
   - 核对 schema、必填章节、`draft` 状态和依赖。
-- 通过后提交本次 draft，并运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
+- 通过后按 [项目记录](common.md#项目记录) 提交本次 draft。
 
 验收：draft Proposal、校验退出 0 且零 finding、回读结果与 diff。
 
@@ -170,5 +170,5 @@ findings 后停止。尚未切到 planning 工作区时留在本步。
 
 验收：会话摘要。
 
-异常与交接：停止。后续显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`；
+异常与交接：按项目记录规则报告待合入状态。draft 进入目标分支后，可显式调用 `$mdf prp review`；
 不得关闭普通对象或填写 `released_in`。

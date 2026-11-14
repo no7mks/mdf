@@ -19,7 +19,7 @@ def test_any_legal_trunk_is_accepted(trunk):
 
 
 @pytest.mark.parametrize("trunk", [
-    "develop", "planning", "feature/x", "bugfix/x", "release/1.0.0", "on-demand-release/1.0.0",
+    "develop", "planning", "pm/x", "feature/x", "bugfix/x", "release/1.0.0", "on-demand-release/1.0.0",
     "hotfix/x", "support/1.2", "adhoc/x", "qa/x", "dev/x", "codex/x",
 ])
 def test_reserved_trunk_names_are_rejected(trunk):
@@ -63,9 +63,9 @@ def test_gitflow_helpers_keep_develop_and_planning(tmp_path):
     wp.require_gitflow(repo, "to develop")
 
 
-def test_github_flow_pr_mode_has_short_lived_planning(tmp_path):
+def test_github_flow_pr_mode_only_has_trunk(tmp_path):
     repo = github_flow_repo(tmp_path, pr=True)
-    assert wp.permanent_trunks(repo) == ("master", "planning")
+    assert wp.permanent_trunks(repo) == ("master",)
 
 
 @pytest.mark.parametrize("name", ["main", "trunk", "production", "support/1.2"])

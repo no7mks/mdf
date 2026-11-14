@@ -212,7 +212,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf intake`
   - 用法：`$mdf intake`
   - 用途：将外部想法或临时来源分诊为 Bug 和/或多个 Proposal。
-  - 说明：Proposal 在 planning 写入；Bug 按当前交付或 develop 归属写入。事实未确认不写对象。
+  - 说明：按分支模型选择记录写入位置；github-flow 的独立记录在 trunk 编辑。事实未确认不写对象。
 - `$mdf jot`
   - 用法：`$mdf jot`
   - 用途：追加一条未分诊的随手记录到 `docs/JOTS.md`。
@@ -220,7 +220,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf jot promote`
   - 用法：`$mdf jot promote`
   - 用途：提升一条既有 Jot 为 Proposal 或 Bug，并移除原条目。
-  - 说明：同一份待提交改动中完成提升与删除；提升为 Proposal 时在 planning 工作区进行。
+  - 说明：同一份待提交改动中完成提升与删除；按分支模型选择记录写入位置。
 - `$mdf bug create`
   - 用法：`$mdf bug create`
   - 用途：按已确认内容手动创建一个 open Bug。
@@ -228,15 +228,15 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf prp create`
   - 用法：`$mdf prp create`
   - 用途：按已确认内容手动创建一个 draft Proposal。
-  - 说明：一次只创建一个对象；须在 planning 工作区创建并合入 master 并同步 develop；随后需 `$mdf prp review`。
+  - 说明：一次只创建一个对象；按分支模型创建并提交；随后需 `$mdf prp review`。
 - `$mdf prp review`
   - 用法：`$mdf prp review`
   - 用途：修订单个 active Proposal，详细 HTML 经用户确认后保存为唯一 ready HTML。
-  - 说明：在 planning 工作区修订；终态或 archive 中的 Proposal 拒绝修改。
+  - 说明：按分支模型选择修订位置；终态或 archive 中的 Proposal 拒绝修改。
 - `$mdf prp split`
   - 用法：`$mdf prp split`
   - 用途：拆分未开工 PRP，并完整改写依赖。
-  - 说明：不拆已开工交付；须在 planning 工作区拆分并合入 master 并同步 develop。
+  - 说明：不拆已开工交付；按分支模型选择拆分与提交位置。
 - `$mdf clarify <议题>`
   - 用法：`$mdf clarify <议题>`
   - 用途：压力测试计划、决策或想法。
@@ -374,7 +374,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf squash`
   - 用法：`$mdf squash [--dry-run]`
   - 用途：定地板、定型切段、写 message；默认自主 soft-reset 多段整理，无需逐次确认。
-  - 说明：激活由调用方决定；所有模式 planning land 前须检查；`--dry-run` 只展示建议。失败不硬回滚。
+  - 说明：激活由调用方决定；gitflow 的 planning land 前须检查；`--dry-run` 只展示建议。失败不硬回滚。
 - `$mdf archive`
   - 用法：`$mdf archive`
   - 用途：归档终态 Proposal 及 closed/rejected Bug。
@@ -397,7 +397,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf to <target>`
   - 用法：`$mdf to plan|develop|deploy|<分支>`
   - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。
-  - 说明：`plan` 进 planning；`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
+  - 说明：gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy` 检出 master 并保留 gitignore config。
 - `$mdf dev-pr`
   - 用法：`$mdf dev-pr [<slug>]`；PR mode 接管 develop 未共享 commits，补材料和检查后 PR。
   - sync 的 non-trivial develop 增量委托同一流程，项目可覆盖默认 trivial 路径规则。

@@ -135,6 +135,7 @@
 
 **创建**
 
+- 独立 Bug 按 [项目记录](common.md#项目记录) 确定写入与提交位置。
 - 为 Bug 提议并确认英文 ASCII kebab-case slug。
   - 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
 - 使用 `make-id --type bug --repo "$REPO_ROOT" --slug <slug>` 生成 ID 与规范化文件名。
@@ -142,7 +143,7 @@
 - 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
   - 回读对象并对照模板、确认事实与完整 diff。
   - 核对 schema、必填章节、`open` 状态及 test 关联证据；空关联必须有用户明确确认。
-  - 创建流程一并提交新增复现 test、关联记录与必要选题配置；不修改生产实现。
+  - 创建流程一并提交新增复现 test、关联记录与必要选题配置；github-flow 的混合路径走普通交付。
 
 验收：open Bug、校验退出 0 且零 finding、回读结果与 diff。
 

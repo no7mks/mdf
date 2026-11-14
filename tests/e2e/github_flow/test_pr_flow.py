@@ -1,4 +1,4 @@
-"""github-flow 的 PR mode：trunk 为目标、无 develop 回合、tag 固定 release_head，以及短命 planning。"""
+"""github-flow 的 PR mode：trunk 为目标、无 develop 回合、tag 固定 release_head，以及独立 pm 分支。"""
 from __future__ import annotations
 import json
 from mdf_test_support import *  # noqa: F403
@@ -68,39 +68,196 @@ def test_release_pr_tags_release_head_and_never_backmerges(python_exe, tmp_path,
     git(remote, "merge-base", "--is-ancestor", head, "master")
 
 
-def test_planning_pr_is_short_lived_and_blocks_dependent_start(python_exe, tmp_path, monkeypatch):
+def pm_commit(python_exe, repo, slug="create-prp"):
+    return mdf(python_exe, "pm", "commit", "--repo", str(repo), "--slug", slug,
+               "--message", "docs(pm): 更新项目记录")
+
+
+def test_pm_pr_uses_trunk_worktree_and_blocks_dependent_start(python_exe, tmp_path, monkeypatch):
     repo, remote, platform = pr_repo(tmp_path, monkeypatch)
-    ensured = payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
-    plan = Path(ensured["worktree"])
-    assert ensured["branch"] == "planning" and ensured["created"]
-    assert git(plan, "rev-parse", "HEAD").stdout == git(repo, "rev-parse", "origin/master").stdout
-    add_prp(plan, "prp-0002")
-    commit(plan, "docs(planning): 新增 prp-0002")
+    head = git(repo, "rev-parse", "HEAD").stdout.strip()
+    trees = git(repo, "worktree", "list", "--porcelain").stdout
+    prepared = payload(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))
+    assert prepared["branch"] == "master" and Path(prepared["worktree"]).resolve() == repo.resolve()
+    add_prp(repo, "prp-0002")
+    git(repo, "add", "docs/proposals")
+    result = payload(pm_commit(python_exe, repo))
+    source = result["source"]
+    assert source.startswith("pm/create-prp-")
+    assert git(repo, "worktree", "list", "--porcelain").stdout == trees
+    assert git(repo, "rev-parse", f"{source}^").stdout.strip() == head
+    assert not has_ref(repo, "refs/heads/planning")
     blocked = mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature", "--proposal", "prp-0002",
                   "--objectives-file", str(write_work_objectives(tmp_path)), "--roster", "solo")
-    assert error_of(blocked)["error"] == "planning_pr_pending"
-    assert error_of(mdf(python_exe, "planning", "land", "--repo", str(repo)))["error"] == "planning_pr_required"
-    squash_pending(plan)
-    assert payload(mdf(python_exe, "pr", "--repo", str(plan)))["status"] == "waiting_for_merge"
-    platform.merge(1, tmp_path)
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "planning"))
+    assert error_of(blocked)["error"] == "pm_pr_pending"
+    assert error_of(mdf(python_exe, "to", "--repo", str(repo), "--target", source))["error"] == "unsupported_branch"
+    git(repo, "switch", source)
+    (repo / "docs/context").mkdir(exist_ok=True)
+    (repo / "docs/context/notes.md").write_text("补充项目背景\n")
+    commit(repo, "docs(pm): 补充背景")
+    git(repo, "switch", "master")
+    request = ["pr", "--repo", str(repo), "--source", source]
+    assert error_of(mdf(python_exe, *request))["error"] == "squash_required"
+    git(repo, "switch", source)
+    squash_pending(repo)
+    git(repo, "switch", "master")
+    assert payload(mdf(python_exe, *request))["status"] == "waiting_for_merge"
+    git(repo, "switch", source)
+    (repo / "docs/context/notes.md").write_text("修订项目背景\n")
+    commit(repo, "docs(pm): 修订背景")
+    git(repo, "switch", "master")
+    updated = payload(mdf(python_exe, "pr", "--repo", str(repo), "--source", source))
+    assert updated["pull_request"]["id"] == 1
+    merged = platform.merge(1, tmp_path)
+    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))
+    audit = payload(_audit(python_exe, repo, "master", head, merged,
+                           {"pull_requests": [done["pull_request"]]}))["result"]
+    assert audit["verdict"] == "pass"
     assert done["completed"] and done["targets"] == ["master"]
-    assert not has_ref(repo, "refs/heads/planning") and not has_ref(remote, "refs/heads/planning")
-    assert (repo / "docs/proposals").exists()
-    again = payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
-    assert again["branch"] == "planning" and git(Path(again["worktree"]), "branch", "--show-current").stdout.strip() == "planning"
-    assert payload(mdf(python_exe, "planning", "land", "--repo", str(repo)))["landed"] is False
+    assert not has_ref(repo, f"refs/heads/{source}") and not has_ref(remote, f"refs/heads/{source}")
+    assert git(repo, "branch", "--show-current").stdout.strip() == "master"
+    assert list((repo / "docs/proposals").glob("prp-0002-*"))
+
+    add_prp(repo, "prp-0003")
+    git(repo, "add", "docs/proposals")
+    assert payload(pm_commit(python_exe, repo))["source"] != source
 
 
-def test_local_planning_uses_clean_trunk_worktree(python_exe, tmp_path):
+def test_pm_local_commits_directly_on_custom_trunk(python_exe, tmp_path):
+    repo = github_flow_repo(tmp_path, trunk="main")
+    prepared = payload(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))
+    assert prepared["branch"] == "main" and Path(prepared["worktree"]).resolve() == repo.resolve()
+    assert error_of(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))["error"] == "github_flow_unsupported"
+    assert error_of(mdf(python_exe, "to", "--repo", str(repo), "--target", "plan"))["error"] == "github_flow_unsupported"
+    assert payload(mdf(python_exe, "make-id", "--repo", str(repo), "--type", "proposal", "--slug", "example"))["id"]
+    add_prp(repo, "prp-0002")
+    git(repo, "add", "docs/proposals")
+    assert error_of(mdf(python_exe, "pm", "prepare", "--repo", str(repo)))["error"] == "dirty_worktree"
+    result = payload(pm_commit(python_exe, repo))
+    assert result["source"] == "main"
+    assert result["head"] == git(repo, "rev-parse", "main").stdout.strip()
+    assert not git(repo, "branch", "--list", "planning", "pm/*").stdout.strip()
+
+
+def test_pm_rejects_unrelated_staged_paths_and_preserves_index(python_exe, tmp_path):
     repo = github_flow_repo(tmp_path)
-    ensured = payload(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))
-    assert ensured["branch"] == "master" and Path(ensured["worktree"]).resolve() == repo.resolve()
-    assert not has_ref(repo, "refs/heads/planning")
-    assert payload(mdf(python_exe, "planning", "land", "--repo", str(repo)))["landed"] is False
-    (repo / "dirty.txt").write_text("未提交\n")
-    git(repo, "add", "dirty.txt")
-    assert error_of(mdf(python_exe, "planning", "ensure", "--repo", str(repo)))["error"] == "dirty_worktree"
+    add_prp(repo, "prp-0002")
+    (repo / "docs" / "outside.md").write_text("无关内容\n")
+    git(repo, "add", "docs")
+    before = git(repo, "diff", "--cached", "--name-only").stdout
+    error = error_of(pm_commit(python_exe, repo))
+    assert error["error"] == "pm_paths_forbidden" and error["details"]["paths"] == ["docs/outside.md"]
+    assert git(repo, "diff", "--cached", "--name-only").stdout == before
+
+
+def test_pm_pr_rejects_outside_history_even_if_reverted(python_exe, tmp_path, monkeypatch):
+    repo, remote, _ = pr_repo(tmp_path, monkeypatch)
+    add_prp(repo, "prp-0002")
+    git(repo, "add", "docs/proposals")
+    source = payload(pm_commit(python_exe, repo))["source"]
+    git(repo, "switch", source)
+    (repo / "outside.py").write_text("value = 1\n")
+    commit(repo, "chore: 添加非项目记录路径")
+    git(repo, "revert", "--no-edit", "HEAD")
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.workspace.squash import check
+    with pytest.raises(MDFError) as forbidden:
+        check(repo)
+    assert forbidden.value.code == "pm_paths_forbidden"
+    git(repo, "switch", "master")
+    result = mdf(python_exe, "pr", "--repo", str(repo), "--source", source)
+    assert error_of(result)["error"] == "pm_paths_forbidden"
+    assert not has_ref(remote, f"refs/heads/{source}")
+
+
+def test_concurrent_pm_commit_cannot_switch_or_consume_index(python_exe, tmp_path, monkeypatch):
+    import subprocess
+
+    from mdf_core.workspace import pm
+
+    repo, _ = github_flow_repo(tmp_path, origin=True, pr=True)
+    add_prp(repo, "prp-0002")
+    git(repo, "add", "docs/proposals")
+    trunk = git(repo, "rev-parse", "master").stdout.strip()
+    script = skill_dir("mdf") / "scripts/mdf.py"
+    real_git = pm.git
+    concurrent = []
+
+    def interleave(path, *args, **kwargs):
+        if args[:2] == ("switch", "-c"):
+            concurrent.append(subprocess.run(
+                [python_exe, str(script), "pm", "commit", "--repo", str(repo),
+                 "--slug", "concurrent", "--message", "docs(pm): 并发提交"],
+                capture_output=True, text=True, check=False,
+            ))
+        return real_git(path, *args, **kwargs)
+
+    monkeypatch.setattr(pm, "git", interleave)
+    result = payload(pm_commit(python_exe, repo))
+    assert len(concurrent) == 1 and error_of(concurrent[0])["error"] == "finish_busy"
+    assert git(repo, "rev-parse", result["source"]).stdout.strip() == result["head"]
+    assert git(repo, "rev-parse", "HEAD").stdout.strip() == trunk
+    assert git(repo, "branch", "--list", "pm/*", "--format=%(refname:short)").stdout.split() == [result["source"]]
+
+
+def test_pm_proposal_feedback_can_reformat_and_update_same_pr(python_exe, tmp_path, monkeypatch):
+    repo, remote, platform = pr_repo(tmp_path, monkeypatch)
+    proposal = add_prp(repo, "prp-0002")
+    git(repo, "add", str(proposal))
+    initial = payload(pm_commit(python_exe, repo))
+    source = initial["source"]
+    args = ["--repo", str(repo), "--source", source]
+    first = payload(mdf(python_exe, "pr", *args))
+    git(repo, "switch", source)
+    format_args = ["--repo", str(repo), "--proposal", "prp-0002"]
+    draft = repo / payload(mdf(python_exe, "prp-format", "draft", *format_args))["path"]
+    draft.write_text(draft.read_text() + "\n## 评审补充\n\n明确校验范围。\n")
+    payload(mdf(python_exe, "prp-format", "preview", *format_args))
+    payload(mdf(python_exe, "prp-format", "ready", *format_args, "--confirmed"))
+    outside = repo / "docs/outside.md"
+    outside.write_text("无关记录\n")
+    git(repo, "add", "docs")
+    assert error_of(pm_commit(python_exe, repo))["error"] == "pm_paths_forbidden"
+    git(repo, "restore", "--staged", str(outside))
+    outside.unlink()
+    revised = payload(pm_commit(python_exe, repo))
+    assert revised["source"] == source and revised["head"] != initial["head"]
+    assert git(repo, "branch", "--show-current").stdout.strip() == "master"
+    updated = payload(mdf(python_exe, "pr", *args))
+    assert updated["pull_request"]["id"] == first["pull_request"]["id"]
+    assert git(remote, "rev-parse", source).stdout.strip() == revised["head"]
+    platform.merge(1, tmp_path)
+    assert payload(mdf(python_exe, "finish-gitflow", *args))["completed"]
+    assert "明确校验范围" in proposal.read_text()
+
+
+@pytest.mark.parametrize("status", ["draft", "ready"])
+def test_linked_proposal_routes_to_ordinary_delivery_before_conversion(python_exe, tmp_path, status):
+    repo = github_flow_repo(tmp_path, trunk="main")
+    proposal = add_prp(repo, "prp-0002", status=status)
+    index = repo / "docs/README.md"
+    index.write_text(index.read_text() + f"\n[计划](proposals/{proposal.name})\n")
+    commit(repo)
+    args = ["--repo", str(repo), "--proposal", "prp-0002"]
+    plan = payload(mdf(python_exe, "prp-format", "plan", *args))
+    assert plan["outside_pm"] == ["docs/README.md"]
+    assert git(repo, "status", "--porcelain").stdout == ""
+    action = "ready" if status == "draft" else "draft"
+    assert error_of(mdf(python_exe, "prp-format", action, *args))["error"] == "proposal_requires_delivery"
+    assert git(repo, "status", "--porcelain").stdout == ""
+    owner = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "adhoc",
+                        "--name", "review-linked-proposal", "--work", "评审 Proposal 并同步外部引用"))
+    work = Path(owner["worktree"])
+    work_args = ["--repo", str(work), "--proposal", "prp-0002"]
+    if status == "ready":
+        payload(mdf(python_exe, "prp-format", "draft", *work_args))
+    payload(mdf(python_exe, "prp-format", "preview", *work_args))
+    result = payload(mdf(python_exe, "prp-format", "ready", *work_args, "--confirmed"))
+    assert (work / result["path"]).is_file()
+    assert f"proposals/{proposal.with_suffix('.html').name}" in (work / "docs/README.md").read_text()
+    assert proposal.is_file()
+    assert git(repo, "status", "--porcelain").stdout == ""
+    assert not git(repo, "branch", "--list", "pm/*").stdout
 
 
 def _audit(python_exe, repo, branch, before, after, proof=None):
@@ -137,6 +294,10 @@ def test_audit_push_covers_custom_trunk_and_forbids_support_merge(python_exe, tm
                                 "source": "feature/x", "target": "main", "head": head, "merge_commit": merged}]}
     accepted = payload(_audit(python_exe, repo, "main", base, merged, proof))["result"]
     assert accepted["verdict"] == "pass" and accepted["commits"][0]["reason"] == "platform_merge"
+    proof["pull_requests"][0]["source"] = "pm/not-records"
+    rejected_pm = payload(_audit(python_exe, repo, "main", base, merged, proof))["result"]
+    assert rejected_pm["verdict"] == "violation"
+    assert rejected_pm["commits"][0]["reason"] == "pm_paths_forbidden"
     git(repo, "merge", "--no-ff", "--no-edit", "support/1.2")
     forbidden_merge = git(repo, "rev-parse", "HEAD").stdout.strip()
     support_head = git(repo, "rev-parse", "support/1.2").stdout.strip()

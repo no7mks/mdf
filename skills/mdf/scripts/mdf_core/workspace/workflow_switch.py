@@ -102,9 +102,9 @@ def require_idle(repo: Path) -> None:
     if dirty:
         raise MDFError("关联 worktree 不干净或存在未完成的 merge，不能切换 workflow",
                        code="workflow_not_idle", details={"worktrees": dirty})
-    if _exists(repo, "refs/heads/planning") and _git(
-        repo, "merge-base", "--is-ancestor", "refs/heads/planning", "HEAD", check=False,
-    ).returncode:
+    planning = "refs/heads/planning"
+    if (workflow_config(repo)["model"] == GITFLOW and _exists(repo, planning)
+            and _git(repo, "merge-base", "--is-ancestor", planning, "HEAD", check=False).returncode):
         raise MDFError("planning 有未落地提交，不能切换 workflow", code="workflow_not_idle",
                        details={"branch": "planning"})
 

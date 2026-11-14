@@ -197,19 +197,19 @@ findings 后停止。
 写入落点按对象类型确定：
 
 - Bug：按 `references/common.md` 的归属规则确定写入分支。
-  - 与当前交付分支工作相关在当前分支，无关在 develop。
+  - 与当前交付相关时使用当前分支；独立 Bug 按模型使用 develop 或 trunk。
   - 使用 `make-id --type bug --repo "$REPO_ROOT" --slug <slug>` 生成 ID，以模板写入 `docs/bugs/`。
-- Proposal：在 planning 工作区写入。
-  1. 运行 `planning ensure --repo "$REPO_ROOT"`。
-  2. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`
-     （分支 `planning`），重新解析目标根。
+- Proposal 按 [项目记录](common.md#项目记录) 写入。
+  1. 按模式矩阵准备写入位置。
+  2. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`，重新解析目标根。
   3. 一次调用 `make-id --type proposal --repo "$REPO_ROOT" --slug <a> --slug <b> …`。
      它为全部新 Proposal 随机生成 ID，并避开已有及本批 ID。
      - 多项时从返回的 `items` 取 ID 与 filename；仅一项时取顶层 `id` 与 `filename`。
      - ❌ 不得逐项取 ID 后再写入，也不得先写占位对象。
   4. 把确认清单中的 `new:<slug>` 替换为对应 ID，以模板写入 `docs/proposals/`。
-  5. 完成下方写入校验与回读核对后提交，再运行 `planning land --repo "$REPO_ROOT"` 合入 master 并同步 develop。
-- 清单同时含两类时，先按归属完成 Bug 并提交，再切换 planning 完成 Proposal。
+  5. 完成下方写入校验与回读核对后按模型提交。
+- gitflow 同时有两类记录时，先提交 Bug，再进入 planning 完成 Proposal。
+- github-flow 中，同一批独立 Bug 和 Proposal 一并准备、写入、校验与提交。
 
 Proposal 初始状态为 `draft`，Bug 初始状态为 `open`。
 Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否则省略字段，不写 `null`。
@@ -225,7 +225,7 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 异常与交接：校验、回读或核对失败时停止并保留现场，报告 findings 与实际已写对象。
 
 - 不得宣称创建验收通过，不进入步骤 7 的成功报告。
-- 尚未进入 planning 工作区时留在本步，按 `common.md` 进入。
+- 尚未进入写入位置时留在本步，按 `common.md` 进入。
 
 <a id="s7"></a>
 
@@ -237,5 +237,5 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 异常与交接：本步展示步骤 6 已验收对象；无法展示时停止。
 
-- Proposal 后续显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。
+- Proposal 进入目标分支后，可显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。
 - Bug 创建后即为 `open`，不得关闭普通对象或填写 `released_in`/`fixed_in`。

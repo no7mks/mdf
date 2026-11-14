@@ -111,11 +111,10 @@ def current_branch(repo: Path) -> str:
 
 def require_planning(repo: Path) -> None:
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
-    from mdf_core.workspace.merge_policy import configured
-    expected = trunk_branch(repo) if is_github_flow(repo) and configured(repo)["mode"] != "pr" else "planning"
+    expected = trunk_branch(repo) if is_github_flow(repo) else "planning"
     if current_branch(repo) != expected:
         raise MDFError(
-            "规划写入只能在 planning 分支上分配或写入",
+            f"Proposal 写入须在 {expected} 分支分配 ID 和写入",
             code="proposal_not_on_planning",
         )
 
@@ -170,6 +169,9 @@ def branch_details(name: str, trunk: str | None = None) -> dict[str, Any]:
             "version": version,
             "supported": True,
         }
+    if name.startswith("pm/"):
+        return {"name": name, "kind": "pm", "slug": name.removeprefix("pm/"),
+                "version": None, "supported": False}
     if name.startswith("support/") or name in _permanent_names(trunk):
         return {
             "name": name,
@@ -380,7 +382,7 @@ def sibling_worktree(repo: Path, name: str) -> Path:
 
 _DELIVERY_PREFIXES = (
     "feature/", "bugfix/", "release/", "on-demand-release/", "hotfix/",
-    "adhoc/", "qa/", "dev/", "codex/",
+    "adhoc/", "qa/", "dev/", "codex/", "pm/",
 )
 
 

@@ -50,7 +50,7 @@
 **目标**
 
 - 空目标停止，并展示 `$mdf help to`。
-- 规划别名（等价，进入 `planning`）：`plan`、`planning`、`plan-mode`。
+- gitflow 的规划别名（等价，进入 `planning`）：`plan`、`planning`、`plan-mode`。
 - gitflow 的 `develop` 进入占用 develop 的 worktree，通常是主仓库根。
 - github-flow 不接受目标 `develop`，返回 `github_flow_unsupported`。
 - `deploy` 进入 `<repo-name>-worktrees/deploy`。
@@ -65,7 +65,7 @@
 **工作区**
 
 - 运行 `to --repo "$REPO_ROOT" --target <target>`。
-- 规划别名内部 `planning ensure`，创建或复用 planning worktree。
+- gitflow 的规划别名调用 `planning ensure`。github-flow 的独立记录使用 `pm prepare` 返回的 trunk worktree。
 - `develop` 复用占用 develop 的已有 worktree，不新建。
 - `deploy` 创建或复用 `<repo-name>-worktrees/deploy`，检出已有 `master`。
   - 不在 master 且已跟踪改动干净时，切回 master。

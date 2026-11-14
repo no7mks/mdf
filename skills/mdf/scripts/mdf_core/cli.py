@@ -248,7 +248,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     from mdf_core.documents.prp_format import command_prp_format
     prp_format = subparsers.add_parser("prp-format")
-    prp_format.add_argument("action", choices=("preview", "ready", "draft"))
+    prp_format.add_argument("action", choices=("plan", "preview", "ready", "draft"))
     prp_format.add_argument("--repo", required=True)
     prp_format.add_argument("--proposal", required=True)
     prp_format.add_argument("--confirmed", action="store_true")
@@ -288,6 +288,17 @@ def build_parser() -> argparse.ArgumentParser:
     planning.add_argument("action", choices=("ensure", "land"))
     planning.add_argument("--repo", required=True)
     planning.set_defaults(func=command_planning)
+
+    from mdf_core.workspace.pm import command_pm
+    pm = subparsers.add_parser("pm")
+    pm_actions = pm.add_subparsers(dest="action", required=True)
+    pm_prepare = pm_actions.add_parser("prepare")
+    pm_prepare.add_argument("--repo", required=True)
+    pm_commit = pm_actions.add_parser("commit")
+    pm_commit.add_argument("--repo", required=True)
+    pm_commit.add_argument("--slug", required=True)
+    pm_commit.add_argument("--message", required=True)
+    pm.set_defaults(func=command_pm)
 
     from mdf_core.workspace.to_target import command_to
     to_cmd = subparsers.add_parser("to")

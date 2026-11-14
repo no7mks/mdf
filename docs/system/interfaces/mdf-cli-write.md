@@ -86,7 +86,7 @@ strict validation。后校验失败时保留现场，供人工检查。
 
 ## `prp-format`
 
-本命令在 planning 工作区转换未开工 active PRP；不代替 Agent 取得用户确认。
+本命令转换未开工 active PRP。生成预览后由 Agent 取得用户确认。
 
 ```bash
 python3 skills/mdf/scripts/mdf.py prp-format preview --repo /path/to/repository --proposal prp-0001
@@ -96,11 +96,14 @@ python3 skills/mdf/scripts/mdf.py prp-format draft --repo /path/to/repository --
 
 | action | 输入 | 结果 |
 | --- | --- | --- |
+| `plan` | 未开工 active draft 或 ready | 只读返回下一次转换的 `paths` 和 `outside_pm` |
 | `preview` | Markdown draft | 生成同目录 `<stem>.review.html`，不修改对象状态 |
 | `ready` | draft、对应 preview、`--confirmed` | 保存唯一 ready HTML，删除 Markdown 与 preview，改写引用 |
 | `draft` | 未开工 ready PRP | HTML 转回 Markdown 并改写引用；Markdown 原位改为 draft |
 
-- 要求 Git 根、planning、manifest ready、有效对象及依赖；不要求 clean，不提交。
+- 要求 Git 根、manifest ready、有效对象及依赖；不要求 clean，不提交。
+- gitflow 在 planning 执行。github-flow 在 trunk、PR mode 的原 `pm/*` 或普通 `adhoc/*` 执行。
+  trunk 或 pm 的转换若需改写范围外的路径，在写入前返回 `proposal_requires_delivery`。
 - preview 必须与当前 draft 一致；缺失或稿件变化以 `preview_changed` 失败。
 - 转换校验失败时恢复本次改写；其他异常保留现场并报告实际状态。
 - HTML 存储格式、详细内容与展示检查见 [HTML 工作材料](../../../skills/mdf/references/html-materials.md)。
@@ -227,8 +230,22 @@ python3 skills/mdf/scripts/mdf.py planning land --repo /path/to/repository
 - 两种模式均优先 fast-forward、分叉时 merge，始终 no-PR；未被占用的目标建立独立 worktree。
 - 冲突 abort。squash 检查会 fetch remote 分支与 tag 来核对共享边界；不 push。
 - `planning` 不是 Gitflow 交付分支。
-- github-flow 的 local 模式直接使用 clean 的 trunk worktree，不建 `planning` 分支。
-  PR mode 的 `planning` 是短命分支：`land` 经 PR 合入 trunk 后清理；合并前依赖它的 start 返回 `planning_pr_pending`。
+- `planning ensure` 和 `planning land` 仅适用于 gitflow。
+
+## `pm`
+
+```bash
+python3 skills/mdf/scripts/mdf.py pm prepare --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py pm commit --repo /path/to/trunk --slug review-prp-0042 --message 'docs(pm): 评审 prp-0042'
+```
+
+- github-flow 专用。`prepare` 返回已检出且干净的 trunk worktree。
+- `commit` 只接收已暂存的 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md` 和 `docs/context/` 改动。
+- local mode 提交到 trunk。PR mode 在当前 worktree 创建 `pm/<slug>-<id>`、提交并切回 trunk。
+  返回 `source`、`target`、`head` 和 `worktree`。PR 修订可在同一 worktree 切到待合入的原 source 后调用，
+  此时复用该分支并切回 trunk。提交与 PR、sync 共用仓库级 OS lock，争用时返回 `finish_busy`。
+- 在 trunk worktree 用 `pr --source <pm/分支>` 发 PR，合并后用 `finish-gitflow --source <pm/分支>` 清理。
+- 目标记录还只在本地 `pm/*` 上时，依赖它的 `start` 返回 `pm_pr_pending`。
 
 ## `workflow`
 

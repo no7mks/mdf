@@ -20,7 +20,7 @@ from mdf_core.workspace.gitutil import (
     unreleased_slug,
     worktree_map,
 )
-from mdf_core.workspace.planning import on_base_or_pending
+from mdf_core.workspace.pm import on_base_or_pending
 from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
 from mdf_core.lifecycle.roster import (
     freeze_roster,
@@ -444,8 +444,8 @@ def command_finish_gitflow(args) -> None:
     forbid_support_to_trunk(repo, source)
     from mdf_core.workspace.merge_policy import configured
     settings = configured(repo)
-    planning_pr = source == "planning" and is_github_flow(repo) and settings["mode"] == "pr"
-    if not details["supported"] and not planning_pr:
+    pm_pr = details["kind"] == "pm" and is_github_flow(repo) and settings["mode"] == "pr"
+    if not details["supported"] and not pm_pr:
         raise MDFError("finish requires a Gitflow delivery branch",
                        code="unsupported_branch")
     if details["kind"] == "adhoc":

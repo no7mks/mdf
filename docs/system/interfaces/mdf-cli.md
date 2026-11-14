@@ -52,7 +52,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
     `semver-check` 和 `prepare-git`。
   - `run` 只要求 `--repo` 是目录；不要求 Git 根、manifest 或 clean worktree。
   - `prepare-git` 接受普通目录；已是其他仓库内部路径时失败，不嵌套 `git init`。
-  - `make-id --type proposal` 需要 Git 根且当前分支为 `planning`。
+  - `make-id --type proposal` 需要 Git 根且当前分支符合模型：gitflow 为 `planning`，github-flow 为配置的 trunk。
   - `upgrade`、`integrate`、`to` 与 `sync` 要求 Git 根，不要求 manifest；
     `sync` 另要求占用三大 trunk 的 worktree（及必要时主 worktree）干净。
 - 提交：
@@ -60,7 +60,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   - 外层写入型 intent 允许并鼓励主动本地提交，包括如实标注状态的阶段成果；
     不夹带无关改动，不替代用户确认或验收。
   - 以下命令按各自协议做提交、集成或远端操作：
-    - start、delivery roster-join、finish-gitflow、planning。
+    - start、delivery roster-join、finish-gitflow、planning、pm。
     - upgrade、`sync` 与 `merge-no-ff`。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
   `upgrade` 中有效。
@@ -100,7 +100,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `worktree-check` | 分派路径、角色与交接核验 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `bug close` | 验收后的 Bug 关闭写入 | [仓库写入命令](mdf-cli-write.md) |
 | `verify` | module 级验证（smart / branch / named） | [交付阶段与验证](mdf-cli-delivery.md) |
-| `planning` | 规划工作区 | [仓库写入命令](mdf-cli-write.md) |
+| `planning` | gitflow 规划工作区 | [仓库写入命令](mdf-cli-write.md#planning) |
+| `pm` | github-flow 项目记录 | [仓库写入命令](mdf-cli-write.md#pm) |
 | `to` | 解析别名并确保目标 worktree | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
@@ -127,7 +128,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | --- | --- |
 | `init`、`bootstrap`、`migrate` | `doctor`、`init` 与 `validate` |
 | `tree` | 只读 `tree` CLI，展示 draft/ready 混态依赖视图 | [交付阶段与验证](mdf-cli-delivery.md) |
-| `intake`、`prp create`、`prp review` 与 `prp split` | `doctor`、`planning`、`list` 与 `make-id` |
+| `intake`、`prp create`、`prp review` 与 `prp split` | `doctor`、`planning` 或 `pm`、`list` 与 `make-id` |
 | `prp review` | 另用 `prp-format` 生成 HTML、确认后转 ready 或回 draft |
 | `bug create` | `doctor`、`list` 与 `make-id` | [交付阶段与验证](mdf-cli-delivery.md) |
 | `jot` | `make-jot-id`；`jot promote` 另用 `list` 查重 | [交付阶段与验证](mdf-cli-delivery.md) |
