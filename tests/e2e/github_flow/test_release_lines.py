@@ -158,11 +158,18 @@ def test_multiple_lines_require_explicit_support(python_exe, tmp_path):
     assert not has_ref(repo, "hotfix/1.2.1")
 
 
-def test_single_line_hotfix_starts_from_trunk(python_exe, tmp_path):
+def test_single_line_hotfix_uses_support_and_excludes_unpublished_trunk(python_exe, tmp_path):
     repo, _ = github_flow_repo(tmp_path, origin=True)
+    assert error_of(hotfix(python_exe, repo, tmp_path, "--version", "1.2.1"))["error"] == "missing_release_tag"
     tag_trunk(repo, "v1.2.0")
+    advance(repo, "unpublished.txt")
+    push_all(repo)
     data = payload(hotfix(python_exe, repo, tmp_path, "--version", "1.2.1"))
-    assert data["base"] == "master"
+    work = Path(data["worktree"])
+    assert data["base"] == "support/1.2"
+    assert not (work / "unpublished.txt").exists()
+    manifest = git(repo, "show", "support/1.2:.mdf/manifest.yaml").stdout
+    assert 'latest_release: "1.2.0"' in manifest
 
 
 def test_support_branch_is_cut_lazily_and_syncs_trunk_config(python_exe, tmp_path):

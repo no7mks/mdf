@@ -245,6 +245,8 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     require_git_root(repo)
     ensure_safe_managed_paths(repo)
     ensure_clean(repo)
+    from mdf_core.lifecycle.support_line import forbid_bug_edits
+    forbid_bug_edits(repo, current_branch(repo))
     manifest = load_manifest(repo)
     if manifest.get("state") != "ready":
         raise MDFError(

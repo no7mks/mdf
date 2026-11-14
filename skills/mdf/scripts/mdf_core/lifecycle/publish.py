@@ -52,6 +52,8 @@ def publish_targets(repo, source):
 
 
 def publish(repo, source, version):
+    from mdf_core.lifecycle.support_line import recheck_before_publish
+    recheck_before_publish(repo, source, version)
     from mdf_core.workspace.gitflow import _git, _exists, _merge, _synced
     primary = primary_worktree(repo)
     master, targets = publish_targets(repo, source)

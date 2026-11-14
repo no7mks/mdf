@@ -75,6 +75,26 @@ def validate_adrs(repo: Path, findings: list[Finding], *, paths: set[Path] | Non
             )
 
 
+def _trunk_bug_ids(repo: Path) -> set[str]:
+    """维护线 CHANGE 可引用 trunk 上的 Bug，避免误报 change.record_missing。"""
+    from mdf_core.workspace.gitutil import current_branch, run
+    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+    try:
+        branch = current_branch(repo)
+    except MDFError:
+        return set()
+    if not is_github_flow(repo) or not (branch.startswith("support/") or branch.startswith("hotfix/")):
+        return set()
+    ref = f"refs/heads/{trunk_branch(repo)}"
+    listed = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "docs/bugs"], cwd=repo, check=False)
+    found = set()
+    for rel in listed.stdout.splitlines():
+        match = OBJECT_FILE_RE.fullmatch(Path(rel).name)
+        if match and Path(rel).parts[:2] == ("docs", "bugs"):
+            found.add(match.group(1))
+    return found
+
+
 def validate_record_references(
     repo: Path, findings: list[Finding], *, paths: set[Path] | None = None,
     touched_ids: set[str] | None = None,
@@ -225,6 +245,7 @@ def validate_record_references(
     changes = repo / "changes"
     if not changes.is_dir():
         return
+    trunk_bugs = _trunk_bug_ids(repo)
     for path in changes.rglob("CHANGE.md"):
         if path.is_symlink() or not path_stays_in_repo(repo, path):
             continue
@@ -249,7 +270,7 @@ def validate_record_references(
                 if (
                     not isinstance(identifier, str)
                     or not identifier.startswith(prefix)
-                    or identifier not in known
+                    or (identifier not in known and identifier not in trunk_bugs)
                 ):
                     add_finding(
                         findings,

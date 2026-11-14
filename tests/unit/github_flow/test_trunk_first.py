@@ -50,10 +50,48 @@ def test_backported_requires_commit_reachable_from_trunk(tmp_path):
 @pytest.mark.parametrize("disposition", ["trunk_not_affected", "urgent_support_first"])
 def test_exceptions_need_non_empty_reason(tmp_path, disposition):
     repo = github_flow_repo(tmp_path)
-    item = {"bug_id": "bug-AAAA", "trunk_disposition": disposition}
+    bug = "bug-CD34" if disposition == "urgent_support_first" else "bug-AAAA"
+    item = {"bug_id": bug, "trunk_disposition": disposition}
     assert code_of(lambda: sl.verify_trunk_first(repo, [item], "1.2.1")) == "trunk_first_required"
     assert code_of(lambda: sl.verify_trunk_first(repo, [{**item, "reason": "  "}], "1.2.1")) == "trunk_first_required"
     assert sl.verify_trunk_first(repo, [{**item, "reason": "旧线独有缺陷"}], "1.2.1")[0]["reason"] == "旧线独有缺陷"
+
+
+def test_urgent_support_first_rejects_missing_or_closed_trunk_bug(tmp_path):
+    repo = github_flow_repo(tmp_path)
+    missing = {"bug_id": "bug-ZZZZ", "trunk_disposition": "urgent_support_first", "reason": "线上阻断"}
+    assert code_of(lambda: sl.verify_trunk_first(repo, [missing], "1.2.1")) == "trunk_first_required"
+    path = repo / "docs/bugs/bug-CD34-unreleased-timeout.md"
+    path.write_text(path.read_text().replace("status: open", "status: closed"), encoding="utf-8")
+    commit(repo, "fix: 关闭 bug")
+    closed = {"bug_id": "bug-CD34", "trunk_disposition": "urgent_support_first", "reason": "线上阻断"}
+    assert code_of(lambda: sl.verify_trunk_first(repo, [closed], "1.2.1")) == "trunk_first_required"
+
+
+def test_support_hotfix_cannot_edit_bug_sources_and_can_cite_trunk_bugs(tmp_path):
+    repo = github_flow_repo(tmp_path)
+    git(repo, "branch", "support/1.2")
+    git(repo, "checkout", "-b", "hotfix/1.2.1")
+    bug = repo / "docs/bugs/bug-CD34-unreleased-timeout.md"
+    bug.write_text(bug.read_text().replace("尚未发布", "已改写"), encoding="utf-8")
+    commit(repo, "docs: 篡改 bug")
+    folder = repo / "changes/unreleased/1.2.1"
+    folder.mkdir(parents=True)
+    (folder / "delivery.json").write_text(
+        json.dumps({"branch": "hotfix/1.2.1", "base_branch": "support/1.2", "slug": "1.2.1"}),
+        encoding="utf-8")
+    commit(repo, "docs: 记录 hotfix 基线")
+    assert code_of(lambda: sl.forbid_bug_edits(repo, "hotfix/1.2.1")) == "bug_source_forbidden"
+    git(repo, "checkout", "HEAD~1", "--", "docs/bugs/bug-CD34-unreleased-timeout.md")
+    bug.unlink()
+    commit(repo, "docs: 删除工作区 bug")
+    change = folder / "CHANGE.md"
+    change.write_text("---\nfixed: [bug-CD34]\n---\n\n# 修复\n", encoding="utf-8")
+    from mdf_core.inspection.validate_records import validate_record_references
+    from mdf_core.foundation.errors import Finding
+    findings: list[Finding] = []
+    validate_record_references(repo, findings)
+    assert not any(item.code == "change.record_missing" for item in findings)
 
 
 def test_unknown_disposition_is_rejected(tmp_path):

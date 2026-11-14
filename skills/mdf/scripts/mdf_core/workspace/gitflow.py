@@ -498,6 +498,8 @@ def command_finish_gitflow(args) -> None:
     if publish:
         _fetch(repo)
         require_trunk_default(repo, trunk_branch(repo))
+        from mdf_core.lifecycle.support_line import forbid_bug_edits
+        forbid_bug_edits(repo, source)
     for name in role_branches(source, finish_roster):
         if _exists(repo, f"refs/heads/{name}") or name in trees:
             raise MDFError("角色分支尚未集成", code="roles_pending")

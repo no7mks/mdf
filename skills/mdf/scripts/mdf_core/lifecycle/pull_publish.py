@@ -28,6 +28,8 @@ def tag_release(repo, state, version, path):
 
 def _publish_github_flow(repo, state, version, path):
     """github-flow：tag 固定在 release_head，并核验其已进入目标远端；不回合 develop。"""
+    from mdf_core.lifecycle.support_line import recheck_before_publish
+    recheck_before_publish(repo, state["source"], version)
     head = state.get("release_head")
     if not isinstance(head, str) or len(head) != 40:
         raise MDFError("缺少已锁定的 release_head", code="release_head_missing")
