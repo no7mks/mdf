@@ -65,6 +65,20 @@ def test_credential_covers_unchanged_content_until_forced(python_exe, tmp_path):
     assert prepare(python_exe, work)["net_increment"] == ["src/service.py"]
 
 
+def test_changes_requested_stops_covering_the_same_content(python_exe, tmp_path):
+    _, work, root = started(python_exe, tmp_path)
+    (work / "src/service.py").write_text("VALUE = 2\n")
+    commit(work, "feat: 实现")
+    first = prepare(python_exe, work)
+    _, identity = own_identity(work, root, first)
+    credentials.record_code_credential(work, {"source": "feature/service-health", "kind": "feature",
+                                              "credential": identity}, 1)
+    assert prepare(python_exe, work)["net_increment"] == []
+    credentials.record_code_credential(work, {"source": "feature/service-health", "kind": "feature",
+                                              "credential": identity}, 1, decision="changes_requested")
+    assert prepare(python_exe, work)["net_increment"] == ["src/service.py"]
+
+
 def test_credential_for_other_requirements_does_not_cover(python_exe, tmp_path):
     _, work, root = started(python_exe, tmp_path)
     (work / "src/service.py").write_text("VALUE = 2\n")

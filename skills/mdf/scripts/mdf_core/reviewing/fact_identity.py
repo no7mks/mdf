@@ -24,9 +24,13 @@ def _digests(repo, manifest):
     pick = lambda names: {n: manifest[n]['sha256'] for n in sorted(names) if n in manifest}
     implementation = [n for n in manifest if config.owns(n) and not review_document(n) and not config.is_ignored(n)]
     facts = [p.relative_to(repo).as_posix() for p in fact_documents(repo)]
+    from mdf_core.foundation.paths import load_manifest
     rules = ['.mdf/modules.yaml', '.mdf/manifest.yaml', 'AGENTS.md']
+    for value in (load_manifest(repo).get('rules') or {}).values():
+        if isinstance(value, str):
+            rules.append(value)
     return {'implementation_digest': fingerprint(pick(implementation)), 'facts_digest': fingerprint(pick(facts)),
-            'rules_digest': fingerprint(pick(rules))}
+            'rules_digest': fingerprint(pick(sorted(set(rules))))}
 
 
 def input_identity(repo, manifest=None):
@@ -38,8 +42,16 @@ def input_identity(repo, manifest=None):
             'tool_sha256': fingerprint(tool_manifest(root))}
 
 
-def record_fact_credential(repo, context, *, semantic_reviewed):
-    """pass 的事实审阅写入凭证；quick 仅机械，semantic_reviewed=False，永不被复用。"""
+def warning_keys(warnings):
+    keys = []
+    for item in warnings or []:
+        if isinstance(item, dict) and isinstance(item.get('code'), str):
+            keys.append(f"{item['code']}|{item.get('path') or ''}")
+    return sorted(set(keys))
+
+
+def record_fact_credential(repo, context, *, semantic_reviewed, decision='pass'):
+    """pass 写入可复用凭证；其他结论写 failed tombstone，覆盖同 key 的旧 pass。quick 仅机械。"""
     from mdf_core.reviewing import credentials
     coverage = {'implementation_paths': sorted(context['implementation_paths']),
                 'document_paths': sorted(context['document_paths'])}
@@ -47,19 +59,30 @@ def record_fact_credential(repo, context, *, semantic_reviewed):
     key = credentials.key_of({'identity': identity, 'scope': 'against', 'semantic': semantic_reviewed, **coverage})
     return credentials.write(repo, 'fact-audit', key, {
         'scope': 'against', 'identity': identity, **coverage, 'semantic_reviewed': semantic_reviewed,
-        'decision': 'pass'})
+        'decision': 'pass' if decision == 'pass' else 'failed',
+        'rules_sha256': context.get('rules_sha256'),
+        'warning_keys': warning_keys((context.get('audit') or {}).get('warnings'))})
 
 
-def find_fact_credential(repo, identity, implementation_paths, document_paths):
-    """仅覆盖范围超集、内容摘要全部一致且 semantic_reviewed 的 pass 凭证可复用。"""
+def find_fact_credential(repo, identity, implementation_paths, document_paths, *, warning_keys=None, rules_sha256=None):
+    """覆盖超集、摘要一致、warning 不超出已审集合，且未被 failed tombstone 吊销。"""
     from mdf_core.reviewing import credentials
-    for record in credentials.records(repo, 'fact-audit'):
-        if (record.get('semantic_reviewed') is True and record.get('decision') == 'pass'
-                and record.get('scope') == 'against' and record.get('identity') == identity
-                and set(implementation_paths) <= set(record.get('implementation_paths', []))
-                and set(document_paths) <= set(record.get('document_paths', []))):
-            return {'key': record['key'], 'recorded_at': record['recorded_at'], 'scope': record['scope'],
-                    'semantic_reviewed': True}
+    rows = credentials.records(repo, 'fact-audit')
+    revoked = {record['key'] for record in rows if record.get('decision') == 'failed'}
+    for record in rows:
+        stored_warnings = record.get('warning_keys')
+        if (record.get('key') in revoked or record.get('semantic_reviewed') is not True
+                or record.get('decision') != 'pass' or record.get('scope') != 'against'
+                or record.get('identity') != identity
+                or not set(implementation_paths) <= set(record.get('implementation_paths', []))
+                or not set(document_paths) <= set(record.get('document_paths', []))):
+            continue
+        if rules_sha256 is not None and record.get('rules_sha256') not in (None, rules_sha256):
+            continue
+        if warning_keys is not None and isinstance(stored_warnings, list) and not set(warning_keys) <= set(stored_warnings):
+            continue
+        return {'key': record['key'], 'recorded_at': record['recorded_at'], 'scope': record['scope'],
+                'semantic_reviewed': True}
     return None
 
 

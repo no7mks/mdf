@@ -72,4 +72,6 @@ def command_fact_report_check(args):
     check_fact_inputs(repo, context)
     if result['decision'] == 'pass':
         record_fact_credential(repo, context, semantic_reviewed=True)
+    else:
+        record_fact_credential(repo, context, semantic_reviewed=True, decision=result['decision'])
     emit({'ok': True, 'result': result, 'report': report})

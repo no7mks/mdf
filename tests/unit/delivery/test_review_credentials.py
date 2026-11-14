@@ -99,6 +99,21 @@ def test_children_touching_one_or_dependent_modules_are_combined_impact(repo):
     assert linked["combined_impact"] == [] and linked["net_increment"] == []
 
 
+def test_changes_requested_revokes_pass_and_tampered_context_is_rejected(repo):
+    ident = record(repo, "feature/a", ["a.py"])
+    assert credentials.reuse_analysis(repo, "release/1.0.0", ident, config())["net_increment"] == []
+    credentials.record_code_credential(repo, {"source": "feature/a", "kind": "feature", "credential": ident}, 1,
+                                       decision="changes_requested")
+    assert credentials.reuse_analysis(repo, "release/1.0.0", ident, config())["net_increment"] == ["a.py"]
+    tampered = {**ident, "code_digest": "tampered"}
+    with pytest.raises(MDFError) as caught:
+        credentials.confirm_code_context(repo, {
+            "review_head": "HEAD", "paths": ["a.py"], "credential": tampered,
+            "artifacts": {"changes/unreleased/a/objectives.md": "- [ ] 目标\n"},
+        })
+    assert caught.value.code == "credential_mismatch"
+
+
 def test_release_and_own_credentials_are_never_child_evidence(repo):
     record(repo, "release/0.9.0", ["a.py"], kind="release")
     record(repo, "release/1.0.0", ["a.py"], kind="feature")

@@ -367,13 +367,15 @@ def audit_payload(
     return payload, 0 if not has_errors(findings) else 2
 
 
-def _reuse(repo, result, quick):
-    """已有覆盖超集且 semantic_reviewed 的 pass 凭证；quick 永不返回可替代语义审阅的凭证。"""
-    if quick:
+def _reuse(repo, result, quick, force=False):
+    """覆盖超集、warning 不扩大且未被 tombstone 吊销才复用；quick 与 --force 不复用。"""
+    if quick or force:
         return None
-    from mdf_core.reviewing.fact_identity import find_fact_credential
+    from mdf_core.reviewing.fact_identity import find_fact_credential, warning_keys
+    audit = result.get('audit') or {}
     return find_fact_credential(repo, result['input_identity'], result['implementation_paths'],
-                                result['document_paths'])
+                                result['document_paths'], warning_keys=warning_keys(audit.get('warnings')),
+                                rules_sha256=result.get('rules_sha256'))
 
 
 def command_audit(args: argparse.Namespace) -> None:
@@ -395,7 +397,8 @@ def command_audit(args: argparse.Namespace) -> None:
             from mdf_core.reviewing.fact_identity import record_fact_credential
             record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick', 'reuse': _reuse(repo, result, args.quick)})
+              'mode': 'against' if not args.quick else 'quick',
+              'reuse': _reuse(repo, result, args.quick, getattr(args, 'force', False))})
         if exit_code:
             raise SystemExit(exit_code)
         return
@@ -417,7 +420,8 @@ def command_audit(args: argparse.Namespace) -> None:
             from mdf_core.reviewing.fact_identity import record_fact_credential
             record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick', 'reuse': _reuse(repo, result, args.quick)})
+              'mode': 'against' if not args.quick else 'quick',
+              'reuse': _reuse(repo, result, args.quick, getattr(args, 'force', False))})
         if exit_code:
             raise SystemExit(exit_code)
         return

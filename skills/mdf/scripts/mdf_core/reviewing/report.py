@@ -130,5 +130,10 @@ def command_report_check(args):
     if reuse is not None:
         result["reuse"] = reuse
     if tracked and result["decision"] == "pass" and result.get("reviewers") != 0:
+        credentials.confirm_code_context(repo, context)
         credentials.record_code_credential(repo, context, len(report["reviewers"]))
+    elif tracked and result["decision"] != "pass" and context.get("credential"):
+        credentials.confirm_code_context(repo, context)
+        credentials.record_code_credential(repo, context, len(report.get("reviewers") or []),
+                                           decision=result["decision"])
     emit({"ok": True, "result": result, "report": report})

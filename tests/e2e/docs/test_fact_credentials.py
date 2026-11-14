@@ -49,6 +49,20 @@ def test_changed_content_or_unreviewed_semantic_credential_is_not_reused(python_
     assert ctx['input_identity'] != context_module.fact_context(repo, base)['input_identity']
 
 
+def test_new_warning_failure_and_force_all_miss(python_exe, tmp_path):
+    repo, base = repository(tmp_path)
+    ctx = reviewed(python_exe, tmp_path, repo, base)
+    assert audit(python_exe, repo, base)['reuse']['semantic_reviewed'] is True
+    assert audit(python_exe, repo, base, '--force')['reuse'] is None
+    fact_identity.record_fact_credential(repo, ctx, semantic_reviewed=True, decision='changes_requested')
+    assert audit(python_exe, repo, base)['reuse'] is None
+    fact_identity.record_fact_credential(repo, ctx, semantic_reviewed=True)
+    current = fact_identity.warning_keys(ctx['audit']['warnings'])
+    assert fact_identity.find_fact_credential(
+        repo, ctx['input_identity'], ctx['implementation_paths'], ctx['document_paths'],
+        warning_keys=[*current, 'audit.uncovered|src/extra.py']) is None
+
+
 def test_credential_requires_superset_coverage(python_exe, tmp_path):
     repo, base = repository(tmp_path)
     ctx = context_module.fact_context(repo, base)

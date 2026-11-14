@@ -100,10 +100,46 @@ def reuse_analysis(repo, source, identity, config):
             'zero_reviewers_allowed': not net and not combined and not combined_modules}
 
 
-def record_code_credential(repo, context, reviewers):
+def confirm_code_context(repo, context):
+    """写凭证前用仓库现场重算规则与代码身份；与 context 不一致则拒写。"""
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.reviewing.context import effective_rules
+    credential = context.get('credential')
+    if not isinstance(credential, dict):
+        raise MDFError('context 缺少现场代码身份', code='credential_mismatch')
+    if context.get('policy_ref') and context.get('review_head'):
+        try:
+            rules, _ = effective_rules(repo, context['policy_ref'], context['review_head'])
+        except MDFError:
+            rules = None
+        if rules is not None and fingerprint(rules) != context.get('rules_sha256'):
+            raise MDFError('context 规则与仓库现场不符', code='credential_mismatch')
+    objectives, delivery = '', {}
+    artifacts = context.get('artifacts') or {}
+    if isinstance(artifacts, dict):
+        for key, value in artifacts.items():
+            if not isinstance(value, str):
+                continue
+            if key.endswith('/objectives.md'):
+                objectives = value
+            elif key.endswith('/delivery.json'):
+                import json
+                try:
+                    delivery = json.loads(value)
+                except ValueError:
+                    delivery = {}
+    fresh = code_identity(repo, context.get('review_head') or 'HEAD', credential.get('paths') or [],
+                          credential.get('rules_sha256'), objectives, delivery if isinstance(delivery, dict) else {})
+    if (fresh['key'] != credential.get('key') or fresh['code_digest'] != credential.get('code_digest')
+            or fresh['rules_sha256'] != credential.get('rules_sha256')):
+        raise MDFError('context 代码身份与仓库现场不符', code='credential_mismatch')
+
+
+def record_code_credential(repo, context, reviewers, *, decision='pass'):
     identity = context['credential']
+    stored = 'pass' if decision == 'pass' else 'failed'
     return write(repo, 'code-review', key_of({'identity': identity['key'], 'source': context['source']}), {
-        'source': context['source'], 'delivery_kind': context['kind'], 'decision': 'pass', 'reviewers': reviewers,
+        'source': context['source'], 'delivery_kind': context['kind'], 'decision': stored, 'reviewers': reviewers,
         'rules_sha256': identity['rules_sha256'], 'code_digest': identity['code_digest'],
         'requirements_digest': identity['requirements_digest'], 'paths': identity['paths'],
         'files': identity['files']})
