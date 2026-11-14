@@ -3,7 +3,7 @@ from mdf_test_support import *  # noqa: F403
 from support_delivery import *  # noqa: F403
 
 
-def hook_repo(tmp_path, script=None, *, hook_type="command", path="pre finish.sh"):
+def hook_repo(tmp_path, script=None, *, hook_type="command", path="pre finish.sh", name="pre-gitflow-finish"):
     repo = local_repo(tmp_path / "with space")
     (repo / "README.md").write_text("# 测试项目\n")
     (repo / "GLOSSARY.md").write_text("# 测试术语\n")
@@ -14,7 +14,7 @@ def hook_repo(tmp_path, script=None, *, hook_type="command", path="pre finish.sh
             target.chmod(0o755)
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text() +
-                        f'\nhooks:\n  pre-gitflow-finish:\n    type: {hook_type}\n'
+                        f'\nhooks:\n  {name}:\n    type: {hook_type}\n'
                         f'    path: "{path}"\n')
     commit(repo, "test: 配置 fact 前 hook")
     git(repo, "checkout", "-b", "feature/hook")
@@ -60,9 +60,11 @@ def test_non_document_changes_require_recheck(python_exe, tmp_path, mutation, ex
     assert result["needs_recheck"] is True
 
 
-def test_rule_is_classified_after_execution_without_repeating(python_exe, tmp_path):
-    repo = hook_repo(tmp_path, "规则内容。\n", hook_type="rule", path="rule.md")
+@pytest.mark.parametrize("name", ["pre-finish", "pre-gitflow-finish"])
+def test_rule_is_classified_after_execution_without_repeating(python_exe, tmp_path, name):
+    repo = hook_repo(tmp_path, "规则内容。\n", hook_type="rule", path="rule.md", name=name)
     prepared = payload(mdf(python_exe, "pre-gitflow-finish", "--repo", str(repo)))
+    assert prepared["operation"] == "pre-gitflow-finish"
     assert prepared["hook"]["status"] == "pending"
     assert prepared["hook"]["cwd"] == str(repo)
     assert "needs_recheck" not in prepared

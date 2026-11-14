@@ -41,13 +41,14 @@ def test_start_command_hook(python_exe, tmp_path, exit_code, binary_output):
     assert (work / "changes/unreleased/service-health/delivery.json").is_file()
 
 
-def test_start_rule_hook_is_handed_to_agent(python_exe, tmp_path):
+@pytest.mark.parametrize("name", ["post-start", "post-gitflow-start"])
+def test_start_rule_hook_is_handed_to_agent(python_exe, tmp_path, name):
     repo = local_repo(tmp_path)
     git(repo, "checkout", "develop")
     (repo / "rule.md").write_text("记录执行结果。\n")
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text() +
-                        '\nhooks:\n  post-gitflow-start:\n'
+                        f'\nhooks:\n  {name}:\n'
                         '    type: rule\n    path: rule.md\n')
     commit(repo, "test: 配置 rule")
     objectives = tmp_path / "objectives.md"

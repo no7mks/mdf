@@ -104,7 +104,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
 - converge 做 smart 验收；实际执行的 feature/release converge 另验可选 coverage。
 - lint 为独立工具检查阶段；主链 verify 修绿改代码后，做 1 人增量 code-review，必要时重跑原验证范围。
-- 可选 `pre-gitflow-finish` hook 在 fact 前执行；仅文档改动继续，其他改动先补审补测。
+- 可选 `pre-finish` hook 在 fact 前执行；仅文档改动继续，其他改动先补审补测。
   - 支持 command / rule，失败仅汇报；配置见 [契约](skills/mdf/references/hooks/pre-gitflow-finish.md)。
 - 一个 feature 对应一个 PRP；`needs_design: yes` 时 design 提交共用底座。
 - start 始终独立 worktree。

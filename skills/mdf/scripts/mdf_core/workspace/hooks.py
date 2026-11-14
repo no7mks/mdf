@@ -11,14 +11,18 @@ from mdf_core.execution.run_logs import stream_child
 
 HOOK_NAME = "post-gitflow-start"
 FINISH_HOOK = "pre-gitflow-finish"
+MANIFEST_HOOKS = {HOOK_NAME: "post-start", FINISH_HOOK: "pre-finish"}
 
 
 def validate_hooks(manifest):
     hooks = manifest.get("hooks", {})
     if not isinstance(hooks, dict):
         raise MDFError("hooks 必须为 mapping", code="invalid_hooks")
+    for alias, standard in MANIFEST_HOOKS.items():
+        if alias in hooks and standard in hooks:
+            raise MDFError(f"hook {standard} 与 {alias} 不能同时配置", code="invalid_hooks")
     for name, entry in hooks.items():
-        if name not in (HOOK_NAME, FINISH_HOOK):
+        if name not in MANIFEST_HOOKS and name not in MANIFEST_HOOKS.values():
             raise MDFError(f"未知 hook：{name}", code="invalid_hooks")
         if not isinstance(entry, dict) or set(entry) != {"type", "path"}:
             raise MDFError("hook 必须只含 type 与 path", code="invalid_hooks")
@@ -42,7 +46,8 @@ def post_gitflow_start(old_worktree, new_worktree):
 
 def run_hook(repo, name, *, context, env, continuation):
     try:
-        entry = validate_hooks(load_manifest(repo)).get(name)
+        hooks = validate_hooks(load_manifest(repo))
+        entry = hooks.get(MANIFEST_HOOKS[name], hooks.get(name))
         if entry is None:
             return None
         print(f"开始执行 hook {name}：{entry['path']}；cwd={repo}",

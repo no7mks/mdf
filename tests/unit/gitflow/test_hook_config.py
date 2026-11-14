@@ -1,6 +1,4 @@
 """hook 配置限制与非阻塞错误。"""
-from pathlib import Path
-
 import pytest
 
 from mdf_core.foundation.errors import MDFError
@@ -17,7 +15,7 @@ from mdf_core.foundation.yamlutil import parse_yaml
     {"post-gitflow-start": {"type": "rule", "path": "../rule.md"}},
     {"post-gitflow-start": {"type": "rule", "path": ""}},
 ])
-@pytest.mark.parametrize("name", ["post-gitflow-start", "pre-gitflow-finish"])
+@pytest.mark.parametrize("name", ["post-start", "pre-finish", "post-gitflow-start", "pre-gitflow-finish"])
 def test_invalid_hooks(hooks, name):
     if isinstance(hooks, dict) and "post-gitflow-start" in hooks:
         hooks = {name: hooks["post-gitflow-start"]}
@@ -43,9 +41,17 @@ def test_missing_hook_file_is_reported_without_raising(tmp_path, capsys, hook_ty
 def test_manifest_render_preserves_hooks():
     from mdf_core.foundation.constants import BASELINES
     hooks = {
-        "post-gitflow-start": {"type": "rule", "path": "rules/start.md"},
+        "post-start": {"type": "rule", "path": "rules/start.md"},
         "pre-gitflow-finish": {"type": "command", "path": "scripts/finish.sh"},
     }
     baselines = {name: {"status": "not_applicable", "reason": "测试"} for name in BASELINES}
     manifest = parse_yaml(render_manifest(baselines, None, ["src"], hooks=hooks))
     assert manifest["hooks"] == hooks
+
+
+@pytest.mark.parametrize("standard,alias", [("post-start", "post-gitflow-start"), ("pre-finish", "pre-gitflow-finish")])
+def test_rejects_both_manifest_keys_for_same_hook(standard, alias):
+    entry = {"type": "rule", "path": "rules/hook.md"}
+    with pytest.raises(MDFError, match=f"{standard} 与 {alias}") as exc:
+        validate_hooks({"hooks": {standard: entry, alias: entry}})
+    assert exc.value.code == "invalid_hooks"
