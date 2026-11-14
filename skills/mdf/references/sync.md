@@ -1,7 +1,8 @@
 # Sync
 
-`$mdf sync` 将 `master`、`develop`、`planning` 三大 trunk 与 `origin` 对齐：
-先对三大分支全部 pull，再全部 push。PR mode 的受保护增量先走本页的 PR 恢复流程。
+`$mdf sync` 按 workflow 解析同步分支，与 `origin` 对齐。
+gitflow 同步配置的 trunk、develop 和 planning；github-flow 同步 trunk 与两侧共有的 support 分支。
+先全部 pull，再全部 push。PR mode 的受保护增量先走本页的 PR 恢复流程。
 其他本地或远端分支只报告，不操作。
 
 ## 决策树

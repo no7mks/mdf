@@ -85,7 +85,7 @@ closeout:
 - 首次 pr 先完成主链前置，再按下方材料准备条款生成候选材料。
   - 无账本 adhoc 在 Prepare 委托 [无账本 Adhoc 收口](adhoc-change.md) 的步骤 1–5，再返回本页 Finish。
   - 保留真实分支与 worktree，不要求 delivery/objectives；已有损坏账本不能绕过。
-- PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入 develop 后生效。
+- PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入已确定目标后生效。
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
@@ -136,7 +136,11 @@ closeout:
 首次创建及未合并 PR/MR 的源提交更新，都必须先完成本节；已 merged 的恢复不重新集成。
 本 intent 的 Prepare 执行本节；local close-out 不使用本节。
 
-- fetch origin 的目标分支并固定最新远端 tip；feature 对应已确定目标的 origin 分支，bugfix/adhoc 对应 `origin/develop`，release/ODR/hotfix 对应 `origin/master`。
+- fetch origin 的已确定目标分支，并固定最新远端 tip。
+  - gitflow 的 bugfix/adhoc 目标为 develop，release/ODR/hotfix 目标为配置的 trunk。
+  - github-flow 的普通交付目标为 trunk，维护线 hotfix 目标为对应 support 分支。
+  - github-flow release 保持冻结的 `release_head`；与 trunk 冲突时用 `release-integrate` 建立集成分支并从该分支创建 PR。
+    该 release 路径跳过下述在源分支合入远端 tip 的步骤。
   - 以远端 tip 为准，不用本地 trunk 或平台的无冲突标记替代；fetch 失败或目标缺失时停止并报告。
 - 用 `git merge-base --is-ancestor <远端tip> HEAD` 检查包含关系；“父节点”指 ancestor，不要求直接 parent。
   - 已包含且没有未完成返工时继续核材料；未包含则必须集成，即使试合并完全无冲突。

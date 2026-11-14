@@ -207,3 +207,14 @@ def test_catch_up_requires_earlier_steps(python_exe, tmp_path):
     _, work, root = started(python_exe, tmp_path)
     set_steps(work, root, [("fact audit", True), ("verify branch", False), ("catch-up", False)])
     assert error_of(complete(python_exe, work, "catch-up"))["error"] == "stage_prerequisite"
+
+
+@pytest.mark.parametrize("result", [{"passed": False}, {}, {"passed": False, "exit_code": 0}])
+def test_smart_refuses_unsuccessful_result(python_exe, tmp_path, result):
+    _, work, root = started(python_exe, tmp_path)
+    set_steps(work, root, [("verify smart", False)])
+    (root / "verification-report.json").write_text(json.dumps({
+        "all_passed": True, "branch": "feature/service-health", "scope": "smart", "results": [result],
+    }))
+    assert route(python_exe, work)["auto_completable"] is False
+    assert error_of(complete(python_exe, work, "verify"))["error"] == "stage_evidence_missing"

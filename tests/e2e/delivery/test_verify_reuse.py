@@ -139,3 +139,37 @@ def test_same_inputs_on_another_branch_and_worktree_hit_the_shared_store(python_
     tree = tmp_path / "worktree"
     git(repo, "worktree", "add", "-q", "-b", "feature/third", str(tree), "HEAD")
     assert "reused_from" in quick_item(verify(python_exe, tree)) and runs(counter) == 1
+
+
+def test_tampered_report_reruns_verification(python_exe, tmp_path):
+    repo, counter, _ = prepare(tmp_path)
+    first = quick_item(verify(python_exe, repo))
+    directory = repo / first["log"]
+    next(directory.rglob("r.xml")).write_text("corrupted")
+    assert "reused_from" not in quick_item(verify(python_exe, repo))
+    assert runs(counter) == 2
+
+
+def test_concurrent_verification_executes_quick_once(python_exe, tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    repo, counter, _ = prepare(tmp_path)
+    command = [python_exe, str(skill_dir("mdf") / "scripts/mdf.py"),
+               "verify", "smart", "--repo", str(repo), "--module", "default"]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        processes = list(pool.map(lambda _: subprocess.run(command, capture_output=True, text=True), range(2)))
+    results = [payload(process)["result"] for process in processes]
+    assert runs(counter) == 1
+    assert sum(quick_item(result).get("reused", False) for result in results) == 1
+
+
+def test_copied_evidence_survives_source_worktree_removal(python_exe, tmp_path):
+    repo, counter, _ = prepare(tmp_path)
+    tree = tmp_path / "source-tree"
+    git(repo, "worktree", "add", "-q", "-b", "feature/source", str(tree), "HEAD")
+    verify(python_exe, tree)
+    item = quick_item(verify(python_exe, repo))
+    assert item["reused"] and item["report"]["path"] == item["log"]
+    git(repo, "worktree", "remove", "--force", str(tree))
+    assert (repo / item["log"]).is_dir()
+    assert next((repo / item["log"]).rglob("r.xml")).is_file()
+    assert runs(counter) == 1

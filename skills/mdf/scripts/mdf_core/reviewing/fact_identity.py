@@ -77,9 +77,10 @@ def find_fact_credential(repo, identity, implementation_paths, document_paths, *
                 or not set(implementation_paths) <= set(record.get('implementation_paths', []))
                 or not set(document_paths) <= set(record.get('document_paths', []))):
             continue
-        if rules_sha256 is not None and record.get('rules_sha256') not in (None, rules_sha256):
+        if rules_sha256 is not None and record.get('rules_sha256') != rules_sha256:
             continue
-        if warning_keys is not None and isinstance(stored_warnings, list) and not set(warning_keys) <= set(stored_warnings):
+        if warning_keys is not None and (not isinstance(stored_warnings, list)
+                                         or not set(warning_keys) <= set(stored_warnings)):
             continue
         return {'key': record['key'], 'recorded_at': record['recorded_at'], 'scope': record['scope'],
                 'semantic_reviewed': True}

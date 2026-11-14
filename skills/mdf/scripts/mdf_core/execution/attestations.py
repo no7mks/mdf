@@ -362,8 +362,10 @@ def record_result(repo: Path, item: dict, fp: dict | None, detail: dict | None, 
     })
 
 
-def reuse_detail(record: dict, check_seconds: float, repo: Path | None = None) -> dict[str, Any]:
+def reuse_detail(record: dict, check_seconds: float, repo: Path | None = None) -> dict[str, Any] | None:
     copied = _materialize(repo, record) if repo is not None else None
+    if repo is not None and copied is None:
+        return None
     log = copied[0] if copied else record["log"]
     report = copied[1] if copied else record.get("report")
     result = {"command": record["command"], "exit_code": record.get("exit_code", 0), "log": log,

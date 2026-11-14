@@ -6,7 +6,9 @@ from mdf_core.workspace.merge_policy import ancestor, git, sha
 
 
 def tag_release(repo, state, version, path):
-    tag, merged = f"v{version}", state.get("release_head") or state["merge_commit"]
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    tag = f"v{version}"
+    merged = state["release_head"] if is_github_flow(repo) else state["merge_commit"]
     ref = f"refs/tags/{tag}"
     local = git(repo, "rev-parse", "--verify", ref, check=False)
     if local.returncode:

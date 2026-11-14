@@ -108,7 +108,8 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
   - 分支与交付目录 slug 取自该 PRP 文件名，不得另选，也不得使用对象 ID。
 - bugfix 必须绑定一个 active open Bug；分支名为 `bugfix/<Bug ID>`，不得另选 slug。
   - ⚠️ 已锁定的 release 或 hotfix 上修复 Bug 不走本 intent，不创建 bugfix 分支。
-- release 必须绑定稳定 SemVer；本版范围是 start 时已在 develop 的 child Change。
+- release 必须绑定稳定 SemVer；gitflow 的本版范围是 start 时已在 develop 的 child Change。
+  - github-flow 使用 trunk 的冻结切点及其已纳入的 child Change。
   - ODR 改用已确认的多来源范围；允许纳入分支、cherry-pick 与直接工作，验收见 Late-decision。
   - 不得把新 PRP 当作本版实现范围。
 - 普通 feature 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`：

@@ -44,7 +44,8 @@ def _verify_evidence(repo, root, data, item):
     else:
         results = report.get("results")
         if (not isinstance(results, list) or not results
-                or any(not isinstance(item, dict) or item.get("exit_code", 0) != 0 for item in results)):
+                or any(not isinstance(item, dict) or item.get("passed") is False
+                       or item.get("exit_code") != 0 for item in results)):
             return None, ("smart 报告需要非空且逐项通过的 results", expected)
     found = {"report": path.relative_to(repo).as_posix()}
     if report["scope"] == "branch":

@@ -72,3 +72,17 @@ def test_credential_requires_superset_coverage(python_exe, tmp_path):
     found = fact_identity.find_fact_credential(repo, ctx['input_identity'], ctx['implementation_paths'],
                                                ctx['document_paths'])
     assert (found is None) == bool(wide)
+
+
+def test_missing_rules_or_warning_identity_is_not_reused(python_exe, tmp_path):
+    from mdf_core.reviewing import credentials
+    repo, base = repository(tmp_path)
+    ctx = reviewed(python_exe, tmp_path, repo, base)
+    path = next(credentials.store(repo, 'fact-audit').glob('*.json'))
+    original = json.loads(path.read_text())
+    for field in ('rules_sha256', 'warning_keys'):
+        broken = {key: value for key, value in original.items() if key != field}
+        path.write_text(json.dumps(broken))
+        assert fact_identity.find_fact_credential(
+            repo, ctx['input_identity'], ctx['implementation_paths'], ctx['document_paths'],
+            rules_sha256=ctx['rules_sha256'], warning_keys=[]) is None

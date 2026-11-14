@@ -58,9 +58,10 @@ def _run_locked(repo, item, index, total, fp, checked, *, force, downstream):
     hit = None if force else attestations.reusable(
         repo, item, fp,
         downstream_hit=item.get("entry") == "build" and attestations.downstream_hits(repo, list(downstream)))
-    if hit is not None:
+    copied = attestations.reuse_detail(hit, time.monotonic() - checked, repo) if hit is not None else None
+    if copied is not None:
         _write_progress(index, total, f"reused {item['id']}")
-        return {**item, **attestations.reuse_detail(hit, time.monotonic() - checked, repo), "passed": True}
+        return {**item, **copied, "passed": True}
     started = time.monotonic()
     try:
         detail = run_verify_command(
@@ -78,7 +79,7 @@ def _run_locked(repo, item, index, total, fp, checked, *, force, downstream):
         )
         elapsed = time.monotonic() - started
         fresh = attestations.fingerprint(repo, item)
-        if fp is None or (fresh and fresh["inputs"] == fp["inputs"]):
+        if fp is None or (fresh and fresh["key"] == fp["key"]):
             attestations.record_result(repo, item, fp, detail, elapsed)
         return {**item, **detail, "original_duration_s": round(elapsed, 3), "passed": True}
     except MDFError as exc:

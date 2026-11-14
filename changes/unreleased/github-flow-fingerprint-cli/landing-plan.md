@@ -215,3 +215,33 @@
 2. **Q2（已裁定）**：采用选项 A。已有发布 tag 时 hotfix 一律走 `support/<major.minor>`，单线自动解析，免传 `--support`。
    - 无任何发布 tag 时报错并提示改走 `bugfix/*`。
    - 理由是版本语义：patch 不得夹带 trunk 上已合入但未发布的功能。
+
+
+## 5. 收口复核记录（2026-11-14）
+
+本轮按八个批次复核 workflow、发布、路由、凭证及 Skill 操作步骤，并修复下列偏差。
+
+- Gitflow PR 被误写入 `release_head`，造成 tag 错位及返工阻断。冻结逻辑现仅作用于 github-flow。
+  首次 smoke 的 20 项 Gitflow 失败均由既有回归测试检出；修复保留原测试断言。
+- smart 阶段门禁拒绝 `passed: false`、缺失 exit code 及非零 exit code。
+- verify 写凭证前比较完整 fingerprint key，覆盖执行期间的环境变化。
+- verify 证据复制失败时重新执行；不再返回旧证据路径并宣称命中。
+- fact 凭证必须具备当前规则摘要与 warning 集合，缺失字段视为 miss。
+- start、sync、pr、close-out 按 workflow 解析目标；github-flow release 保持冻结切点并使用 integration 分支解冲突。
+- 增补报告篡改、双进程并发、源 worktree 删除后的证据复制回归。
+
+### 接受的实现差异与范围
+
+- branch 阶段门禁直接复用 suite 解析与覆盖函数，等价检查当前 branch、scope、通过声明与必需 suite。
+  无需强制调用依赖当前交付定位的 `valid_branch` 包装函数。
+- catch-up 对代码路径采用保守范围，module ignore 路径可能触发额外检查；接受该范围扩大以避免漏检。
+- D1–D3、D5–D7 继续按决策版推迟；D4 的共有 support 分支同步已完成。
+- Q1、Q2 沿用已裁定结论。主干合入等待用户确认。
+
+### 最终验证
+
+- smoke 全部 1770 项通过，0 failure、0 error、0 skipped，JUnit 用时 244.508s，满足 300s 预算。
+  报告为 `.test-reports/closeout-smoke-final.xml`。
+- release 冷跑使用 `--cache-clear`，各测试创建独立临时仓库及凭证目录。
+  全部 1841 项通过，0 failure、0 error、0 skipped，用时 303.08s。
+  报告为 `.test-reports/closeout-release-final.xml`，named suite 统计见 `.test-reports/20261114-final-suite-summary.log`。
