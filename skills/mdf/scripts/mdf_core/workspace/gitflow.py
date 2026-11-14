@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import sys
 
 from mdf_core.lifecycle.adhoc import prepare, validate_start
 from mdf_core.foundation.errors import MDFError, emit
@@ -12,6 +13,7 @@ from mdf_core.workspace.gitutil import (
     branch_details,
     current_branch,
     ensure_clean,
+    git_is_clean,
     primary_worktree,
     repo_path,
     require_git_root,
@@ -21,7 +23,7 @@ from mdf_core.workspace.gitutil import (
     worktree_map,
 )
 from mdf_core.workspace.pm import on_base_or_pending
-from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+from mdf_core.workspace.workflow_policy import GITHUB_FLOW, is_github_flow, manifest_at, parse_workflow, trunk_branch
 from mdf_core.lifecycle.roster import (
     freeze_roster,
     models_from_args,
@@ -133,13 +135,6 @@ def require_trunk_default(repo: Path, trunk: str) -> None:
         )
 
 
-def _target(repo: Path, kind: str) -> str:
-    from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
-    if kind in {"feature", "bugfix", "release", "adhoc"}:
-        return integration_branch(repo)
-    return trunk_branch(repo)
-
-
 def _discard(repo: Path, created: list[tuple[str, Path]]) -> None:
     primary = primary_worktree(repo)
     for branch, path in reversed(created):
@@ -166,23 +161,33 @@ def command_start(args) -> None:
     validate_start(args)
     repo = repo_path(args.repo)
     require_git_root(repo)
-    ensure_clean(repo)
     from mdf_core.lifecycle.late_decision import start_options, CHECKPOINT
+    from mdf_core.workspace.merge_policy import config
     from mdf_core.workspace.workflow_policy import require_gitflow
-    trunk, github = trunk_branch(repo), is_github_flow(repo)
-    from mdf_core.workspace.merge_policy import configured
-    pr_mode = configured(repo)["mode"] == "pr"
+
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    try:
+        manifest = manifest_at(repo, head)
+    except MDFError as exc:
+        if exc.code != "not_initialized":
+            raise
+        manifest = {}
+    workflow = parse_workflow(manifest, repo)
+    trunk, github = workflow["trunk"], workflow["model"] == GITHUB_FLOW
+    pr_mode = config(manifest)["mode"] == "pr"
+    if not git_is_clean(repo):
+        print("警告：原 worktree 有未提交改动或未完成的 Git 操作，启动时仅使用已提交的基线。", file=sys.stderr)
     if github:
         if getattr(args, "from_master", False):
-            require_gitflow(repo, "start --from-master")
+            require_gitflow(repo, "start --from-master", head)
         if args.kind == "on-demand-release":
-            require_gitflow(repo, "start --kind on-demand-release")
+            require_gitflow(repo, "start --kind on-demand-release", head)
     from_master, delivery_target, features = start_options(args)
     from mdf_core.lifecycle.odr_scope import load_scope
-    scope = load_scope(repo, args.scope_file) if getattr(args, "scope_file", None) else []
+    scope = load_scope(repo, args.scope_file, trunk=trunk) if getattr(args, "scope_file", None) else []
     if args.kind == "on-demand-release" and not (features or scope):
         raise MDFError("ODR 范围不得为空", code="missing_features")
-    base = trunk if from_master else _target(repo, args.kind)
+    base = trunk if github or from_master or args.kind in {"hotfix", "on-demand-release"} else "develop"
     support = None
     if github and args.kind == "hotfix":
         from mdf_core.lifecycle.support_line import hotfix_base
@@ -224,7 +229,8 @@ def command_start(args) -> None:
                 code="missing_proposal",
             )
         from mdf_core.documents.proposals import proposal_slug_on_ref, require_startable
-        suffix = on_base_or_pending(repo, proposal_slug_on_ref, args.proposal, base, ref=start_point)
+        suffix = on_base_or_pending(repo, proposal_slug_on_ref, args.proposal, base,
+                                    ref=start_point, check_pending=github and pr_mode)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, start_point, suffix)
     elif args.kind == "bugfix":
@@ -237,7 +243,8 @@ def command_start(args) -> None:
             raise MDFError("bugfix 需要 --bug", code="missing_bug")
         objectives = _read_objectives(args.objectives_file)
         from mdf_core.documents.bugs import bug_id_on_ref, require_startable_bug
-        suffix = on_base_or_pending(repo, bug_id_on_ref, args.bug, base, ref=start_point)
+        suffix = on_base_or_pending(repo, bug_id_on_ref, args.bug, base,
+                                    ref=start_point, check_pending=github and pr_mode)
         _unreleased_collision(repo, start_point, slugify(suffix))
     elif args.kind in {"release", "on-demand-release"}:
         suffix = _require_version(args.version)

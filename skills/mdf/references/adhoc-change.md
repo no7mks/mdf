@@ -102,7 +102,7 @@
 
 - local 按实际目标关系 no-ff 集成 develop；PR 沿用 pr 的提交前远端集成与 squash 规则。
   - 目标推进、冲突修复或其他实现改动后补审补测，保留原 base。
-  - 两端 worktree 须 clean；已有未提交工作先按已授权范围处理，不提交他人改动。
+  - owner worktree 须 clean。作为合入来源的 develop 只读取已提交 tip。
 - 委托 [无账本审查](code-review-adhoc.md)，传固定 base、当前 head、最新目标 policy_ref 与实际工作。
   - 该子流程完成 lint、1 人审查、裁定与必要修复验证，返回后继续本页检查；不递归进入收口。
 - dev-pr 接管的 source 仅读 [dev-pr](dev-pr.md) 的「材料与验收」条款，执行 smoke 并保存 named suite 证据。

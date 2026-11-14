@@ -143,10 +143,7 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
     source 须来自已锁定交付或用户输入，不能从 detached 路径猜测；恢复不要求原源分支仍存在。
   - 其余首次调用继续下列 doctor、branch 与现场检查。委托前仍应用外层 until 和 decision 策略。
 - 解析目标 Git 根为 `REPO_ROOT`，运行 `doctor` 与 `branch`。
-- 写入前只读检查目标 worktree；有未提交改动或 `MERGE_HEAD` 即停止并报告路径与状态。
-  - 按 workflow 检查实际目标，gitflow 发布还检查 develop，github-flow hotfix 检查 support；未 checkout 时查实际合并目录。
-  - ❌ 不得为 clean 而 abort、reset、restore、stash、自动 Commit 或清理他人改动；无关脏分支不检查。
-  - 源工作区已有 merge 同样须停；冲突已解决、已 add 或 diff 为空仍须保留 `MERGE_HEAD`。
+- 交付 worktree 已有 merge 时停止；冲突已解决、已 add 或 diff 为空仍保留 `MERGE_HEAD`。
 - 验收：实际收口授权；manifest `ready`、非 detached。
   Gitflow 分支为 `feature/*`、`bugfix/*`、`release/<semver>`、`hotfix/<semver>` 或 `hotfix/<slug>`。
 
@@ -184,7 +181,8 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - local 模式的 release/ODR/hotfix 使用已确定的发布目标。
     先 fetch origin 并核对该本地目标与远端一致；github-flow hotfix 的目标为 support 分支。
 - 集成：
-  - 确认 clean，记录目标主线的完整 commit 与当前 HEAD。
+  - 确认交付 worktree clean，固定目标主线 tip 的完整 commit 与当前 HEAD。
+  - 目标主线作为 merge 来源时，只读取其已提交 tip，允许其 worktree 有未提交改动。
   - 若它尚不是当前 HEAD 的祖先，运行：
     - `python3 "$MDF_ROOT/scripts/mdf.py" merge-no-ff --repo "$REPO_ROOT" --commit <目标commit>`
   - ❌ 禁止 rebase，不在主线上解决交付冲突。
@@ -378,11 +376,14 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   ❌ 不回委托 verify branch。不做 commit 对齐审判。
   - release/ODR/hotfix 已收口，按步骤 4 的已收口规则核对 `changes/<semver>/`。
   - report 缺失时停止，不进入步骤 10。
-- local 模式在成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
 - PR mode 的提交前远端集成、补审补测属于 pr，见 [pr](pr.md)。
 - local 模式再次核对步骤 2 的目标主线仍被最终 HEAD 包含；主线前进时：
   - feature/bugfix 回到步骤 2 重新集成、审查并更新事实材料。
   - release/ODR/hotfix 无论是否已收口均停止并报告状态不一致，不重新集成、不覆盖版本目录。
+- local 模式在勾选 close-out 前，只读检查实际执行收口合并的 worktree，并报告脏状态与路径。
+  - 按 workflow 检查实际目标，gitflow 发布还检查 develop，github-flow hotfix 检查 support；未 checkout 时查实际合并目录。
+  - 有未提交改动或未结束的 Git 操作时保留现场，停止收口合并。
+- local 模式在成功收尾前将 `objectives.md` 的 close-out 项改为 `[x]` 并提交（材料仍在 unreleased 时）。
 - 验收：必要提交、当前证据、源与全部目标 worktree clean；有脏状态或已有 merge 即停止，不处理无关改动。
 
 **合并** <a id="s10"></a>

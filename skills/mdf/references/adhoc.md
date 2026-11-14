@@ -85,8 +85,8 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
     不复用旧目标或工作区。
 - 新建或续办未完成工作时运行 doctor 与 branch。
   要求 ready、`normal_workflows_allowed: true`。
-  - 新建前检查源工作区 clean 与本地基线存在。gitflow 使用 develop，github-flow 使用 trunk。
-  - 不能把已有改动搬走或提交来满足 clean；失败保留现场。
+  - 新建前核对本地基线。gitflow 使用 develop，github-flow 使用 trunk。
+  - 原 worktree 有未提交改动时按 [start](start.md#s4) 提示并继续，改动留在原处。
   - 已有其他交付时先明确目标，不把其改动混入新任务。
 - Agent 自行选与需求相关且不冲突的 slug，不要求用户指定格式或确认。
   - CLI 将 `--name` 规范化为材料目录可用的 slug；冲突时另选相关名称，不覆盖既有材料。

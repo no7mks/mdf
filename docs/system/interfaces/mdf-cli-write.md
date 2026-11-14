@@ -20,7 +20,8 @@ python3 skills/mdf/scripts/mdf.py merge-no-ff \
   --repo /path/to/repository --commit develop
 ```
 
-要求 `--repo` 为 Git 根且 worktree clean。把 `--commit` 解析出的提交
+要求执行合并的 `--repo` 为 Git 根且 worktree clean。来源分支允许有未提交改动。
+把 `--commit` 解析出的提交
 `--no-ff` 合入当前分支。已是祖先时 `merged` 为 false。冲突保留
 `MERGE_HEAD`，以 `merge_conflict` 失败，不 abort。
 
@@ -168,7 +169,9 @@ github-flow（manifest 的 `workflow.model`）下基线改为 `workflow.trunk`�
   - support hotfix 只发布到 support 线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
   - 维护线不得增删改 `docs/bugs/bug-*.md`。
 
-命令要求 clean worktree 和本地基线分支存在。不要求 origin，不 fetch、不 push。
+命令要求本地基线分支存在。workflow 与 closeout 配置取自调用 worktree 的 `HEAD`。
+原 worktree 有未提交改动或未完成的 Git 操作时，stderr 输出提示，改动留在原处。
+不要求 origin，不 fetch、不 push。
 有 origin 时用 `ls-remote` 核对基线。远程提交必须已在本地，本地可以更新。
 
 分支与 worktree：

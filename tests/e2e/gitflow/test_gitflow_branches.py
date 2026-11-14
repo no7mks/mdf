@@ -102,6 +102,41 @@ def test_start_does_not_require_origin(
     assert git(repo, "branch", "--show-current").stdout.strip() == "master"
 
 
+def test_start_preserves_dirty_source_and_uses_committed_base(python_exe, tmp_path):
+    repo = local_repo(tmp_path)
+    git(repo, "switch", "develop")
+    git(repo, "commit", "--allow-empty", "-m", "test: 推进交付基线")
+    base = git(repo, "rev-parse", "HEAD").stdout.strip()
+    manifest = repo / ".mdf/manifest.yaml"
+    committed = manifest.read_text()
+    manifest.write_text(committed + "\nworkflow:\n  model: github-flow\n  trunk: other\n")
+    git(repo, "add", "--", ".mdf/manifest.yaml")
+    manifest.write_text(manifest.read_text() + "# 未暂存配置\n")
+    (repo / "scratch.txt").write_text("临时改动\n")
+    status = git(repo, "status", "--porcelain").stdout
+    staged = git(repo, "diff", "--cached").stdout
+    unstaged = git(repo, "diff").stdout
+    obj = tmp_path / "objectives.md"
+    obj.write_text("# 目标\n\n- needs_design: yes\n")
+
+    result = mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
+                 "--proposal", "prp-0001", "--objectives-file", str(obj))
+    data = payload(result)
+    work = Path(data["worktree"])
+
+    assert "警告" in result.stderr
+    assert data["base"] == "develop" and data["start_commit"] == base
+    assert git(work, "rev-parse", "HEAD^").stdout.strip() == base
+    assert (work / ".mdf/manifest.yaml").read_text() == committed
+    assert not (work / "scratch.txt").exists()
+    assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
+    assert git(repo, "rev-parse", "HEAD").stdout.strip() == base
+    assert git(repo, "status", "--porcelain").stdout == status
+    assert git(repo, "diff", "--cached").stdout == staged
+    assert git(repo, "diff").stdout == unstaged
+    assert (repo / "scratch.txt").read_text() == "临时改动\n"
+
+
 @pytest.mark.parametrize("kind", ["feature", "bugfix", "release", "hotfix"])
 def test_start_uses_local_base_without_upstream(
     python_exe: str, tmp_path: Path, kind: str,

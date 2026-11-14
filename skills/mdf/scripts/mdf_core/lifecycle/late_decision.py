@@ -56,10 +56,10 @@ def target_for(repo, source, *, data=None):
     return validate_target(target, concrete=True)
 
 
-def require_independent(repo, source):
+def require_independent(repo, source, *, trunk=None):
     """拒绝 source 已包含的 develop 未发布历史；不只相信启动参数。"""
     from mdf_core.workspace.workflow_policy import trunk_branch
-    trunk = trunk_branch(repo)
+    trunk = trunk if trunk is not None else trunk_branch(repo)
     pending = set(git(repo, "rev-list", "develop", f"^{trunk}").stdout.split())
     included = set(git(repo, "rev-list", source, f"^{trunk}").stdout.split())
     if pending & included:

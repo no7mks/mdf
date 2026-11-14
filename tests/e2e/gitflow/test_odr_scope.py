@@ -41,7 +41,12 @@ def test_non_mdf_branch_requires_no_child_materials(python_exe, tmp_path):
     commit(repo)
     tip = git(repo, "rev-parse", "HEAD").stdout.strip()
     entries = [dict(id="external", kind="branch", scope="外部功能", source="external", base=base, tip=tip)]
+    manifest = repo / ".mdf/manifest.yaml"
+    dirty = manifest.read_text() + "\nworkflow:\n  model: gitflow\n  trunk: other\n"
+    manifest.write_text(dirty)
     work = start_scope(python_exe, repo, tmp_path, entries)
+    assert manifest.read_text() == dirty
+    assert git(work, "rev-parse", "HEAD^").stdout.strip() == base
     assert not payload(checkpoint(python_exe, work))["result"]["ready"]
     git(work, "merge", "--no-ff", "--no-edit", "external")
     accept(python_exe, work, tmp_path, entries)

@@ -116,7 +116,7 @@ local 先运行 adhoc-status；`material_mode: change` 时委托 [无账本 Adho
 PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr.md#提交前远端集成)，
 使用最新 origin/develop；以下本地 develop 的包含检查与 docs 跳过规则仅适用于 local。
 
-- 先只读检查 owner 与 develop 的实际合并工作区均 clean，无未完成 merge。
+- 先只读检查 owner clean，无未完成 merge。合入 develop 时只读取其已提交 tip。
   - 有问题停止并保留现场；不 stash、reset、abort 或提交他人改动，无关工作区不检查。
 - develop 尚非 owner HEAD 的祖先时，固定 develop commit 与集成前 HEAD。
   - 运行 `mdf.py merge-no-ff --repo <owner> --commit <develop-commit>`。
@@ -138,10 +138,11 @@ PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr.md#提交前
 
 本节保留 deliver 的确认边界，并以实际 Git 结果结束交付。
 
-- 步骤 4 先重核前置 report、连续账本与两端 clean；缺项先交接或停止，再判定主线关系。
+- 步骤 4 先重核前置 report、连续账本与 owner clean；缺项先交接或停止，再判定主线关系。
   - 未合并时，最终 HEAD 须包含当前 develop，否则回 2；已合并时走下条清理核对。
   - 已合并仅待清理时，重核 merge_commit 仍在 develop 第一父链；不将新 develop 合回已交付源。
   - 清理续办须有已提交的规范 Change；缺损时报告状态不一致并停止，不新增源提交。
+  - 进入本地收口合并或清理前，检查 develop 的实际合并工作区 clean。
   - close-out 尚未勾时改为 `[x]` 并提交；已勾不重复提交，记录两端 tip，全勾不代表 close-out 完成。
 - deliver 委托先核 until 允许进入 close-out；步骤 5 的 Gitflow decision 按其 confidence 策略裁定。
   - 低 confidence 返回 deliver 6 等待确认；yolo 无 confidence 限制；其他调用沿用实际收口授权。

@@ -66,7 +66,6 @@ def _no_tags(repo: Path) -> MDFError:
 
 def hotfix_base(repo: Path, args) -> tuple[str, dict[str, Any] | None]:
     """已有发布 tag 时 hotfix 一律走 support/<major.minor>；单线可省略 --support。"""
-    trunk_branch(repo)
     wanted = getattr(args, "support", None)
     if not _tag_lines(repo):
         raise _no_tags(repo)

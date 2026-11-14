@@ -33,12 +33,11 @@ def require_pm_merge(repo, first_parent, head, merged):
     require_pm_paths(paths(repo, first_parent, merged))
 
 
-def on_base_or_pending(repo, finder, identifier, base, *, ref):
+def on_base_or_pending(repo, finder, identifier, base, *, ref, check_pending):
     try:
         return finder(repo, identifier, ref)
     except MDFError as exc:
-        if (exc.code not in {"missing_proposal", "missing_bug"} or not is_github_flow(repo)
-                or configured(repo)["mode"] != "pr"):
+        if exc.code not in {"missing_proposal", "missing_bug"} or not check_pending:
             raise
         refs = git(repo, "for-each-ref", "--format=%(refname)", "refs/heads/pm/").stdout.splitlines()
         for ref in refs:

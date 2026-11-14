@@ -6,6 +6,7 @@ from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle.delivery_state import safe, locate, write_json
 from mdf_core.workspace.gitutil import ensure_clean, current_branch
 from mdf_core.workspace.merge_policy import git, commit_paths
+from mdf_core.workspace.workflow_policy import trunk_branch
 
 
 def fail(message):
@@ -29,7 +30,7 @@ def ancestor(repo, base, tip):
     return git(repo, "merge-base", "--is-ancestor", base, tip, check=False).returncode == 0
 
 
-def normalize(repo, entries):
+def normalize(repo, entries, *, trunk=None):
     if not isinstance(entries, list):
         fail("scope 必须为数组")
     result, identifiers = [], set()
@@ -47,9 +48,8 @@ def normalize(repo, entries):
             for key in ("base", "tip"):
                 item[key] = commit_id(repo, item.get(key))
             from mdf_core.lifecycle.late_decision import require_independent
-            require_independent(repo, item["tip"])
-            from mdf_core.workspace.workflow_policy import trunk_branch
-            trunk = trunk_branch(repo)
+            trunk = trunk if trunk is not None else trunk_branch(repo)
+            require_independent(repo, item["tip"], trunk=trunk)
             if not ancestor(repo, item["base"], trunk) or not ancestor(repo, item["base"], item["tip"]):
                 fail(f"整分支来源必须基于 {trunk}；其他来源使用 cherry-pick")
             # 已有 MDF 材料不可通过 branch 来源绕过原契约。
@@ -73,9 +73,9 @@ def normalize(repo, entries):
     return result
 
 
-def load_scope(repo, filename):
+def load_scope(repo, filename, *, trunk=None):
     try:
-        return normalize(repo, json.loads(Path(filename).read_text()))
+        return normalize(repo, json.loads(Path(filename).read_text()), trunk=trunk)
     except (OSError, ValueError, TypeError) as exc:
         raise MDFError("无法读取 scope JSON", code="invalid_release_scope") from exc
 

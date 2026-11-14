@@ -173,7 +173,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 精简 checklist 至少含：修复/范围、converge、lint、code-review、verify branch、
     fact audit、catch-up，以及 local 模式的 close-out；并含 `needs_design`。
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
-- 共同理解确认后，将确认文本放在仓外临时文件，保持开分支前 clean。
+- 共同理解确认后，将确认文本放在仓外临时文件，供 CLI 写入新 worktree。
 
 验收：确认目标、前置条件与准备安排、`needs_design`（release 另含联调工作线与 `has_dev`）以及共同理解。
 人工 feature 按专用规则确认，不要求 `needs_design`。
@@ -272,7 +272,9 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - 未带的 `--*-model` 不写入 roster.models 对应键。
 - `--roster` 只展开为人数与策略，不写入 delivery.json。
 - hotfix 的命名、可选版本与收口定版见 [Hotfix 版本](hotfix-version.md)。
-- CLI 要求 clean，且本地基线分支存在；不 fetch、不要求 origin、不 push。
+- CLI 从调用 worktree 的 `HEAD` 读取已提交的 workflow 与 closeout 配置。
+- 原 worktree 有未提交改动或未完成的 Git 操作时，CLI 提示并继续。改动留在原处。
+- 本地基线分支须存在；不 fetch、不要求 origin、不 push。
 - 有 origin 时，开分支前用 `ls-remote` 核对基线，不更新远程跟踪分支。
   - 远程提交已在本地（相同或本地更新）才通过。
   - 远程有本地没有的提交则停止，不创建分支。
