@@ -13,7 +13,8 @@ from mdf_core.foundation.constants import (
 )
 from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.paths import load_manifest, manifest_path
-from mdf_core.foundation.yamlutil import yaml_quote
+from mdf_core.foundation.yamlutil import parse_yaml, yaml_quote
+from mdf_core.workspace.agents_block import block_span, render_block
 
 
 def parse_baselines(values: list[str]) -> dict[str, dict[str, str]]:
@@ -169,6 +170,8 @@ def init_files(
     verification: dict[str, Any],
     implementation_roots: list[str],
     workflow: dict[str, str] | None = None,
+    closeout_mode: str | None = None,
+    closeout_provider: str | None = None,
 ) -> dict[Path, str]:
     from mdf_core.execution.modules_check import render_modules_yaml
 
@@ -176,7 +179,11 @@ def init_files(
     from mdf_core.workspace.project_rules import validate_rules
     validate_rules(manifest)
     from mdf_core.workspace.merge_policy import config
-    config(manifest)
+    closeout = config(manifest)
+    if closeout_mode is not None:
+        closeout["mode"] = closeout_mode
+    if closeout_provider is not None:
+        closeout["provider"] = closeout_provider
     files = {
         repo / ".mdf" / "manifest.yaml": render_manifest(
             baselines,
@@ -185,7 +192,7 @@ def init_files(
             logo=manifest.get("logo"),
             hooks=manifest.get("hooks"),
             rules=manifest.get("rules"),
-            closeout=manifest.get("closeout"),
+            closeout=closeout if "closeout" in manifest or closeout_mode or closeout_provider else None,
             workflow=workflow if workflow is not None else manifest.get("workflow"),
         )
     }
@@ -239,16 +246,16 @@ def init_files(
         "Use repository-local Mars Development Flow records "
         "as versioned context.\n"
         f"{MDF_BLOCK_END}\n",
-    ).strip()
+    )
+    agents_block = render_block(agents_block, parse_yaml(files[manifest_path(repo)]))
     agents = repo / "AGENTS.md"
     current = (
-        agents.read_text(encoding="utf-8")
+        agents.read_bytes().decode("utf-8")
         if agents.is_file()
         else "# AGENTS.md\n"
     )
-    starts = current.count(MDF_BLOCK_START)
-    ends = current.count(MDF_BLOCK_END)
-    if starts == 0 and ends == 0:
+    span = block_span(current)
+    if span is None:
         separator = (
             ""
             if current.endswith("\n\n")
@@ -257,19 +264,9 @@ def init_files(
             else "\n\n"
         )
         files[agents] = current + separator + agents_block + "\n"
-    elif (
-        starts == 1
-        and ends == 1
-        and current.index(MDF_BLOCK_START) < current.index(MDF_BLOCK_END)
-    ):
-        start = current.index(MDF_BLOCK_START)
-        end = current.index(MDF_BLOCK_END) + len(MDF_BLOCK_END)
-        files[agents] = current[:start] + agents_block + current[end:]
     else:
-        raise MDFError(
-            "AGENTS.md 的 MDF 标记格式错误或重复",
-            code="invalid_managed_block",
-        )
+        start, end = span
+        files[agents] = current[:start] + agents_block + current[end:]
     for path in (
         repo / "docs/proposals",
         repo / "docs/bugs",
@@ -315,4 +312,4 @@ def write_files(
         )
     for path, content in files.items():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        path.write_text(content, encoding="utf-8", newline="")

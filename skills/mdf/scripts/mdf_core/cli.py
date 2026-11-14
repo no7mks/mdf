@@ -73,6 +73,8 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--budget", action="append", default=[])
     init.add_argument("--workflow", choices=("gitflow", "github-flow"))
     init.add_argument("--trunk")
+    init.add_argument("--closeout-mode", choices=("local", "pr"))
+    init.add_argument("--closeout-provider", choices=("github", "gitlab"))
     init.add_argument(
         "--implementation-root", action="append", default=[]
     )

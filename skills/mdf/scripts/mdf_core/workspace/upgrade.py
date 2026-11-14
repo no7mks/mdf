@@ -13,10 +13,10 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from mdf_core.foundation.constants import MDF_BLOCK_END, MDF_BLOCK_START
 from mdf_core.foundation.errors import MDFError, emit
+from mdf_core.foundation.paths import load_manifest, manifest_path, relative
+from mdf_core.workspace.agents_block import block_span, render_block
 from mdf_core.workspace.gitutil import repo_path, require_git_root
-from mdf_core.foundation.paths import relative
 
 DEFAULT_SKILL_SOURCE = "http://10.1.5.65:8929/mars/mdf"
 KNOWN_SKILL_DIRS = (
@@ -127,47 +127,25 @@ def _agents_template(skill_root: Path) -> str:
     return path.read_text(encoding="utf-8").strip()
 
 
-def _agents_file_state(repo: Path) -> str:
+def _plan_agents(
+    repo: Path, skill_root: Path
+) -> tuple[dict[str, str], str | None]:
     path = repo / "AGENTS.md"
     if not path.exists():
-        return "absent"
+        return {"path": path.name, "action": "skip", "reason": "absent"}, None
     if path.is_symlink() or not path.is_file():
         raise MDFError(
             "AGENTS.md must be a regular repository file",
             code="upgrade_agents_not_file",
         )
-    text = path.read_text(encoding="utf-8")
-    starts = text.count(MDF_BLOCK_START)
-    ends = text.count(MDF_BLOCK_END)
-    if starts == 0 and ends == 0:
-        return "no_block"
-    if (
-        starts == 1
-        and ends == 1
-        and text.index(MDF_BLOCK_START) < text.index(MDF_BLOCK_END)
-    ):
-        return "present"
-    raise MDFError(
-        "AGENTS.md 的 MDF 标记格式错误或重复",
-        code="invalid_managed_block",
-    )
-
-
-def _replace_managed_block(text: str, block: str) -> str:
-    start = text.index(MDF_BLOCK_START)
-    end = text.index(MDF_BLOCK_END) + len(MDF_BLOCK_END)
-    return text[:start] + block + text[end:]
-
-
-def _plan_agents(
-    repo: Path, skill_root: Path
-) -> tuple[dict[str, str], str | None]:
-    state = _agents_file_state(repo)
-    if state in {"absent", "no_block"}:
-        return {"path": "AGENTS.md", "action": "skip", "reason": state}, None
-    block = _agents_template(skill_root)
-    current = (repo / "AGENTS.md").read_text(encoding="utf-8")
-    updated = _replace_managed_block(current, block)
+    current = path.read_bytes().decode("utf-8")
+    span = block_span(current)
+    if span is None:
+        return {"path": path.name, "action": "skip", "reason": "no_block"}, None
+    template = _agents_template(skill_root)
+    manifest = load_manifest(repo) if manifest_path(repo).is_file() else {}
+    start, end = span
+    updated = current[:start] + render_block(template, manifest) + current[end:]
     if updated == current:
         return {"path": "AGENTS.md", "action": "unchanged"}, None
     return {"path": "AGENTS.md", "action": "update"}, updated
@@ -392,7 +370,7 @@ def command_upgrade(args: argparse.Namespace) -> None:
             for skill in installs:
                 _replace_skill(skill, extracted, commit)
         if agents_text is not None:
-            (repo / "AGENTS.md").write_text(agents_text, encoding="utf-8")
+            (repo / "AGENTS.md").write_bytes(agents_text.encode("utf-8"))
         payload["replaced"] = [item["path"] for item in targets]
         payload["commit"] = _commit_upgrade(repo, plan)
         emit(payload)

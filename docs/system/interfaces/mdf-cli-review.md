@@ -76,8 +76,8 @@
 
 ## Develop 与 Trunk 接管
 
-github-flow 下由 `mdf.py trunk-pr --repo <root> [--slug <slug>]` 完成同样的本地准备，目标为 `origin/<trunk>`；
-非 github-flow 或非 PR mode 拒绝。见 [trunk-pr 契约](../../../skills/mdf/references/trunk-pr.md)。
+`mdf.py trunk-pr --repo <root> [--slug <slug>]` 仅用于 github-flow + PR mode，接管后将本地 trunk 对齐 `origin/<trunk>`。
+返回 `kind`、`source` 与 `worktree`，重试沿用 source。见 [trunk-pr 契约](../../../skills/mdf/references/trunk-pr.md)。
 
 
 `mdf.py dev-pr --repo <root> [--slug <slug>]` 仅准备本地现场：fetch、保全 develop HEAD

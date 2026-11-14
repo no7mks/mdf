@@ -8,6 +8,7 @@ from pathlib import Path
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.foundation.paths import load_manifest, manifest_path
 from mdf_core.foundation.yamlutil import parse_yaml
+from mdf_core.workspace.agents_block import block_span, render_block
 from mdf_core.workspace.gitutil import (
     current_branch,
     ensure_clean,
@@ -110,7 +111,7 @@ def require_idle(repo: Path) -> None:
 
 
 def switch(repo: Path, model: str | None, trunk: str | None) -> dict:
-    """在目标 trunk 的干净 checkout 上改写 manifest 并提交；既有分支、历史与产出物不动。"""
+    """在目标 trunk 的干净 checkout 上提交 workflow 配置和托管规则。"""
     require_git_root(repo)
     ensure_clean(repo)
     if not manifest_path(repo).is_file():
@@ -132,10 +133,23 @@ def switch(repo: Path, model: str | None, trunk: str | None) -> dict:
     if wanted["model"] == GITFLOW and not _exists(repo, "refs/heads/develop"):
         raise MDFError("切换到 gitflow 需要已有 develop 分支", code="missing_branch")
     path = manifest_path(repo)
-    path.write_text(set_manifest_block(path.read_text(encoding="utf-8"), "workflow",
-                                       render_workflow_lines(wanted)), encoding="utf-8")
-    parse_workflow(parse_yaml(path.read_text(encoding="utf-8")), repo)
-    _git(repo, "add", "--", ".mdf/manifest.yaml")
+    manifest_text = set_manifest_block(path.read_text(encoding="utf-8"), "workflow", render_workflow_lines(wanted))
+    manifest = parse_yaml(manifest_text)
+    parse_workflow(manifest, repo)
+    files = {path: manifest_text}
+    agents = repo / "AGENTS.md"
+    if agents.is_file() and not agents.is_symlink():
+        current_agents = agents.read_bytes().decode("utf-8")
+        span = block_span(current_agents)
+        if span:
+            start, end = span
+            current_block = current_agents[start:end]
+            block = render_block(current_block, manifest)
+            if block != current_block:
+                files[agents] = current_agents[:start] + block + current_agents[end:]
+    for file, content in files.items():
+        file.write_bytes(content.encode("utf-8"))
+    _git(repo, "add", "--", *(file.relative_to(repo).as_posix() for file in files))
     _git(repo, "commit", "-m", f"chore(workflow): 切换到 {wanted['model']}（trunk {wanted['trunk']}）")
     return {"changed": True, "from": current, "to": wanted,
             "commit": _git(repo, "rev-parse", "HEAD").stdout.strip()}

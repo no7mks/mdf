@@ -169,6 +169,8 @@ def command_init(args: argparse.Namespace) -> None:
         verification=verification,
         implementation_roots=implementation_roots,
         workflow=workflow,
+        closeout_mode=args.closeout_mode,
+        closeout_provider=args.closeout_provider,
     )
     create = [
         relative(repo, path) for path in sorted(files) if not path.exists()

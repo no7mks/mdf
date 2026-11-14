@@ -151,7 +151,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" upgrade --repo "$REPO_ROOT" --expected-commit
   - CLI 在任何替换前比对上游 HEAD，变化返回 `upgrade_source_changed`，
     回到 2 重新预览并确认。
 - CLI 用上游 `skills/mdf` 替换每个已安装副本，并写入完整 commit 到 `references/.version`。
-- 已有唯一 `AGENTS.md` 托管区块时，用上游 `agents-managed-block.md` 替换该区块。
+- 已有唯一 `AGENTS.md` 托管区块时，使用上游模板和目标仓库的 manifest 渲染后替换该区块。
   - 无文件或无区块则跳过，不新建或追加。
 - 失败时保留现场；逐个读取各目标的 `references/.version`，等于 `new_commit` 的为已替换，
   其余为未替换，分别报告路径。

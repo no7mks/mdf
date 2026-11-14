@@ -61,6 +61,52 @@ def test_doctor_reports_invalid_workflow(python_exe, tmp_path):
     assert "manifest.workflow" in codes
 
 
+@pytest.mark.parametrize("model", ["github-flow", "gitflow"])
+@pytest.mark.parametrize("pr", [False, True])
+def test_init_managed_block_limits_trunk_push_rule_to_github_flow_pr(python_exe, tmp_path, model, pr):
+    repo = local_gitflow(tmp_path)
+    agents = repo / "AGENTS.md"
+    agents.write_bytes(agents.read_bytes() + b"\r\nCustom push rule.\r\n")
+    options = ("--closeout-mode", "pr", "--closeout-provider", "github") if pr else ()
+    payload(_init(python_exe, repo, "--workflow", model, *options))
+    block, outside = agents.read_bytes().split(b"<!-- MDF:END -->")
+    assert (b"$mdf trunk-pr" in block) == (model == "github-flow" and pr)
+    assert outside.endswith(b"\r\nCustom push rule.\r\n")
+
+
+def test_init_closeout_changes_refresh_block_and_preserve_other_settings(python_exe, tmp_path):
+    repo = github_flow_repo(tmp_path, trunk="main")
+    manifest = repo / ".mdf/manifest.yaml"
+    agents = repo / "AGENTS.md"
+    manifest.write_text(manifest.read_text() + 'closeout:\n  mode: local\n  trivial_paths: ["docs/*"]\n')
+    before = manifest.read_bytes(), agents.read_bytes()
+    assert error_of(_init(python_exe, repo, "--closeout-mode", "pr"))["error"] == "invalid_closeout"
+    assert (manifest.read_bytes(), agents.read_bytes()) == before
+
+    payload(_init(python_exe, repo, "--closeout-mode", "pr", "--closeout-provider", "gitlab"))
+    assert "$mdf trunk-pr" in agents.read_text()
+    payload(_init(python_exe, repo))
+    assert "$mdf trunk-pr" in agents.read_text()
+    payload(_init(python_exe, repo, "--closeout-mode", "local"))
+    assert "$mdf trunk-pr" not in agents.read_text()
+    assert 'closeout:\n  mode: local\n  provider: gitlab\n  trivial_paths: ["docs/*"]\n' in manifest.read_text()
+    payload(_init(python_exe, repo, "--closeout-mode", "pr"))
+    assert "$mdf trunk-pr" in agents.read_text()
+
+
+def test_switch_updates_trunk_push_rule_in_committed_block(python_exe, tmp_path):
+    repo = local_gitflow(tmp_path)
+    manifest = repo / ".mdf/manifest.yaml"
+    manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: gitlab\n")
+    commit(repo)
+    original = (repo / "AGENTS.md").read_text()
+    switch = ("workflow", "switch", "--repo", str(repo), "--model")
+    payload(mdf(python_exe, *switch, "github-flow"))
+    assert "$mdf trunk-pr" in git(repo, "show", "HEAD:AGENTS.md").stdout
+    payload(mdf(python_exe, *switch, "gitflow"))
+    assert git(repo, "show", "HEAD:AGENTS.md").stdout == original
+
+
 def test_switch_gitflow_to_github_flow_preserves_history_and_branches(python_exe, tmp_path):
     repo = local_gitflow(tmp_path)
     before = git(repo, "rev-parse", "develop").stdout

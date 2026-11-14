@@ -8,8 +8,8 @@ from support_planning import add_prp
 from support_pull import Platform, squash_pending
 
 
-def pr_repo(tmp_path, monkeypatch):
-    repo, remote = github_flow_repo(tmp_path, origin=True, pr=True)
+def pr_repo(tmp_path, monkeypatch, *, trunk="master"):
+    repo, remote = github_flow_repo(tmp_path, trunk=trunk, origin=True, pr=True)
     platform = Platform()
     platform.repo, platform.remote = repo, remote
     from mdf_core.lifecycle import pull_finish
@@ -35,16 +35,120 @@ def test_trunk_pr_requires_pr_mode(python_exe, tmp_path):
     assert error_of(mdf(python_exe, "trunk-pr", "--repo", str(repo)))["error"] == "pr_mode_required"
 
 
-def test_trunk_pr_moves_local_trunk_work_to_adhoc(python_exe, tmp_path, monkeypatch):
-    repo, remote, _ = pr_repo(tmp_path, monkeypatch)
+@pytest.mark.parametrize("reverted", [False, True])
+def test_trunk_pr_moves_mixed_history_to_adhoc(python_exe, tmp_path, monkeypatch, reverted):
+    from test_untracked_adhoc import write_change
+
+    repo, _, platform = pr_repo(tmp_path, monkeypatch)
     before = git(repo, "rev-parse", "master").stdout.strip()
+    add_prp(repo, "prp-0002")
+    commit(repo, "docs(pm): 新增项目记录")
     (repo / "local.txt").write_text("trunk 本地增量\n")
     commit(repo)
+    if reverted:
+        git(repo, "revert", "--no-edit", "HEAD")
     kept = git(repo, "rev-parse", "master").stdout.strip()
-    result = payload(mdf(python_exe, "trunk-pr", "--repo", str(repo), "--slug", "trunk-work"))["result"]
+    rescue = ("trunk-pr", "--repo", str(repo), "--slug", "trunk-work")
+    result = payload(mdf(python_exe, *rescue))["result"]
+    assert result["kind"] == "adhoc"
     assert result["source"] == "adhoc/trunk-work" and result["next_intent"] == "trunk-pr"
     assert git(repo, "rev-parse", "master").stdout.strip() == before
     assert git(repo, "rev-parse", "adhoc/trunk-work").stdout.strip() == kept
+    work = Path(result["worktree"])
+    write_change(work, result["source"], "trunk-work")
+    commit(work)
+    squash_pending(work)
+    request = ("pr", "--repo", str(work))
+    first = payload(mdf(python_exe, *request))
+    assert first["status"] == "waiting_for_merge"
+    assert payload(mdf(python_exe, *rescue))["result"]["source"] == result["source"]
+    assert payload(mdf(python_exe, *request))["pull_request"]["id"] == first["pull_request"]["id"]
+    assert len(platform.pulls) == 1
+
+
+@pytest.mark.parametrize("via_sync", [False, True])
+def test_trunk_pr_moves_project_records_to_pm_and_reuses_pr(python_exe, tmp_path, monkeypatch, via_sync):
+    from mdf_core.workspace.gitutil import worktree_map
+    from support_sync import sync
+
+    trunk = "team/main" if via_sync else "main"
+    repo, remote, platform = pr_repo(tmp_path, monkeypatch, trunk=trunk)
+    before = git(repo, "rev-parse", trunk).stdout.strip()
+    trees = worktree_map(repo)
+    add_prp(repo, "prp-0002")
+    commit(repo, "docs(pm): 新增项目记录")
+    (repo / "docs/JOTS.md").write_text("# Jots\n")
+    commit(repo, "docs(pm): 更新 Jots")
+    head = git(repo, "rev-parse", trunk).stdout.strip()
+    rescue = ("trunk-pr", "--repo", str(repo))
+    if via_sync:
+        other = tmp_path / "other"
+        git(tmp_path, "clone", "--branch", trunk, str(remote), str(other))
+        (other / "remote.txt").write_text("远端增量\n")
+        commit(other)
+        git(other, "push")
+        before = git(other, "rev-parse", "HEAD").stdout.strip()
+        result = payload(sync(python_exe, repo))["pull_requests"][trunk]
+        assert result["source"].startswith("pm/team-main-")
+    else:
+        rescue += ("--slug", "project-records")
+        result = payload(mdf(python_exe, *rescue))["result"]
+        assert result["source"].startswith("pm/project-records-")
+    source = result["source"]
+    assert result["kind"] == "pm" and source.startswith("pm/")
+    assert Path(result["worktree"]).resolve() == repo.resolve()
+    assert worktree_map(repo) == trees
+    assert git(repo, "rev-parse", source).stdout.strip() == head
+    assert git(repo, "rev-parse", trunk).stdout.strip() == before
+    assert not has_ref(remote, f"refs/heads/{source}")
+
+    request = ("pr", "--repo", str(repo), "--source", source)
+    git(repo, "switch", source)
+    if via_sync:
+        git(repo, "merge", "--no-ff", "--no-edit", f"origin/{trunk}")
+    squash_pending(repo)
+    git(repo, "switch", trunk)
+    first = payload(mdf(python_exe, *request))
+    assert first["status"] == "waiting_for_merge"
+    assert payload(mdf(python_exe, *rescue))["result"]["source"] == source
+    assert payload(mdf(python_exe, *request))["pull_request"]["id"] == first["pull_request"]["id"]
+    assert len(platform.pulls) == 1
+    merged = platform.merge(1, tmp_path)
+    assert payload(mdf(python_exe, *request))["completed"]
+    finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))
+    assert finished["completed"]
+    assert git(repo, "rev-parse", trunk).stdout.strip() == merged
+    assert not has_ref(repo, f"refs/heads/{source}") and not has_ref(remote, f"refs/heads/{source}")
+    assert payload(mdf(python_exe, *rescue))["result"]["status"] == "no_pending_commits"
+
+
+def test_trunk_pr_resumes_pm_after_interruption_following_reset(python_exe, tmp_path, monkeypatch):
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.workspace import dev_pr
+
+    repo, _ = github_flow_repo(tmp_path, origin=True, pr=True)
+    add_prp(repo, "prp-0002")
+    commit(repo, "docs(pm): 新增项目记录")
+    head = git(repo, "rev-parse", "HEAD").stdout.strip()
+    original_git = dev_pr.git
+
+    def interrupt_git(where, *args, **kwargs):
+        result = original_git(where, *args, **kwargs)
+        if args[:2] == ("reset", "--keep"):
+            raise MDFError("模拟 reset 后中断", code="test_interrupted")
+        return result
+
+    rescue = ("trunk-pr", "--repo", str(repo), "--slug", "records")
+    with monkeypatch.context() as patch:
+        patch.setattr(dev_pr, "git", interrupt_git)
+        assert error_of(mdf(python_exe, *rescue))["error"] == "test_interrupted"
+    source = dev_pr.pending(repo)["source"]
+    assert source.startswith("pm/records-")
+    assert error_of(mdf(python_exe, *rescue[:-1], "different"))["error"] == "pull_state_changed"
+    result = payload(mdf(python_exe, *rescue))["result"]
+    assert result["source"] == source and result["reset"]
+    assert git(repo, "rev-parse", source).stdout.strip() == head
+    assert git(repo, "rev-parse", "HEAD").stdout == git(repo, "rev-parse", "origin/master").stdout
 
 
 def test_release_pr_tags_release_head_and_never_backmerges(python_exe, tmp_path, monkeypatch):

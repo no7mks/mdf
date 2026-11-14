@@ -176,6 +176,9 @@ develop 的 non-trivial 本地增量及分叉委托 [dev-pr](dev-pr.md)。
 - 直到 close-out 完成，恢复记录始终参与计划；不得因 develop 已 equal 就跳过未完成 PR。
 - 项目 trivial policy 与整串判定见 dev-pr；默认纯维护直接同步，任一 non-trivial 则整串接管。
 
+github-flow 的 trunk 接管计划使用 `trunk_pr`。收到 `trunk_pr_required` 时按返回的 `kind`、`source` 和 `worktree`
+续办 [trunk-pr](trunk-pr.md)。合并并完成 close-out 后回到 sync 预览。
+
 以下 `--pr` 预览与确认入口由 master/develop 共用。
 其中 master 使用下述创建 source、平台等待与同名 ff 恢复流程；develop 使用上述 dev-pr 流程。
 普通 sync 返回 `pr_required` 时，Agent 进入以下预览并展示 source、target、local tip 与审计结果：

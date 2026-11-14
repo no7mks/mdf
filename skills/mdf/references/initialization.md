@@ -230,9 +230,11 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 - 重复 `--baseline`、`--implementation-root`。
 - `--lint`、`--build`、`--quick`、`--smoke`、`--release`。
 - 可重复的 `--budget <suite>=<秒数>`。
+- 首次配置 workflow 时传 `--workflow` 与 `--trunk`。
+- 变更收口配置时传 `--closeout-mode local|pr`。PR mode 需要已有 provider 或显式传入 `--closeout-provider github|gitlab`。
 
-init CLI 没有 closeout option，只保留已有值。用户已确认变更时，在 CLI 完成后定点更新 manifest.closeout。
-回读 mode/provider 并检查 diff；不符回步骤 3 澄清或修正，按步骤 5 strict validation 验收后才启用。
+init CLI 按最终配置同时写入 manifest 与 `AGENTS.md` 托管区块。回读 mode/provider 并检查 diff；
+不符回步骤 3 澄清或修正，按步骤 5 strict validation 验收后才启用。
 
 init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent 按确认的验证配置填写并清除模板说明：
 

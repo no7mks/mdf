@@ -60,6 +60,8 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   - 省略 workflow 等同 `gitflow` 与 `master`，manifest 不写该块，行为不变。
   - trunk 不得占用保留名（develop、planning、feature/、bugfix/、release/、on-demand-release/、hotfix/、support/、adhoc/ 等）。
   - 重跑 init 不得静默改变已有 workflow；变更只经 `workflow switch`。
+- `--closeout-mode local|pr` 与 `--closeout-provider github|gitlab` 更新对应字段。PR mode 需要 provider。
+  省略参数时保留已有配置；托管 `AGENTS.md` 区块按写入的配置渲染。
 
 它创建或更新 MDF 固定 scaffold：
 
@@ -256,7 +258,7 @@ python3 skills/mdf/scripts/mdf.py workflow ci --repo /path/to/repository --provi
 
 - `switch` 只在空闲态执行：当前位于目标 trunk、worktree clean、无在途交付分支；否则拒绝并说明占用者。
   - 新 trunk 必须包含旧 trunk 的全部历史；切回 gitflow 要求 develop 已存在。
-  - 只改 manifest 的 `workflow`，保留历史、分支与 tag；提交由调用方完成。
+  - 提交 manifest 的 `workflow` 及已有 `AGENTS.md` 托管区块中的推送规则更新。规则仅在 github-flow + PR mode 时生成。
 - `ci` 只读，按当前 workflow 返回需触发 CI 的分支（gitflow 为 develop 与 trunk；github-flow 为 trunk 与 `support/*`）
   及对应 provider 的渲染内容。
 

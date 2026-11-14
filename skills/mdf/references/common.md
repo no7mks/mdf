@@ -180,7 +180,7 @@ upgrade 不读取本文件。
 - github-flow 全程使用现有 trunk worktree，无 develop 同步。
   - 校验并暂存本次路径后执行 `pm commit --repo "$REPO_ROOT" --slug <操作或对象> --message <中文 Conventional Commit>`。
   - 允许路径为 `docs/proposals/`、`docs/bugs/`、`docs/JOTS.md`、`docs/context/`。混合路径整批走普通交付。
-  - PR mode 须先在 origin 建立同名 trunk。本地 trunk 有远端未合入的提交时，先处理本地 trunk 提交。
+  - PR mode 须先在 origin 建立同名 trunk。本地 trunk 有远端未合入的提交时，先用 [trunk-pr](trunk-pr.md) 接管。
   - PR/MR 等待、修订、同步和清理见 [pm 分支](pr.md#pm-分支)。每次新操作分配独立 source。
   - PR/MR 待合入时报告 source 与实际状态，沿用该 source 续办。依赖该记录的 intent 须等它进入本地 trunk。
 - 只读和预览不提交。

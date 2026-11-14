@@ -53,7 +53,7 @@ def init_target(tmp_path: Path) -> Path:
     (target / "docs" / "README.md").write_text("keep-docs\n", encoding="utf-8")
     (target / ".mdf").mkdir()
     (target / ".mdf" / "manifest.yaml").write_text(
-        "keep-mdf\n", encoding="utf-8"
+        "# keep-mdf\n", encoding="utf-8"
     )
     (target / "skills" / "mdf").mkdir(parents=True)
     (target / "skills" / "mdf" / "SKILL.md").write_text(

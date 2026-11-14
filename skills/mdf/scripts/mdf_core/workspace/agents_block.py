@@ -1,0 +1,32 @@
+"""按 manifest 渲染 AGENTS.md 的 MDF 托管 block。"""
+
+from mdf_core.foundation.constants import MDF_BLOCK_END, MDF_BLOCK_START
+from mdf_core.foundation.errors import MDFError
+from mdf_core.workspace.merge_policy import config
+from mdf_core.workspace.workflow_policy import GITHUB_FLOW, parse_workflow
+
+TRUNK_PUSH_RULE = (
+    "- 当 manifest 使用 `github-flow` 和 PR mode 时，推送 `workflow.trunk` 前先 fetch `origin`，检查本地独有 commit。\n"
+    "  - 有本地独有 commit 时停止直接 push，提示用户运行 `$mdf trunk-pr`。\n"
+    "  - 已确认 `$mdf sync` 的 PR 计划时，按该计划接管并续办。\n\n"
+)
+
+
+def block_span(text: str) -> tuple[int, int] | None:
+    starts, ends = text.count(MDF_BLOCK_START), text.count(MDF_BLOCK_END)
+    if starts == 0 and ends == 0:
+        return None
+    if starts == 1 and ends == 1:
+        start, end = text.index(MDF_BLOCK_START), text.index(MDF_BLOCK_END)
+        if start < end:
+            return start, end + len(MDF_BLOCK_END)
+    raise MDFError("AGENTS.md 的 MDF 标记格式错误或重复", code="invalid_managed_block")
+
+
+def render_block(template: str, manifest: dict) -> str:
+    rule = TRUNK_PUSH_RULE.replace("\n", "\r\n") if "\r\n" in template else TRUNK_PUSH_RULE
+    block = template.strip().replace(rule, "", 1)
+    workflow = parse_workflow(manifest)
+    if workflow["model"] != GITHUB_FLOW or config(manifest)["mode"] != "pr":
+        return block
+    return block.replace(MDF_BLOCK_END, rule + MDF_BLOCK_END, 1)

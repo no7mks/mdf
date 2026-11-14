@@ -139,7 +139,7 @@ def test_upgrade_replaces_installed_copies_only(
     )
     assert (target / ".mdf" / "manifest.yaml").read_text(
         encoding="utf-8"
-    ) == "keep-mdf\n"
+    ) == "# keep-mdf\n"
     assert data["agents"] == {
         "path": "AGENTS.md",
         "action": "skip",
@@ -248,6 +248,21 @@ def test_upgrade_updates_existing_agents_managed_block(
     assert (target / ".codex/skills/mdf/SKILL.md").read_text(
         encoding="utf-8"
     ) == "new-skill\n"
+
+
+def test_upgrade_renders_trunk_push_rule_for_github_flow_pr(python_exe, tmp_path):
+    upstream = init_upstream(tmp_path, "new-skill", agents_body="new-block")
+    target = init_target(tmp_path)
+    write_agents(target, "old-block", extra="\nKeep this exact rule.\n")
+    manifest = target / ".mdf/manifest.yaml"
+    manifest.write_text("workflow:\n  model: github-flow\n  trunk: main\ncloseout:\n  mode: pr\n  provider: github\n")
+    data = payload(mdf(python_exe, "upgrade", "--repo", str(target), "--source", str(upstream),
+                       "--expected-commit", source_head(upstream)))
+    assert data["agents"]["action"] == "update"
+    agents = (target / "AGENTS.md").read_text()
+    block, outside = agents.split(END)
+    assert "new-block" in block and "$mdf trunk-pr" in block
+    assert outside == "\n\nKeep this exact rule.\n"
 
 
 def test_upgrade_dry_run_does_not_write_agents_block(
