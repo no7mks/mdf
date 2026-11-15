@@ -131,7 +131,8 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 - named：从 suite shortcut 或 `--suites` 取得 suite 名；固定入口与可选 coverage 由 modules 解析，
   真 named 按其 testing 文档 frontmatter 解析。名称未知、文档缺失或 command/playbook 均缺失则停止。
 - smart：`--paths` 命中 sourceset（非 ignore）并与 `--module` 合并。
-- branch：全部 module；新一轮验证前 worktree 必须干净；收录 pending 时允许 Core 的本交付报告改动。
+- branch：全部 module；dirty 时仍执行验证且不更新 clear commit。主链先提交本轮改动，以记录通过的 commit。
+  有 playbook 的 branch 用 `delivery complete-stage --stage verify` 提交报告后记录 clear commit。
 - bugfix 的 branch 验证：须已有 `suites.json` 关联 ≥1 已文档化 named suite。
   缺失则 `missing_delivery_suite`。
 

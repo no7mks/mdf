@@ -14,7 +14,7 @@ from mdf_core.commands_misc import (
     command_semver,
     command_validate,
 )
-from mdf_core.inspection.audit import command_audit
+from mdf_core.inspection.audit import command_audit, command_fact_record_full
 from mdf_core.inspection.doc_size import command_prose_check
 from mdf_core.lifecycle.commands_release import command_release_closeout
 from mdf_core.foundation.errors import MDFError
@@ -107,6 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
     fact_report.add_argument("--report-file", required=True)
     fact_report.set_defaults(func=command_fact_report_check)
 
+    fact_record = subparsers.add_parser("fact-audit-record-full")
+    fact_record.add_argument("--repo", required=True)
+    fact_record.add_argument("--head", required=True)
+    fact_record.set_defaults(func=command_fact_record_full)
+
     prose = subparsers.add_parser("prose-check")
     prose.add_argument("--repo", required=True)
     prose.add_argument("--path", action="append", default=[])
@@ -146,12 +151,20 @@ def build_parser() -> argparse.ArgumentParser:
     review_context.add_argument("--previous-report")
     review_context.set_defaults(func=command_context)
 
-    from mdf_core.reviewing.prepare import command_review_prepare
+    from mdf_core.reviewing.prepare import command_review_prepare, command_review_record
     review_prepare = subparsers.add_parser("review-prepare")
     review_prepare.add_argument("--repo", required=True)
     review_prepare.add_argument("--against")
-    review_prepare.add_argument("--force", action="store_true", help="忽略 code-review 凭证，不扣除已覆盖路径")
+    review_prepare.add_argument("--initial-base")
+    review_prepare.add_argument("--force", action="store_true", help="使用正常审查范围，不跳过 reviewer")
     review_prepare.set_defaults(func=command_review_prepare)
+
+    review_record = subparsers.add_parser("review-record")
+    for name in ("repo", "against", "head"):
+        review_record.add_argument(f"--{name}", required=True)
+    review_record.add_argument("--initial-base")
+    review_record.add_argument("--failed", action="store_true", help="阻断项使同内容的旧 clear 失效")
+    review_record.set_defaults(func=command_review_record)
 
     from mdf_core.lifecycle.catchup_plan import command_catch_up_plan
     catch_up_plan = subparsers.add_parser("catch-up-plan")
@@ -161,7 +174,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     from mdf_core.reviewing.report import command_report_check
     report_check = subparsers.add_parser("review-report-check")
-    report_check.add_argument("--repo", help="提供时记录 pass 凭证并复核 0 reviewer 复用结论")
     report_check.add_argument("--context-file", required=True)
     report_check.add_argument("--report-file", required=True)
     report_check.set_defaults(func=command_report_check)
@@ -381,7 +393,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="smart 额外 test/testcase 命令（Agent+Jev 选题后传入）",
     )
     verify.add_argument("--report-file", help="smart 结果另存到仓库内路径，替代默认报告")
-    verify.add_argument("--force", action="store_true", help="忽略内容指纹凭证，强制冷跑全部命令")
+    verify.add_argument("--force", action="store_true", help="忽略 clear commit，执行请求的 suite")
     verify.add_argument("--record", help="branch/named：收录 pending 报告目录中 Agent 写的 playbook JUnit")
     verify.set_defaults(func=command_verify)
 

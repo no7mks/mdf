@@ -85,7 +85,7 @@ def git_in_progress_head(repo: Path) -> str | None:
 def git_is_clean(repo: Path) -> bool:
     if git_in_progress_head(repo) is not None:
         return False
-    result = run(["git", "status", "--porcelain"], cwd=repo)
+    result = run(["git", "status", "--porcelain", "--untracked-files=all", "--ignore-submodules=none"], cwd=repo)
     return not result.stdout.strip()
 
 

@@ -74,8 +74,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `project-rules` | 项目阶段 rule 原文加载 | [只读命令](mdf-cli-inspect.md) |
 | `audit-push` | trunk push 事后审计 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `review-context` | 固定 Git 审查上下文 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
-| `review-report-check` | 外部复核报告校验与通过凭证记录 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
-| `review-prepare` | 审查左端点、未审净增量、交互文件集与体积 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
+| `review-report-check` | 外部复核报告校验 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
+| `review-prepare` | 审查左端点、未审增量与体积 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
+| `review-record` | 记录完整审查通过的 clean commit | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `catch-up-plan` | 基线之后 review/verify/fact 三路动作 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `doctor` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
 | `prepare-git` | 非 Git 目录初始化为 master | [仓库写入命令](mdf-cli-write.md) |

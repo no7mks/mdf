@@ -9,12 +9,12 @@ from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.workspace.gitutil import (
     branch_details,
     current_branch,
-    ensure_clean,
+    git_is_clean,
     repo_path,
     require_git_root,
     unreleased_slug,
 )
-from mdf_core.execution.modules import SUITE_DOC_DIR, load_modules
+from mdf_core.execution.modules import SUITE_DOC_DIR, load_modules, match
 from mdf_core.execution.modules_check import module_commands
 from mdf_core.foundation.paths import load_manifest
 from mdf_core.execution.project_verify import associated_suites, run_targets
@@ -32,6 +32,8 @@ from mdf_core.execution.verification import (
     recorded_suites,
 )
 from mdf_core.foundation.yamlutil import read_frontmatter
+from mdf_core.workspace import clear_commits
+from mdf_core.workspace.merge_policy import sha
 
 
 def evidence_file(repo: Path, slug: str) -> Path:
@@ -231,8 +233,8 @@ def command_verify(args) -> None:
         )
 
 
-def _run_entry_groups(repo: Path, kind: str | None = None, force: bool = False) -> list[dict[str, Any]]:
-    """branch：按 lint→build→quick→smoke|release 分组，组内可并行。"""
+def _branch_groups(repo, kind):
+    """branch：按 lint→build→quick→smoke|release 分组。"""
     from mdf_core.execution.verification import repo_verification
 
     suite = required_suite(kind) if kind else "quick"
@@ -244,25 +246,50 @@ def _run_entry_groups(repo: Path, kind: str | None = None, force: bool = False) 
         if entry == "lint":
             items = [{**item, "lint_modules": None} for item in items]
         groups.append((items, entry_parallel(repo, entry)))
-    return _run_groups(repo, groups, force)
+    return groups
 
 
-def _run_groups(repo, groups, force) -> list[dict[str, Any]]:
-    """按组顺序执行；后续组作为 build 免跑判定的 downstream。"""
+def _run_groups(repo, groups) -> list[dict[str, Any]]:
+    """按组顺序执行。"""
     grand_total = sum(len(items) for items, _ in groups)
     results: list[dict[str, Any]] = []
     offset = 0
-    for index, (items, parallel) in enumerate(groups):
-        downstream = [item for later, _ in groups[index + 1:] for item in later]
+    for items, parallel in groups:
         results.extend(run_targets(repo, items, parallel=parallel, index_base=offset,
-                                   grand_total=grand_total, force=force, downstream=downstream))
+                                   grand_total=grand_total))
         offset += len(items)
     return results
 
 
+def _suite_clear(repo, suite, head, clean, force):
+    key = f"verify_{suite}"
+    base = clear_commits.load(repo, key)
+    # 除交付记录外，保守看全部 tracked 输入，包含测试定义、lockfile 和配置。
+    config = load_modules(repo)
+    external = any(module.external_state or module.suite(suite).external_state
+                   for module in config.modules.values())
+    if base and not external and clean:
+        changes = clear_commits.changed_paths(repo, base, head)
+        declared = [pattern.removeprefix("./") for module in config.modules.values()
+                    for pattern in (*module.sourceset, *module.extra_inputs, *module.suite(suite).tests,
+                                    *module.suite(suite).extra_inputs)]
+        if all(path.startswith("changes/") and not any(match(path, pattern) for pattern in declared)
+               for path in changes):
+            if not force:
+                return base, True
+            # 强制重跑后只接受本轮实跑结果，包括需要稍后收录的 playbook。
+            if clear_commits.invalidate(repo, key, head, expected=base):
+                return None, False
+    return base, False
+
+
+def _reused(items, base):
+    return [{**item, "passed": True, "exit_code": 0, "clear_commit": base} for item in items]
+
+
 def _verify_branch(repo, branch, kind, slug, force=False) -> None:
     path = evidence_file(repo, slug)
-    ensure_clean(repo)
+    clean, head = git_is_clean(repo), sha(repo, "HEAD")
     if kind == "on-demand-release":
         from mdf_core.lifecycle.late_decision import checkpoint
         checkpoint(repo, required=True)
@@ -275,15 +302,28 @@ def _verify_branch(repo, branch, kind, slug, force=False) -> None:
 
     suite = required_suite(kind)
     playbooks = playbooks_for(repo, suite) if suite in PLAYBOOK_SUITES else []
-    results = _run_entry_groups(repo, kind, force)
+    base, skip = _suite_clear(repo, suite, head, clean, force)
+    groups = _branch_groups(repo, kind)
+    if skip:
+        results = _run_groups(repo, groups[:-1])
+        skip = git_is_clean(repo) and sha(repo, "HEAD") == head
+        if skip:
+            results += _reused(groups[-1][0] + branch_playbooks(repo, suite), base)
+        else:
+            results += _run_groups(repo, groups[-1:])
+    else:
+        results = _run_groups(repo, groups)
     result = _branch_result(repo, branch, kind, results)
-    if playbooks and all(item["passed"] for item in results):
+    if playbooks and not skip and all(item["passed"] for item in results):
         result["pending"] = create_pending(
             repo, scope="branch", suite=suite, branch=branch, playbooks=playbooks, results=results,
+            clear_state={"base": base} if clean and git_is_clean(repo) and sha(repo, "HEAD") == head else None,
         )
         write_json(path, result)
         emit({"ok": True, "operation": "verify-pending", "result": result})
         return
+    if clean and not skip and result["all_passed"]:
+        clear_commits.record(repo, f"verify_{suite}", head, expected=base)
     _finish_branch(path, result)
 
 
@@ -301,6 +341,28 @@ def _record_branch(repo, branch, kind, slug, raw) -> None:
         )
     results = state["results"] + record_playbooks(repo, report_dir, state)
     _finish_branch(evidence, _branch_result(repo, branch, kind, results))
+
+
+def record_completed_playbook_clear(repo, report, report_paths):
+    """报告提交后，工作区重新 clean 时记录同一份已验证内容。"""
+    raw = next((item["report"]["path"] for item in report.get("results", [])
+                if "playbook" in item and "report" in item), None)
+    if not raw:
+        return
+    from mdf_core.execution.playbooks import PENDING_FILE
+    from mdf_core.execution.run_logs import REPORTS
+
+    pending = safe(repo, raw) / PENDING_FILE
+    if pending.resolve().parent.parent != (repo / REPORTS).resolve() or not pending.is_file():
+        return
+    state = read_json(pending)
+    saved = state.get("clear_state")
+    suite = required_suite(report["kind"])
+    if saved is None or state.get("scope") != "branch" or state.get("suite") != suite:
+        return
+    reports_only = clear_commits.changed_paths(repo, state["head"]) <= set(report_paths)
+    if reports_only:
+        clear_commits.record(repo, f"verify_{suite}", sha(repo, "HEAD"), expected=saved["base"])
 
 
 def _branch_result(repo, branch, kind, results) -> dict[str, Any]:
@@ -354,7 +416,7 @@ def _verify_smart(repo, args) -> None:
     for entry in (*STEPS, "quick"):
         items = module_commands(config, modules, entry)
         groups.append((items, entry_parallel(repo, entry)))
-    results = _run_groups(repo, groups, bool(getattr(args, "force", False)))
+    results = _run_groups(repo, groups)
     extra = list(args.test or [])
     for index, command in enumerate(extra, 1):
         from mdf_core.execution.verify_run import run_verify_command
@@ -447,26 +509,42 @@ def _verify_named(repo, args) -> None:
                 code="invalid_playbook_report",
             )
         results = state["results"] + record_playbooks(repo, report_dir, state)
+        if state.get("clear_state") is not None and all(item["passed"] for item in results):
+            clear_commits.record(repo, f"verify_{names[0]}", state["head"],
+                                 expected=state["clear_state"]["base"])
     else:
         runs = []
+        clean, head = git_is_clean(repo), sha(repo, "HEAD")
         for name in names:
             targets, parallel = resolve_named_suite(repo, name)
             playbooks = (
                 playbooks_for(repo, name)
                 if name not in ALL_ENTRIES or name in PLAYBOOK_SUITES else []
             )
-            runs.append((name, playbooks, run_targets(repo, targets, parallel=parallel,
-                                                      force=bool(getattr(args, "force", False)))))
-        results = [item for _, _, suite_results in runs for item in suite_results]
+            at_clean_head = clean and git_is_clean(repo) and sha(repo, "HEAD") == head
+            base, skip = (_suite_clear(repo, name, head, at_clean_head, args.force)
+                          if name in {"smoke", "release"} else (None, False))
+            if skip:
+                suite_results = _reused(targets + branch_playbooks(repo, name), base)
+                playbooks = []
+            else:
+                suite_results = run_targets(repo, targets, parallel=parallel)
+            can_record = at_clean_head and git_is_clean(repo) and sha(repo, "HEAD") == head
+            clear_state = {"base": base} if can_record and not skip and name in {"smoke", "release"} else None
+            runs.append((name, playbooks, suite_results, clear_state))
+        results = [item for _, _, suite_results, _ in runs for item in suite_results]
         if all(item["passed"] for item in results):
             pending = [
                 create_pending(
                     repo, scope="named", suite=name, branch=None,
-                    playbooks=playbooks, results=suite_results,
+                    playbooks=playbooks, results=suite_results, clear_state=clear_state,
                 )
-                for name, playbooks, suite_results in runs
+                for name, playbooks, suite_results, clear_state in runs
                 if playbooks
             ]
+            for name, playbooks, _, clear_state in runs:
+                if not playbooks and clear_state is not None:
+                    clear_commits.record(repo, f"verify_{name}", head, expected=clear_state["base"])
     all_passed = not pending and all(item["passed"] for item in results)
     result = {
         "scope": "named",

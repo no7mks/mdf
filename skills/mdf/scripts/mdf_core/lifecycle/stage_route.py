@@ -194,5 +194,9 @@ def complete_stage(repo, root, data, stage):
         git(repo, "reset", "-q", "--", *changed)
         raise MDFError("暂存集超出本阶段白名单", code="unrelated_staged_changes", details={"paths": extra})
     git(repo, "commit", "-q", "-m", f"docs(delivery): 完成 {stage} 阶段", "--", *changed)
+    if stage == "verify" and item["name"] != "verify smart":
+        from mdf_core.execution.module_verify import record_completed_playbook_clear
+
+        record_completed_playbook_clear(repo, read_json(safe(repo, found["report"])), owned)
     return {"stage": stage, "completed": True, "already_completed": False, "commit": sha(repo, "HEAD"),
             "paths": changed, "evidence": found}

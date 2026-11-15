@@ -30,7 +30,7 @@ def verification_for_source(repo, source, target, head):
     if not is_github_flow(repo):
         return "smoke"
 
-    from mdf_core.execution.attestations import FIXED_INPUTS
+    from mdf_core.execution.verification import FIXED_INPUTS
     from mdf_core.execution.modules import match
     from mdf_core.reviewing.scope import review_document
     from mdf_core.workspace.project_rules import validate_rules

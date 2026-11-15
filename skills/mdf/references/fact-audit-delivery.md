@@ -24,8 +24,11 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 - base 按 fact-audit 的 resolve-base：start_commit → mdf-start-commit；release 用上一正式发布；
   无账本 adhoc 用固定 range.base。已明确 CI base 时用同一 SHA，并记录原交付起点。
 - 将选定 base 解析为完整 SHA；本轮与修复重审固定该 SHA。
-- 直接执行 against 五步：`fact-audit --against <完整 SHA>`，再语义复核与 report-check。
-  不以 audit 子范围代替 context 范围；只有 valid 且 decision=pass 才通过。
+- 主链执行 `fact-audit --scope branch --base <完整 SHA>`。有 clear commit 时 CLI 输出实际比较起点。
+  `skip_audit: true` 时直接返回通过结论；否则完成语义复核与 report-check。不得缩小 context 范围。
+  正常交付基线或完整 clear 增量通过且 worktree clean 时，report-check 推进 clear commit；
+  同内容的阻断结论使旧记录失效。局部 base 与最终候选的显式 `--against` 仅用于本轮复核。
+- 首次 release 无已发布基线且无 clear 时，按已确认的显式 base 审阅。建立首个全局 clear 需 full 语义审阅。
 - fact update 委托时，完整复核后仅剩结构 finding 且 warning 已处置，可返回「仅结构 finding」。
   结构分类沿用 [普通结论](fact-audit.md#s7)。
 

@@ -87,7 +87,6 @@ def test_fact_against_head_change_updates_fingerprint(tmp_path):
     git(repo, 'add', '--all')
     git(repo, 'commit', '-m', 'test: 第二版')
     second = fact_context(repo, base)
-    assert first['input_identity']['implementation_digest'] != second['input_identity']['implementation_digest']
     assert 'head' not in first['input_identity']
     assert first['worktree_sha256'] != second['worktree_sha256']
 

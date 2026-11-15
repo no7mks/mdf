@@ -44,8 +44,9 @@
 | --- | --- | --- |
 | audit-push | --repo --branch --before --after；可选 --evidence-file 或 --collect-evidence | result.verdict 为 pass/violation/needs-review，退出 0 不代表合规 |
 | review-context | --repo --source --head --policy-ref；可选 --review-base --previous-report | result 为固定上下文，缺身份或基线失败，材料缺项写 incomplete |
-| review-report-check | --context-file --report-file；可选 --repo | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
-| review-prepare | --repo；可选 --against --force | 左端点、净增量、交互文件与 module 集、numstat、体积结论、project rule；凭证同规则同需求；release 另给 `reuse`；要求 clean |
+| review-report-check | --context-file --report-file | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
+| review-prepare | --repo；可选 --against --initial-base --force | 左端点、净增量、体积、project rule 和 `skip_review` |
+| review-record | --repo --against --head；可选 --initial-base --failed | 完整审查通过后记录当前 clean HEAD；--failed 使同内容旧记录失效 |
 
 - audit-push 从 `before` 读取 workflow。gitflow 接受 trunk 与 develop；github-flow 接受 trunk 与 `support/*`。
   - `support/*` 合入 trunk 为 `support_merge_forbidden`。默认离线，显式 collect-evidence 才访问平台。
@@ -62,14 +63,12 @@
 - release 首轮使用 policy_ref 的上一正式发布 tag，首次无版本需显式 --review-base。
 - report-check 支持 Cursor JSON result envelope；不会修补不符合 schema 的模型文本。
 - report-check 不是语义裁定，也不是交付 gate；不写 objectives 或 code-review.md。
-- 传 `--repo` 且 context 含 credential 时，通过的报告写入 code-review 内容凭证（Git common dir，不依赖 commit SHA）。
-  - release/on-demand-release 另按子交付凭证做复用分析：净代码增量与未覆盖组合影响面均为空才接受 `reviewers: []`。
-  - 组合影响面含 ≥2 个子交付共同修改的文件、release 自身改动、冲突解决、规则或基线变化；否则仍须冻结份数的 reviewer。
-- review-prepare 默认左端点为交付 start_commit，非交付分支须 `--against`；缺失为 `missing_review_base`。
-  - `net_increment` 为过滤后 paths 扣除已有通过凭证（内容与规则均一致）后的路径；`--force` 不扣除。
-  - `size.reviewers` 按 numstat 新增与删除之和 `ceil(lines / 1000)`；`skip_review` 要求净增量与交互文件集均空。
-- fact-audit 的 `--against` 结果附带 `reuse`：存在覆盖范围超集、摘要一致且 semantic_reviewed 的 pass 凭证时非空。
-  - 输入身份与 HEAD SHA 解耦；`--quick` 永不返回可替代语义审阅的凭证，`fact-audit-report-check` 通过后才写入凭证。
+- review-prepare 有 clear commit 时比较两端，无需 ancestor。正常左端点为交付 start_commit；
+  release 用上一正式发布；非交付分支传 `--against`，首次 release 可传 `--initial-base`。
+- `net_increment` 是实际审查范围；`--force` 使用正常左端点。dirty 仍读取 clear commit，
+  输出暂存、未暂存和未跟踪改动的审查范围，此时 `skip_review` 为 false。
+- `size.reviewers` 按 numstat 新增与删除之和向上取整，每 1000 行一人；跳过时人数为 0。
+- review-record 检查实际审查范围是否覆盖全部增量。独立指定的局部范围不能推进 clear commit。
 
 ## 接入与运行证据
 

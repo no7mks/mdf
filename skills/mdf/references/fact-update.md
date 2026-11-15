@@ -52,7 +52,7 @@ evidence 仅为 path 列表；怎么验归 modules 套件与 `$mdf verify`。
 读取 `references/common.md` 与 `references/repository-contract.md`。
 步骤 3 读取并内部执行 `references/fact-audit.md` 共用核。
 
-- 主链与独立 `branch`：resolve-base 后委托 `--against <完整 SHA>`，交付外壳见 `fact-audit-delivery.md`。
+- 主链与独立 `branch`：resolve-base 后委托 `--scope branch --base <完整 SHA>`，交付外壳见 `fact-audit-delivery.md`。
 - 独立 `full`/`paths` 走同一语义标准，仅 must-cover 解析不同。
 - 内部 Audit **不得**带 `--quick`（不得跳过 LLM）。
 
@@ -124,7 +124,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 `--scope` 与 fact audit 同义，三选一；**左端点一律按 [fact-audit resolve-base](fact-audit.md#resolve-base)**：
 
 - `branch`：独立调用默认。步骤 1 解析完整 base SHA；Align 与后续 Audit 共用该 SHA。
-  - Audit 委托：`$mdf fact audit --against <该 SHA>`（等同 CLI `--scope branch` 收成 against 核）。
+  - Audit 委托：执行 `fact-audit --scope branch --base <该 SHA>`，由共用核处理。
   - must-cover = `diff(base, 当前工作区) ∩ sourceset ∩ ¬ignore` 该碰的事实页与被改到的路由链接，
     不是「分支上改过的 Markdown」。
   - 未改实现只想整理文档时显式用 `full`。
@@ -200,7 +200,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 - 主链委托时，这次事实提交由本 intent 完成。
   调用方随后提交 Change 等其余材料。
 - 主链与独立 `branch`：传入步骤 1 固定的完整 SHA，执行
-  `fact-audit --against <SHA>`，由 against 核捕获修复后的完整范围；不混传 scope/base/paths。
+  `fact-audit --scope branch --base <SHA>`，捕获修复后的完整范围。
 - 独立 `full`：`fact-audit --scope full`。
 - 独立 `paths`：同一 `--scope paths`；把本次新建或拆出的页写入 `--document-path`。
 

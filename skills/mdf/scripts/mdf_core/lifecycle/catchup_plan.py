@@ -1,7 +1,7 @@
 """catch-up-plan：按 base..HEAD 的拓扑图（0/1/多次 merge）独立判定 review/verify/fact 动作；只读。"""
 import re
 
-from mdf_core.execution.attestations import FIXED_INPUTS, LOCKFILES
+from mdf_core.execution.verification import FIXED_INPUTS, LOCKFILES
 from mdf_core.execution.modules import load_modules, match
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import locate, safe

@@ -163,16 +163,16 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
 
 | 调用方 | 范围与状态 |
 | --- | --- |
-| fact update 委托 | branch→`--against <步骤1 SHA>`；full/paths 同其 scope；不得 `--quick`；允许审阅其已提交写入 |
+| fact update 委托 | branch→`--scope branch --base <步骤1 SHA>`；full/paths 同其 scope；允许审阅已提交写入；禁用 `--quick` |
 | direct 调用 | against/branch 走共用核；full/paths 步骤 2 读取 Audit CLI 的 `state`，缺失或非 `ready` 即停止，不进入语义审阅 |
 | migrate | `full`，允许 `initializing` |
 | 已收口 release/hotfix（直接委托） | resolve-base 后 against，或等价 `paths`，不得改用 `full` |
-| 主链其他（含待收口 release） | 经 fact update 委托或直接 against；不得改用 `full` |
+| 主链其他（含待收口 release） | 由 fact update 委托或直接使用 `--scope branch --base <SHA>` |
 
 direct 调用不再为读取 state 运行入口 doctor；fact update 写入前的 doctor 仍由调用方执行。
 
 首次发布无上一版本时停止确认初始基线。
-不强制 clean；不替调用方提交。主链与独立 branch 优先 `--against <完整 SHA>`，与 resolve-base 一致。
+不强制 clean，也不替调用方提交。主链与普通 branch 使用 `--scope branch`，固定最终候选和显式旁路使用 `--against`。
 
 验收：调用方、scope 与范围。
 
@@ -190,9 +190,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 ```
 
 - 独立调用省略时传 `--scope branch`。裸 CLI 省略时仍为 `full`，本流程不使用该默认。
-- `branch` 的 `--base` 按上方范围规则传入；省略时 CLI 取 integration 分支与 HEAD 的 merge-base。
-  - gitflow 的 integration 分支是 develop；github-flow 是 `workflow.trunk`。
-- `fact-audit --against <sha> --force` 返回 `reuse: null`，不复用事实凭证。
+- `branch` 的 `--base` 按上方范围规则传入。省略时，CLI 按相同优先级解析正常基线。
+  - 无交付基线时，比较 integration 分支与 HEAD 的 merge-base。gitflow 用 develop，github-flow 用 `workflow.trunk`。
+- branch 模式读 `fact_audit` clear commit，`skip_audit: true` 时可跳过语义审阅。
+  `--force` 使用正常基线，`--quick` 只做机械检查。显式 `--against` 用固定范围。
+- 完成 full 范围的语义审阅和 strict validation 且通过后，在 clean worktree 执行
+  `fact-audit-record-full --repo <repo> --head <本轮审阅的 HEAD>`。dirty、quick、paths 均不调用。
 - `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，module sourceset 内的已跟踪实现文件（含配置与测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
 - CLI 按 `repository-documents.md` 的文档体积表检查 size.hard、prose.*；命中 module ignore 时保留排除依据。

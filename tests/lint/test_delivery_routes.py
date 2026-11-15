@@ -11,13 +11,12 @@ from support_routes import *  # noqa: F403
 def test_review_resume_routes_to_repair_without_replacing_initial_head():
     from conftest import skill_dir
     text = (skill_dir("mdf") / "references/code-review.md").read_text()
-    assert "修复续办 3；无新则5；否则 2" in text
+    assert "修复续办 3；否则 2" in text
     assert "已齐审查且修复续办" in text
     assert "保留原 review_head，不覆盖原报告" in text
     assert "首轮未齐时进入 2 补齐" in text
     assert "增量新一轮" in text
-    assert "已齐审查且无新改动" in text
-    assert "非本交付 `docs/` 不是新的交付改动" in text
+    assert "`skip_review: true` 时直接进步骤 4" in text
     assert "close-out 集成增量轮与主链 verify 修绿轮为 1" in text
     assert "不得把上轮多份独立报告交给本轮" in text
     assert "git diff <操作左端点> <review_head>" in text
@@ -339,7 +338,7 @@ def test_code_review_requires_three_full_reviews_before_owner_repairs():
     table = rows(text)
     assert table[1][2] == "约束"
     assert "派不出则主 Agent 审" in table[1][3]
-    assert table[1][5] == "只读5；否则3"
+    assert table[1][5] == "只读5；可复用4；否则3"
     assert table[1][6] == "未覆盖留在2"
     assert table[3][6] == "close-out 需 smart 返回待续办；可修则 3；否则停"
     for rule in (
@@ -404,16 +403,16 @@ def test_code_review_covers_branch_starts_and_previous_release():
     for rule in (
         "delivery.json 的 start_commit", "mdf-start-commit",
         "上一正式发布版本的 master commit/tag", "首次发布没有上一版本",
-        "git diff <base_commit> <review_head>", "显式 `--against` 不受此限制",
+        "git diff <base_commit> <review_head>", "不要求 ancestor",
         "git diff <操作左端点> <review_head>",
         "changes/unreleased/<slug>/code-review.md",
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "进度只认 `objectives.md`",
-        "审查基线仍为上一正式发布", "objectives.md",
+        "选择 clear commit 或上一正式发布基线", "objectives.md",
         "不再改代码",
         "不跑 verify branch", "洗成无 commit 终稿",
         "不运行 `delivery record --stage code-review`",
-        "worktree **必须 clean**", "--read-only", "--output",
+        "交付模式支持 dirty 审查", "--read-only", "--output",
         "sourceset ∩ ¬module-ignore",
     ):
         assert rule in text

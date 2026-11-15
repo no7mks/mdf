@@ -177,11 +177,6 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
               "target": delivery_target}
     if publication:
         result["publication"] = publication
-    else:
-        from mdf_core.reviewing import credentials
-        identity = credentials.code_identity(repo, head, review_paths, result["rules_sha256"],
-                                             artifacts.get(root + "/objectives.md", ""), delivery)
-        result["credential"] = identity
     result["context_sha256"] = fingerprint(result)
     return result
 

@@ -7,12 +7,12 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 同一次审查走同一条链。`--read-only` 跳过修复与返工。没有 `--output` 时不写结论文件，会话里的结论仍要给出。
 
-`ensure clean → resolve-base → 统计 diff 行数 → 派发 → 审查 → [Repair] → [Record] → 结论 → [文件]`
+`检查 worktree → resolve-base → 统计 diff 行数 → 派发 → 审查 → [Repair] → [Record] → 结论 → [文件]`
 
 拒绝审查、不审查、以及因 subagent、diff 大小或 path 数量停住，都不是合法结果。
 
-- worktree **必须 clean**；脏库停止，先提交或隔离无关改动。
-- 右端点固定为当前 `HEAD`（即本轮 `review_head`）。
+- clean 时固定右端点为当前 `HEAD`。交付模式 dirty 时一并审查暂存、未暂存及相关未跟踪文件，
+  审查结束后保留原 clear commit。显式 against 与只读旁路要求 clean。
 - 强制覆盖 paths = sourceset ∩ ¬module-ignore 的实现变更；文档/配置/交付材料不进覆盖清单，reviewer 可读不禁。
 - `$mdf code-review --against <commit>`：用该 commit 覆盖本轮左端点（完整 SHA），仍要求 clean。
 - `$mdf code-review --read-only`：不进入 Repair 与 Record，不修、不返工、不勾 objectives。
@@ -41,9 +41,9 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
 | 情形 | 本轮左端点 |
 | --- | --- |
 | 显式 `--against` | 解析后的完整 SHA |
-| 无有效审查账本 / 首轮；feature·bugfix·hotfix·adhoc | branch start（`delivery.json.start_commit` 或 `branch.*.mdf-start-commit`） |
-| 无有效审查账本 / 首轮；release | 上一正式发布 master commit/tag |
-| 有账本且可增量 | 上轮闭环 tip（终稿落盘 commit；close-out 集成用集成前 HEAD；verify 修绿用传入左端点） |
+| 交付有可用 clear commit | `review-prepare` 返回的 clear commit |
+| 无可用 clear commit；feature·bugfix·hotfix·adhoc | branch start（`delivery.json.start_commit` 或 `branch.*.mdf-start-commit`） |
+| 无可用 clear commit；release | 上一正式发布 master commit/tag，首次发布传 `--initial-base` |
 
 报告上下文可另保留 `delivery_base`（整次交付起点），与本轮左端点分离。
 
@@ -61,7 +61,6 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
                  ├──── 来源 verify 且待修绿 ────→ [返回原 verify；独立调用报告待续办]
                  ├──── 已齐审查且修复续办   ────→ 3 Repair
                  ├──── 已齐审查但勾选未完成 ────→ 4 Record
-                 ├──── 已齐审查且无新改动   ────→ 5 Report
                  ├──── 失败或缺失           ────→ [停止并报告]
                  │
                  ▼ 新审查、增量新一轮或首轮未齐
@@ -71,6 +70,7 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
                  │
                  ├──── 未覆盖           ────→ [留在 2，主 Agent 补审]
                  ├──── 只读             ────→ 5 Report
+                 ├──── 可以复用         ────→ 4 Record
                  │
                  ▼ 交付审查完成
 ┌──────────────────────────────────┐
@@ -100,8 +100,11 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
                  └──── 无 --output ──────────────→ [结束；会话结论已给出]
 ```
 
-步骤 2 先运行 `review-prepare --repo <repo> [--against <commit>] [--force]`，取得左端点、扣除凭证后的净增量。
-同时取得上游交互文件集、`numstat`、人数 `size.reviewers` 与 project rule；`skip_review` 为 true 时无需派发。
+步骤 2 先运行 `review-prepare --repo <repo> [--against <commit>] [--initial-base <commit>] [--force]`。
+命令返回实际左端点、未审增量、`numstat`、人数与 project rule。默认按 clear commit 比较两端，
+不要求 ancestor；缺记录或规则变化则回到正常范围。绑定父流程的固定补审范围用 `--against <commit> --force`。
+`skip_review: true` 时直接进步骤 4，终稿写明无须复审的依据。dirty 仍 load，按实际 worktree 审查，不能跳过。
+
 仅 `--read-only` 或显式 `--against` 再调用 `review-context`，日志在 checkout 外。
 派发按「派发」。未覆盖留在步骤 2，由主 Agent 补审。只读从步骤 2 进入步骤 5。交付审查完成后进入步骤 3。
 
@@ -122,8 +125,8 @@ paths 非空而行数为 0（含 numstat 的 `-`）时派 1 人，覆盖全部 p
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 约束 | clean、分流；只读记下跳过修复 | 参数或范围、rule、报告 | 只读仍2；verify待修绿返回；漏勾4；修复续办 3；无新则5；否则 2 | 停止并报告 |
-| 2 | Review | 约束 | 按派发规则审完全部 paths；派不出则主 Agent 审 | 覆盖全部 paths | 只读5；否则3 | 未覆盖留在2 |
+| 1 | Check | 约束 | 检查 worktree、分流；只读记下跳过修复 | 参数或范围、rule、报告 | 只读仍2；verify待修绿返回；漏勾4；修复续办 3；否则 2 | 停止并报告 |
+| 2 | Review | 约束 | 按 scope 审完全部 paths；派不出则主 Agent 审 | 增量、覆盖 | 只读5；可复用4；否则3 | 未覆盖留在2 |
 | 3 | Repair | 约束 | 主 Agent 裁定、修复、整理 tests 并复核 | 裁定、修复与 suite 验证，无阻断项 | 4 | 可修则留在 3；否则保留现场并报告 |
 | 4 | Record | 约束 | 按需 smart；洗成无 commit 终稿并勾选 | 终稿、smart、提交 | 5 | close-out 需 smart 返回待续办；可修则 3；否则停 |
 | 5 | Report | 约束 | 会话给出结论；有 `--output` 才写入经校验的 JSON | 结论、可选文件 | 结束 | 只读 context 变回2；交付不回2；无 `--output` 不写文件 |
@@ -150,7 +153,6 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
   - 一致才出报告；否则回 2 重审；不复用旧通过结论；失败读日志报 error。
   - 交付进入过步骤 3 或 4 后，步骤 5 不再重跑 review-context，也不回步骤 2。
 - `review-report-check` 校验最终报告；valid 才返回；`--output` 另存路径；不直接 approve/merge。
-  交付审查带 `--repo <repo>` 才记录内容凭证；release 复用子交付证据时以 `reviewers: []` 提交，由该命令核验。
 
 ### 项目 rule 的阶段接入
 
@@ -168,7 +170,7 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
 ### 范围与前置条件
 
 进入步骤 2 前，objectives 的 lint 项须已勾选并提交；增量轮核对最近验证中的 lint 结果。
-worktree 必须 clean；相关未提交改动先按公共规则提交，无法隔离则停止。
+交付模式支持 dirty 审查。固定 commit 的旁路仍须 clean；需要记录 clear commit 时先按公共规则提交待审内容。
 
 本节确定审查人数、记录位置、轮次、固定基线与各分支前置条件。
 
@@ -176,7 +178,7 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
 只有 `--read-only` 跳过步骤 3 与 4。显式 `--against` 不跳过修复。
 
 - 步骤 1 支持 feature、bugfix、hotfix、release、adhoc；cwd 为 qa/dev 时切回 owner。
-- 先确认目标仓库 ready，读取已有审查记录；脏库不得进入 Review。
+- 先确认目标仓库 ready，再用 `review-prepare` 确定本轮范围。
 - 审查人数见「派发」。有账本时读取冻结 roster：
   - 有 `delivery.json` 时用 `delivery status`，否则读 `branch.<owner>.mdf-roster`；有账本但未冻结则停止。
   - 本轮应派人数在有 roster 时默认同 roster.reviewers。
@@ -212,16 +214,11 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
 - 修复窗在本轮修复已提交、且（若本轮改过实现、测试或验证配置）smart 已通过时关闭。
   - 此后改实现、测试或验证配置才可进入增量新一轮。
   - 主链 verify 修绿改动由 verify 记录原左端点，开启 1 人增量新一轮，不复用旧修复窗。
-- 无新改动：已有声称通过的终稿（或本轮已可收口）、无待修问题，且相对操作左端点到
-  HEAD 没有新的交付改动时，核对后结束。
-  - 不进入 2。
-  - 此出口另须 objectives 的 code-review 已勾且已提交；仅漏勾或未提交则进 4 补齐。
-  - 记录文件、纯事实、收口文档、以及非本交付 `docs/` 不是新的交付改动。
+- 无新改动：按步骤 2 的 `skip_review` 决定是否免派发。已有终稿可作为本交付的裁定记录。
 - 增量新一轮：修复窗已关闭（或终稿已在），且其后改了实现、测试或验证配置时进入
   （含 close-out 集成以及主链 verify 修绿后的增量）。
   - 完整上轮：应派份数报告已齐（或已有终稿）、已采纳与未解决问题清单齐全。
-  - 操作左端点不从终稿读 hash：close-out 集成用集成前 HEAD（当场记录）；其它增量用
-    终稿落盘提交 `git log -1 --format=%H -- <code-review.md>`；无法判定则走首轮。
+  - 操作左端点由 `review-prepare` 选择；close-out 集成用集成前 HEAD（当场记录）。
     pre-gitflow-finish 补审用其执行时返回的原 `before_head`，可从上下文或 CLI 日志恢复。
     主链 verify 修绿轮人数为 1；其他普通增量仍为冻结 roster.reviewers。
   - 重新固定 review_head 为当前 HEAD，进入 2。
@@ -246,15 +243,14 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
   - 不取 master 合回 develop 的合并提交，也不使用移动的 master/develop HEAD 代替发布基线。
   - 首次发布没有上一版本时，须用户明确确认初始基线。
   - 基线缺失、歧义或对象不可解析时停止询问。
-- 默认交付基线及增量操作左端点必须是 review_head 的祖先；显式 `--against` 不受此限制。
+- clear commit 与 review_head 直接比较，不要求 ancestor。
 - 审查内容：
   - 首轮：`git diff <base_commit> <review_head>`，按 sourceset ∩ ¬module-ignore 过滤。
   - 增量：`git diff <操作左端点> <review_head>`（操作左端点按上方规则，不读终稿
     hash）。
   - 强制覆盖仅为实现变更；文档/交付材料不进 paths，可读不禁。
   - 并读取必要上下文，不能仅按提交标题或文件名审查。
-- release 首轮覆盖上一版本以来的完整变化：
-  - 不得仅审 release 分支创建后的改动，也不得因某个 child 已审查而跳过其代码。
+- release 正常范围从上一版本开始。存在可用 clear commit 时以该 commit 比较两端；没有相关变化即跳过。
 - 后续轮次只覆盖操作左端点以来的增量，仍须复核上轮问题。
 - 步骤 1 仅在新审查或增量新一轮时将本轮左端点与 review_head 记入进行中草稿
   （或派发参数），明确尚未通过，再启动审查。
@@ -271,7 +267,7 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
   - `needs_design: yes` 时可读 design.md 作审查上下文；不以 design/converge gate 文件为通行证。
   - 修复续办进入 3；步骤 4 按需补 smart，不在本 intent 强制 verify branch。
 - release 读取 `objectives.md` 对照本版目标与验收；超出计划的新能力不在本轮实现。
-  - 审查基线仍为上一正式发布。
+  - 依本节规则选择 clear commit 或上一正式发布基线。
   - 📌 integrate 项须已 `[x]`；未勾停止，提示先 `$mdf integrate`（或不联调应由 start 预勾）。
   - 📌 联调时（含 collab-mode），进入 2 前须双端验收通过，且已确认此后不再改代码。
     未双端验收通过则不派审查。
@@ -473,6 +469,9 @@ worktree 必须 clean；相关未提交改动先按公共规则提交，无法�
    左端点 tip、完整或缩写 SHA）。本条仅约束审查正文；父 PR 返工备注单列保留恢复所需 SHA。
 4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
 5. 提交终稿；有账本时将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
+   - 完整审查并提交后调用 `review-record --repo <repo> --against <本轮左端点> --head <已审并通过的最终 HEAD>`。
+     首次 release 另传 `--initial-base <已确认基线>`。跳过、只读或 dirty 轮保持原 clear commit。
+   - clean 轮有阻断项时，以本轮固定 HEAD 调用同一命令并加 `--failed`，使同内容的旧 clear 失效。
    - 只清理本轮审查草稿；不得删除父 PR 返工备注，完成后按其返回位置交还调用方。
 6. ❌ 报告未齐或仍在修复窗时不得洗稿、不得勾选。
 

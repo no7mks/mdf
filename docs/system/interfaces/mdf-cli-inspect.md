@@ -143,8 +143,10 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | `prose.section` | 一个标题下散文合计超过 15 行 |
 | `prose.emoji` | 出现 ⚠️ ✅ ❌ 💡 📌 📂 📍 ⬇️ 以外的 emoji |
 
-分支范围审计以 `--base` 指定起点 commit。省略时取 integration 分支与 HEAD 的 merge-base：gitflow 为 develop，github-flow 为 trunk。
-`--against <sha> --force` 返回 `reuse: null`。新增 warning 或 failed tombstone 使旧 pass 不可复用。
+- 分支范围以 `--base` 指定起点。省略时，release 用上一发布 tag，其他交付用 `delivery.start_commit` 或 Git config。
+- 无账本 adhoc 用固定范围。普通 fallback 取 integration 分支与 HEAD 的 merge-base，gitflow 用 develop，github-flow 用 trunk。
+- 非 quick 的 branch 审阅使用 `clear_commit`，仅 clean 且无相关变化时返回 `skip_audit: true`。显式 against 采用固定基线。
+- 整仓语义审阅通过后，owner 可执行 `fact-audit-record-full --repo <repo> --head <SHA>` 记录实际审阅的 clean commit。
 
 - 实现范围是起点以来改动的实现文件。
 - 文档范围是改动到的事实页与 evidence 引用这些实现的事实页。

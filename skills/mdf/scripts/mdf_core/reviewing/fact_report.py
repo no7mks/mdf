@@ -5,7 +5,7 @@ from pathlib import Path
 from mdf_core.foundation.errors import emit
 from mdf_core.lifecycle.delivery_state import read_json
 from mdf_core.reviewing.context import fingerprint
-from mdf_core.reviewing.fact_identity import check_fact_inputs, record_fact_credential
+from mdf_core.reviewing.fact_identity import check_fact_inputs
 from mdf_core.reviewing.report import require
 from mdf_core.reviewing.schema import check
 from mdf_core.workspace.gitutil import repo_path, require_git_root
@@ -70,8 +70,13 @@ def command_fact_report_check(args):
     report = read_json(Path(args.report_file))
     result = validate_fact_report(context, report)
     check_fact_inputs(repo, context)
-    if result['decision'] == 'pass':
-        record_fact_credential(repo, context, semantic_reviewed=True)
-    else:
-        record_fact_credential(repo, context, semantic_reviewed=True, decision=result['decision'])
+    if context.get('clear_state'):
+        from mdf_core.workspace import clear_commits
+
+        state = context['clear_state']
+        base, head = state['base'], state['head']
+        if result['decision'] == 'pass' and state['complete']:
+            result['recorded'] = clear_commits.record(repo, 'fact_audit', head, expected=base)
+        elif result['decision'] == 'changes_requested' and state['same_scope']:
+            clear_commits.invalidate(repo, 'fact_audit', head, expected=base)
     emit({'ok': True, 'result': result, 'report': report})

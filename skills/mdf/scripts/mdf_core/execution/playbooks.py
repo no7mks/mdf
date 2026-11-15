@@ -105,7 +105,7 @@ def _tracked_state(repo: Path) -> str:
 
 def create_pending(
     repo: Path, *, scope: str, suite: str, branch: str | None, playbooks: list[dict[str, Any]],
-    results: list[dict[str, Any]],
+    results: list[dict[str, Any]], clear_state: dict | None = None,
 ) -> dict[str, Any]:
     from mdf_core.execution.reports import new_report_dir
 
@@ -114,7 +114,7 @@ def create_pending(
     state = {
         "scope": scope, "suite": suite, "branch": branch, "head": _head(repo),
         "playbooks": [{"path": item["path"], "steps": item["steps"]} for item in playbooks],
-        "results": results,
+        "results": results, "clear_state": clear_state,
     }
     if scope == "named":
         state["tracked_state"] = _tracked_state(repo)

@@ -111,24 +111,37 @@ def _scope_paths(
 
 def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str | None:
     if base is None:
+        from mdf_core.lifecycle.adhoc_context import context as adhoc_context
         from mdf_core.workspace.gitutil import branch_details
-        from mdf_core.lifecycle.delivery_state import locate, read_json
-        from mdf_core.workspace.merge_policy import manifest_at
+        from mdf_core.lifecycle.delivery_state import locate
+        from mdf_core.lifecycle.roster import parse_role_branch
+        from mdf_core.workspace.merge_policy import git, manifest_at
         from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
         branch = run(["git", "branch", "--show-current"], cwd=repo, check=False).stdout.strip()
+        role = parse_role_branch(branch)
+        owner = role[0] if role else branch
         trunk = trunk_branch(repo)
-        details = branch_details(branch, trunk)
-        if details["kind"] == "feature":
-            record = repo / "changes/unreleased" / details["slug"] / "delivery.json"
-            if record.is_file() and read_json(record).get("base_branch") == trunk:
-                _, data = locate(repo)
-                base = data["start_commit"]
-        elif details["kind"] == "on-demand-release":
+        details = branch_details(owner, trunk)
+        if details["kind"] in {"release", "on-demand-release"}:
             previous = manifest_at(repo, trunk_branch(repo)).get("versioning", {}).get("latest_release")
             if previous is None:
-                add_finding(findings, "audit.base", "首次 ODR 需要显式 --base")
+                add_finding(findings, "audit.base", "首次 release 需要显式 --base")
                 return None
             base = f"refs/tags/v{previous}"
+        elif details["supported"]:
+            try:
+                _, data = locate(repo)
+            except MDFError:
+                start = git(repo, "config", "--local", "--get", f"branch.{owner}.mdf-start-commit", check=False)
+                base = start.stdout.strip() or None
+                if base is None and branch == owner and branch_details(owner)["kind"] == "adhoc":
+                    try:
+                        base = adhoc_context(repo, owner)["range"]["base"]
+                    except MDFError as exc:
+                        add_finding(findings, "audit.base", str(exc))
+                        return None
+            else:
+                base = data["start_commit"]
     if base is None:
         from mdf_core.workspace.workflow_policy import integration_branch
         result = run(["git", "merge-base", integration_branch(repo), "HEAD"], cwd=repo, check=False)
@@ -147,6 +160,13 @@ def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str 
         add_finding(findings, "audit.base", "branch audit base is not a commit", base)
         return None
     return result.stdout.strip()
+
+
+def _default_base_matches(repo, left):
+    try:
+        return _resolve_base(repo, None, []) == left
+    except MDFError:
+        return False
 
 
 def _changed_paths(repo: Path, base: str) -> list[Path]:
@@ -367,15 +387,49 @@ def audit_payload(
     return payload, 0 if not has_errors(findings) else 2
 
 
-def _reuse(repo, result, quick, force=False):
-    """覆盖超集、warning 不扩大且未被 tombstone 吊销才复用；quick 与 --force 不复用。"""
-    if quick or force:
-        return None
-    from mdf_core.reviewing.fact_identity import find_fact_credential, warning_keys
-    audit = result.get('audit') or {}
-    return find_fact_credential(repo, result['input_identity'], result['implementation_paths'],
-                                result['document_paths'], warning_keys=warning_keys(audit.get('warnings')),
-                                rules_sha256=result.get('rules_sha256'))
+def _branch_fact_context(repo, base, force):
+    from mdf_core.lifecycle.catchup_plan import rule_paths
+    from mdf_core.reviewing.context import fingerprint
+    from mdf_core.reviewing.fact_context import fact_context
+    from mdf_core.workspace import clear_commits
+    from mdf_core.workspace.gitutil import git_is_clean
+    from mdf_core.workspace.merge_policy import sha
+
+    clear = clear_commits.load(repo, "fact_audit")
+    clean, head = git_is_clean(repo), sha(repo, "HEAD")
+    changed = clear_commits.changed_paths(repo, clear, head, dirty=not clean) if clear else set()
+    if clear and clean and not force and not changed:
+        return {"against": clear, "paths": [], "document_paths": []}, clear, True
+    rules_changed = bool(changed & rule_paths(repo))
+    left = clear if clear and not force and not rules_changed else base
+    result = fact_context(repo, left, include_index=not clean)
+    expected = fact_context(repo, clear) if clean and clear and left != clear else result
+    trusted = clean and (left == clear or (left != head and _default_base_matches(repo, left)))
+    complete = trusted and all(set(expected.get(key, [])) <= set(result[key]) for key in ("paths", "document_paths"))
+    if clean and clear and left != clear:
+        baseline_delta = clear_commits.changed_paths(repo, left, clear)
+        complete &= not baseline_delta.intersection(expected["paths"])
+    same_scope = bool(clear and clean and not rules_changed
+                      and (not changed or not any((expected["paths"], expected["document_paths"],
+                                                   expected["audit"]["findings"], expected["audit"]["warnings"]))))
+    skip = same_scope and not force
+    result["clear_state"] = ({"base": clear, "head": head, "complete": complete, "same_scope": same_scope}
+                             if clean else None)
+    result["context_sha256"] = fingerprint({k: v for k, v in result.items() if k != "context_sha256"})
+    return result, clear, skip
+
+
+def command_fact_record_full(args):
+    """由完成整仓语义审阅的 owner 调用。"""
+    from mdf_core.workspace import clear_commits
+    from mdf_core.workspace.merge_policy import sha
+
+    repo = repo_path(args.repo)
+    require_git_root(repo)
+    head = sha(repo, args.head)
+    base = clear_commits.load(repo, "fact_audit")
+    recorded = head == args.head and clear_commits.record(repo, "fact_audit", head, expected=base)
+    emit({"ok": True, "operation": "fact-audit-record-full", "result": {"recorded": recorded}})
 
 
 def command_audit(args: argparse.Namespace) -> None:
@@ -393,12 +447,8 @@ def command_audit(args: argparse.Namespace) -> None:
         result = fact_context(repo, args.against)
         # --quick 只跳过 LLM，不换 against 工作对象。
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
-        if args.quick and not exit_code:
-            from mdf_core.reviewing.fact_identity import record_fact_credential
-            record_fact_credential(repo, result, semantic_reviewed=False)
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick',
-              'reuse': _reuse(repo, result, args.quick, getattr(args, 'force', False))})
+              'mode': 'against' if not args.quick else 'quick', 'skip_audit': False})
         if exit_code:
             raise SystemExit(exit_code)
         return
@@ -414,14 +464,14 @@ def command_audit(args: argparse.Namespace) -> None:
                 code=findings[0].code if findings else 'audit.base',
             )
         from mdf_core.reviewing.fact_context import fact_context
-        result = fact_context(repo, base)
+        clear, skip = None, False
+        if args.quick:
+            result = fact_context(repo, base)
+        else:
+            result, clear, skip = _branch_fact_context(repo, base, args.force)
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
-        if args.quick and not exit_code:
-            from mdf_core.reviewing.fact_identity import record_fact_credential
-            record_fact_credential(repo, result, semantic_reviewed=False)
-        emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
-              'mode': 'against' if not args.quick else 'quick',
-              'reuse': _reuse(repo, result, args.quick, getattr(args, 'force', False))})
+        emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick and not skip,
+              'mode': 'against' if not args.quick else 'quick', 'clear_commit': clear, 'skip_audit': skip})
         if exit_code:
             raise SystemExit(exit_code)
         return

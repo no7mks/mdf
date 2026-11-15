@@ -137,7 +137,7 @@
 - 始终跑 lint、build、quick。
 - 再加 smoke（feature/bugfix/hotfix）或 release（仅 release）。
 - 证据 `suites` 为 `quick` 加后者。
-- 须在 Gitflow 交付分支；执行前 worktree 必须干净。
+- 须在 Gitflow 交付分支。dirty 时实跑且不更新 clear commit。
 - bugfix 须有 `changes/unreleased/<slug>/suites.json` 关联 named suite。
   - 缺失返回 `missing_delivery_suite`；Core 不执行 named suite。
 - 证据文件损坏返回 `invalid_delivery`。
@@ -164,10 +164,9 @@
 - adhoc 例外：smart 成败均保存 `verification-report.json`，scope 仍为 smart。
   - 只跑涉及 module 的 lint/build/quick 与选题，不要求 smoke 或 branch scope。
   - 包括无账本分支；使用 adhoc-status 的材料目录，允许独立 slug，不创建 delivery/objectives。
-- 内容指纹凭证：命令的输入指纹与环境（平台、Python、lockfile）一致且证据完整时复用上次通过结果，不启动子进程。
-  - 凭证存于 Git common dir 的 `mdf/attestations/verify/`，跨 worktree 与分支共享。
-  - 命中项在报告中保留首次的 `original_duration_s`，另记 `check_duration_s`、`reused: true` 与 `reused_from`。
-  - `--force` 忽略凭证冷跑；同指纹实跑失败写入 tombstone，阻断旧成功凭证直到重新通过。
+- smoke 与 release 各自从 `clear-commits.json` 读取通过节点。clean 且相关内容相同时，
+  命中项返回 `clear_commit`，不再执行该 suite。dirty 或 `--force` 时执行。
+  clean 下强制重跑同内容时，旧记录失效，实跑通过后重新记录。
   - 入口声明与产物规则见 [modules](../../../skills/mdf/references/modules.md)。
 - `--report-file <路径>`：smart 成败结果仅写入指定文件，替代上述默认写入位置；用于 catch-up 保留基线报告。
   - 相对路径以 repo 为根；必须留在仓库内且不含符号链接，执行验证前检查路径。

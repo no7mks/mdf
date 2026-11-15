@@ -127,12 +127,10 @@ github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--
 - release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
 - `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。
 
-### 内容指纹复用与确定性规划
+### Clear commit 与确定性规划
 
-- `verify`、`code-review`、`fact-audit` 的通过结果按内容指纹记入 Git common dir 的 `mdf/attestations/`，跨分支与 worktree 命中时不重跑。
-  - 指纹含显式输入、环境、lockfile 与 MDF scripts；同指纹失败写入 tombstone。
-  - `verify --force` 与 `fact-audit --force` 都不复用旧凭证。
-  - release 仅在净代码增量与未覆盖组合影响面均为空时可用 0 reviewer；`--quick` 的事实审阅不可替代语义审阅。
+- Git common dir 的 `mdf/clear-commits.json` 共享 smoke、release、code-review、fact-audit 各自最近通过的 commit。
+- 比较记录与当前内容，不要求 ancestor。dirty 照常读取作比较起点，执行检查，保留原记录。
 - `catch-up-plan` 按 merge 拓扑独立给出 review、verify、fact 三路动作；`review-prepare` 给出审查左端点、未审净增量与体积。
 - `delivery route` 返回等待状态；`delivery complete-stage` 只自动完成 verify 与 catch-up，且不连带提交无关暂存内容。
 
@@ -150,7 +148,7 @@ feature 可使用 `$mdf start --from-master`，支持 `--manual`。
 
 ### code-review 与 roster
 
-code-review 支持 feature、bugfix、hotfix、release 和 adhoc；worktree 必须 clean。
+code-review 支持 feature、bugfix、hotfix、release 和 adhoc。dirty 照常审查；clean 时可以记录 clear commit。
 审查是一条链。有 roster 按 roster 派发。没有 roster 时用总行数定人数，每 1000 行一人。
 切开按模块相近度，不按行数切。派不出则主 Agent 审查。
 执行方式见 [code-review](skills/mdf/references/code-review.md)；以下 roster 规则仅用于交付模式。

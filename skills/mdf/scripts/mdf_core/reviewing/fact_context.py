@@ -32,7 +32,7 @@ def inventory(repo):
     return result
 
 
-def fact_context(repo, against):
+def fact_context(repo, against, *, include_index=False):
     base = sha(repo, against)
     identity = input_identity(repo)
     with TemporaryDirectory(prefix='mdf-fact-') as folder:
@@ -47,6 +47,10 @@ def fact_context(repo, against):
                   'repository-documents.md', 'modules.md', 'doc-structure.md')}}
         changed = git(after, 'diff', '--no-renames', '--name-only', '-z', base, '--').stdout.split('\0')
         changed = [p for p in changed if p]
+        if include_index:
+            from mdf_core.workspace.clear_commits import changed_paths
+
+            changed = sorted(set(changed) | changed_paths(repo, base, dirty=True))
         validation_paths = sorted(set(files) | set(
             git(before, 'ls-tree', '-rz', '--name-only', base).stdout.split('\0')) - {''})
         ignored = {}
@@ -75,5 +79,8 @@ def fact_context(repo, against):
                   'base_mappings': old, 'worktree_mappings': new, 'audit': audit,
                   'diff': selected_diff(after, base, None, review_paths),
                   'rules': rules, 'rules_sha256': fingerprint(rules), 'incomplete': []}
+        if include_index:
+            result['staged_diff'] = git(repo, 'diff', '--cached', '--no-ext-diff', '--no-textconv',
+                                        '--no-renames', '--binary', '--').stdout
     result['context_sha256'] = fingerprint(result)
     return result

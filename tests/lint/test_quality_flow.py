@@ -42,7 +42,7 @@ def test_read_only_skips_repair_inside_one_review_chain():
     table = rows(review)
     assert [row[1] for row in table] == ["Check", "Review", "Repair", "Record", "Report"]
     assert table[1][6] == "未覆盖留在2"
-    assert "只读5；否则3" in table[1][5]
+    assert table[1][5] == "只读5；可复用4；否则3"
     assert "未审查不得写入 incomplete" in review
     assert "未审查不是合法 decision" in protocol
     assert "派不出 subagent 时由主 Agent 审查" in protocol

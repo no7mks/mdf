@@ -73,6 +73,30 @@ def test_complete_verify_commits_only_stage_files_and_is_idempotent(python_exe, 
     assert again["already_completed"] is True and git(work, "rev-parse", "HEAD").stdout.strip() == head
 
 
+def test_playbook_verification_records_clear_after_committing_its_report(python_exe, tmp_path):
+    from test_playbooks import _write_junit, _write_playbook
+
+    repo, _, _ = started(python_exe, tmp_path)
+    release = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
+                          "--version", "1.3.0", "--objectives-file", str(write_release_objectives(tmp_path))))
+    work = Path(release["worktree"])
+    root = work / "changes/unreleased/1.3.0"
+    _write_playbook(work, "release.md", "[release]", ("S01",))
+    set_steps(work, root, [("verify branch", False)])
+    command = ("verify", "branch", "--repo", str(work))
+    pending = payload(mdf(python_exe, *command))["result"]["pending"]
+    folder = pending["report_dir"]
+    _write_junit(work, folder, "release", [("tests/playbooks/release.md", "S01", False)])
+    payload(mdf(python_exe, *command, "--record", folder))
+    state = repo / ".git/mdf/clear-commits.json"
+    assert not state.exists()
+    payload(complete(python_exe, work, "verify"))
+    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    assert json.loads(state.read_text())["verify_release"] == head
+    rerun = payload(mdf(python_exe, *command))["result"]
+    assert rerun["all_passed"] and rerun["results"][-1]["clear_commit"] == head
+
+
 def test_verify_requires_matching_scope_branch_and_earlier_steps(python_exe, tmp_path):
     _, work, root = started(python_exe, tmp_path)
     set_steps(work, root, [("code-review", False), ("verify branch", False)])
