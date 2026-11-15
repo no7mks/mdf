@@ -63,14 +63,17 @@ def test_doctor_reports_invalid_workflow(python_exe, tmp_path):
 
 @pytest.mark.parametrize("model", ["github-flow", "gitflow"])
 @pytest.mark.parametrize("pr", [False, True])
-def test_init_managed_block_limits_trunk_push_rule_to_github_flow_pr(python_exe, tmp_path, model, pr):
+def test_init_managed_block_uses_workflow_branch_rules(python_exe, tmp_path, model, pr):
     repo = local_gitflow(tmp_path)
     agents = repo / "AGENTS.md"
     agents.write_bytes(agents.read_bytes() + b"\r\nCustom push rule.\r\n")
     options = ("--closeout-mode", "pr", "--closeout-provider", "github") if pr else ()
     payload(_init(python_exe, repo, "--workflow", model, *options))
     block, outside = agents.read_bytes().split(b"<!-- MDF:END -->")
-    assert (b"$mdf trunk-pr" in block) == (model == "github-flow" and pr)
+    block = block.decode("utf-8")
+    assert ("直接在 `workflow.trunk` 上改动时" in block) == (model == "github-flow")
+    assert ("直接在 develop 上改动时" in block) == (model == "gitflow")
+    assert ("$mdf trunk-pr" in block) == (model == "github-flow" and pr)
     assert outside.endswith(b"\r\nCustom push rule.\r\n")
 
 
@@ -94,10 +97,9 @@ def test_init_closeout_changes_refresh_block_and_preserve_other_settings(python_
     assert "$mdf trunk-pr" in agents.read_text()
 
 
-def test_switch_updates_trunk_push_rule_in_committed_block(python_exe, tmp_path):
+def test_switch_updates_workflow_branch_rules_in_committed_block(python_exe, tmp_path):
     repo = local_gitflow(tmp_path)
-    manifest = repo / ".mdf/manifest.yaml"
-    manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: gitlab\n")
+    payload(_init(python_exe, repo, "--closeout-mode", "pr", "--closeout-provider", "gitlab"))
     commit(repo)
     remote = tmp_path / "origin.git"
     git(tmp_path, "init", "--bare", str(remote))
@@ -106,7 +108,10 @@ def test_switch_updates_trunk_push_rule_in_committed_block(python_exe, tmp_path)
     original = (repo / "AGENTS.md").read_text()
     switch = ("workflow", "switch", "--repo", str(repo), "--model")
     forward = payload(mdf(python_exe, *switch, "github-flow"))
-    assert "$mdf trunk-pr" in git(repo, "show", "HEAD:AGENTS.md").stdout
+    block = git(repo, "show", "HEAD:AGENTS.md").stdout
+    assert "$mdf trunk-pr" in block
+    assert "直接在 `workflow.trunk` 上改动时" in block
+    assert "直接在 develop 上改动时" not in block
     git(repo, "checkout", "master")
     git(repo, "merge", "--no-ff", "--no-edit", forward["source"])
     git(repo, "push", "origin", "master")
