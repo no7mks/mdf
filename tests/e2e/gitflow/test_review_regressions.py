@@ -27,9 +27,9 @@ def completed_materials(work, version='1.2.1'):
     commit(work)
 
 
-def waiting_backmerge(python_exe, tmp_path, monkeypatch):
+def waiting_backmerge(python_exe, tmp_path, monkeypatch, *, kind='hotfix'):
     from mdf_core.lifecycle import pull_publish
-    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     completed_materials(work)
     squash_pending(work)
     payload(mdf(python_exe, 'pr', '--repo', str(work)))
@@ -98,6 +98,52 @@ def test_backmerge_resume_preserves_local_fixes_when_remote_already_contains_rel
     assert git(remote, 'show', 'develop:resolution.py').stdout == 'resolved = True\n'
 
 
+@pytest.mark.parametrize('diverged', [False, True])
+def test_release_waits_for_backmerge_fix_before_source_cleanup(python_exe, tmp_path, monkeypatch, diverged):
+    repo, remote, work, _, record, merged = waiting_backmerge(python_exe, tmp_path, monkeypatch, kind='release')
+    back = Path(record['worktree'])
+    published = record['head']
+    git(back, 'push', 'origin', 'HEAD:refs/heads/develop')
+    assert git(remote, 'rev-parse', 'develop^2').stdout.strip() == merged
+    (back / 'resolution.py').write_text('resolved = True\n')
+    commit(back)
+    fix = git(back, 'rev-parse', 'HEAD').stdout.strip()
+    source = git(work, 'branch', '--show-current').stdout.strip()
+    source_head = git(work, 'rev-parse', 'HEAD').stdout.strip()
+    hook = remote / 'hooks/pre-receive'
+    if diverged:
+        other = git(back, 'commit-tree', f'{published}^{{tree}}', '-p', published,
+                    '-m', 'test: 推进远端 develop').stdout.strip()
+        git(back, 'push', 'origin', f'{other}:refs/heads/develop')
+    else:
+        other = published
+        hook.write_text('#!/bin/sh\nwhile read -r old new ref; do\n'
+                        '    if [ "$ref" = refs/heads/develop ]; then\n'
+                        '        echo "develop push rejected" >&2\n        exit 1\n    fi\ndone\n')
+        hook.chmod(0o755)
+
+    args = ('finish-gitflow', '--repo', str(work))
+    pending = payload(mdf(python_exe, *args))
+    assert pending['status'] == 'published_pending_backmerge' and not pending['completed']
+    assert ('请先集成' if diverged else 'develop push rejected') in pending['backmerge']['push_error']
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == other
+    assert git(back, 'rev-parse', 'HEAD').stdout.strip() == fix
+    for repository in (repo, remote):
+        assert git(repository, 'rev-parse', f'refs/heads/{source}').stdout.strip() == source_head
+
+    if diverged:
+        git(back, 'fetch', 'origin')
+        git(back, 'merge', '--no-ff', '--no-edit', 'origin/develop')
+    else:
+        hook.unlink()
+        git(back, 'push', 'origin', 'HEAD:refs/heads/develop')
+    done = payload(mdf(python_exe, *args))
+    assert done['completed'] and done['remote_deleted'] and done['deleted'] == source
+    git(remote, 'merge-base', '--is-ancestor', fix, 'develop')
+    for repository in (repo, remote):
+        assert not git(repository, 'for-each-ref', f'refs/heads/{source}').stdout
+
+
 
 @pytest.mark.parametrize('retained_action', ['advance', 'remove'])
 def test_completed_backmerge_does_not_republish_retained_worktree(python_exe, tmp_path, monkeypatch, retained_action):
@@ -114,6 +160,22 @@ def test_completed_backmerge_does_not_republish_retained_worktree(python_exe, tm
     repeated = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', done['source']))
     assert repeated['completed'] and len(platform.pulls) == 1
     assert git(remote, 'rev-parse', 'develop').stdout == expected
+
+
+def test_completed_backmerge_stops_if_remote_lost_the_release(python_exe, tmp_path, monkeypatch):
+    repo, remote, work, _, record, _ = waiting_backmerge(python_exe, tmp_path, monkeypatch)
+    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    assert done['completed']
+    back = Path(record['worktree'])
+    (back / 'later.py').write_text('unrelated = True\n')
+    commit(back)
+    retained = git(back, 'rev-parse', 'HEAD').stdout
+    git(remote, 'update-ref', 'refs/heads/develop', record['base'])
+
+    retry = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', done['source'])
+    assert retry.returncode != 0 and 'pull_state_changed' in retry.stderr
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == record['base']
+    assert git(back, 'rev-parse', 'HEAD').stdout == retained
 
 
 def incremental_report(state='reopened'):

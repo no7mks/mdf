@@ -138,7 +138,7 @@ def test_platform_deleted_source_is_reused_without_another_delete(python_exe, tm
 
 
 @pytest.mark.parametrize('back_action', ['advance', 'remove'])
-def test_remote_cleanup_retry_does_not_publish_later_backmerge_commits(python_exe, tmp_path, monkeypatch, back_action):
+def test_remote_cleanup_retry_checks_backmerge_before_local_deletion(python_exe, tmp_path, monkeypatch, back_action):
     repo, remote, work, first = merged_delivery(python_exe, tmp_path, monkeypatch)
     source, head = first['source'], first['pull_request']['head']
     original = pull_finish.git
@@ -151,12 +151,13 @@ def test_remote_cleanup_retry_does_not_publish_later_backmerge_commits(python_ex
         assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
     from mdf_core.workspace.gitutil import sibling_worktree
     back = sibling_worktree(repo, 'codex/backmerge/1.2.1')
+    expected = git(remote, 'rev-parse', 'develop').stdout
     if back_action == 'advance':
-        (back / 'later.py').write_text('later = True\n')
+        (back / 'resolution.py').write_text('resolved = True\n')
         commit(back)
+        expected = git(back, 'rev-parse', 'HEAD').stdout
     else:
         git(repo, 'worktree', 'remove', str(back))
-    before = git(remote, 'rev-parse', 'develop').stdout
     git(repo, 'push', f'--force-with-lease=refs/heads/{source}:{head}', 'origin', f':refs/heads/{source}')
     done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
-    assert done['completed'] and git(remote, 'rev-parse', 'develop').stdout == before
+    assert done['completed'] and git(remote, 'rev-parse', 'develop').stdout == expected

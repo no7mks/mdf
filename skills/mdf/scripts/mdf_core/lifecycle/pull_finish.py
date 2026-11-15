@@ -270,11 +270,12 @@ def submit(repo, forge, source, target, pull, *, pm, fixed_head):
 
 def retained_owner(repo, source, head):
     work = sibling_worktree(repo, source)
-    if work.is_dir() and git(work, "branch", "--show-current", check=False).stdout.strip() == "":
-        tip = git(work, "rev-parse", "--verify", "HEAD", check=False)
-        if tip.returncode == 0 and tip.stdout.strip() == head:
+    listing = git(repo, "worktree", "list", "--porcelain", "-z").stdout
+    for entry in listing.split("\0\0"):
+        fields = entry.split("\0")
+        if fields[0] == f"worktree {work}" and f"HEAD {head}" in fields and "detached" in fields and work.is_dir():
             return work
-    return primary_worktree(repo)
+    return None
 
 
 def _finish(repo, source, settings, *, phase, number):
@@ -311,8 +312,9 @@ def _finish(repo, source, settings, *, phase, number):
             from mdf_core.lifecycle.late_decision import require_feature_target
             require_feature_target(repo, source, target)
         pull = submit(repo, forge, source, target, pull, pm=pm, fixed_head=github and publishes and not version)
+    owner = worktree_map(repo).get(source) or retained_owner(repo, source, pull["head"])
     state = {"source": source, "target": target, "head": pull["head"],
-             "retained_worktree": str(worktree_map(repo).get(source) or retained_owner(repo, source, pull["head"]))}
+             "retained_worktree": str(owner) if owner is not None else None}
     status = "waiting_for_merge" if pull["state"] == "open" else "closed_without_merge"
     if pull["state"] == "merged":
         check_source(repo, state)
@@ -351,7 +353,7 @@ def _finish(repo, source, settings, *, phase, number):
                 details["version"] = source_version(repo, source, ref=state["head"])
             if github:
                 state["release_head"] = release_head_of(repo, source, ref=state["head"]) if version else state["head"]
-            ready = publish(repo, state, details["version"])
+            ready = publish(repo, state, details["version"], source_cleaned=remote_head is None and local is None)
         if ready:
             cleanup_remote(repo, source, state["head"])
             cleanup(repo, state)

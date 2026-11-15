@@ -222,8 +222,8 @@ local 模式先在 feature 集成已确定目标；bugfix 集成 develop，relea
   - confidence ≥ 0.8 自动确认，低于 0.8 请求用户确认；不降低验收要求。
   - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
   - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
-  - manual slug 与收尾 worktree 删除等 decision 也适用；squash 默认自主执行，人工工作仍须用户完成并勾选。
-  - close-out 保留 detached worktree；收尾按同一策略决定是否删除，删除后结束本对话。
+  - manual slug 等 decision 也适用；squash 默认自主执行，人工工作仍须用户完成并勾选。
+  - close-out 成功收尾后默认删除临时 owner 和 backmerge worktree，不再单独确认；随后结束本对话。
     后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。
 - release 从 develop 开分支前确认发布目标。
   - 工作线四选一；目标里只写选中的那条。不实施新 PRP。
@@ -344,5 +344,5 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 - slug 由 Agent 自定；直接生成六项 objectives，不另确认目标文本或 roster，不绑定 PRP。
 - 主线：`工作 → lint → code-review → verify smart → fact audit/update → close-out`。
 - 工作可由 Agent 完成并勾选；code-review 使用 1 个 reviewer，smart 成败均留存 report。
-- close-out no-ff 合入本地 develop，删除源分支，保留 detached worktree；不 push。
+- close-out no-ff 合入本地 develop，删除源分支；成功收尾后默认删除临时 worktree，不 push。
 - `$mdf next` 单步续办；已有 adhoc 上的 `$mdf deliver` 持续推进剩余阶段。

@@ -53,7 +53,7 @@ def test_pr_watch_reuses_original_pull_after_repair(python_exe, tmp_path, monkey
 
 @pytest.mark.parametrize('kind', ['release', 'hotfix'])
 @pytest.mark.parametrize('action', ['remove', 'advance'])
-def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path, monkeypatch, kind, action):
+def test_published_backmerge_resumes_after_local_conflict(python_exe, tmp_path, monkeypatch, kind, action):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, kind)
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     merged = platform.merge(1, tmp_path)
@@ -73,12 +73,16 @@ def test_published_backmerge_is_fixed_before_local_conflict(python_exe, tmp_path
         git(repo, 'worktree', 'remove', str(back))
         git(repo, 'branch', '-D', branch)
     else:
-        (back / 'later.py').write_text('unrelated_later_work = True\n')
+        (back / 'resolution.py').write_text('resolved = True\n')
         commit(back)
         squash_pending(back)
     result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed'] and result['merge_commit'] == merged
-    assert git(remote, 'rev-parse', 'develop').stdout == before
+    if action == 'remove':
+        assert git(remote, 'rev-parse', 'develop').stdout == before
+    else:
+        assert git(remote, 'rev-parse', 'develop').stdout == git(back, 'rev-parse', 'HEAD').stdout
+        assert git(remote, 'show', 'develop:resolution.py').stdout == 'resolved = True\n'
 
 
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])

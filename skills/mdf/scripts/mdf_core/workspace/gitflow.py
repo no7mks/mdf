@@ -563,23 +563,26 @@ def finish_local(repo, source, details, args):
         _merge(merge_at, incoming, target, hook)
         return merge_at
 
+    merged_in = None
     if kind in {"feature", "bugfix"}:
         if source_head is None:
             raise MDFError("源分支不存在", code="missing_branch")
         from mdf_core.lifecycle.publish import find_merge
         if find_merge(repo, f"refs/heads/{target}", source_head) is None:
-            merge_into(target, source, complete_feature)
+            merged_in = merge_into(target, source, complete_feature)
     else:
         from mdf_core.lifecycle.publish import publish as publish_release
         source_head = publish_release(repo, source, details["version"], head=source_head)
-    remaining = worktree_map(primary)
-    source_wt = remaining.get(source)
-    retained = source_wt or (repo if repo != primary else None)
-    from mdf_core.lifecycle.pull_finish import cleanup
+    source_wt = worktree_map(primary).get(source)
+    from mdf_core.lifecycle.pull_finish import cleanup, retained_owner
     cleanup(repo, {"source": source, "head": source_head})
-    if retained is not None and source_wt is None and _git(retained, "branch", "--show-current").stdout.strip():
-        ensure_clean(retained)
-        _git(retained, "checkout", "--detach", source_head)
+    retained = source_wt
+    if owner is not None and owner == merged_in and owner != primary and source_wt is None:
+        ensure_clean(owner)
+        _git(owner, "checkout", "--detach", source_head)
+        retained = owner
+    if retained is None:
+        retained = retained_owner(repo, source, source_head)
     tag = f"v{details['version']}" if publish else None
     emit(
         {

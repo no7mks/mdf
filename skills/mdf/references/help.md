@@ -270,8 +270,8 @@ $mdf clarify 要不要把缓存放到 Redis
       `--qa-strategy`、`--dev-strategy`、`--review-strategy`；
       `--write-tests-model`、`--implement-model`、`--code-review-model`。
     - 允许进入 close-out 时包含其合并及适用的 tag、发版推送，不另加固定 Gitflow 确认。
-    - manual slug 与收尾删除工作区按 confidence 策略裁定；squash 默认自主执行，人工工作仍须用户显式勾选。
-    - close-out 保留 detached worktree；收尾决定是否删除。
+    - manual slug 按 confidence 策略裁定；squash 默认自主执行，人工工作仍须用户显式勾选。
+    - close-out 成功收尾后默认删除临时 owner 和 backmerge worktree，不再单独确认。
       删除后本对话不要再继续，后续工作在主 worktree 开新对话。
 - `$mdf start`
   - 用法：`$mdf start` 或 `$mdf start --manual`；可带 `--roster`、`--*-strategy`、`--*-model`
@@ -293,7 +293,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用法：`$mdf adhoc 更新配置说明`；省略描述时从已有 adhoc 的 work 或已明确对话恢复。
   - 用途：在独立 worktree 连续完成临时小工作；slug 与七项 objectives 直接生成。
   - 顺序：工作 → lint → code-review → verify smart → fact audit/update → catch-up → close-out。
-  - 说明：固定 roster `0,0,1`，不绑定 PRP；local 模式本地 no-ff 合入 develop，保留 detached worktree。
+  - 说明：固定 roster `0,0,1`，不绑定 PRP；local 模式本地 no-ff 合入 develop，成功收尾后默认删除临时 worktree。
     PR mode 提交 PR/MR，实际合并并完成清理后才完成交付。
 - `$mdf design`
   - 用法：`$mdf design`；可带与 start 相同的 strategy / models 参数

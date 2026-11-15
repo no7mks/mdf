@@ -118,7 +118,7 @@ closeout:
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
   - release/ODR/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
-  - worktree 删除只在实际收口及最终核验完成后，按原清理授权执行；不能凭 checklist 全勾或 PR 已创建提前删除。
+  - worktree 删除只在实际收口及最终核验完成后，按 [工作区清理](close-out.md#工作区清理) 默认删除临时 owner 和 backmerge；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，保留 Git 现场。
   - lock 只覆盖本次收口操作；调用退出或中断时由 OS 释放，不删除 lock 文件。
   - finish_busy 先等待持锁调用结束再续办，不启动第二个写入流程。

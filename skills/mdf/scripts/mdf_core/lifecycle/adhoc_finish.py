@@ -50,13 +50,14 @@ def status(repo, source, slug=None):
 
 def finish(repo, source, *, recovering):
     from mdf_core.lifecycle.adhoc import completion
-    from mdf_core.lifecycle.pull_finish import cleanup
+    from mdf_core.lifecycle.pull_finish import cleanup, retained_owner
     from mdf_core.workspace.gitflow import _merge
 
     require_source(source)
     integ = integration_branch(repo)
     trees = worktree_map(repo)
-    owner = trees.get(source, repo)
+    source_owner = trees.get(source)
+    owner = source_owner or repo
     ensure_clean(owner)
     target = trees.get(integ, owner)
     ensure_clean(target)
@@ -88,11 +89,13 @@ def finish(repo, source, *, recovering):
         raise MDFError("无法核对原双亲 merge", code="finish_state_changed")
     cleanup(repo, {"source": source, "head": head})
     primary = primary_worktree(repo)
-    if owner != primary and sha(owner, "HEAD") == merged:
+    if owner == source_owner and owner != primary and sha(owner, "HEAD") == merged:
         git(owner, "checkout", "--detach", head)
     elif owner == primary and not git(owner, "branch", "--show-current").stdout.strip():
         if integ not in worktree_map(repo):
             git(owner, "checkout", integ)
+    retained = source_owner or retained_owner(repo, source, head)
     emit({"ok": True, "operation": "finish-gitflow", "mode": "local", "source": source,
           "targets": [integ], "completed": True, "merge_commit": merged, "deleted": source,
-          "retained_worktree": str(owner), "primary_worktree": str(primary), "tag": None, "pushed": False})
+          "retained_worktree": str(retained) if retained is not None else None,
+          "primary_worktree": str(primary), "tag": None, "pushed": False})

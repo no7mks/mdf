@@ -155,7 +155,7 @@ PR mode 的 Integrate 与 Recheck 执行 [提交前远端集成](pr.md#提交前
     核对 no-ff 合入本地 develop、源分支已删、owner 保留且 detached 在交付 tip；不 fetch、不 push、不打 tag。
   - PR：按 PR Close-out 核 completed=true、目标远端 merge、remote_deleted=true 与本地 source 清理。
     不以本地 adhoc-status 或 detached 单独代替平台结果。
-  - 两种模式均不删除 `.mdf/`、`docs/` 或保留的工作区。
-  - deliver 返回其完成核验；直调返回 adhoc Select；独立 close-out 报告实际结果后结束。
-- 独立调用只有用户明确要求才删除工作区；deliver 委托按其 confidence 策略与公共清理规则裁定。
-  保留目录不影响交付完成。
+  - 两种模式均不单独删除 `.mdf/`、`docs/` 产出物；已交付材料随目标分支保留。
+  - deliver 返回其完成核验；直调和独立 close-out 完成报告后执行公共清理，不再返回 adhoc Select。
+- 成功收尾后默认删除临时 owner 和 backmerge worktree，不再单独确认。
+  - 保护对象、失败保留与最后一次 tool call 均按 [工作区清理](close-out.md#工作区清理) 执行。

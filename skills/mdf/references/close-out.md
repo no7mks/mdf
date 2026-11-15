@@ -91,7 +91,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 └────────────────┬─────────────────┘
                  │
                  ├──── PR mode ─────────────────────→ [委托合并后续办]
-                 ├──── local 通过 ──────────────────→ [核验、报告并询问工作区清理]
+                 ├──── local 通过 ──────────────────→ [核验、报告并默认清理临时工作区]
                  ├──── local 失败且用户决定继续 ────→ 10 Finish Gitflow
                  ├──── local 失败且未决 ────────────→ 10 Finish Gitflow
                  └──── local 失败且用户停止 ────────→ [报告现场并停止]
@@ -414,16 +414,35 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
   - 不继续推送或删分支；询问用户是否继续。继续或未决回步骤 10，用户停止则停止。
   - 必要修复按确认范围由 Agent 复核并提交。
 
-工作区清理（Gitflow 成功后）：
-- 先核验、完成所有收尾并报告；删除工作区不是 close-out 完成条件。
-- deliver 委托时先返回，由其步骤 5 完成核验、Goal 与报告后执行本节。
-- `retained_worktree` 为 null 或指向主 worktree 时不删除主工作区。
-- 否则展示绝对路径；独立调用询问是否删除，deliver 委托按其 confidence 策略裁定。
-  - 说明：删除后本对话不要再继续，后续工作在主 worktree 开新对话。
-  - 拒绝或未决则保留，不影响交付完成。
-- 自动裁定或用户确认后直接执行 `git -C <主路径> worktree remove <保留路径>`，不引入另一个脚本。
-  - 从主 worktree 启动，作为最后一次 tool call；成功后只报告删除结果并结束本对话。
-  - 不加 `--force`；失败则保留现场并报告，不重跑 close-out。
+### 工作区清理
+
+本节统一规定 local、PR、adhoc 与 deliver 成功收尾后的临时 worktree 清理。
+
+- CLI 先保留目录供核验；Agent 完成核验、Goal 与报告后，默认删除本次临时 owner 和 backmerge worktree，不再单独确认。
+  - deliver 委托时先返回其步骤 5；adhoc 直调在本次完成核验后清理，不再回到依赖 owner 的 Select。
+  - 用户明确要求保留时遵从；清理不再使用 confidence 策略。
+- 仅处理本次交付已核实的路径，不扫描删除其他交付或整个 worktrees 根目录。
+  - owner 使用 `retained_worktree`；null 或已移除时跳过，不重建。
+  - backmerge 使用 `backmerge.worktree`；恢复结果缺项时，以已核实发布版本对应的 `codex/backmerge/<version>` 查询 worktree 清单。
+  - 恢复时不得从目录名猜版本；必须确认该回合包含本次发布提交，且完整 HEAD 已进入远端 develop。
+
+| 路径或状态 | 动作 |
+| --- | --- |
+| 主 worktree、planning/deploy worktree | 始终保留；按实际路径与分支绑定核对，优先于候选清单 |
+| 收口未完成、证据不符、未提交改动或未结束 Git 操作 | 保留失败现场并报告，不执行删除 |
+| 存在无法确认可重建或已留存的 Git 忽略文件 | 保留 worktree 并报告 |
+| owner 已切换分支或 HEAD 不等于已交付 source tip | 保留并报告，不删除后续工作 |
+| backmerge 分支身份不符或完整 HEAD 未进入远端 develop | 保留并报告，不删除未发布提交 |
+| 本次已完成且身份、状态均符合的临时 worktree | 默认删除，不再单独确认 |
+
+1. 从主 worktree 核对清单、身份、clean 状态及完成证据，展示待删除绝对路径；先完成所有依赖临时目录的读取。
+   - 用 `git -C <保留路径> status --porcelain --ignored=matching --untracked-files=all` 检查本地文件。
+   - Git 会随 worktree 删除忽略文件；先核对其中的配置、credential 与本地产出是否可重建或已留存。
+2. 从主 worktree 执行 `git -C <主路径> worktree remove <保留路径>`，不引入另一个脚本。
+   - 先删除 backmerge，再删除 owner；合并在最后一次 tool call 中执行，进程 cwd 必须为主 worktree。
+   - 不加 `--force`；任一删除失败则停止清理，保留剩余现场并报告，不重跑 close-out。
+3. 只报告实际删除和保留结果，结束本对话；后续工作在主 worktree 开新对话。
+   - 清理失败不回退已完成交付，也不影响交付完成判定；不得将保留目录误报为已删除。
 
 release、ODR 与 hotfix 的发布和续办检查：
 

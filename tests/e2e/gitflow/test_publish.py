@@ -64,8 +64,12 @@ def test_publish_resumes_without_remerging_or_retagging(
     ).stdout
     assert contents.startswith("chore(release): 发布 v1.2.1")
     assert "测试发布条目" in contents
-    # 从主 worktree 恢复不会删除已经 detached 的工作区或重复创建提交/tag。
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/1.2.1"))
+    # 从其他 linked worktree 恢复时，保留其分支并定位 detached owner。
+    other_worktree = tmp_path / "other-worktree"
+    git(repo, "worktree", "add", "-b", "other-work", str(other_worktree), "master")
+    recovered = payload(mdf(python_exe, "finish-gitflow", "--repo", str(other_worktree), "--source", "hotfix/1.2.1"))
+    assert recovered["retained_worktree"] == str(work)
+    assert git(other_worktree, "branch", "--show-current").stdout.strip() == "other-work"
     assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
     assert git(remote, "rev-parse", "develop").stdout == remote_develop
     assert work.is_dir()

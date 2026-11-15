@@ -26,7 +26,7 @@ def tag_release(repo, state, version):
     state["tag"] = tag
 
 
-def publish(repo, state, version):
+def publish(repo, state, version, *, source_cleaned):
     from mdf_core.lifecycle.pull_finish import sync_local
     from mdf_core.workspace.workflow_policy import is_github_flow
     from mdf_core.workspace.squash import require_ready
@@ -40,13 +40,16 @@ def publish(repo, state, version):
             raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
         tag_release(repo, state, version)
         return True
-    tag_release(repo, state, version)
     remote = "refs/remotes/origin/develop"
     from mdf_core.lifecycle.publish import find_merge
     branch = f"codex/backmerge/{version}"
     tip = local_head(repo, branch)
-    remote_merge = find_merge(repo, remote, merged)
-    if remote_merge or (ancestor(repo, merged, remote) and (tip is None or ancestor(repo, tip, remote))):
+    published = ancestor(repo, merged, remote) and (tip is None or ancestor(repo, tip, remote))
+    # 源分支已清理时，以远端回合为准，保留 worktree 里的后续提交。
+    if source_cleaned and not published and not find_merge(repo, remote, merged):
+        raise MDFError("源分支已清理，但远端 develop 缺少回合证据，保留现场", code="pull_state_changed")
+    tag_release(repo, state, version)
+    if published or source_cleaned:
         sync_local(repo, "develop", integrate_develop=True)
         return True
     work = sibling_worktree(repo, branch)

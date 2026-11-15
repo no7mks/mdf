@@ -399,8 +399,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。
 - 报告本次完成的阶段、验证、Git 结果或具体阻塞，以及所有仍存活的 subagent 和未完成交接。
-- 仅在实际 close-out 完成且核验、Goal 与报告完成后，按 confidence 策略决定是否删除保留的 owner 工作区。
-  - 拒绝或未决时保留，不影响交付完成；到 until 时不清理尚在交付中的 owner。
-  - 自动裁定或用户确认删除后，按 `references/close-out.md` 将删除命令作为最后一次 tool call，
-    并说明本对话不要再继续。
+- 仅在实际 close-out 完成且核验、Goal 与报告完成后，默认删除本次临时 owner 和 backmerge worktree，不再单独确认。
+  - 按 [工作区清理](close-out.md#工作区清理) 核对保护对象和失败现场；不再使用 confidence 策略。
+  - 到 until 时不清理尚在交付中的 worktree；用户明确要求保留时遵从。
+  - 从主 worktree 将清理作为最后一次 tool call，报告实际结果并结束本对话。
 - 上下文恢复时用上述现有产物与实际 Git 状态重新核验，不依赖未落地的内存完成标志。

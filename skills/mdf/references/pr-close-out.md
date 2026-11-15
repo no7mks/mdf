@@ -67,8 +67,9 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 - github-flow 的本地 trunk 有未共享 commit 时，`finish-gitflow` 返回 `upstream_diverged` 并保留现场。
   通过显式 [trunk-pr](trunk-pr.md) 或已确认的 sync PR 计划保全这些 commit 并对齐本地 trunk。
   对齐后用原交付 source 续办 close-out，新 PR/MR 可独立等待合并。
-- close-out 完成后返回 deliver / adhoc；更大范围 Goal 的其他工作仍须保留。
-- 工作区清理按 [close-out](close-out.md) 的清理授权执行；CLI 始终保留 owner worktree。
+- close-out 完成后由 deliver 完成最终核验；其他入口报告后执行公共清理并结束，不再返回 adhoc Select。
+  - 更大范围 Goal 的其他工作仍须保留，不因本次交付完成而置 complete。
+- CLI 先保留 owner 与 backmerge worktree 供核验；成功收尾后按 [工作区清理](close-out.md#工作区清理) 默认删除，不再单独确认。
 
 ### Backmerge 修复
 
@@ -94,6 +95,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
   - 远端已由平台或用户删除时，确认缺失即复用，不重复发删除请求。
 - 中断或推送结果不明时，重新查询精确远端 ref。缺失即继续本地清理。SHA 不同，或本地 source 已缺失而同名远端 ref 仍存在时，保留现场。
 - 发布重试核对固定 M、annotated tag 与远端 develop 第一父链的双亲回合。已合入的回合以远端拓扑为准。
+  - 本地和远端 source 均已清理时，只核远端回合证据；证据缺失时停止，保留 backmerge worktree 的后续提交。
 - CLI 的 remote_deleted 独立表示已确认远端 source 删除，deleted 仍表示本地 source；全部清理完成后才能 completed=true。
 
 ### 发布与回合
@@ -107,7 +109,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 | 核 release/ODR/hotfix 平台合并 | master 第一父链中的双亲 M | 停止并保留现场 |
 | 在 M 创建 annotated `v<version>`，正文取 CHANGELOG，只 push tag | 远端 tag 指向 M | 读日志并核对当前 tag |
 | 独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
-| 清理远端及本地 source，保留临时回合目录 | remote_deleted、deleted、owner 状态 | 步骤 3 核对剩余 refs |
+| 清理远端及本地 source，暂留临时目录供核验 | remote_deleted、deleted、owner 状态 | 步骤 3 核对后默认清理临时目录 |
 
 - 不跟随后来前进的 master HEAD；本地 master 只做同名 ff 同步，分歧时保留现场。
 - 本地 develop 的集成遵循下节；远端 backmerge 始终以远端 develop 为 base，不夹带本地独有 commits。

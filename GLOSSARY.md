@@ -197,7 +197,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 - Agent 自行选相关 slug，从 develop 建立 `adhoc/<slug>` 与独立 worktree，不绑定 PRP。
 - `$mdf adhoc` 的 local objectives 为六项：工作、lint、code-review、verify smart、fact audit/update、close-out。
 - roster 固定 `0,0,1`，`needs_design: false`；工作可由 Agent 完成并勾选。
-- smart 成败均写 verification-report.json；本地 no-ff 合入 develop 后保留 detached worktree。
+- smart 成败均写 verification-report.json；本地 no-ff 合入 develop 并完成收尾后默认删除临时 worktree。
 - 已有分支可无账本收口：保留真实名称与工作区，由 pr / close-out 准备 Change 与实际 evidence，不补造 delivery/objectives。
 - 内部 qa/dev 角色及 backmerge 先归属原 workflow；不能独立作为 adhoc 收口。
 
@@ -208,7 +208,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 - `--until <intent>`：exclusive 截止点，不执行该 intent；`--stop-at` 是别名。
 - confidence：AI 对一项 decision 的置信度，范围 `[0,1]`；默认由 Jev 评分，无 Jev 时由主 Agent 评分。
   - ≥ 0.8 自动确认；< 0.8 或无法评分时请求用户确认。
-  - 包括 manual slug、squash、Gitflow 与收尾 worktree 删除的决定；人工工作不由 Agent 代勾。
+  - 包括 manual slug、squash 与 Gitflow 的决定；收尾临时 worktree 默认删除，人工工作不由 Agent 代勾。
 - 完整边界与执行规则见 [deliver](skills/mdf/references/deliver.md)。
 
 ## Yolo
