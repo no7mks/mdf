@@ -138,8 +138,9 @@ def test_platform_deleted_source_is_reused_without_another_delete(python_exe, tm
 
 
 @pytest.mark.parametrize('back_action', ['advance', 'remove'])
-def test_remote_cleanup_retry_checks_backmerge_before_local_deletion(python_exe, tmp_path, monkeypatch, back_action):
-    repo, remote, work, first = merged_delivery(python_exe, tmp_path, monkeypatch)
+@pytest.mark.parametrize('remote_source_deleted', [False, True])
+def test_source_cleanup_retry_does_not_republish_backmerge(python_exe, tmp_path, monkeypatch, back_action, remote_source_deleted):
+    repo, remote, work, first = merged_delivery(python_exe, tmp_path, monkeypatch, kind='release')
     source, head = first['source'], first['pull_request']['head']
     original = pull_finish.git
     def rejected(repo_path, *args, **kwargs):
@@ -148,16 +149,26 @@ def test_remote_cleanup_retry_checks_backmerge_before_local_deletion(python_exe,
         return original(repo_path, *args, **kwargs)
     with monkeypatch.context() as patch:
         patch.setattr(pull_finish, 'git', rejected)
-        assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+        failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+        assert failed.returncode != 0 and 'remote_cleanup_uncertain' in failed.stderr
+    assert remote_source(repo, source) == remote_source(remote, source) == head
     from mdf_core.workspace.gitutil import sibling_worktree
     back = sibling_worktree(repo, 'codex/backmerge/1.2.1')
-    expected = git(remote, 'rev-parse', 'develop').stdout
+    published = git(remote, 'rev-parse', 'develop').stdout
+    assert git(back, 'rev-parse', 'HEAD').stdout == published
+    assert git(remote, 'rev-parse', 'develop^2').stdout == git(remote, 'rev-parse', 'master').stdout
     if back_action == 'advance':
-        (back / 'resolution.py').write_text('resolved = True\n')
+        (back / 'later.py').write_text('unrelated = True\n')
         commit(back)
-        expected = git(back, 'rev-parse', 'HEAD').stdout
+        retained = git(back, 'rev-parse', 'HEAD').stdout
     else:
         git(repo, 'worktree', 'remove', str(back))
-    git(repo, 'push', f'--force-with-lease=refs/heads/{source}:{head}', 'origin', f':refs/heads/{source}')
+    if remote_source_deleted:
+        git(repo, 'push', f'--force-with-lease=refs/heads/{source}:{head}', 'origin', f':refs/heads/{source}')
+
     done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
-    assert done['completed'] and git(remote, 'rev-parse', 'develop').stdout == expected
+    assert done['completed'] and done['remote_deleted'] and done['deleted'] == source
+    assert not remote_source(repo, source) and not remote_source(remote, source)
+    assert git(remote, 'rev-parse', 'develop').stdout == published
+    if back_action == 'advance':
+        assert git(back, 'rev-parse', 'HEAD').stdout == retained

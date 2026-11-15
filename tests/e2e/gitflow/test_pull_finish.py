@@ -73,16 +73,14 @@ def test_published_backmerge_resumes_after_local_conflict(python_exe, tmp_path, 
         git(repo, 'worktree', 'remove', str(back))
         git(repo, 'branch', '-D', branch)
     else:
-        (back / 'resolution.py').write_text('resolved = True\n')
+        (back / 'later.py').write_text('unrelated = True\n')
         commit(back)
-        squash_pending(back)
+        retained = git(back, 'rev-parse', 'HEAD').stdout
     result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed'] and result['merge_commit'] == merged
-    if action == 'remove':
-        assert git(remote, 'rev-parse', 'develop').stdout == before
-    else:
-        assert git(remote, 'rev-parse', 'develop').stdout == git(back, 'rev-parse', 'HEAD').stdout
-        assert git(remote, 'show', 'develop:resolution.py').stdout == 'resolved = True\n'
+    assert git(remote, 'rev-parse', 'develop').stdout == before
+    if action == 'advance':
+        assert git(back, 'rev-parse', 'HEAD').stdout == retained
 
 
 @pytest.mark.parametrize('kind', ['feature', 'release', 'hotfix'])

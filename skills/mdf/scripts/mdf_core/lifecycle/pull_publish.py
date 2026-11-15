@@ -42,16 +42,16 @@ def publish(repo, state, version, *, source_cleaned):
         return True
     remote = "refs/remotes/origin/develop"
     from mdf_core.lifecycle.publish import find_merge
-    branch = f"codex/backmerge/{version}"
-    tip = local_head(repo, branch)
-    published = ancestor(repo, merged, remote) and (tip is None or ancestor(repo, tip, remote))
-    # 源分支已清理时，以远端回合为准，保留 worktree 里的后续提交。
-    if source_cleaned and not published and not find_merge(repo, remote, merged):
+    # 远端已有回合时，保留 backmerge worktree 里的后续提交。
+    published = find_merge(repo, remote, merged) is not None
+    if source_cleaned and not published:
         raise MDFError("源分支已清理，但远端 develop 缺少回合证据，保留现场", code="pull_state_changed")
     tag_release(repo, state, version)
-    if published or source_cleaned:
+    if published:
         sync_local(repo, "develop", integrate_develop=True)
         return True
+    branch = f"codex/backmerge/{version}"
+    tip = local_head(repo, branch)
     work = sibling_worktree(repo, branch)
     occupant = worktree_map(repo).get(branch)
     if occupant is None:

@@ -102,9 +102,9 @@ def test_backmerge_resume_preserves_local_fixes_when_remote_already_contains_rel
 def test_release_waits_for_backmerge_fix_before_source_cleanup(python_exe, tmp_path, monkeypatch, diverged):
     repo, remote, work, _, record, merged = waiting_backmerge(python_exe, tmp_path, monkeypatch, kind='release')
     back = Path(record['worktree'])
-    published = record['head']
-    git(back, 'push', 'origin', 'HEAD:refs/heads/develop')
-    assert git(remote, 'rev-parse', 'develop^2').stdout.strip() == merged
+    base = record['base']
+    assert git(remote, 'rev-parse', 'develop').stdout.strip() == base
+    assert git(back, 'rev-parse', 'HEAD^2').stdout.strip() == merged
     (back / 'resolution.py').write_text('resolved = True\n')
     commit(back)
     fix = git(back, 'rev-parse', 'HEAD').stdout.strip()
@@ -112,11 +112,11 @@ def test_release_waits_for_backmerge_fix_before_source_cleanup(python_exe, tmp_p
     source_head = git(work, 'rev-parse', 'HEAD').stdout.strip()
     hook = remote / 'hooks/pre-receive'
     if diverged:
-        other = git(back, 'commit-tree', f'{published}^{{tree}}', '-p', published,
+        other = git(back, 'commit-tree', f'{base}^{{tree}}', '-p', base,
                     '-m', 'test: 推进远端 develop').stdout.strip()
         git(back, 'push', 'origin', f'{other}:refs/heads/develop')
     else:
-        other = published
+        other = base
         hook.write_text('#!/bin/sh\nwhile read -r old new ref; do\n'
                         '    if [ "$ref" = refs/heads/develop ]; then\n'
                         '        echo "develop push rejected" >&2\n        exit 1\n    fi\ndone\n')
@@ -136,7 +136,6 @@ def test_release_waits_for_backmerge_fix_before_source_cleanup(python_exe, tmp_p
         git(back, 'merge', '--no-ff', '--no-edit', 'origin/develop')
     else:
         hook.unlink()
-        git(back, 'push', 'origin', 'HEAD:refs/heads/develop')
     done = payload(mdf(python_exe, *args))
     assert done['completed'] and done['remote_deleted'] and done['deleted'] == source
     git(remote, 'merge-base', '--is-ancestor', fix, 'develop')
