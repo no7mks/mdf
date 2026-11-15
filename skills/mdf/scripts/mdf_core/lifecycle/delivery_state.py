@@ -2,6 +2,7 @@
 import fnmatch
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
@@ -11,6 +12,17 @@ from mdf_core.lifecycle.roster import fingerprint_data, owner_branch, require_ro
 from mdf_core.execution.verification import repo_verification
 
 STAGES = ("design", "write-tests", "implement", "converge")
+
+
+def split_objectives_steps(text: str) -> tuple[str, str, str]:
+    """返回步骤区的前文、正文与后文。直接传入 checklist 时正文是全文。"""
+    heading = re.search(r"(?m)^## 步骤[ \t]*(?:\n|$)", text)
+    if heading is None:
+        return "", text, ""
+    start = heading.end()
+    following = re.search(r"(?m)^#{1,2}[ \t]+", text[start:])
+    end = start + following.start() if following else len(text)
+    return text[:start], text[start:end], text[end:]
 
 
 def read_objectives(path: str | None) -> str:
@@ -26,7 +38,6 @@ def read_objectives(path: str | None) -> str:
 
 def _parse_yes_no_field(text: str, name: str, missing_code: str) -> bool:
     """从 objectives 解析 `name: yes|no`（可带列表前缀）。"""
-    import re
     match = re.search(
         rf"(?im)^(?:[-*]\s*)?{re.escape(name)}:\s*(yes|no|true|false)\s*$",
         text,
@@ -178,7 +189,6 @@ def fingerprints(repo, root, data, config=None, *, ref=None):
         text = (git(repo, "show", f"{ref}:{path.relative_to(repo)}").stdout
                 if ref else path.read_text())
         if name == "objectives.md":
-            import re
             text = re.sub(r"(?m)^([-*]\s+)\[[ xX]\]", r"\1[ ]", text)
         if MARKER_RE.search(text):
             raise MDFError("设计材料仍含模板占位内容", code="missing_artifact")

@@ -97,7 +97,8 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
   - 固定 roster `0,0,1`，`needs_design: false`；不建立 qa/dev 角色树。
 - CLI 写入并提交 `changes/unreleased/<slug>/delivery.json` 与 `objectives.md`。
   - delivery 的 `work` 保存实际工作描述；跨会话续办及 code-review 均以此为准。
-  - 账本使用 `assets/templates/adhoc-objectives.md`，按模式写入固定清单，初始均未勾。
+  - `objectives.md` 使用 `assets/templates/adhoc-objectives.md`，先展示工作描述，再按模式写入固定清单。
+    清单初始均未勾。
   - 不要求 design、converge、人工工作确认或额外的 start checklist 项。
 - start 返回的 command hook 已由 Core 执行。pending rule 由 Agent 在返回的 cwd 读取 path 并执行。
   - 使用返回的 new_worktree、old_worktree 上下文；执行前后记录名称、路径、cwd、结果及日志。

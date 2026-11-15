@@ -3,7 +3,7 @@ import re
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle.catchup_plan import BASELINE, build_plan
-from mdf_core.lifecycle.delivery_state import git, read_json, safe
+from mdf_core.lifecycle.delivery_state import git, read_json, safe, split_objectives_steps
 from mdf_core.workspace.merge_policy import sha
 
 ITEM = re.compile(r"(?m)^- \[([ xX])\] (.+?)[ \t]*$")
@@ -11,8 +11,9 @@ AUTO = ("catch-up", "verify")
 
 
 def parse_items(text):
+    _, steps, _ = split_objectives_steps(text)
     return [{"checked": mark != " ", "label": label, "name": label.split("（", 1)[0].strip()}
-            for mark, label in ITEM.findall(text)]
+            for mark, label in ITEM.findall(steps)]
 
 
 def _is(item, stage):
@@ -108,14 +109,17 @@ def _staged(repo):
 
 
 def _tick(text, item, stage, found):
-    updated = text.replace(f"- [ ] {item['label']}", f"- [x] {item['label']}", 1)
+    label = item["label"]
+    step = rf"(?m)^- \[[ xX]\] {re.escape(label)}[ \t]*$"
+    checked = f"- [x] {label}"
     if stage == "catch-up":
-        line = f"catch-up 基线：{found['baseline']}"
-        if BASELINE.search(updated):
-            updated = BASELINE.sub(line, updated)
+        baseline = found["baseline"]
+        if BASELINE.search(text):
+            text = BASELINE.sub(lambda match: match[0].replace(match[1], baseline), text)
         else:
-            updated = updated.replace(f"- [x] {item['label']}", f"- [x] {item['label']}\n  - {line}", 1)
-    return updated
+            checked += f"\n  - catch-up 基线：{baseline}"
+    before, steps, after = split_objectives_steps(text)
+    return before + re.sub(step, lambda _: checked, steps, count=1) + after
 
 
 def _already_done(repo, rel, text, item, stage):

@@ -38,6 +38,7 @@ from mdf_core.lifecycle.delivery_state import (
     parse_has_dev,
     parse_needs_design,
     read_objectives as _read_objectives,
+    split_objectives_steps,
 )
 
 
@@ -261,27 +262,29 @@ def command_start(args) -> None:
             suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
+    before_steps, checklist, after_steps = split_objectives_steps(objectives)
     if pr_mode:
-        objectives = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", objectives)
+        checklist = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", checklist)
     if args.kind == "on-demand-release":
         from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
         before = r"catch-up(?:（[^\n]*）)?[ \t]*" if pr_mode else r"close-out\s*"
-        objectives = re.sub(rf"(?m)^(- \[[ x]\] {before})$",
-                            "- [ ] " + ACCEPTANCE + r"\n\1", objectives, count=1)
-        if ACCEPTANCE not in objectives:
-            objectives += "\n- [ ] " + ACCEPTANCE + "\n"
-        objectives = objectives.replace("- [x] 确认工作线与范围（start）",
-                                        "- [x] 确认工作线与范围（start）\n- [ ] " + CHECKPOINT)
-        if "- [ ] " + CHECKPOINT not in objectives:
+        checklist = re.sub(rf"(?m)^(- \[[ x]\] {before})$",
+                           "- [ ] " + ACCEPTANCE + r"\n\1", checklist, count=1)
+        if ACCEPTANCE not in checklist:
+            checklist += "\n- [ ] " + ACCEPTANCE + "\n"
+        checklist = checklist.replace("- [x] 确认工作线与范围（start）",
+                                      "- [x] 确认工作线与范围（start）\n- [ ] " + CHECKPOINT)
+        if "- [ ] " + CHECKPOINT not in checklist:
             if pr_mode:
-                objectives = re.sub(r"(?m)^- \[[ x]\] ", "- [ ] " + CHECKPOINT + "\n" + r"\g<0>", objectives, count=1)
+                checklist = re.sub(r"(?m)^- \[[ x]\] ", "- [ ] " + CHECKPOINT + "\n" + r"\g<0>", checklist, count=1)
             else:
-                objectives += "\n- [ ] " + CHECKPOINT + "\n"
+                checklist += "\n- [ ] " + CHECKPOINT + "\n"
     if pr_mode:
-        items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", objectives)
+        items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", checklist)
         steps = [item.split("（", 1)[0] for item in items]
         if not steps or steps[-1] != "catch-up" or "pr" in steps:
             raise MDFError("PR mode 的 checklist 必须止于 catch-up，且不包含 pr", code="invalid_objectives")
+    objectives = before_steps + checklist + after_steps
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
         args.kind, args.qa, args.dev, args.reviewers,

@@ -1,5 +1,21 @@
 # 交付目标
 
+## 目标与非目标
+
+{{MDF_GOALS_AND_NON_GOALS}}
+
+## 需求来源
+
+{{MDF_PROPOSAL_REFERENCE}}
+
+## 约束
+
+{{MDF_DELIVERY_CONSTRAINTS}}
+
+## 可验证验收
+
+{{MDF_ACCEPTANCE_CRITERIA}}
+
 ## 流程
 
 - needs_design: {{MDF_NEEDS_DESIGN}}
@@ -21,19 +37,3 @@
 - [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）
 - [ ] catch-up（由 `$mdf catch-up` 自勾；仅增量补检改动文件，禁止全量重跑）
 - [ ] close-out（由 `$mdf close-out` 自勾）
-
-## 需求来源
-
-{{MDF_PROPOSAL_REFERENCE}}
-
-## 目标与非目标
-
-{{MDF_GOALS_AND_NON_GOALS}}
-
-## 约束
-
-{{MDF_DELIVERY_CONSTRAINTS}}
-
-## 可验证验收
-
-{{MDF_ACCEPTANCE_CRITERIA}}

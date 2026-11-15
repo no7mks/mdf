@@ -138,6 +138,8 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
 `needs_design: false` 由 CLI 写入 delivery.json，objectives 不要求该字段。
 下列普通交付的 needs_design、PRP 与阶段要求不适用于人工 feature。
 
+各 kind 的 objectives 先写已有的交付目标或范围，再写适用约束与验收，最后列步骤。
+在 `## 步骤` 下记录交付阶段的勾选状态。
 feature、release、bugfix 与 hotfix 均按下列规则写入 objectives checklist；
 feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确认。
 

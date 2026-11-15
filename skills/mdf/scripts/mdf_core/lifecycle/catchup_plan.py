@@ -4,15 +4,15 @@ import re
 from mdf_core.execution.verification import FIXED_INPUTS, LOCKFILES
 from mdf_core.execution.modules import load_modules, match
 from mdf_core.foundation.errors import MDFError, emit
-from mdf_core.lifecycle.delivery_state import locate, safe
+from mdf_core.lifecycle.delivery_state import locate, safe, split_objectives_steps
 from mdf_core.workspace.gitutil import repo_path, require_git_root
 from mdf_core.workspace.merge_policy import ancestor, git, sha
 from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
 
 MATERIAL_NAMES = {"objectives.md", "code-review.md", "fact-audit.md", "CHANGE.md", "catch-up-verification-report.json"}
 CONTRACTS = {".mdf/manifest.yaml", ".mdf/modules.yaml", "AGENTS.md"}
-BASELINE = re.compile(r"catch-up 基线：([0-9a-f]{40})")
-REWORK = re.compile(r"PR 返工：([0-9a-f]{40})\.\.[0-9a-f]{40}")
+BASELINE = re.compile(r"(?m)^[ \t]*(?:- )?catch-up 基线：([0-9a-f]{40})")
+REWORK = re.compile(r"(?m)^[ \t]*(?:- )?PR 返工：([0-9a-f]{40})\.\.[0-9a-f]{40}")
 
 
 def classify(path):
@@ -42,10 +42,13 @@ def resolve_base(repo, root, explicit):
         if found:
             return found[-1]
     relative = (root / "objectives.md").relative_to(repo).as_posix()
-    first = git(repo, "log", "--reverse", "--format=%H", "-G^- \\[[xX]\\] fact", "--", relative).stdout.split()
-    if not first:
-        raise MDFError("无法确定 catch-up 基线，请用 --base 指定", code="missing_catch_up_base")
-    return first[0]
+    commits = git(repo, "log", "--reverse", "--format=%H", "-G^- \\[[xX]\\] fact", "--", relative).stdout.split()
+    for commit in commits:
+        version = git(repo, "show", f"{commit}:{relative}", check=False)
+        _, steps, _ = split_objectives_steps(version.stdout)
+        if not version.returncode and re.search(r"(?m)^- \[[xX]\] fact", steps):
+            return commit
+    raise MDFError("无法确定 catch-up 基线，请用 --base 指定", code="missing_catch_up_base")
 
 
 def target_refs(repo, target):

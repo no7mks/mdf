@@ -2,11 +2,18 @@
 import re
 
 from mdf_core.foundation.errors import MDFError
-from mdf_core.lifecycle.delivery_state import read_json, safe
+from mdf_core.lifecycle.delivery_state import read_json, safe, split_objectives_steps
 from mdf_core.workspace.gitutil import ensure_clean
 
 ACCEPTANCE = "ODR 统一验收"
 INCLUSION_BASE = re.compile(r"(?m)^<!-- odr-inclusion-base: ([0-9a-f]{40}) -->$")
+
+
+def set_acceptance(text, checked):
+    before, steps, after = split_objectives_steps(text)
+    mark = "x" if checked else " "
+    steps = re.sub(rf"(?m)^- \[[ x]\] {ACCEPTANCE}$", f"- [{mark}] {ACCEPTANCE}", steps)
+    return before + steps + after
 
 
 def feature_records(repo, root, data):
@@ -26,7 +33,8 @@ def feature_records(repo, root, data):
 def require_acceptance(repo, root, data, *, accepted=True, included=()):
     from mdf_core.execution.verification import recorded_suites, required_suites, suites_cover
     objectives = safe(repo, root / "objectives.md").read_text()
-    checked = re.findall(r"(?m)^- \[x\] (.+)$", objectives)
+    _, checklist, _ = split_objectives_steps(objectives)
+    checked = re.findall(r"(?m)^- \[x\] (.+)$", checklist)
     stages = ("lint", "code-review", "verify branch", "fact audit")
     if any(not any(item == stage or item.startswith(stage + "（") for item in checked) for stage in stages):
         raise MDFError("ODR 须先完成 lint、review、verify branch 与 fact audit", code="odr_acceptance_pending")
@@ -86,7 +94,8 @@ def accept(repo):
             raise MDFError("ODR 来源存在未满足的 PRP 依赖", code="unreleased_dependency")
     path = safe(repo, root / "objectives.md")
     text = path.read_text()
-    if not re.search(rf"(?m)^- \[[ x]\] {ACCEPTANCE}$", text):
+    _, checklist, _ = split_objectives_steps(text)
+    if not re.search(rf"(?m)^- \[[ x]\] {ACCEPTANCE}$", checklist):
         raise MDFError("ODR 缺少统一验收步骤", code="invalid_delivery")
     # 全部检查通过后才写入，保留 feature 的 objectives 与报告原样。
     for identifier in selected:
@@ -98,7 +107,7 @@ def accept(repo):
     from mdf_core.workspace.merge_policy import git
     base = git(repo, "rev-parse", "HEAD").stdout.strip()
     text = INCLUSION_BASE.sub("", text).rstrip()
-    text = text.replace(f"- [ ] {ACCEPTANCE}", f"- [x] {ACCEPTANCE}")
+    text = set_acceptance(text, True)
     path.write_text(text + f"\n\n<!-- odr-inclusion-base: {base} -->\n")
     return {"accepted": True, "proposals": sorted(selected)}
 
@@ -173,7 +182,7 @@ def invalidate(repo, target):
         root = repo / "changes" / version
     path = safe(repo, root / "objectives.md")
     original = path.read_text()
-    updated = original.replace(f"- [x] {ACCEPTANCE}", f"- [ ] {ACCEPTANCE}")
+    updated = set_acceptance(original, False)
     if updated != original:
         path.write_text(updated)
         git(repo, "add", "--", str(path.relative_to(repo)))

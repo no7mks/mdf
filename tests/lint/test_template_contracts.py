@@ -36,6 +36,22 @@ def test_release_objectives_keep_only_the_selected_work_line():
     assert "本版选定" not in text
 
 
+@pytest.mark.parametrize(("name", "first_heading"), [
+    ("adhoc-objectives.md", "工作目标"),
+    ("objectives.md", "目标与非目标"),
+    ("manual-objectives.md", "工作范围"),
+    ("release-objectives.md", "本版范围"),
+])
+def test_objectives_templates_frontload_delivery_content(name, first_heading):
+    text = (skill_dir("mdf") / "assets" / "templates" / name).read_text(encoding="utf-8")
+    headings = re.findall(r"^## (.+)$", text, re.M)
+
+    assert headings[0] == first_heading
+    assert headings[-1] == "步骤"
+    if name != "adhoc-objectives.md":
+        assert "可验证验收" in headings[:-1]
+
+
 def test_template_slots_use_mdf_prefix():
     load_core_module()
     from mdf_core.foundation.constants import MARKER_RE

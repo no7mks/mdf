@@ -7,9 +7,9 @@ from support_github_flow import error_of
 from test_catch_up_plan import started
 
 
-def set_steps(work, root, steps):
+def set_steps(work, root, steps, *, intro=""):
     body = "".join(f"- [{'x' if done else ' '}] {name}\n" for name, done in steps)
-    (root / "objectives.md").write_text("# 目标\n\n- needs_design: no\n\n" + body)
+    (root / "objectives.md").write_text("# 目标\n\n- needs_design: no\n\n" + intro + "## 步骤\n\n" + body)
     commit(work, "docs: 更新清单")
 
 
@@ -151,15 +151,23 @@ def test_stage_without_evidence_or_not_pure_evidence_is_refused(python_exe, tmp_
     assert "- [ ] verify branch" in (root / "objectives.md").read_text()
 
 
-def test_catch_up_completes_on_zero_increment_and_records_baseline(python_exe, tmp_path):
+@pytest.mark.parametrize("checked", [False, True])
+def test_catch_up_completes_on_zero_increment_and_records_baseline(python_exe, tmp_path, checked):
     _, work, root = started(python_exe, tmp_path)
-    set_steps(work, root, [("fact audit", True), ("catch-up", False)])
+    intro = (f"## 可验证验收\n\n- [ ] catch-up\n- [x] fact audit\n\n"
+             f"> catch-up 基线：{'a' * 40}\n> PR 返工：{'b' * 40}..{'c' * 40}\n\n")
+    set_steps(work, root, [("fact audit", False), ("catch-up", False)], intro=intro)
+    set_steps(work, root, [("fact audit", True), ("catch-up", checked)], intro=intro)
     base = git(work, "rev-parse", "HEAD").stdout.strip()
-    assert route(python_exe, work)["auto_completable"] is True
+    plan = payload(mdf(python_exe, "catch-up-plan", "--repo", str(work)))["result"]
+    assert plan["base"] == base
+    if not checked:
+        assert route(python_exe, work)["auto_completable"] is True
     done = payload(complete(python_exe, work, "catch-up"))["result"]
     assert done["completed"] and done["evidence"] == {"baseline": base}
     text = (root / "objectives.md").read_text()
-    assert "- [x] catch-up" in text and f"catch-up 基线：{base}" in text
+    assert intro in text
+    assert f"\n- [x] catch-up\n  - catch-up 基线：{base}\n" in text
     head = git(work, "rev-parse", "HEAD").stdout.strip()
     assert payload(complete(python_exe, work, "catch-up"))["result"]["already_completed"] is True
     assert git(work, "rev-parse", "HEAD").stdout.strip() == head

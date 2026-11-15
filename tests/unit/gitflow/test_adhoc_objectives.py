@@ -3,9 +3,11 @@ import pytest
 from mdf_core.lifecycle.adhoc import objectives, require_objectives
 from mdf_core.foundation.errors import MDFError
 
+WORK = "更新配置说明"
+
 
 def test_adhoc_initial_and_completed_objectives():
-    text = objectives()
+    text = objectives(WORK)
     require_objectives(text, starting=True)
     require_objectives(text.replace("[ ]", "[x]"), finishing=True)
     with pytest.raises(MDFError, match="未完成"):
@@ -15,7 +17,7 @@ def test_adhoc_initial_and_completed_objectives():
 
 
 def test_adhoc_progress_is_a_completed_prefix():
-    text = objectives()
+    text = objectives(WORK)
     assert require_objectives(text) == "工作"
     assert require_objectives(text.replace("[ ]", "[x]", 1)) == "lint"
     with pytest.raises(MDFError, match="顺序完成"):
@@ -30,11 +32,11 @@ def test_adhoc_progress_is_a_completed_prefix():
 ])
 def test_adhoc_rejects_changed_or_reordered_steps(old, new):
     with pytest.raises(MDFError, match="固定顺序"):
-        require_objectives(objectives().replace(old, new))
+        require_objectives(objectives(WORK).replace(old, new))
 
 
 def test_pr_adhoc_requires_catch_up_and_no_pr_checkbox():
-    text = objectives().replace("- [ ] close-out\n", "")
+    text = objectives(WORK).replace("- [ ] close-out\n", "")
     require_objectives(text, starting=True, pr_mode=True)
     assert require_objectives(text.replace("[ ]", "[x]", 5), pr_mode=True) == "catch-up"
     checked = text.replace("[ ]", "[x]")

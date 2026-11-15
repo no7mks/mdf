@@ -2,13 +2,15 @@
 import re
 
 from mdf_core.foundation.errors import MDFError
+from mdf_core.lifecycle.delivery_state import split_objectives_steps
 
 STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "catch-up", "close-out")
 
 
 def require_manual_objectives(text, *, starting=False, finishing=False, pr_mode=False):
     steps = STEPS[:-1] if pr_mode else STEPS
-    items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
+    _, checklist, _ = split_objectives_steps(text)
+    items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", checklist)
     if tuple(name for _, name in items) != steps:
         raise MDFError("人工 feature 必须按配置对应的固定顺序填写步骤", code="invalid_manual_objectives")
     checked = tuple(mark == "x" for mark, _ in items)

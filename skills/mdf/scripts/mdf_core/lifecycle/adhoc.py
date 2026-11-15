@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 from mdf_core.foundation.errors import MDFError
+from mdf_core.lifecycle.delivery_state import split_objectives_steps
 
 STEPS = ("工作", "lint", "code-review", "verify smart", "fact audit/update", "catch-up", "close-out")
 
@@ -12,10 +13,13 @@ def validate_start(args):
         raise MDFError("--work 仅用于 adhoc", code="unexpected_work")
 
 
-def objectives():
-    return (Path(__file__).resolve().parents[3] / "assets/templates/adhoc-objectives.md").read_text(
+def objectives(work):
+    template = (Path(__file__).resolve().parents[3] / "assets/templates/adhoc-objectives.md").read_text(
         encoding="utf-8"
     )
+    # 引用内的 Markdown task list 不属于交付步骤。
+    description = "\n".join(f"> {line}" if line else ">" for line in work.strip().splitlines())
+    return template.replace("{{MDF_ADHOC_WORK}}", description)
 
 
 def prepare(args):
@@ -30,14 +34,15 @@ def prepare(args):
     if (args.roster not in (None, "solo") or args.qa not in (None, 0)
             or args.dev not in (None, 0) or args.reviewers not in (None, 1)):
         raise MDFError("adhoc 的 roster 固定为 0,0,1", code="invalid_adhoc")
-    text = objectives()
+    text = objectives(args.work)
     require_objectives(text, starting=True)
     return slugify(args.name), text
 
 
 def require_objectives(text, *, starting=False, finishing=False, pr_mode=False):
     steps = STEPS[:-1] if pr_mode else STEPS
-    items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", text)
+    _, checklist, _ = split_objectives_steps(text)
+    items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", checklist)
     if tuple(name for _, name in items) != steps:
         raise MDFError("adhoc 必须按配置对应的固定顺序填写步骤", code="invalid_adhoc_objectives")
     checked = [mark == "x" for mark, _ in items]

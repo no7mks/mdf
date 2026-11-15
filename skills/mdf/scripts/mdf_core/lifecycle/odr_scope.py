@@ -91,9 +91,9 @@ def update_scope(repo, filename):
     if not entries and not data.get("features"):
         fail("ODR 范围不得为空")
     if entries != data.get("scope", []):
-        from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
+        from mdf_core.lifecycle.odr_acceptance import set_acceptance
         objectives = safe(repo, root / "objectives.md")
-        objectives.write_text(objectives.read_text().replace(f"- [x] {ACCEPTANCE}", f"- [ ] {ACCEPTANCE}"))
+        objectives.write_text(set_acceptance(objectives.read_text(), False))
     data["scope"] = entries
     write_json(safe(repo, root / "delivery.json"), data)
     return {"scope": entries, "path": str(root / "delivery.json")}

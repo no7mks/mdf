@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from mdf_core.reviewing.scope import review_changes, source_modules
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.foundation.textutil import stable_semver
-from mdf_core.lifecycle.delivery_state import read_json
+from mdf_core.lifecycle.delivery_state import read_json, split_objectives_steps
 from mdf_core.lifecycle.roster import require_roster
 from mdf_core.workspace.gitutil import branch_details, repo_path, require_git_root, unreleased_slug
 from mdf_core.workspace.merge_policy import ancestor, git, manifest_at, sha
@@ -141,7 +141,8 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         else:
             artifacts[root + "/" + name] = raw
     objectives = artifacts.get(root + "/objectives.md", "")
-    if not re.search(r"(?m)^- \[x\] code-review\s*$", objectives):
+    _, steps, _ = split_objectives_steps(objectives)
+    if not re.search(r"(?m)^- \[x\] code-review\s*$", steps):
         incomplete.append("本地 code-review 尚未完成")
     try:
         verification = json.loads(artifacts.get(root + "/verification-report.json", "{}"))

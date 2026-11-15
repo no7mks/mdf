@@ -1,5 +1,33 @@
 # 发布目标
 
+## 本版范围
+
+{{MDF_RELEASE_SCOPE}}
+
+## 工作线
+
+{{MDF_RELEASE_WORK_LINE}}
+
+## 明确不含
+
+{{MDF_RELEASE_EXCLUSIONS}}
+
+## 联调
+
+{{MDF_RELEASE_INTEGRATE}}
+
+## 预发布工作
+
+{{MDF_PRERELEASE_WORK}}
+
+## 允许在本分支改什么
+
+{{MDF_RELEASE_ALLOWED_CHANGES}}
+
+## 可验证验收
+
+{{MDF_RELEASE_ACCEPTANCE}}
+
 ## 流程
 
 - needs_design: {{MDF_NEEDS_DESIGN}}
@@ -25,31 +53,3 @@
 - [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）
 - [ ] catch-up（由 `$mdf catch-up` 自勾；仅增量补检改动文件，禁止全量重跑）
 - [ ] close-out（由 `$mdf close-out` 自勾）
-
-## 工作线
-
-{{MDF_RELEASE_WORK_LINE}}
-
-## 本版范围
-
-{{MDF_RELEASE_SCOPE}}
-
-## 明确不含
-
-{{MDF_RELEASE_EXCLUSIONS}}
-
-## 联调
-
-{{MDF_RELEASE_INTEGRATE}}
-
-## 预发布工作
-
-{{MDF_PRERELEASE_WORK}}
-
-## 允许在本分支改什么
-
-{{MDF_RELEASE_ALLOWED_CHANGES}}
-
-## 可验证验收
-
-{{MDF_RELEASE_ACCEPTANCE}}

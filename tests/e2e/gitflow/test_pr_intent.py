@@ -63,13 +63,14 @@ def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path
         commit(repo)
         git(repo, "branch", "-f", "develop", "master")
     args = ["--kind", "adhoc", "--work", "更新文档"]
+    criteria = "- [ ] pr\n- [ ] close-out"
     if kind == "manual":
         from conftest import skill_dir
         obj = tmp_path / "manual.md"
         text = (skill_dir("mdf") / "assets/templates/manual-objectives.md").read_text()
-        for marker in ("GOALS_AND_NON_GOALS", "DELIVERY_CONSTRAINTS", "ACCEPTANCE_CRITERIA"):
+        for marker in ("GOALS_AND_NON_GOALS", "DELIVERY_CONSTRAINTS"):
             text = text.replace("{{MDF_" + marker + "}}", "本次仅更新文档，保留现有行为。")
-        obj.write_text(text)
+        obj.write_text(text.replace("{{MDF_ACCEPTANCE_CRITERIA}}", criteria))
         args = ["--kind", "feature", "--manual", "--objectives-file", str(obj)]
     name = ["--name", "test-tail"]
     slug = "test-tail"
@@ -80,6 +81,9 @@ def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path
     result = payload(mdf(python_exe, "start", "--repo", str(repo), *name, *args))
     work = Path(result["worktree"])
     text = (work / "changes/unreleased" / slug / "objectives.md").read_text()
+    if kind == "manual":
+        assert criteria in text
+        text = text.split("## 步骤\n", 1)[1]
     if mode == "pr":
         steps = re.findall(r"(?m)^- \[[ x]\] (.+)$", text)
         assert steps[-1] == "catch-up"

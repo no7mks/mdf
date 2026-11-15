@@ -23,8 +23,12 @@ def write_change(root, *, proposals="[]", change_kind="adhoc"):
     )
 
 
-def test_adhoc_start_keeps_primary_and_trunks_unchanged(python_exe, tmp_path):
-    repo, result = start_adhoc(python_exe, tmp_path)
+@pytest.mark.parametrize("description", [
+    "更新配置说明并保留使用示例",
+    "更新配置说明\n\n- [ ] 保留使用示例\n- [ ] close-out",
+])
+def test_adhoc_start_keeps_primary_and_trunks_unchanged(python_exe, tmp_path, description):
+    repo, result = start_adhoc(python_exe, tmp_path, "--work", description)
     data = payload(result)
     work = Path(data["worktree"])
     root = work / "changes/unreleased/update-readme"
@@ -34,9 +38,13 @@ def test_adhoc_start_keeps_primary_and_trunks_unchanged(python_exe, tmp_path):
     assert data["roles"] == {"qa": [], "dev": []}
     assert tuple(data["roster"][key] for key in ("qa", "dev", "reviewers")) == (0, 0, 1)
     assert identity["needs_design"] is False
-    assert identity["work"] == "更新配置说明并保留使用示例"
+    assert identity["work"] == description
     assert not {"proposal", "bug", "manual"} & identity.keys()
-    assert re.findall(r"^- \[ \] (.+)$", (root / "objectives.md").read_text(), re.M) == list(STEPS)
+    objectives = (root / "objectives.md").read_text()
+    goal, steps = objectives.split("## 步骤\n")
+    assert "## 工作目标\n" in goal
+    assert "\n".join(line[1:].lstrip() for line in goal.splitlines() if line.startswith(">")) == description
+    assert re.findall(r"^- \[ \] (.+)$", steps, re.M) == list(STEPS)
     assert git(repo, "branch", "--show-current").stdout.strip() == "develop"
     assert git(repo, "rev-parse", "develop").stdout.strip() == data["start_commit"]
     assert git(repo, "rev-parse", "master").stdout.strip() == data["start_commit"]
