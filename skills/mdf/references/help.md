@@ -381,8 +381,10 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：仅用户要求预览时 dry-run；未要求则实际归档。
 - `$mdf fact audit`
   - 用法：`$mdf fact audit [<path>...] [--scope branch|full|paths]`
-  - 独立对比：`$mdf fact audit --against <commit>`（与当前工作区比较，可 dirty）。
-    可加 `--quick` 只跳过 LLM；不混用 scope/base/paths。
+  - 独立对比：`$mdf fact audit --against <commit> [--quick] [--output <path>]`（与当前工作区比较，可 dirty）。
+    `--quick` 只跳过 LLM。`--output` 不传给 CLI。未传不写文件。
+    report-check 返回 ok 且 valid 为 true 后写入报告 JSON，不是 context 或信封。
+    缺少 `--against` 或混用 scope/base/paths 则不写。
   - `--scope branch`：resolve-base 后等同 against；`--quick` 只跳过 LLM，不换工作对象。
   - 用途：只读审阅覆盖、证据、语义与加载质量。
   - 说明：不执行 `verification`；`size.hard` 阻断。主链 release base 为上一正式发布。

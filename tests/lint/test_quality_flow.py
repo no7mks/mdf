@@ -166,3 +166,49 @@ def test_all_public_commands_have_a_discoverable_help_topic():
             canonical = re.split(r"\s+(?:\[|<|--)", command, maxsplit=1)[0]
             canonical = {"next?": "tree", "next？": "tree"}.get(canonical, canonical)
             assert canonical in topics, command
+
+
+def test_fact_audit_output_writes_only_a_checked_report():
+    entry = workflow("entry")
+    against = workflow("fact-audit-against")
+    audit = workflow("fact-audit")
+    readme = (skill_dir("mdf").parents[1] / "README.md").read_text(encoding="utf-8")
+    help_text = workflow("help")
+    params = entry.split("fact audit 共用核", 1)[1].split("- fact update", 1)[0]
+    assert "--output <path>" in params
+    assert "未传不写文件" in params
+    assert "ok 且 valid 为 true" in params
+    assert "不传给 `fact-audit` CLI" in params
+    assert "缺少 `--against` 或与 `--scope` 同用则停止，不写文件" in params
+    assert "不是 context，也不是信封" in params
+    report = rows(against)[4]
+    assert report[1] == "Report"
+    assert "valid 后才写 `--output`" in report[3]
+    assert "不写最终文件" in report[6]
+    assert "无 result 则停止，不写文件" in rows(against)[1][6]
+    for phrase in (
+        "未传 `--output` 时，报告由会话返回，不写调用方文件",
+        "校验通过前不把草稿写入 `--output`",
+        "`fact-audit` 的 context stdout 不是该文件的内容",
+        "`fact-audit-report-check` 返回 `ok: true` 且 `result.valid` 为 true",
+        "`decision` 不是 pass 时也写入",
+        "文件内容是报告 JSON，不是 context，也不是 report-check 信封",
+        "不把未通过报告写成 `--output` 的最终内容",
+        "本轮已写入该路径或留下半成品时，删除该文件",
+        "不删除本轮没写过的已有文件",
+        "写入 `--output` 失败时报 error 并停止",
+        "不改 HEAD、index、refs、objects，不写交付 Markdown，不勾 objectives",
+        "这些确定性结果仍进入报告",
+        "不改变它的含义",
+        "不是 `fact-audit` 或 `fact-audit-report-check` 的 CLI 参数",
+        "退出码 2 且 stdout 含 result 时，不是步骤 2 失败",
+        "这不是终止 error",
+        "日志、context 与草稿仍在 checkout 外",
+    ):
+        assert phrase in against, phrase
+    assert "against 旁路的 `--output` 除外" in audit
+    assert "缺少 `--against` 或与 `--scope` 同用则停止，不写文件" in audit
+    assert "不进入本页七步" in audit
+    assert "核末尾的 `[output]` 是会话结论" in audit
+    assert "不是 context，也不是 report-check 信封" in readme
+    assert "不是 context 或信封" in help_text

@@ -163,6 +163,10 @@ disable-model-invocation: true
   - `--against <commit>`：覆盖左端点，与当前工作区比较；
   - `--quick`：只跳过 LLM（不换工作对象；可与 against / scope 组合）；
   - `--scope branch`：resolve-base 后等同 against；`full|paths` 为机械入口（与 against 互斥）。
+  - `--output <path>`：会话参数，不传给 `fact-audit` CLI。未传不写文件。
+    只与 `--against <commit>`、`--quick` 组合。缺少 `--against` 或与 `--scope` 同用则停止，不写文件。
+    只走 against 旁路五步，不走七步。校验前不写。
+    `fact-audit-report-check` 返回 ok 且 valid 为 true 后，写入报告 JSON。不是 context，也不是信封。
 - fact update、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
   - fact update 的 `branch`：resolve-base 后内部委托 `--scope branch --base`（不得 `--quick`）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。
@@ -194,6 +198,7 @@ disable-model-invocation: true
 - **MDF_ROOT**：本文件所在目录的绝对路径。
   - code-review 的 `--read-only` 或 `--against`，以及 fact audit 带 `--against` 时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
     后续复用该根与日志目录；目录无法安全确认则停止，不在被审 checkout 落盘。
+    `--output` 不豁免日志落点。日志、context 与草稿仍在 checkout 外。调用方路径可在仓内外。
   - 确认 `scripts/mdf.py` 后运行 `python3 -B "$MDF_ROOT/scripts/mdf.py" info`；
     协议、工具与 schema 版本均须为数字 `3`。
   - 上述调用的后续 Core 调用同样使用 `python3 -B`，避免在 checkout 内的安装副本生成 bytecode。
@@ -206,7 +211,8 @@ disable-model-invocation: true
 2. 再完整读取命中 intent，只按其声明条件读取公共引用；缺失材料时停止并报告。
 
 - 按 intent 用 Markdown 与 `manifest` 留下可验证的演进记录。
-- code-review 的 `--read-only` 与 fact audit 的 against / `--quick` 只核 Git 根并执行自身只读契约，不读取 common.md 的交付前置流程。单独 `--against` 仍读 common.md。
+- code-review 的 `--read-only` 与 fact audit 的 against、`--quick`、`--output` 只核 Git 根并执行自身只读契约，不读取 common.md。
+  code-review 单独 `--against` 仍读 common.md。fact audit 的 `--output` 不读交付前置。
 - 除上述只读调用、quick 模式及 help、clarify、upgrade 外，公开 intent 均读取 `references/common.md`。
   - help 与 clarify 不核 Git 根；upgrade 见 `references/upgrade.md`。
 

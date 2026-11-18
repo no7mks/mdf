@@ -177,7 +177,10 @@ code-review 支持 feature、bugfix、hotfix、release 和 adhoc。dirty 照常�
 fact audit 共用核：`resolve-base → diff → must-cover → stale → uncovered → [LLM] → output`。
 见 [Fact Audit](skills/mdf/references/fact-audit.md)。不强制 clean。
 
-- `$mdf fact audit --against <commit>`：覆盖左端点，与当前工作区比较。
+- `$mdf fact audit --against <commit> [--quick] [--output <path>]`：覆盖左端点，与当前工作区比较。
+  `--output` 是会话参数，不传给 `fact-audit`。未传不写文件。
+  `fact-audit-report-check` 返回 ok 且 valid 为 true 后，写入报告 JSON。
+  不是 context，也不是 report-check 信封。缺少 `--against` 或与 scope 同用则不写。
 - `$mdf fact audit --scope branch`：resolve-base 后等同 against。
 - `$mdf fact audit --quick`：只跳过 LLM；不换工作对象；可与 `--against` / scope 组合。
 - 交付主链复用同一核并写 `fact-audit.md` / 勾选；见 [交付事实审阅](skills/mdf/references/fact-audit-delivery.md)。

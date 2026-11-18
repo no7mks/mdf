@@ -6,13 +6,17 @@
 
 `resolve-base → diff → 过滤 → must-cover → stale → uncovered → [LLM] → gather → [output]`
 
+- 核末尾的 `[output]` 是会话结论，不是调用方文件。调用方文件只由 against 旁路在 report-check 通过后写入。
 - 不强制 clean；against 比较基线与**当前工作区**（可含 dirty）。
 - `must-cover` = `diff(base, 当前工作区) ∩ sourceset ∩ ¬module-ignore` 的实现路径。
   - stale：frontmatter evidence 落在 must-cover 内的事实页。
   - uncovered：must-cover 每项须有文档覆盖或显式 ignored；只裁定该集合，不是全库。
 - 交付与独立 branch：CLI `--scope branch` / Agent resolve-base 后均走 against 核（同一核）。
 - `$mdf fact audit --quick`：**只**跳过 LLM；不换工作对象；可与 `--against` / `--scope branch` 或 full/paths 组合。
-- 旁路 / CI 将 JSON 写在 checkout 外；交付主链另写 Markdown 摘要。
+- `$mdf fact audit --output <path>`：会话参数，不传给 `fact-audit` CLI。与 `--against`、`--quick` 组合。
+  缺少 `--against` 或与 `--scope` 同用则停止，不写文件。未传不写调用方文件。
+  只执行 [旁路与报告](fact-audit-against.md) 五步，不进入本页七步，不写交付 Markdown。
+- 旁路 / CI 将 context 与报告草稿写在 checkout 外；交付主链另写 Markdown 摘要。
 - 交付主链按 [交付事实审阅](fact-audit-delivery.md)；旁路见 [旁路与报告](fact-audit-against.md)。
 - CLI `--scope full|paths` 仍为确定性机械入口（无 against 左端点时）。
 
@@ -33,13 +37,15 @@
 ## 决策树
 
 交付 / against 旁路在步骤 1–2 使用对应外壳 CLI，语义仍用本表；`--quick` 在步骤 2 后跳到 7。
+传入 `--output` 时在步骤 1 离开本树，只执行旁路五步。
 
 ```text
 ┌──────────────────────────────────┐
 │ 1 Resolve scope                  │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 失败/缺失 ────→ [停止]
+                 ├──── 失败/缺失 ────────→ [停止且不写 output]
+                 ├──── 合法 --output ────→ [只执行旁路五步]
                  │
                  ▼ 通过
 ┌──────────────────────────────────┐
@@ -92,6 +98,7 @@
 ## 工作流（唯一执行契约）
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
+传入 `--output` 时步骤 1 改走旁路，不执行步骤 2–7，不写交付 Markdown。
 
 完整读取 `references/common.md` 与 `references/repository-contract.md`。
 主链调用方进入本 intent 前须按 [pre-gitflow-finish](pre-gitflow-finish.md)
@@ -101,7 +108,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve scope | 约束 | 调用方与 base / `--against` 或 `--scope` | 类型、scope、范围 | 2 | 停止 |
+| 1 | Resolve scope | 约束 | 调用方与 base / `--against` 或 `--scope`；合法 `--output` 只走旁路 | 类型、scope、范围 | 无 output 则 2 | 停止且不写文件 |
 | 2 | Audit CLI | 脚本 | against / branch→against 或 full/paths 机械 CLI | 映射、结构、findings | 可审阅→3；quick→7 | 无法审阅则停止 |
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
@@ -379,6 +386,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   - adhoc 只返回审阅结果；有账本时由 adhoc 保存 report 并勾 fact audit/update。
   - 无账本时由 adhoc-change 在 status 返回目录保存并提交 report，不创建或勾选 objectives。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中报告结论。
+    against 旁路的 `--output` 除外。本七步不写该文件。只按 [旁路与报告](fact-audit-against.md) 在 `result.valid` 为 true 后写入报告 JSON。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。
 validation 已由步骤 6 判定通过，本步不再复核。
