@@ -73,6 +73,8 @@ def test_init_managed_block_uses_workflow_branch_rules(python_exe, tmp_path, mod
     block = block.decode("utf-8")
     assert ("直接在 `workflow.trunk` 上改动时" in block) == (model == "github-flow")
     assert ("直接在 develop 上改动时" in block) == (model == "gitflow")
+    assert ("主工区永远只 checkout 主 branch（`workflow.trunk`）" in block) == (model == "github-flow")
+    assert ("不得 checkout 任何其他 branch" in block) == (model == "github-flow")
     assert ("$mdf trunk-pr" in block) == (model == "github-flow" and pr)
     assert outside.endswith(b"\r\nCustom push rule.\r\n")
 
@@ -110,6 +112,7 @@ def test_switch_updates_workflow_branch_rules_in_committed_block(python_exe, tmp
     forward = payload(mdf(python_exe, *switch, "github-flow"))
     block = git(repo, "show", "HEAD:AGENTS.md").stdout
     assert "$mdf trunk-pr" in block
+    assert "主工区永远只 checkout 主 branch（`workflow.trunk`）" in block
     assert "直接在 `workflow.trunk` 上改动时" in block
     assert "直接在 develop 上改动时" not in block
     git(repo, "checkout", "master")
