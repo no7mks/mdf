@@ -15,11 +15,24 @@ def record_path(repo, source):
     return common_dir(repo) / "mdf/consolidate" / (source + ".json")
 
 
+def pending_attempt(repo, source):
+    path = record_path(repo, source)
+    return path.is_file() and read_json(path).get("pending") is True
+
+
+def mark_pending(repo, source):
+    path = record_path(repo, source)
+    state = read_json(path) if path.is_file() else {}
+    write_json(path, {**state, "pending": True})
+
+
 def require_consolidated(repo, source):
+    from mdf_core.lifecycle.catchup import require_completed_attempt
+    require_completed_attempt(repo, source)
     path = record_path(repo, source)
     state = read_json(path) if path.is_file() else {}
     head = state.get("head")
-    if not head or git(repo, "cat-file", "-e", head, check=False).returncode:
+    if state.get("pending") or not head or git(repo, "cat-file", "-e", head, check=False).returncode:
         raise MDFError("先执行 consolidate 收敛交付材料", code="consolidation_required")
     changed = git(repo, "diff", "--name-only", head, "HEAD").stdout.splitlines()
     if changed:
@@ -81,10 +94,41 @@ def release_paths(repo, result, version):
     return owned
 
 
+
+def commit_materials(repo, source, start_head, changed):
+    """只为固定 parent 与预期 index tree 写 receipt，失败回到增量验收。"""
+    from mdf_core.lifecycle.catchup import reopen_attempt
+    try:
+        if current_branch(repo) != source or sha(repo, "HEAD") != start_head:
+            raise MDFError("consolidate 期间工作分支变化，保留现场重新增量验收", code="consolidation_required")
+        if changed:
+            git(repo, "add", "-A", "--", *changed)
+            expected_tree = git(repo, "write-tree").stdout.strip()
+            staged = set(git(repo, "diff", "--name-only", start_head, expected_tree).stdout.splitlines())
+            if staged - set(changed):
+                raise MDFError("consolidate index 夹带其他改动，保留现场重新验收", code="consolidation_required")
+            git(repo, "commit", "--only", "-m", "docs(delivery): 收敛交付材料与对象记录", "--", *changed)
+            head = sha(repo, "HEAD")
+            parents = git(repo, "show", "-s", "--format=%P", head).stdout.split()
+            tree = git(repo, "rev-parse", f"{head}^{{tree}}").stdout.strip()
+            if parents != [start_head] or tree != expected_tree:
+                raise MDFError("consolidate 提交夹带未验收变化，保留现场重新验收", code="consolidation_required")
+        else:
+            head = start_head
+        if current_branch(repo) != source or sha(repo, "HEAD") != head:
+            raise MDFError("consolidate 完成前工作分支变化，重新验收", code="consolidation_required")
+        ensure_clean(repo)
+    except Exception:
+        reopen_attempt(repo, source, start_head)
+        raise
+    return head
+
+
 def consolidate(repo, args):
     from mdf_core.inspection import doctor
     ensure_clean(repo)
     source = current_branch(repo)
+    start_head = sha(repo, "HEAD")
     root, data = locate(repo)
     if data["branch"] != source:
         raise MDFError("该阶段须在交付 owner 工作分支执行", code="stage_branch")
@@ -97,6 +141,8 @@ def consolidate(repo, args):
     pending = [i["name"] for i in items[:items.index(item)] if not i["checked"]]
     if pending:
         raise MDFError("consolidate 前置未完成", code="stage_prerequisite", details={"pending": pending})
+    from mdf_core.lifecycle.catchup import require_completed_attempt
+    require_completed_attempt(repo, source)
     details = branch_details(source)
     versioned = details["kind"] in {"release", "hotfix", "on-demand-release"}
     version = details["version"] or data.get("version")
@@ -130,19 +176,18 @@ def consolidate(repo, args):
     changed = written_paths(repo)
     foreign = sorted(set(changed) - owned)
     if foreign:
+        from mdf_core.lifecycle.catchup import reopen_attempt
+        reopen_attempt(repo, source, start_head)
         raise MDFError("出现本次 consolidate 之外的改动，保留现场", code="unrelated_staged_changes", details={"paths": foreign})
-    if changed:
-        git(repo, "add", "-A", "--", *changed)
-        git(repo, "commit", "--only", "-m", "docs(delivery): 收敛交付材料与对象记录", "--", *changed)
-    head = sha(repo, "HEAD")
+    head = commit_materials(repo, source, start_head, changed)
     write_json(record_path(repo, source), {"head": head, "version": version, "incremental": args.incremental})
     if not args.incremental:
         from mdf_core.lifecycle.target_integration import state_path
         integration_path = state_path(repo, source)
         state = read_json(integration_path) if integration_path.is_file() else {}
-        if not state or state.get("accepted_head"):
+        if not state.get("target") or state.get("accepted_head"):
             write_json(integration_path, {"base": head})
-    return {"completed": True, "head": sha(repo, "HEAD"), "release": result}
+    return {"completed": True, "head": head, "release": result}
 
 
 def command_consolidate(args):

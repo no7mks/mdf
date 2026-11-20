@@ -31,13 +31,14 @@
 | PRP 纳入发布 | implemented → released，写 released_in | publish 确认 final tag 已推送 |
 | 已验证的 Bug 修复 | open → fixed，补齐 Change outcome 与证据 | 修复及适用验收通过 |
 | 修复纳入确定版本 | 调用 bug close，fixed → closed，写 fixed_in | 复现验证与修复审查通过，发布版本明确 |
+| github-flow support hotfix | 只记录版本根 fixed/trunk_fixes，不改维护线 Bug 副本 | 首次 publish 从远端 trunk 核验 Trunk-First |
 | 其他处置 | 按已有 rejected、replaced、deferred 等决定维护记录 | 核对理由、关联与适用归档 |
 
 - 工作分支先准备对象状态并提交，交付完成同时依据实际 merge 和远端 tag。
 - 目标为 ODR 的 feature 沿用统一验收规则：首次纳入保持 ready，ODR 验收通过后更新 implemented。
   后续增量遵循 [ODR 复验](late-decision.md)，保留已有的有效对象状态。
 - 沿用现有状态枚举；具体字段与约束见 [对象契约](object-contract.md)。
-- 待收入 fixed 先委托 bug close，执行 `references/bug-close.md`。bug close 未通过时保留现场。
+- 除 support hotfix 的只读 Bug 边界外，待收入 fixed 先委托 bug close，执行 `references/bug-close.md`。bug close 未通过时保留现场。
 - Bug close 先完成复现验证和修复审查，再关闭 Bug；需要修改实现时交回当前增量验收循环。
 - 准备 closures，覆盖本版 child Change 的对象结果；critical Bug 须 fixed，major 的延期须有接受记录。
 
@@ -54,6 +55,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" consolidate --repo "$REPO_ROOT"
 - hotfix 另传 `--hotfix-change-json`，版本处理遵循 [Hotfix 版本](hotfix-version.md)。
 - 版本聚合执行于 final tag 之前，CHANGELOG、版本根和 manifest 必须一致。
 - 通过后提交材料并自勾 consolidate；下一阶段由 workflow 和分支类型确定。
+- 只记录本次预期 parent 与 tree 对应的材料 commit；hook 或并发内容不算已验收成果。
+- 提交身份或内容变化时保留现场，回到 catch-up 验收新增内容后重试；已勾 consolidate 不能掩盖本轮未完成记录。
 
 ## Incr-consolidate
 

@@ -221,7 +221,8 @@ def test_adhoc_status_runs_through_cli_entry(python_exe, tmp_path):
     assert git(work, "status", "--porcelain").stdout == before
 
 
-def test_adhoc_status_routes_real_entrypoints_through_merge(python_exe, tmp_path):
+@pytest.mark.parametrize("resync", [False, True])
+def test_adhoc_status_routes_real_entrypoints_through_merge(python_exe, tmp_path, resync):
     from support_delivery import write_change
     repo, result = start_adhoc(python_exe, tmp_path)
     data = payload(result)
@@ -231,6 +232,15 @@ def test_adhoc_status_routes_real_entrypoints_through_merge(python_exe, tmp_path
     objective.write_text(objective.read_text().replace("[ ]", "[x]").replace("[x] consolidate", "[ ] consolidate"))
     commit(work)
     payload(mdf(python_exe, "consolidate", "--repo", str(work)))
+    if resync:
+        sync = payload(mdf(python_exe, "catch-up", "--repo", str(work)))
+        status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
+        assert status["next_step"] == "catch-up"
+        payload(mdf(python_exe, "catch-up", "--repo", str(work), "--complete", "--reviewed-head", sync["head"],
+                    "--summary", "重新核对同步增量"))
+        status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
+        assert status["next_step"] == "consolidate"
+        payload(mdf(python_exe, "consolidate", "--repo", str(work)))
     status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
     assert status["next_step"] == "merge" and not status["completed"]
     payload(mdf(python_exe, status["next_step"], "--repo", str(work)))

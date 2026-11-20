@@ -124,6 +124,12 @@ def command_status(args):
     from mdf_core.workspace.merge_policy import configured
     pr_mode = configured(repo)["mode"] == "pr"
     pending = require_objectives(text, pr_mode=pr_mode)
+    from mdf_core.lifecycle.catchup import pending_attempt
+    if pending in (None, "consolidate") and pending_attempt(repo, source):
+        pending = "catch-up"
+    from mdf_core.lifecycle.consolidation import pending_attempt as consolidation_pending
+    if pending is None and consolidation_pending(repo, source):
+        pending = "consolidate"
     head = git(repo, "rev-parse", "HEAD").stdout.strip()
     merge_commit = merged_commit(repo, head)
     if merge_commit and pending is not None:

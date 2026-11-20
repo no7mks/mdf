@@ -65,6 +65,18 @@ def route(repo, root, data, yolo=False):
     items = parse_items(text)
     pending = [i for i in items if not i["checked"]]
     result = {"pending": [i["name"] for i in pending], "yolo": yolo, "next": None, "auto_completable": False}
+    from mdf_core.lifecycle.catchup import pending_attempt
+    catchup_index = next((n for n, item in enumerate(items) if item["name"] == "catch-up"), None)
+    if (catchup_index is not None and all(item["checked"] for item in items[:catchup_index])
+            and pending_attempt(repo, data["branch"])):
+        return {**result, "next": "catch-up", "state": "ready",
+                "pending": ["catch-up", *[name for name in result["pending"] if name != "catch-up"]]}
+    from mdf_core.lifecycle.consolidation import pending_attempt as consolidation_pending
+    consolidation_index = next((n for n, item in enumerate(items) if item["name"] == "consolidate"), None)
+    if (consolidation_index is not None and all(item["checked"] for item in items[:consolidation_index])
+            and consolidation_pending(repo, data["branch"])):
+        return {**result, "next": "consolidate", "state": "ready",
+                "pending": ["consolidate", *[name for name in result["pending"] if name != "consolidate"]]}
     if not pending:
         return _after_checklist(repo, data, result, yolo)
     head = pending[0]

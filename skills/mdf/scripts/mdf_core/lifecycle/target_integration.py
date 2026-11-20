@@ -41,12 +41,13 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
         from mdf_core.lifecycle.release_publish import require_published_source
         require_published_source(repo, details["version"] or data.get("version"), "HEAD", source=source)
     consolidation = record_path(repo, source)
-    if not consolidation.is_file():
+    consolidated = read_json(consolidation) if consolidation.is_file() else {}
+    if not consolidated.get("head") or consolidated.get("pending"):
         raise MDFError("merge/pr 前须完成 consolidate", code="consolidation_required")
     from mdf_core.lifecycle.support_line import ensure_remote_support_target
     ensure_remote_support_target(repo, source, target)
     path = state_path(repo, source)
-    state = read_json(path) if path.is_file() else {"base": read_json(consolidation)["head"]}
+    state = read_json(path) if path.is_file() else {"base": consolidated["head"]}
     head = sha(repo, "HEAD")
     remote = target_commit(repo, target)
     if state.get("accepted_head") == head and ancestor(repo, remote, head):
@@ -97,6 +98,11 @@ def require_integrated(repo, source, target):
         ensure_clean(repo)
         require_feature_target(repo, source, target)
         return {"completed": True, "head": sha(repo, source), "target": target, "target_head": target_commit(repo, target), "acceptance": "odr"}
+    from mdf_core.lifecycle.catchup import require_completed_attempt
+    require_completed_attempt(repo, source)
+    from mdf_core.lifecycle.consolidation import pending_attempt
+    if pending_attempt(repo, source):
+        raise MDFError("本轮文档须重新 consolidate，再继续 merge/pr", code="consolidation_required")
     from mdf_core.workspace.gitutil import branch_details
     if branch_details(source)["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import material
@@ -114,7 +120,7 @@ def require_integrated(repo, source, target):
         target_lookup = git(repo, "rev-parse", "--verify", target_ref, check=False)
         target_head = target_lookup.stdout.strip() if target_lookup.returncode == 0 else None
         if target_head and state.get("accepted_head") == head and ancestor(repo, target_head, head):
-            ensure_clean(repo)
+            require_current_head(repo, source, head)
             return {"completed": True, "head": head, "target": target, "target_head": target_head}
     result = prepare(repo, source, target)
     if not result["completed"]:

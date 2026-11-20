@@ -34,5 +34,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" catch-up --repo "$REPO_ROOT" \
 
 - 验收通过后执行 complete，自勾 catch-up。CLI 核对当前 HEAD 与远端包含关系。
 - 阶段提交失败时，可续办本次精确的 objectives 改动；重复完成保持幂等。
+- hook 或并发提交引入额外内容时，保留现场，本轮仍未完成；next/route 继续 catch-up，consolidate/merge 不能越过。
+- 已勾 checklist 不覆盖未完成的本轮记录；再次验收新增内容后才可继续，不退勾原 CR、verify、FA。
 - 远端再次前进时，在本步骤内重新同步与验收，再进入 consolidate。
 - catch-up 完成后允许 consolidate 产生已核验的材料提交。publish 继续核对远端同名分支是否有未纳入的提交。

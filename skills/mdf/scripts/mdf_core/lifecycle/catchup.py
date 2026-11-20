@@ -11,6 +11,28 @@ def state_path(repo, source):
     return common_dir(repo) / "mdf/catch-up" / (source + ".json")
 
 
+def pending_attempt(repo, source):
+    path = state_path(repo, source)
+    return path.is_file() and not read_json(path).get("completed_head")
+
+
+def require_completed_attempt(repo, source):
+    if pending_attempt(repo, source):
+        raise MDFError("本轮 catch-up 尚未完成增量验收，先续办 catch-up", code="catchup_required",
+                       details={"next_intent": "catch-up"})
+
+
+def reopen_attempt(repo, source, base):
+    """保留未验收增量左端；失败记录不得被已勾的 checklist 掩盖。"""
+    path = state_path(repo, source)
+    state = read_json(path) if path.is_file() else {}
+    state["base"] = state.pop("completed_head", None) or state.get("base") or base
+    state.pop("summary", None)
+    write_json(path, state)
+    from mdf_core.lifecycle.consolidation import mark_pending
+    mark_pending(repo, source)
+
+
 def remote_head(repo, source):
     if git(repo, "config", "--get", "remote.origin.url", check=False).returncode:
         return None
@@ -92,10 +114,13 @@ def catchup(repo, *, complete=False, reviewed_head=None, summary=None):
                     if publication.get("owned_tag") and publication.get("tag_oid"):
                         git(repo, "update-ref", "-d", f"refs/tags/v{version}", publication["tag_oid"])
                     publication_record_path(repo, source, version).unlink()
+        from mdf_core.lifecycle.consolidation import mark_pending
+        mark_pending(repo, source)
         state.pop("completed_head", None)
         state["remote"] = remote
         write_json(path, state)
-        if item["checked"]:
+        consolidated = any(i["name"] == "consolidate" and i["checked"] for i in items)
+        if item["checked"] and not consolidated:
             text = text.replace(f"- [x] {item['label']}", f"- [ ] {item['label']}", 1)
             objectives.write_text(text)
             git(repo, "add", "--", str(objectives.relative_to(repo)))
