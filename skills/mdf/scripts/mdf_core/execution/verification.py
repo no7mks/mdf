@@ -88,7 +88,7 @@ class Verification:
 
 def required_suite(kind):
     # verify branch 默认：release → release；其余交付分支 → smoke
-    if kind in {"release", "on-demand-release"}:
+    if kind == "release":
         return "release"
     if kind in {"feature", "bugfix", "hotfix"}:
         return "smoke"

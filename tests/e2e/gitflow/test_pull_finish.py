@@ -441,3 +441,24 @@ def test_rejected_develop_push_preserves_pending_without_another_pull(python_exe
     assert result['backmerge']['push_error'] == 'protected branch'
     assert 'pull' not in result['backmerge']
     assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+
+
+@pytest.mark.parametrize("record", [None, "not json", "[]", '{"branch": "feature/other"}'])
+def test_merged_feature_requires_identity_at_pr_head(python_exe, tmp_path, monkeypatch, record):
+    repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, "feature")
+    source = "feature/service-health"
+    identity = work / "changes/unreleased/service-health/delivery.json"
+    if record is None:
+        identity.unlink()
+    else:
+        identity.write_text(record)
+    commit(work)
+    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    git(work, "push", "origin", source)
+    platform.create(source, "develop", "manual PR", "manual PR")
+    platform.merge(1, tmp_path)
+    for command in ("pr", "finish-gitflow"):
+        result = mdf(python_exe, command, "--repo", str(repo), "--source", source)
+        assert result.returncode != 0 and "invalid_delivery" in result.stderr
+        assert git(repo, "rev-parse", source).stdout.strip() == head
+        assert git(remote, "rev-parse", source).stdout.strip() == head

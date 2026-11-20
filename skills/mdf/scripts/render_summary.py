@@ -42,7 +42,7 @@ def render_summary(args):
     if not details["supported"]:
         raise MDFError("总结生成只用于 owner 交付分支", code="unsupported_branch")
     root = repo / "changes/unreleased" / unreleased_slug(details)
-    if details["kind"] in {"release", "on-demand-release", "hotfix"}:
+    if details["kind"] in {"release", "hotfix"}:
         released = repo / "changes" / details["version"]
         if (released / "CHANGE.md").is_file():
             metadata, _ = read_frontmatter(released / "CHANGE.md")

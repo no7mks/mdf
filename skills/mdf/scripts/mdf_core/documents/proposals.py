@@ -87,7 +87,7 @@ def started_ids(repo):
             if isinstance(data.get("proposal"), str):
                 found.add(data["proposal"])
     from mdf_core.workspace.workflow_policy import integration_branch
-    names = ("feature/", integration_branch(repo), "release/", "on-demand-release/", "support/")
+    names = ("feature/", integration_branch(repo), "release/", "support/")
     refs = run(["git", "for-each-ref", "--format=%(refname)",
                 *[f"{prefix}/{name}" for prefix in ("refs/heads", "refs/remotes/origin")
                   for name in names]], cwd=repo).stdout.splitlines()

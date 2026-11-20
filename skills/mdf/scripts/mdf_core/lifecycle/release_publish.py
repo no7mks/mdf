@@ -119,7 +119,7 @@ def publish_release(repo):
             raise MDFError("固定候选未包含远端同名分支，重新 catch-up 后发布", code="catchup_required")
     if not remote_tag and not receipt["published"]:
         from mdf_core.lifecycle.support_line import recheck_before_publish
-        from mdf_core.lifecycle.late_decision import target_for
+        from mdf_core.workspace.workflow_policy import target_for
         recheck_before_publish(repo, source, version, target=target_for(repo, source, data=data), head=head)
     state = {"release_head": head}
     try:
@@ -180,7 +180,7 @@ def publish_gitflow(repo, source, *, number=None):
     from mdf_core.workspace.merge_policy import configured, local_head
     from mdf_core.lifecycle.pull_publish import tag_release
     details = branch_details(source)
-    if details["kind"] not in {"release", "hotfix", "on-demand-release"}:
+    if details["kind"] not in {"release", "hotfix"}:
         raise MDFError("publish 需要版本发布分支", code="unsupported_branch")
     version = details["version"]
     settings = configured(repo)

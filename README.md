@@ -127,10 +127,12 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 ### 分支模型
 
 manifest 的 `workflow: {model, trunk}` 选择 `gitflow`（默认，trunk 为 master）或 `github-flow`（任意合法 trunk，无 develop）。
-github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--from-master`、to develop 与 `dev-pr`。
+feature 的起点与合入目标由 workflow 固定：gitflow 为 develop，github-flow 为 trunk，无需逐次选择。
 
-- release 可用 `--from-commit` 冻结历史切点；发布以固定 `release_head` 打 tag，并核验其为 trunk 的 ancestor。
-- 已有发布 tag 时 hotfix 走 `support/<major.minor>`；单线可省略 `--support`。无 tag 时改走 `bugfix/*`。
+- github-flow release 可用 `--from-commit` 冻结历史切点。
+  发布以固定 `release_head` 打 tag，并核验其为 trunk 的 ancestor。
+- github-flow 已有发布 tag 时 hotfix 走 `support/<major.minor>`；单线可省略 `--support`。
+  无 tag 时改走 `bugfix/*`。
   - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
 - github-flow 的独立项目记录在本地 trunk 编辑并提交。PR mode 发 PR 时由 `trunk-pr` 接管整批提交。
   范围和命令见 [项目记录](skills/mdf/references/common.md#项目记录)。
@@ -144,18 +146,6 @@ github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--
 - 比较记录与当前内容，不要求 ancestor。dirty 照常读取作比较起点，执行检查，保留原记录。
 - `incremental-integration-plan` 按 merge 拓扑独立给出 review、verify、fact 三路动作；`review-prepare` 给出审查左端点、未审净增量与体积。
 - `delivery route` 返回等待状态；`delivery complete-stage` 只自动完成 verify，且不连带提交无关暂存内容。
-
-### 延迟选择发布路径
-
-feature 可使用 `$mdf start --from-master`，支持 `--manual`。
-显式 `--target` 不重复确认；未指定时询问，可暂不决定，但须在 incremental-integration 前确定。
-
-- 目标为 develop 或具体 `on-demand-release/<version>`。
-- ODR 从 master 创建，支持 MDF feature、master 起点的非 MDF 分支、cherry-pick 与直接工作；按范围及证据验收。
-- ODR 对所有来源统一 review、verify 与 fact audit；feature 纳入不补齐来源交付材料，PRP 验收后才为 implemented。
-- ODR 最终发布到 master，并必须合回 develop；支持 local 与 PR mode。
-- 规则与 CLI 参数见 [Late-decision](skills/mdf/references/late-decision.md)。
-- `deliver --yolo` 在入口集中确认未决事项，开始自动推进后不再询问流程决策。
 
 ### code-review 与 roster
 
@@ -207,14 +197,23 @@ pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问
 完整交付继续执行 close-out；默认 deliver 走完 close-out，非 yolo 在 pr、close-out 前分别取得用户确认，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 
-PR 模式在创建或更新 PR/MR 前 fetch 远端目标：feature 已确定目标、develop（bugfix/adhoc）或 master（release/ODR/hotfix）。
-PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共享提交并按逻辑分段 squash；
-可以保留多笔 commit，无可压缩区间则 no-op，保留 merge commit，禁止 force push。
-gitflow 的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
-只要远端 tip 不是当前 HEAD 的 ancestor，就先 no-ff merge 到本分支；无冲突也必须重新完成
-incremental-integration：incr-cr、verify smart、incr-fa，以及适用的 incr-consolidate；target 再次前进则在 merge/pr 内重复。
+PR mode 在创建或更新 PR/MR 前 fetch workflow 推导的固定目标。
 
-local 模式先在 feature 集成已确定目标；bugfix 集成 develop，release/ODR/hotfix 集成 master，冲突自动尝试解决。
+| workflow | 交付种类 | 固定目标 |
+| --- | --- | --- |
+| gitflow | feature / bugfix / adhoc | develop |
+| gitflow | release / hotfix | trunk |
+| github-flow | feature / bugfix / adhoc / release | trunk |
+| github-flow | hotfix | support 维护线 |
+
+- PR mode 每次 roster merge、远端主线 merge 和 push 前，分析未共享提交并按逻辑分段 squash。
+  可以保留多笔 commit，无可压缩区间则 no-op；保留 merge commit，禁止 force push。
+- gitflow 的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
+- 远端 tip 不是当前 HEAD 的 ancestor 时，先 no-ff merge 到本分支。
+  无冲突也重新完成 incremental-integration：incr-cr、verify smart、incr-fa，以及适用的 incr-consolidate。
+  target 再次前进时，在 merge/pr 内重复。
+
+local 模式先集成 workflow 推导的固定目标，再完成增量验收和合入；冲突自动尝试解决。
 以下本地合并与发布行为适用于默认 local 模式。
 
 - 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。
@@ -222,7 +221,7 @@ local 模式先在 feature 集成已确定目标；bugfix 集成 develop，relea
 - 集成产生新提交后：
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
-- release/ODR/hotfix 的 publish 创建带本版内容的 annotated tag 并推送。
+- release/hotfix 的 publish 创建带本版内容的 annotated tag 并推送。
   - Gitflow 在 merge/pr 后发布实际 merge commit；github-flow 在集成前发布固定候选。
   - close-out 核验远端合入与 tag；Gitflow 再将发布结果合回本地 develop，不推送远端 develop。
 - deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
@@ -351,7 +350,7 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 `$mdf adhoc <工作描述>` 从 develop 创建 `adhoc/<slug>` 与独立临时 worktree。
 
 已有普通分支也可直接执行 `$mdf pr` 或 `$mdf close-out`；无账本时按实际成果生成 Change 并收口。
-五类 Gitflow 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
+feature/bugfix/release/hotfix 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
 无账本 adhoc 保留真实分支与工作区，不补造 delivery/objectives。
 
 - slug 由 Agent 自定；直接生成七项 objectives，不另确认目标文本或 roster，不绑定 PRP。

@@ -21,8 +21,8 @@ Proposal 字段为 id、type: proposal、status、depends_on。
 状态为 draft、ready、implemented、released、rejected、replaced。
 
 - 正常路径 draft → ready → implemented → released。
-- implemented 表示已验收合入选定的目标分支（develop、ODR 或 trunk）；进入 ODR 后尚未发布。
-  - consolidate 为普通 feature 准备 implemented 候选状态，合入目标后确认交付；ODR 的 implemented 由统一验收确认。
+- implemented 表示已验收合入 workflow 对应的目标分支：gitflow 为 develop，github-flow 为 trunk。
+  - consolidate 为普通 feature 准备 implemented 候选状态，合入目标后确认交付。
   - released 必须记录稳定 SemVer released_in；其他状态不得使用 released_in。
 - rejected 必须有 reject-reason: wont-do/obsolete/duplicate。
   - duplicate 还须有 duplicate_of，直接指向同类型的 canonical 非 duplicate PRP，
@@ -102,10 +102,10 @@ Bug 的 `status` 只允许 `open`、`fixed`、`closed`、`rejected`。
 | `closed` | 由 bug close 二次验证与修复审查通过后转入 |
 | `rejected` | 终态，必须有 `reject-reason` |
 
-- 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release、ODR 或 hotfix 交付。
+- 可在当前 checkout 把 Bug 标为 `fixed`，包括 bugfix、feature、release 或 hotfix 交付。
 - 存在 test 临时移除时，标为 `fixed` 前须恢复原 suite 成员并验证通过；不等待 `closed`。
   记录与状态不变量见 [已知 Bug test 契约](known-bug-tests.md)。
-- release、ODR 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change。
+- release 与 hotfix 上直接修复时不创建 bugfix 分支或 bugfix child Change。
   - 该 Bug 进入版本根 Change 或 hotfix 结果的 `fixed` outcome。
   - 独立修复不写 child Change。
 - `reject-reason` 取值：`wont-fix`、`not-a-bug`、`cannot-reproduce`、`obsolete` 或 `duplicate`。
@@ -174,7 +174,7 @@ evidence:
 `changes/<version>/CHANGE.md` 包含：
 
 - 字段：
-  - `change_kind: release|on-demand-release|hotfix`、`source_branch`、`version`、`previous_version`；
+  - `change_kind: release|hotfix`、`source_branch`、`version`、`previous_version`；
   - `included_changes`、Proposal/Bug outcomes、release notes、`evidence`、审阅记录。
 - 章节：“结果”“包含的 Change”“收口结果”“found-in 转换”、
   “SemVer 决策”“审计”“验证命令”等。

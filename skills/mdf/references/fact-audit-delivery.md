@@ -1,8 +1,5 @@
 # 交付事实审阅
 
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
-
 主链 fact audit（含人工 feature 的 fact update 内部委托）复用
 [Fact Audit](fact-audit.md) 共用核与 [旁路](fact-audit-against.md) 的 against context，
 使本地与 CI 在相同 base、文件、history 和规则下完成同一机械与语义校验。

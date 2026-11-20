@@ -187,7 +187,7 @@ def _require_open_trunk_bug(repo: Path, trunk: str, bug_id: str, *, ref=None) ->
 def support_hotfix(repo: Path, source: str) -> bool:
     """仅 github-flow、绑定 support 目标的 hotfix 具有只读 Bug 边界。"""
     from mdf_core.workspace.workflow_policy import is_github_flow
-    from mdf_core.lifecycle.late_decision import target_for
+    from mdf_core.workspace.workflow_policy import target_for
     return (source.startswith("hotfix/") and is_github_flow(repo)
             and is_support_branch(target_for(repo, source)))
 

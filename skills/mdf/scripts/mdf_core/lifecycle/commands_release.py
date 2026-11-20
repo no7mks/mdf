@@ -82,7 +82,7 @@ def _apply_trunk_first(repo: Path, source: str, version: str, change: dict[str, 
     from mdf_core.lifecycle.support_line import is_support_branch, normalize_trunk_fixes, verify_trunk_first
     target = None
     if is_github_flow(repo):
-        from mdf_core.lifecycle.late_decision import target_for
+        from mdf_core.workspace.workflow_policy import target_for
         target = target_for(repo, source)
     if target is None or not is_support_branch(target):
         if change.get("trunk_fixes"):
@@ -97,9 +97,9 @@ def derive_closeout_spec(
     repo: Path, args: argparse.Namespace
 ) -> dict[str, Any]:
     details = branch_details(current_branch(repo))
-    if details["kind"] not in {"release", "on-demand-release", "hotfix"}:
+    if details["kind"] not in {"release", "hotfix"}:
         raise MDFError(
-            "release closeout 只接受 release/<version>、on-demand-release/<version>、hotfix/<version> 或 hotfix/<slug>",
+            "release closeout 只接受 release/<version>、hotfix/<version> 或 hotfix/<slug>",
             code="unsupported_branch",
         )
     mode = details["kind"]
@@ -120,12 +120,8 @@ def derive_closeout_spec(
             "必须显式提供 --release-date",
             code="invalid_closeout_spec",
         )
-    if mode == "on-demand-release":
-        from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-        checkpoint(repo, required=True, release=True)
-        require_independent(repo, "HEAD")
-    if mode in {"release", "on-demand-release"}:
-        slugs = unreleased_change_slugs(repo, version, odr=mode == "on-demand-release")
+    if mode == "release":
+        slugs = unreleased_change_slugs(repo, version)
         proposals: set[str] = set()
         fixed: set[str] = set()
         closed: set[str] = set()
@@ -138,10 +134,6 @@ def derive_closeout_spec(
             fixed.update(metadata.get("fixed", []))
             closed.update(metadata.get("closed", []))
             deferred.update(metadata.get("deferred", []))
-        if mode == "on-demand-release":
-            from mdf_core.lifecycle.odr_acceptance import source_contexts
-            proposals.update(record["proposal"] for _folder, record in source_contexts(repo, version).values()
-                             if not record.get("manual"))
         hotfix_change = None
     else:
         raw_hotfix = _json_argument(

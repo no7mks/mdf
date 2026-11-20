@@ -19,7 +19,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" merge --repo "$REPO_ROOT"
 - 必要的历史整理遵循 `references/squash.md`，可选 squash 的 dry-run 建议由 Agent 裁定。
 - merge 前 target 有新提交时，CLI 合回并返回 incremental-integration，完成验收后重试 merge。
 - feature / bugfix 完成后进入 close-out。
-- Gitflow release / hotfix / ODR 完成后进入 publish，再由 close-out 完成 develop 回合与清理。
+- Gitflow release / hotfix 完成后进入 publish，再由 close-out 完成 develop 回合与清理。
 - github-flow release / hotfix 的 final tag 已在 merge 前发布；本次合入后进入 close-out。
 - 目标分支前进和 PR 返工采用相同的 [incremental-integration](incremental-integration.md) 验收方法。
 - merge 成功后保留工作分支及 worktree，供 publish 与 close-out 核验。

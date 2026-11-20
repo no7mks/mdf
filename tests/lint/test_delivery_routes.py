@@ -58,7 +58,7 @@ def test_start_clarifies_feature_objectives_before_branch():
     assert table[3][5] == "5"
     assert table[4][1] == "Switch worktree"
     assert table[4][2] == "约束"
-    assert table[4][5] == "ODR 等待；同/跨6；collab 交接；其他结束"
+    assert table[4][5] == "同/跨6；collab 交接；其他结束"
     assert table[4][6] == "未切到或材料阻塞则留5"
     assert table[5][1] == "Open integrate"
     assert table[5][5] == "结束"

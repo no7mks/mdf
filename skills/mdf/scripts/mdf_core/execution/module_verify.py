@@ -47,7 +47,7 @@ def _delivery_slug(repo: Path) -> tuple[str, str, str]:
     branch = current_branch(repo)
     details = branch_details(branch)
     kind = details["kind"]
-    if kind not in {"feature", "bugfix", "hotfix", "release", "on-demand-release"}:
+    if kind not in {"feature", "bugfix", "hotfix", "release"}:
         raise MDFError("verify 需要 Gitflow 交付分支", code="stage_branch")
     return branch, kind, unreleased_slug(details)
 
@@ -290,9 +290,6 @@ def _reused(items, base):
 def _verify_branch(repo, branch, kind, slug, force=False) -> None:
     path = evidence_file(repo, slug)
     clean, head = git_is_clean(repo), sha(repo, "HEAD")
-    if kind == "on-demand-release":
-        from mdf_core.lifecycle.late_decision import checkpoint
-        checkpoint(repo, required=True)
     if kind == "bugfix" and not associated_suites(repo, slug):
         raise MDFError(
             "bugfix 必须在 suites.json 关联 named suite",

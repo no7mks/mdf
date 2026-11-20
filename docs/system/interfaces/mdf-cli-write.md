@@ -2,7 +2,6 @@
 
 调用约定与命令总表见 [MDF 确定性 CLI 参考](mdf-cli.md)。
 
-
 ## `prepare-git`
 
 ```bash
@@ -59,7 +58,7 @@ python3 skills/mdf/scripts/mdf.py init --repo /path/to/repository \
   写入 `verification.budgets`。
 - `--workflow gitflow|github-flow` 与 `--trunk <分支>` 写入 manifest 的 `workflow: {model, trunk}`。
   - 省略 workflow 等同 `gitflow` 与 `master`，manifest 不写该块，行为不变。
-  - trunk 不得占用保留名（develop、planning、feature/、bugfix/、release/、on-demand-release/、hotfix/、support/、adhoc/ 等）。
+  - trunk 不得占用保留名（develop、planning、feature/、bugfix/、release/、hotfix/、support/、adhoc/ 等）。
   - 重跑 init 不得静默改变已有 workflow；变更只经 `workflow switch`。
 - `--closeout-mode local|pr` 与 `--closeout-provider github|gitlab` 更新对应字段。PR mode 需要 provider。
   省略参数时保留已有配置；托管 `AGENTS.md` 区块按写入的配置渲染。
@@ -164,7 +163,7 @@ python3 skills/mdf/scripts/mdf.py start --repo /path/to/repository \
 
 github-flow（manifest 的 `workflow.model`）下基线改为 `workflow.trunk`，没有 develop：
 
-- feature、bugfix、release、hotfix、adhoc 均从 trunk 建分支并回到 trunk；`--from-master`、to develop、ODR 与 `dev-pr` 被拒绝。
+- feature、bugfix、release、adhoc 从 trunk 建分支并回到 trunk；hotfix 使用 support 维护线。to develop 与 `dev-pr` 被拒绝。
 - `--from-commit <sha>`：release 的历史切点。要求位于 trunk 第一父链且晚于上一发布 tag；创建即冻结，之后不随 trunk 前进，
   publish 在 target 集成前以验收完成的发布 commit 打 tag；随后工作分支可继续集成，close-out 核对 tag 已进入 trunk。
 - `--support <major.minor>`：hotfix 的维护线。多条发布线并存时必须显式指定。
@@ -376,7 +375,7 @@ python3 skills/mdf/scripts/mdf.py consolidate --repo /path/to/repository [--incr
 ```
 
 - 整理并提交前置准备好的 Change、总结、对象状态与版本材料。
-- feature 的 PRP 准备 implemented；已验证 Bug 准备 fixed；ODR 仍由统一验收确认 PRP。
+- feature 的 PRP 准备 implemented；已验证 Bug 准备 fixed。
 - release / hotfix 的版本聚合调用 release-closeout，可传发布日期、closures 和 hotfix 实际结果 JSON。
 - 校验文档与对象一致性，提交本次拥有的路径，自勾 consolidate，保留其他写入者的改动。
 - --incremental 用于 merge/pr 内的 incr-consolidate，更新当前交付材料后记录本轮收敛结果。
@@ -416,7 +415,6 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 - `--dry-run` 只拉取并报告 `new_commit`、各目标当前基线、`history`、`agents` 与 `commit` 计划。
   - `history` 按已安装 `.version` 分组，列出上游 `skills/mdf` 在该基线到 HEAD 之间的提交与文件变更。
   - 无法对照时带 `status`，不视为失败。
-
 
 ## `bug close`
 

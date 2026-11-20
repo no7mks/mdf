@@ -2,12 +2,6 @@
 
 主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
 
-feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
-不套用本文普通 feature 的材料准备、验收前置或步骤补勾；目标 develop 保持原流程。
-
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
-
 ## 选择树
 
 ```text
@@ -160,7 +154,6 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
   - fact 已通过后，同名远端同步只重新打开 `catch-up`，其他分支集成或收尾返工只重新打开 `incremental-integration`。
     两者在对应步骤内完成增量验收，已通过的基线四项保持 `[x]`。
-  - PR mode 的 ODR 在 fact 后先完成 [统一验收](late-decision.md#纳入-checkpoint-与统一验收)，再依次 catch-up、consolidate；target 合回和 incremental-integration 属于后续 merge/pr。
   - checklist 阶段只在有对应未勾项时进入；PR mode 前置全勾时按 PR 恢复路由续办。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；

@@ -1,8 +1,5 @@
 # Start
 
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
-
 一次只启动一个交付 kind。start 按 roster 建立 owner 与可选 qa/dev 角色分支。
 开分支前展示并确认将冻结的 roster。
 
@@ -47,7 +44,6 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
                  ├──── 未切到 ─────────────────────→ [留在 5 等待]
                  ├──── post-start check 阻塞 ──────→ [留在 5 补齐材料]
                  ├──── collab-mode 已交接 ─────────→ [结束]
-                 ├──── 已切到且 ODR ───────────────→ [等待纳入 checkpoint]
                  ├──── 已切到且 release 需联调 ────→ 6 Open integrate
                  └──── 已切到 ─────────────────────→ [结束]
 
@@ -81,7 +77,7 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 | 2 | Clarify objectives | 约束 | 盘点前置条件，写/确认 objectives checklist（含大步骤） | 确认目标与准备说明 | 3 | 不写目标，停止 |
 | 3 | Confirm roster | 约束 | 确认 member、strategy 与 models | 明确确认、与步骤2的 needs_design 一致 | 冲突2；否则4 | 拒绝停止；未决留3 |
 | 4 | Start branch | 脚本 | 运行 start，核对分支与 worktree | 分支、worktree | 5 | 检查失败不创建；中途失败已回滚并停 |
-| 5 | Switch worktree | 约束 | 绑定 owner；hook、检查与交接 | 路径与材料 | ODR 等待；同/跨6；collab 交接；其他结束 | 未切到或材料阻塞则留5 |
+| 5 | Switch worktree | 约束 | 绑定 owner；hook、检查与交接 | 路径与材料 | 同/跨6；collab 交接；其他结束 | 未切到或材料阻塞则留5 |
 | 6 | Open integrate | 约束 | 立即执行 `$mdf integrate` | Goal；跨 worktree 另有通道与 poll | 结束 | 按 integrate 交接 |
 
 ## 术语与数据结构
@@ -102,8 +98,8 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 一次只要求一个分支的类型和必要标识：
 
 - 普通 feature 要 PRP ID；人工 feature 要 `--manual` 与已确认 slug。
-  bugfix 要 Bug ID，release/ODR 要稳定 SemVer；hotfix 接受稳定 SemVer 或 kebab-case slug。
-- 五种 Gitflow kind 均须有 objectives checklist（含 `[ ]`/`[x]` 大步骤）；roster `0,0` 也写。
+  bugfix 要 Bug ID，release 要稳定 SemVer；hotfix 接受稳定 SemVer 或 kebab-case slug。
+- 各交付 kind 均须有 objectives checklist（含 `[ ]`/`[x]` 大步骤）；roster `0,0` 也写。
   - 在步骤 2 确认并写入临时文件，步骤 4 由 CLI 经 `--objectives-file` 落入 `objectives.md`。
   - hotfix 始终记录已确认的热修复范围；roster ≥1 可由 design 修订。
 - 普通 feature 必须绑定一个 active ready 且依赖满足、未 start 的 PRP。
@@ -114,7 +110,6 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
   release 指定的历史切点只须已进入 origin 的 trunk。
 - release 必须绑定稳定 SemVer；gitflow 的本版范围是 start 时已在 develop 的 child Change。
   - github-flow 使用 trunk 的冻结切点及其已纳入的 child Change。
-  - ODR 改用已确认的多来源范围；允许纳入分支、cherry-pick 与直接工作，验收见 Late-decision。
   - 不得把新 PRP 当作本版实现范围。
 - 普通 feature 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`：
   - 只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选。
@@ -284,8 +279,9 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - 远程提交已在本地（相同或本地更新）才通过。
   - 远程有本地没有的提交则停止，不创建分支。
   - 无 origin，或 origin 上没有该基线分支，则跳过。
-- gitflow：feature/bugfix/release 默认从本地 develop 创建；`--from-master`、ODR 和 hotfix 从 trunk 创建。
-- github-flow：交付从 `workflow.trunk` 创建并回到 trunk；不从 develop 创建。hotfix 见 [Hotfix 版本](hotfix-version.md)。
+- gitflow：feature/bugfix/release 从本地 develop 创建，hotfix 从 trunk 创建；feature 固定合入 develop。
+- github-flow：feature/bugfix/release/adhoc 从 `workflow.trunk` 创建并回到 trunk。
+  hotfix 从 support 维护线创建并合回该线；无发布 tag 时改走 bugfix，见 [Hotfix 版本](hotfix-version.md)。
 - 本地已有同名分支则失败，不检查远端。
 - 始终从基线在仓库同级 `<repo-name>-worktrees/<worktree-name>` 建立 worktree：
   - 路径等于分支名，`/` 为嵌套目录。
@@ -293,7 +289,6 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - roster ≥1 时按人数建立 `qa/<owner>`、`dev/<owner>`，
   第 2 路起为 `qa/2/<owner>`、`dev/2/<owner>`；`0,0` 只建 owner。
 - 成功 JSON 含 `worktree`（owner）、冻结后的 `roster` 与 `roles.qa` / `roles.dev` 列表。
-- ODR 另传重复 `--feature feature/<slug>`；feature 可传 `--from-master` 与 `--target`，见 late-decision。
 - CLI 成功后按 [post-gitflow-start](post-gitflow-start.md) 执行 hook。
   - command 已由 CLI 执行，Agent 汇报前后说明与结果。
   - JSON 的 `hook.status: pending` 表示 rule；切到 owner 后读取并执行规则，
@@ -334,8 +329,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 - Cursor 未进入则留在 5，重复切换；其他宿主绑定绝对路径后即通过。
 - 不拆除已建 worktree 与分支。
 - 已切到后先完成 pending rule hook，再执行下方「Post-start check」；通过后才可交接、进入 6 或返回调用方。
-- ODR 检查通过后交接范围内工作；发布前必须完成纳入 checkpoint。
-- 其他分支检查通过后看 objectives，release 的 collab-mode 先按 [交接契约](collab-mode.md) 输出本仓材料并结束。
+- 检查通过后看 objectives，release 的 collab-mode 先按 [交接契约](collab-mode.md) 输出本仓材料并结束。
   - deliver 内部委托时返回调用方并说明待接手，不进入 6、不接管另一仓的 start 或联调。
 - release 且为同 worktree 或跨 worktree 则进入 6，不得先结束。
 - 其他 kind，或不联调的 release：

@@ -98,12 +98,12 @@ def planning_only(repo, before, after):
 
 
 def protected_target(repo, target):
-    """PR mode 下禁止本地直接合入的分支：gitflow 的 trunk/develop/ODR，github-flow 的 trunk 与 support/*。"""
+    """PR mode 下禁止本地直接合入的分支：gitflow 的 trunk/develop，github-flow 的 trunk 与 support/*。"""
     from mdf_core.workspace.workflow_policy import GITHUB_FLOW, workflow_config
     cfg = workflow_config(repo, "HEAD")
     if cfg["model"] == GITHUB_FLOW:
         return target == cfg["trunk"] or target.startswith("support/")
-    return target in {cfg["trunk"], "develop"} or target.startswith("on-demand-release/")
+    return target in {cfg["trunk"], "develop"}
 
 
 def require_merge(repo, source, target):

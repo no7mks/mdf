@@ -34,7 +34,7 @@ def validate_change_file(
         add_finding(
             findings,
             "change.kind",
-            "CHANGE requires a supported change_kind (including on-demand-release)",
+            "CHANGE requires a supported change_kind",
             rel,
         )
     source_branch = metadata.get("source_branch")
@@ -60,7 +60,7 @@ def validate_change_file(
             add_finding(findings, "change.source_branch", str(exc), rel)
         else:
             expected_kinds = (
-                {"release", "on-demand-release", "hotfix"} if root else {"feature", "bugfix", "adhoc"}
+                {"release", "hotfix"} if root else {"feature", "bugfix", "adhoc"}
             )
             if (
                 not details["supported"]
@@ -89,11 +89,11 @@ def validate_change_file(
                     rel,
                 )
     if root:
-        if change_kind not in {"release", "on-demand-release", "hotfix"}:
+        if change_kind not in {"release", "hotfix"}:
             add_finding(
                 findings,
                 "change.kind",
-                "Version-root CHANGE must be release, on-demand-release or hotfix",
+                "Version-root CHANGE must be release or hotfix",
                 rel,
             )
         if (

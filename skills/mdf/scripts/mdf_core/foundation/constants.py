@@ -90,7 +90,7 @@ BUG_TERMINAL_RESOLUTIONS = BUG_REJECT_REASONS - {"duplicate"}
 BUG_RESOLUTIONS = {"fixed", "duplicate", *BUG_TERMINAL_RESOLUTIONS}
 # Proposal 拒绝原因，用于发布收口的一次性操作输入。
 PROPOSAL_CLOSED_RESOLUTIONS = {"wont-do", "duplicate", "obsolete"}
-CHANGE_KINDS = {"feature", "bugfix", "fix", "release", "on-demand-release", "hotfix", "adhoc"}
+CHANGE_KINDS = {"feature", "bugfix", "fix", "release", "hotfix", "adhoc"}
 BASELINES = (
     "glossary",
     "user_guide",

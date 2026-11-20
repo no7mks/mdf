@@ -52,9 +52,7 @@ def update_child_objects(repo, root, data):
     objects = active_objects(repo)
     owned = set()
     proposal = data.get("proposal")
-    from mdf_core.lifecycle.late_decision import target_for
-    deferred_prp = target_for(repo, data["branch"], data=data).startswith("on-demand-release/")
-    if proposal and not deferred_prp:
+    if proposal:
         if change.get("proposals") != [proposal] or proposal not in objects:
             raise MDFError("Change 必须引用本次唯一 PRP", code="invalid_proposal")
         kind, path, meta = objects[proposal]
@@ -144,7 +142,7 @@ def consolidate(repo, args):
     from mdf_core.lifecycle.catchup import require_completed_attempt
     require_completed_attempt(repo, source)
     details = branch_details(source)
-    versioned = details["kind"] in {"release", "hotfix", "on-demand-release"}
+    versioned = details["kind"] in {"release", "hotfix"}
     version = details["version"] or data.get("version")
     result = None
     owned = set()

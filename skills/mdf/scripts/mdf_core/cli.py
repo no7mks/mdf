@@ -218,16 +218,12 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--repo", required=True)
     start.add_argument(
         "--kind",
-        choices=("feature", "bugfix", "release", "on-demand-release", "hotfix", "adhoc"),
+        choices=("feature", "bugfix", "release", "hotfix", "adhoc"),
         required=True,
     )
     start.add_argument("--name")
     start.add_argument("--work")
     start.add_argument("--manual", action="store_true")
-    start.add_argument("--from-master", action="store_true")
-    start.add_argument("--target")
-    start.add_argument("--feature", action="append")
-    start.add_argument("--scope-file")
     start.add_argument("--proposal")
     start.add_argument("--bug")
     start.add_argument("--objectives-file")
@@ -288,7 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
     delivery = subparsers.add_parser("delivery")
     delivery.add_argument(
         "action",
-        choices=("status", "check", "record", "roster-join", "roster", "resolve-version", "target", "checkpoint", "scope", "accept",
+        choices=("status", "check", "record", "roster-join", "roster", "resolve-version",
                  "route", "complete-stage"),
     )
     delivery.add_argument("--repo", required=True)
@@ -296,8 +292,6 @@ def build_parser() -> argparse.ArgumentParser:
     delivery.add_argument("--stage", choices=(*STAGES, "finish", "verify"))
     delivery.add_argument("--yolo", action="store_true", help="route：pr/close-out 入口无需确认")
     delivery.add_argument("--summary")
-    delivery.add_argument("--target")
-    delivery.add_argument("--scope-file")
     delivery.add_argument("--policy-file")
     delivery.add_argument("--test-approval")
     delivery.add_argument("--qa-branch")

@@ -122,7 +122,7 @@ def _resolve_base(repo: Path, base: str | None, findings: list[Finding]) -> str 
         owner = role[0] if role else branch
         trunk = trunk_branch(repo)
         details = branch_details(owner, trunk)
-        if details["kind"] in {"release", "on-demand-release"}:
+        if details["kind"] == "release":
             previous = manifest_at(repo, trunk_branch(repo)).get("versioning", {}).get("latest_release")
             if previous is None:
                 add_finding(findings, "audit.base", "首次 release 需要显式 --base")

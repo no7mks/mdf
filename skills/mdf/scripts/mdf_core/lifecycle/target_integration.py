@@ -35,7 +35,7 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
     if data["branch"] != source:
         raise MDFError("该阶段须在交付 owner 工作分支执行", code="stage_branch")
     details = branch_details(source)
-    publishing = details["kind"] in {"release", "hotfix", "on-demand-release"}
+    publishing = details["kind"] in {"release", "hotfix"}
     frozen = publishing and is_github_flow(repo)
     if frozen:
         from mdf_core.lifecycle.release_publish import require_published_source
@@ -93,11 +93,6 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
 
 
 def require_integrated(repo, source, target):
-    from mdf_core.lifecycle.late_decision import is_odr_inclusion, require_feature_target
-    if is_odr_inclusion(source, target):
-        ensure_clean(repo)
-        require_feature_target(repo, source, target)
-        return {"completed": True, "head": sha(repo, source), "target": target, "target_head": target_commit(repo, target), "acceptance": "odr"}
     from mdf_core.lifecycle.catchup import require_completed_attempt
     require_completed_attempt(repo, source)
     from mdf_core.lifecycle.consolidation import pending_attempt
@@ -129,7 +124,7 @@ def require_integrated(repo, source, target):
 
 
 def command_incremental_integration(args):
-    from mdf_core.lifecycle.late_decision import target_for
+    from mdf_core.workspace.workflow_policy import target_for
     from mdf_core.lifecycle.pull_finish import finish_lock
     repo = repo_path(args.repo)
     require_git_root(repo)

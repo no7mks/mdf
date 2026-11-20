@@ -1,8 +1,5 @@
 # verify
 
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
-
 按 scope 运行验证；branch 要求交付分支，smart/named 不要求。
 
 - **smart**：开发与 converge 使用（lint+build+quick + 改动测试/选题）。
@@ -189,7 +186,7 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
 
 - branch：无论成败均写入 `changes/unreleased/<slug>/verification-report.json`；
   **report**，非 gate；不含 commit / head；`all_passed:false` 时 CLI 仍失败。
-  - PR mode 的 release/ODR/hotfix 候选材料已进入 `changes/<version>/` 时，报告写回该版本目录，不新建 unreleased 副本。
+  - PR mode 的 release/hotfix 候选材料已进入 `changes/<version>/` 时，报告写回该版本目录，不新建 unreleased 副本。
   - 未绿且可修 → 回 3（提交后重跑）；未绿且阻塞 → 停止并报告。
   - 仅 `all_passed:true` 且步骤 5 完成时，在步骤 6 追加 `verification-report.md`（suite、报告路径、架构审视要点）。
     报告标题为 Verification Report，写明 scope: branch 与实际 suites；阶段仍为 verify branch。
@@ -204,7 +201,6 @@ adhoc 的主链执行 smart；Core 成败均保存 smart report，Agent 在步�
   incremental-integration 必须使用独立报告；branch/named 不接受该参数。
 - quick 复现结论只在 branch 已绿写入 `verification-report.md` 时一并记录。
   - 不写 `code-review.md`（审查轮次的 quick 复现仍由 code-review 自记）。
-
 
 ### 主链 review/verify 小 loop
 

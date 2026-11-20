@@ -292,3 +292,22 @@ def test_upstream_manifest_change_alone_requires_fact_audit(python_exe, tmp_path
     merge(work)
     fact = plan(python_exe, work)["fact"]
     assert fact["action"] == "audit" and fact["rules_changed"] == ["AGENTS.md"]
+
+
+def test_feature_plan_ignores_mutable_target_field(python_exe, tmp_path):
+    repo, work, root = started(python_exe, tmp_path)
+    base = tick_fact(work, root)
+    git(repo, "checkout", "-b", "feature/other", "develop")
+    (repo / "src/other.py").write_text("other = True\n")
+    commit(repo)
+    incoming = git(repo, "rev-parse", "HEAD").stdout.strip()
+    git(work, "merge", "--no-ff", "--no-edit", "feature/other")
+    expected = plan(python_exe, work, "--base", base)
+    path = root / "delivery.json"
+    data = json.loads(path.read_text())
+    data["target"] = "feature/other"
+    path.write_text(json.dumps(data))
+    actual = plan(python_exe, work, "--base", base)
+    assert actual == expected
+    assert [m["kind"] for m in actual["merges"]] == ["internal"]
+    assert incoming in actual["own_commits"] and incoming not in actual["incoming_commits"]

@@ -29,7 +29,7 @@ def left_endpoint(repo, against, data, initial_base=None):
         return sha(repo, against)
     if data is None:
         raise MDFError("非交付分支需要 --against 指定审查左端点", code="missing_review_base")
-    if branch_details(data["branch"])["kind"] in {"release", "on-demand-release"}:
+    if branch_details(data["branch"])["kind"] == "release":
         version = manifest_at(repo, trunk_branch(repo)).get("versioning", {}).get("latest_release")
         if not version:
             if initial_base:

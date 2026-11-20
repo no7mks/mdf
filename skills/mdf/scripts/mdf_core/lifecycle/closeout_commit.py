@@ -72,7 +72,7 @@ def apply_version_closeout(
     release_dir = repo / "changes" / context["version"]
     moves: dict[Path, Path] = {}
     move_records: list[dict[str, Any]] = []
-    for item in [*context["release_items"], *context.get("source_items", [])]:
+    for item in context["release_items"]:
         source = repo / item["source"]
         destination = release_dir / item["slug"]
         broken = opaque_links_survive_move(repo, source, destination)
@@ -93,8 +93,7 @@ def apply_version_closeout(
     review_source = repo / "changes" / "unreleased" / context["review_slug"]
     if review_source.is_dir() and not review_source.is_symlink():
         for path in sorted(review_source.iterdir()):
-            odr_directory = context["mode"] == "on-demand-release" and path.is_dir()
-            if path.is_symlink() or not (path.is_file() or odr_directory):
+            if path.is_symlink() or not path.is_file():
                 continue
             destination = release_dir / path.name
             if destination in moves.values():

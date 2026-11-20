@@ -89,32 +89,6 @@ def apply_closeout(
             evidence,
         ) = aggregate_release_changes(repo, all_slugs)
         hotfix_body = None
-        if context["mode"] == "on-demand-release":
-            from mdf_core.lifecycle.delivery_state import read_json
-            record = read_json(repo / "changes/unreleased" / context["review_slug"] / "delivery.json")
-            from mdf_core.lifecycle.odr_acceptance import source_contexts
-            for source, (folder, child) in source_contexts(repo, context["version"]).items():
-                evidence["artifacts"].append(f"changes/{context['version']}/{folder.name}/delivery.json")
-                if not child.get("manual"):
-                    proposal_ids.add(child["proposal"])
-
-            evidence["artifacts"].extend(f"changes/{context['version']}/{name}"
-                                         for name in ("code-review.md", "verification-report.json", "fact-audit.md"))
-            from mdf_core.lifecycle.odr_acceptance import release_summary
-            summary_path = repo / "changes/unreleased" / context["review_slug"]
-            summary_notes, summary_breaking = release_summary(repo, summary_path, record)
-            for category, values in summary_notes.items():
-                notes[category].extend(values)
-            breaking = breaking or summary_breaking
-            if (summary_path / "release-notes.json").is_file():
-                evidence["artifacts"].append(f"changes/{context['version']}/release-notes.json")
-            for item in record.get("scope", []):
-                breaking = breaking or item.get("breaking") is True
-                evidence["artifacts"].extend(
-                    path.replace(f"changes/unreleased/{context['version']}/", f"changes/{context['version']}/", 1)
-                    for path in (item.get("evidence", {}).get(key) for key in ("review", "tests", "fact"))
-                    if isinstance(path, str) and path
-                )
     if context.get("require_release_notes") and not any(notes.values()):
         raise MDFError("发布版本需要实际 release notes", code="empty_release_notes")
     if support and (closed_ids or deferred_ids):

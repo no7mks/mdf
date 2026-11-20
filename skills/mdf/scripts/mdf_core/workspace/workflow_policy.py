@@ -18,7 +18,7 @@ DEFAULT_WORKFLOW = {"model": GITFLOW, "trunk": DEFAULT_TRUNK}
 # MDF 保留的分支名与前缀；trunk 不得与之冲突。
 RESERVED_NAMES = frozenset({"develop", "planning", "pm"})
 RESERVED_PREFIXES = (
-    "feature/", "bugfix/", "release/", "on-demand-release/", "hotfix/",
+    "feature/", "bugfix/", "release/", "hotfix/",
     "support/", "adhoc/", "qa/", "dev/", "codex/", "pm/",
 )
 GITHUB_FLOW_UNSUPPORTED = "github_flow_unsupported"
@@ -167,3 +167,18 @@ def ci_branches(repo: Path) -> list[str]:
     if config["model"] == GITFLOW:
         return ["develop", config["trunk"]]
     return [config["trunk"], "support/**"]
+
+
+def target_for(repo, source, *, data=None, ref=None):
+    """由 workflow 与交付种类推导固定目标；support hotfix 使用冻结的维护线。"""
+    from mdf_core.workspace.gitutil import branch_details
+    kind = branch_details(source)["kind"]
+    if is_github_flow(repo):
+        if kind == "hotfix":
+            if data is None:
+                from mdf_core.lifecycle.hotfix_version import delivery_record
+                record = delivery_record(repo, source, ref=ref or f"refs/heads/{source}")
+                data = record[1] if record else {}
+            return data.get("base_branch") or trunk_branch(repo)
+        return trunk_branch(repo)
+    return trunk_branch(repo) if kind in {"release", "hotfix"} else "develop"

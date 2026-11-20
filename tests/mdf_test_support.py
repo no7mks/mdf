@@ -432,7 +432,7 @@ def finish_delivery(python_exe, command, *args, **kwargs):
     repo = Path(values[values.index("--repo") + 1])
     source = values[values.index("--source") + 1] if "--source" in values else git(repo, "branch", "--show-current").stdout.strip()
     details = branch_details(source)
-    versioned = details["kind"] in {"release", "hotfix", "on-demand-release"}
+    versioned = details["kind"] in {"release", "hotfix"}
     mode = configured(repo)["mode"]
     github = is_github_flow(repo)
     from mdf_core.lifecycle.publish import merge_record_path

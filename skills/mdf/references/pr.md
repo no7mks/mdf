@@ -1,11 +1,6 @@
 # PR
 
-feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
-不套用本文普通 feature 的材料准备、验收前置或步骤补勾；gitflow 的目标 develop 保持原流程。
-github-flow 的 PR 目标是 `workflow.trunk`，不使用 develop。
-
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+github-flow 的 PR 目标是 `workflow.trunk`；support hotfix 使用冻结的维护线，不使用 develop。
 
 <a id="pm-分支"></a>
 
@@ -113,11 +108,11 @@ closeout:
   `pm/*` 使用 [pm 分支](#pm-分支) 的准备流程。
   - 无账本 adhoc 在 Prepare 委托 [无账本 Adhoc 收口](adhoc-change.md) 的步骤 1–5，再返回本页 Finish。
   - 保留真实分支与 worktree，不要求 delivery/objectives；已有损坏账本不能绕过。
-- PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入已确定目标后生效。
+- PR mode 的 feature PRP 在源提交中准备 implemented，随 PR 合入 workflow 推导的固定目标后生效。
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
-  - release/ODR/hotfix 须先完成 publish，close-out 再核对固定发布点与适用的 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
+  - release/hotfix 须先完成 publish，close-out 再核对固定发布点与适用的 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按 [工作区清理](close-out.md#工作区清理) 默认删除临时 owner 和 backmerge；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，保留 Git 现场。
   - lock 只覆盖本次收口操作；调用退出或中断时由 OS 释放，不删除 lock 文件。

@@ -7,7 +7,7 @@ from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import locate, safe, split_objectives_steps
 from mdf_core.workspace.gitutil import repo_path, require_git_root
 from mdf_core.workspace.merge_policy import ancestor, git, sha
-from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
+from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch, target_for
 
 MATERIAL_NAMES = {"objectives.md", "code-review.md", "fact-audit.md", "CHANGE.md", "incremental-integration-verification-report.json"}
 CONTRACTS = {".mdf/manifest.yaml", ".mdf/modules.yaml", "AGENTS.md"}
@@ -116,7 +116,7 @@ def build_plan(repo, root, data, explicit_base=None, *, explicit_head=None):
     base, head = resolve_base(repo, root, explicit_base), sha(repo, explicit_head or "HEAD")
     if not ancestor(repo, base, head):
         raise MDFError("incremental-integration 基线不是 HEAD 的祖先", code="invalid_integration_base")
-    refs = target_refs(repo, data.get("target"))
+    refs = target_refs(repo, target_for(repo, data["branch"], data=data))
     merges, own, incoming = graph(repo, base, refs, head)
     start = data.get("start_commit") or base
     _, branch_own, _ = graph(repo, start, refs, head) if start != base else (None, own, None)

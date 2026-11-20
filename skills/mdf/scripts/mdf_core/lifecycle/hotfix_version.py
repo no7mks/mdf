@@ -61,7 +61,7 @@ def _tag_base(repo, source):
     """tag 历史所在分支：gitflow 为 trunk；github-flow 的 support 线 hotfix 为其 support 分支。"""
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     if source is not None and is_github_flow(repo):
-        from mdf_core.lifecycle.late_decision import target_for
+        from mdf_core.workspace.workflow_policy import target_for
         return target_for(repo, source)
     return trunk_branch(repo)
 

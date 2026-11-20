@@ -1,12 +1,7 @@
 # PR 合并后续办
 
-feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
-不套用本文普通 feature 的材料准备、验收前置或步骤补勾；gitflow 的目标 develop 保持原流程。
-github-flow 的主线收口目标是 `workflow.trunk`。
+github-flow 的主线收口目标是 `workflow.trunk`；support hotfix 合回冻结的维护线。
 `pm/*` 从 trunk worktree 按 [pm 分支](pr.md#pm-分支) 完成收口。
-
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
 
 ## 决策树
 
@@ -94,24 +89,29 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
   - lease 仅用于删除该 source，不用于改写任何分支历史；并发前进时停止并保留新 tip。
   - 远端已由平台或用户删除时，确认缺失即复用，不重复发删除请求。
 - 中断或推送结果不明时，重新查询精确远端 ref。缺失即继续本地清理。SHA 不同，或本地 source 已缺失而同名远端 ref 仍存在时，保留现场。
-- 发布重试核对固定 M、annotated tag 与远端 develop 第一父链的双亲回合。已合入的回合以远端拓扑为准。
+- 发布重试核对固定 M 与 annotated tag。Gitflow 另核远端 develop 第一父链的双亲回合；已合入回合以远端拓扑为准。
   - 本地和远端 source 均已清理时，只核远端回合证据；证据缺失时停止，保留 backmerge worktree 的后续提交。
 - CLI 的 remote_deleted 独立表示已确认远端 source 删除，deleted 仍表示本地 source；全部清理完成后才能 completed=true。
 
 ### 发布与回合
 
-本节固定本次发布的实际 merge commit M。
+本节固定本次发布的实际 merge commit M。release 的 target 为 `workflow.trunk`；
+gitflow hotfix 同样合回 trunk，github-flow hotfix 的 target 为冻结的 support 维护线。
 
 步骤 2 的 `finish-gitflow` 固化执行下列发布动作，Agent 只核结果及处理返回的冲突。
 
 | CLI 动作 | 证据 | 失败/缺失去向 |
 | --- | --- | --- |
-| 核 release/ODR/hotfix 平台合并 | master 第一父链中的双亲 M | 停止并保留现场 |
+| 核 release/hotfix 平台合并 | 实际 PR target 第一父链中的双亲 M | 停止并保留现场 |
 | 核对前置 publish 的 annotated tag、目标 commit 与正文 | 远端 tag 与发布记录一致 | 续办 publish |
 | Gitflow 在独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
 | 清理远端及本地 source，暂留临时目录供核验 | remote_deleted、deleted、owner 状态 | 步骤 3 核对后默认清理临时目录 |
 
-- 不跟随后来前进的 master HEAD；本地 master 只做同名 ff 同步，分歧时保留现场。
+- 不跟随后来前进的 target HEAD；本地 target 只做同名 ff 同步，分歧时保留现场。
+- tag push 响应丢失时先核对远端；已存在且符合记录则复用。
+
+以下 backmerge 规则仅适用于 gitflow；github-flow 不回合 develop。
+
 - 本地 develop 的集成遵循下节；远端 backmerge 始终以远端 develop 为 base，不夹带本地独有 commits。
 - tag 已发布、回合未完成时返回 published_pending_backmerge。
 - backmerge 是直接进入 develop 的特例；使用 no-ff merge 和非 force push，不创建回合 PR/MR。
@@ -121,12 +121,11 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 - 新 head 必须保留记录的历史和固定 M；改写历史仍停止。
 - worktree 创建中断后，已有未占用回合分支与记录的 head（尚无 head 时为 base）精确一致，才复用分支建立工作区。
   分支不符、已被占用或已有 head 的分支丢失时保留现场，不重建或覆盖已记录历史。
-- tag push 响应丢失时先核对远端；已存在且符合记录则复用。
-- local 模式继续原子 push master + tag，develop 只在本地回合。
+- gitflow 的 local 模式按 merge、publish 各自契约推送 trunk 与 tag，develop 只在本地回合。
 
 ### 本地 develop 集成
 
-close-out 要求本地 develop 包含远端交付结果，不要求本地与远端 tip 相同。
+gitflow 的 close-out 要求本地 develop 包含远端交付结果，不要求本地与远端 tip 相同。
 
 - 本地落后时同名 ff；已包含远端时保留本地 commits；双方分叉时将远端 no-ff merge 到本地。
 - 不分类、squash 或 push 本地独有 commits，不要求先执行 dev-pr；这些工作的远端交付独立处理。
@@ -142,20 +141,20 @@ close-out 要求本地 develop 包含远端交付结果，不要求本地与远�
 
 | 操作 | PR mode |
 | --- | --- |
-| feature → 已确定目标；bugfix/adhoc → develop；release/ODR/hotfix → master | PR/MR |
+| gitflow：feature/bugfix/adhoc → develop；release/hotfix → trunk | PR/MR |
 | gitflow 的 planning → trunk → develop、trunk → planning | 按 [项目记录](common.md#项目记录) 直接合入，planning 入 trunk 核完整文档历史 |
 | github-flow 的 pm/* → trunk | PR/MR，按 [pm 分支](pr.md#pm-分支) 检查路径 |
-| master → develop | 允许固定 master 历史提交 no-ff 回合 |
-| develop 上纯 MDF/宿主维护 | 允许直接提交和 push |
-| close-out 中 origin/develop → 本地 develop | 允许 no-ff 集成；不 push 本地独有 commits |
-| 其他合入 master/develop | 拒绝，提示 PR/MR |
+| gitflow 的 trunk → develop | 允许固定 trunk 历史提交 no-ff 回合 |
+| gitflow 的 develop 上纯 MDF/宿主维护 | 允许直接提交和 push |
+| gitflow close-out 中 origin/develop → 本地 develop | 允许 no-ff 集成；不 push 本地独有 commits |
+| 其他合入受保护的 trunk/develop/support | 拒绝，提示 PR/MR |
 | trunk → owner、角色分支 → owner | 沿用现有集成 |
 
 - 完整文档白名单：docs/、changes/、根 *.md、.mdf/ 及以下全部宿主目录。
 - 宿主目录：.agents/、.claude/、.codex/、.cursor/、.kiro/、.openclaw/，不限定 skills/mdf。
 - develop 默认直接维护仅允许 .mdf/、宿主目录、根 AGENTS.md；项目可按 [dev-pr](dev-pr.md) 覆盖 trivial policy。
-- 混入其他路径须 PR/MR；master 不增加文件维护例外；禁止 rebase 或跨分支 ff-only。
+- 混入其他路径须 PR/MR；trunk 不增加文件维护例外；禁止 rebase 或跨分支 ff-only。
 - gitflow 的 planning 检查独有普通提交、rename/delete 原路径、merge resolution 及最终增量，防止 revert 掩盖代码修改。
-- sync 的 master/develop 分叉或无法证明合规的领先增量须走 PR/MR；同名 ff 同步允许。
+- gitflow sync 的 trunk/develop 分叉或无法证明合规的领先增量须走 PR/MR；同名 ff 同步允许。
   - 创建、等待、核验合并及继续同步见 [Sync 的 PR 提交与恢复](sync.md#pr-提交与恢复)。
 - push 后审计与项目配置见 [CI 接入](ci-review.md)。

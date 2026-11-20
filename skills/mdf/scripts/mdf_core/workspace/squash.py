@@ -76,20 +76,6 @@ def inspect(repo, branch=None, *, refresh=True):
                 if not isinstance(fixed, dict) or not fixed.get('source_head'):
                     raise MDFError('Change 固定范围无效', code='squash_boundary_unknown')
                 protected.add(sha(repo, fixed['source_head']))
-    if branch_details(owner)['kind'] == 'on-demand-release':
-        version = branch_details(owner)['version']
-        for folder in (f'changes/{version}', f'changes/unreleased/{version}'):
-            raw = git(repo, 'show', f'{head}:{folder}/delivery.json', check=False)
-            if raw.returncode == 0:
-                record = json.loads(raw.stdout)
-                from mdf_core.lifecycle.odr_acceptance import INCLUSION_BASE
-                objectives = git(repo, 'show', f'{head}:{folder}/objectives.md').stdout
-                protected.update(INCLUSION_BASE.findall(objectives))
-                for item in record.get('scope', []):
-                    protected.update(item.get('commits', []))
-                    if item.get('tip'):
-                        protected.add(item['tip'])
-                break
     start = git(repo, 'config', '--get', f'branch.{owner}.mdf-start-commit', check=False)
     if start.returncode == 0:
         protected.add(sha(repo, start.stdout.strip()))

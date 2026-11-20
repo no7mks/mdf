@@ -64,7 +64,7 @@ deliver 委托时先核外层 fact 的 until，再承办本表；decision 继承
 - 普通交付：code-review → verify branch → 本 hook → fact audit（必要时 fact update）→ catch-up → consolidate → merge/pr → close-out。
 - 人工 feature：code-review → verify smoke → 本 hook → fact update → catch-up → consolidate → merge/pr → close-out。
 - adhoc：code-review → verify smart → 本 hook → fact audit/update → catch-up → consolidate → merge/pr → close-out。
-- 五种 kind 共用；在 owner 上执行，不在 qa/dev 或最终 `finish-gitflow` 内执行。
+- 各交付 kind 共用；在 owner 上执行，不在 qa/dev 或最终 `finish-gitflow` 内执行。
 - 无账本 adhoc 以实际审查、验证报告替代本页勾选前置，不读写 objectives 或依赖 roster。
   - 非文档改动返回 adhoc-change 步骤 3，由 1 人增量补审，再按该步要求补验。
   - 补验通过才进入 fact；已执行的 hook 不重跑。

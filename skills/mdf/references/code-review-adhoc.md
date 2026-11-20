@@ -7,7 +7,7 @@
 先确定 branch 身份、实际改动与调用边界，再准备审查。
 
 1. 读取 common.md，核 Git 根与 manifest ready；运行 branch，先识别内部角色及 backmerge 的所属 workflow。
-2. feature、bugfix、release、on-demand-release、hotfix 沿用专用流程；master/main/develop/planning 不走本页。
+2. feature、bugfix、release、hotfix 沿用专用流程；master/main/develop/planning 不走本页。
    材料缺失时说明分类与缺项。`--read-only` 不进入本页。单独 `--against` 只覆盖左端点，不把本页改成只读。
 3. worktree 必须 clean；按 common 处理本次相关未提交成果；无法隔离时停止，不遗漏未提交工作或提交他人改动。
 4. 运行 `adhoc-status --repo <owner>`，使用返回的 material_mode、path、range、paths。

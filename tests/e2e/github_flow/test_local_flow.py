@@ -71,17 +71,6 @@ def test_publish_merges_only_trunk_and_tags_release_head(python_exe, tmp_path, k
     assert not has_ref(repo, "develop")
 
 
-@pytest.mark.parametrize("entry", [
-    ("start", "--kind", "on-demand-release", "--version", "1.3.0"),
-    ("start", "--kind", "feature", "--from-master", "--manual", "--name", "x"),
-])
-def test_gitflow_only_start_entries_are_rejected(python_exe, tmp_path, entry):
-    repo = github_flow_repo(tmp_path)
-    args = list(entry)
-    args[1:1] = ["--repo", str(repo)]
-    result = mdf(python_exe, *args, "--objectives-file", str(write_work_objectives(tmp_path)))
-    assert error_of(result)["error"] == "github_flow_unsupported"
-
 
 def test_published_release_reuses_tag_and_merge(python_exe, tmp_path):
     repo, remote, work, data = finishable(python_exe, tmp_path, "release")

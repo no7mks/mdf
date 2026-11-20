@@ -1,11 +1,6 @@
 # Deliver
 
-feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
-不套用本文普通 feature 的材料准备、验收前置或步骤补勾；gitflow 的目标 develop 保持原流程。
-github-flow 的交付目标是 `workflow.trunk`，不使用 develop。
-
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
+github-flow 的交付目标是 `workflow.trunk`；support hotfix 使用冻结的维护线，不使用 develop。
 
 ## 决策树
 
@@ -136,9 +131,9 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 
 完成范围：
 
-- 无截止点时，gitflow 的 local feature 完成本地已选目标合并，bugfix/adhoc 完成本地 develop 合并。
-  - github-flow 的 local 交付合入 `workflow.trunk`，不使用 develop。
-  - PR mode 核对远端目标合并与清理。release/ODR/hotfix 包含 publish 的 tag 与发版推送，以及 close-out 的适用回合。
+- 无截止点时，gitflow 的 local feature/bugfix/adhoc 完成本地 develop 合并。
+  - github-flow 的 local 主线交付合入 `workflow.trunk`，support hotfix 合回维护线，不使用 develop。
+  - PR mode 核对远端目标合并与清理。release/hotfix 包含 publish 的 tag 与发版推送，以及 close-out 的适用回合。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 close-out 完成条件冲突时说明并询问，不能声称完成。
@@ -172,7 +167,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 - 委托前先核 until；until start 直接进入 5，只报告解析结果，不创建 worktree。
 - 已由 target 或用户指定 kind 与 PRP/Bug/版本则直接使用；未指定则按其步骤 1 列出候选。
 - 主 Agent 按仓库证据与对话上下文选定唯一目标，按 confidence 策略裁定。
-- 不调用初始化或规划流程，不发明 release/ODR 版本；hotfix 按 [版本规则](hotfix-version.md) 定版。
+- 不调用初始化或规划流程，不发明 release 版本；hotfix 按 [版本规则](hotfix-version.md) 定版。
 - start 成功后回到 1；collab-mode 尚待接手由步骤 2 交接；start 失败或停止则按其交接结束，不回 1。
   - start 内部到 until 时直接进入 5，不重复委托 start；已完成的启动产物如实保留。
 
@@ -287,7 +282,6 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、配置了 hook 但尚未执行 | 按 pre-gitflow-finish 执行；按实际改动补审补测或进入 fact |
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
-| PR mode 的 ODR 已完成 fact、统一验收未勾 | 按 [统一验收](late-decision.md#纳入-checkpoint-与统一验收) 执行 `delivery accept`，返回 Select |
 | catch-up 未勾 | 委托 `references/catch-up.md`，同步远端同名分支并增量验收 |
 | consolidate 未勾 | 委托 `references/consolidate.md`，收敛材料和对象状态 |
 | github-flow 发布交付且 publish 未完成 | 委托 `references/publish.md` |
@@ -299,7 +293,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 
 - fact 前的 hook 读取 [pre-gitflow-finish](pre-gitflow-finish.md)；失败仅汇报，
   非文档改动退勾后回到本表补审补测；已执行的 hook 不因补测或 fact 重审而重跑。
-- release/ODR/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
+- release/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
 - merge/pr 的 target 前进、review/CI 反馈与冲突，在该调用内继续 incremental-integration。
   增量验收通过后更新原 PR/MR 或重试本地 merge，保留已通过的基线步骤。
@@ -395,7 +389,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
   - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
 - 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
-  - 按分支核对合并、源分支删除，以及 release/ODR/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
+  - 按分支核对合并、源分支删除，以及 release/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
   - PR mode 另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
   - owner 已被外部删除时如实报告，以平台与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。

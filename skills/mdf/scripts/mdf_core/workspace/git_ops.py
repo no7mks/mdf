@@ -79,8 +79,6 @@ def merge_no_ff(repo, source):
     )
     if verified.returncode:
         raise MDFError(f"无法解析合并目标 {source}", code="bad_commit")
-    from mdf_core.lifecycle.late_decision import guard_catch_up
-    guard_catch_up(repo, verified.stdout.strip())
     from mdf_core.workspace.squash import require_ready
     require_ready(repo)
     incoming = run(

@@ -1,8 +1,5 @@
 # Code Review
 
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
-
 ## 审阅核与参数
 
 同一次审查走同一条链。`--read-only` 跳过修复与返工。没有 `--output` 时不写结论文件，会话里的结论仍要给出。
@@ -185,10 +182,10 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
   - close-out 集成或主链 verify 修绿产生的增量新一轮为 1，不改冻结 roster。
   - 无有效上轮记录而走首轮时仍用 roster.reviewers。
 - 审查记录写在 `changes/unreleased/<slug>/code-review.md`：
-  - PR mode 的 release/ODR/hotfix 若已准备 `changes/<version>/delivery.json`，本轮使用该版本目录的材料、objectives 和报告。
+  - PR mode 的 release/hotfix 若已准备 `changes/<version>/delivery.json`，本轮使用该版本目录的材料、objectives 和报告。
     PR/MR 合并前可补审修订；不另建 unreleased 副本。候选流程见 [PR](pr.md)。
   - feature/adhoc 用 delivery.json 的 slug；bugfix 用 Bug ID 的 kebab-case。
-    release/ODR 与 SemVer hotfix 用分支版本；slug hotfix 用原 slug。
+    release 与 SemVer hotfix 用分支版本；slug hotfix 用原 slug。
      已归档 hotfix 使用 `delivery status` 返回的版本目录，见 [Hotfix 版本](hotfix-version.md)。
   - 无该 Markdown 视为无记录。进行中可为带 tip 的草稿；裁定收口后覆盖为无
     commit 终稿。branch 验证证据是主链 `verification-report.json`，不写
@@ -324,7 +321,6 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
   - 修复后使用 --ref <已提交修复终点 HEAD>，不覆盖本轮固定 review_head。
 
   - 数据通过任务原文或已有工具日志交给 reviewer，不让 reviewer 执行脚本、运行 tests 或写入报告。
-
 
 ### 缺陷复现
 

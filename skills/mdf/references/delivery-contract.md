@@ -2,8 +2,6 @@
 
 主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
 
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
 
 树形：not-tree。本流程核对当前交付阶段的共同契约，阶段仍由原 intent 的编号工作流承办。
 
@@ -107,7 +105,7 @@ close-out 用固定脚本生成总结外框、目录及样式，不现场拼装�
 python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <正文HTML文件>
 ```
 
-- 脚本按当前 kind 选择 unreleased 目录；已收口 release/ODR/hotfix 使用版本根。
+- 脚本按当前 kind 选择 unreleased 目录；已收口 release/hotfix 使用版本根。
   - 已开始 Gitflow 发布时停止，不改写源提交；读取已有归档总结继续核对。
 - 退出 0 后回读 JSON `path`，打开实际 HTML，核对详细内容与证据，再提交。
   - 静态校验不替代语义审阅；不得把未执行的 merge、tag、push 写成成功。
@@ -139,7 +137,7 @@ consolidate 后按 workflow 定序：
 
 | 交付类型 | 后续顺序 |
 | --- | --- |
-| Gitflow release / ODR / hotfix | merge/pr → publish → close-out |
+| Gitflow release / hotfix | merge/pr → publish → close-out |
 | github-flow release / hotfix | publish → merge/pr → close-out |
 | feature / bugfix / adhoc | merge/pr → close-out |
 
@@ -159,7 +157,7 @@ merge/pr 内部先把 target 合回工作分支；有变化时完成 incremental
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook。
     仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
 - **consolidate**：收敛交付材料、PRP/Bug 状态与版本归档。
-  - release/ODR/hotfix 的适用 Bug closure 在此委托 bug close，再调用 `release-closeout` 聚合版本材料。
+  - release/hotfix 的适用 Bug closure 在此委托 bug close，再调用 `release-closeout` 聚合版本材料。
   - github-flow support hotfix 仅记录 fixed/trunk_fixes，Bug 真源保留在 trunk，不改维护线 Bug 副本。
   - `release-closeout` 只复用可复用的 `verification-report.json`，永不执行验证命令。
 - **merge/pr**：target 合回、incremental-integration 与实际合入；创建 PR/MR 不代表完成。
@@ -170,7 +168,7 @@ merge/pr 内部先把 target 合回工作分支；有变化时完成 incremental
   - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
   - 不内嵌、不委托 verify（branch / smart / named）、fact、bug close 或 release-closeout；缺项交回所属 intent。
 - 开发迭代只用 `$mdf verify --scope smart`；branch 只用于交付验收。
-- release/ODR/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
+- release/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` 不走交付主线，也不由 deliver 内部委托。
 - `$mdf bug close` 不作为 deliver 的直接阶段；consolidate 可按本契约内部委托，不改变独立调用的边界。
 - code-review 份数取冻结的 roster.reviewers；incremental-integration 与主链 verify 修绿的增量新一轮为 1。
@@ -472,7 +470,6 @@ Conventional Commit。修复某个 Bug 的提交说明必须含该 Bug 的完整
 
 fact update / fact audit 可独立运行；交付主链在 verify branch 之后、close-out 之前委托。
 无 fact stage gate；进度靠 objectives 自勾。独立调用不能因此自动进入 close-out 或其他交付阶段。
-
 
 ### Lint 与复审检查点
 

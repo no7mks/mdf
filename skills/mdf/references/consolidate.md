@@ -35,8 +35,6 @@
 | 其他处置 | 按已有 rejected、replaced、deferred 等决定维护记录 | 核对理由、关联与适用归档 |
 
 - 工作分支先准备对象状态并提交，交付完成同时依据实际 merge 和远端 tag。
-- 目标为 ODR 的 feature 沿用统一验收规则：首次纳入保持 ready，ODR 验收通过后更新 implemented。
-  后续增量遵循 [ODR 复验](late-decision.md)，保留已有的有效对象状态。
 - 沿用现有状态枚举；具体字段与约束见 [对象契约](object-contract.md)。
 - 除 support hotfix 的只读 Bug 边界外，待收入 fixed 先委托 bug close，执行 `references/bug-close.md`。bug close 未通过时保留现场。
 - Bug close 先完成复现验证和修复审查，再关闭 Bug；需要修改实现时交回当前增量验收循环。

@@ -100,7 +100,7 @@ def material_root(repo, slug, *, owner=None):
         record = delivery_record(repo, owner)
         if record:
             return safe(repo, repo / record[0]).parent
-    if details["kind"] in {"release", "on-demand-release", "hotfix"} and details["version"] == slug:
+    if details["kind"] in {"release", "hotfix"} and details["version"] == slug:
         candidate = safe(repo, repo / "changes" / slug)
         record = safe(repo, candidate / "delivery.json")
         if record.is_file():

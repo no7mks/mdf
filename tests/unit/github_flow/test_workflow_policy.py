@@ -19,7 +19,7 @@ def test_any_legal_trunk_is_accepted(trunk):
 
 
 @pytest.mark.parametrize("trunk", [
-    "develop", "planning", "pm/x", "feature/x", "bugfix/x", "release/1.0.0", "on-demand-release/1.0.0",
+    "develop", "planning", "pm/x", "feature/x", "bugfix/x", "release/1.0.0",
     "hotfix/x", "support/1.2", "adhoc/x", "qa/x", "dev/x", "codex/x",
 ])
 def test_reserved_trunk_names_are_rejected(trunk):
@@ -79,3 +79,16 @@ def test_occupies_delivery_keeps_explicit_delivery_prefixes(name):
     from mdf_core.workspace.gitutil import occupies_delivery
     assert occupies_delivery(name, "production") is True
     assert occupies_delivery("production", "production") is False
+
+
+@pytest.mark.parametrize("model,trunk,expected", [
+    ("gitflow", "master", "develop"), ("gitflow", "main", "develop"),
+    ("github-flow", "master", "master"), ("github-flow", "main", "main"),
+])
+def test_feature_target_is_fixed_by_workflow(tmp_path, model, trunk, expected):
+    repo = copy_fixture(tmp_path)
+    set_workflow(repo, model=model, trunk=trunk)
+    init_git(repo)
+    git(repo, "branch", "-m", trunk)
+    assert wp.target_for(repo, "feature/work") == expected
+    assert wp.target_for(repo, "feature/work", data={"target": "another-branch"}) == expected

@@ -71,7 +71,7 @@ module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置
 - **smart**：改动涉及的 module 跑 lint/build/quick，并由 Agent+Jev 选题
   test/testcase；converge 验收使用。
 - **branch**：全 module 的 lint/build/quick + 套件。
-  - feature/bugfix/hotfix→smoke，release/ODR→release；默认按 module 串行展开。
+  - feature/bugfix/hotfix→smoke，release→release；默认按 module 串行展开。
   - 写入 `verification-report.json`（不含 commit）。
   - 主链在 code-review 之后、fact audit / close-out 之前跑。
 - **named**：`--suites` 指定五固定或真 named；不写 branch 证据。
@@ -92,7 +92,7 @@ module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置
 - **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
 - **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix、hotfix 的 branch 验证
   跑到此。
-- **release**：包含 smoke，发版所需的 test case，无预算上限；release 与 ODR 的 branch 验证跑到此。
+- **release**：包含 smoke，发版所需的 test case，无预算上限；release 的 branch 验证跑到此。
 - **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有
   `docs/system/testing/<name>.md`。smart 由 Agent+Jev 选题，不默认整 suite 盲跑。
   - 与保留 suite 可以重叠，也可含 smoke 之外的成员；报告使用具体 suite 名称。
@@ -189,7 +189,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 
 ## Adhoc
 
-临时工作分支，可涉及代码、测试、文档或配置；五类 Gitflow 与 master/main/develop/planning 外的分支均归此类。
+临时工作分支，可涉及代码、测试、文档或配置；feature/bugfix/release/hotfix 与 master/main/develop/planning 外的分支均归此类。
 
 - Agent 自行选相关 slug，从 develop 建立 `adhoc/<slug>` 与独立 worktree，不绑定 PRP。
 - `$mdf adhoc` 的 objectives 为七项：工作、lint、code-review、verify smart、fact audit/update、catch-up、consolidate。
@@ -242,7 +242,7 @@ fact audit 对文档结构的语义审阅：
 
 ## Proposal 状态
 
-draft 为待评审，ready 为可交付，implemented 为已验收合入 develop 或已通过 ODR 统一验收，released 为已发布。
+draft 为待评审，ready 为可交付，implemented 为已验收合入 develop（gitflow）或 trunk（github-flow），released 为已发布。
 rejected 用 reject-reason 说明不实施原因；replaced 表示需求已由拆分出的 PRP 承接。
 
 - Proposal 全程使用同一份 Markdown 正文。评审时展示该文件，用户确认后更新状态。
@@ -319,13 +319,6 @@ collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
 - Code smell 指提示维护性或设计问题的代码特征。
   - 由 code-review 判断是否需要在当前范围修复。
 
-
 ## Coverage
 
 代码覆盖测量。coverage 是可选验证入口；target 是某个 metric 的最低百分比，covered/total 是命中数与总数。
-
-## ODR 与 late-decision
-
-on-demand-release（ODR）只用于 gitflow：从 trunk 创建并回合 trunk 的按需发布分支。
-trunk 起点的 feature 可延迟决定进入 develop 或具体 ODR。github-flow 不使用 ODR。
-规则见 [Late-decision](skills/mdf/references/late-decision.md)。

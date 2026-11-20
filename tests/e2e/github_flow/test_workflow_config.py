@@ -301,23 +301,22 @@ def test_gitflow_main_planning_lands_on_trunk(python_exe, tmp_path):
     assert git(repo, "merge-base", "--is-ancestor", "main", "develop").returncode == 0
 
 
-def test_gitflow_main_odr_starts_from_trunk(python_exe, tmp_path):
+def test_gitflow_custom_trunk_feature_uses_develop(python_exe, tmp_path):
     repo = _gitflow_main(tmp_path)
     git(repo, "checkout", "develop")
+    (repo / "develop-only.txt").write_text("integration work\n")
+    commit(repo)
+    base = git(repo, "rev-parse", "develop").stdout.strip()
     feature = payload(mdf(
-        python_exe, "start", "--repo", str(repo), "--kind", "feature", "--from-master",
+        python_exe, "start", "--repo", str(repo), "--kind", "feature",
         "--proposal", PRP_ID, "--roster", "solo",
         "--objectives-file", str(write_work_objectives(tmp_path)),
     ))
     work = Path(feature["worktree"])
     record = json.loads((work / "changes/unreleased/service-health/delivery.json").read_text())
-    assert record["base_branch"] == "main"
-    odr = payload(mdf(
-        python_exe, "start", "--repo", str(repo), "--kind", "on-demand-release", "--version", "1.3.0",
-        "--feature", "feature/service-health",
-        "--objectives-file", str(write_release_objectives(tmp_path)),
-    ))
-    assert odr["base"] == "main"
+    assert feature["base"] == record["base_branch"] == record["target"] == "develop"
+    assert record["start_commit"] == base
+    assert (work / "develop-only.txt").is_file()
 
 
 def test_gitflow_main_pr_closeout_publishes_to_trunk(python_exe, tmp_path, monkeypatch):

@@ -150,7 +150,7 @@ def branch_details(name: str, trunk: str | None = None) -> dict[str, Any]:
             "version": None,
             "supported": True,
         }
-    match = re.fullmatch(r"(release|on-demand-release|hotfix)/(.+)", name)
+    match = re.fullmatch(r"(release|hotfix)/(.+)", name)
     if match:
         version = match.group(2)
         if (match.group(1) == "hotfix" and stable_semver(version) is None
@@ -198,7 +198,7 @@ def unreleased_slug(details: dict[str, Any]) -> str:
     kind = details.get("kind")
     if kind == "hotfix" and details.get("version") is None:
         return details["slug"]
-    if kind in {"release", "on-demand-release", "hotfix"}:
+    if kind in {"release", "hotfix"}:
         version = details.get("version")
         if not isinstance(version, str) or stable_semver(version) is None:
             raise MDFError(
@@ -381,7 +381,7 @@ def sibling_worktree(repo: Path, name: str) -> Path:
 
 
 _DELIVERY_PREFIXES = (
-    "feature/", "bugfix/", "release/", "on-demand-release/", "hotfix/",
+    "feature/", "bugfix/", "release/", "hotfix/",
     "adhoc/", "qa/", "dev/", "codex/", "pm/",
 )
 

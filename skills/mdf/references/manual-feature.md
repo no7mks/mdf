@@ -1,11 +1,5 @@
 # 人工 feature 续办
 
-feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
-不套用本文普通 feature 的材料准备、验收前置或步骤补勾；目标 develop 保持原流程。
-
-涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
-ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
-
 ## 决策树
 
 ```text

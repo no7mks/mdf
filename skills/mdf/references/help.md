@@ -257,7 +257,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：
     - target 为位置参数，自动分辨 PRP 或 Bug，按 confidence 策略选择。无 target 时锁定并续办
       当前在途交付；target 冲突或命中已 in_progress 的 Proposal 时停止。
-    - 支持 feature/bugfix/hotfix/release/ODR/adhoc；roster ≥1 且两路可并行时强制分别使用
+    - 支持 feature/bugfix/hotfix/release/adhoc；roster ≥1 且两路可并行时强制分别使用
       qa/dev worktree 的 subagent。
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
     - 除 pr、close-out 入口确认外，其他 decision 由 AI 评分，优先用 Jev，无 Jev 时主 Agent 评分。
@@ -282,9 +282,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：
     - 始终在同级 `<repo-name>-worktrees/` 建 worktree，不在当前目录开分支，不 push。
     - 开分支前确认并冻结 roster（member/strategy/models）；人数 ≥1 时建 qa/dev 角色树。
-    - feature 支持 `--from-master` 与 `--target`，含 `--manual`；显式目标不重复确认。
-    - ODR 从 master 创建，按已确认范围纳入来源或直接工作，见 [Late-decision](late-decision.md)。
-    - roster 默认：feature=min-tdd；release/ODR=solo+3 partition reviewer；其他=solo。
+    - feature 起点和合入目标由 workflow 固定：gitflow 为 develop，github-flow 为 trunk；不询问分支去向。
+    - roster 默认：feature=min-tdd；release=solo+3 partition reviewer；其他=solo。
     - release 开分支前确认发布目标（工作线、联调、`has_dev`；checklist 含 integrate；
       不实施新 PRP；无开发则预勾 owner 开发/converge）。
     - collab-mode 在 start 完成本仓准备后交接，由另一 workspace 的接手 Agent 调度两端。
@@ -341,7 +340,7 @@ $mdf clarify 要不要把缓存放到 Redis
   - 参数：arg 与 `--scope` 互斥；`--suites` 仅供 named；`--module` / `--paths` / `--test` 仅供 smart。
     没有 arg 或 scope 时要求补充，不默认选择；verify named 必须指定 `--suites`。
   - 说明：branch 写 `verification-report.json`（feature/bugfix/hotfix→smoke，
-    release/ODR→release；不含 commit）；smart/named 不写 branch 报告，运行日志与 JUnit 仍落盘；named 命令来自
+    release→release；不含 commit）；smart/named 不写 branch 报告，运行日志与 JUnit 仍落盘；named 命令来自
     testing 文档 frontmatter。
   - playbook：release 与 named 可含 `tests/playbooks/` 下由 Agent 执行的测试手册；
     结果为 pending 时执行手册、写 JUnit，再用 `--record <report_dir>` 收录。

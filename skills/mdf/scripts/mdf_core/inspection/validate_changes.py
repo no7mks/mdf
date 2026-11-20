@@ -8,29 +8,6 @@ from mdf_core.inspection.validate_change_schema import validate_change_file, val
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
-def version_evidence_directories(repo: Path, directory: Path, metadata: dict) -> set[str]:
-    """ODR 根证据引用的目录不是 child Change；已声明的 child 仍须验证。"""
-    if metadata.get("change_kind") != "on-demand-release":
-        return set()
-    evidence = metadata.get("evidence")
-    artifacts = evidence.get("artifacts") if isinstance(evidence, dict) else None
-    if not isinstance(artifacts, list):
-        return set()
-    included = metadata.get("included_changes")
-    included = included if isinstance(included, list) else []
-    result = set()
-    for value in artifacts:
-        if not isinstance(value, str) or ".." in Path(value).parts:
-            continue
-        try:
-            parts = Path(value).relative_to(directory.relative_to(repo)).parts
-        except ValueError:
-            continue
-        if len(parts) > 1 and parts[0] not in included and not (directory / parts[0] / "CHANGE.md").is_file():
-            result.add(parts[0])
-    return result
-
-
 def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None) -> None:
     root = repo / "changes"
     if (
@@ -110,7 +87,6 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             )
             continue
         release = directory / "CHANGE.md"
-        evidence_dirs: set[str] = set()
         if not release.is_file():
             add_finding(
                 findings,
@@ -127,12 +103,10 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             except MDFError:
                 root_metadata = {}
             root_kind = root_metadata.get("change_kind")
-            evidence_dirs = version_evidence_directories(repo, directory, root_metadata)
             child_dirs = sorted(
                 path.name
                 for path in directory.iterdir()
                 if path.is_dir()
-                and path.name not in evidence_dirs
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             )
@@ -201,7 +175,6 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             path
             for path in directory.iterdir()
             if path.is_dir()
-            and path.name not in evidence_dirs
             and not path.is_symlink()
             and path_stays_in_repo(repo, path)
         ):

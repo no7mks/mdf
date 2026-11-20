@@ -92,7 +92,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         if record is None:
             raise MDFError("hotfix 交付身份缺失", code="invalid_review_context")
         root = record[0].rsplit("/", 1)[0]
-    if (details["kind"] in {"release", "on-demand-release", "hotfix", "backmerge"}
+    if (details["kind"] in {"release", "hotfix", "backmerge"}
             and blob(repo, artifact_ref, f"changes/{folder}/delivery.json", required=False)):
         root = f"changes/{folder}"
     try:
@@ -102,7 +102,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         raise MDFError("交付身份或 roster 缺失", code="invalid_review_context") from exc
     if publication:
         published = branch_details(delivery.get("branch", ""))
-        if (published["kind"] not in {"release", "on-demand-release", "hotfix"}
+        if (published["kind"] not in {"release", "hotfix"}
                 or (published["version"] or delivery.get("version")) != publication["version"]):
             raise MDFError("发布 tag 的交付身份与回合版本不符", code="invalid_review_context")
         publication["source"] = delivery["branch"]
@@ -118,7 +118,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
                 raise MDFError("工作分支未包含已发布 commit", code="invalid_review_context")
     manifest = manifest_at(repo, policy_ref)
     base = integration_head or (publication["base_commit"] if publication else delivery["start_commit"])
-    if details["kind"] in {"release", "on-demand-release"} and integration_head is None:
+    if details["kind"] == "release" and integration_head is None:
         previous_version = manifest.get("versioning", {}).get("latest_release")
         if not previous_version:
             if previous is not None:
@@ -170,10 +170,9 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
                 or len(previous.get("reviewers", [])) != roster["reviewers"]
                 or any(r.get("incomplete") for r in previous.get("reviewers", []))):
             raise MDFError("上轮规则已变化或报告不完整；需要完整首轮审查", code="invalid_previous_review")
-    from mdf_core.lifecycle.late_decision import target_for
-    from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
-    delivery_target = (delivery.get("target") if details["kind"] == "feature" and delivery.get("base_branch") == trunk_branch(repo)
-                       else integration_branch(repo) if publication else target_for(repo, source, data=delivery))
+    from mdf_core.workspace.workflow_policy import target_for
+    from mdf_core.workspace.workflow_policy import integration_branch
+    delivery_target = integration_branch(repo) if publication else target_for(repo, source, data=delivery)
     result = {"schema_version": 3, "source": source, "kind": details["kind"],
               "delivery_base": base, "review_base": left, "review_head": head, "policy_ref": policy_ref,
               "scope": "delivery", "merge_base": merge_base,

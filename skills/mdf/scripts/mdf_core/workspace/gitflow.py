@@ -162,9 +162,7 @@ def command_start(args) -> None:
     validate_start(args)
     repo = repo_path(args.repo)
     require_git_root(repo)
-    from mdf_core.lifecycle.late_decision import start_options, CHECKPOINT
     from mdf_core.workspace.merge_policy import config
-    from mdf_core.workspace.workflow_policy import require_gitflow
 
     head = _git(repo, "rev-parse", "HEAD").stdout.strip()
     try:
@@ -178,17 +176,7 @@ def command_start(args) -> None:
     pr_mode = config(manifest)["mode"] == "pr"
     if not git_is_clean(repo):
         print("警告：原 worktree 有未提交改动或未完成的 Git 操作，启动时仅使用已提交的基线。", file=sys.stderr)
-    if github:
-        if getattr(args, "from_master", False):
-            require_gitflow(repo, "start --from-master", head)
-        if args.kind == "on-demand-release":
-            require_gitflow(repo, "start --kind on-demand-release", head)
-    from_master, delivery_target, features = start_options(args)
-    from mdf_core.lifecycle.odr_scope import load_scope
-    scope = load_scope(repo, args.scope_file, trunk=trunk) if getattr(args, "scope_file", None) else []
-    if args.kind == "on-demand-release" and not (features or scope):
-        raise MDFError("ODR 范围不得为空", code="missing_features")
-    base = trunk if github or from_master or args.kind in {"hotfix", "on-demand-release"} else "develop"
+    base = trunk if github or args.kind == "hotfix" else "develop"
     support = None
     if github and args.kind == "hotfix":
         from mdf_core.lifecycle.support_line import hotfix_base
@@ -247,7 +235,7 @@ def command_start(args) -> None:
         suffix = on_base_or_pending(repo, bug_id_on_ref, args.bug, base,
                                     ref=start_point, check_pending=github and pr_mode)
         _unreleased_collision(repo, start_point, slugify(suffix))
-    elif args.kind in {"release", "on-demand-release"}:
+    elif args.kind == "release":
         suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
@@ -270,20 +258,6 @@ def command_start(args) -> None:
     if github and args.kind in {"release", "hotfix"}:
         if not re.search(r"(?m)^- \[[ x]\] publish(?:（|$)", checklist):
             checklist = checklist.rstrip() + "\n- [ ] publish（创建并推送 final tag）\n"
-    if args.kind == "on-demand-release":
-        from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
-        before = r"consolidate(?:（[^\n]*）)?[ \t]*"
-        checklist = re.sub(rf"(?m)^(- \[[ x]\] {before})$",
-                           "- [ ] " + ACCEPTANCE + r"\n\1", checklist, count=1)
-        if ACCEPTANCE not in checklist:
-            checklist += "\n- [ ] " + ACCEPTANCE + "\n"
-        checklist = checklist.replace("- [x] 确认工作线与范围（start）",
-                                      "- [x] 确认工作线与范围（start）\n- [ ] " + CHECKPOINT)
-        if "- [ ] " + CHECKPOINT not in checklist:
-            if pr_mode:
-                checklist = re.sub(r"(?m)^- \[[ x]\] ", "- [ ] " + CHECKPOINT + "\n" + r"\g<0>", checklist, count=1)
-            else:
-                checklist += "\n- [ ] " + CHECKPOINT + "\n"
     items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", checklist)
     steps = [item.split("（", 1)[0] for item in items]
     expected_last = "publish" if github and args.kind in {"release", "hotfix"} else "consolidate"
@@ -309,10 +283,10 @@ def command_start(args) -> None:
             "roster ≥1 时 needs_design 必须为 yes",
             code="invalid_needs_design",
         )
-    if args.kind in {"release", "on-demand-release"}:
+    if args.kind == "release":
         parse_has_dev(objectives)
-    if args.kind in {"release", "on-demand-release", "hotfix"}:
-        for kind in ("release", "on-demand-release", "hotfix"):
+    if args.kind in {"release", "hotfix"}:
+        for kind in ("release", "hotfix"):
             if kind != args.kind and _exists(repo, f"refs/heads/{kind}/{suffix}"):
                 raise MDFError("该版本已有在途发布分支", code="version_in_progress")
     names = start_branches(branch, roster)
@@ -362,9 +336,7 @@ def command_start(args) -> None:
                 if support:
                     identity.update(base_branch=base, support=support)
             elif args.kind == "feature":
-                identity.update(base_branch=base, target=delivery_target if from_master else "develop")
-            if args.kind == "on-demand-release":
-                identity.update(features=features or [], scope=scope)
+                identity.update(base_branch=base, target=base)
             if manual:
                 identity["manual"] = True
             elif args.kind == "feature":
@@ -384,7 +356,7 @@ def command_start(args) -> None:
                 message = f"docs(delivery): 建立 {suffix} 临时任务"
             elif args.kind == "feature":
                 message = f"docs(delivery): 确认 {suffix if manual else args.proposal} 交付目标"
-            elif args.kind in {"release", "on-demand-release"}:
+            elif args.kind == "release":
                 message = f"docs(delivery): 确认 {args.version} 发布目标"
             elif args.kind == "bugfix":
                 message = f"docs(delivery): 确认 {args.bug} 修复目标"
@@ -433,7 +405,6 @@ def _merge(repo: Path, source: str, target: str, before_commit=None, snapshot=No
     require_merge(repo, source, target)
     require_snapshot(repo, snapshot)
     incoming = snapshot["head"]
-    new_inclusion = _git(repo, "merge-base", "--is-ancestor", incoming, "HEAD", check=False).returncode != 0
     result = _git(repo, "merge", "--no-ff", "--no-commit", incoming, check=False)
     if result.returncode:
         if result.returncode != 1:
@@ -460,9 +431,6 @@ def _merge(repo: Path, source: str, target: str, before_commit=None, snapshot=No
             code="merge_conflict",
             details=details,
         )
-    if new_inclusion and target.startswith("on-demand-release/"):
-        from mdf_core.lifecycle.odr_acceptance import invalidate
-        invalidate(repo, target)
     if before_commit is not None:
         before_commit(repo)
     message = f"chore(gitflow): 合并 {source} 到 {target}"
@@ -523,7 +491,7 @@ def finish_local(repo, source, details, args):
         return
     kind = details["kind"]
     merging = getattr(args, "phase", "close-out") == "merge"
-    from mdf_core.lifecycle.late_decision import target_for, require_feature_target
+    from mdf_core.workspace.workflow_policy import target_for
     github = is_github_flow(repo)
     from mdf_core.workspace.merge_policy import local_head
     source_head = local_head(repo, source)
@@ -550,7 +518,7 @@ def finish_local(repo, source, details, args):
     target = target_for(repo, source, ref=target_head) if kind == "feature" or github else "develop"
     trees = worktree_map(repo)
     owner = trees.get(source)
-    if owner is not None and not (kind == "feature" and target.startswith("on-demand-release/")):
+    if owner is not None:
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         ensure_clean(owner)
         require_fixed_outcomes(owner, source)
@@ -560,18 +528,7 @@ def finish_local(repo, source, details, args):
     merge_record = merge_record_path(repo, source, details.get("version"))
     saved_merge = read_json(merge_record) if merge_record.is_file() else {}
     source_head = source_head or saved_merge.get("head")
-    if kind == "on-demand-release" and merging and not saved_merge:
-        from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-        if owner is not None:
-            checkpoint(owner, required=True, release=True)
-            require_independent(owner, source)
-        elif _exists(repo, f"refs/heads/{source}"):
-            from mdf_core.lifecycle.publish import find_merge
-            if find_merge(repo, f"refs/heads/{trunk_branch(repo)}", _git(repo, "rev-parse", source).stdout.strip()) is None:
-                raise MDFError("首次 ODR 发布需要原 owner worktree", code="invalid_delivery")
-    publish = kind in {"release", "on-demand-release", "hotfix"}
-    if kind == "feature":
-        require_feature_target(repo, source, target)
+    publish = kind in {"release", "hotfix"}
     targets = [target] if kind in {"feature", "bugfix"} or github else [trunk_branch(repo), "develop"]
     if args.source and not publish:
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
@@ -628,14 +585,12 @@ def finish_local(repo, source, details, args):
                 raise MDFError("target 已改变，无法核对本次 merge；保留现场", code="integration_required")
         from mdf_core.workspace.merge_policy import ancestor
         parents = _git(repo, "show", "-s", "--format=%P", merged).stdout.split()
-        from mdf_core.lifecycle.late_decision import is_odr_inclusion
-        deferred_acceptance = is_odr_inclusion(source, actual_target)
         if (len(parents) != 2 or parents[1] != source_head
-                or (not deferred_acceptance and not ancestor(repo, parents[0], source_head))):
+                or not ancestor(repo, parents[0], source_head)):
             write_json(merge_record, {"source": source, "head": source_head, "target": actual_target,
                                      "merge_commit": merged, "target_parent": parents[0] if parents else None, "pending": True})
             raise MDFError("target 在实际合入前前进，继续 incremental-integration 后重试 merge", code="integration_required")
-        if not deferred_acceptance and _git(repo, "diff", "--quiet", source_head, merged, check=False).returncode:
+        if _git(repo, "diff", "--quiet", source_head, merged, check=False).returncode:
             raise MDFError("实际 merge 含已验收 source 之外的内容；保留现场", code="integration_required")
         record = {"source": source, "head": source_head, "target": actual_target, "merge_commit": merged}
         write_json(merge_record, record)

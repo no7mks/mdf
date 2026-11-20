@@ -1,5 +1,6 @@
 """用平台 PR/MR 与 Git refs 执行提交、合并核验与清理。"""
 from contextlib import contextmanager
+import json
 import os
 import re
 
@@ -26,13 +27,7 @@ def preflight(repo, source):
         _, data = locate(repo)
         version = branch_details(source)["version"] or data.get("version")
         require_published_source(repo, version, "HEAD", source=source)
-    from mdf_core.lifecycle.late_decision import target_for
-    if not (kind == "feature" and target_for(repo, source).startswith("on-demand-release/")):
-        require_fixed_outcomes(repo, source)
-    if kind == "on-demand-release":
-        from mdf_core.lifecycle.late_decision import checkpoint, require_independent
-        checkpoint(repo, required=True, release=True)
-        require_independent(repo, source)
+    require_fixed_outcomes(repo, source)
     if kind == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
@@ -58,9 +53,7 @@ def verified_merge(repo, pull, source, target, head):
     parents = git(repo, "show", "-s", "--format=%P", merged).stdout.split()
     if len(parents) != 2 or parents[1] != head:
         raise MDFError("PR/MR 必须保留源提交并使用双亲 merge commit", code="invalid_pull_merge")
-    from mdf_core.lifecycle.late_decision import is_odr_inclusion
-    deferred_acceptance = is_odr_inclusion(source, target)
-    if not source.startswith(("pm/", "codex/sync/")) and not deferred_acceptance:
+    if not source.startswith(("pm/", "codex/sync/")):
         if not ancestor(repo, parents[0], head):
             raise MDFError("实际 PR merge 的 target 未先合回工作分支并验收", code="target_not_integrated")
         if git(repo, "diff", "--quiet", head, merged, check=False).returncode:
@@ -210,8 +203,22 @@ def finish_lock(repo):
         yield
 
 
+def require_feature_identity(repo, source, ref):
+    """从固定 source commit 校验 feature 身份；恢复不依赖本地分支或 worktree。"""
+    slug = branch_details(source)["slug"]
+    record = git(repo, "show", f"{ref}:changes/unreleased/{slug}/delivery.json", check=False)
+    if record.returncode:
+        raise MDFError("feature 交付记录缺失", code="invalid_delivery")
+    try:
+        data = json.loads(record.stdout)
+    except ValueError as exc:
+        raise MDFError("feature 交付记录无效", code="invalid_delivery") from exc
+    if not isinstance(data, dict) or data.get("branch") != source or data.get("slug") != slug:
+        raise MDFError("feature 交付身份不匹配", code="invalid_delivery")
+
+
 def lookup_pull(repo, forge, source, *, number=None):
-    from mdf_core.lifecycle.late_decision import target_for
+    from mdf_core.workspace.workflow_policy import target_for
     head = local_head(repo, source)
     if number is not None and number <= 0:
         raise MDFError("--pull 需要正整数 ID", code="invalid_arguments")
@@ -225,7 +232,10 @@ def lookup_pull(repo, forge, source, *, number=None):
         pull = forge.find(source, None, head=exact)
     if pull is None:
         return None, target_for(repo, source) if head is not None else None
-    target = target_for(repo, source, ref=pull["head"] if pull["state"] == "merged" else head)
+    ref = pull["head"] if pull["state"] == "merged" else head
+    if branch_details(source)["kind"] == "feature":
+        require_feature_identity(repo, source, ref)
+    target = target_for(repo, source, ref=ref)
     if pull["source"] != source or pull["target"] != target:
         raise MDFError("PR/MR 与交付的来源或目标不符", code="pull_state_changed")
     return pull, target
@@ -311,13 +321,10 @@ def _finish(repo, source, settings, *, phase, number):
     pull, target = lookup_pull(repo, forge, source, number=number)
     if phase == "close-out" and (pull is None or pull["state"] != "merged"):
         raise MDFError("PR/MR 尚未 merged；由 pr intent 继续推进", code="pr_not_merged")
-    publishes = details["kind"] in {"release", "hotfix", "on-demand-release"} and (github or target == trunk)
+    publishes = details["kind"] in {"release", "hotfix"} and (github or target == trunk)
     if pull is None or pull["state"] == "open":
         if target is None:
             raise MDFError("源分支不存在，也未发现对应 PR/MR", code="missing_branch")
-        if details["kind"] == "feature":
-            from mdf_core.lifecycle.late_decision import require_feature_target
-            require_feature_target(repo, source, target)
         pull = submit(repo, forge, source, target, pull, pm=pm, fixed_head=False)
     owner = worktree_map(repo).get(source) or retained_owner(repo, source, pull["head"])
     state = {"source": source, "target": target, "head": pull["head"],

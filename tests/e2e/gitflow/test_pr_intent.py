@@ -55,7 +55,7 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
 
 
 @pytest.mark.parametrize("mode", ["local", "pr"])
-@pytest.mark.parametrize("kind", ["manual", "adhoc", "on-demand-release"])
+@pytest.mark.parametrize("kind", ["manual", "adhoc"])
 def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path, mode, kind):
     repo, _ = start_repo(tmp_path)
     if mode == "pr":
@@ -75,10 +75,6 @@ def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path
         args = ["--kind", "feature", "--manual", "--objectives-file", str(obj)]
     name = ["--name", "test-tail"]
     slug = "test-tail"
-    if kind == "on-demand-release":
-        slug, name = "1.2.1", []
-        args = ["--kind", kind, "--version", slug, "--feature", "feature/service-health",
-                "--objectives-file", str(write_release_objectives(tmp_path))]
     result = payload(mdf(python_exe, "start", "--repo", str(repo), *name, *args))
     work = Path(result["worktree"])
     text = (work / "changes/unreleased" / slug / "objectives.md").read_text()
@@ -91,8 +87,6 @@ def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path
         steps = re.findall(r"(?m)^- \[[ x]\] (.+)$", text)
         assert steps[-1] == "consolidate"
         assert "pr" not in steps and "close-out" not in steps
-        if kind == "on-demand-release":
-            assert steps[-2] == "ODR 统一验收"
     else:
         assert "- [ ] consolidate" in text and "- [ ] pr" not in text and "- [ ] close-out" not in text
         result = mdf(python_exe, "pr", "--repo", str(work))

@@ -456,7 +456,7 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     start = intent("start")
     finish = intent("close-out")
 
-    assert "master" in start and "develop" in start
+    assert "workflow.trunk" in start and "feature 固定合入 develop" in start
     assert "不 fetch、不要求 origin、不 push" in start
     assert "内部 clarify intent" in start
     assert "不写目标" in start
