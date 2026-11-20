@@ -7,7 +7,7 @@ from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.integrations.pull_status import pull_status
 from mdf_core.lifecycle.pull_finish import Forge, confirm_pull, lookup_pull, origin, verified_merge
 from mdf_core.workspace.gitutil import current_branch, repo_path, require_git_root
-from mdf_core.workspace.merge_policy import configured, git
+from mdf_core.workspace.merge_policy import configured_delivery, git
 
 
 def record_poll(report, result):
@@ -93,13 +93,13 @@ def watch(repo, source, forge, origin_runs, allow_skipped, *, number=None, expec
 def command_pr_watch(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
-    settings = configured(repo)
+    source = args.source or current_branch(repo)
+    settings = configured_delivery(repo, source)
     if settings["mode"] != "pr":
         raise MDFError("pr-watch 仅适用于 PR mode", code="invalid_closeout")
     if any(run_id <= 0 for run_id in args.origin_run):
         raise MDFError("--origin-run 需要正整数 ID", code="invalid_run_id")
     identity = origin(repo, settings["provider"])
-    source = args.source or current_branch(repo)
     try:
         result = watch(repo, source, Forge(repo, identity), args.origin_run, args.allow_skipped,
                        number=args.pull, expected_head=args.head, handled_reviews=args.handled_review, report=args.log_path / "polls.jsonl")

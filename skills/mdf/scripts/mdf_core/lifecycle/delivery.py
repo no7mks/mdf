@@ -192,6 +192,16 @@ def command_delivery(args):
         result = update_roster(repo, args)
         emit({"ok": True, "operation": "delivery-roster", "result": result})
         return
+    if args.action == "route" and args.source:
+        from mdf_core.lifecycle.publish import support_merge_record
+        from mdf_core.lifecycle.stage_route import support_completion
+        receipt = support_merge_record(repo, args.source, args.version)
+        if not receipt or not receipt[1].get("closed"):
+            raise MDFError("--source 须指定已完成 close-out 的 support hotfix", code="closeout_required")
+        result = support_completion(repo, args.source, receipt[0],
+                                    {"pending": [], "yolo": args.yolo, "auto_completable": False}, args.yolo)
+        emit({"ok": True, "operation": "delivery-route", "result": result})
+        return
     root, data = locate(repo)
     if args.action == "resolve-version":
         from mdf_core.lifecycle.hotfix_version import freeze_version

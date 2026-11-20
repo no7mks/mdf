@@ -69,6 +69,12 @@ def require_idle(repo: Path, *, allow_switch: bool) -> None:
     if branches:
         raise MDFError("存在在途交付分支，不能切换 workflow", code="workflow_not_idle",
                        details={"branches": branches})
+    if workflow_config(repo)["model"] == GITHUB_FLOW:
+        from mdf_core.lifecycle.publish import pending_support_publications
+        pending = pending_support_publications(repo)
+        if pending:
+            raise MDFError("存在待发布的 support hotfix，完成 publish 后再切换 workflow", code="workflow_not_idle",
+                           details={"publications": pending})
     dirty = _dirty_worktrees(repo)
     if dirty:
         raise MDFError("关联 worktree 不干净或存在未完成的 merge，不能切换 workflow",

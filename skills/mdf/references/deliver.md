@@ -1,6 +1,6 @@
 # Deliver
 
-github-flow 的交付目标是 `workflow.trunk`；support hotfix 使用冻结的维护线，不使用 develop。
+github-flow 的交付目标是 `workflow.trunk`。support hotfix 走 [本地 merge](merge.md)，目标是冻结的维护线。
 
 ## 决策树
 
@@ -21,7 +21,7 @@ github-flow 的交付目标是 `workflow.trunk`；support hotfix 使用冻结的
 │ 2 Select                         │
 └────────────────┬─────────────────┘
                  │
-                 ├──── 已到 until 或 close-out 已完成 ────→ 5 Report
+                 ├──── 已到 until 或 本次最后阶段完成 ────→ 5 Report
                  ├──── PR 恢复且未到截止点 ───────────────→ 3 Execute
                  ├──── collab-mode 联调未完且待接手 ──────→ [交接并结束]
                  ├──── 可并行阶段 ────────────────────────→ 4 Parallel
@@ -50,7 +50,7 @@ github-flow 的交付目标是 `workflow.trunk`；support hotfix 使用冻结的
                  ├──── decision 待确认 ────→ 6 Confirm decision
                  └──── 失败或外部阻塞 ─────→ [保留各路现场并报告]
 
-到 until（含内部返回）或 close-out 已完成时进入步骤 5，不是步骤 4 的后续。
+到 until（含内部返回）或最后阶段完成时进入步骤 5，不是步骤 4 的后续。
 
 ┌──────────────────────────────────┐
 │ 5 Report                         │
@@ -78,7 +78,7 @@ github-flow 的交付目标是 `workflow.trunk`；support hotfix 使用冻结的
   正常等待不属于外部阻塞；`waiting_for_merge` 时不结束当前调用、不进入步骤 5，也不要求用户再次调用。
   completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR](pr.md)。
 
-- PR 恢复优先：先核当前 until，再按 [PR 的恢复路由](pr.md) 核已锁定 source 的 Git 和平台状态及返工备注。
+- 走 pr 的交付按 PR 恢复优先规则执行。先核当前 until，再按 [PR 的恢复路由](pr.md) 核已锁定 source 的 Git 和平台状态及返工备注。
   命中时先恢复父 PR 流程；未命中才进入下方特殊身份或普通选择，不能先要求 owner 当前仍在交付分支。
 
 - 已有 adhoc 在步骤 2–3 执行 `references/adhoc.md` 的步骤 3–4，不走普通选择表。
@@ -109,21 +109,24 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 ## 术语与数据结构
 
-清单止于 consolidate，github-flow 发布交付还包含 publish。前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr、适用的 publish 或 close-out。
+清单止于 consolidate，github-flow release 还包含 publish。前置全勾后按 `delivery route` 选择下一阶段。走 pr 的交付还须核对 [PR 恢复状态](pr.md#恢复路由与返工上下文)。
 merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验，通过后按 workflow 选择适用 publish 或 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 Select 读取 `delivery route` 的 `next` 与 `state`：
 
+- support hotfix 完成 close-out 后，从主 worktree 用 `delivery route --source <原分支> --version <version>` 续办。
+- 返回 `publish` 时先核 until，再传同一 `source` 与 `version` 调用 publish。返回 `completed` 后进入步骤 5。
+
 - `--yolo` 下 design 为 `ready`；非 yolo 的 design 为 `awaiting_design_approval`。
-- PR mode 清单勾完后，`delivery route` 按实际合入和 tag 返回 merge/pr、publish 或 close-out；Agent 再核平台与关联 CI。
+- 清单勾完后，`delivery route` 按实际合入和 tag 返回 merge、pr、publish 或 close-out。走 pr 时再核平台与关联 CI。
 - local 通过目标合并历史、适用的 tag 和实际 source refs 核验收口。
 - `delivery complete-stage` 只自动完成 verify，且须在 owner worktree、无进行中的 merge。
 
 ### 目标与持续授权
 
 调用 `$mdf deliver [<target>] [--until <intent>] [--yolo]` 授权连续推进本次交付。
-除 pr、close-out 入口确认外，默认自动裁定其他 decision，直到指定 intent 之前；无截止点时直到 close-out 完成。
+除 pr、close-out 入口确认外，默认自动裁定其他 decision，直到指定 intent 之前；无截止点时直到最后阶段完成。
 
 - 授权含截止点之前尚未完成的 start、本地提交、并行委托与集成；允许进入 close-out 时含 Gitflow 操作。
 - target 是唯一位置参数，不是 `--` option；option 可在其前或后，option 的值不算 target。
@@ -133,7 +136,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 
 - 无截止点时，gitflow 的 local feature/bugfix/adhoc 完成本地 develop 合并。
   - github-flow 的 local 主线交付合入 `workflow.trunk`，support hotfix 合回维护线，不使用 develop。
-  - PR mode 核对远端目标合并与清理。release/hotfix 包含 publish 的 tag 与发版推送，以及 close-out 的适用回合。
+  - 走 pr 的交付核对远端目标合并与清理。release/hotfix 包含 publish 的 tag 与发版推送，以及 close-out 的适用回合。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 close-out 完成条件冲突时说明并询问，不能声称完成。
@@ -149,7 +152,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 - 截止点是本次调用的正常完成边界，不是等待确认；不得自动越过或自动续办被排除的 intent。
 
 步骤 1 先解析策略参数并只读判定路径，核对该路径的 until 合法性；随后才能委托 start 或写入。
-先只读核原 source 的平台 PR；已命中者进入步骤 2 的恢复路由，不先运行普通身份检查。
+走 pr 的交付先只读核原 source 的平台 PR；已命中者进入步骤 2 的恢复路由，不先运行普通身份检查。
 未命中且已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
 其余情况解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
 
@@ -284,10 +287,11 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
 | catch-up 未勾 | 委托 `references/catch-up.md`，同步远端同名分支并增量验收 |
 | consolidate 未勾 | 委托 `references/consolidate.md`，收敛材料和对象状态 |
-| github-flow 发布交付且 publish 未完成 | 委托 `references/publish.md` |
+| github-flow release 且 publish 未完成 | 委托 `references/publish.md` |
 | merge/pr 未完成 | 按模式委托 `references/merge.md` 或 `references/pr.md`，内部完成 target 集成与增量验收 |
 | Gitflow 发布交付已 merged，publish 未完成 | 委托 `references/publish.md`，发布实际 merge commit |
-| 合入与适用 publish 已完成，close-out 尚未实际完成 | 委托 `references/close-out.md`，核验、回合及清理 |
+| 合入及所有适用前置阶段已完成，close-out 尚未实际完成 | 委托 `references/close-out.md`，核验、回合及清理 |
+| support hotfix 已 close-out，publish 未完成 | 从主 worktree 使用原 source 和固定 version 委托 publish |
 
 剩余工作与失败处理：
 
@@ -387,10 +391,10 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 
 - 到 until 时核对允许操作的证据与仍在运行的执行者，报告已完成阶段、截止点与剩余工作。
   - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
-  - 不勾选被排除 intent、不执行 close-out、不声称交付已收口；不自动调用 next 或另开 deliver 越过截止点。
-- 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。
+  - 不勾选被排除 intent、不声称交付已收口。不自动调用 next 或另开 deliver 越过截止点。
+- 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。support hotfix 还须确认随后 publish 成功。
   - 按分支核对合并、源分支删除，以及 release/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
-  - PR mode 另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
+  - 走 pr 的交付另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
   - owner 已被外部删除时如实报告，以平台与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。
   - 用步骤 1 固定的主 worktree 核对，不依赖 owner 的分支身份。
 - 若 close-out 部分失败，记录已完成操作与未完成项，按其恢复规则交接，不重放已经发生的发布操作。

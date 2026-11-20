@@ -23,10 +23,11 @@
 ## 前置与动作
 
 - feature / bugfix 已完成 catch-up、consolidate 和实际 merge/pr。
-- 发布交付还须 final tag 已成功发布，正文与固定 commit 的本版 CHANGELOG 一致。
-- PR mode 的实际 merged 和关联 CI 收尾由 pr 完成，close-out 依据已确认的平台结果续办。
+- Gitflow 发布交付和 github-flow release 还须核对已发布 final tag 及本版 CHANGELOG。
+- 走 pr 的交付由 pr 核对实际 merged 并完成关联 CI 收尾，close-out 依据已确认的平台结果续办。
 - Gitflow 将固定发布 merge commit 回合 develop；回合冲突在独立回合 worktree 验收后续办。
-- github-flow 核对 final tag 的 commit 已进入目标主线。工作分支在发布后产生的集成提交一并核对。
+- github-flow release 核对已发布内容和后续集成提交均进入目标主线。
+- github-flow support hotfix 核对远端 support merge，清理 source 后返回 `next_intent: publish`、`source` 与 `version`。
 - 清理前检查 source 的实际 tip 与已合入结果一致，远端并发新增提交保留现场。
 - 对象状态由 consolidate 随交付材料准备，close-out 根据实际 merge 与发布结果确认完成。
 

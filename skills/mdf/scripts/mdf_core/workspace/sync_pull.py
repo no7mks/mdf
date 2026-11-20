@@ -55,6 +55,9 @@ def plans(repo, branches):
             evidence = {"sources": {name: sha(repo, f"refs/heads/{name}") for name in sync_trunks(repo) if name != integ},
                         "pull_requests": []}
             report = audit(repo, branch, info["remote"], info["local"], evidence, source_prefix="refs/heads")
+            if any(item["reason"] == "local_support_merge" for item in report["commits"]):
+                result[branch] = {"action": "delivery_merge", "head": info["local"], "base": info["remote"], "audit": report}
+                continue
             if report["verdict"] == "pass" and report.get("reason") != "local_mode":
                 continue
         elif info["relation"] != "diverged":

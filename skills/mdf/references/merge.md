@@ -1,6 +1,12 @@
 # Merge
 
-non-PR 模式的实际合入入口。PR mode 由 [pr](pr.md) 执行对应流程。
+本地实际合入入口，适用于 local 模式和所有 github-flow support hotfix。
+PR mode 的其他交付走 [pr](pr.md)。
+
+- github-flow support hotfix 在 consolidate 后，以 no-ff merge 合入冻结的维护线，并将结果推送到 origin。
+- support hotfix 使用本 intent。已有本地 merge 时，仍须在推送前核对增量验收记录。
+- origin 尚未建立该维护线时，首次 merge push 会创建远端分支。
+- MDF 使用现有 push 权限。平台禁止直推时，保留本地 merge，待权限恢复后续办。
 
 树形：not-tree。
 
@@ -20,6 +26,6 @@ python3 "$MDF_ROOT/scripts/mdf.py" merge --repo "$REPO_ROOT"
 - merge 前 target 有新提交时，CLI 合回并返回 incremental-integration，完成验收后重试 merge。
 - feature / bugfix 完成后进入 close-out。
 - Gitflow release / hotfix 完成后进入 publish，再由 close-out 完成 develop 回合与清理。
-- github-flow release / hotfix 的 final tag 已在 merge 前发布；本次合入后进入 close-out。
+- github-flow release 在 merge 前发布 final tag。support hotfix 合入后进入 close-out，再发布指向实际 merge commit 的 tag。
 - 目标分支前进和 PR 返工采用相同的 [incremental-integration](incremental-integration.md) 验收方法。
 - merge 成功后保留工作分支及 worktree，供 publish 与 close-out 核验。

@@ -1,6 +1,6 @@
 # PR 合并后续办
 
-github-flow 的主线收口目标是 `workflow.trunk`；support hotfix 合回冻结的维护线。
+github-flow 的 PR 收口目标是 `workflow.trunk`。
 `pm/*` 从 trunk worktree 按 [pm 分支](pr.md#pm-分支) 完成收口。
 
 ## 决策树
@@ -96,7 +96,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 ### 发布与回合
 
 本节固定本次发布的实际 merge commit M。release 的 target 为 `workflow.trunk`；
-gitflow hotfix 同样合回 trunk，github-flow hotfix 的 target 为冻结的 support 维护线。
+gitflow hotfix 同样合回 trunk。
 
 步骤 2 的 `finish-gitflow` 固化执行下列发布动作，Agent 只核结果及处理返回的冲突。
 
@@ -147,6 +147,7 @@ gitflow 的 close-out 要求本地 develop 包含远端交付结果，不要求�
 | gitflow 的 trunk → develop | 允许固定 trunk 历史提交 no-ff 回合 |
 | gitflow 的 develop 上纯 MDF/宿主维护 | 允许直接提交和 push |
 | gitflow close-out 中 origin/develop → 本地 develop | 允许 no-ff 集成；不 push 本地独有 commits |
+| github-flow hotfix → 冻结的 support 维护线 | 走 [本地 merge](merge.md) |
 | 其他合入受保护的 trunk/develop/support | 拒绝，提示 PR/MR |
 | trunk → owner、角色分支 → owner | 沿用现有集成 |
 

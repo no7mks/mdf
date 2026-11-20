@@ -61,7 +61,7 @@ def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():
     text = deliver_contract()
     for rule in (
         "`--until <intent>` 与 `--stop-at <intent>` 是同一个 option",
-        "exclusive，不执行该 intent", "默认 local 与 PR mode 均无截止点，直到 close-out 完成",
+        "exclusive，不执行该 intent", "默认 local 与 PR mode 均无截止点，直到交付的最后一个阶段完成",
         "先核 until，再核本节确认；被截止的 intent 不询问、不执行",
         "`--yolo` 未显式指定 until 时无截止点；显式 until 仍生效",
         "缺值、未知 intent、重复指定", "写入或 start 之前完成解析",
@@ -185,7 +185,7 @@ def test_deliver_requires_separate_user_confirmation_before_pr_and_closeout():
     policy = workflow("deliver-policy")
     for rule in (
         "非 yolo 在进入 pr、close-out 前分别取得用户明确确认，不以高 confidence 自动通过",
-        "PR mode 需要两次独立确认；local 只需 close-out 入口确认",
+        "走 pr 的交付需要两次独立确认。走 merge 的交付只需 close-out 入口确认。",
         "调用 deliver 本身不代替入口确认；pr 的确认不授权后续 close-out",
         "pr 确认发生在候选材料准备、push、创建或更新 PR/MR、轮询之前",
         "同一范围的返工、重试或中断恢复复用已有有效确认",

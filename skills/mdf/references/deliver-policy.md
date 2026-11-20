@@ -1,6 +1,6 @@
 # Deliver Policy
 
-主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
+主链统一先 catch-up、consolidate。发布与收尾顺序见下方阶段表。
 
 树形：not-tree。由 deliver 的入口、intent 委托与 decision 事件触发；不执行交付阶段。
 
@@ -22,7 +22,7 @@
 本节在任何写入或分派前确定本次调用的执行边界。
 
 - `--until <intent>` 与 `--stop-at <intent>` 是同一个 option；截止点为 exclusive，不执行该 intent。
-- 默认 local 与 PR mode 均无截止点，直到 close-out 完成；非 yolo 的入口确认见下节。
+- 默认 local 与 PR mode 均无截止点，直到交付的最后一个阶段完成；非 yolo 的入口确认见下节。
 - 显式 `--until pr` 排除 pr 及 close-out；显式 `--until close-out` 允许 pr 等到 merged 后停止。
 - local 不接受 `--until pr`；pr 不在该路径中。
 - `--yolo` 未显式指定 until 时无截止点；显式 until 仍生效，包括 `--yolo --until close-out`。
@@ -34,7 +34,8 @@
 | 普通交付前段 | start（联调时内部 integrate）→ design → write-tests / implement → converge |
 | 前置验收 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit） |
 | Gitflow 发布交付后段 | catch-up → consolidate → merge/pr → publish → close-out |
-| github-flow 发布交付后段 | catch-up → consolidate → publish → merge/pr → close-out |
+| github-flow release 后段 | catch-up → consolidate → publish → merge/pr → close-out |
+| github-flow support hotfix 后段 | catch-up → consolidate → merge → close-out → publish |
 | feature / bugfix 后段 | catch-up → consolidate → merge/pr → close-out |
 | 人工 feature | start → 人工工作 → 前置验收 → catch-up → consolidate → merge/pr → close-out |
 | 已有 adhoc | 工作 → 前置验收 → catch-up → consolidate → merge/pr → close-out |
@@ -77,11 +78,11 @@
 先核 until，再核本节确认；被截止的 intent 不询问、不执行。
 
 - 非 yolo 在进入 pr、close-out 前分别取得用户明确确认，不以高 confidence 自动通过。
-  - PR mode 需要两次独立确认；local 只需 close-out 入口确认。
+  - 走 pr 的交付需要两次独立确认。走 merge 的交付只需 close-out 入口确认。
   - 调用 deliver 本身不代替入口确认；pr 的确认不授权后续 close-out。
 - 进入前展示当前成果、验证结果、目标分支及该 intent 将执行的操作，然后返回 deliver 步骤 6 等待答复。
   - pr 确认发生在候选材料准备、push、创建或更新 PR/MR、轮询之前。
-  - close-out 确认发生在其材料、发布、backmerge、清理或 Gitflow 操作之前；PR mode 先完成 pr 的合并与 CI 核验。
+  - close-out 确认发生在其材料、发布、backmerge、清理或 Gitflow 操作之前；走 pr 的交付先完成合并与 CI 核验。
 - 确认记入现有交接材料，绑定当前交付、intent 与操作范围，不新增状态文件。
   - 同一范围的返工、重试或中断恢复复用已有有效确认，不逐轮重复询问；范围变化须重新确认。
   - 用户未确认或拒绝进入时保留现场并暂停；不得换用 next、独立 intent 或内部委托绕过。

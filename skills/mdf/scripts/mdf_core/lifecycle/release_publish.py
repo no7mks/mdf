@@ -53,10 +53,38 @@ def command_publish(args):
     require_git_root(repo)
     with finish_lock(repo):
         if is_github_flow(repo):
-            result = publish_release(repo)
+            from mdf_core.lifecycle.publish import support_merge_record
+            from mdf_core.lifecycle.support_line import support_hotfix
+            source = args.source or current_branch(repo)
+            active_support = support_hotfix(repo, source)
+            record = None
+            if args.source and (not active_support or args.version):
+                record = support_merge_record(repo, source, args.version)
+            if record or active_support or (args.source and source.startswith("hotfix/")):
+                result = publish_support(repo, record)
+            else:
+                result = publish_release(repo)
         else:
             result = publish_gitflow(repo, args.source or current_branch(repo), number=args.pull)
     emit({"ok": True, "operation": "publish", **result})
+
+
+def publish_support(repo, receipt):
+    from mdf_core.lifecycle.publish import merge_record_path, require_support_merge
+    from mdf_core.lifecycle.pull_publish import tag_release
+    if not receipt or not receipt[1].get("closed") or receipt[1].get("pending"):
+        raise MDFError("support hotfix 须先完成 close-out", code="closeout_required")
+    version, record = receipt
+    merged = require_support_merge(repo, record)
+    ref = f"refs/tags/v{version}"
+    if (git(repo, "rev-parse", "--verify", ref, check=False).returncode
+            and git(repo, "ls-remote", "origin", ref).stdout.strip()):
+        git(repo, "fetch", "--no-tags", "origin", f"{ref}:{ref}")
+    state = {"release_head": merged}
+    tag_release(repo, state, version)
+    published_head(repo, version, expected_oid=state["tag_oid"])
+    write_json(merge_record_path(repo, record["source"], version), {**record, "published": True})
+    return {"completed": True, "tag": state["tag"], "release_head": merged, "next_intent": None}
 
 
 def publish_release(repo):
@@ -142,7 +170,9 @@ def publish_release(repo):
         path.write_text(text)
         git(repo, "add", "--", str(path.relative_to(repo)))
         git(repo, "commit", "--only", "-m", "docs(release): 记录 final tag 发布完成", "--", str(path.relative_to(repo)))
-    return {"completed": True, "tag": state["tag"], "release_head": head, "next_intent": "pr" if configured_mode(repo) == "pr" else "merge"}
+    from mdf_core.workspace.merge_policy import configured_delivery
+    mode = configured_delivery(repo, source, data=data)["mode"]
+    return {"completed": True, "tag": state["tag"], "release_head": head, "next_intent": "pr" if mode == "pr" else "merge"}
 
 
 def recover_publication_record(repo, root, source):
@@ -168,11 +198,6 @@ def recover_publication_record(repo, root, source):
     require_published_source(repo, branch_details(source)["version"] or data.get("version"), "HEAD", source=source)
     git(repo, "add", "--", relative)
     git(repo, "commit", "-m", "docs(release): 续办 final tag 发布记录", "--", relative)
-
-
-def configured_mode(repo):
-    from mdf_core.workspace.merge_policy import configured
-    return configured(repo)["mode"]
 
 
 def publish_gitflow(repo, source, *, number=None):

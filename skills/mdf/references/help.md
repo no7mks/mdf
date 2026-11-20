@@ -262,7 +262,7 @@ $mdf clarify 要不要把缓存放到 Redis
     - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不走 deliver 步骤 4。
     - 除 pr、close-out 入口确认外，其他 decision 由 AI 评分，优先用 Jev，无 Jev 时主 Agent 评分。
       confidence ≥ 0.8 自动确认，< 0.8 请求用户确认。
-    - 默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+    - 默认无截止点，直到交付的最后一个阶段完成；非 yolo 在 pr、close-out 前分别取得用户确认。
     - 显式 until 为 exclusive，不执行截止 intent；`--stop-at` 为别名。
     - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
     - `--roster` 可转交给 start，仅尚未 start 时有效。
@@ -364,7 +364,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf consolidate`
   - 收敛交付文档、对象状态和版本材料，完成适用的归档与提交。
 - `$mdf merge`
-  - non-PR 模式先合回 target 并增量验收，再实际合入。
+  - local 模式与 github-flow support hotfix 先合回 target 并增量验收，再本地合入。
 
 - `$mdf publish`
   - 用法：`$mdf publish`

@@ -2,7 +2,7 @@
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 from support_delivery import write_changelog_release
-from support_github_flow import commit, error_of, github_flow_repo, has_ref, publish_release
+from support_github_flow import commit, error_of, github_flow_repo, has_ref, prepare_release_materials, publish_release
 from test_local_flow import start
 
 
@@ -234,9 +234,13 @@ def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_e
     work = Path(data["worktree"])
     (work / "src/support_fix.py").write_text("fixed = True\n")
     commit(work)
-    head = publish_release(python_exe, work)
-    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
-    assert done["targets"] == ["support/1.1"] and done["tag"] == "v1.1.1"
+    prepare_release_materials(python_exe, work)
+    payload(mdf(python_exe, "merge", "--repo", str(work)))
+    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert done["targets"] == ["support/1.1"] and done["next_intent"] == "publish"
+    published = payload(mdf(python_exe, "publish", "--repo", str(repo), "--source", data["branch"]))
+    head = published["release_head"]
+    assert head == git(repo, "rev-parse", "support/1.1").stdout.strip()
     assert git(repo, "rev-parse", "v1.1.1^{commit}").stdout.strip() == head
     assert git(repo, "rev-parse", "master").stdout == trunk_before
     assert git(remote, "rev-parse", "master").stdout == trunk_before
@@ -245,5 +249,5 @@ def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_e
     git(repo, "worktree", "remove", str(work))
     snapshot = git(remote, "show-ref").stdout
     resumed = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
-    assert resumed["targets"] == ["support/1.1"] and resumed["tag"] == "v1.1.1"
+    assert resumed["targets"] == ["support/1.1"] and resumed["version"] == "1.1.1"
     assert git(remote, "show-ref").stdout == snapshot

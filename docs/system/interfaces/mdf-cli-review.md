@@ -51,6 +51,8 @@
 - audit-push 从 `before` 读取 workflow。gitflow 接受 trunk 与 develop；github-flow 接受 trunk 与 `support/*`。
   - `support/*` 合入 trunk 为 `support_merge_forbidden`。默认离线，显式 collect-evidence 才访问平台。
   - 切换 PR/MR 的审计见 [Workflow 切换](../../../skills/mdf/references/workflow/switch.md#首次-push-审计)。
+- github-flow support 的本地 merge 由版本材料、交付身份、双亲和最终 tree 验证。
+  首次 push 的 `before` 为全零时，从已验证的 `delivery.start_commit` 起审计。
 - evidence 文件由可信 CI controller 提供，sources 需能验证为 origin 历史，PR 证明匹配实际双亲。
 - review-context 的 --against <commit> 选择独立只读模式，不接受 source/head/policy-ref。
   - mode=against，要求 worktree clean；直接比较指定历史版本与当前 HEAD，不计算 merge-base。

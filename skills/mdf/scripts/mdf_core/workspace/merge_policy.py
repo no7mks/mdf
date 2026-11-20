@@ -40,6 +40,14 @@ def configured(repo, ref=None):
     return config(load_manifest(repo)) if manifest_path(repo).is_file() else {"mode": "local"}
 
 
+def configured_delivery(repo, source, *, data=None, ref=None):
+    from mdf_core.lifecycle.support_line import support_hotfix
+    settings = configured(repo)
+    if settings["mode"] == "pr" and support_hotfix(repo, source, data=data, ref=ref):
+        settings["mode"] = "local"
+    return settings
+
+
 def sha(repo, ref):
     return git(repo, "rev-parse", "--verify", f"{ref}^{{commit}}").stdout.strip()
 
@@ -106,7 +114,7 @@ def protected_target(repo, target):
     return target in {cfg["trunk"], "develop"}
 
 
-def require_merge(repo, source, target):
+def require_merge(repo, source, target, *, delivery=False):
     from mdf_core.workspace.workflow_policy import forbid_support_to_trunk
     if manifest_path(repo).is_file():
         forbid_support_to_trunk(repo, source, target)
@@ -115,6 +123,11 @@ def require_merge(repo, source, target):
         return
     incoming = sha(repo, source)
     if ancestor(repo, incoming, "HEAD"):
+        return
+    from mdf_core.lifecycle.support_line import support_hotfix
+    if target.startswith("support/") and support_hotfix(repo, source, target=target, ref=incoming):
+        if not delivery:
+            raise MDFError("support hotfix 须通过交付的 merge 核验增量验收后合入", code="delivery_merge_required")
         return
     from mdf_core.workspace.workflow_policy import GITFLOW, workflow_config
     cfg = workflow_config(repo, "HEAD")

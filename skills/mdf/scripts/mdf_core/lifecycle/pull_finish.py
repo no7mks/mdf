@@ -265,8 +265,6 @@ def submit(repo, forge, source, target, pull, *, pm, fixed_head):
         preflight(repo, source)
         head = sha(repo, f"refs/heads/{source}")
     if not pm:
-        from mdf_core.lifecycle.support_line import ensure_remote_support_target
-        ensure_remote_support_target(repo, source, target)
         if current_branch(repo) == source:
             from mdf_core.lifecycle.target_integration import require_integrated
             accepted = require_integrated(repo, source, target)

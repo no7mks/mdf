@@ -31,7 +31,7 @@
 | PRP 纳入发布 | implemented → released，写 released_in | publish 确认 final tag 已推送 |
 | 已验证的 Bug 修复 | open → fixed，补齐 Change outcome 与证据 | 修复及适用验收通过 |
 | 修复纳入确定版本 | 调用 bug close，fixed → closed，写 fixed_in | 复现验证与修复审查通过，发布版本明确 |
-| github-flow support hotfix | 只记录版本根 fixed/trunk_fixes，不改维护线 Bug 副本 | 首次 publish 从远端 trunk 核验 Trunk-First |
+| github-flow support hotfix | 只记录版本根 fixed/trunk_fixes，不改维护线 Bug 副本 | merge 前从远端 trunk 核验 Trunk-First |
 | 其他处置 | 按已有 rejected、replaced、deferred 等决定维护记录 | 核对理由、关联与适用归档 |
 
 - 工作分支先准备对象状态并提交，交付完成同时依据实际 merge 和远端 tag。

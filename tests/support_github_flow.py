@@ -42,21 +42,22 @@ def has_ref(repo: Path, ref: str) -> bool:
     return _run(["git", "rev-parse", "--verify", "--quiet", ref], cwd=repo).returncode == 0
 
 
-def publish_release(python_exe, work):
-    """为发布 CLI 准备已完成的基线 checklist。"""
+def prepare_release_materials(python_exe, work):
+    """准备已收敛的发布材料。"""
     from mdf_test_support import mdf, payload
     from support_pull import squash_pending
     from mdf_core.lifecycle.delivery_state import locate
     root, data = locate(work)
     hotfix = data["branch"].startswith("hotfix/")
-    if hotfix:
-        seed_verify_branch(python_exe, work)
     path = root / "objectives.md"
     text = path.read_text()
-    if "- [ ] publish" not in text:
-        return payload(mdf(python_exe, "publish", "--repo", str(work)))["release_head"]
-    before, after = text.split("- [ ] publish", 1)
-    path.write_text(before.replace("- [ ]", "- [x]") + "- [ ] publish" + after)
+    boundary = "- [ ] catch-up" if hotfix else "- [ ] publish"
+    if boundary not in text:
+        return
+    if hotfix:
+        seed_verify_branch(python_exe, work)
+    before, after = text.split(boundary, 1)
+    path.write_text(before.replace("- [ ]", "- [x]") + boundary + after)
     commit(work, "test: 完成发布基线")
     squash_pending(work)
     sync = payload(mdf(python_exe, "catch-up", "--repo", str(work)))
@@ -70,4 +71,9 @@ def publish_release(python_exe, work):
                     "--hotfix-change-json", json.dumps(change)))
     else:
         seed_consolidation(work, mark=True)
+
+
+def publish_release(python_exe, work):
+    from mdf_test_support import mdf, payload
+    prepare_release_materials(python_exe, work)
     return payload(mdf(python_exe, "publish", "--repo", str(work)))["release_head"]

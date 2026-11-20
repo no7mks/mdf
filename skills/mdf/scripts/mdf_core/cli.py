@@ -289,6 +289,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--version")
+    delivery.add_argument("--source", help="route：恢复已收尾的 support hotfix")
     delivery.add_argument("--stage", choices=(*STAGES, "finish", "verify"))
     delivery.add_argument("--yolo", action="store_true", help="route：pr/close-out 入口无需确认")
     delivery.add_argument("--summary")
@@ -351,6 +352,7 @@ def build_parser() -> argparse.ArgumentParser:
     publish_cmd = subparsers.add_parser("publish")
     publish_cmd.add_argument("--repo", required=True)
     publish_cmd.add_argument("--source")
+    publish_cmd.add_argument("--version", help="恢复同名 support hotfix 时指定版本")
     publish_cmd.add_argument("--pull", type=int)
     publish_cmd.set_defaults(func=command_publish)
     from mdf_core.lifecycle.target_integration import command_incremental_integration

@@ -2,7 +2,7 @@
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 from support_delivery import write_changelog_release
-from support_github_flow import commit, error_of, github_flow_repo, has_ref, publish_release
+from support_github_flow import commit, error_of, github_flow_repo, has_ref, prepare_release_materials, publish_release
 
 
 def start(python_exe, repo, tmp_path, kind, *extra, objectives=None):
@@ -57,16 +57,24 @@ def test_feature_and_bugfix_start_and_finish_on_trunk(python_exe, tmp_path, kind
 @pytest.mark.parametrize("kind", ["release", "hotfix"])
 def test_publish_merges_only_trunk_and_tags_release_head(python_exe, tmp_path, kind):
     repo, remote, work, data = finishable(python_exe, tmp_path, kind)
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
-    head = publish_release(python_exe, work)
     trunk_before = git(repo, "rev-parse", "master").stdout
-    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     target = "support/1.2" if kind == "hotfix" else "master"
-    assert done["targets"] == [target] and done["tag"] == "v1.2.1" and done["pushed"] is True
+    if kind == "hotfix":
+        prepare_release_materials(python_exe, work)
+        payload(mdf(python_exe, "merge", "--repo", str(work)))
+        done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+        assert done["next_intent"] == "publish"
+        published = payload(mdf(python_exe, "publish", "--repo", str(repo), "--source", data["branch"]))
+        assert published["release_head"] == git(repo, "rev-parse", target).stdout.strip()
+        head = published["release_head"]
+        assert git(repo, "rev-parse", "master").stdout == trunk_before
+    else:
+        head = publish_release(python_exe, work)
+        done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
+        assert done["tag"] == "v1.2.1"
+    assert done["targets"] == [target] and done["pushed"] is True
     assert git(repo, "rev-parse", "v1.2.1^{commit}").stdout.strip() == head
     git(repo, "merge-base", "--is-ancestor", head, target)
-    if kind == "hotfix":
-        assert git(repo, "rev-parse", "master").stdout == trunk_before
     assert git(remote, "rev-parse", "master").stdout == git(repo, "rev-parse", "master").stdout
     assert not has_ref(repo, "develop")
 

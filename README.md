@@ -54,7 +54,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf init migrate` | 将已有项目材料与布局收敛到当前 MDF 结构；也可 `$mdf migrate` |
 | `$mdf tree [--depth N]` | 按 milestone 分组画出 draft/ready PRP 依赖树；也可 `$mdf prp tree` 或 `$mdf next?` |
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
-| `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 默认推进至 close-out 完成，可显式指定截止 intent；可并行分派 subagent |
+| `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 默认推进至交付完成，可显式指定截止 intent；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
 | `$mdf adhoc [<工作描述>]` | 自动生成七项 objectives，在临时 worktree 完成小工作并收口 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
@@ -80,7 +80,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
 | `$mdf catch-up` | 同步远端同名工作分支并增量验收 |
 | `$mdf consolidate` | 收敛交付文档、对象状态和版本材料 |
-| `$mdf merge` | non-PR 模式下合回 target、增量验收并实际合入 |
+| `$mdf merge` | 合回 target、增量验收并本地合入，适用范围见 [Merge](skills/mdf/references/merge.md) |
 | `$mdf publish` | 给固定发布 commit 创建带本版说明的 annotated tag 并推送 |
 | `$mdf close-out` | 核验合入与发布结果、完成适用回合、清理分支和 worktree |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
@@ -99,7 +99,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 主线 intent 由用户手动触发。
 
 - `$mdf next`：单步续办。
-- `$mdf deliver`：自动推进，默认走完 close-out；非 yolo 在 pr、close-out 前分别取得用户确认。
+- `$mdf deliver` 自动推进到交付的最后一个阶段。非 yolo 在 pr、close-out 前分别取得用户确认。
 
 统一骨架：
 
@@ -108,7 +108,8 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | 交付类型 | 后段顺序 |
 | --- | --- |
 | Gitflow 发布交付 | catch-up → consolidate → merge/pr → publish → close-out |
-| github-flow 发布交付 | catch-up → consolidate → publish → merge/pr → close-out |
+| github-flow release | catch-up → consolidate → publish → merge/pr → close-out |
+| github-flow support hotfix | catch-up → consolidate → merge → close-out → publish |
 | feature / bugfix | catch-up → consolidate → merge/pr → close-out |
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
@@ -191,10 +192,10 @@ fact audit 共用核：`resolve-base → diff → must-cover → stale → uncov
 ### close-out 与 deliver
 
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
-交付清单止于 consolidate，github-flow 发布交付还包含 publish；之后按实际 Git 状态续办。
+交付清单止于 consolidate，github-flow release 还包含 publish；之后按实际 Git 状态续办。
 pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
 实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；Gitflow 发布交付先完成 publish，close-out 再负责适用 backmerge、清理与最终核验。
-完整交付继续执行 close-out；默认 deliver 走完 close-out，非 yolo 在 pr、close-out 前分别取得用户确认，显式 until 仍生效。
+完整交付执行 close-out，github-flow support hotfix 随后发布。默认 deliver 推进到最后一个阶段，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 
 PR mode 在创建或更新 PR/MR 前 fetch workflow 推导的固定目标。
@@ -204,7 +205,6 @@ PR mode 在创建或更新 PR/MR 前 fetch workflow 推导的固定目标。
 | gitflow | feature / bugfix / adhoc | develop |
 | gitflow | release / hotfix | trunk |
 | github-flow | feature / bugfix / adhoc / release | trunk |
-| github-flow | hotfix | support 维护线 |
 
 - PR mode 每次 roster merge、远端主线 merge 和 push 前，分析未共享提交并按逻辑分段 squash。
   可以保留多笔 commit，无可压缩区间则 no-op；保留 merge commit，禁止 force push。
@@ -214,7 +214,7 @@ PR mode 在创建或更新 PR/MR 前 fetch workflow 推导的固定目标。
   target 再次前进时，在 merge/pr 内重复。
 
 local 模式先集成 workflow 推导的固定目标，再完成增量验收和合入；冲突自动尝试解决。
-以下本地合并与发布行为适用于默认 local 模式。
+github-flow support hotfix 始终用此流程，包括项目启用 PR mode 时。
 
 - 写入前只读检查目标 worktree；未提交改动或未结束的 merge 均保留现场并停止。
   不自动 abort、reset、stash 或 Commit 他人的工作；无关脏分支不阻断。
@@ -222,7 +222,7 @@ local 模式先集成 workflow 推导的固定目标，再完成增量验收和�
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
 - release/hotfix 的 publish 创建带本版内容的 annotated tag 并推送。
-  - Gitflow 在 merge/pr 后发布实际 merge commit；github-flow 在集成前发布固定候选。
+  - Gitflow 在 merge/pr 后发布实际 merge commit。github-flow release 在集成前发布固定候选，support hotfix 在 close-out 后发布实际 merge commit。
   - close-out 核验远端合入与 tag；Gitflow 再将发布结果合回本地 develop，不推送远端 develop。
 - deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
   - 验证其已有 qa/dev worktree 身份，等待交接后再收敛。
@@ -232,7 +232,7 @@ local 模式先集成 workflow 推导的固定目标，再完成增量验收和�
 - 自动裁定与截止点：
   - 除 pr、close-out 入口确认外，其他 decision 由 AI 计算 confidence，优先用 Jev；不可用时主 Agent 评分。
   - confidence ≥ 0.8 自动确认，低于 0.8 请求用户确认；不降低验收要求。
-  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+  - `--until <intent>` 为 exclusive；`--stop-at` 是别名，默认无截止点，直到交付的最后一个阶段完成；非 yolo 在 pr、close-out 前分别取得用户确认。
   - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效，死硬阻塞仍停止。
   - manual slug 等 decision 也适用；squash 默认自主执行，人工工作仍须用户完成并勾选。
   - close-out 成功收尾后默认删除临时 owner 和 backmerge worktree，不再单独确认；随后结束本对话。

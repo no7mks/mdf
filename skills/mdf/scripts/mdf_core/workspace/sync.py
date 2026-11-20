@@ -204,6 +204,9 @@ def _command_sync(args) -> None:
             "分支关系或同步目标已变化；重新展示图并请用户确认", code="sync_plan_changed", details=preview,
         )
 
+    if any(item["action"] == "delivery_merge" for item in preview["pull_plan"].values()):
+        raise MDFError("support hotfix 合入须通过交付的 merge 验收与推送，保留现场", code="delivery_merge_required",
+                       details=preview)
     if preview["pull_plan"] and not args.pr:
         raise MDFError("需要 PR/MR；用 sync --pr 重新预览、确认后提交或恢复", code="pr_required",
                        details=preview)

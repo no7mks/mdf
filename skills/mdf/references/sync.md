@@ -99,6 +99,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" sync --repo "$REPO_ROOT"
 
 - gitflow 的同步分支为 `master`、`develop`、`planning`；两侧 refs 都必须已存在。
 - github-flow 只同步 trunk，以及本地与 origin 都有的 `support/*`；不同步 develop。
+- PR mode 中，尚未推送的 support hotfix merge 由交付的 [merge](merge.md) 核验并推送。
+  sync 预览标记 `delivery_merge`，确认时返回 `delivery_merge_required`。
   - trunk 领先时 `pull_plan` 动作为 `trunk_pr`；只有 gitflow 的 develop 可用 trivial 提交免 PR。
 - JSON `branches` 覆盖本地与 `origin` 分支的并集；每项含 local / remote tip SHA、
   ahead / behind（local 相对 remote）、relation、graph 与是否参与同步的 `sync`。

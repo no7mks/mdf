@@ -1,6 +1,6 @@
 # 交付契约
 
-主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
+主链统一先 catch-up、consolidate。发布与收尾顺序见下方阶段表。
 
 
 树形：not-tree。本流程核对当前交付阶段的共同契约，阶段仍由原 intent 的编号工作流承办。
@@ -26,7 +26,7 @@
 
 objectives 按 manifest.closeout.mode 固定收尾结构，local 使用原有 checklist。
 
-- 交付清单记录 catch-up、consolidate 等合入前工作；github-flow 发布交付在其后记录 publish。
+- 交付清单记录 catch-up、consolidate 等合入前工作；github-flow release 在其后记录 publish。
 - pr 按实际 merged、合并核验与关联 CI 收尾判定完成。
 - close-out 按适用的发布、backmerge、source 清理与最终核验判定完成。
 - 完整交付在 pr 完成后继续 close-out；until、暂停与普通 next 的单步边界仍有效。
@@ -138,7 +138,8 @@ consolidate 后按 workflow 定序：
 | 交付类型 | 后续顺序 |
 | --- | --- |
 | Gitflow release / hotfix | merge/pr → publish → close-out |
-| github-flow release / hotfix | publish → merge/pr → close-out |
+| github-flow release | publish → merge/pr → close-out |
+| github-flow support hotfix | merge → close-out → publish |
 | feature / bugfix / adhoc | merge/pr → close-out |
 
 merge/pr 内部先把 target 合回工作分支；有变化时完成 incremental-integration，才能实际合入。
@@ -178,7 +179,7 @@ merge/pr 内部先把 target 合回工作分支；有变化时完成 incremental
 - 显式 deliver 按 `references/deliver.md` 串联截止点之前的剩余真实 intent。
   - 可并行阶段按 roster 分别委托 subagent。
   - 除 pr、close-out 入口确认外，默认自动裁定其他 decision，confidence 低于 0.8 请求用户确认；默认用 Jev 评分，无 Jev 时主 Agent 评分。
-  - 默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+  - 默认无截止点，直到交付的最后一个阶段完成；非 yolo 在 pr、close-out 前分别取得用户确认。
   - 显式 until 为 exclusive，`--stop-at` 为别名；yolo 跳过入口确认、无 confidence 限制。
   - 显式 until 对 yolo 仍生效；子 intent 的确认与批准统一遵守 deliver-policy 的入口确认与 confidence 策略。
 - design 的 Baseline 与 converge 由各 intent 启动恰好 1 个 owner subagent，不计入 roster。

@@ -67,27 +67,28 @@ def advance_trunk(repo, remote):
     return old
 
 
-def test_publish_rechecks_remote_trunk_before_tag(python_exe, tmp_path):
+def test_merge_rechecks_remote_trunk_before_push(python_exe, tmp_path):
     repo, remote, work, change = prepare_hotfix(python_exe, tmp_path)
     consolidate_hotfix(python_exe, work, change)
     old = advance_trunk(repo, remote)
     # 本地 trunk 故意回到旧 open 记录；门禁必须看 origin。
     git(repo, "reset", "--hard", old)
-    failed = mdf(python_exe, "publish", "--repo", str(work))
+    failed = mdf(python_exe, "merge", "--repo", str(work))
     assert error_of(failed)["error"] == "trunk_first_required"
+    assert git(remote, "branch", "--list", "support/1.2").stdout == ""
     assert not git(remote, "tag", "--list", "v1.2.1").stdout.strip()
 
 
 def test_published_support_retries_after_trunk_status_changes(python_exe, tmp_path):
     repo, remote, work, change = prepare_hotfix(python_exe, tmp_path)
     consolidate_hotfix(python_exe, work, change)
-    first = payload(mdf(python_exe, "publish", "--repo", str(work)))
+    merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
     advance_trunk(repo, remote)
-    again = payload(mdf(python_exe, "publish", "--repo", str(work)))
-    assert first["release_head"] == again["release_head"]
     payload(mdf(python_exe, "doctor", "--repo", str(work)))
-    payload(mdf(python_exe, "merge", "--repo", str(work)))
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    args = ("--repo", str(repo), "--source", "hotfix/1.2.1")
+    assert payload(mdf(python_exe, "publish", *args))["release_head"] == merged
+    assert payload(mdf(python_exe, "publish", *args))["release_head"] == merged
 
 
 def test_support_rejects_extra_fixed_closure_before_writes(python_exe, tmp_path):
@@ -103,10 +104,11 @@ def test_support_rejects_extra_fixed_closure_before_writes(python_exe, tmp_path)
 def test_slug_hotfix_review_base_uses_published_tag(python_exe, tmp_path):
     _repo, _remote, work, change = prepare_hotfix(python_exe, tmp_path, slug=True)
     consolidate_hotfix(python_exe, work, change)
-    published = payload(mdf(python_exe, "publish", "--repo", str(work)))
+    merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    published = payload(mdf(python_exe, "publish", "--repo", str(work), "--source", "hotfix/support-timeout"))
     from mdf_core.reviewing.context import context
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
-    result = context(work, source="hotfix/support-timeout", head=head, policy_ref=head)
+    result = context(work, source="hotfix/support-timeout", head=merged, policy_ref=merged)
     assert result["delivery_base"] == published["release_head"]
 
 

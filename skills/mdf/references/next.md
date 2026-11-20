@@ -1,6 +1,6 @@
 # Next
 
-主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
+主链统一先 catch-up、consolidate。其余阶段按 [阶段顺序](delivery-contract.md) 推进。
 
 ## 选择树
 
@@ -39,7 +39,7 @@
 
 ## 工作流（唯一执行契约）
 
-PR 恢复优先：按 [PR 的恢复路由](pr.md) 只读核已锁定 source 的 Git 和平台状态及返工备注。
+走 pr 的交付按 PR 恢复优先规则执行。按 [PR 的恢复路由](pr.md) 只读核已锁定 source 的 Git 和平台状态及返工备注。
 命中时未 merged 恢复父 pr，已 merged 且关联 CI 收尾通过才续办 close-out。
 merged 但关联 CI 未收尾或缺少证据时先恢复 pr；先应用仍在协调的 deliver 边界。
 不先调用普通身份检查，不因 detached 或 source 已删除而另选任务。
@@ -67,8 +67,10 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 
 ## 术语与数据结构
 
-清单止于 consolidate，github-flow 发布交付还包含 publish。前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr、适用的 publish 或 close-out。
-选择 close-out 前须按 [PR 轮询](pr.md#当前调用内轮询) 确认关联 CI 收尾通过。
+清单止于 consolidate，github-flow release 还包含 publish。前置全勾后按 `delivery route` 选择下一阶段。走 pr 的交付还须核对 [PR 恢复状态](pr.md#恢复路由与返工上下文)。
+support hotfix 完成 close-out 后，以原分支与版本从主 worktree 调用 `delivery route --source <原分支> --version <version>`。
+该路由返回 publish 时，执行 [发布](publish.md)；返回 completed 时报告完成。
+走 pr 的交付在选择 close-out 前须按 [PR 轮询](pr.md#当前调用内轮询) 确认关联 CI 收尾通过。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### 在途流程识别
@@ -149,12 +151,12 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
   - 主线后半：lint → code-review → verify branch → fact audit → catch-up → consolidate。
-  - 后续按 [交付阶段顺序](delivery-contract.md) 的 workflow 表执行；github-flow 发布在 merge/pr 前，Gitflow 发布在其后。
+  - 后续按 [交付阶段顺序](delivery-contract.md) 的 workflow 表执行。
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
   - fact 已通过后，同名远端同步只重新打开 `catch-up`，其他分支集成或收尾返工只重新打开 `incremental-integration`。
     两者在对应步骤内完成增量验收，已通过的基线四项保持 `[x]`。
-  - checklist 阶段只在有对应未勾项时进入；PR mode 前置全勾时按 PR 恢复路由续办。
+  - checklist 阶段只在有对应未勾项时进入；前置全勾后按 `delivery route` 续办。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；
     ❌ 不因 roster `0,0` 强行进入 owner 开发或 converge。

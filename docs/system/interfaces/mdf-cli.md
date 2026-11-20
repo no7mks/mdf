@@ -126,7 +126,7 @@ deliver 是外层 Agent 协调 intent，复用现有 start、delivery 与 close-
 - deliver 负责从尚未 start 起持续委托、并行 subagent 的 worktree 身份核验与结果交接。
 - design 的 Baseline 与 converge 的 owner subagent 由各 intent 启动，CLI 不介入。
 - 位置参数 target 与 `--until`（别名 `--stop-at`）、`--yolo` 由 intent 解释，不是 CLI 参数。
-  其他 decision 自动裁定、confidence < 0.8 请求确认、默认走完 close-out；非 yolo 在 pr、close-out 前分别取得用户确认；细则见 deliver 契约。
+  默认走完交付的最后一个阶段。非 yolo 在 pr、close-out 前分别取得用户确认。其他 decision 按 deliver 的 confidence 契约裁定。
 
 CLI 不负责询问用户、判定文档语义或决定交付范围。它由 intent 在完成这些判断后调用：
 
@@ -158,7 +158,8 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 ## 独立发布
 
 `mdf.py publish --repo <repo>` 在 github-flow release 的基线完成后创建并推送 final tag，
-github-flow 在发布后进入 merge/pr；Gitflow 在实际 merge 后 publish，再进入 close-out。执行契约见
+该路径发布后进入 merge/pr。Gitflow 在实际 merge 后 publish，再进入 close-out。
+github-flow support hotfix 在 close-out 后用 `publish --source <原分支> --version <version>` 发布实际合入 commit。执行契约见
 [publish](../../../skills/mdf/references/publish.md)。
 
 ## 远端同名分支同步

@@ -128,11 +128,13 @@ def test_merged_recovery_cannot_bypass_ci_completion(name):
 
 def test_pr_mode_default_completion_and_mandatory_unticked_continuation():
     policy = workflow('deliver-policy')
-    assert '默认 local 与 PR mode 均无截止点，直到 close-out 完成' in policy
+    assert '默认 local 与 PR mode 均无截止点，直到交付的最后一个阶段完成' in policy
     assert '显式 `--until close-out` 允许 pr 等到 merged 后停止' in policy
     contract = workflow('delivery-contract')
     assert '交付清单记录 catch-up、consolidate' in contract
-    for name in ('deliver', 'next', 'manual-feature', 'adhoc'):
+    for name in ('deliver', 'next'):
+        assert '前置全勾后按 `delivery route` 选择下一阶段' in workflow(name)
+    for name in ('manual-feature', 'adhoc'):
         assert '前置全勾后按 [PR 恢复路由]' in workflow(name)
     assert '实际 merged、合并核验与关联 CI 收尾均通过后，pr 完成' in workflow('pr')
 

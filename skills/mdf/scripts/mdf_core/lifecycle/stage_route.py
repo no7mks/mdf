@@ -96,7 +96,7 @@ def route(repo, root, data, yolo=False):
 
 def _after_checklist(repo, root_data, result, yolo):
     """清单完毕后，PR phase 由 Agent 核对平台与关联 CI。"""
-    from mdf_core.workspace.merge_policy import ancestor, configured
+    from mdf_core.workspace.merge_policy import configured_delivery
 
     def gated(nxt):
         confirm = nxt in {"pr", "close-out"} and not yolo
@@ -108,7 +108,7 @@ def _after_checklist(repo, root_data, result, yolo):
     from mdf_core.workspace.workflow_policy import is_github_flow
     source = root_data["branch"]
     target = target_for(repo, source, data=root_data)
-    mode = configured(repo)["mode"]
+    mode = configured_delivery(repo, source, data=root_data)["mode"]
     target_ref = f"refs/remotes/origin/{target}" if mode == "pr" else f"refs/heads/{target}"
     exists = git(repo, "rev-parse", "--verify", target_ref, check=False).returncode == 0
     merged = find_merge(repo, target_ref, sha(repo, "HEAD")) if exists else None
@@ -120,6 +120,9 @@ def _after_checklist(repo, root_data, result, yolo):
         from mdf_core.lifecycle.publish import remote_contains_merge
         if not remote_contains_merge(repo, target, merged):
             return gated("merge")
+    from mdf_core.lifecycle.support_line import support_hotfix
+    if support_hotfix(repo, source, data=root_data):
+        return support_completion(repo, source, details["version"] or root_data.get("version"), result, yolo)
     if versioned and not is_github_flow(repo):
         from mdf_core.lifecycle.release_publish import published_head
         try:
@@ -127,6 +130,23 @@ def _after_checklist(repo, root_data, result, yolo):
         except MDFError:
             return gated("publish")
     return gated("close-out")
+
+
+def support_completion(repo, source, version, result, yolo):
+    from mdf_core.lifecycle.publish import require_support_merge, support_merge_record
+    from mdf_core.lifecycle.release_publish import published_head
+    receipt = support_merge_record(repo, source, version)
+    if not receipt or not receipt[1].get("closed"):
+        return {**result, "next": "close-out", "state": "ready" if yolo else "awaiting_decision_confirmation"}
+    version, record = receipt
+    merged = require_support_merge(repo, record)
+    ref = f"refs/tags/v{version}"
+    if (not record.get("published") or git(repo, "rev-parse", "--verify", ref, check=False).returncode
+            or not git(repo, "ls-remote", "origin", ref).stdout.strip()):
+        return {**result, "next": "publish", "state": "ready", "source": source, "version": version}
+    if published_head(repo, version) != merged:
+        raise MDFError("final tag 与 support merge 不符", code="tag_conflict")
+    return {**result, "next": None, "state": "completed", "source": source, "version": version}
 
 
 def _staged(repo):

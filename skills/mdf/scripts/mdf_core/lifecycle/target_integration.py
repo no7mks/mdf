@@ -3,7 +3,7 @@ from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import locate, read_json, write_json
 from mdf_core.lifecycle.incremental_plan import build_plan
 from mdf_core.workspace.gitutil import current_branch, ensure_clean, repo_path, require_git_root, git_in_progress_head
-from mdf_core.workspace.merge_policy import git, sha, ancestor, configured
+from mdf_core.workspace.merge_policy import git, sha, ancestor, configured_delivery
 from mdf_core.workspace.squash import common_dir
 
 
@@ -11,8 +11,8 @@ def state_path(repo, source):
     return common_dir(repo) / "mdf/incremental-integration" / (source + ".json")
 
 
-def target_commit(repo, target):
-    if configured(repo)["mode"] == "pr":
+def target_commit(repo, source, target):
+    if configured_delivery(repo, source)["mode"] == "pr":
         git(repo, "fetch", "origin", f"refs/heads/{target}")
         return sha(repo, "FETCH_HEAD")
     return sha(repo, f"refs/heads/{target}")
@@ -35,8 +35,9 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
     if data["branch"] != source:
         raise MDFError("该阶段须在交付 owner 工作分支执行", code="stage_branch")
     details = branch_details(source)
+    from mdf_core.lifecycle.support_line import support_hotfix
     publishing = details["kind"] in {"release", "hotfix"}
-    frozen = publishing and is_github_flow(repo)
+    frozen = publishing and is_github_flow(repo) and not support_hotfix(repo, source, data=data)
     if frozen:
         from mdf_core.lifecycle.release_publish import require_published_source
         require_published_source(repo, details["version"] or data.get("version"), "HEAD", source=source)
@@ -44,12 +45,10 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
     consolidated = read_json(consolidation) if consolidation.is_file() else {}
     if not consolidated.get("head") or consolidated.get("pending"):
         raise MDFError("merge/pr 前须完成 consolidate", code="consolidation_required")
-    from mdf_core.lifecycle.support_line import ensure_remote_support_target
-    ensure_remote_support_target(repo, source, target)
     path = state_path(repo, source)
     state = read_json(path) if path.is_file() else {"base": consolidated["head"]}
     head = sha(repo, "HEAD")
-    remote = target_commit(repo, target)
+    remote = target_commit(repo, source, target)
     if state.get("accepted_head") == head and ancestor(repo, remote, head):
         require_current_head(repo, source, head)
         return {"completed": True, "head": head, "target": target, "target_head": remote}
@@ -103,7 +102,7 @@ def require_integrated(repo, source, target):
         from mdf_core.lifecycle.adhoc_context import material
         _, ledger = material(repo, source)
         if not ledger:
-            remote = target_commit(repo, target)
+            remote = target_commit(repo, source, target)
             if not ancestor(repo, remote, "HEAD"):
                 raise MDFError("先合入 target 并完成增量验收", code="integration_required")
             return {"completed": True, "head": sha(repo, "HEAD"), "target_head": remote}
@@ -111,7 +110,8 @@ def require_integrated(repo, source, target):
     if path.is_file():
         state = read_json(path)
         head = sha(repo, "HEAD")
-        target_ref = f"refs/remotes/origin/{target}" if configured(repo)["mode"] == "pr" else f"refs/heads/{target}"
+        mode = configured_delivery(repo, source)["mode"]
+        target_ref = f"refs/remotes/origin/{target}" if mode == "pr" else f"refs/heads/{target}"
         target_lookup = git(repo, "rev-parse", "--verify", target_ref, check=False)
         target_head = target_lookup.stdout.strip() if target_lookup.returncode == 0 else None
         if target_head and state.get("accepted_head") == head and ancestor(repo, target_head, head):

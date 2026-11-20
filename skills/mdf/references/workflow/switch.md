@@ -3,6 +3,7 @@
 ## 准备目标 trunk
 
 - 先结束在途交付，并让关联 worktree 保持 clean。
+- github-flow support hotfix 在 tag 推送核验完成前仍属于在途交付。
 - 将旧 trunk 历史、已落地的 planning，以及切离 gitflow 时已有的 develop 历史纳入目标 trunk。
   - 目标 trunk 已受保护时，先通过平台 PR/MR 落地所需历史，保留 Git ancestry。
   - 改名时，先从包含上述历史的 commit 创建远端目标分支，并在平台上配置分支保护和所需的 CI 检查。

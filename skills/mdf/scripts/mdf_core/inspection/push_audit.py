@@ -1,7 +1,9 @@
 """对完整 push 第一父链的每次落地操作做确定性审计。"""
+import json
 from pathlib import Path
 from urllib.parse import urlencode
 from mdf_core.foundation.errors import MDFError, emit
+from mdf_core.foundation.textutil import stable_semver
 from mdf_core.lifecycle.delivery_state import read_json
 from mdf_core.workspace.gitutil import repo_path, require_git_root
 from mdf_core.workspace.pm import require_pm_merge
@@ -48,12 +50,51 @@ def _platform_merge(commit, branch, head, evidence):
                  and pull.get("source") and pull.get("id") and pull.get("url")), None)
 
 
+def _support_merge_start(repo, branch, commit, parents):
+    from mdf_core.lifecycle.closeout_render import expected_tag_message
+    from mdf_core.lifecycle.support_line import SHA_RE
+    from mdf_core.workspace.gitutil import branch_details, unreleased_slug
+
+    if not branch.startswith("support/") or len(parents) != 2:
+        return None
+    base, head = parents
+    if not ancestor(repo, base, head) or paths(repo, head, commit):
+        return None
+    for path in paths(repo, base, head):
+        parts = path.split("/")
+        if len(parts) != 3 or parts[0] != "changes" or parts[2] != "delivery.json":
+            continue
+        version = parts[1]
+        semver = stable_semver(version)
+        if semver is None or branch != f"support/{semver[0]}.{semver[1]}":
+            continue
+        try:
+            if git(repo, "cat-file", "-e", f"{base}:{path}", check=False).returncode == 0:
+                continue
+            git(repo, "cat-file", "-e", f"{head}:changes/{version}/CHANGE.md")
+            expected_tag_message(repo, version, commit)
+            record = git(repo, "show", f"{head}:{path}").stdout
+            data = json.loads(record)
+            details = branch_details(data["branch"])
+            start = data["start_commit"]
+            if (details["kind"] == "hotfix" and details["version"] in (None, version)
+                    and data.get("slug") == unreleased_slug(details) and data.get("version") == version
+                    and data.get("base_branch") == branch and data.get("support", {}).get("branch") == branch
+                    and SHA_RE.fullmatch(start) and ancestor(repo, start, base)):
+                return start
+        except (MDFError, AttributeError, KeyError, TypeError, ValueError):
+            continue
+    return None
+
+
 def classify(repo, commit, branch, evidence, source_prefix, *, trunk, github):
     parents = git(repo, "show", "-s", "--format=%P", commit).stdout.split()
     changed = commit_paths(repo, commit)
     if github and branch == trunk and _from_support(repo, commit, parents, evidence):
         return "violation", "support_merge_forbidden", changed
     if len(parents) == 2:
+        if github and _support_merge_start(repo, branch, commit, parents):
+            return "pass", "local_support_merge", changed
         if pull := _platform_merge(commit, branch, parents[1], evidence):
             if github and str(pull["source"]).startswith("pm/"):
                 if branch != trunk:
@@ -123,8 +164,16 @@ def audit(repo, branch, before, after, evidence=None, *, source_prefix="refs/rem
     result = {"schema_version": 3, "operation": "audit-push", "branch": branch,
               "push_before": before, "push_after": after, "policy_ref": before, "commits": []}
     try:
+        new_support = branch.startswith("support/") and before == "0" * 40
+        if new_support:
+            after = sha(repo, after)
+            parents = git(repo, "show", "-s", "--format=%P", after).stdout.split()
+            start = _support_merge_start(repo, branch, after, parents)
+            if start is None or not _policy(repo, start)[1]:
+                return {**result, "verdict": "violation", "reason": "invalid_support_creation"}
+            before = start
         before, after = sha(repo, before), sha(repo, after)
-        result.update(push_before=before, push_after=after, policy_ref=before)
+        result.update(push_before=result["push_before"] if new_support else before, push_after=after, policy_ref=before)
         settings = configured(repo, before)
         policy = _policy(repo, before)
         trunk, github = policy
@@ -173,12 +222,20 @@ def command_audit_push(args):
 def collect(repo, branch, before, after):
     """CI controller 显式请求时采集平台事实；默认离线审计不访问网络。"""
     from mdf_core.integrations.forge import Forge, origin
+    evidence = {"sources": {}, "pull_requests": []}
+    if branch.startswith("support/") and before == "0" * 40:
+        return evidence
     settings = configured(repo, before)
-    forge = Forge(repo, origin(repo, settings["provider"]))
     before, after = sha(repo, before), sha(repo, after)
     wanted = set(git(repo, "rev-list", "--first-parent", "--merges", f"{before}..{after}").stdout.split())
-    evidence = {"sources": {}, "pull_requests": []}
     trunk, github = _policy(repo, before)
+    if github and branch.startswith("support/"):
+        wanted = {commit for commit in wanted if not _support_merge_start(
+            repo, branch, commit, git(repo, "show", "-s", "--format=%P", commit).stdout.split(),
+        )}
+        if not wanted:
+            return evidence
+    forge = Forge(repo, origin(repo, settings["provider"]))
     # 新 trunk 的切换只依赖平台 Merge 证据，CI checkout 已包含 push 的 Git 对象。
     names = {trunk, "develop", "planning"} if not github and _auditable(branch, trunk, github) else set()
     if branch == "develop":

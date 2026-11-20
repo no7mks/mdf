@@ -361,9 +361,10 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository [--s
 
 - merge 为 local 的实际合入入口，先把 target 合回工作分支，有增量则返回 incremental-integration。
 - 验收完成后 no-ff 合入目标。发布交付推送实际主线 merge commit，保留 source 与 owner worktree。
-- feature / bugfix 合入后进入 close-out；Gitflow 发布交付先 publish，github-flow 发布交付已在 merge 前 publish。
+- feature / bugfix 合入后进入 close-out；Gitflow 发布交付先 publish，github-flow release 在 merge 前 publish，support hotfix 在 close-out 后向实际 merge commit 发布 tag。
 - finish-gitflow 核验已完成的合入和适用的远端 annotated tag，完成 Gitflow develop 回合，再清理 source。
-- PR mode 的实际合入由 pr 完成，finish-gitflow 只接受已 merged 的恢复。
+- 交付走 PR 时由 pr 实际合入，finish-gitflow 只接受已 merged 的恢复。
+- github-flow support hotfix 始终走 merge，包括项目启用 PR mode 时。
 - 清理前核对 source tip 和目标拓扑，脏工作区、未完成 Git 操作或并发新增 source 提交均保留现场。
 - CLI 保留临时 worktree 供结果核验。Agent 按 [工作区清理](../../../skills/mdf/references/close-out.md#工作区清理) 完成清理。
 - 相同 hotfix slug 的不同版本保留独立 merge 记录；恢复旧版本可传 --version 或 PR 的 --pull。
@@ -386,10 +387,10 @@ python3 skills/mdf/scripts/mdf.py consolidate --repo /path/to/repository [--incr
 python3 skills/mdf/scripts/mdf.py publish --repo /path/to/repository [--source <source>] [--pull <id>]
 ```
 
-- Gitflow 给实际 merge commit 打 tag；github-flow 给已完成 consolidate 的工作分支 commit 打 tag。
+- Gitflow 和 github-flow support hotfix 给实际 merge commit 打 tag。github-flow release 给已完成 consolidate 的工作分支 commit 打 tag。
 - annotated tag 正文取固定 commit 的本版 CHANGELOG，空章节、空条目或不符的已有 tag 均拒绝发布。
-- github-flow 原子推送工作分支和 tag，并核对同名远端的 expected SHA 与实际 pre-push 更新清单。
-- Gitflow 在 merge 之后推送 tag。发布成功后由 workflow 决定进入 merge/pr 或 close-out。
+- github-flow release 原子推送工作分支和 tag，并核对同名远端的 expected SHA 与实际 pre-push 更新清单。
+- Gitflow 在 merge 之后推送 tag。github-flow support hotfix 在 close-out 之后从主 worktree 传 `--source <原分支> --version <version>` 推送 tag。
 
 ## `upgrade`
 

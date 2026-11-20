@@ -201,7 +201,7 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 
 ## Deliver、until 与 confidence
 
-`$mdf deliver` 默认走完 close-out；非 yolo 在 pr、close-out 前分别取得用户确认，其他 decision 按 confidence 策略裁定。
+`$mdf deliver` 默认走完交付的最后一个阶段。非 yolo 在 pr、close-out 前分别取得用户确认，其他 decision 按 confidence 策略裁定。
 
 - `--until <intent>`：exclusive 截止点，不执行该 intent；`--stop-at` 是别名。
 - confidence：AI 对一项 decision 的置信度，范围 `[0,1]`；默认由 Jev 评分，无 Jev 时由主 Agent 评分。
@@ -257,7 +257,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 ## Objectives、Report 与收敛
 
 - **objectives**：本次交付的目标、验收与 checklist 进度账本。各 intent 自勾对应项。
-  checklist 止于 consolidate；github-flow 发布交付另有 publish。merge/pr、Gitflow publish 与 close-out 按实际状态续办。
+  checklist 止于 consolidate；github-flow release 另有 publish。merge/pr、close-out 与清单后的 publish 按实际状态续办。
   - feature 引用单个 PRP 的目标、非目标、约束与可验证验收。
   - release 写已选定工作线、本版收口范围、预发布工作、是否联调、
     非目标与可验证验收。

@@ -85,9 +85,9 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-发布前先 catch-up、consolidate；github-flow 的 publish 在 merge/pr 前，Gitflow 的 publish 在 merge/pr 后。
+发布前先 catch-up、consolidate；发布与合入的顺序见 [阶段表](delivery-contract.md)。
 
-清单止于 consolidate；github-flow 发布分支在其后加入 publish。merge/pr 和后续收尾依据实际 Git 结果推进。
+清单止于 consolidate；github-flow release 在其后加入 publish。merge/pr 和后续收尾依据实际 Git 结果推进。
 
 ### 分支参数
 
@@ -165,7 +165,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
     - collab-mode：由接手 Agent 直接调度前后端 worktree；本 Agent 完成本仓 start 后交接。
       交接规则见 [collab-mode](collab-mode.md)；本步只确认本仓范围与已知的对端信息。
   - 主链收口前为 verify branch → fact audit → catch-up → consolidate，之后按 [交付阶段顺序](delivery-contract.md) 的 workflow 表执行。
-  - github-flow 发布先 publish 后 merge/pr；Gitflow 发布先 merge/pr 后 publish；close-out 只核验和清理。
+  - 按 [交付阶段顺序](delivery-contract.md) 执行 publish、merge/pr 和 close-out。
   - ❌ 不得实施新 PRP。
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：

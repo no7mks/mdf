@@ -1,6 +1,6 @@
 # PR
 
-github-flow 的 PR 目标是 `workflow.trunk`；support hotfix 使用冻结的维护线，不使用 develop。
+github-flow 的 PR 目标是 `workflow.trunk`。support hotfix 走 [merge](merge.md)。
 
 <a id="pm-分支"></a>
 
@@ -155,8 +155,6 @@ closeout:
 ### 提交前远端集成
 
 - 首次提交及更新 PR 前，核对 catch-up、consolidate 和适用的 publish 已完成。
-  - github-flow 首次 support hotfix 若缺远端 target，只以已发布候选中冻结的 `delivery.start_commit` 创建维护线。
-  - 使用 create-only lease；已有或并发建立的远端维护线按实际 tip 集成，不覆盖，不直接把 hotfix 推入 target。
 - fetch 目标 target，把 target 合回当前工作分支。github-flow 已发布 release 继续使用同一工作分支。
 - 有 change 时，在 pr 内部执行 [incremental-integration](incremental-integration.md)。
 - incr-cr → verify smart → incr-fa → 适用的 incr-consolidate 全部通过后再提交 PR。

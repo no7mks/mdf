@@ -184,12 +184,15 @@ def _require_open_trunk_bug(repo: Path, trunk: str, bug_id: str, *, ref=None) ->
                        details={"bug_id": bug_id, "status": status})
 
 
-def support_hotfix(repo: Path, source: str) -> bool:
-    """仅 github-flow、绑定 support 目标的 hotfix 具有只读 Bug 边界。"""
+def support_hotfix(repo: Path, source: str, *, data=None, ref=None, target=None) -> bool:
+    """识别 github-flow 中绑定 support 维护线的 hotfix。"""
     from mdf_core.workspace.workflow_policy import is_github_flow
     from mdf_core.workspace.workflow_policy import target_for
-    return (source.startswith("hotfix/") and is_github_flow(repo)
-            and is_support_branch(target_for(repo, source)))
+    source = source.removeprefix("refs/heads/")
+    if not source.startswith("hotfix/") or not is_github_flow(repo):
+        return False
+    base = target_for(repo, source, data=data, ref=ref)
+    return is_support_branch(base) and target in (None, base)
 
 
 def forbid_bug_edits(repo: Path, source: str) -> None:
@@ -285,35 +288,3 @@ def render_trunk_fixes(fixes: list[dict[str, str]]) -> str:
                 lines.append(f"  {'- ' if first else '  '}{key}: {json.dumps(item[key], ensure_ascii=False)}")
                 first = False
     return "\n".join(lines) + "\n"
-
-
-def ensure_remote_support_target(repo: Path, source: str, target: str) -> None:
-    """PR 首次使用维护线时，仅以已发布交付的固定起点创建远端 target。"""
-    from mdf_core.workspace.merge_policy import configured
-    if configured(repo)["mode"] != "pr" or not support_hotfix(repo, source):
-        return
-    from mdf_core.lifecycle.hotfix_version import delivery_record, source_version
-    from mdf_core.lifecycle.release_publish import require_published_source
-    source_ref = f"refs/heads/{source}"
-    version = source_version(repo, source, ref=source_ref)
-    published = require_published_source(repo, version, source_ref, source=source)
-    record = delivery_record(repo, source, ref=published)
-    data = record[1] if record else {}
-    start = data.get("start_commit")
-    support = data.get("support")
-    if (data.get("base_branch") != target or not isinstance(support, dict)
-            or support.get("branch") != target or not isinstance(start, str) or not SHA_RE.fullmatch(start)
-            or _git(repo, "merge-base", "--is-ancestor", start, published, check=False).returncode):
-        raise MDFError("维护线缺少有效固定起点", code="invalid_delivery")
-    ref = f"refs/heads/{target}"
-    remote = _git(repo, "ls-remote", "--exit-code", "origin", ref, check=False)
-    if remote.returncode not in {0, 2}:
-        raise MDFError(remote.stderr.strip() or "无法读取远端维护线", code="command_failed")
-    if remote.returncode == 2:
-        created = _git(repo, "push", "--no-follow-tags", f"--force-with-lease={ref}:",
-                       "origin", f"{start}:{ref}", check=False)
-        if created.returncode:
-            raced = _git(repo, "ls-remote", "--exit-code", "origin", ref, check=False)
-            if raced.returncode:
-                raise MDFError(created.stderr.strip() or "无法创建远端维护线", code="command_failed")
-    _git(repo, "fetch", "--no-tags", "origin", f"+{ref}:refs/remotes/origin/{target}")

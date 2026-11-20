@@ -255,14 +255,15 @@ def command_start(args) -> None:
     for required in ("catch-up", "consolidate"):
         if not re.search(rf"(?m)^- \[[ x]\] {required}(?:（|$)", checklist):
             checklist = checklist.rstrip() + f"\n- [ ] {required}\n"
-    if github and args.kind in {"release", "hotfix"}:
+    publish_before_merge = github and args.kind in {"release", "hotfix"} and not support
+    if publish_before_merge:
         if not re.search(r"(?m)^- \[[ x]\] publish(?:（|$)", checklist):
             checklist = checklist.rstrip() + "\n- [ ] publish（创建并推送 final tag）\n"
     items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", checklist)
     steps = [item.split("（", 1)[0] for item in items]
-    expected_last = "publish" if github and args.kind in {"release", "hotfix"} else "consolidate"
+    expected_last = "publish" if publish_before_merge else "consolidate"
     if not steps or steps[-1] != expected_last or "catch-up" not in steps or "consolidate" not in steps:
-        raise MDFError("交付清单须依次包含 catch-up、consolidate，github-flow 发布分支还须 publish", code="invalid_objectives")
+        raise MDFError(f"交付清单须依次包含 catch-up、consolidate，并以 {expected_last} 结束", code="invalid_objectives")
     objectives = before_steps + checklist + after_steps
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
@@ -397,12 +398,13 @@ def command_start(args) -> None:
 def _merge(repo: Path, source: str, target: str, before_commit=None, snapshot=None) -> None:
     from mdf_core.workspace.merge_guard import capture, require_snapshot, commit_merge
     ensure_clean(repo)
+    delivery = snapshot is not None
     snapshot = snapshot or capture(repo, source, target)
     require_snapshot(repo, snapshot)
     if current_branch(repo) != target:
         _git(repo, "checkout", target)
     from mdf_core.workspace.merge_policy import require_merge
-    require_merge(repo, source, target)
+    require_merge(repo, source, target, delivery=delivery)
     require_snapshot(repo, snapshot)
     incoming = snapshot["head"]
     result = _git(repo, "merge", "--no-ff", "--no-commit", incoming, check=False)
@@ -459,8 +461,19 @@ def command_finish_gitflow(args) -> None:
     details = branch_details(source)
     from mdf_core.workspace.workflow_policy import forbid_support_to_trunk
     forbid_support_to_trunk(repo, source)
-    from mdf_core.workspace.merge_policy import configured
-    settings = configured(repo)
+    from mdf_core.workspace.merge_policy import configured_delivery, local_head
+    ref = None
+    recovered = None
+    if args.source and details["kind"] == "hotfix" and is_github_flow(repo) and local_head(repo, source) is None:
+        from mdf_core.lifecycle.publish import support_merge_record
+        recovered = support_merge_record(repo, source, getattr(args, "version", None))
+        if recovered:
+            ref = recovered[1]["head"]
+        else:
+            from mdf_core.lifecycle.hotfix_version import source_version
+            version = details["version"] or getattr(args, "version", None) or source_version(repo, source)
+            ref = f"refs/tags/v{version}"
+    settings = configured_delivery(repo, source, ref=ref)
     pm_pr = details["kind"] == "pm" and is_github_flow(repo) and settings["mode"] == "pr"
     if not details["supported"] and not pm_pr:
         raise MDFError("finish requires a Gitflow delivery branch",
@@ -479,10 +492,10 @@ def command_finish_gitflow(args) -> None:
         return
     from mdf_core.lifecycle.pull_finish import finish_lock
     with finish_lock(repo):
-        finish_local(repo, source, details, args)
+        finish_local(repo, source, details, args, recovered=recovered)
 
 
-def finish_local(repo, source, details, args):
+def finish_local(repo, source, details, args, *, recovered=None):
     if getattr(args, "phase", "close-out") == "pr":
         raise MDFError("pr intent 仅适用于 PR mode", code="invalid_closeout")
     if details["kind"] == "adhoc":
@@ -495,6 +508,9 @@ def finish_local(repo, source, details, args):
     github = is_github_flow(repo)
     from mdf_core.workspace.merge_policy import local_head
     source_head = local_head(repo, source)
+    if recovered:
+        details["version"], receipt = recovered
+        source_head = receipt["head"]
     if kind == "hotfix" and details["version"] is None:
         from mdf_core.lifecycle.hotfix_version import source_version
         requested = getattr(args, "version", None)
@@ -561,6 +577,7 @@ def finish_local(repo, source, details, args):
 
     merged_in = None
     actual_target = target if kind in {"feature", "bugfix"} or github else trunk_branch(repo)
+    support = github and kind == "hotfix" and actual_target.startswith("support/")
     from mdf_core.lifecycle.publish import find_merge
     merged = find_merge(repo, f"refs/heads/{actual_target}", source_head) if source_head else None
     if merging:
@@ -576,6 +593,12 @@ def finish_local(repo, source, details, args):
         if merged is None:
             accepted = require_integrated(repo, source, actual_target)
             source_head = accepted["head"]
+        if support and not saved_merge.get("closed"):
+            tag_ref = f"refs/tags/v{details['version']}"
+            if (_exists(repo, tag_ref) or _git(repo, "ls-remote", "origin", tag_ref).stdout.strip()):
+                raise MDFError("support hotfix 的发布 tag 已存在，不能合入相同版本", code="tag_conflict")
+            from mdf_core.lifecycle.support_line import recheck_before_publish
+            recheck_before_publish(repo, source, details["version"], target=actual_target, head=source_head)
         if merged is None:
             snapshot = {"source": source, "head": source_head, "target": actual_target,
                         "target_head": accepted["target_head"]}
@@ -592,7 +615,18 @@ def finish_local(repo, source, details, args):
             raise MDFError("target 在实际合入前前进，继续 incremental-integration 后重试 merge", code="integration_required")
         if _git(repo, "diff", "--quiet", source_head, merged, check=False).returncode:
             raise MDFError("实际 merge 含已验收 source 之外的内容；保留现场", code="integration_required")
+        if support:
+            from mdf_core.lifecycle.target_integration import state_path
+            path = state_path(repo, source)
+            state = read_json(path) if path.is_file() else {}
+            if state.get("accepted_head") != source_head or state.get("target") != actual_target:
+                raise MDFError("已有 support merge 缺少本轮增量验收记录；保留现场", code="integration_required")
         record = {"source": source, "head": source_head, "target": actual_target, "merge_commit": merged}
+        if support:
+            same_merge = all(saved_merge.get(key) == value for key, value in record.items())
+            record["closed"] = same_merge and saved_merge.get("closed") is True
+            if record["closed"] and saved_merge.get("published") is True:
+                record["published"] = True
         write_json(merge_record, record)
         if publish:
             _git(repo, "push", "--atomic", "--no-follow-tags", "origin",
@@ -607,17 +641,23 @@ def finish_local(repo, source, details, args):
     if saved_merge.get("pending"):
         raise MDFError("本次 merge 尚待增量验收", code="integration_required")
     if publish:
-        from mdf_core.lifecycle.publish import require_remote_merge
-        require_remote_merge(repo, actual_target, merged)
-        from mdf_core.lifecycle.release_publish import published_head
-        if github:
-            from mdf_core.lifecycle.release_publish import require_published_source
-            released = require_published_source(repo, details["version"], source_head, source=source)
-        else:
-            released = published_head(repo, details["version"])
+        from mdf_core.lifecycle.publish import require_remote_merge, require_support_merge
         from mdf_core.workspace.merge_policy import ancestor
-        if (github and not ancestor(repo, released, source_head)) or (not github and released != merged):
-            raise MDFError("final tag 与已合入结果不符", code="tag_conflict")
+        if support:
+            if any(saved_merge.get(key) != value for key, value in {
+                "source": source, "target": actual_target, "head": source_head, "merge_commit": merged,
+            }.items()):
+                raise MDFError("先执行 merge 记录已验收的 support 合入", code="merge_required")
+            require_support_merge(repo, saved_merge)
+        else:
+            require_remote_merge(repo, actual_target, merged)
+        if github and not support:
+            from mdf_core.lifecycle.release_publish import require_published_source
+            require_published_source(repo, details["version"], source_head, source=source)
+        elif not github:
+            from mdf_core.lifecycle.release_publish import published_head
+            if published_head(repo, details["version"]) != merged:
+                raise MDFError("final tag 与已合入结果不符", code="tag_conflict")
         if not github and not ancestor(repo, merged, "refs/heads/develop"):
             merge_into("develop", merged)
         from mdf_core.lifecycle.pull_finish import cleanup_remote
@@ -625,6 +665,8 @@ def finish_local(repo, source, details, args):
     source_wt = worktree_map(primary).get(source)
     from mdf_core.lifecycle.pull_finish import cleanup, retained_owner
     cleanup(repo, {"source": source, "head": source_head})
+    if support:
+        write_json(merge_record, {**saved_merge, "closed": True})
     retained = source_wt
     if owner is not None and owner == merged_in and owner != primary and source_wt is None:
         ensure_clean(owner)
@@ -632,7 +674,7 @@ def finish_local(repo, source, details, args):
         retained = owner
     if retained is None:
         retained = retained_owner(repo, source, source_head)
-    tag = f"v{details['version']}" if publish else None
+    tag = f"v{details['version']}" if publish and not support else None
     emit(
         {
             "ok": True,
@@ -644,5 +686,6 @@ def finish_local(repo, source, details, args):
             "primary_worktree": str(primary),
             "tag": tag,
             "pushed": publish,
+            **({"next_intent": "publish", "version": details["version"]} if support else {}),
         }
     )

@@ -132,7 +132,7 @@ disable-model-invocation: true
   - `$mdf next` 无问号时执行 `references/next.md`。
 - `$mdf deliver [<target>] [--until <intent>] [--yolo]` 仍是 deliver，不是独立 intent。
   - option 可在 target 前或后；`--stop-at` 是 `--until` 的别名，值不算 target。
-  - 默认无截止点，直到 close-out 完成；非 yolo 在 pr、close-out 前分别取得用户确认。
+  - 默认无截止点，直到交付的最后一个阶段完成；非 yolo 在 pr、close-out 前分别取得用户确认。
   - 其他 decision 默认自动裁定，confidence < 0.8 请求用户确认；显式 until 不执行截止 intent。
   - `--yolo` 跳过两个入口确认、无 confidence 限制；显式 until 仍生效。详见 deliver。
 - `$mdf fix <bug-id> [--yolo]` 仍是 fix；`--yolo` 可在 bug-id 前或后。
