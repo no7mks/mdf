@@ -14,8 +14,10 @@ def tag_release(repo, state, version, *, source=None, expected_remote=None):
     local = git(repo, "rev-parse", "--verify", ref, check=False)
     if local.returncode:
         git(repo, "tag", "-a", tag, merged, "--cleanup=verbatim", "-m", message)
+        state["created_tag"] = True
     tag_data = require_tag_content(repo, version, merged, expected=message)
     expected = tag_data["oid"]
+    state["tag_oid"] = expected
     remote = git(repo, "ls-remote", "origin", ref).stdout.split()
     if remote and remote[0] != expected:
         raise MDFError("远端 tag 与本次发布不符", code="tag_conflict")
@@ -36,8 +38,6 @@ def publish(repo, state, version, *, source_cleaned):
     merged = state["merge_commit"]
     # 调用方刚完成远端 merge 核验，复用同一轮 fetch 的 refs。
     if is_github_flow(repo):
-        from mdf_core.lifecycle.support_line import recheck_before_publish
-        recheck_before_publish(repo, state["source"], version, target=state["target"], head=state["head"])
         if not ancestor(repo, state["release_head"], f"refs/remotes/origin/{state['target']}"):
             raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
         if state["source"].startswith(("release/", "hotfix/")):

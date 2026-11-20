@@ -63,14 +63,17 @@ def test_feature_inclusion_defers_acceptance_and_preserves_context(python_exe, t
     (work / "feature.py").write_text("feature = True\n")
     commit(work)
     if mode == "pr":
-        squash_pending(work)
-        payload(mdf(python_exe, "incremental-integration", "--repo", str(work)))
-        from support_delivery import seed_consolidation
-        seed_consolidation(work)
-        squash_pending(work)
+        from mdf_core.workspace.squash import check
+        from squash_execute import execute
+        plan = check(work)
+        if not plan["noop"]:
+            plan.update(start_commit=plan["floor"], segments=[{"tip": plan["old_tip"], "message": "test: 整理来源提交"}])
+            execute(work.resolve(), plan, False, [])
         payload(mdf(python_exe, "pr", "--repo", str(work)))
         platform.merge(1, tmp_path)
-    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
+    else:
+        payload(mdf(python_exe, "merge", "--repo", str(work)))
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     assert read_frontmatter(odr / "docs/proposals" / PRP_NAME)[0]["status"] == "ready"
     assert payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]["ready"]
     assert "odr_acceptance_pending" in mdf(python_exe, "delivery", "accept", "--repo", str(odr)).stderr

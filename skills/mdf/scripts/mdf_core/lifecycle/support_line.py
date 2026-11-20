@@ -157,10 +157,12 @@ def normalize_trunk_fixes(raw: Any, fixed: list[str]) -> list[dict[str, str]]:
     return result
 
 
-def _require_open_trunk_bug(repo: Path, trunk: str, bug_id: str) -> None:
+def trunk_bug(repo: Path, bug_id: str, *, ref: str | None = None) -> dict:
+    """读取 trunk 上唯一的 canonical Bug；维护线不持有 Bug 真源。"""
     from mdf_core.foundation.constants import OBJECT_FILE_RE
     from mdf_core.foundation.yamlutil import frontmatter_span, parse_yaml
-    ref = f"refs/heads/{trunk}"
+    trunk = trunk_branch(repo)
+    ref = ref or f"refs/heads/{trunk}"
     listed = _git(repo, "ls-tree", "-r", "--name-only", ref, "--", "docs/bugs", check=False).stdout.splitlines()
     found = [rel for rel in listed if (match := OBJECT_FILE_RE.fullmatch(Path(rel).name))
              and match.group(1) == bug_id and Path(rel).parts[:2] == ("docs", "bugs")]
@@ -168,10 +170,26 @@ def _require_open_trunk_bug(repo: Path, trunk: str, bug_id: str) -> None:
         raise MDFError(f"{trunk} 上缺少 Bug {bug_id}", code="trunk_first_required", details={"bug_id": bug_id})
     shown = _git(repo, "show", f"{ref}:{found[0]}").stdout
     start, end, _body = frontmatter_span(shown)
-    status = parse_yaml(shown[start:end]).get("status")
+    metadata = parse_yaml(shown[start:end])
+    if (metadata.get("type") != "bug" or metadata.get("id") != bug_id
+            or metadata.get("reject-reason") == "duplicate"):
+        raise MDFError("维护线必须引用 trunk canonical Bug", code="trunk_first_required")
+    return metadata
+
+
+def _require_open_trunk_bug(repo: Path, trunk: str, bug_id: str, *, ref=None) -> None:
+    status = trunk_bug(repo, bug_id, ref=ref).get("status")
     if status != "open":
         raise MDFError(f"{trunk} 上的 Bug {bug_id} 不是 open", code="trunk_first_required",
                        details={"bug_id": bug_id, "status": status})
+
+
+def support_hotfix(repo: Path, source: str) -> bool:
+    """仅 github-flow、绑定 support 目标的 hotfix 具有只读 Bug 边界。"""
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.lifecycle.late_decision import target_for
+    return (source.startswith("hotfix/") and is_github_flow(repo)
+            and is_support_branch(target_for(repo, source)))
 
 
 def forbid_bug_edits(repo: Path, source: str) -> None:
@@ -207,13 +225,27 @@ def recheck_before_publish(repo: Path, source: str, version: str, *, target, hea
         shown = _git(repo, "show", f"{head}:{path}", check=False)
         if shown.returncode == 0:
             start, end, _ = frontmatter_span(shown.stdout)
-            fixes = parse_yaml(shown.stdout[start:end]).get("trunk_fixes")
-            if isinstance(fixes, list) and fixes:
-                verify_trunk_first(repo, fixes, version)
+            metadata = parse_yaml(shown.stdout[start:end])
+            fixed = metadata.get("fixed", [])
+            raw = metadata.get("trunk_fixes", [])
+            if not isinstance(raw, list) or not isinstance(fixed, list):
+                raise MDFError("发布材料缺少有效 Trunk-First 记录", code="trunk_first_required")
+            fixes = normalize_trunk_fixes([
+                {key: value for key, value in item.items() if key != "released_in"}
+                if isinstance(item, dict) else item for item in raw
+            ], fixed)
+            if fixes:
+                trunk = trunk_branch(repo)
+                _git(repo, "fetch", "origin", f"refs/heads/{trunk}")
+                remote_head = _git(repo, "rev-parse", "FETCH_HEAD").stdout.strip()
+                for item in fixes:
+                    trunk_bug(repo, item["bug_id"], ref=remote_head)
+                verify_trunk_first(repo, fixes, version, trunk_ref=remote_head)
             return
+    raise MDFError("维护线发布缺少固定 Change", code="trunk_first_required")
 
 
-def verify_trunk_first(repo: Path, fixes: list[dict[str, str]], version: str) -> list[dict[str, str]]:
+def verify_trunk_first(repo: Path, fixes: list[dict[str, str]], version: str, *, trunk_ref=None) -> list[dict[str, str]]:
     """support 收口门禁：backported 核验 source_commit 在 trunk 可达；例外须附非空 reason。"""
     trunk = trunk_branch(repo)
     checked = []
@@ -226,13 +258,13 @@ def verify_trunk_first(repo: Path, fixes: list[dict[str, str]], version: str) ->
             raise MDFError(f"{disposition} 须附非空 reason", code="trunk_first_required",
                            details={"bug_id": item["bug_id"]})
         if disposition == "urgent_support_first":
-            _require_open_trunk_bug(repo, trunk, item["bug_id"])
+            _require_open_trunk_bug(repo, trunk, item["bug_id"], ref=trunk_ref)
         if disposition == "backported":
             commit = item.get("source_commit", "")
             if not SHA_RE.match(commit):
                 raise MDFError("backported 须提供 40 位 source_commit", code="trunk_first_required",
                                details={"bug_id": item["bug_id"]})
-            reachable = _git(repo, "merge-base", "--is-ancestor", commit, f"refs/heads/{trunk}", check=False)
+            reachable = _git(repo, "merge-base", "--is-ancestor", commit, trunk_ref or f"refs/heads/{trunk}", check=False)
             if reachable.returncode:
                 raise MDFError(f"{trunk} 上尚未包含修复提交；默认须 Trunk-First", code="trunk_first_required",
                                details={"bug_id": item["bug_id"], "source_commit": commit})
@@ -253,3 +285,35 @@ def render_trunk_fixes(fixes: list[dict[str, str]]) -> str:
                 lines.append(f"  {'- ' if first else '  '}{key}: {json.dumps(item[key], ensure_ascii=False)}")
                 first = False
     return "\n".join(lines) + "\n"
+
+
+def ensure_remote_support_target(repo: Path, source: str, target: str) -> None:
+    """PR 首次使用维护线时，仅以已发布交付的固定起点创建远端 target。"""
+    from mdf_core.workspace.merge_policy import configured
+    if configured(repo)["mode"] != "pr" or not support_hotfix(repo, source):
+        return
+    from mdf_core.lifecycle.hotfix_version import delivery_record, source_version
+    from mdf_core.lifecycle.release_publish import require_published_source
+    source_ref = f"refs/heads/{source}"
+    version = source_version(repo, source, ref=source_ref)
+    published = require_published_source(repo, version, source_ref, source=source)
+    record = delivery_record(repo, source, ref=published)
+    data = record[1] if record else {}
+    start = data.get("start_commit")
+    support = data.get("support")
+    if (data.get("base_branch") != target or not isinstance(support, dict)
+            or support.get("branch") != target or not isinstance(start, str) or not SHA_RE.fullmatch(start)
+            or _git(repo, "merge-base", "--is-ancestor", start, published, check=False).returncode):
+        raise MDFError("维护线缺少有效固定起点", code="invalid_delivery")
+    ref = f"refs/heads/{target}"
+    remote = _git(repo, "ls-remote", "--exit-code", "origin", ref, check=False)
+    if remote.returncode not in {0, 2}:
+        raise MDFError(remote.stderr.strip() or "无法读取远端维护线", code="command_failed")
+    if remote.returncode == 2:
+        created = _git(repo, "push", "--no-follow-tags", f"--force-with-lease={ref}:",
+                       "origin", f"{start}:{ref}", check=False)
+        if created.returncode:
+            raced = _git(repo, "ls-remote", "--exit-code", "origin", ref, check=False)
+            if raced.returncode:
+                raise MDFError(created.stderr.strip() or "无法创建远端维护线", code="command_failed")
+    _git(repo, "fetch", "--no-tags", "origin", f"+{ref}:refs/remotes/origin/{target}")

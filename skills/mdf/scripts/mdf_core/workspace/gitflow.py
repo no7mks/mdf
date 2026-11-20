@@ -422,20 +422,26 @@ def command_start(args) -> None:
     emit(payload)
 
 
-def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
+def _merge(repo: Path, source: str, target: str, before_commit=None, snapshot=None) -> None:
+    from mdf_core.workspace.merge_guard import capture, require_snapshot, commit_merge
     ensure_clean(repo)
+    snapshot = snapshot or capture(repo, source, target)
+    require_snapshot(repo, snapshot)
     if current_branch(repo) != target:
         _git(repo, "checkout", target)
     from mdf_core.workspace.merge_policy import require_merge
     require_merge(repo, source, target)
-    new_inclusion = _git(repo, "merge-base", "--is-ancestor", source, "HEAD", check=False).returncode != 0
-    result = _git(repo, "merge", "--no-ff", "--no-commit", source, check=False)
+    require_snapshot(repo, snapshot)
+    incoming = snapshot["head"]
+    new_inclusion = _git(repo, "merge-base", "--is-ancestor", incoming, "HEAD", check=False).returncode != 0
+    result = _git(repo, "merge", "--no-ff", "--no-commit", incoming, check=False)
     if result.returncode:
         if result.returncode != 1:
             raise MDFError(
                 result.stderr.strip() or "Git 拒绝开始合并；保留现场",
                 code="command_failed",
             )
+        require_snapshot(repo, snapshot)
         _git(repo, "merge", "--abort", check=False)
         details = None
         from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
@@ -460,15 +466,17 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
     if before_commit is not None:
         before_commit(repo)
     message = f"chore(gitflow): 合并 {source} 到 {target}"
-    _git(repo, "commit", "-m", message)
+    commit_merge(repo, snapshot, message)
 
 
-def merge_preserving_checkout(repo, source, target):
+def merge_preserving_checkout(repo, source, target, snapshot=None):
     """实际合入后恢复调用 worktree 的原分支，保留工作分支供后续阶段使用。"""
     from mdf_core.workspace.gitutil import git_in_progress_head
+    from mdf_core.workspace.merge_guard import capture
     original = current_branch(repo)
+    snapshot = snapshot or capture(repo, source, target)
     try:
-        _merge(repo, source, target)
+        _merge(repo, source, target, None, snapshot)
     finally:
         if (original and current_branch(repo) != original and not git_in_progress_head(repo)
                 and not _git(repo, "status", "--porcelain").stdout.strip()):
@@ -586,12 +594,12 @@ def finish_local(repo, source, details, args):
         from mdf_core.lifecycle.manual import feature_completion
         feature_completion(repo, source)
 
-    def merge_into(target, incoming):
+    def merge_into(target, incoming, snapshot=None):
         occupant = worktree_map(primary).get(target)
         fallback = primary
         merge_at = occupant if occupant is not None else fallback
         ensure_clean(merge_at)
-        merge_preserving_checkout(merge_at, incoming, target)
+        merge_preserving_checkout(merge_at, incoming, target, snapshot)
         return merge_at
 
     merged_in = None
@@ -609,21 +617,33 @@ def finish_local(repo, source, details, args):
                 raise MDFError("本地发布目标与远端不同，先同步目标分支", code="publish_state_changed")
         from mdf_core.lifecycle.target_integration import require_integrated
         if merged is None:
-            require_integrated(repo, source, actual_target)
-        source_head = local_head(repo, source)
+            accepted = require_integrated(repo, source, actual_target)
+            source_head = accepted["head"]
         if merged is None:
-            merged_in = merge_into(actual_target, source)
-            merged = _git(repo, "rev-parse", actual_target).stdout.strip()
+            snapshot = {"source": source, "head": source_head, "target": actual_target,
+                        "target_head": accepted["target_head"]}
+            merged_in = merge_into(actual_target, source, snapshot)
+            merged = find_merge(repo, f"refs/heads/{actual_target}", source_head)
+            if merged is None:
+                raise MDFError("target 已改变，无法核对本次 merge；保留现场", code="integration_required")
         from mdf_core.workspace.merge_policy import ancestor
         parents = _git(repo, "show", "-s", "--format=%P", merged).stdout.split()
-        if len(parents) != 2 or not ancestor(repo, parents[0], source_head):
+        from mdf_core.lifecycle.late_decision import is_odr_inclusion
+        deferred_acceptance = is_odr_inclusion(source, actual_target)
+        if (len(parents) != 2 or parents[1] != source_head
+                or (not deferred_acceptance and not ancestor(repo, parents[0], source_head))):
             write_json(merge_record, {"source": source, "head": source_head, "target": actual_target,
                                      "merge_commit": merged, "target_parent": parents[0] if parents else None, "pending": True})
             raise MDFError("target 在实际合入前前进，继续 incremental-integration 后重试 merge", code="integration_required")
+        if not deferred_acceptance and _git(repo, "diff", "--quiet", source_head, merged, check=False).returncode:
+            raise MDFError("实际 merge 含已验收 source 之外的内容；保留现场", code="integration_required")
+        record = {"source": source, "head": source_head, "target": actual_target, "merge_commit": merged}
+        write_json(merge_record, record)
         if publish:
             _git(repo, "push", "--atomic", "--no-follow-tags", "origin",
                  f"{merged}:refs/heads/{actual_target}", f"{source_head}:refs/heads/{source}")
-        write_json(merge_record, {"source": source, "head": source_head, "target": actual_target, "merge_commit": merged})
+            from mdf_core.lifecycle.publish import require_remote_merge
+            require_remote_merge(repo, actual_target, merged)
         emit({"ok": True, "operation": "merge", "completed": True, "source": source, "merge_commit": merged,
               "next_intent": "publish" if publish and not github else "close-out"})
         return
@@ -632,8 +652,14 @@ def finish_local(repo, source, details, args):
     if saved_merge.get("pending"):
         raise MDFError("本次 merge 尚待增量验收", code="integration_required")
     if publish:
+        from mdf_core.lifecycle.publish import require_remote_merge
+        require_remote_merge(repo, actual_target, merged)
         from mdf_core.lifecycle.release_publish import published_head
-        released = published_head(repo, details["version"])
+        if github:
+            from mdf_core.lifecycle.release_publish import require_published_source
+            released = require_published_source(repo, details["version"], source_head, source=source)
+        else:
+            released = published_head(repo, details["version"])
         from mdf_core.workspace.merge_policy import ancestor
         if (github and not ancestor(repo, released, source_head)) or (not github and released != merged):
             raise MDFError("final tag 与已合入结果不符", code="tag_conflict")

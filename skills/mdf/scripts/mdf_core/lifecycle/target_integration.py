@@ -18,6 +18,12 @@ def target_commit(repo, target):
     return sha(repo, f"refs/heads/{target}")
 
 
+def require_current_head(repo, source, head):
+    if current_branch(repo) != source or sha(repo, "HEAD") != head:
+        raise MDFError("工作分支在增量验收期间变化，重新验收当前提交", code="integration_required")
+    ensure_clean(repo)
+
+
 def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary=None):
     from mdf_core.workspace.workflow_policy import is_github_flow
     from mdf_core.workspace.gitutil import branch_details
@@ -33,15 +39,18 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
     frozen = publishing and is_github_flow(repo)
     if frozen:
         from mdf_core.lifecycle.release_publish import require_published_source
-        require_published_source(repo, details["version"] or data.get("version"), "HEAD")
+        require_published_source(repo, details["version"] or data.get("version"), "HEAD", source=source)
     consolidation = record_path(repo, source)
     if not consolidation.is_file():
         raise MDFError("merge/pr 前须完成 consolidate", code="consolidation_required")
+    from mdf_core.lifecycle.support_line import ensure_remote_support_target
+    ensure_remote_support_target(repo, source, target)
     path = state_path(repo, source)
     state = read_json(path) if path.is_file() else {"base": read_json(consolidation)["head"]}
     head = sha(repo, "HEAD")
     remote = target_commit(repo, target)
     if state.get("accepted_head") == head and ancestor(repo, remote, head):
+        require_current_head(repo, source, head)
         return {"completed": True, "head": head, "target": target, "target_head": remote}
     if state.get("accepted_head"):
         state = {"base": state["accepted_head"]}
@@ -58,42 +67,55 @@ def prepare(repo, source, target, *, complete=False, reviewed_head=None, summary
         state.update(target=target, target_head=remote)
         write_json(path, state)
         if not ancestor(repo, remote, head):
+            require_current_head(repo, source, head)
             result = git(repo, "merge", "--no-ff", "--no-commit", remote, check=False)
             if result.returncode:
                 raise MDFError("target 合回产生冲突，解决并提交后继续 incremental-integration", code="merge_conflict",
                                details={"base": state["base"], "target_head": remote})
             if git_in_progress_head(repo):
                 git(repo, "commit", "-m", f"chore(integration): 合入 {target} 的最新提交")
-    plan = build_plan(repo, root, data, explicit_base=state["base"])
+            head = sha(repo, "HEAD")
+    require_current_head(repo, source, head)
+    plan = build_plan(repo, root, data, explicit_base=state["base"], explicit_head=head)
+    require_current_head(repo, source, head)
     changed = any(plan[key]["action"] != "skip" for key in ("review", "verify", "fact"))
-    changed = changed or (not frozen and bool(git(repo, "diff", "--name-only", state["base"], "HEAD").stdout.strip()))
+    changed = changed or (not frozen and bool(git(repo, "diff", "--name-only", state["base"], head).stdout.strip()))
     if complete or not changed:
         if not frozen:
             require_consolidated(repo, source)
-        state.update(accepted_head=sha(repo, "HEAD"), target=target, target_head=remote, summary=summary)
+        require_current_head(repo, source, head)
+        state.update(accepted_head=head, target=target, target_head=remote, summary=summary)
         write_json(path, state)
-        return {"completed": True, "head": state["accepted_head"], "target": target, "plan": plan}
-    return {"completed": False, "head": sha(repo, "HEAD"), "target": target, "plan": plan,
+        return {"completed": True, "head": state["accepted_head"], "target": target, "target_head": remote, "plan": plan}
+    return {"completed": False, "head": head, "target": target, "plan": plan,
             "incr_consolidate": not frozen, "next_intent": "incremental-integration"}
 
 
 def require_integrated(repo, source, target):
+    from mdf_core.lifecycle.late_decision import is_odr_inclusion, require_feature_target
+    if is_odr_inclusion(source, target):
+        ensure_clean(repo)
+        require_feature_target(repo, source, target)
+        return {"completed": True, "head": sha(repo, source), "target": target, "target_head": target_commit(repo, target), "acceptance": "odr"}
     from mdf_core.workspace.gitutil import branch_details
     if branch_details(source)["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import material
         _, ledger = material(repo, source)
         if not ledger:
-            if not ancestor(repo, target_commit(repo, target), "HEAD"):
+            remote = target_commit(repo, target)
+            if not ancestor(repo, remote, "HEAD"):
                 raise MDFError("先合入 target 并完成增量验收", code="integration_required")
-            return {"completed": True, "head": sha(repo, "HEAD")}
+            return {"completed": True, "head": sha(repo, "HEAD"), "target_head": remote}
     path = state_path(repo, source)
     if path.is_file():
         state = read_json(path)
         head = sha(repo, "HEAD")
         target_ref = f"refs/remotes/origin/{target}" if configured(repo)["mode"] == "pr" else f"refs/heads/{target}"
-        if state.get("accepted_head") == head and ancestor(repo, target_ref, head):
+        target_lookup = git(repo, "rev-parse", "--verify", target_ref, check=False)
+        target_head = target_lookup.stdout.strip() if target_lookup.returncode == 0 else None
+        if target_head and state.get("accepted_head") == head and ancestor(repo, target_head, head):
             ensure_clean(repo)
-            return {"completed": True, "head": head, "target": target}
+            return {"completed": True, "head": head, "target": target, "target_head": target_head}
     result = prepare(repo, source, target)
     if not result["completed"]:
         raise MDFError("先完成本轮 incremental-integration，再继续 merge/pr", code="integration_required", details=result)

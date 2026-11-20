@@ -47,7 +47,10 @@ def publish_release(python_exe, work):
     from mdf_test_support import mdf, payload
     from support_pull import squash_pending
     from mdf_core.lifecycle.delivery_state import locate
-    root, _ = locate(work)
+    root, data = locate(work)
+    hotfix = data["branch"].startswith("hotfix/")
+    if hotfix:
+        seed_verify_branch(python_exe, work)
     path = root / "objectives.md"
     text = path.read_text()
     if "- [ ] publish" not in text:
@@ -60,5 +63,11 @@ def publish_release(python_exe, work):
     payload(mdf(python_exe, "catch-up", "--repo", str(work), "--complete",
                 "--reviewed-head", sync["head"], "--summary", "已完成测试夹具增量验收"))
     from support_delivery import seed_consolidation
-    seed_consolidation(work, mark=True)
+    if hotfix:
+        change = {"fixed": [], "release_notes": {"Fixed": ["修复维护线交付回归场景"]},
+                  "body": "维护线变更已通过回归验证。", "evidence": {"tests": [], "commands": ["python -m pytest"], "artifacts": []}}
+        payload(mdf(python_exe, "consolidate", "--repo", str(work), "--release-date", "2026-11-21",
+                    "--hotfix-change-json", json.dumps(change)))
+    else:
+        seed_consolidation(work, mark=True)
     return payload(mdf(python_exe, "publish", "--repo", str(work)))["release_head"]

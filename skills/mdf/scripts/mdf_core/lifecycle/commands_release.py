@@ -160,11 +160,13 @@ def derive_closeout_spec(
         fixed = set(hotfix_change["fixed"])
         closed = set(hotfix_change["closed"])
         deferred = set(hotfix_change["deferred"])
+    from mdf_core.lifecycle.support_line import support_hotfix
+    support = mode == "hotfix" and support_hotfix(repo, details["name"])
     records = active_objects(repo)
     fixed.update(
         identifier
         for identifier, (kind, _path, metadata) in records.items()
-        if kind == "bug"
+        if not support and kind == "bug"
         and metadata.get("status") == "closed"
         and metadata.get("fixed_in") == version
     )
@@ -284,6 +286,7 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     ensure_clean(repo)
     spec["verify_command_results"] = command_results
     context = validate_closeout_shape(repo, spec)
+    context["require_release_notes"] = getattr(args, "require_release_notes", False)
     result = apply_closeout(repo, context)
 
     post_findings = doctor.collect_findings(repo, full=True)

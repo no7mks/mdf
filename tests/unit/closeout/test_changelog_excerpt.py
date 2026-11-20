@@ -49,3 +49,14 @@ def test_release_notes_require_actual_content(body):
     with pytest.raises(MDFError) as caught:
         excerpt("# Changelog\n\n## [1.3.0] - 2026-11-20\n" + body, "1.3.0")
     assert caught.value.code == "empty_release_notes"
+
+
+def test_generated_no_change_placeholder_is_not_a_release_note():
+    from mdf_core.foundation.errors import MDFError
+    from mdf_core.foundation.constants import CHANGELOG_CATEGORIES
+    from mdf_core.lifecycle.closeout_render import update_changelog_text
+    text = update_changelog_text("# Changelog\n", version="1.3.0", release_date="2026-11-20",
+                                 notes={key: [] for key in CHANGELOG_CATEGORIES})
+    with pytest.raises(MDFError) as caught:
+        excerpt(text, "1.3.0")
+    assert caught.value.code == "empty_release_notes"

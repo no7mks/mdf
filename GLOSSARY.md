@@ -192,7 +192,8 @@ Change 的 `change_kind: fix` 表示小范围修正，比 feature、bugfix 更�
 临时工作分支，可涉及代码、测试、文档或配置；五类 Gitflow 与 master/main/develop/planning 外的分支均归此类。
 
 - Agent 自行选相关 slug，从 develop 建立 `adhoc/<slug>` 与独立 worktree，不绑定 PRP。
-- `$mdf adhoc` 的 local objectives 为六项：工作、lint、code-review、verify smart、fact audit/update、close-out。
+- `$mdf adhoc` 的 objectives 为七项：工作、lint、code-review、verify smart、fact audit/update、catch-up、consolidate。
+  merge/pr 与 close-out 按实际 Git 状态续办。
 - roster 固定 `0,0,1`，`needs_design: false`；工作可由 Agent 完成并勾选。
 - smart 成败均写 verification-report.json；本地 no-ff 合入 develop 并完成收尾后默认删除临时 worktree。
 - 已有分支可无账本收口：保留真实名称与工作区，由 pr / close-out 准备 Change 与实际 evidence，不补造 delivery/objectives。
@@ -256,7 +257,7 @@ MVP（最小可行产品）是满足最小可用或验证目的的产品范围�
 ## Objectives、Report 与收敛
 
 - **objectives**：本次交付的目标、验收与 checklist 进度账本。各 intent 自勾对应项。
-  PR mode 的 checklist 止于 incremental-integration，pr 与 close-out 按实际状态续办。
+  checklist 止于 consolidate；github-flow 发布交付另有 publish。merge/pr、Gitflow publish 与 close-out 按实际状态续办。
   - feature 引用单个 PRP 的目标、非目标、约束与可验证验收。
   - release 写已选定工作线、本版收口范围、预发布工作、是否联调、
     非目标与可验证验收。

@@ -67,6 +67,10 @@ def require_independent(repo, source, *, trunk=None):
         raise MDFError("已引入 develop 未发布历史，不能独立发布", code="unreleased_dependency")
 
 
+def is_odr_inclusion(source, target):
+    return source.startswith("feature/") and target.startswith(ODR + "/")
+
+
 def require_feature_target(repo, source, target):
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     if target == "develop" or is_github_flow(repo):

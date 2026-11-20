@@ -11,3 +11,21 @@ def find_merge(repo, target, head):
 def merge_record_path(repo, source, version=None):
     from mdf_core.workspace.squash import common_dir
     return common_dir(repo) / "mdf/merge" / source / ((version or "unversioned") + ".json")
+
+
+def remote_contains_merge(repo, target, merged):
+    """刷新精确远端目标后证明 merge 已实际接纳；不信任旧 tracking ref。"""
+    from mdf_core.workspace.merge_policy import ancestor
+    ref = f"refs/heads/{target}"
+    advertised = git(repo, "ls-remote", "origin", ref).stdout.split()
+    if not advertised:
+        return False
+    tracking = f"refs/remotes/origin/{target}"
+    git(repo, "fetch", "--no-tags", "origin", f"+{ref}:{tracking}")
+    return ancestor(repo, merged, tracking)
+
+
+def require_remote_merge(repo, target, merged):
+    from mdf_core.foundation.errors import MDFError
+    if not remote_contains_merge(repo, target, merged):
+        raise MDFError("远端目标尚未包含本次 merge，先续办 merge", code="merge_required")

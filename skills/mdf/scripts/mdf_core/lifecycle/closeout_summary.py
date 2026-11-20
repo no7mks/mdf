@@ -12,6 +12,8 @@ from mdf_core.execution.verification import required_suites
 
 def summarize_closeout(repo: Path, context: dict[str, Any]) -> dict[str, Any]:
     """Produce a read-only closeout preview without running verification."""
+    from mdf_core.lifecycle.support_line import support_hotfix
+    support = context["mode"] == "hotfix" and support_hotfix(repo, context["source_branch"])
     all_slugs = [item["slug"] for item in context["release_items"]]
     findings: list[Finding] = []
     for slug in all_slugs:
@@ -47,6 +49,8 @@ def summarize_closeout(repo: Path, context: dict[str, Any]) -> dict[str, Any]:
         if closure["resolution"] == "deferred":
             continue
         identifier = closure["id"]
+        if support and identifier.startswith("bug-"):
+            continue
         record = active.get(identifier)
         if record is None:
             continue

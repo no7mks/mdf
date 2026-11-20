@@ -134,11 +134,16 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 9. fact audit（必要时 fact update 后重审）；进入前执行可选 pre-gitflow-finish hook
 10. catch-up（同步远端同名工作分支并增量验收）
 11. consolidate（收敛交付材料、对象状态与适用版本归档）
-12. merge/pr（内部先 target 合回与 incremental-integration）
-13. 适用的 publish 与 close-out
 
-发布交付按 workflow 定序：Gitflow 在 merge/pr 后 publish，github-flow 在 merge/pr 前 publish。
-feature / bugfix 完成 merge/pr 后直接 close-out。
+consolidate 后按 workflow 定序：
+
+| 交付类型 | 后续顺序 |
+| --- | --- |
+| Gitflow release / ODR / hotfix | merge/pr → publish → close-out |
+| github-flow release / hotfix | publish → merge/pr → close-out |
+| feature / bugfix / adhoc | merge/pr → close-out |
+
+merge/pr 内部先把 target 合回工作分支；有变化时完成 incremental-integration，才能实际合入。
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。
@@ -153,18 +158,22 @@ feature / bugfix 完成 merge/pr 后直接 close-out。
   - fact：verify branch 之后、close-out 之前 audit；未通过则 update 后重审。默认 scope=`branch`。
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook。
     仅文档改动直接进入 fact；其他改动补审补测。失败仅汇报，仍按实际改动处理；续办不重跑。
-- **close-out**：材料与 Gitflow 收口。
-  - PR mode 的提交与恢复见 [PR](pr.md)；创建 PR/MR 不代表完成。
-  - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
-  - 不内嵌、不委托 verify（branch / smart / named）；不内嵌 fact。
-    bug close 不算 verify 族，release/ODR/hotfix 收口步骤可委托。
+- **consolidate**：收敛交付材料、PRP/Bug 状态与版本归档。
+  - release/ODR/hotfix 的适用 Bug closure 在此委托 bug close，再调用 `release-closeout` 聚合版本材料。
+  - github-flow support hotfix 仅记录 fixed/trunk_fixes，Bug 真源保留在 trunk，不改维护线 Bug 副本。
   - `release-closeout` 只复用可复用的 `verification-report.json`，永不执行验证命令。
+- **merge/pr**：target 合回、incremental-integration 与实际合入；创建 PR/MR 不代表完成。
+  - PR mode 的提交与恢复见 [PR](pr.md)。
   - PR 模式每次 roster merge、远端主线 merge 与 push 前强制执行 `references/squash.md` 的检查；local 模式可选。
+- **publish**：创建并推送包含本版实际 CHANGELOG 内容的 annotated tag，冻结发布 commit。
+- **close-out**：核验实际合入与发布、适用 backmerge、清理分支和 worktree。
+  - 只查 report **交没交**（有文件且声称通过）；不复验报告对不对、不做 commit 对齐审判。
+  - 不内嵌、不委托 verify（branch / smart / named）、fact、bug close 或 release-closeout；缺项交回所属 intent。
 - 开发迭代只用 `$mdf verify --scope smart`；branch 只用于交付验收。
 - release/ODR/hotfix 可修已确认 open Bug，标 `fixed`；不另开 bugfix。
 - 独立 `$mdf fix` 不走交付主线，也不由 deliver 内部委托。
-- `$mdf bug close` 不作为 deliver 的直接阶段；close-out 可按本契约内部委托，不改变独立调用的边界。
-- code-review 份数取冻结的 roster.reviewers；close-out 与主链 verify 修绿的增量新一轮为 1。
+- `$mdf bug close` 不作为 deliver 的直接阶段；consolidate 可按本契约内部委托，不改变独立调用的边界。
+- code-review 份数取冻结的 roster.reviewers；incremental-integration 与主链 verify 修绿的增量新一轮为 1。
 #### 触发与协调
 
 - 用户手动触发主线 intent，或显式调用 next 委托下一阶段。

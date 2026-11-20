@@ -9,13 +9,15 @@ from mdf_core.foundation.yamlutil import read_frontmatter
 
 
 def archive_plan(
-    repo: Path, epoch: str
+    repo: Path, epoch: str, *, exclude_bugs: bool = False
 ) -> tuple[dict[Path, Path], dict[Path, str]]:
     if not EPOCH_RE.fullmatch(epoch):
         raise MDFError("Archive epoch must be MAJOR.MINOR", code="bad_epoch")
     moves: dict[Path, Path] = {}
     records: dict[str, tuple[Path, dict[str, Any]]] = {}
     for kind, directory in (("proposal", "docs/proposals"), ("bug", "docs/bugs")):
+        if exclude_bugs and kind == "bug":
+            continue
         for path in iter_object_files(repo, kind):
             records_path_parts = path.relative_to(repo / "docs").parts
             try:

@@ -100,7 +100,7 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     commit(work)
     source = git(work, "rev-parse", "HEAD").stdout.strip()
     status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
-    assert not status["completed"] and status["next_step"] == "close-out"
+    assert not status["completed"] and status["next_step"] == "merge"
     result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["targets"] == ["develop"] and result["pushed"] is False
     assert result["retained_worktree"] == str(work) and work.is_dir()
@@ -219,3 +219,22 @@ def test_adhoc_status_runs_through_cli_entry(python_exe, tmp_path):
     data = payload(result)["result"]
     assert data["next_step"] == "工作" and data["primary_worktree"] == str(repo)
     assert git(work, "status", "--porcelain").stdout == before
+
+
+def test_adhoc_status_routes_real_entrypoints_through_merge(python_exe, tmp_path):
+    from support_delivery import write_change
+    repo, result = start_adhoc(python_exe, tmp_path)
+    data = payload(result)
+    work = Path(data["worktree"])
+    root = write_change(work, data["branch"], data["branch"].split("/", 1)[1])
+    objective = root / "objectives.md"
+    objective.write_text(objective.read_text().replace("[ ]", "[x]").replace("[x] consolidate", "[ ] consolidate"))
+    commit(work)
+    payload(mdf(python_exe, "consolidate", "--repo", str(work)))
+    status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
+    assert status["next_step"] == "merge" and not status["completed"]
+    payload(mdf(python_exe, status["next_step"], "--repo", str(work)))
+    status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
+    assert status["next_step"] == "close-out" and not status["completed"]
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    assert not git(repo, "branch", "--list", data["branch"]).stdout.strip()

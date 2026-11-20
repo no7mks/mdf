@@ -169,7 +169,8 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
       不得改、操作、启动或终止对端。
     - collab-mode：由接手 Agent 直接调度前后端 worktree；本 Agent 完成本仓 start 后交接。
       交接规则见 [collab-mode](collab-mode.md)；本步只确认本仓范围与已知的对端信息。
-  - 主链收口前为 verify branch → fact audit → catch-up → consolidate → merge/pr → 适用 publish → close-out（不内嵌在 close-out）。
+  - 主链收口前为 verify branch → fact audit → catch-up → consolidate，之后按 [交付阶段顺序](delivery-contract.md) 的 workflow 表执行。
+  - github-flow 发布先 publish 后 merge/pr；Gitflow 发布先 merge/pr 后 publish；close-out 只核验和清理。
   - ❌ 不得实施新 PRP。
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：

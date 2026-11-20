@@ -129,7 +129,7 @@ def command_status(args):
     if merge_commit and pending is not None:
         raise MDFError("已合并的 adhoc 账本仍有未完成项，保留现场", code="invalid_delivery")
     from mdf_core.workspace.workflow_policy import integration_branch
-    next_step = pending or "close-out"
+    next_step = pending or ("close-out" if merge_commit else "merge")
     if pr_mode and pending is None:
         from mdf_core.lifecycle.publish import find_merge
         merged_remote = find_merge(repo, f"refs/remotes/origin/{integration_branch(repo)}", head)

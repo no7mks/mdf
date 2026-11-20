@@ -25,7 +25,7 @@ def preflight(repo, source):
         from mdf_core.lifecycle.delivery_state import locate
         _, data = locate(repo)
         version = branch_details(source)["version"] or data.get("version")
-        require_published_source(repo, version, "HEAD")
+        require_published_source(repo, version, "HEAD", source=source)
     from mdf_core.lifecycle.late_decision import target_for
     if not (kind == "feature" and target_for(repo, source).startswith("on-demand-release/")):
         require_fixed_outcomes(repo, source)
@@ -58,8 +58,13 @@ def verified_merge(repo, pull, source, target, head):
     parents = git(repo, "show", "-s", "--format=%P", merged).stdout.split()
     if len(parents) != 2 or parents[1] != head:
         raise MDFError("PR/MR 必须保留源提交并使用双亲 merge commit", code="invalid_pull_merge")
-    if not source.startswith(("pm/", "codex/sync/")) and not ancestor(repo, parents[0], head):
-        raise MDFError("实际 PR merge 的 target 未先合回工作分支并验收", code="target_not_integrated")
+    from mdf_core.lifecycle.late_decision import is_odr_inclusion
+    deferred_acceptance = is_odr_inclusion(source, target)
+    if not source.startswith(("pm/", "codex/sync/")) and not deferred_acceptance:
+        if not ancestor(repo, parents[0], head):
+            raise MDFError("实际 PR merge 的 target 未先合回工作分支并验收", code="target_not_integrated")
+        if git(repo, "diff", "--quiet", head, merged, check=False).returncode:
+            raise MDFError("实际 PR merge 含已验收 source 之外的内容", code="invalid_pull_merge")
     remote = f"refs/remotes/origin/{target}"
     first = git(repo, "rev-list", "--first-parent", remote).stdout.split()
     if merged not in first:
@@ -250,10 +255,12 @@ def submit(repo, forge, source, target, pull, *, pm, fixed_head):
         preflight(repo, source)
         head = sha(repo, f"refs/heads/{source}")
     if not pm:
+        from mdf_core.lifecycle.support_line import ensure_remote_support_target
+        ensure_remote_support_target(repo, source, target)
         if current_branch(repo) == source:
             from mdf_core.lifecycle.target_integration import require_integrated
-            require_integrated(repo, source, target)
-            head = local_head(repo, source)
+            accepted = require_integrated(repo, source, target)
+            head = accepted["head"]
         elif not ancestor(repo, remote, head):
             raise MDFError("在工作分支合回最新 target 并增量验收", code="integration_required")
     require_ready(repo, source)
@@ -355,7 +362,7 @@ def _finish(repo, source, settings, *, phase, number):
                 state["release_head"] = state["head"]
                 if details["kind"] in {"release", "hotfix"}:
                     from mdf_core.lifecycle.release_publish import require_published_source
-                    state["release_head"] = require_published_source(repo, details["version"], state["release_head"])
+                    state["release_head"] = require_published_source(repo, details["version"], state["release_head"], source=source)
             ready = publish(repo, state, details["version"], source_cleaned=remote_head is None and local is None)
         if ready:
             cleanup_remote(repo, source, state["head"])

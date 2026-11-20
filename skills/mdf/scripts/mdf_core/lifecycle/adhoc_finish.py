@@ -85,9 +85,10 @@ def finish(repo, source, *, recovering, merging=False):
     if merging:
         if merged is None:
             from mdf_core.lifecycle.target_integration import require_integrated
-            require_integrated(owner, source, integ)
-            head = local_head(repo, source)
-            merge_preserving_checkout(target, head, integ)
+            accepted = require_integrated(owner, source, integ)
+            head = accepted["head"]
+            snapshot = {"source": source, "head": head, "target": integ, "target_head": accepted["target_head"]}
+            merge_preserving_checkout(target, source, integ, snapshot)
             merged = find_merge(repo, ref, head)
         from mdf_core.lifecycle.publish import merge_record_path
         from mdf_core.lifecycle.delivery_state import write_json

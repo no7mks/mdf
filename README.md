@@ -56,7 +56,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf next [--depth N]` | 续办在途或提示下一步；feature 上走交付；无在途时委托 tree |
 | `$mdf deliver [<target>] [--until <intent>] [--yolo]` | 默认推进至 close-out 完成，可显式指定截止 intent；可并行分派 subagent |
 | `$mdf start` | 按 Gitflow 创建本地交付分支与 `<repo-name>-worktrees/` worktree |
-| `$mdf adhoc [<工作描述>]` | 自动生成六项 objectives，在临时 worktree 完成小工作并收口 |
+| `$mdf adhoc [<工作描述>]` | 自动生成七项 objectives，在临时 worktree 完成小工作并收口 |
 | `$mdf jot` | 追加一条未分诊的随手记录 |
 | `$mdf jot promote` | 提升一条 Jot 为 Proposal 或 Bug 并移除原条目 |
 | `$mdf intake` | 将外部想法或临时来源分诊为 Bug 和/或多个 Proposal |
@@ -212,7 +212,7 @@ PR 模式每次 roster merge、远端主线 merge 和 push 前必须分析未共
 可以保留多笔 commit，无可压缩区间则 no-op，保留 merge commit，禁止 force push。
 gitflow 的 planning land 前也检查 planning 的未共享尾段；squash 默认自主执行，无需逐次确认计划。
 只要远端 tip 不是当前 HEAD 的 ancestor，就先 no-ff merge 到本分支；无冲突也必须重新完成
-lint、增量 code-review、verify 与 fact，再次 close-out；提交前远端再次前进则重复此流程。
+incremental-integration：incr-cr、verify smart、incr-fa，以及适用的 incr-consolidate；target 再次前进则在 merge/pr 内重复。
 
 local 模式先在 feature 集成已确定目标；bugfix 集成 develop，release/ODR/hotfix 集成 master，冲突自动尝试解决。
 以下本地合并与发布行为适用于默认 local 模式。
@@ -222,8 +222,9 @@ local 模式先在 feature 集成已确定目标；bugfix 集成 develop，relea
 - 集成产生新提交后：
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
-- release/ODR/hotfix 的 close-out 包含 tag 与发版推送。
-  - 仅原子 push master 与 tag；master 合回本地 develop，不检查或推送远端 develop。
+- release/ODR/hotfix 的 publish 创建带本版内容的 annotated tag 并推送。
+  - Gitflow 在 merge/pr 后发布实际 merge commit；github-flow 在集成前发布固定候选。
+  - close-out 核验远端合入与 tag；Gitflow 再将发布结果合回本地 develop，不推送远端 develop。
 - deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
   - 验证其已有 qa/dev worktree 身份，等待交接后再收敛。
 - design 的 Baseline 与 converge 由各 intent 自行派恰好 1 个 owner subagent，不计入 roster。
@@ -240,7 +241,7 @@ local 模式先在 feature 集成已确定目标；bugfix 集成 develop，relea
 - release 从 develop 开分支前确认发布目标。
   - 工作线四选一；目标里只写选中的那条。不实施新 PRP。
   - 不联调：`start → [design?] → 开发 → converge → lint → code-review → verify branch →
-    fact audit → close-out`。开发/converge 用 smart；branch 验证与 fact 在 code-review 之后。
+    fact audit → catch-up → consolidate → merge/pr → publish → close-out`。开发/converge 用 smart；branch 验证与 fact 在 code-review 之后。
   - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
   - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
   - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
@@ -343,7 +344,7 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 
 - `$mdf start --manual`：无需 PRP，先经 clarify 询问并确认 slug，按 feature 建立 worktree。
 - roster 固定 `0,0,1`；允许 Agent 介入，人工工作必须由用户显式勾选。
-- 主线：`start → 人工工作 → lint → code-review → verify smoke → fact update → close-out`。
+- 主线：`start → 人工工作 → lint → code-review → verify smoke → fact update → catch-up → consolidate → merge/pr → close-out`。
 
 ### Adhoc 入口
 
@@ -353,8 +354,8 @@ mkdir -p /absolute/path/to/target-repository/.codex/skills
 五类 Gitflow 分支、master/main/develop/planning 与内部角色 workflow 沿用专用规则。
 无账本 adhoc 保留真实分支与工作区，不补造 delivery/objectives。
 
-- slug 由 Agent 自定；直接生成六项 objectives，不另确认目标文本或 roster，不绑定 PRP。
-- 主线：`工作 → lint → code-review → verify smart → fact audit/update → close-out`。
+- slug 由 Agent 自定；直接生成七项 objectives，不另确认目标文本或 roster，不绑定 PRP。
+- 主线：`工作 → lint → code-review → verify smart → fact audit/update → catch-up → consolidate → merge/pr → close-out`。
 - 工作可由 Agent 完成并勾选；code-review 使用 1 个 reviewer，smart 成败均留存 report。
-- close-out no-ff 合入本地 develop，删除源分支；成功收尾后默认删除临时 worktree，不 push。
+- merge 先集成 target 并验收增量，再 no-ff 合入；close-out 核验后删除源分支和临时 worktree。local adhoc 不 push。
 - `$mdf next` 单步续办；已有 adhoc 上的 `$mdf deliver` 持续推进剩余阶段。

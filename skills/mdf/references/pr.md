@@ -153,13 +153,15 @@ closeout:
 - 宿主不提供 Goal 时仍按本页轮询与恢复规则推进，并如实说明缺少跨 turn 自动续办保障。
   Goal 不替代平台合并授权，也不越过 deliver 的 until、只读限制或用户暂停。
 
-- pr Goal 完成后交回调用方续办 close-out；它有独立完成判据，不属于 pr Goal。
-  独立 pr、deliver / adhoc 按该步骤继续 close-out；显式 until、用户停止或暂停仍须遵守。
-- 普通 next 保持单步语义：本次若选择 pr，完成后报告 close-out 为下一步，不升级为 deliver。
+- pr Goal 完成后交回调用方：Gitflow 发布交付先续办 publish，其余续办 close-out；两者均不属于 pr Goal。
+  独立 pr、deliver / adhoc 按该顺序继续；显式 until、用户停止或暂停仍须遵守。
+- 普通 next 保持单步语义：本次若选择 pr，完成后报告适用的 publish 或 close-out 为下一步，不升级为 deliver。
 
 ### 提交前远端集成
 
 - 首次提交及更新 PR 前，核对 catch-up、consolidate 和适用的 publish 已完成。
+  - github-flow 首次 support hotfix 若缺远端 target，只以已发布候选中冻结的 `delivery.start_commit` 创建维护线。
+  - 使用 create-only lease；已有或并发建立的远端维护线按实际 tip 集成，不覆盖，不直接把 hotfix 推入 target。
 - fetch 目标 target，把 target 合回当前工作分支。github-flow 已发布 release 继续使用同一工作分支。
 - 有 change 时，在 pr 内部执行 [incremental-integration](incremental-integration.md)。
 - incr-cr → verify smart → incr-fa → 适用的 incr-consolidate 全部通过后再提交 PR。
@@ -235,7 +237,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
 - CLI 返回 `merged` 后回步骤 3，执行 `pr --repo <主路径> --source <原分支>` 核验 Git 合并结果。
   - CLI 仅核验实际合并；`status=merged` 且 `completed=true` 后，关联运行也全部结束且结论通过才返回 pr 完成。
   - 仅在项目 policy 允许 skipped / neutral 时传 `--allow-skipped`；cancelled、timed_out、action_required 不算通过。
-  - 调用方继续选择 close-out；不得将 pr 完成报告成整个交付完成。
+  - 调用方继续选择适用的 publish 或 close-out；不得将 pr 完成报告成整个交付完成。
 - 关联运行失败时读取失败 job / step 的日志与报告，按证据修复或处理阻塞；不能因 PR 已 merged 忽略失败。
   - 合并后的失败不得向已合入的 source 追加提交、重开原 PR 或改写固定 M；需要代码修改时按调用边界另行交付。
   - 仅有证据支持暂时故障且已有授权时重试；否则报告运行链接、失败 job 与恢复位置，保留未完成状态。
@@ -286,4 +288,4 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
 - 每次可能 push 新 head 的步骤 3 调用前，必须完成 Prepare 的最终候选复核；恢复或返工直达步骤 3 也不豁免。
   当前 head 的纯轮询、已 merged 核验与合并后 close-out 不适用。
 - squash、bug close、code-review、verify 与 fact 的内部返工也先核 until；被截断返回外层，不绕过边界。
-- 仅 pr 的实际合并核验与关联 CI 收尾均完成才结束其同范围 Goal；随后按原调用边界交接 close-out。
+- 仅 pr 的实际合并核验与关联 CI 收尾均完成才结束其同范围 Goal；随后按原调用边界交接适用的 publish 或 close-out。

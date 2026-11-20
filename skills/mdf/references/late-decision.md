@@ -67,7 +67,7 @@ ODR 是独立发布 kind，除本页规定的起点、范围与等待 checkpoint
 
 - start 事件允许尚无 delivery.json；步骤 2 只准备输入，由 start 创建分支与材料。
 - feature 的 design、code-review、verify、fact 不要求具体 target；步骤 3、4 不适用。
-- feature 的 incremental-integration、未合并 pr、local close-out 在集成前执行步骤 3。
+- feature 的 merge、未合并 pr 在集成前执行步骤 3。
   - 已合并 PR 的 close-out 只核对原 PR 与远端合并历史；不重新选择目标，也不要求目标 ODR 尚在途。
 - ODR start 不执行步骤 4；next / deliver 恢复及后续阶段在 owner 执行步骤 4。
   - deliver 先核 until；被截止时直接返回，不勾 checkpoint 或推进后续阶段。
@@ -87,7 +87,7 @@ ODR 是独立发布 kind，除本页规定的起点、范围与等待 checkpoint
 
 ### Catch-up 前确定目标
 
-local close-out 与 PR mode 的 pr 均须在 incremental-integration 目标前应用本节；独立 incremental-integration 也不能绕过。
+local merge 与 PR mode 的 pr 均须在 incremental-integration 目标前应用本节；独立 incremental-integration 也不能绕过。
 
 - 读取 `delivery.json` 的 `base_branch` 与 `target`；已确认的具体目标直接复用。
 - 尚未确定时询问；deliver 的 yolo 使用入口已确认的选择或授权的自动裁定，不在中途询问。
@@ -99,7 +99,7 @@ local close-out 与 PR mode 的 pr 均须在 incremental-integration 目标前�
 - feature → develop：incremental-integration develop 后合入 develop；不自动创建 release。
 - feature → ODR：目标 ODR 必须已 start，且本 feature 在其纳入清单内。
   - 纳入只核对 master 来源、实际提交、依赖与已确认范围；组合验收在 ODR 执行。
-  - local close-out no-ff 合入具体 ODR；PR mode 的 PR 以具体 ODR 为 base。
+  - local merge no-ff 合入具体 ODR；PR mode 的 PR 以具体 ODR 为 base。
   - PR mode 在首次 feature PR 前确保目标 ODR 分支已非 force push 到 origin；不得隐式创建 ODR。
   - feature 合入后 PRP 仍为 ready；ODR 统一验收通过后才改为 implemented。
   - 按原规则清理分支并保留 worktree；不在 feature 侧打 tag 或宣称发布完成。
@@ -150,12 +150,13 @@ Agent 须核对证据覆盖实际 diff、测试结果与 fact audit；CLI 只核
 
 请求把 feature 纳入 ODR 时，本节优先于 feature 的普通收口链；目标 develop 不变。
 
-- next / deliver / close-out / pr 先读取已确认 target；ODR 路径不因 source checklist 未完成而补跑阶段。
+- next / deliver / merge / close-out / pr 先读取已确认 target；ODR 路径不因 source checklist 未完成而补跑阶段。
 - 核对 clean、来源、依赖、确认范围及角色分支已集成；有未完成的范围应明确交接给 ODR，不声称验收通过。
-- 不要求 source 的 design、converge、lint、code-review、verify、fact 或 close-out 项勾选。
+- 不要求 source 的 design、converge、lint、code-review、verify、fact、catch-up 或 consolidate 项勾选。
 - 不补建 source 的 CHANGE.md、设计、HTML 总结、review 或 verification/fact 报告。
 - 不改动 source objectives 的勾选，不提前更新 PRP 为 implemented。
-- local 在 feature owner 执行 `finish-gitflow`，no-ff 合入目标 ODR；不执行普通 feature 材料准备步骤。
+- local 在 feature owner 执行 `merge`，no-ff 纳入目标 ODR，随后由 close-out 核验并清理来源。
+  纳入时不要求来源 consolidate 或 incremental-integration，整版由 ODR 统一验收。
 - PR mode 在 feature owner 执行 `pr`，base 为指定 ODR；遵守平台 CI/review 与 merge commit 要求。
   - 不执行普通 feature 的 Prepare 材料与 MDF 验收链；仓库平台保护仍须满足。
   - merged 后按原 pr-close-out 完成同步、分支清理；不补做来源验收或虚假勾选。
@@ -215,7 +216,7 @@ ODR 复用 release 的审查、验证、材料归档、SemVer、tag、发布及�
 
 - branch 验证执行 release suite；首轮审查基线为上一正式发布版本。
 - local mode：ODR no-ff 合入 master，创建 tag，按现有发布规则原子 push master 与 tag。
-- PR mode：ODR → master 经 PR；实际 merged 后 close-out 发布固定 merge commit。
+- PR mode：ODR → master 经 PR；实际 merged 后 publish 发布固定 merge commit，再由 close-out 核验与清理。
 - 两种模式最终均须 master → develop backmerge；未完成不能报告发布收口完成。
   - local 只回合本地 develop；PR mode 按现有规则完成远端与本地 develop 回合。
 - 发布后列出需要包含本次变更的在途 release，由用户确定同步范围，分别补审补验。

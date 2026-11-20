@@ -105,6 +105,7 @@ def consolidate(repo, args):
     if versioned:
         if not (repo / "changes" / str(version) / "CHANGE.md").exists():
             from mdf_core.lifecycle.commands_release import command_release_closeout
+            args.require_release_notes = True
             with contextlib.redirect_stdout(io.StringIO()) as captured:
                 command_release_closeout(args)
             result = json.loads(captured.getvalue())
@@ -113,6 +114,9 @@ def consolidate(repo, args):
         owned.update(update_child_objects(repo, root, data))
     root, data = locate(repo)
     version = details["version"] or data.get("version")
+    if versioned:
+        from mdf_core.lifecycle.closeout_render import changelog_excerpt
+        changelog_excerpt((repo / "CHANGELOG.md").read_text(), version)
     findings = doctor.collect_findings(repo, full=True) if result is None else []
     if has_errors(findings):
         raise MDFError("consolidate 文档检查未通过，保留材料供修复", code="post_validation_failed",

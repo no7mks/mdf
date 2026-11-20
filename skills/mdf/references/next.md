@@ -154,12 +154,13 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
-  - 主线后半：lint → code-review → verify branch → fact audit → catch-up → consolidate → merge/pr → 适用 publish → close-out。
+  - 主线后半：lint → code-review → verify branch → fact audit → catch-up → consolidate。
+  - 后续按 [交付阶段顺序](delivery-contract.md) 的 workflow 表执行；github-flow 发布在 merge/pr 前，Gitflow 发布在其后。
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
   - fact 已通过后，同名远端同步只重新打开 `catch-up`，其他分支集成或收尾返工只重新打开 `incremental-integration`。
     两者在对应步骤内完成增量验收，已通过的基线四项保持 `[x]`。
-  - PR mode 的 ODR 在 fact 后先完成 [统一验收](late-decision.md#纳入-checkpoint-与统一验收)，再进入 incremental-integration。
+  - PR mode 的 ODR 在 fact 后先完成 [统一验收](late-decision.md#纳入-checkpoint-与统一验收)，再依次 catch-up、consolidate；target 合回和 incremental-integration 属于后续 merge/pr。
   - checklist 阶段只在有对应未勾项时进入；PR mode 前置全勾时按 PR 恢复路由续办。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。
   - 有无开发 / converge：只看 objectives checklist 勾选与 release 的 `has_dev`；

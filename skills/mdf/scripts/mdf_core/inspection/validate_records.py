@@ -75,23 +75,49 @@ def validate_adrs(repo: Path, findings: list[Finding], *, paths: set[Path] | Non
             )
 
 
-def _trunk_bug_ids(repo: Path) -> set[str]:
-    """维护线 CHANGE 可引用 trunk 上的 Bug，避免误报 change.record_missing。"""
-    from mdf_core.workspace.gitutil import current_branch, run
-    from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+def _trunk_bug_ids(repo: Path, path: Path, metadata: dict) -> set[str]:
+    """只允许带 support 身份与对应处置的版本根 Change 引用 trunk Bug。"""
+    from mdf_core.lifecycle.delivery_state import read_json
+    from mdf_core.lifecycle.support_line import DISPOSITIONS, NEEDS_REASON, SHA_RE, trunk_bug
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    version = metadata.get("version")
+    source = metadata.get("source_branch")
+    if (not is_github_flow(repo) or not isinstance(version, str)
+            or path != repo / "changes" / version / "CHANGE.md"
+            or not isinstance(source, str) or not source.startswith("hotfix/")):
+        return set()
     try:
-        branch = current_branch(repo)
-    except MDFError:
+        identity = read_json(path.parent / "delivery.json")
+    except (MDFError, OSError):
         return set()
-    if not is_github_flow(repo) or not (branch.startswith("support/") or branch.startswith("hotfix/")):
+    support = identity.get("support")
+    base = identity.get("base_branch")
+    if (identity.get("branch") != source or identity.get("version") != version
+            or not isinstance(base, str) or not base.startswith("support/")
+            or not isinstance(support, dict) or support.get("branch") != base
+            or support.get("major_minor") != base.removeprefix("support/")
+            or not version.startswith(base.removeprefix("support/") + ".")):
         return set()
-    ref = f"refs/heads/{trunk_branch(repo)}"
-    listed = run(["git", "ls-tree", "-r", "--name-only", ref, "--", "docs/bugs"], cwd=repo, check=False)
+    fixes = metadata.get("trunk_fixes")
+    fixed = metadata.get("fixed")
+    if not isinstance(fixes, list) or not isinstance(fixed, list):
+        return set()
+    ids = [item.get("bug_id") for item in fixes if isinstance(item, dict)]
+    if (any(not isinstance(identifier, str) for identifier in [*ids, *fixed])
+            or len(ids) != len(fixes) or len(set(ids)) != len(ids) or set(ids) != set(fixed)):
+        return set()
     found = set()
-    for rel in listed.stdout.splitlines():
-        match = OBJECT_FILE_RE.fullmatch(Path(rel).name)
-        if match and Path(rel).parts[:2] == ("docs", "bugs"):
-            found.add(match.group(1))
+    for item in fixes:
+        disposition = item.get("trunk_disposition")
+        if (disposition not in DISPOSITIONS or item.get("released_in") != version
+                or (disposition in NEEDS_REASON and not str(item.get("reason", "")).strip())
+                or (disposition == "backported" and not SHA_RE.fullmatch(str(item.get("source_commit", ""))))):
+            continue
+        try:
+            trunk_bug(repo, item["bug_id"])
+        except MDFError:
+            continue
+        found.add(item["bug_id"])
     return found
 
 
@@ -245,7 +271,6 @@ def validate_record_references(
     changes = repo / "changes"
     if not changes.is_dir():
         return
-    trunk_bugs = _trunk_bug_ids(repo)
     for path in changes.rglob("CHANGE.md"):
         if path.is_symlink() or not path_stays_in_repo(repo, path):
             continue
@@ -253,6 +278,7 @@ def validate_record_references(
             metadata, _ = read_frontmatter(path)
         except MDFError:
             continue
+        trunk_bugs = _trunk_bug_ids(repo, path, metadata)
         for key, prefix in (
             ("proposals", "prp-"),
             ("fixed", "bug-"),
@@ -270,7 +296,7 @@ def validate_record_references(
                 if (
                     not isinstance(identifier, str)
                     or not identifier.startswith(prefix)
-                    or (identifier not in known and identifier not in trunk_bugs)
+                    or (identifier not in known and not (key == "fixed" and identifier in trunk_bugs))
                 ):
                     add_finding(
                         findings,

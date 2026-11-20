@@ -119,12 +119,12 @@ PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下�
   - owner 已 detached，HEAD 是 develop 的 no-ff merge 非首父。
   - detached owner 须 clean；有本地改动时停止，不将改过的工作描述或账本当成已交付内容。
   - `merge_commit` 是 develop 第一父链中的实际 merge；返回 primary_worktree 供调用方复核。
-  - 账本全勾且仍在源分支时：local 返回 close-out；PR mode 未核验 merged 返回 pr，已核验则 close-out。
+  - 账本全勾且仍在源分支时：local 未合并返回 merge、已合并返回 close-out；PR mode 未核验 merged 返回 pr，已核验则 close-out。
 - 状态只读原有材料与 Git，不创建 gate 或新的 workflow 状态文件。
 
 ### 账本与续办
 
-objectives 的固定清单须同序、完整，已勾项形成连续前缀；工作完成后由执行者勾选。
+objectives 的固定七项止于 consolidate，须同序、完整，已勾项形成连续前缀。表中 merge/pr 与 close-out 是清单后的实际状态路由。
 
 | 阶段 | 执行与完成证据 |
 | --- | --- |
@@ -133,9 +133,11 @@ objectives 的固定清单须同序、完整，已勾项形成连续前缀；工
 | code-review | 委托 `references/code-review.md`；1 人独立审查，终稿与自勾 |
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
 | fact audit/update | 按下节审阅，必要时更新；报告结论、自勾与提交 |
-| incremental-integration | 委托 `references/incremental-integration.md`；仅对改动文件增量补检（严禁全量重跑），自勾与提交 |
+| catch-up | 执行 `references/catch-up.md`；同步同名远端并在本步骤内完成增量验收 |
+| consolidate | 执行 `references/consolidate.md`；收敛 Change、事实更新与实际 evidence |
+| merge（仅 local） | 执行 `references/merge.md`；先将 target 合回，完成必要 incremental-integration，再实际 no-ff 合入 |
 | pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged、合并核验与关联 CI 收尾通过后结束 |
-| close-out | 仅此项读取并执行 `references/adhoc-close-out.md`；Change 与实际 Git 完成证据 |
+| close-out | 执行 `references/adhoc-close-out.md`；核验实际 Git 完成证据并清理 |
 
 - 默认从首个未勾项执行到实际收口；有效的已完成项不重复执行。
 - `$mdf next` 在已启动 adhoc 上仅执行本页步骤 3–4 的一个阶段，然后返回。

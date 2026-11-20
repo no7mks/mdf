@@ -43,7 +43,7 @@ def passing_report(root, branch="feature/service-health", scope="branch"):
     ([("pr", False)], False, "awaiting_decision_confirmation", None),
     ([("close-out", False)], True, "ready", None),
     ([("lint", False)], False, "ready", None),
-    ([("lint", True), ("close-out", True)], False, "awaiting_decision_confirmation", "merge"),
+    ([("lint", True), ("close-out", True)], False, "ready", "merge"),
 ])
 def test_route_keeps_confirmation_and_manual_nodes(python_exe, tmp_path, steps, yolo, state, nxt):
     _, work, root = started(python_exe, tmp_path)

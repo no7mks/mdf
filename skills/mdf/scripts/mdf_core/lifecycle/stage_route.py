@@ -87,7 +87,8 @@ def _after_checklist(repo, root_data, result, yolo):
     from mdf_core.workspace.merge_policy import ancestor, configured
 
     def gated(nxt):
-        return {**result, "next": nxt, "state": "ready" if yolo else "awaiting_decision_confirmation"}
+        confirm = nxt in {"pr", "close-out"} and not yolo
+        return {**result, "next": nxt, "state": "awaiting_decision_confirmation" if confirm else "ready"}
 
     from mdf_core.lifecycle.late_decision import target_for
     from mdf_core.lifecycle.publish import find_merge
@@ -102,7 +103,12 @@ def _after_checklist(repo, root_data, result, yolo):
     if merged is None:
         return gated("pr" if mode == "pr" else "merge")
     details = branch_details(source)
-    if details["kind"] in {"release", "hotfix", "on-demand-release"} and not is_github_flow(repo):
+    versioned = details["kind"] in {"release", "hotfix", "on-demand-release"}
+    if versioned and mode == "local":
+        from mdf_core.lifecycle.publish import remote_contains_merge
+        if not remote_contains_merge(repo, target, merged):
+            return gated("merge")
+    if versioned and not is_github_flow(repo):
         from mdf_core.lifecycle.release_publish import published_head
         try:
             published_head(repo, details["version"] or root_data.get("version"))

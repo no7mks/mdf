@@ -48,6 +48,8 @@ def apply_version_closeout(
     closures: list[dict[str, Any]],
     hotfix_body: str | None,
 ) -> dict[str, Any]:
+    from mdf_core.lifecycle.support_line import support_hotfix
+    support = context["mode"] == "hotfix" and support_hotfix(repo, context["source_branch"])
     categories = {
         category for category in CHANGELOG_CATEGORIES if notes[category]
     }
@@ -106,7 +108,7 @@ def apply_version_closeout(
                 }
             )
     epoch = ".".join(context["version"].split(".")[:2])
-    archive_moves, _ = archive_plan(repo, epoch)
+    archive_moves, _ = archive_plan(repo, epoch, exclude_bugs=support)
     archived: list[tuple[str, str]] = []
     for source, destination in archive_moves.items():
         metadata, _ = read_frontmatter(source)
@@ -133,6 +135,11 @@ def apply_version_closeout(
             )
         ),
     )
+    protected = [relative(repo, path) for path in rewrites
+                 if support and path.relative_to(repo).parts[:2] == ("docs", "bugs")]
+    if protected:
+        raise MDFError("维护线文档移动将改写 Bug 真源链接", code="bug_source_forbidden",
+                       details={"paths": protected})
     apply_moves_and_rewrites(moves, rewrites)
     if review_source.is_dir() and not any(review_source.iterdir()):
         review_source.rmdir()
@@ -149,7 +156,7 @@ def apply_version_closeout(
     found_in_transitions: list[str] = []
     for closure in closures:
         identifier = closure["id"]
-        if not identifier.startswith("bug-"):
+        if support or not identifier.startswith("bug-"):
             continue
         record = objects.get(identifier)
         if record is not None and is_unreleased_sentinel(

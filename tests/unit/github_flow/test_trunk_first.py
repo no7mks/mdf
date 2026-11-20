@@ -68,7 +68,7 @@ def test_urgent_support_first_rejects_missing_or_closed_trunk_bug(tmp_path):
     assert code_of(lambda: sl.verify_trunk_first(repo, [closed], "1.2.1")) == "trunk_first_required"
 
 
-def test_support_hotfix_cannot_edit_bug_sources_and_can_cite_trunk_bugs(tmp_path):
+def test_support_hotfix_cannot_edit_bug_sources_or_cite_trunk_without_root_identity(tmp_path):
     repo = github_flow_repo(tmp_path)
     git(repo, "branch", "support/1.2")
     git(repo, "checkout", "-b", "hotfix/1.2.1")
@@ -91,7 +91,7 @@ def test_support_hotfix_cannot_edit_bug_sources_and_can_cite_trunk_bugs(tmp_path
     from mdf_core.foundation.errors import Finding
     findings: list[Finding] = []
     validate_record_references(repo, findings)
-    assert not any(item.code == "change.record_missing" for item in findings)
+    assert any(item.code == "change.record_missing" for item in findings)
 
 
 def test_unknown_disposition_is_rejected(tmp_path):
@@ -108,3 +108,15 @@ def test_rendered_records_round_trip_through_frontmatter_parser():
     parsed = parse_yaml("a: 1\n" + sl.render_trunk_fixes(fixes) + "b: 2\n")
     assert parsed["trunk_fixes"] == fixes and parsed["b"] == 2
     assert sl.render_trunk_fixes([]) == ""
+
+
+def test_support_archive_excludes_bug_groups_before_scanning(tmp_path):
+    from mdf_core.documents.archive import archive_plan
+    repo = github_flow_repo(tmp_path)
+    duplicate = repo / "docs/bugs/bug-EF56-duplicate-timeout.md"
+    duplicate.write_text((repo / "docs/bugs" / BUG_NAME).read_text()
+                         .replace(BUG_ID, "bug-EF56")
+                         .replace("status: open", "status: rejected\nreject-reason: duplicate\nduplicate_of: bug-CD34"))
+    assert code_of(lambda: archive_plan(repo, "1.2")) == "duplicate_group_open"
+    moves, _rewrites = archive_plan(repo, "1.2", exclude_bugs=True)
+    assert not any(path.is_relative_to(repo / "docs/bugs") for path in moves)

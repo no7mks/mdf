@@ -23,6 +23,8 @@ def apply_closeout(
     repo: Path,
     context: dict[str, Any],
 ) -> dict[str, Any]:
+    from mdf_core.lifecycle.support_line import support_hotfix, trunk_bug
+    support = context["mode"] == "hotfix" and support_hotfix(repo, context["source_branch"])
     all_slugs = [item["slug"] for item in context["release_items"]]
     change_findings: list[Finding] = []
     for slug in all_slugs:
@@ -113,6 +115,10 @@ def apply_closeout(
                     for path in (item.get("evidence", {}).get(key) for key in ("review", "tests", "fact"))
                     if isinstance(path, str) and path
                 )
+    if context.get("require_release_notes") and not any(notes.values()):
+        raise MDFError("发布版本需要实际 release notes", code="empty_release_notes")
+    if support and (closed_ids or deferred_ids):
+        raise MDFError("维护线仅记录 fixed/trunk_fixes，不处置 trunk Bug 状态", code="invalid_closure")
     if (
         fixed_ids & closed_ids
         or fixed_ids & deferred_ids
@@ -165,6 +171,8 @@ def apply_closeout(
                 f"{identifier}",
                 code="invalid_closure",
             )
+        if support and identifier.startswith("bug-") and identifier not in fixed_ids:
+            raise MDFError("维护线 Bug closure 必须匹配 fixed/trunk_fixes", code="trunk_first_required")
         if identifier not in baseline_closures:
             record = objects.get(identifier)
             object_kind = record[0] if record is not None else None
@@ -193,7 +201,7 @@ def apply_closeout(
     unreleased_active = sorted(
         identifier
         for identifier, (kind, _path, metadata) in objects.items()
-        if kind == "bug"
+        if not support and kind == "bug"
         and metadata.get("status") in {"open", "fixed", "closed", "rejected"}
         and is_unreleased_sentinel(metadata.get("found_in"))
         and metadata.get("reject-reason") != "duplicate"
@@ -217,6 +225,11 @@ def apply_closeout(
     for closure in closures:
         resolution = closure["resolution"]
         identifier = closure["id"]
+        if support and identifier in fixed_ids:
+            if resolution != "fixed" or closure.get("fixed_in") != context["version"]:
+                raise MDFError("维护线修复版本不符", code="invalid_closure")
+            trunk_bug(repo, identifier)
+            continue
         record = objects.get(identifier)
         if record is None:
             raise MDFError(

@@ -58,9 +58,6 @@ def inspect(repo, branch=None, *, refresh=True):
         rows = block.splitlines()
         if f'branch refs/heads/{branch}' not in rows:
             protected.update(row[5:] for row in rows if row.startswith('HEAD '))
-        anchor = git(repo, 'log', '-1', '--first-parent', '--format=%H', '--grep=^MDF-Release-Head: ', head).stdout.strip()
-        if anchor:
-            protected.add(anchor)
     owner = branch
     from mdf_core.lifecycle.roster import parse_role_branch
     role = parse_role_branch(branch)

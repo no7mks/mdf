@@ -45,6 +45,9 @@ def test_release_delivery_matrix(python_exe, tmp_path, monkeypatch, github, pr):
     release_head = git(work, "rev-parse", "HEAD").stdout.strip()
     if github:
         payload(mdf(python_exe, "publish", "--repo", str(work)))
+    route = payload(mdf(python_exe, "delivery", "route", "--repo", str(work)))["result"]
+    assert route["next"] == ("pr" if pr else "merge")
+    assert route["state"] == ("awaiting_decision_confirmation" if pr else "ready")
     if pr:
         squash_pending(work)
         payload(mdf(python_exe, "pr", "--repo", str(work)))
@@ -53,6 +56,8 @@ def test_release_delivery_matrix(python_exe, tmp_path, monkeypatch, github, pr):
     else:
         merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
     if not github:
+        route = payload(mdf(python_exe, "delivery", "route", "--repo", str(work)))["result"]
+        assert route["next"] == "publish" and route["state"] == "ready"
         payload(mdf(python_exe, "publish", "--repo", str(work)))
     tag_head = git(remote, "rev-parse", "v1.3.0^{commit}").stdout.strip()
     assert tag_head == (release_head if github else merged)

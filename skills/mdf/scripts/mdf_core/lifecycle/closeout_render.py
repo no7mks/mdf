@@ -271,7 +271,7 @@ def changelog_excerpt(text: str, version: str) -> str:
     meaningful = [line.strip() for line in body.splitlines()
                   if line.strip() and not re.match(r"^\s*(?:#+\s|[-*_]{3,}\s*$)", line)]
     content = [re.sub(r"^(?:[-*+]\s*|\d+[.)](?:\s+|$))(?:\[[ xX]\]\s*)?", "", line) for line in meaningful]
-    if not any(re.search(r"[^\W_]", line) for line in content):
+    if not any(re.search(r"[^\W_]", line) and line != "没有面向用户的变更。" for line in content):
         raise MDFError(f"CHANGELOG 的 {version} 缺少实际发布内容", code="empty_release_notes")
     return excerpt
 

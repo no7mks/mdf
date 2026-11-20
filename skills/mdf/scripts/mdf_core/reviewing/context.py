@@ -79,13 +79,6 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
     publication = backmerge_identity(repo, source, head) if source.startswith("codex/backmerge/") else None
     details = branch_details(source)
     integration_head = None
-    from mdf_core.workspace.workflow_policy import is_github_flow
-    if is_github_flow(repo) and details["kind"] in {"release", "hotfix"} and details.get("version"):
-        tag = f"refs/tags/v{details['version']}"
-        if git(repo, "rev-parse", "--verify", tag, check=False).returncode == 0:
-            integration_head = sha(repo, tag)
-            if not ancestor(repo, integration_head, head):
-                raise MDFError("工作分支未包含已发布 commit", code="invalid_review_context")
     if publication:
         details = {"supported": True, "kind": "backmerge", "version": publication["version"]}
     elif not details["supported"]:
@@ -115,6 +108,14 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         publication["source"] = delivery["branch"]
     elif delivery.get("branch") != source:
         raise MDFError("source 与 delivery.json 不符", code="invalid_review_context")
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    published_version = details.get("version") or delivery.get("version")
+    if is_github_flow(repo) and details["kind"] in {"release", "hotfix"} and published_version:
+        tag = f"refs/tags/v{published_version}"
+        if git(repo, "rev-parse", "--verify", tag, check=False).returncode == 0:
+            integration_head = sha(repo, tag)
+            if not ancestor(repo, integration_head, head):
+                raise MDFError("工作分支未包含已发布 commit", code="invalid_review_context")
     manifest = manifest_at(repo, policy_ref)
     base = integration_head or (publication["base_commit"] if publication else delivery["start_commit"])
     if details["kind"] in {"release", "on-demand-release"} and integration_head is None:

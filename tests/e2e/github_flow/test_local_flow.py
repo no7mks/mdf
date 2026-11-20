@@ -32,7 +32,7 @@ def finishable(python_exe, tmp_path, kind, version="1.2.1"):
         (root / "objectives.md").write_text("# 目标\n\n" + "".join(f"- [x] {n}\n" for n in STEPS))
         (root / "CHANGE.md").write_text(
             "---\nchange_kind: feature\nsource_branch: feature/manual-work\nproposals: []\n---\n成果\n")
-    elif kind in {"release", "hotfix"}:
+    elif kind == "release":
         write_changelog_release(work, version)
     (work / "finish.txt").write_text("本次交付\n")
     commit(work)

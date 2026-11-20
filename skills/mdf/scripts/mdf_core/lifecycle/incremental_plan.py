@@ -61,10 +61,10 @@ def upstream_merge(repo, parents, refs):
     return len(parents) > 1 and all(any(ancestor(repo, p, ref) for ref in refs) for p in parents[1:])
 
 
-def graph(repo, left, refs):
+def graph(repo, left, refs, head):
     """left..HEAD 的 merge 与普通提交划分：上游并入集、本分支自身提交、各 merge 冲突解决净改动。"""
     merges, incoming = [], set()
-    for line in git(repo, "rev-list", "--merges", "--reverse", "--parents", f"{left}..HEAD").stdout.splitlines():
+    for line in git(repo, "rev-list", "--merges", "--reverse", "--parents", f"{left}..{head}").stdout.splitlines():
         commit, *parents = line.split()
         kind = "upstream" if upstream_merge(repo, parents, refs) else "internal"
         if kind == "upstream":
@@ -75,7 +75,7 @@ def graph(repo, left, refs):
             if not known else [x for x in merged.stdout.split("\0") if x]
         merges.append({"commit": commit, "kind": kind, "parents": len(parents),
                        "resolution_known": known, "resolution_paths": sorted(resolution)})
-    own = [c for c in git(repo, "rev-list", "--no-merges", "--reverse", f"{left}..HEAD").stdout.split()
+    own = [c for c in git(repo, "rev-list", "--no-merges", "--reverse", f"{left}..{head}").stdout.split()
            if c not in incoming]
     return merges, own, incoming
 
@@ -111,15 +111,15 @@ def dependents(config, touched):
     return sorted(result)
 
 
-def build_plan(repo, root, data, explicit_base=None):
+def build_plan(repo, root, data, explicit_base=None, *, explicit_head=None):
     config = load_modules(repo)
-    base, head = resolve_base(repo, root, explicit_base), sha(repo, "HEAD")
-    if not ancestor(repo, base, "HEAD"):
+    base, head = resolve_base(repo, root, explicit_base), sha(repo, explicit_head or "HEAD")
+    if not ancestor(repo, base, head):
         raise MDFError("incremental-integration 基线不是 HEAD 的祖先", code="invalid_integration_base")
     refs = target_refs(repo, data.get("target"))
-    merges, own, incoming = graph(repo, base, refs)
+    merges, own, incoming = graph(repo, base, refs, head)
     start = data.get("start_commit") or base
-    _, branch_own, _ = graph(repo, start, refs) if start != base else (None, own, None)
+    _, branch_own, _ = graph(repo, start, refs, head) if start != base else (None, own, None)
 
     def counted_code(paths):
         """无 module 的根脚本、CI 与 lockfile 同样计入 review、verify 与 fact。"""
@@ -139,7 +139,7 @@ def build_plan(repo, root, data, explicit_base=None):
     reasons = [name for name, hit in (("conflict_resolution", resolution or unknown), ("post_base_code", own_code), ("upstream_code", up_code),
                                       ("interaction", shared), ("module_interaction", interaction_modules),
                                       ("rules_or_contract_changed", contract)) if hit]
-    review = {"action": "skip" if not reasons else "focused", "reasons": reasons, "diff_range": f"{base}..HEAD",
+    review = {"action": "skip" if not reasons else "focused", "reasons": reasons, "diff_range": f"{base}..{head}",
               "paths": sorted(set(own_code) | set(up_code) | set(res_code) | set(shared) | set(module_files)),
               "interaction": {"files": shared, "modules": interaction_modules,
                               "branch_paths": sorted(p for p in branch_code if set(config.modules_for_paths(repo, [p]))

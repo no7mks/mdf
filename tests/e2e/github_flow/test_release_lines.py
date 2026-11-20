@@ -222,13 +222,17 @@ def test_support_option_validation(python_exe, tmp_path):
 @pytest.mark.parametrize("slug", [False, True])
 def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_exe, tmp_path, slug):
     repo, remote = github_flow_repo(tmp_path, origin=True)
+    # 历史 1.1 tag 的材料与版本一致，真实 consolidate 才能审计维护线。
+    for relative in (".mdf/manifest.yaml", "CHANGELOG.md"):
+        path = repo / relative
+        path.write_text(path.read_text().replace("1.2.0", "1.1.0"))
+    commit(repo)
     two_lines(repo)
     trunk_before = git(repo, "rev-parse", "master").stdout
     name = ("--name", "fix-login") if slug else ()
     data = payload(hotfix(python_exe, repo, tmp_path, "--version", "1.1.1", "--support", "1.1", *name))
     work = Path(data["worktree"])
-    write_changelog_release(work, "1.1.1")
-    (work / "src/service.py").write_text("fixed = True\n")
+    (work / "src/support_fix.py").write_text("fixed = True\n")
     commit(work)
     head = publish_release(python_exe, work)
     done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))

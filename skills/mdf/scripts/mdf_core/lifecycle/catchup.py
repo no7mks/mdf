@@ -83,11 +83,15 @@ def catchup(repo, *, complete=False, reviewed_head=None, summary=None):
         if remote and not ancestor(repo, remote, head):
             raise MDFError("远端同名工作分支 再次前进，重新执行 catch-up 并补检", code="catchup_required")
     else:
-        candidate = state.pop("candidate_tag", None)
-        if candidate and version:
-            remote_tag = git(repo, "ls-remote", "origin", f"refs/tags/v{version}").stdout.strip()
-            if not remote_tag:
-                git(repo, "update-ref", "-d", f"refs/tags/v{version}", candidate)
+        if version:
+            from mdf_core.lifecycle.release_publish import publication_record, publication_record_path
+            publication = publication_record(repo, source, version)
+            if publication and not publication["published"]:
+                remote_tag = git(repo, "ls-remote", "origin", f"refs/tags/v{version}").stdout.strip()
+                if not remote_tag:
+                    if publication.get("owned_tag") and publication.get("tag_oid"):
+                        git(repo, "update-ref", "-d", f"refs/tags/v{version}", publication["tag_oid"])
+                    publication_record_path(repo, source, version).unlink()
         state.pop("completed_head", None)
         state["remote"] = remote
         write_json(path, state)
@@ -104,6 +108,9 @@ def catchup(repo, *, complete=False, reviewed_head=None, summary=None):
         root, data = locate(repo)
     plan = build_plan(repo, root, data, explicit_base=state["base"])
     if complete:
+        if sha(repo, "HEAD") != head or plan["head"] != head:
+            raise MDFError("验收计划期间 HEAD 变化，重新核对增量后完成 catch-up", code="sync_review_required")
+        require_completion_worktree(repo, objectives, text, completion_text(text, item, head))
         if state.get("completed_head") == head and state.get("remote") == remote and item["checked"]:
             ensure_clean(repo)
             return {"completed": True, "remote": remote, "plan": plan, "head": head, "next_intent": "consolidate"}
@@ -112,7 +119,17 @@ def catchup(repo, *, complete=False, reviewed_head=None, summary=None):
             objectives.write_text(desired)
             git(repo, "add", "--", str(objectives.relative_to(repo)))
             git(repo, "commit", "-m", "docs(release): 完成远端同步与增量验收")
-        state.update(completed_head=sha(repo, "HEAD"), remote=remote, summary=summary)
+        completed = sha(repo, "HEAD")
+        if desired != text:
+            parents = git(repo, "show", "-s", "--format=%P", completed).stdout.split()
+            changed = set(git(repo, "diff", "--name-only", head, completed).stdout.splitlines())
+            recorded = git(repo, "show", f"{completed}:{relative}").stdout
+            if parents != [head] or changed != {relative} or recorded != desired:
+                raise MDFError("同步记录提交夹带未验收变化，保留现场重新验收", code="sync_review_required")
+        elif completed != head:
+            raise MDFError("验收完成前 HEAD 变化", code="sync_review_required")
+        ensure_clean(repo)
+        state.update(completed_head=completed, remote=remote, summary=summary)
         write_json(path, state)
     return {"completed": complete, "remote": remote, "plan": plan,
             "head": sha(repo, "HEAD"), "next_intent": "consolidate" if complete else "catch-up"}
