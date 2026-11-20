@@ -1,9 +1,18 @@
 # 交付契约
 
+github-flow release 在 fact 后先执行 [sync-remote](sync-remote.md)，再执行 [publish](publish.md)，创建并推送 final tag，然后进入 catch-up 与主线集成。
+
 涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
 ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
 
 树形：not-tree。本流程核对当前交付阶段的共同契约，阶段仍由原 intent 的编号工作流承办。
+
+## 同步与集成的增量验收
+
+- sync-remote 从远端同名分支同步，catch-up 从其他分支集成。
+- 两个步骤各自包含新增改动的增量 code-review、verify 与 fact 验收，并在本步骤内循环修复至通过。
+- 已完成的 lint、code-review、verify、fact audit / fact update 保持 `[x]`，基线报告继续保留。
+- 再次出现增量时，只重新打开对应的 sync-remote 或 catch-up，完成本轮增量验收后自勾。
 
 ## 工作流（唯一执行契约）
 

@@ -1,5 +1,7 @@
 # Close-out
 
+github-flow release 须先完成 [publish](publish.md)。本阶段复用版本材料，核对远端 final tag 与合入结果后收尾。
+
 feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
 不套用本文普通 feature 的材料准备、验收前置或步骤补勾；目标 develop 保持原流程。
 
@@ -165,7 +167,10 @@ adhoc 仅执行 `references/adhoc-close-out.md`，不进入本页普通收口主
 PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提交前远端集成)。
 本节的本地目标、跳过判定及已收口后禁止新集成仅适用于 local；PR 候选版本按 PR 返工规则续办。
 
-待收口或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
+github-flow release 已在 publish 前完成版本材料；本阶段直接核对 final tag 与合入结果。
+其 PR 集成在独立分支完成，local 集成由 finish-gitflow 合入 trunk。
+
+其他待收口交付或 feature/bugfix 在当前交付分支先集成目标主线，再核对审查证据：
 
 - PR 模式在每次目标主线 merge 与 push 前执行 `references/squash.md` 的必要检查，完成分析及分段 squash 后再继续。
 - **local 模式可选 squash**（第一次把目标主线合入交付分支之前；嵌在本步、不改编号）：
@@ -404,7 +409,7 @@ PR mode 的集成及补审补测统一执行 [提交前远端集成](pr.md#提�
       精简条目），再 no-ff 合并 trunk 到 develop。
     - 原子 push trunk 与 tag；develop 仅在本地合回，要求 clean，不核对远端。
       不推送、不删除远端 `develop`、`release/*`、`hotfix/*`。
-  - github-flow 的 local 发布 tag 等于锁定的 `release_head`，不打在 merge commit 上。
+  - github-flow release 的 local 收尾核对前置 publish 已发布的 final tag，其指向固定 `release_head`。
     - 与 trunk 冲突时 CLI abort，`details.recovery` 给出手工恢复指引。
     - 在 trunk 上执行 `git merge --no-ff <release_head>`，解决冲突并提交后重跑 `finish-gitflow`。
   - 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。

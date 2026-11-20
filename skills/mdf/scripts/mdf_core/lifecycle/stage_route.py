@@ -156,8 +156,12 @@ def complete_stage(repo, root, data, stage):
     from mdf_core.workspace.gitutil import current_branch, git_in_progress_head
     if git_in_progress_head(repo):
         raise MDFError("存在未完成的 merge、cherry-pick 或 revert", code="unfinished_merge")
-    if current_branch(repo) != data["branch"]:
-        raise MDFError("complete-stage 须在 owner worktree 执行", code="not_owner")
+    from mdf_core.lifecycle.release_integration import integration_version
+    branch = current_branch(repo)
+    version = integration_version(branch)
+    integration_catchup = stage == "catch-up" and version and data["branch"] == f"release/{version}"
+    if branch != data["branch"] and not integration_catchup:
+        raise MDFError("complete-stage 须在 owner 或对应集成分支的 catch-up 执行", code="not_owner")
     if stage not in AUTO:
         raise MDFError(f"{stage} 不是纯证据可判定的阶段，仅支持 {', '.join(AUTO)}", code="invalid_stage")
     path, text = _objectives(repo, root)

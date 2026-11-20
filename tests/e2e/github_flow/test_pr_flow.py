@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from mdf_test_support import *  # noqa: F403
 from support_delivery import write_change, write_changelog_release
-from support_github_flow import commit, error_of, github_flow_repo, has_ref
+from support_github_flow import commit, error_of, github_flow_repo, has_ref, publish_release
 from support_planning import add_prp
 from support_pull import Platform, squash_pending
 
@@ -219,9 +219,9 @@ def test_release_pr_tags_release_head_and_never_backmerges(python_exe, tmp_path,
     write_changelog_release(work, "1.3.0")
     commit(work)
     squash_pending(work)
+    head = publish_release(python_exe, work)
     first = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert first["status"] == "waiting_for_merge" and first["source"] == "release/1.3.0"
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
     merged = platform.merge(1, tmp_path)
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "release/1.3.0"))
     assert done["completed"] and done["targets"] == ["master"] and done["backmerge"] is None
@@ -734,28 +734,18 @@ def test_github_flow_sync_reports_trunk_pr_and_aligns_shared_support(python_exe,
     assert ahead["pull_plan"]["main"]["action"] == "trunk_pr"
 
 
-def test_release_head_updates_before_pr_and_locks_after(python_exe, tmp_path, monkeypatch):
+def test_release_head_locks_at_publish(python_exe, tmp_path, monkeypatch):
     repo, _remote, _platform = pr_repo(tmp_path, monkeypatch)
-    git(repo, "tag", "-a", "v1.2.0", "-m", "test: v1.2.0")
-    git(repo, "push", "origin", "--tags")
     data = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release", "--version", "1.3.0",
                        "--objectives-file", str(write_release_objectives(tmp_path))))
     work = Path(data["worktree"])
     write_changelog_release(work, "1.3.0")
     commit(work)
+    assert error_of(mdf(python_exe, "release-integrate", "--repo", str(work)))["error"] == "release_not_published"
+    publish_release(python_exe, work)
     first = payload(mdf(python_exe, "release-integrate", "--repo", str(work)))
     assert first["release_head"] == git(work, "rev-parse", "HEAD").stdout.strip()
-    (work / "extra.txt").write_text("追加\n")
-    commit(work)
-    new_head = git(work, "rev-parse", "HEAD").stdout.strip()
-    second = payload(mdf(python_exe, "release-integrate", "--repo", str(work)))
-    assert second["release_head"] == new_head
-    integ = Path(second["worktree"])
-    git(integ, "merge-base", "--is-ancestor", new_head, "HEAD")
-    squash_pending(integ)
-    opened = payload(mdf(python_exe, "pr", "--repo", str(integ)))
-    assert opened["status"] == "waiting_for_merge"
-    (work / "after-pr.txt").write_text("再追加\n")
+    (work / "extra.txt").write_text("发布后追加\n")
     commit(work)
     assert error_of(mdf(python_exe, "release-integrate", "--repo", str(work)))["error"] == "release_head_changed"
 
@@ -800,7 +790,7 @@ def test_conflicting_release_goes_through_integration_branch_and_tags_release_he
     (work / "src/service.py").write_text("released = True\n")
     commit(work)
     squash_pending(work)
-    release_head = git(work, "rev-parse", "HEAD").stdout.strip()
+    release_head = publish_release(python_exe, work)
     (repo / "src/service.py").write_text("trunk_work = True\n")
     commit(repo, "fix: trunk 上的并行修改")
     git(repo, "push", "origin", "master")
@@ -819,7 +809,8 @@ def test_conflicting_release_goes_through_integration_branch_and_tags_release_he
     assert first["status"] == "waiting_for_merge" and first["source"] == "codex/integrate/release-1.3.0"
     # 原 release ref 在 PR 已打开后改变或消失时，tag 仍绑定已合入的集成历史。
     git(work, "checkout", "--detach", release_head)
-    git(repo, "update-ref", "refs/heads/release/1.3.0", release_head + "^", release_head)
+    source_head = git(repo, "rev-parse", "release/1.3.0").stdout.strip()
+    git(repo, "update-ref", "refs/heads/release/1.3.0", release_head + "^", source_head)
     platform.merge(1, tmp_path)
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
     assert done["completed"] and done["tag"] == "v1.3.0"

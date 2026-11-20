@@ -105,7 +105,9 @@ def material_root(repo, slug, *, owner=None):
         from mdf_core.workspace.merge_policy import configured
         candidate = safe(repo, repo / "changes" / slug)
         record = safe(repo, candidate / "delivery.json")
-        if configured(repo)["mode"] == "pr" and record.is_file():
+        from mdf_core.workspace.workflow_policy import is_github_flow
+        candidate_release = is_github_flow(repo) and details["kind"] == "release"
+        if (configured(repo)["mode"] == "pr" or candidate_release) and record.is_file():
             if (root / "delivery.json").exists():
                 raise MDFError("候选发布材料存在多个目录", code="invalid_delivery")
             data = read_json(record)
@@ -116,7 +118,13 @@ def material_root(repo, slug, *, owner=None):
 
 
 def locate(repo, slug=None, *, owner=None):
-    owner = owner if owner is not None else owner_branch(current_branch(repo))
+    if owner is None:
+        from mdf_core.lifecycle.release_integration import integration_version, release_head_of
+        branch = current_branch(repo)
+        version = integration_version(branch)
+        if version:
+            release_head_of(repo, branch)
+        owner = f"release/{version}" if version else owner_branch(branch)
     if slug is None:
         slug = unreleased_slug(branch_details(owner))
     root = material_root(repo, slug, owner=owner)

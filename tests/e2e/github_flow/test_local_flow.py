@@ -2,7 +2,7 @@
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 from support_delivery import write_changelog_release
-from support_github_flow import commit, error_of, github_flow_repo, has_ref
+from support_github_flow import commit, error_of, github_flow_repo, has_ref, publish_release
 
 
 def start(python_exe, repo, tmp_path, kind, *extra, objectives=None):
@@ -58,6 +58,8 @@ def test_feature_and_bugfix_start_and_finish_on_trunk(python_exe, tmp_path, kind
 def test_publish_merges_only_trunk_and_tags_release_head(python_exe, tmp_path, kind):
     repo, remote, work, data = finishable(python_exe, tmp_path, kind)
     head = git(work, "rev-parse", "HEAD").stdout.strip()
+    if kind == "release":
+        head = publish_release(python_exe, work)
     trunk_before = git(repo, "rev-parse", "master").stdout
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     target = "support/1.2" if kind == "hotfix" else "master"
@@ -84,7 +86,7 @@ def test_gitflow_only_start_entries_are_rejected(python_exe, tmp_path, entry):
 
 def test_published_release_reuses_tag_and_merge(python_exe, tmp_path):
     repo, remote, work, data = finishable(python_exe, tmp_path, "release")
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    head = publish_release(python_exe, work)
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     refs = git(remote, "show-ref").stdout
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))

@@ -39,6 +39,7 @@
 联调例外：integrate 先打开工作线，内部完成适用的 design / 开发 / converge 后验收、冻结并自勾。
 这些开发阶段不依赖 integrate 已勾；code-review 仍须等联调收口。
 进度只认本清单，不以 `gates/*.json` 或 verify/fact 报告当通行证。
+github-flow release 由 start 在 catch-up 前依次写入 sync-remote、publish，先同步远端同名 release 并验收，再发布 final tag。
 跳过项由 start 写入时即勾为 `[x]`（不靠缺席表示跳过）。
 
 - [ ] 确认工作线与范围（start）

@@ -2,7 +2,7 @@
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 from support_delivery import write_changelog_release
-from support_github_flow import commit, error_of, github_flow_repo, has_ref
+from support_github_flow import commit, error_of, github_flow_repo, has_ref, publish_release
 from test_local_flow import start
 
 
@@ -74,10 +74,11 @@ def test_local_conflict_recovery_tags_the_locked_release_head(python_exe, tmp_pa
     write_changelog_release(work, "1.3.0")
     (work / "src/service.py").write_text("release = True\n")
     commit(work)
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    head = publish_release(python_exe, work)
+    source_head = git(work, "rev-parse", "HEAD").stdout.strip()
     failed = error_of(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    assert failed["error"] == "merge_conflict" and head in failed["details"]["recovery"]
-    assert run(["git", "merge", "--no-ff", "--no-commit", head], cwd=repo).returncode != 0
+    assert failed["error"] == "merge_conflict" and source_head in failed["details"]["recovery"]
+    assert run(["git", "merge", "--no-ff", "--no-commit", source_head], cwd=repo).returncode != 0
     (repo / "src/service.py").write_text("trunk = True\nrelease = True\n")
     git(repo, "add", "src/service.py")
     git(repo, "commit", "-m", "chore: 解决发布冲突")
@@ -95,7 +96,7 @@ def test_cutpoint_release_publishes_with_tag_on_release_head(python_exe, tmp_pat
     work = Path(data["worktree"])
     write_changelog_release(work, "1.3.0")
     commit(work)
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    head = publish_release(python_exe, work)
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     assert git(repo, "rev-parse", "v1.3.0^{commit}").stdout.strip() == head
     assert head != git(repo, "rev-parse", "master").stdout.strip()

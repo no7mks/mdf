@@ -332,6 +332,17 @@ def build_parser() -> argparse.ArgumentParser:
     dev_pr.add_argument("--repo", required=True)
     dev_pr.add_argument("--slug")
     dev_pr.set_defaults(func=command_dev_pr)
+    from mdf_core.lifecycle.sync_remote import command_sync_remote
+    sync_remote_cmd = subparsers.add_parser("sync-remote")
+    sync_remote_cmd.add_argument("--repo", required=True)
+    sync_remote_cmd.add_argument("--complete", action="store_true")
+    sync_remote_cmd.add_argument("--reviewed-head")
+    sync_remote_cmd.add_argument("--summary")
+    sync_remote_cmd.set_defaults(func=command_sync_remote)
+    from mdf_core.lifecycle.release_publish import command_publish
+    publish_cmd = subparsers.add_parser("publish")
+    publish_cmd.add_argument("--repo", required=True)
+    publish_cmd.set_defaults(func=command_publish)
     from mdf_core.lifecycle.release_integration import command_release_integrate
     integrate = subparsers.add_parser("release-integrate")
     integrate.add_argument("--repo", required=True)

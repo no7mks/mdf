@@ -1,5 +1,7 @@
 # Next
 
+github-flow release 在 fact 后先执行 [sync-remote](sync-remote.md)，再执行 [publish](publish.md)，创建并推送 final tag，然后进入 catch-up 与主线集成。
+
 feature 的目标为 ODR 时，纳入/收口优先执行 [Late-decision 的纳入路径](late-decision.md#feature--odr-纳入路径)，
 不套用本文普通 feature 的材料准备、验收前置或步骤补勾；目标 develop 保持原流程。
 
@@ -153,9 +155,10 @@ PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路�
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
   - 主线后半：lint → code-review → verify branch → fact audit → catch-up → [pr（仅 PR mode）] → close-out。
-    进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
+  - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；
     仅文档直接进入 fact，其他改动补审补测，失败仅汇报，续办不重跑已执行 hook。
-    fact 已通过后，远端合入或收尾返工一律只退勾 `catch-up`，严禁退勾基线四项。
+  - fact 已通过后，同名远端同步只重新打开 `sync-remote`，其他分支集成或收尾返工只重新打开 `catch-up`。
+    两者在对应步骤内完成增量验收，已通过的基线四项保持 `[x]`。
   - PR mode 的 ODR 在 fact 后先完成 [统一验收](late-decision.md#纳入-checkpoint-与统一验收)，再进入 catch-up。
   - checklist 阶段只在有对应未勾项时进入；PR mode 前置全勾时按 PR 恢复路由续办。
   - 是否 design 读 `delivery.json` / objectives 的 `needs_design`；不按 kind 猜。

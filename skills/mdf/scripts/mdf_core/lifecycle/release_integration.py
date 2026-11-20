@@ -43,22 +43,16 @@ def release_anchor(head):
     return f"MDF-Release-Head: {head}"
 
 
-def conflicts_with_trunk(repo, release_head, trunk):
-    """release_head 与 origin/<trunk> 无法干净合并时返回 True；已含 trunk 或可 ff 视为无冲突。"""
-    remote = f"refs/remotes/origin/{trunk}"
-    if ancestor(repo, remote, release_head):
-        return False
-    return git(repo, "merge-tree", "--write-tree", "--no-messages", remote, release_head, check=False).returncode != 0
-
-
 def require_direct_pr(repo, source):
-    """release 源分支直接 PR 前核验；冲突时要求改走 integration 分支。"""
+    """release 源分支直接 PR 前核验；主线前进时要求独立集成并增量验收。"""
     if not (is_github_flow(repo) and branch_details(source)["kind"] == "release"):
         return
+    from mdf_core.lifecycle.release_publish import require_published_source
+    require_published_source(repo, branch_details(source)["version"], source)
     trunk = trunk_branch(repo)
-    if conflicts_with_trunk(repo, sha(repo, source), trunk):
+    if not ancestor(repo, f"refs/remotes/origin/{trunk}", source):
         version = branch_details(source)["version"]
-        raise MDFError(f"release/{version} 与 {trunk} 冲突；先执行 release-integrate 建立集成分支",
+        raise MDFError(f"release/{version} 尚未集成最新 {trunk}；先执行 release-integrate 并完成 catch-up",
                        code="integration_required", details={"integration": f"{PREFIX}{version}"})
 
 
@@ -83,6 +77,8 @@ def integrate(repo, source):
     git(repo, "fetch", "origin", "--prune")
     remote = f"refs/remotes/origin/{trunk}"
     current = sha(repo, source)
+    from mdf_core.lifecycle.release_publish import require_published_source
+    require_published_source(repo, version, source)
     forge = Forge(repo, origin(repo, configured(repo)["provider"]))
     pull = forge.find(branch, trunk)
     if pull and release_head_of(repo, branch, ref=pull["head"]) != current:
@@ -121,6 +117,7 @@ def integrate(repo, source):
             git(work, "commit", "--no-edit")
         status = "merged"
     if not ancestor(work, remote, "HEAD"):
+        reopen_catchup(work)
         result = git(work, "merge", "--no-ff", "--no-commit", remote, check=False)
         if result.returncode:
             conflicts = git(work, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
@@ -130,4 +127,19 @@ def integrate(repo, source):
             git(work, "commit", "-m", f"chore(release): 集成 {trunk} 到 release/{version}")
         status = "merged"
     emit({"ok": True, "operation": "release-integrate", "branch": branch, "worktree": str(work),
-          "release_head": current, "status": status, "next_intent": "pr"})
+          "release_head": current, "status": status, "next_intent": "catch-up"})
+
+
+def reopen_catchup(repo):
+    from mdf_core.lifecycle.delivery_state import locate
+    from mdf_core.lifecycle.stage_route import parse_items, _tick
+    root, _ = locate(repo)
+    path = root / "objectives.md"
+    text = path.read_text()
+    item = next((i for i in parse_items(text) if i["name"] == "catch-up"), None)
+    if item and item["checked"]:
+        desired = _tick(text, item, "catch-up", {"baseline": sha(repo, "HEAD")})
+        desired = desired.replace(f"- [x] {item['label']}", f"- [ ] {item['label']}", 1)
+        path.write_text(desired)
+        git(repo, "add", "--", str(path.relative_to(repo)))
+        git(repo, "commit", "-m", "docs(release): 重新打开集成增量验收")

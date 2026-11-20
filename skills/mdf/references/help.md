@@ -190,7 +190,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
-  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`catch-up`、`pr`、`close-out`
+  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`sync-remote`、`publish`、`catch-up`、`pr`、`close-out`
 - 维护：`archive`、`fact audit`、`prettify`、`upgrade`；
   `to`、`dev-pr`、`trunk-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -358,6 +358,14 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
   - 说明：独立默认 `branch`；`full` 整理知识面全树。主链只用 branch/paths；
     release `--base` 为上一正式发布。独立调用须 manifest ready。
+- `$mdf sync-remote`
+  - 用法：`$mdf sync-remote`
+  - 发布前同步远端同名 release，完成新增内容的增量审查、验证和事实补检。
+
+- `$mdf publish`
+  - 用法：`$mdf publish`
+  - github-flow release 完成基线后创建并推送 final tag，再进入 catch-up 和主线集成。
+
 - `$mdf catch-up`
   - 用法：`$mdf catch-up`
   - 用途：在基线 lint、code-review、verify、fact 已通过后，仅对远端合入或收尾返工的改动文件做增量补检。

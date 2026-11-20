@@ -77,12 +77,22 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         raise MDFError("source 与 target 需要唯一 merge-base", code="invalid_review_base")
     merge_base = bases[0]
     publication = backmerge_identity(repo, source, head) if source.startswith("codex/backmerge/") else None
+    from mdf_core.lifecycle.release_integration import integration_version, release_head_of
+    version = integration_version(source)
+    integration_head = None
     details = branch_details(source)
+    if version:
+        anchor = release_head_of(repo, source, ref=head)
+        tag = f"refs/tags/v{version}"
+        integration_head = sha(repo, tag)
+        if git(repo, "cat-file", "-t", tag).stdout.strip() != "tag" or not ancestor(repo, integration_head, anchor):
+            raise MDFError("集成审查需要对应的 annotated final tag", code="invalid_review_context")
+        details = {"supported": True, "kind": "integration", "version": version}
     if publication:
         details = {"supported": True, "kind": "backmerge", "version": publication["version"]}
     elif not details["supported"]:
         raise MDFError("需要 MDF 交付 source", code="unsupported_branch")
-    folder = publication["version"] if publication else unreleased_slug(details)
+    folder = version or (publication["version"] if publication else unreleased_slug(details))
     artifact_ref = publication["merge_commit"] if publication else head
     root = f"changes/unreleased/{folder}"
     if details["kind"] == "hotfix" and details["version"] is None:
@@ -91,7 +101,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         if record is None:
             raise MDFError("hotfix 交付身份缺失", code="invalid_review_context")
         root = record[0].rsplit("/", 1)[0]
-    if (details["kind"] in {"release", "on-demand-release", "hotfix", "backmerge"}
+    if (details["kind"] in {"release", "on-demand-release", "hotfix", "backmerge", "integration"}
             and blob(repo, artifact_ref, f"changes/{folder}/delivery.json", required=False)):
         root = f"changes/{folder}"
     try:
@@ -105,10 +115,10 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
                 or (published["version"] or delivery.get("version")) != publication["version"]):
             raise MDFError("发布 tag 的交付身份与回合版本不符", code="invalid_review_context")
         publication["source"] = delivery["branch"]
-    elif delivery.get("branch") != source:
+    elif delivery.get("branch") != (f"release/{version}" if version else source):
         raise MDFError("source 与 delivery.json 不符", code="invalid_review_context")
     manifest = manifest_at(repo, policy_ref)
-    base = publication["base_commit"] if publication else delivery["start_commit"]
+    base = integration_head or (publication["base_commit"] if publication else delivery["start_commit"])
     if details["kind"] in {"release", "on-demand-release"}:
         previous_version = manifest.get("versioning", {}).get("latest_release")
         if not previous_version:

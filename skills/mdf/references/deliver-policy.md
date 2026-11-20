@@ -1,5 +1,7 @@
 # Deliver Policy
 
+github-flow release 在 fact 后先执行 [sync-remote](sync-remote.md)，再执行 [publish](publish.md)，创建并推送 final tag，然后进入 catch-up 与主线集成。
+
 树形：not-tree。由 deliver 的入口、intent 委托与 decision 事件触发；不执行交付阶段。
 
 ## 工作流（唯一执行契约）

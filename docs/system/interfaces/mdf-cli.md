@@ -150,3 +150,15 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 
 `fact-audit`、`validate`、`semver-check` 与 `info` 提供可重复的状态、契约与版本判断。
 它们是 intent 和测试的确定性基础，不是面向最终用户的直接产品入口。
+
+## 独立发布
+
+`mdf.py publish --repo <repo>` 在 github-flow release 的基线完成后创建并推送 final tag，
+核验远端后自勾 publish，再进入 catch-up 与主线集成。执行契约见
+[publish](../../../skills/mdf/references/publish.md)。
+
+## 远端同名分支同步
+
+`mdf.py sync-remote --repo <repo>` 同步 github-flow release 的远端同名分支并返回增量 plan。
+补检后使用 `--complete --reviewed-head <sha> --summary <结论>` 完成阶段，随后 publish 核对该同步点并原子推送。
+执行契约见 [sync-remote](../../../skills/mdf/references/sync-remote.md)。

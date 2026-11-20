@@ -40,3 +40,21 @@ def error_of(result) -> dict:
 def has_ref(repo: Path, ref: str) -> bool:
     from _support import run as _run
     return _run(["git", "rev-parse", "--verify", "--quiet", ref], cwd=repo).returncode == 0
+
+
+def publish_release(python_exe, work):
+    """为发布 CLI 准备已完成的基线 checklist。"""
+    from mdf_test_support import mdf, payload
+    from support_pull import squash_pending
+    version = git(work, "branch", "--show-current").stdout.strip().removeprefix("release/")
+    root = work / "changes/unreleased" / version
+    path = root / "objectives.md"
+    text = path.read_text()
+    before, after = text.split("- [ ] publish", 1)
+    path.write_text(before.replace("- [ ]", "- [x]") + "- [ ] publish" + after)
+    commit(work, "test: 完成发布基线")
+    squash_pending(work)
+    sync = payload(mdf(python_exe, "sync-remote", "--repo", str(work)))
+    payload(mdf(python_exe, "sync-remote", "--repo", str(work), "--complete",
+                "--reviewed-head", sync["head"], "--summary", "已完成测试夹具增量验收"))
+    return payload(mdf(python_exe, "publish", "--repo", str(work)))["release_head"]

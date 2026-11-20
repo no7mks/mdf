@@ -19,7 +19,8 @@ def preflight(repo, source):
         raise MDFError("首次提交或更新 PR/MR 必须在源 worktree 执行", code="stage_branch")
     from mdf_core.lifecycle.release_integration import integration_version, release_head_of, require_direct_pr
     if integration_version(source):
-        release_head_of(repo, source)
+        from mdf_core.lifecycle.release_publish import require_published_source
+        require_published_source(repo, integration_version(source), release_head_of(repo, source))
         ensure_clean(repo)
         return
     require_direct_pr(repo, source)
@@ -353,6 +354,9 @@ def _finish(repo, source, settings, *, phase, number):
                 details["version"] = source_version(repo, source, ref=state["head"])
             if github:
                 state["release_head"] = release_head_of(repo, source, ref=state["head"]) if version else state["head"]
+                if version or details["kind"] == "release":
+                    from mdf_core.lifecycle.release_publish import require_published_source
+                    state["release_head"] = require_published_source(repo, details["version"], state["release_head"])
             ready = publish(repo, state, details["version"], source_cleaned=remote_head is None and local is None)
         if ready:
             cleanup_remote(repo, source, state["head"])

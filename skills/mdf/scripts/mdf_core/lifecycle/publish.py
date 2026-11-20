@@ -29,6 +29,10 @@ def publish(repo, source, version, *, head=None):
     from mdf_core.workspace.workflow_policy import is_github_flow
     github = is_github_flow(repo)
     tag = f"refs/tags/v{version}"
+    separate_release = github and source.startswith("release/")
+    if separate_release:
+        from mdf_core.lifecycle.release_publish import published_head
+        published_head(repo, version)
     checked_source = local_head(repo, source)
     if head is None and checked_source is None and github:
         head = sha(repo, tag)
@@ -46,6 +50,9 @@ def publish(repo, source, version, *, head=None):
     head = head or checked_source or published_source(repo, version, ref)
     if checked_source is not None and checked_source != head:
         raise MDFError("源分支已变化，保留现场", code="publish_state_changed")
+    if separate_release:
+        from mdf_core.lifecycle.release_publish import require_published_source
+        require_published_source(repo, version, head)
     recheck_before_publish(repo, source, version, target=target, head=head)
     primary = primary_worktree(repo)
     current = sha(repo, ref)
@@ -60,7 +67,7 @@ def publish(repo, source, version, *, head=None):
     merged = find_merge(repo, ref, head)
     if merged is None and github and ancestor(repo, head, current):
         merged = head
-    if local_tag and (merged is None or _git(repo, "cat-file", "-t", tag).stdout.strip() != "tag"
+    if local_tag and not separate_release and (merged is None or _git(repo, "cat-file", "-t", tag).stdout.strip() != "tag"
                       or sha(repo, tag) != (head if github else merged)):
         raise MDFError("发布 tag 与源提交不符", code="publish_state_changed")
     if merged is None:
@@ -70,6 +77,12 @@ def publish(repo, source, version, *, head=None):
         ensure_clean(work)
         _merge(work, head, target)
         merged = current = sha(repo, ref)
+    if separate_release:
+        from mdf_core.lifecycle.release_publish import require_published_source
+        require_published_source(repo, version, head)
+        if remote_head != current:
+            _git(primary, "push", "origin", f"{current}:{ref}")
+        return head
     if remote_refs.get(tag) == local_tag and local_tag:
         if not remote_head or not ancestor(repo, merged, remote_head):
             raise MDFError("远端版本 tag 与发布分支历史不一致", code="publish_state_changed")

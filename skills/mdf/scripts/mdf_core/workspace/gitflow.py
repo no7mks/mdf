@@ -265,6 +265,11 @@ def command_start(args) -> None:
     before_steps, checklist, after_steps = split_objectives_steps(objectives)
     if pr_mode:
         checklist = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", checklist)
+    if github and args.kind == "release":
+        checklist = re.sub(r"(?m)^- \[[ x]\] (?:sync-remote|publish)[^\n]*\n", "", checklist)
+        checklist = re.sub(r"(?m)^(- \[[ x]\] catch-up)",
+                           "- [ ] sync-remote（同步远端同名 release 并增量补检）\n"
+                           "- [ ] publish（创建并推送 final tag）\n" + r"\1", checklist, count=1)
     if args.kind == "on-demand-release":
         from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
         before = r"catch-up(?:（[^\n]*）)?[ \t]*" if pr_mode else r"close-out\s*"

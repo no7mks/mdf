@@ -89,6 +89,8 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
+github-flow release 在 fact 后依次加入 sync-remote、publish，同步远端同名 release 并验收后发布 final tag。
+
 PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
 
 ### 分支参数

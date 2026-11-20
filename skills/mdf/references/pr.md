@@ -166,7 +166,8 @@ closeout:
 - fetch origin 的已确定目标分支，并固定最新远端 tip。
   - gitflow 的 bugfix/adhoc 目标为 develop，release/ODR/hotfix 目标为配置的 trunk。
   - github-flow 的普通交付目标为 trunk，维护线 hotfix 目标为对应 support 分支。
-  - github-flow release 保持冻结的 `release_head`；与 trunk 冲突时用 `release-integrate` 建立集成分支并从该分支创建 PR。
+  - github-flow release 先完成 [publish](publish.md) 并核对远端 final tag，保持冻结的 `release_head`。
+    trunk 有尚未包含的提交时用 `release-integrate` 建立集成分支，完成 catch-up 后从该分支创建 PR。
     该 release 路径跳过下述在源分支合入远端 tip 的步骤。
   - 以远端 tip 为准，不用本地 trunk 或平台的无冲突标记替代；fetch 失败或目标缺失时停止并报告。
 - 用 `git merge-base --is-ancestor <远端tip> HEAD` 检查包含关系；“父节点”指 ancestor，不要求直接 parent。
@@ -293,9 +294,12 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
    - 恢复 pr，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。
    - release/ODR/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
 
-release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并时仍是候选发布材料。
+github-flow release 已发布后，返工在独立集成分支完成，final tag 与发布内容保持固定。
 
-- 在同一版本目录退勾 objectives、更新 code-review、verification-report、fact 与交付总结，不另建 unreleased 副本。
+release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并且尚未 publish 时仍是候选发布材料。
+
+- 在同一版本目录仅重新打开对应的 sync-remote 或 catch-up，追加增量 code-review 与 fact 结论，验证写入独立增量报告。
+  已通过的基线步骤与报告继续保留，交付总结按实际成果更新。
 - CLI 的 delivery 与 verify branch 共用候选目录；不得重复 release-closeout 或搬回目录。
 - 保留原版本和发布范围；按修复同步候选 CHANGE、CHANGELOG 和相关对象，检查链接及声明与实现一致。
 - release 首轮审查仍从目标 master 的上一正式发布记录确定基线，不把候选 manifest 的 latest_release 当作已发布版本。
@@ -319,7 +323,8 @@ Prepare 在首次提交前完成交付材料。前置齐全后核对当前 Git �
   - 按 close-out 材料规则依据修复与验证证据更新 Bug 为 `fixed`；缺少证据则停止。
   - push 前检查未发布 Change 的 `fixed` 引用均为 fixed 或 closed Bug；不凭声明自动改状态。
 - hotfix 先按 [Hotfix 版本](hotfix-version.md) 固定版本并提交，再准备 Bug closures。
-- release/ODR/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
+- github-flow release 复用 publish 已提交的版本材料与远端 final tag。
+- 其他 release/ODR/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
 - adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
   不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
   - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。

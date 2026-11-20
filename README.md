@@ -78,6 +78,8 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf dev-pr [<slug>]` | 将 develop 未共享工作移到 adhoc，检查通过后创建 PR |
 | `$mdf trunk-pr [<slug>]` | 接管 github-flow 的本地 trunk 提交，纯项目记录走 `pm/*`，其余走 `adhoc/*`，再经 PR |
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
+| `$mdf sync-remote` | 发布前同步远端同名 release 并增量验收 |
+| `$mdf publish` | github-flow release 在集成前创建并推送 final tag |
 | `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--against] [--quick]` | 只读事实审阅；`--quick` 只跳过 LLM |
@@ -124,6 +126,7 @@ github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--
   - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
 - github-flow 的独立项目记录在本地 trunk 编辑并提交。PR mode 发 PR 时由 `trunk-pr` 接管整批提交。
   范围和命令见 [项目记录](skills/mdf/references/common.md#项目记录)。
+- github-flow release 按 `fact → sync-remote → publish → catch-up → pr（PR mode）→ close-out` 推进，final tag 在集成前发布。
 - release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
 - `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。
 

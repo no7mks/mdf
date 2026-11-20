@@ -39,7 +39,9 @@ def resolve_cutpoint(repo: Path, raw: str, trunk: str) -> str:
 
 def require_not_frozen_catch_up(identity: dict, repo: Path, incoming: str) -> None:
     """frozen_cutpoint 的 release/* 禁止 catch-up 引入切点之后的 trunk 提交。"""
-    if identity.get("frozen_cutpoint") is not True:
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    release = is_github_flow(repo) and identity.get("branch", "").startswith("release/")
+    if not release and identity.get("frozen_cutpoint") is not True:
         return
     if _git(repo, "merge-base", "--is-ancestor", incoming, "HEAD", check=False).returncode == 0:
         return

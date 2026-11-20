@@ -22,7 +22,7 @@
 - finish-gitflow 仅续办 merged 后的操作；未 merged 返回 pr_not_merged，不创建/更新 PR。
 - waiting_for_merge、closed_without_merge、published_pending_backmerge 都是各自 operation 的 completed=false。
 - gitflow 发布后以固定 merge commit no-ff 回合并直接 push develop；不创建回合 PR/MR。
-- github-flow 的 tag 等于 `release_head`，不回合 develop。
+- github-flow release 的 tag 由前置 publish 创建并推送，指向固定 `release_head`；close-out 核验 tag 与主线合入结果。
   冲突或 push 未完成时保留 backmerge worktree；push 失败详情见 backmerge.push_error。
 - finish-gitflow 的 completed=true 后才能报告交付完成；正常等待退出 0，不重复创建远端对象。
 - source 清理再次检查 worktree 占用，并以已确认 head 原子删除 ref；并发前进时拒绝删除，保留分支配置。
@@ -100,3 +100,9 @@ code-review against 要求 clean；fact audit against / `--scope branch` 比较�
 - code-review 不把项目文档和交付材料列入强制 paths；reviewer 可读但不纳入覆盖校验。
 - against code-review：worktree 必须 clean；规则、AGENTS、manifest、modules 从当前 HEAD 读取；context 绑定 against 与 head SHA。
 - fact audit against / branch：比较 against → 当前工作区；`worktree_sha256` 为工作区树指纹；仓外 snapshot 不改原仓库。
+
+### Release 集成审查
+
+- `codex/integrate/release-<version>` 的 review-context 复用对应 release 材料，返回 `kind: integration`。
+- `delivery_base` 固定为已发布 final tag 的 commit，审查覆盖发布后主线集成的增量。
+- 集成 worktree 支持 catch-up-plan、delivery route、smart verify 与 catch-up 自勾，记录提交在集成分支。

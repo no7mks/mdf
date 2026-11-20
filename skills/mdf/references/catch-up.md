@@ -3,6 +3,17 @@
 涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
 ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
 
+github-flow release 先完成 [publish](publish.md)。release 内容保持固定，main 后续改动在独立集成分支处理。
+无实质增量时按零增量直通勾选；集成分支的冲突修复按本页增量补检规则验收。
+
+github-flow + PR 的 release 在 Check 前 fetch 目标 trunk；有尚未纳入的提交时先执行 release-integrate。
+按返回的独立 worktree 路径继续本阶段。无冲突的新提交同样进入增量验收。
+独立 release 集成 worktree 复用对应 release 的交付材料，增量报告与 catch-up 勾选提交留在集成分支。
+
+catch-up 负责来自其他分支的集成。增量 lint、code-review、smart verify 与 paths fact 补检均属于本步骤内部。
+已通过的基线步骤保持 `[x]`；增量检查或修复完成后自勾 catch-up。
+远端同名 release 的同步由 [sync-remote](sync-remote.md) 执行，并在该步骤内完成同样的增量验收。
+
 ## 决策树
 
 ```text

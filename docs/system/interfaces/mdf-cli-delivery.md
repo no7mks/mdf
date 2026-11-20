@@ -235,6 +235,7 @@
   - 重复调用核验同一合流后只完成剩余清理。
   - 角色引用改变或无法证明已合流时停止。
 - release/hotfix 的 `finish-gitflow` 按 Git merge、annotated tag 与远端 ref 核验发布结果。
+  github-flow release 须先执行 publish；finish-gitflow 只核验现有 final tag 并完成主线集成收尾。
   - 源 worktree 已移除时，可从主 worktree 使用 `--source <原分支>`。涉及同名 PR 时显式传 `--pull <id>`。
 
 ### `integrate`

@@ -210,7 +210,7 @@ def test_catch_up_contract_forbids_full_reruns_and_reticking_baseline():
         "只审 `<catch_up_base>..HEAD` 的改动文件",
     ):
         assert rule in catch_up
-    assert "fact 已勾、catch-up 未勾" in workflow("deliver")
+    assert "fact 已勾、publish 已完成或不适用、catch-up 未勾" in workflow("deliver")
     assert "仅退勾 objectives 的 `catch-up`" in workflow("pr")
     assert "仅将 `catch-up` 退回 `[ ]`" in workflow("close-out")
     assert "仅退勾 `catch-up`" in workflow("adhoc-close-out")
@@ -231,3 +231,15 @@ def test_catch_up_examples_match_cli_arguments():
     assert audit.implementation_path and audit.document_path
     assert "PR/CI 反馈中的失败用例" in text
     assert "quick 已完整覆盖所需回归" in text
+
+
+def test_sync_and_catch_up_own_incremental_acceptance():
+    sync = workflow("sync-remote")
+    catch_up = workflow("catch-up")
+    contract = workflow("delivery-contract")
+    assert "阶段归属和自勾对象均为 sync-remote" in sync
+    assert "sync-remote-verification-report.json" in sync
+    assert "已通过的 lint、code-review、verify、fact audit / fact update 保持 `[x]`" in sync
+    assert "其他分支的集成" in catch_up and "补检均属于本步骤内部" in catch_up
+    assert "只重新打开对应的 sync-remote 或 catch-up" in contract
+    assert "同名远端同步只重新打开 `sync-remote`" in workflow("next")

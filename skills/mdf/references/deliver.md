@@ -288,7 +288,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
 | PR mode 的 ODR 已完成 fact、统一验收未勾 | 按 [统一验收](late-decision.md#纳入-checkpoint-与统一验收) 执行 `delivery accept`，返回 Select |
-| fact 已勾、catch-up 未勾 | 委托 `references/catch-up.md`（仅对改动文件做增量补检；严禁退勾已过基线四项或全量重跑） |
+| sync-remote 未勾（github-flow release） | 委托 `references/sync-remote.md`，在本步骤内同步并增量验收，保留基线四项 `[x]` |
+| publish 未勾（github-flow release） | 委托 `references/publish.md`，发布 final tag 后回 Select |
+| fact 已勾、publish 已完成或不适用、catch-up 未勾 | 委托 `references/catch-up.md`（仅对改动文件做增量补检；严禁退勾已过基线四项或全量重跑） |
 | catch-up 已勾、PR mode 且 pr 尚未完成 | 委托 `references/pr.md`，等待 merged、合并核验与关联 CI 收尾通过；完成后回 Select |
 | catch-up 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
 | close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |

@@ -4,7 +4,7 @@ from mdf_core.workspace.gitutil import add_linked_worktree, ensure_clean, git_in
 from mdf_core.workspace.merge_policy import ancestor, git, local_head, sha
 
 
-def tag_release(repo, state, version):
+def tag_release(repo, state, version, *, source=None, expected_remote=None):
     from mdf_core.workspace.workflow_policy import is_github_flow
     tag = f"v{version}"
     merged = state["release_head"] if is_github_flow(repo) else state["merge_commit"]
@@ -22,7 +22,11 @@ def tag_release(repo, state, version):
     if remote and remote[0] != expected:
         raise MDFError("远端 tag 与本次发布不符", code="tag_conflict")
     if not remote:
-        git(repo, "push", "--no-follow-tags", "origin", f"{ref}:{ref}")
+        if source:
+            from mdf_core.lifecycle.publication_push import push_release
+            push_release(repo, source, merged, ref, expected_remote)
+        else:
+            git(repo, "push", "--no-follow-tags", "origin", f"{ref}:{ref}")
     state["tag"] = tag
 
 
@@ -38,7 +42,13 @@ def publish(repo, state, version, *, source_cleaned):
         recheck_before_publish(repo, state["source"], version, target=state["target"], head=state["head"])
         if not ancestor(repo, state["release_head"], f"refs/remotes/origin/{state['target']}"):
             raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
-        tag_release(repo, state, version)
+        if state["source"].startswith(("release/", "codex/integrate/release-")):
+            from mdf_core.lifecycle.release_publish import published_head
+            if published_head(repo, version) != state["release_head"]:
+                raise MDFError("final tag 与发布 commit 不符", code="tag_conflict")
+            state["tag"] = f"v{version}"
+        else:
+            tag_release(repo, state, version)
         return True
     remote = "refs/remotes/origin/develop"
     from mdf_core.lifecycle.publish import find_merge

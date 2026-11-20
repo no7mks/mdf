@@ -61,6 +61,8 @@ disable-model-invocation: true
                  ├──── verify ────────────────────────────────────────────→ references/verify.md
                  ├──── fact update ───────────────────────────────────────→ references/fact-update.md
                  ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
+                 ├──── sync-remote ───────────────────────────────────────→ references/sync-remote.md
+                 ├──── publish ───────────────────────────────────────────→ references/publish.md
                  ├──── catch-up ──────────────────────────────────────────→ references/catch-up.md
                  ├──── prp split ─────────────────────────────────────────→ references/prp-split.md
                  ├──── pr ────────────────────────────────────────────────→ references/pr.md
@@ -149,6 +151,8 @@ disable-model-invocation: true
 - `$mdf adhoc [<工作描述>]` 直接生成 slug 与七项 objectives，在独立 worktree 完成临时工作。
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
+- `$mdf sync-remote` 执行 `references/sync-remote.md`，在 github-flow release 发布前同步远端同名分支并增量验收。
+- `$mdf publish` 执行 `references/publish.md`，在 github-flow release 的 catch-up 前创建并推送 final tag。
 - `$mdf catch-up` 在基线 `lint`、`code-review`、`verify`、`fact` 已通过后，仅对改动文件执行增量补检；严禁全量重跑。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - code-review 读取 clear commit；dirty 审查实际内容，独立旁路仍须 clean。可带：

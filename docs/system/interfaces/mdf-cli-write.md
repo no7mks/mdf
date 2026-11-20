@@ -166,7 +166,7 @@ github-flow（manifest 的 `workflow.model`）下基线改为 `workflow.trunk`�
 
 - feature、bugfix、release、hotfix、adhoc 均从 trunk 建分支并回到 trunk；`--from-master`、to develop、ODR 与 `dev-pr` 被拒绝。
 - `--from-commit <sha>`：release 的历史切点。要求位于 trunk 第一父链且晚于上一发布 tag；创建即冻结，之后不随 trunk 前进，
-  禁止 catch-up 引入切点之后的提交；发布以固定的 `release_head` 打 tag，并核验其为 `<trunk>` 的 ancestor。
+  禁止 catch-up 引入切点之后的提交；publish 在集成前以固定的 `release_head` 打 tag 并推送，close-out 再核验其为 `<trunk>` 的 ancestor。
 - `--support <major.minor>`：hotfix 的维护线。多条发布线并存时必须显式指定。
   - 只有一条已发布线时可省略，自动走该 `support/<major.minor>`。
   - 没有任何发布 tag 时返回 `missing_release_tag`，应改走 `bugfix/*`。
@@ -280,7 +280,7 @@ python3 skills/mdf/scripts/mdf.py release-integrate --repo /path/to/repository [
 ```
 
 仅 github-flow 的 PR mode：release 与最新 `origin/<trunk>` 冲突时，在独立 `codex/integrate/release-<semver>` 分支合并并解决冲突，
-再以该分支走 PR。发布仍以原 release 的固定 `release_head` 打 tag；集成分支不改变 `release_head`，也不产生回合。
+先完成 publish，再以该分支走 PR。已发布 final tag 保持原 release 的固定 `release_head`，集成分支用于后续主线对齐。
 - 集成提交的 `MDF-Release-Head` trailer 绑定发布 SHA，且必须与该提交的父节点一致。
   纳入更新的 release 提交时如有冲突，解决后用 `git commit --no-edit` 保留 trailer。
 
