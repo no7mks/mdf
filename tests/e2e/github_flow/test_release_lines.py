@@ -45,8 +45,6 @@ def test_frozen_release_ignores_later_trunk_and_blocks_catch_up(python_exe, tmp_
     data = payload(release_start(python_exe, repo, tmp_path, cut))
     work = Path(data["worktree"])
     assert not (work / "later.txt").exists()
-    blocked = mdf(python_exe, "merge-no-ff", "--repo", str(work), "--commit", "master")
-    assert error_of(blocked)["error"] == "frozen_cutpoint"
     assert "release/1.3.0" not in git(work, "branch", "--contains", later).stdout
 
 
@@ -63,27 +61,29 @@ def test_pr_release_accepts_shared_cutpoint_with_unpublished_trunk_commits(pytho
 
 
 def test_local_conflict_recovery_tags_the_locked_release_head(python_exe, tmp_path):
-    repo, _remote = github_flow_repo(tmp_path, origin=True)
+    repo, remote = github_flow_repo(tmp_path, origin=True)
     tag_trunk(repo, "v1.2.0")
     cut = git(repo, "rev-parse", "HEAD").stdout.strip()
-    (repo / "src/service.py").write_text("trunk = True\n")
-    commit(repo, "test: trunk 并行")
-    push_all(repo)
     data = payload(release_start(python_exe, repo, tmp_path, cut))
     work = Path(data["worktree"])
     write_changelog_release(work, "1.3.0")
     (work / "src/service.py").write_text("release = True\n")
     commit(work)
     head = publish_release(python_exe, work)
-    source_head = git(work, "rev-parse", "HEAD").stdout.strip()
-    failed = error_of(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    assert failed["error"] == "merge_conflict" and source_head in failed["details"]["recovery"]
-    assert run(["git", "merge", "--no-ff", "--no-commit", source_head], cwd=repo).returncode != 0
-    (repo / "src/service.py").write_text("trunk = True\nrelease = True\n")
-    git(repo, "add", "src/service.py")
-    git(repo, "commit", "-m", "chore: 解决发布冲突")
+    (repo / "src/service.py").write_text("trunk = True\n")
+    commit(repo)
+    push_all(repo)
+    failed = error_of(mdf(python_exe, "merge", "--repo", str(work)))
+    assert failed["error"] == "merge_conflict"
+    (work / "src/service.py").write_text("trunk = True\nrelease = True\n")
+    git(work, "add", "src/service.py")
+    git(work, "commit", "-m", "test: 解决 target 冲突")
+    pending = payload(mdf(python_exe, "incremental-integration", "--repo", str(work)))
+    payload(mdf(python_exe, "incremental-integration", "--repo", str(work), "--complete",
+                "--reviewed-head", pending["head"], "--summary", "本轮增量验收通过"))
+    payload(mdf(python_exe, "merge", "--repo", str(work)))
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    assert git(repo, "rev-parse", "v1.3.0^{commit}").stdout.strip() == head
+    assert git(remote, "rev-parse", "v1.3.0^{commit}").stdout.strip() == head
 
 
 def test_cutpoint_release_publishes_with_tag_on_release_head(python_exe, tmp_path):
@@ -97,7 +97,10 @@ def test_cutpoint_release_publishes_with_tag_on_release_head(python_exe, tmp_pat
     write_changelog_release(work, "1.3.0")
     commit(work)
     head = publish_release(python_exe, work)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    pending = payload(mdf(python_exe, "incremental-integration", "--repo", str(work)))
+    payload(mdf(python_exe, "incremental-integration", "--repo", str(work), "--complete",
+                "--reviewed-head", pending["head"], "--summary", "新增 target 内容已增量验收"))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert git(repo, "rev-parse", "v1.3.0^{commit}").stdout.strip() == head
     assert head != git(repo, "rev-parse", "master").stdout.strip()
     git(repo, "merge-base", "--is-ancestor", head, "master")
@@ -227,8 +230,8 @@ def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_e
     write_changelog_release(work, "1.1.1")
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    head = publish_release(python_exe, work)
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert done["targets"] == ["support/1.1"] and done["tag"] == "v1.1.1"
     assert git(repo, "rev-parse", "v1.1.1^{commit}").stdout.strip() == head
     assert git(repo, "rev-parse", "master").stdout == trunk_before
@@ -237,6 +240,6 @@ def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_e
     git(repo, "merge-base", "--is-ancestor", head, "support/1.1")
     git(repo, "worktree", "remove", str(work))
     snapshot = git(remote, "show-ref").stdout
-    resumed = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
+    resumed = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
     assert resumed["targets"] == ["support/1.1"] and resumed["tag"] == "v1.1.1"
     assert git(remote, "show-ref").stdout == snapshot

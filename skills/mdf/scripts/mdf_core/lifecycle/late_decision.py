@@ -53,7 +53,7 @@ def target_for(repo, source, *, data=None, ref=None):
     trunk = trunk_branch(repo)
     target = data.get("target", None if data.get("base_branch") == trunk else "develop")
     if target is None or target == ODR:
-        raise MDFError("catch-up 前须确定具体交付目标", code="target_pending")
+        raise MDFError("incremental-integration 前须确定具体交付目标", code="target_pending")
     return validate_target(target, concrete=True)
 
 
@@ -181,12 +181,6 @@ def checkpoint(repo, *, required=False, release=False):
 
 def guard_catch_up(repo, incoming):
     source = current_branch(repo)
-    if branch_details(source)["kind"] == "release":
-        folder = unreleased_slug(branch_details(source))
-        if (repo / "changes/unreleased" / folder / "delivery.json").is_file():
-            from mdf_core.lifecycle.cutpoint import require_not_frozen_catch_up
-            require_not_frozen_catch_up(identity_at(repo, source), repo, incoming)
-        return
     if branch_details(source)["kind"] != "feature":
         return
     folder = unreleased_slug(branch_details(source))
@@ -203,7 +197,7 @@ def guard_catch_up(repo, incoming):
         target = target_for(repo, source, data=data)
         selected_refs = {f"refs/heads/{target}", f"refs/remotes/origin/{target}"}
         if not selected_refs.intersection(refs):
-            raise MDFError("catch-up 必须使用已确定的交付目标", code="invalid_target")
+            raise MDFError("incremental-integration 必须使用已确定的交付目标", code="invalid_target")
         require_feature_target(repo, source, target)
     if str(data.get("target", "")).startswith(ODR):
         require_independent(repo, incoming)

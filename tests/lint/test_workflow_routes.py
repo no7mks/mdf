@@ -60,7 +60,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
                 "project-rules.md", "temporary-work.md", "reviewer-protocol.md", "ci-review.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 60
+    assert len(workflows) == 62
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -197,7 +197,7 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
     assert "可修复则重验" in rows(workflow("migrate"))[5][6]
     assert rows(workflow("fact-update"))[2][5] == "通过或仅结构则 4"
     assert rows(workflow("fact-update"))[2][6] == "其他未通过或验证失败则停"
-    assert rows(workflow("close-out"))[3][6] == "未过则停止并交接"
+    assert rows(workflow("consolidate"))[0][6] == "补齐当前增量验收后继续"
 
 def test_bug_create_checks_ready_without_blocking_stale_docs():
     text = workflow("bug-create")

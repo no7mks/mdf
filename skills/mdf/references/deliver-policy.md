@@ -1,6 +1,6 @@
 # Deliver Policy
 
-github-flow release 在 fact 后先执行 [sync-remote](sync-remote.md)，再执行 [publish](publish.md)，创建并推送 final tag，然后进入 catch-up 与主线集成。
+主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
 
 树形：not-tree。由 deliver 的入口、intent 委托与 decision 事件触发；不执行交付阶段。
 
@@ -32,10 +32,13 @@ github-flow release 在 fact 后先执行 [sync-remote](sync-remote.md)，再执
 | 交付路径 | 可用截止点与调用关系 |
 | --- | --- |
 | 普通交付前段 | start（联调时内部 integrate）→ design → write-tests / implement → converge |
-| 普通交付后段 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ catch-up → [pr（仅 PR mode）] → close-out |
-| 人工 feature | start → lint → code-review → verify → fact update（内部 fact audit）→ catch-up → [pr（仅 PR mode）] → close-out |
-| 已有 adhoc | 工作 → lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ catch-up → [pr（仅 PR mode）] → close-out |
-| 条件性子 intent | clarify（start/design）；squash（local close-out / pr）；bug close（release/hotfix 的 local close-out / pr） |
+| 前置验收 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit） |
+| Gitflow 发布交付后段 | catch-up → consolidate → merge/pr → publish → close-out |
+| github-flow 发布交付后段 | catch-up → consolidate → publish → merge/pr → close-out |
+| feature / bugfix 后段 | catch-up → consolidate → merge/pr → close-out |
+| 人工 feature | start → 人工工作 → 前置验收 → catch-up → consolidate → merge/pr → close-out |
+| 已有 adhoc | 工作 → 前置验收 → catch-up → consolidate → merge/pr → close-out |
+| 条件性子 intent | clarify（start/design）；squash（merge/pr 前）；bug close（consolidate）；incremental-integration（merge/pr） |
 
 - 只读解析目标时确定路径；不适用该路径的 intent 报参数错误，不悄悄忽略，不先执行 start。
   - 工作是 adhoc 的账本项，不是 intent；子 intent 按括号中的调用位置判断边界，不另启动调用方。

@@ -57,7 +57,7 @@ budgets:
   - 正文写明目的与 testcase 构成；testcase 本身靠代码 frontmatter/stringdoc。
 - `quick`/`smoke`/`release` mapping 可选 `parallel: true`（按 module 展开的多命令）。
 - **depends_on**：module 名列表，表示本 module 依赖这些 module；名称必须存在且不得成环。
-  - `catch-up-plan` 据此把受影响 module 沿依赖反向扩展并判定审查交互；未声明时 verify 并入本分支触及的 module。
+  - `incremental-integration-plan` 据此把受影响 module 沿依赖反向扩展并判定审查交互；未声明时 verify 并入本分支触及的 module。
 - **verify clear commit** 适用于 smoke、release 两个 suite。tracked 输入变化或
   `external_state: true` 时执行 suite；`verify --force` 强制执行。Git 之外的环境变更由调用方用 `--force` 重跑。
 - lint、build、quick 和项目自定义 suite 每次执行，交付材料与 suite 有关时应纳入显式输入。

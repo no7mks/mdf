@@ -49,7 +49,7 @@
 读取 `references/common.md` 与 `references/object-contract.md`。
 复现命令对照 `references/fix.md` 的红灯与回归证据规则。
 CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
-独立调用只推进当前 intent；close-out 内部委托时完成后返回调用方。
+独立调用只推进当前 intent；consolidate 内部委托时完成后返回调用方。
 PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2，不进入合并后 close-out。
 不由 deliver 直接委托。
 
@@ -89,7 +89,7 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 | 调用方 | 修改实现后的返回位置 | 补验后继续 |
 | --- | --- | --- |
 | local close-out | close-out 步骤 4，交接主链补验与增量审查 | close-out 步骤 7 |
-| PR mode 的 pr | pr 步骤 2，按 PR 返工规则补审补测与 fact | pr 材料准备中的 Bug closures |
+| consolidate | 当前材料收敛步骤，按 PR 返工规则补审补测与 fact | pr 材料准备中的 Bug closures |
 
 - ❌ 边界：
   - 只有复现验证与修复审查都通过，才写 `closed` 与 `fixed_in`。

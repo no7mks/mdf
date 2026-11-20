@@ -240,6 +240,16 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
             "release_notes": {"Fixed": ["修复服务超时"]},
             "evidence": {"tests": [], "commands": ["true"], "artifacts": []},
         })]
+    from mdf_core.lifecycle.roster import freeze_roster
+    from mdf_core.lifecycle.delivery_state import write_json
+    root = repo / "changes/unreleased" / version
+    root.mkdir(parents=True, exist_ok=True)
+    write_json(root / "delivery.json", {"branch": f"{kind}/{version}", "slug": version, "needs_design": False,
+               "start_commit": git(repo, "rev-parse", "master").stdout.strip(),
+               "roster": freeze_roster(kind, qa=0, dev=0, reviewers=1)})
+    (root / "objectives.md").write_text("# 目标\n\n- needs_design: no\n\n## 步骤\n\n- [x] catch-up\n- [x] consolidate\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-m", "test: 准备当前交付身份")
     remote = attach_origin(repo, tmp_path)
     before_local = git(repo, "show-ref").stdout
     before_remote = git(remote, "show-ref").stdout
@@ -262,7 +272,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo)))
 
-    finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
+    finished = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo)))
 
     assert finished["tag"] == f"v{version}"
     assert finished["pushed"] is True
@@ -331,7 +341,7 @@ def test_start_from_delivery_branch_creates_worktree_and_finish_detaches_it(
     git(bugfix, "add", "--all")
     git(bugfix, "commit", "-m", "fix: 补充热修复文件")
     source = git(bugfix, "rev-parse", "HEAD").stdout
-    finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(bugfix)))
+    finished = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(bugfix)))
     assert finished["pushed"] is False
     assert bugfix.is_dir()
     assert finished["retained_worktree"] == str(bugfix)

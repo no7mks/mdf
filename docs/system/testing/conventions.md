@@ -83,7 +83,7 @@
 
 | suite | 含 `tests/unit/<suite>` | 覆盖 |
 | --- | --- | --- |
-| delivery | 是 | delivery、roster、verification、verify_run、reports、project_verify、worktree_check、verify_reuse、catch_up_plan、stage_route、review_prepare |
+| delivery | 是 | delivery、roster、verification、verify_run、reports、project_verify、worktree_check、verify_reuse、incremental_plan、stage_route、review_prepare |
 | gitflow | 是 | gitflow、publish、git_ops、gitutil、merge-no-ff |
 | github_flow | 是 | workflow 配置与切换、trunk 本地与 PR 流程、release 线、support 与 Trunk-First 热修 |
 | closeout | 是 | closeout_*、commands_release、semver、validate_release |

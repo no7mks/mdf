@@ -26,35 +26,21 @@ def test_review_resume_routes_to_repair_without_replacing_initial_head():
     assert "裁定收口" in text
 
 def test_close_out_materials_without_embedded_verify_or_fact():
-    text = workflow("close-out")
-    prepare = text.split('<a id="s3"></a>', 1)[1].split('<a id="s4"></a>', 1)[0]
-    assert "不内嵌、不委托 verify" in text or "不委托 verify" in text
-    assert "bug close（步骤 7）不算 verify 族" in text or "不算 verify 族" in text
-    assert "delivery check --stage fact-update" not in text
-    assert "move-change" not in text
-    assert "- feature：" in prepare
-    assert "- bugfix：" in prepare
-    assert "- release：" in prepare
-    assert "- hotfix：" in prepare
-    assert "材料不搬迁" in prepare
-    assert "start 已写入的 objectives checklist 保留" in prepare
+    finish = workflow("close-out")
+    prepare = workflow("consolidate")
+    assert "材料收敛由 consolidate 完成" in finish
+    assert "verify --scope" not in finish
+    for term in ("CHANGE.md", "HTML 总结", "PRP", "Bug", "release-closeout", "CHANGELOG", "归档"):
+        assert term in prepare
+    assert "implemented" in prepare and "released_in" in prepare and "fixed_in" in prepare
 
 def test_finish_keeps_pending_closeout_on_the_release_path():
-    text = workflow("close-out")
-    table = rows(text)
-    assert table[3][5] == "已收口或 feature/bugfix→9；待收口→5"
-    assert table[7][5] == "9"
-    assert "裁定有效 10" in table[8][5] and "deliver 6" in table[8][5]
-    assert "feature/bugfix 回 2" in table[8][6]
-    assert "其余停" in table[8][6]
-    diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
-    assert "有写入" not in diagram and "无写入" not in diagram
-    assert "preview" not in diagram and "预览" not in diagram
-    assert "不提供预览模式" in text
-    assert "仅预览或只读时" in text and "说明此入口不支持并停止" in text
-    assert "正文为本版 CHANGELOG" in text
-    assert "精简条目" in text
-    assert "--dry-run" not in text
+    table = rows(workflow("close-out"))
+    assert [row[1] for row in table] == ["Check", "Finish", "Cleanup"]
+    assert "续办缺失阶段" in table[0][6]
+    assert "先执行" not in table[2][5]
+    assert "实际合入" in workflow("close-out")
+    assert "annotated" in workflow("publish") and "CHANGELOG" in workflow("publish")
 
 def test_start_clarifies_feature_objectives_before_branch():
     text = workflow("start")
@@ -203,7 +189,7 @@ def test_verify_fix_is_second_verification_before_closeout():
         "不按上一正式发布或 start_commit 做整分支审查",
         "不派 roster.reviewers",
         "可修复实现问题",
-        "close-out 内部委托时完成后返回调用方",
+        "consolidate 内部委托时完成后返回调用方",
         "不由 deliver 直接委托",
         "bug-close.md",
     ):
@@ -211,10 +197,10 @@ def test_verify_fix_is_second_verification_before_closeout():
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"可修复实现问题 ─+→ 2 Verify", diagram)
     assert re.search(r"有可修问题 ─+→ 2 Verify", diagram)
-    finish = workflow("close-out")
-    assert "references/bug-close.md" in finish
-    assert "待收入 fixed 先委托 bug close" in finish
-    assert "bug close 未通过" in finish
+    material = workflow("consolidate")
+    assert "references/bug-close.md" in material
+    assert "待收入 fixed 先委托 bug close" in material
+    assert "bug close 未通过" in material
     help_text = workflow("help")
     assert "$mdf bug close <bug-id> --fixed-in <version>" in help_text
     keys = help_text.split("### 主题", 1)[1].split("`$mdf bootstrap`", 1)[0]
@@ -316,13 +302,9 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "needs_design" in deliver
     assert "进度只认 objectives" in deliver or "只认 objectives" in deliver
     finish = workflow("close-out")
-    assert "不委托 verify" in finish or "不内嵌、不委托 verify" in finish
-    assert "永不在 closeout 内执行验证" in finish or "verification_report_not_reusable" in finish
-    assert "不算 verify 族" in finish
-    assert "不做 commit 对齐审判" in finish or "不做 verify 报告的 commit 对齐" in finish
-    contract = workflow("delivery-contract")
-    assert "只复用可复用的" in contract or "永不执行验证命令" in contract
-    assert "不运行 `delivery check --stage finish`" in finish
+    assert "前置验收和材料由对应阶段完成" in finish
+    assert "verify --scope" not in finish
+    assert "全量" not in finish
     assert "审阅结论由执行者按下列通过条件判定，无需用户确认" in workflow("fact-audit")
     assert "不重跑" in workflow("bug-close")
     assert "既有 suite 命令未产出报告时" in workflow("migrate")
@@ -416,32 +398,15 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "sourceset ∩ ¬module-ignore",
     ):
         assert rule in text
-    finish = workflow("close-out")
-    assert "develop...HEAD" not in finish and "master...HEAD" not in finish
-    assert "四种分支均须有完整的各轮应派份数独立审查" in finish
-    assert "本轮应派人数为 1" in finish
-    assert "不得把上轮多份原文交给本轮唯一 reviewer 去合并" in finish
-    assert "Agent 按已确认目标、设计及两侧改动自动尝试 resolve" in finish
-    assert "不启动 code-review" in finish
-    assert "不委托、不执行 verify" in finish or "不在 closeout 内执行验证" in finish
-    assert "本交付文档" in finish
-    assert "以集成后的 HEAD 执行增量新一轮" in finish
-    assert "不复用集成前终稿充当增量差" in finish
-    assert "终稿存在、声称通过" in finish
-    assert "复核上轮问题" in finish
-    assert "不得跳过" in finish
-    assert "report 缺失时内部执行 code-review" in finish
-    assert "可选 squash" in finish
-    assert "第一次把目标主线合入交付分支之前" in finish
+    integration = workflow("incremental-integration")
+    assert "base..HEAD" in integration
+    assert "复核未解决项" in integration
+    assert "验证使用独立报告" in integration
+    assert "禁止退勾已通过的基线步骤" in integration
+    assert "禁止全量重跑" in integration
     contract = workflow("delivery-contract")
     assert "可选历史整理（squash）" in contract
-    assert "references/squash.md" in contract
-    squash = workflow("squash")
-    assert "git merge --squash" in squash
-    assert "不增加 squash 的逐次确认" in squash
-    assert "是否建议（可选启发式）" in squash
-    assert "不可 squash" in squash
-    assert "dry-run 建议且 Agent 裁定" in finish
+    assert "references/squash.md" in workflow("merge")
     assert "推导出必须空转的 owner 开发" in contract
     assert "has_dev" in contract
     verify = workflow("verify")

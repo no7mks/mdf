@@ -166,11 +166,11 @@ def build_parser() -> argparse.ArgumentParser:
     review_record.add_argument("--failed", action="store_true", help="阻断项使同内容的旧 clear 失效")
     review_record.set_defaults(func=command_review_record)
 
-    from mdf_core.lifecycle.catchup_plan import command_catch_up_plan
-    catch_up_plan = subparsers.add_parser("catch-up-plan")
-    catch_up_plan.add_argument("--repo", required=True)
-    catch_up_plan.add_argument("--base", help="缺省取 objectives 记录的 catch-up 基线")
-    catch_up_plan.set_defaults(func=command_catch_up_plan)
+    from mdf_core.lifecycle.incremental_plan import command_incremental_plan
+    incremental_plan = subparsers.add_parser("incremental-integration-plan")
+    incremental_plan.add_argument("--repo", required=True)
+    incremental_plan.add_argument("--base", help="缺省取 objectives 记录的 incremental-integration 基线")
+    incremental_plan.set_defaults(func=command_incremental_plan)
 
     from mdf_core.reviewing.report import command_report_check
     report_check = subparsers.add_parser("review-report-check")
@@ -199,6 +199,20 @@ def build_parser() -> argparse.ArgumentParser:
     closeout.add_argument("--hotfix-change-json")
     closeout.add_argument("--dry-run", action="store_true")
     closeout.set_defaults(func=command_release_closeout)
+
+    merge_cmd = subparsers.add_parser("merge")
+    merge_cmd.add_argument("--repo", required=True)
+    merge_cmd.add_argument("--source")
+    merge_cmd.add_argument("--version")
+    merge_cmd.set_defaults(func=command_finish_gitflow, phase="merge", pull=None)
+
+    from mdf_core.lifecycle.consolidation import command_consolidate
+    consolidate = subparsers.add_parser("consolidate")
+    consolidate.add_argument("--repo", required=True)
+    consolidate.add_argument("--incremental", action="store_true")
+    for name in ("release-date", "closures-json", "deferred-acceptance-json", "hotfix-change-json"):
+        consolidate.add_argument(f"--{name}")
+    consolidate.set_defaults(func=command_consolidate, dry_run=False)
 
     start = subparsers.add_parser("start")
     start.add_argument("--repo", required=True)
@@ -279,7 +293,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     delivery.add_argument("--repo", required=True)
     delivery.add_argument("--version")
-    delivery.add_argument("--stage", choices=(*STAGES, "finish", "verify", "catch-up"))
+    delivery.add_argument("--stage", choices=(*STAGES, "finish", "verify"))
     delivery.add_argument("--yolo", action="store_true", help="route：pr/close-out 入口无需确认")
     delivery.add_argument("--summary")
     delivery.add_argument("--target")
@@ -332,22 +346,26 @@ def build_parser() -> argparse.ArgumentParser:
     dev_pr.add_argument("--repo", required=True)
     dev_pr.add_argument("--slug")
     dev_pr.set_defaults(func=command_dev_pr)
-    from mdf_core.lifecycle.sync_remote import command_sync_remote
-    sync_remote_cmd = subparsers.add_parser("sync-remote")
-    sync_remote_cmd.add_argument("--repo", required=True)
-    sync_remote_cmd.add_argument("--complete", action="store_true")
-    sync_remote_cmd.add_argument("--reviewed-head")
-    sync_remote_cmd.add_argument("--summary")
-    sync_remote_cmd.set_defaults(func=command_sync_remote)
+    from mdf_core.lifecycle.catchup import command_catchup
+    catchup_cmd = subparsers.add_parser("catch-up")
+    catchup_cmd.add_argument("--repo", required=True)
+    catchup_cmd.add_argument("--complete", action="store_true")
+    catchup_cmd.add_argument("--reviewed-head")
+    catchup_cmd.add_argument("--summary")
+    catchup_cmd.set_defaults(func=command_catchup)
     from mdf_core.lifecycle.release_publish import command_publish
     publish_cmd = subparsers.add_parser("publish")
     publish_cmd.add_argument("--repo", required=True)
+    publish_cmd.add_argument("--source")
+    publish_cmd.add_argument("--pull", type=int)
     publish_cmd.set_defaults(func=command_publish)
-    from mdf_core.lifecycle.release_integration import command_release_integrate
-    integrate = subparsers.add_parser("release-integrate")
-    integrate.add_argument("--repo", required=True)
-    integrate.add_argument("--source")
-    integrate.set_defaults(func=command_release_integrate)
+    from mdf_core.lifecycle.target_integration import command_incremental_integration
+    integration_cmd = subparsers.add_parser("incremental-integration")
+    integration_cmd.add_argument("--repo", required=True)
+    integration_cmd.add_argument("--complete", action="store_true")
+    integration_cmd.add_argument("--reviewed-head")
+    integration_cmd.add_argument("--summary")
+    integration_cmd.set_defaults(func=command_incremental_integration)
     from mdf_core.workspace.dev_pr import command_trunk_pr
     trunk_pr = subparsers.add_parser("trunk-pr")
     trunk_pr.add_argument("--repo", required=True)

@@ -58,9 +58,6 @@ def inspect(repo, branch=None, *, refresh=True):
         rows = block.splitlines()
         if f'branch refs/heads/{branch}' not in rows:
             protected.update(row[5:] for row in rows if row.startswith('HEAD '))
-    from mdf_core.lifecycle.release_integration import integration_version
-    if integration_version(branch):
-        # 初始集成提交本身携带发布 SHA，禁止 squash 丢失该提交。
         anchor = git(repo, 'log', '-1', '--first-parent', '--format=%H', '--grep=^MDF-Release-Head: ', head).stdout.strip()
         if anchor:
             protected.add(anchor)

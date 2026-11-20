@@ -5,7 +5,7 @@ from pathlib import Path
 from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle.delivery_state import split_objectives_steps
 
-STEPS = ("工作", "lint", "code-review", "verify smart", "fact audit/update", "catch-up", "close-out")
+STEPS = ("工作", "lint", "code-review", "verify smart", "fact audit/update", "catch-up", "consolidate")
 
 
 def validate_start(args):
@@ -40,7 +40,7 @@ def prepare(args):
 
 
 def require_objectives(text, *, starting=False, finishing=False, pr_mode=False):
-    steps = STEPS[:-1] if pr_mode else STEPS
+    steps = STEPS
     _, checklist, _ = split_objectives_steps(text)
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", checklist)
     if tuple(name for _, name in items) != steps:

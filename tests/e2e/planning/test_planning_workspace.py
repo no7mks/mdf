@@ -76,7 +76,7 @@ def test_dirty_planning_does_not_block_feature_finish(python_exe, tmp_path):
     git(bugfix, "commit", "-m", "fix: 文件")
     plan = planning_worktree(python_exe, repo)
     (plan / "review-wip.md").write_text("未提交评审\n")
-    finished = payload(mdf(
+    finished = payload(finish_delivery(
         python_exe, "finish-gitflow", "--repo", str(bugfix),
     ))
     assert finished["ok"] is True

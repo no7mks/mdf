@@ -388,7 +388,7 @@ def audit_payload(
 
 
 def _branch_fact_context(repo, base, force):
-    from mdf_core.lifecycle.catchup_plan import rule_paths
+    from mdf_core.lifecycle.incremental_plan import rule_paths
     from mdf_core.reviewing.context import fingerprint
     from mdf_core.reviewing.fact_context import fact_context
     from mdf_core.workspace import clear_commits

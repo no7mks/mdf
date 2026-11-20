@@ -17,15 +17,15 @@ def preflight(repo, source):
     """沿用交付材料检查；由外层 intent 完成审查、验证及 fact。"""
     if current_branch(repo) != source:
         raise MDFError("首次提交或更新 PR/MR 必须在源 worktree 执行", code="stage_branch")
-    from mdf_core.lifecycle.release_integration import integration_version, release_head_of, require_direct_pr
-    if integration_version(source):
-        from mdf_core.lifecycle.release_publish import require_published_source
-        require_published_source(repo, integration_version(source), release_head_of(repo, source))
-        ensure_clean(repo)
-        return
-    require_direct_pr(repo, source)
     from mdf_core.inspection.validate_records import require_fixed_outcomes
     kind = branch_details(source)["kind"]
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    if is_github_flow(repo) and kind in {"release", "hotfix"}:
+        from mdf_core.lifecycle.release_publish import require_published_source
+        from mdf_core.lifecycle.delivery_state import locate
+        _, data = locate(repo)
+        version = branch_details(source)["version"] or data.get("version")
+        require_published_source(repo, version, "HEAD")
     from mdf_core.lifecycle.late_decision import target_for
     if not (kind == "feature" and target_for(repo, source).startswith("on-demand-release/")):
         require_fixed_outcomes(repo, source)
@@ -36,22 +36,18 @@ def preflight(repo, source):
     if kind == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
-    if kind == "feature":
-        from mdf_core.lifecycle.manual import feature_completion
-        complete, roster = feature_completion(repo, source, allow_candidate=True)
-    elif kind == "adhoc":
+    if kind == "adhoc":
         from mdf_core.lifecycle.adhoc import completion
-        complete, roster = None, completion(repo, source)
+        roster = completion(repo, source)
     else:
-        complete, roster = None, resolve_roster(repo, source, kind)
+        roster = resolve_roster(repo, source, kind)
     trees = worktree_map(repo)
     for name in role_branches(source, roster):
         if name in trees or not git(repo, "show-ref", "--verify", "--quiet", f"refs/heads/{name}", check=False).returncode:
             raise MDFError("角色分支尚未集成", code="roles_pending")
-    if complete is not None:
-        complete(repo)
-        if git(repo, "diff", "--cached", "--name-only").stdout.strip():
-            git(repo, "commit", "-m", "docs(delivery): 准备合入后的 Proposal 状态")
+    if kind == "feature":
+        from mdf_core.lifecycle.manual import feature_completion
+        feature_completion(repo, source, allow_candidate=True)
     ensure_clean(repo)
 
 
@@ -62,6 +58,8 @@ def verified_merge(repo, pull, source, target, head):
     parents = git(repo, "show", "-s", "--format=%P", merged).stdout.split()
     if len(parents) != 2 or parents[1] != head:
         raise MDFError("PR/MR 必须保留源提交并使用双亲 merge commit", code="invalid_pull_merge")
+    if not source.startswith(("pm/", "codex/sync/")) and not ancestor(repo, parents[0], head):
+        raise MDFError("实际 PR merge 的 target 未先合回工作分支并验收", code="target_not_integrated")
     remote = f"refs/remotes/origin/{target}"
     first = git(repo, "rev-list", "--first-parent", remote).stdout.split()
     if merged not in first:
@@ -251,6 +249,13 @@ def submit(repo, forge, source, target, pull, *, pm, fixed_head):
     elif pull is None or head != pull["head"]:
         preflight(repo, source)
         head = sha(repo, f"refs/heads/{source}")
+    if not pm:
+        if current_branch(repo) == source:
+            from mdf_core.lifecycle.target_integration import require_integrated
+            require_integrated(repo, source, target)
+            head = local_head(repo, source)
+        elif not ancestor(repo, remote, head):
+            raise MDFError("在工作分支合回最新 target 并增量验收", code="integration_required")
     require_ready(repo, source)
     if local_head(repo, source) != head:
         raise MDFError("源分支在提交期间变化", code="pull_state_changed")
@@ -284,10 +289,6 @@ def _finish(repo, source, settings, *, phase, number):
     if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
         require_source(source)
-    from mdf_core.lifecycle.release_integration import integration_version, release_head_of
-    version = integration_version(source)
-    if version:
-        details = {**details, "kind": "integration", "version": version}
     from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
     github, trunk = is_github_flow(repo), trunk_branch(repo)
     pm = details["kind"] == "pm"
@@ -303,16 +304,14 @@ def _finish(repo, source, settings, *, phase, number):
     pull, target = lookup_pull(repo, forge, source, number=number)
     if phase == "close-out" and (pull is None or pull["state"] != "merged"):
         raise MDFError("PR/MR 尚未 merged；由 pr intent 继续推进", code="pr_not_merged")
-    publishes = details["kind"] in {"release", "hotfix", "on-demand-release", "integration"} and (github or target == trunk)
+    publishes = details["kind"] in {"release", "hotfix", "on-demand-release"} and (github or target == trunk)
     if pull is None or pull["state"] == "open":
-        if version and pull and release_head_of(repo, source) != release_head_of(repo, source, ref=pull["head"]):
-            raise MDFError("PR 已创建后 release_head 变化", code="release_head_changed")
         if target is None:
             raise MDFError("源分支不存在，也未发现对应 PR/MR", code="missing_branch")
         if details["kind"] == "feature":
             from mdf_core.lifecycle.late_decision import require_feature_target
             require_feature_target(repo, source, target)
-        pull = submit(repo, forge, source, target, pull, pm=pm, fixed_head=github and publishes and not version)
+        pull = submit(repo, forge, source, target, pull, pm=pm, fixed_head=False)
     owner = worktree_map(repo).get(source) or retained_owner(repo, source, pull["head"])
     state = {"source": source, "target": target, "head": pull["head"],
              "retained_worktree": str(owner) if owner is not None else None}
@@ -326,7 +325,7 @@ def _finish(repo, source, settings, *, phase, number):
         if phase == "pr":
             emit({"ok": True, "operation": "pr", "mode": "pr", "source": source,
                   "completed": True, "status": "merged", "pull_request": pull,
-                  "merge_commit": merged, "next_intent": "close-out"})
+                  "merge_commit": merged, "next_intent": "publish" if publishes and not github else "close-out"})
             return
         state["merge_commit"] = merged
         remote_head = remote_source_head(repo, source)
@@ -353,8 +352,8 @@ def _finish(repo, source, settings, *, phase, number):
                 from mdf_core.lifecycle.hotfix_version import source_version
                 details["version"] = source_version(repo, source, ref=state["head"])
             if github:
-                state["release_head"] = release_head_of(repo, source, ref=state["head"]) if version else state["head"]
-                if version or details["kind"] == "release":
+                state["release_head"] = state["head"]
+                if details["kind"] in {"release", "hotfix"}:
                     from mdf_core.lifecycle.release_publish import require_published_source
                     state["release_head"] = require_published_source(repo, details["version"], state["release_head"])
             ready = publish(repo, state, details["version"], source_cleaned=remote_head is None and local is None)

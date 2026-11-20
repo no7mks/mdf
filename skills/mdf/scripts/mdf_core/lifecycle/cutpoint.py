@@ -35,16 +35,3 @@ def resolve_cutpoint(repo: Path, raw: str, trunk: str) -> str:
             raise MDFError(f"上一发布 tag v{latest} 不是切点的 ancestor", code="cutpoint_before_latest_release",
                            details={"commit": commit, "latest_release": latest})
     return commit
-
-
-def require_not_frozen_catch_up(identity: dict, repo: Path, incoming: str) -> None:
-    """frozen_cutpoint 的 release/* 禁止 catch-up 引入切点之后的 trunk 提交。"""
-    from mdf_core.workspace.workflow_policy import is_github_flow
-    release = is_github_flow(repo) and identity.get("branch", "").startswith("release/")
-    if not release and identity.get("frozen_cutpoint") is not True:
-        return
-    if _git(repo, "merge-base", "--is-ancestor", incoming, "HEAD", check=False).returncode == 0:
-        return
-    raise MDFError("release 已冻结在历史切点，禁止 catch-up 合入后续 trunk 提交；"
-                   "冲突与对齐经集成分支处理", code="frozen_cutpoint",
-                   details={"cutpoint_commit": identity.get("cutpoint_commit")})

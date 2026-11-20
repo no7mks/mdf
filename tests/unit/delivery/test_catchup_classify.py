@@ -1,11 +1,11 @@
-"""catch-up-plan 的纯函数：路径分类与 depends_on 反向传递。"""
+"""incremental-integration-plan 的纯函数：路径分类与 depends_on 反向传递。"""
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 
 load_core_module()
 from mdf_core.execution.modules import parse_modules  # noqa: E402
 from mdf_core.foundation.yamlutil import parse_yaml  # noqa: E402
-from mdf_core.lifecycle.catchup_plan import classify, dependents  # noqa: E402
+from mdf_core.lifecycle.incremental_plan import classify, dependents  # noqa: E402
 
 
 @pytest.mark.parametrize("path,kind", [

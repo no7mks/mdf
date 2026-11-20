@@ -1,6 +1,6 @@
 # 交付契约
 
-github-flow release 在 fact 后先执行 [sync-remote](sync-remote.md)，再执行 [publish](publish.md)，创建并推送 final tag，然后进入 catch-up 与主线集成。
+主链统一先 catch-up、consolidate。Gitflow 在 merge/pr 后 publish，github-flow 发布交付在 merge/pr 前 publish。
 
 涉及 master 起点 feature 或 ODR 时，先应用 [Late-decision](late-decision.md)。
 ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature 目标从 delivery.json 读取。
@@ -9,10 +9,10 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## 同步与集成的增量验收
 
-- sync-remote 从远端同名分支同步，catch-up 从其他分支集成。
+- catch-up 从远端同名分支同步，incremental-integration 从其他分支集成。
 - 两个步骤各自包含新增改动的增量 code-review、verify 与 fact 验收，并在本步骤内循环修复至通过。
 - 已完成的 lint、code-review、verify、fact audit / fact update 保持 `[x]`，基线报告继续保留。
-- 再次出现增量时，只重新打开对应的 sync-remote 或 catch-up，完成本轮增量验收后自勾。
+- 再次出现增量时，只重新打开对应的 catch-up 或 incremental-integration，完成本轮增量验收后自勾。
 
 ## 工作流（唯一执行契约）
 
@@ -28,7 +28,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 objectives 按 manifest.closeout.mode 固定收尾结构，local 使用原有 checklist。
 
-- PR mode 的 checklist 止于 `catch-up`，记录仓内前置工作与验收。
+- 交付清单记录 catch-up、consolidate 等合入前工作；github-flow 发布交付在其后记录 publish。
 - pr 按实际 merged、合并核验与关联 CI 收尾判定完成。
 - close-out 按适用的发布、backmerge、source 清理与最终核验判定完成。
 - 完整交付在 pr 完成后继续 close-out；until、暂停与普通 next 的单步边界仍有效。
@@ -132,8 +132,13 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 7. code-review
 8. verify branch
 9. fact audit（必要时 fact update 后重审）；进入前执行可选 pre-gitflow-finish hook
-10. catch-up（仅对事实后增量改动文件补检；严禁退勾基线四项或全量重跑）
-11. close-out
+10. catch-up（同步远端同名工作分支并增量验收）
+11. consolidate（收敛交付材料、对象状态与适用版本归档）
+12. merge/pr（内部先 target 合回与 incremental-integration）
+13. 适用的 publish 与 close-out
+
+发布交付按 workflow 定序：Gitflow 在 merge/pr 后 publish，github-flow 在 merge/pr 前 publish。
+feature / bugfix 完成 merge/pr 后直接 close-out。
 
 - **是否 design**：start clarify 冻结 `needs_design`；deliver/next 只读该字段。
   - `roster ≥1` 必须 `needs_design: yes`；选 no 则须收成 `0,0`。

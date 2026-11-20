@@ -17,7 +17,7 @@ github-flow 的 [trunk-pr](trunk-pr.md) 把本地 trunk 的项目记录保全到
   `mdf.py pr --repo <trunk 路径> --source <pm/分支>`。
 - CLI 将确认的源提交通过 refspec 推送到远端 `pm/*`。用同一 source 创建或复用 PR/MR，等待 CI、review 与平台合并。
 - `pm/*` 采用本节的 Prepare 和返工流程。记录 PR/MR、source、原 head、反馈与验证结果到会话或 Git common dir 下的本地日志。
-  按项目记录的校验和审查推进，跳过普通交付的 `changes/` 候选材料、objectives 备注与 catch-up。
+  按项目记录的校验和审查推进，跳过普通交付的 `changes/` 候选材料、objectives 备注与 incremental-integration。
 - 需要返工、集成 trunk 增量或响应 `squash_required` 时，从主 worktree 执行
   `mdf.py pm rework --repo <主路径> --source <原 pm 分支>`，进入返回的临时 worktree。
   - Proposal 反馈走 [PRP Review](prp-review.md)，由该流程提交评审文件。
@@ -117,7 +117,7 @@ closeout:
 - 源分支的候选状态不代表已交付；交付完成看远端目标分支和实际合并结果。
 - PR/MR 未完成时必须保留 source branch 和 owner worktree，不得 detach、删除分支或删除工作区。
   - 等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理。
-  - release/ODR/hotfix 的 close-out 须完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
+  - release/ODR/hotfix 须先完成 publish，close-out 再核对固定发布点与适用的 backmerge，之后才可清理远端及本地 source；CLI 始终保留 owner worktree。
   - worktree 删除只在实际收口及最终核验完成后，按 [工作区清理](close-out.md#工作区清理) 默认删除临时 owner 和 backmerge；不能凭 checklist 全勾或 PR 已创建提前删除。
 - 每次 CLI 收口持有 Git common dir 的仓库级 OS lock；同源及不同源并发调用返回 finish_busy，保留 Git 现场。
   - lock 只覆盖本次收口操作；调用退出或中断时由 OS 释放，不删除 lock 文件。
@@ -159,44 +159,21 @@ closeout:
 
 ### 提交前远端集成
 
-普通交付首次创建或更新 PR/MR 前执行本节。
-`pm/*` 按 [pm 分支](#pm-分支) 执行；已 merged 的恢复不重新集成。
-本 intent 的 Prepare 执行本节；local close-out 不使用本节。
-
-- fetch origin 的已确定目标分支，并固定最新远端 tip。
-  - gitflow 的 bugfix/adhoc 目标为 develop，release/ODR/hotfix 目标为配置的 trunk。
-  - github-flow 的普通交付目标为 trunk，维护线 hotfix 目标为对应 support 分支。
-  - github-flow release 先完成 [publish](publish.md) 并核对远端 final tag，保持冻结的 `release_head`。
-    trunk 有尚未包含的提交时用 `release-integrate` 建立集成分支，完成 catch-up 后从该分支创建 PR。
-    该 release 路径跳过下述在源分支合入远端 tip 的步骤。
-  - 以远端 tip 为准，不用本地 trunk 或平台的无冲突标记替代；fetch 失败或目标缺失时停止并报告。
-- 用 `git merge-base --is-ancestor <远端tip> HEAD` 检查包含关系；“父节点”指 ancestor，不要求直接 parent。
-  - 已包含且没有未完成返工时继续核材料；未包含则必须集成，即使试合并完全无冲突。
-  - 命令异常不能当作未包含或已通过；先读日志定位。
-- 集成前确认 owner clean、无已有 MERGE_HEAD，并保存下节格式的「PR 返工」备注。
-  - 尚无 PR/MR 时记录 provider/source/target 与“尚未创建”。
-  - 固定集成前 HEAD 为 `catch-up 基线`（增量审查左端点）、远端 tip 与原验证请求；仅退勾 `catch-up`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`）。
-  - 提交备注后先按 [squash](squash.md#pr-模式与-planning-land-的必要检查) 完成必要检查，squash 后重新固定增量审查左端点。
-  - 然后运行 `mdf.py merge-no-ff --repo <owner> --commit <远端tip>`，在本分支解决冲突并提交 merge。
-  - 禁止 rebase、force push、整侧覆盖或削弱测试；语义不明时保留现场并询问。
-- 上述集成完成后结束 pr 内部调用栈。trunk-pr 接管的无账本 source 回到 Adhoc 检查与事实，重新读取 `adhoc-status` 补验。
-- 其他 source 由当前 Agent 在主链外委托 `references/catch-up.md` 对改动文件执行增量补检。
-  - ❌ 严禁因远端集成退勾已通过的基线步骤，严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release`、从 `start_commit` 起全分支审查或全量 `fact audit`。
-  - 有有效上轮审查时按 1 人增量新一轮仅覆盖 `<catch_up_base>..HEAD` 改动文件与冲突修复，复核上轮问题。
-  - 验证只跑 `verify --scope smart --paths <本次改动文件>`；事实只按 `--scope paths` 补检改动文件关联的事实页。
-  - 即使 `catch-up` 此前已勾选，再次触发远端集成也只退勾 `catch-up` 并回到 `catch-up`。
-  - 补检引发修复时在 `catch-up` 内对改动文件增量复检，直到通过并自勾 `catch-up`，同步材料并提交。
-- 全部完成后再次 pr；独立调用也持续续办，不只报告待办。release/ODR/hotfix 候选目录沿用下方返工规则。
-  - 创建或更新 PR/MR 前再次 fetch 并检查最新远端 tip；未包含则重复本节，不复用集成前的通过记录。
-  - 按下方规则清除返工备注；存在未完成返工时不得调用 pr 提交源分支。
-  - 检查后远端仍可能并发前进；本节不保证未来 CI 必过，平台 CI 与合并约束仍须针对最终合并结果核验。
+- 首次提交及更新 PR 前，核对 catch-up、consolidate 和适用的 publish 已完成。
+- fetch 目标 target，把 target 合回当前工作分支。github-flow 已发布 release 继续使用同一工作分支。
+- 有 change 时，在 pr 内部执行 [incremental-integration](incremental-integration.md)。
+- incr-cr → verify smart → incr-fa → 适用的 incr-consolidate 全部通过后再提交 PR。
+- 本轮 base 为合回前已验收状态；修复与冲突解决累计在本轮，target 再次前进时循环处理。
+- 保留已通过的基线 CR、verify、FA 与 consolidate 状态；本轮结果追加，验证写独立报告。
+- PR/MR 必须保留源提交并采用 no-ff merge，禁止 rebase 与 force push。
+- 项目记录 pm 分支继续按本页 pm 规则处理；无账本 adhoc 按已有材料完成对应增量验收。
 
 ### 恢复路由与返工上下文
 
 恢复先核调用边界，再用 chat 中的交付身份查询 Git 和平台。
 
 - PR 恢复优先于 doctor、branch、delivery status 和 adhoc-status；先应用当前 until。
-  未 merged 选 pr，已 merged 且关联 CI 收尾通过才选 close-out；显式 until pr 不进入这两个阶段。
+  未 merged 选 pr；已 merged 且 CI 收尾通过后，Gitflow 发布交付先选 publish，其余选 close-out；显式 until pr 不进入这两个阶段。
   merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按下方轮询规则查回关联运行。
 - source 来自 chat、当前完整分支或用户指定。身份不足或多个候选时，向用户确认 source 和 PR/MR ID。
 - 核仓库、origin/provider、source、target 和 head；身份不符保留现场。
@@ -207,7 +184,7 @@ closeout:
   `pm/*` 按[本页修订流程](#pm-分支)清理临时 worktree 后，从 trunk 续办原 PR。
   普通交付从原 source worktree 调用 CLI；owner 缺失且仍需修改时报告阻塞。
   续办不重新 start。
-- merged 时调用 `mdf.py pr --repo <主路径> --source <原分支>` 核验合并，关联 CI 收尾通过后才结束 pr 并交接 close-out。
+- merged 时调用 `mdf.py pr --repo <主路径> --source <原分支>` 核验合并，关联 CI 收尾通过后结束 pr；Gitflow 发布交付进入 publish，其余进入 close-out。
   已进入发布或清理的恢复直接执行 [合并后续办](pr-close-out.md)，不重开 pr Goal。
 - 清理前置已全部完成、detach 或删除 source 后中断时，从主 worktree 续办 close-out。
   此恢复容错不授权任何流程提前删除 source 或 owner；发布未完而 source 缺失须核实际证据。
@@ -228,7 +205,7 @@ closeout:
 | merged | 核身份、head、双亲 merge commit 与远端第一父链；CLI 返回 status=merged、completed=true 后仍须核关联 CI 收尾 |
 
 - PR/MR 由用户或项目 CI 合并；pr 不批准或合并平台 PR/MR，不修改 CI policy。
-- pr 完成不执行 tag、backmerge、source 清理或 detach；这些操作全部属于 close-out。
+- pr 完成后，tag 由 publish 负责，适用的 backmerge、source 清理和 detach 由 close-out 负责。
 - 未 merged 必须保留 source branch 和 owner worktree；等待 review、返工、补验和 closed 均不清理。
 - source/target/head 或实际 M 不符时保留现场；不 reset、覆盖 tag 或改写已合入结果。
 
@@ -274,71 +251,28 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
 
 ### 反馈修复与重新提交
 
-普通交付的可修问题交回主链外处理；独立 pr 和 deliver 委托均适用。
-`pm/*` 使用 [pm 分支](#pm-分支) 的修订流程。
-
-- 步骤 4 的返工入口：核对反馈对应当前 PR/MR 与 head；读取完整 review、CI 日志和失败报告，定位问题，不为查看输出重复运行。
-- 修改前先保存「PR 返工」非 checklist 备注（含 `catch-up 基线`），仅退勾 objectives 的 `catch-up`（❌ 严禁退勾基线 `lint`、`code-review`、`verify`、`fact`），落盘后再修复。
-   - 备注位于本次材料目录的 objectives，记录父 intent 与调用方、原 PR/MR 身份、source/owner/common dir/主路径。
-   - 原调用方为 deliver 时保留其有效 until、yolo 与已有授权依据；新调用有显式边界或用户限制时以本次要求为准。
-   - 同时记录反馈对应的旧 head、修复前左端点、原验证请求（scope/模块/选题或 suite/完整命令）及返回 PR 的位置。
-   - checklist 记录前置验收；备注恢复父流程与参数，保留人工工作勾选来源。
-   - 冲突通过 merge 最新远端目标分支解决；不 rebase、不 force push，不覆盖他人现场。
-   - CI 暂时故障仅在证据支持时重试；不降低测试、审批或 branch protection 要求。
-- 结束 pr 内部调用栈。trunk-pr 接管的无账本 source 回到 Adhoc 检查与事实，重新读取 `adhoc-status` 补验。
-- 其他 source 在主链外委托 `references/catch-up.md`，仅对修复改动文件增量完成 lint、1 人 code-review、`verify --scope smart --paths` 及 paths 事实补检。
-   - ❌ 严禁全量重跑 `verify --scope branch`、整仓 `smoke`/`release` 或全分支审查；再次触发更新同样只回到 `catch-up`。
-   - 独立 pr 也由当前 Agent 续办 `catch-up`，不仅报告待办后结束；deliver 返回 Select 按 `catch-up` 推进。
-- 全部补审补测与 fact 完成后，复核候选材料，在更新 PR/MR 前的材料提交中移除该备注。
-   - 清除备注不会提前声明实际完成；中断后按前置全勾、本地 head 与平台 head 的差异恢复更新，不重做首次材料准备。
-   - 恢复 pr，步骤 3 从原 source worktree 非 force push 合法新提交、复用原 PR/MR，继续每 2 分钟查询新 head。
-   - release/ODR/hotfix 同样允许在 PR/MR 合并前更新；合并后固定 M，源工作区的新增或未提交改动须在发布前报告。
-
-github-flow release 已发布后，返工在独立集成分支完成，final tag 与发布内容保持固定。
-
-release/ODR/hotfix 的材料即使已位于 `changes/<version>/`，PR/MR 未合并且尚未 publish 时仍是候选发布材料。
-
-- 在同一版本目录仅重新打开对应的 sync-remote 或 catch-up，追加增量 code-review 与 fact 结论，验证写入独立增量报告。
-  已通过的基线步骤与报告继续保留，交付总结按实际成果更新。
-- CLI 的 delivery 与 verify branch 共用候选目录；不得重复 release-closeout 或搬回目录。
-- 保留原版本和发布范围；按修复同步候选 CHANGE、CHANGELOG 和相关对象，检查链接及声明与实现一致。
-- release 首轮审查仍从目标 master 的上一正式发布记录确定基线，不把候选 manifest 的 latest_release 当作已发布版本。
-- fact 使用 paths 范围补齐受影响的事实页，避免把尚无正式 tag 的候选版本当作 branch 基线。
-  paths 仅定位修复；完成审阅沿用首轮固定 base SHA 与完整 against 范围，不从候选 manifest 重算发布基线。
-- 补审补测与材料提交完成后更新原 PR/MR；合并并发布后，该版本材料冻结。
-
+- 可修 review/CI 反馈、目标前进与冲突都在当前 pr 调用内持续处理。
+- 固定本轮已验收 HEAD，修复后执行 incremental-integration；验收前保持工作分支与现场。
+- Gitflow 和 github-flow feature/bugfix 完成 incr-consolidate，同步 Change、对象状态与交付材料。
+- github-flow 已发布交付追加集成记录，final tag 始终保持发布时的 commit 和正文。
+- 已完成的 CR、verify、FA 和 consolidate 保持完成，新增改动在本轮增量验收内部闭环。
+- 目标再次前进时继续 target → 工作分支、incremental-integration、提交更新的循环。
+- 在更新 PR/MR 前的材料提交中移除已完成的返工备注，保留实际验收证据。
+- 更新后恢复原 PR/MR 的轮询，沿用当前 source；已 merged 后转入下一阶段。
 
 ### 候选材料准备
 
-Prepare 在首次提交前完成交付材料。前置齐全后核对当前 Git 与平台。
-
-- 按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项。按 source 查回当前平台 PR/MR。
-- release/ODR/hotfix 已提交 `changes/<version>/` 候选时，复用原版本与材料，不重复 release-closeout 或归档。
-
-- 普通交付与人工 feature 读取 [close-out 的材料规则](close-out.md#s3) 至步骤 9 的材料条款。
-  这里只复用材料规则，不执行 close-out intent、local 集成或 Finish Gitflow。
-- release/ODR/hotfix 的 bug close 返回「实现已变更」时回本页步骤 2，先补审补测与 fact。
-  Bug 状态保持，补验通过后恢复 closures；不得回到合并后 close-out。
-- feature/bugfix 补齐 Change 与 HTML 总结；feature 的 implemented 是合入后的候选状态。
-  - 按 close-out 材料规则依据修复与验证证据更新 Bug 为 `fixed`；缺少证据则停止。
-  - push 前检查未发布 Change 的 `fixed` 引用均为 fixed 或 closed Bug；不凭声明自动改状态。
-- hotfix 先按 [Hotfix 版本](hotfix-version.md) 固定版本并提交，再准备 Bug closures。
-- github-flow release 复用 publish 已提交的版本材料与远端 final tag。
-- 其他 release/ODR/hotfix 完成 Bug closures、release-closeout 与版本材料准备；不创建 tag、不 backmerge。
-- adhoc 读取 [Adhoc Close-out](adhoc-close-out.md) 的 Change 与 validate 材料条款。
-  不执行该流程的 local 集成或 Finish；不要求 HTML 总结。
-  - 无账本时改用 [无账本 Adhoc 收口](adhoc-change.md) 的准备步骤，不补造 checklist。
-- 所有 kind 先完成主链 verify、fact 与配置的 hook；材料不替代前置验收。
-- 提交前重核远端 ancestor 与 squash；目标前进则回本页集成、补审补测循环。
-- 候选材料提交、必要 squash 完成后，push 前执行
-  [PR 最终候选复核](fact-audit-delivery.md#pr-最终候选复核)。首次与更新 PR 均适用。
-  未通过不 push；本轮 JSON 留在仓外，不再写回报告或产生候选提交。
+- 交付文档、对象状态、版本聚合与归档统一由 [consolidate](consolidate.md) 完成。
+- PR Prepare 核对其结果，候选材料需要更新时在 incremental-integration 中执行 incr-consolidate。
+- 无账本 adhoc 沿用 [无账本交付材料](adhoc-change.md) 的对应规则。
+- 每次 push 前执行 [PR 最终候选复核](fact-audit-delivery.md#pr-最终候选复核)。
+  当前 head 的纯轮询和已 merged 核验复用已完成证据。
 
 ### 完成与交接
 
-PR mode 的 checklist 止于 `catch-up`。pr 和 close-out 都按实际结果续办。
+交付清单止于 consolidate，github-flow 发布交付还包含 publish；其后阶段按实际 Git 结果续办。
 
-- 实际 merged、合并核验与关联 CI 收尾均通过后，pr 完成并交回调用方选择 close-out。
+- 实际 merged、合并核验与关联 CI 收尾均通过后，pr 完成后，Gitflow 发布交付进入 publish，其余进入 close-out。
 - close-out 按 [合并后续办](pr-close-out.md) 核发布、backmerge 与清理结果。
 
 ### 调用边界与提交裁定

@@ -89,9 +89,9 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-github-flow release 在 fact 后依次加入 sync-remote、publish，同步远端同名 release 并验收后发布 final tag。
+发布前先 catch-up、consolidate；github-flow 的 publish 在 merge/pr 前，Gitflow 的 publish 在 merge/pr 后。
 
-PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
+清单止于 consolidate；github-flow 发布分支在其后加入 publish。merge/pr 和后续收尾依据实际 Git 结果推进。
 
 ### 分支参数
 
@@ -169,13 +169,13 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
       不得改、操作、启动或终止对端。
     - collab-mode：由接手 Agent 直接调度前后端 worktree；本 Agent 完成本仓 start 后交接。
       交接规则见 [collab-mode](collab-mode.md)；本步只确认本仓范围与已知的对端信息。
-  - 主链收口前为 verify branch → fact audit → catch-up → close-out（不内嵌在 close-out）。
+  - 主链收口前为 verify branch → fact audit → catch-up → consolidate → merge/pr → 适用 publish → close-out（不内嵌在 close-out）。
   - ❌ 不得实施新 PRP。
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
   - 精简 checklist 至少含：修复/范围、converge、lint、code-review、verify branch、
-    fact audit、catch-up，以及 local 模式的 close-out；并含 `needs_design`。
+    fact audit、catch-up、consolidate；并含 `needs_design`。
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，供 CLI 写入新 worktree。
 

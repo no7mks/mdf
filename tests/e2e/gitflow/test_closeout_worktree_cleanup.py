@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from mdf_test_support import git, mdf, payload, run
+from mdf_test_support import finish_delivery
 from support_pull import prepare
 from test_adhoc import prepare_finish
 
@@ -15,11 +16,11 @@ def test_local_owner_removal_keeps_delivery_and_long_lived_worktrees(python_exe,
     git(repo, 'worktree', 'add', str(develop), 'develop')
     git(repo, 'worktree', 'add', '-b', 'planning', str(planning), 'master')
     git(repo, 'worktree', 'add', '--detach', str(deploy), 'master')
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(owner)))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(owner)))
     status = payload(mdf(python_exe, 'adhoc-status', '--repo', str(owner), '--slug', 'update-readme'))['result']
     assert result['completed'] and status['completed']
     merged = git(repo, 'rev-parse', 'develop').stdout
-    retry = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(develop), '--source', result['source']))
+    retry = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(develop), '--source', result['source']))
     assert retry['retained_worktree'] == str(owner)
     assert git(develop, 'branch', '--show-current').stdout.strip() == 'develop'
     git(repo, 'worktree', 'remove', result['retained_worktree'])
@@ -34,7 +35,7 @@ def test_pr_backmerge_then_owner_cleanup_and_recovery(python_exe, tmp_path, monk
     repo, remote, owner, platform = prepare(python_exe, tmp_path, monkeypatch)
     source = payload(mdf(python_exe, 'pr', '--repo', str(owner)))['source']
     platform.merge(1, tmp_path)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(owner)))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(owner)))
     assert result['completed'] and result['remote_deleted']
     back = Path(result['backmerge']['worktree'])
     branch = result['backmerge']['source']
@@ -43,7 +44,7 @@ def test_pr_backmerge_then_owner_cleanup_and_recovery(python_exe, tmp_path, monk
     git(repo, 'merge-base', '--is-ancestor', head, 'origin/develop')
     before = git(remote, 'show-ref').stdout
     # 恢复结果可能没有 backmerge，按已核实的完整分支从清单定位。
-    retry = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
+    retry = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
     assert retry['completed']
     trees = git(repo, 'worktree', 'list', '--porcelain').stdout.split('\n\n')
     matches = [entry.splitlines()[0].removeprefix('worktree ') for entry in trees
@@ -59,10 +60,10 @@ def test_pr_backmerge_then_owner_cleanup_and_recovery(python_exe, tmp_path, monk
         git(repo, 'worktree', 'remove', str(back))
         git(repo, 'worktree', 'remove', result['retained_worktree'])
         assert not back.exists() and not owner.exists()
-        recovered = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
+        recovered = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
         assert recovered['completed'] and recovered['retained_worktree'] is None and repo.is_dir()
         git(repo, 'clone', '--no-checkout', str(repo), str(owner))
         git(owner, 'checkout', '--detach', result['pull_request']['head'])
-        recovered = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
+        recovered = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', source))
         assert recovered['completed'] and recovered['retained_worktree'] is None
     assert git(remote, 'show-ref').stdout == before

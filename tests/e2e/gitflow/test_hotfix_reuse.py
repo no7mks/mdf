@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from mdf_test_support import BUG_NAME, git, mdf, payload, seed_verify_branch, write_work_objectives
+from mdf_test_support import finish_delivery
 from support_delivery import commit, start_repo
 from support_pull import Platform, squash_pending
 
@@ -84,9 +85,9 @@ def test_reuse_hotfix_slug_publishes_new_version_and_preserves_first_release(
         if index == 2:
             with monkeypatch.context() as patch:
                 interrupt_publication(patch, pr_mode)
-                interrupted = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+                interrupted = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
                 assert "test_interruption" in interrupted.stderr
-        done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+        done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
         assert done["tag"] == f"v{version}"
         head = git(remote, "rev-parse", f"v{version}^{{commit}}").stdout.strip()
         if pr_mode:
@@ -97,6 +98,6 @@ def test_reuse_hotfix_slug_publishes_new_version_and_preserves_first_release(
             assert git(remote, "rev-parse", f"v{previous}^{{commit}}").stdout.strip() == expected
         git(repo, "worktree", "remove", str(work))
         identity_args = ["--pull", str(index)] if pr_mode else ["--version", version]
-        resumed = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source, *identity_args))
+        resumed = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source, *identity_args))
         assert resumed["tag"] == f"v{version}"
     assert released["1.2.1"] != released["1.2.2"]

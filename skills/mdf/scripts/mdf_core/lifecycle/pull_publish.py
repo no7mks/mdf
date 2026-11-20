@@ -9,15 +9,13 @@ def tag_release(repo, state, version, *, source=None, expected_remote=None):
     tag = f"v{version}"
     merged = state["release_head"] if is_github_flow(repo) else state["merge_commit"]
     ref = f"refs/tags/{tag}"
+    from mdf_core.lifecycle.closeout_render import expected_tag_message, require_tag_content
+    message = expected_tag_message(repo, version, merged)
     local = git(repo, "rev-parse", "--verify", ref, check=False)
     if local.returncode:
-        from mdf_core.lifecycle.closeout_render import changelog_excerpt, release_tag_message
-        changelog = git(repo, "show", f"{merged}:CHANGELOG.md").stdout
-        message = release_tag_message(tag, changelog_excerpt(changelog, version))
         git(repo, "tag", "-a", tag, merged, "--cleanup=verbatim", "-m", message)
-    if (git(repo, "cat-file", "-t", ref).stdout.strip() != "tag" or sha(repo, ref) != merged):
-        raise MDFError("现有 tag 与固定发布提交不符", code="tag_conflict")
-    expected = git(repo, "rev-parse", ref).stdout.strip()
+    tag_data = require_tag_content(repo, version, merged, expected=message)
+    expected = tag_data["oid"]
     remote = git(repo, "ls-remote", "origin", ref).stdout.split()
     if remote and remote[0] != expected:
         raise MDFError("远端 tag 与本次发布不符", code="tag_conflict")
@@ -36,13 +34,13 @@ def publish(repo, state, version, *, source_cleaned):
     from mdf_core.workspace.squash import require_ready
 
     merged = state["merge_commit"]
-    git(repo, "fetch", "origin", "--prune")
+    # 调用方刚完成远端 merge 核验，复用同一轮 fetch 的 refs。
     if is_github_flow(repo):
         from mdf_core.lifecycle.support_line import recheck_before_publish
         recheck_before_publish(repo, state["source"], version, target=state["target"], head=state["head"])
         if not ancestor(repo, state["release_head"], f"refs/remotes/origin/{state['target']}"):
             raise MDFError("release_head 不在目标远端历史中，不创建 tag", code="release_head_unreachable")
-        if state["source"].startswith(("release/", "codex/integrate/release-")):
+        if state["source"].startswith(("release/", "hotfix/")):
             from mdf_core.lifecycle.release_publish import published_head
             if published_head(repo, version) != state["release_head"]:
                 raise MDFError("final tag 与发布 commit 不符", code="tag_conflict")
@@ -56,7 +54,10 @@ def publish(repo, state, version, *, source_cleaned):
     published = find_merge(repo, remote, merged) is not None
     if source_cleaned and not published:
         raise MDFError("源分支已清理，但远端 develop 缺少回合证据，保留现场", code="pull_state_changed")
-    tag_release(repo, state, version)
+    from mdf_core.lifecycle.release_publish import published_head
+    if published_head(repo, version) != merged:
+        raise MDFError("final tag 与 PR merge commit 不符", code="tag_conflict")
+    state["tag"] = f"v{version}"
     if published:
         sync_local(repo, "develop", integrate_develop=True)
         return True

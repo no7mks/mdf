@@ -4,7 +4,7 @@ import pytest
 from mdf_test_support import *  # noqa: F403
 from support_delivery import commit
 from support_github_flow import error_of
-from test_catch_up_plan import started
+from test_incremental_plan import started
 
 load_core_module()
 from mdf_core.workspace import clear_commits  # noqa: E402

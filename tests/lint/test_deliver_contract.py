@@ -17,7 +17,7 @@ def test_deliver_continues_within_scope_and_preserves_evidence():
         "只完成当前一个交付", "阶段完成 ─", "2 Select",
         "不结束 deliver", "需要用户决定时暂停", "已有有效确认继续适用",
         "步骤 5 必须取得 close-out 的实际成功结果", "不会被 close-out 删除的主 worktree",
-        "不重放已经发生的发布操作", "release/ODR/hotfix 包含 close-out 规定的 tag 与发版推送",
+        "不重放已经发生的发布操作", "release/ODR/hotfix 包含 publish 的 tag 与发版推送",
         "角色已集成并清理时读取 owner 的两路证据",
         "尚未存在本次交付时委托", "references/start.md",
         "不可恢复的死硬阻塞仍停止", "位置参数至多一个", "自动分辨",
@@ -76,7 +76,8 @@ def test_deliver_until_is_exclusive_and_checked_before_every_dispatch():
         assert rule in text
     table = text.split("| 交付路径 |", 1)[1].split("\n\n", 1)[0]
     assert "start（联调时内部 integrate）→ design → write-tests / implement → converge" in table
-    assert "code-review → verify → fact audit → 必要时 fact update（内部 fact audit）→ catch-up → [pr（仅 PR mode）] → close-out" in table
+    assert "catch-up → consolidate → merge/pr → publish → close-out" in table
+    assert "catch-up → consolidate → publish → merge/pr → close-out" in table
     assert "多词 intent 须作为单个值传入" in text
     assert "until fact update 可完成前置 audit，需要 update 时先停住" in text
     assert "audit 无须修复时也在 update 的顺序位置停住" in text
@@ -136,7 +137,7 @@ def test_deliver_policy_is_inherited_before_nested_intents_and_decisions():
     assert "步骤 3 的 Gitflow 关口" not in deliver
     assert "不排除 converge 内部的 smart" not in policy
     assert "close-out 尚未实际完成" in deliver
-    assert "全勾但 Git 未完成也续办" in deliver
+    assert "其后阶段按实际 Git 结果续办" in workflow("pr")
 
 
 def test_deliver_public_contract_has_no_obsolete_mode():
@@ -198,48 +199,32 @@ def test_deliver_requires_separate_user_confirmation_before_pr_and_closeout():
 
 
 def test_catch_up_contract_forbids_full_reruns_and_reticking_baseline():
-    catch_up = workflow("catch-up")
-    for rule in (
-        "## 强硬禁令（严禁全量重跑）",
-        "严禁退勾已通过的基线步骤",
-        "严禁触发全量验证",
-        "严禁触发全分支或全员代码审查",
-        "严禁触发全量事实审阅",
-        "再次触发更新只回 `catch-up`",
-        "--scope smart --paths",
-        "只审 `<catch_up_base>..HEAD` 的改动文件",
-    ):
-        assert rule in catch_up
-    assert "fact 已勾、publish 已完成或不适用、catch-up 未勾" in workflow("deliver")
-    assert "仅退勾 objectives 的 `catch-up`" in workflow("pr")
-    assert "仅将 `catch-up` 退回 `[ ]`" in workflow("close-out")
-    assert "仅退勾 `catch-up`" in workflow("adhoc-close-out")
+    integration = workflow("incremental-integration")
+    for term in ("禁止退勾已通过的基线步骤", "禁止全量重跑", "verify smart", "incr-cr", "incr-fa", "incr-consolidate"):
+        assert term in integration
+    assert "merge/pr 内部" in integration
+    assert "在 pr 内部执行" in workflow("pr")
+    assert "catch-up 未勾" in workflow("deliver") and "consolidate 未勾" in workflow("deliver")
 
 
 def test_catch_up_examples_match_cli_arguments():
     import shlex
     from mdf_core.cli import build_parser
-
-    text = workflow("catch-up")
-    commands = re.findall(r"```bash\n(.*?)\n```", text, re.S)
-    plan, verify, audit = [build_parser().parse_args(shlex.split(command.replace("\\\n", ""))[2:])
-                           for command in commands]
-    assert plan.command == "catch-up-plan" and plan.base is None
-    assert verify.command == "verify" and verify.scope == "smart"
-    assert len(verify.paths) == 2 and verify.test and verify.report_file
-    assert audit.command == "fact-audit" and audit.scope == "paths"
-    assert audit.implementation_path and audit.document_path
-    assert "PR/CI 反馈中的失败用例" in text
-    assert "quick 已完整覆盖所需回归" in text
+    text = workflow("incremental-integration")
+    commands = []
+    for block in re.findall(r"```bash\n(.*?)\n```", text, re.S):
+        for line in block.replace("\\\n", "").splitlines():
+            if line.strip():
+                commands.append(build_parser().parse_args(shlex.split(line)[2:]))
+    assert [c.command for c in commands] == ["incremental-integration", "verify", "consolidate", "incremental-integration"]
+    assert commands[1].scope == "smart" and commands[1].test and commands[1].report_file
+    assert commands[2].incremental and commands[3].complete
 
 
 def test_sync_and_catch_up_own_incremental_acceptance():
-    sync = workflow("sync-remote")
-    catch_up = workflow("catch-up")
-    contract = workflow("delivery-contract")
-    assert "阶段归属和自勾对象均为 sync-remote" in sync
-    assert "sync-remote-verification-report.json" in sync
-    assert "已通过的 lint、code-review、verify、fact audit / fact update 保持 `[x]`" in sync
-    assert "其他分支的集成" in catch_up and "补检均属于本步骤内部" in catch_up
-    assert "只重新打开对应的 sync-remote 或 catch-up" in contract
-    assert "同名远端同步只重新打开 `sync-remote`" in workflow("next")
+    sync = workflow("catch-up")
+    integration = workflow("incremental-integration")
+    assert "远端同名" in sync and "catch-up-verification-report.json" in sync
+    assert "本步骤内" in sync and "[x]" in sync
+    assert "target 合回工作分支" in integration and "merge/pr 内部" in integration
+    assert "github-flow feature / bugfix" in integration

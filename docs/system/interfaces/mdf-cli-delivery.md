@@ -14,7 +14,7 @@
   - 确认的发布目标写入 `changes/unreleased/<semver>/`，不 push。
 - adhoc start 使用 `--kind adhoc --name <名称>`，CLI 规范化 slug 并直接生成六项 objectives。
   - 不接受 PRP、Bug、版本、`--manual` 或 `--objectives-file`；固定 roster `0,0,1`、`needs_design: false`。
-  - 创建 `adhoc/<slug>` 与同级独立 worktree；close-out no-ff 合入 develop，不改 PRP、不 push。
+  - 创建 `adhoc/<slug>` 与同级独立 worktree；merge no-ff 合入目标，close-out 核对并清理。
   - Change 的 `change_kind` 可用 adhoc 或 fix；fix 表示小范围修正，仍要求 `proposals: []`。
 
 ### `delivery`
@@ -30,7 +30,7 @@
 | roster | 更新 strategy / 按 intent 的 models；design 完成后不能改 qa/dev strategy |
 | resolve-version | hotfix owner 固定发布版本；可传 `--version <semver>`，返回 version 与 tag |
 | route | 只读；按 `objectives.md` 首个未勾步骤返回 state、next、pending 与 `auto_completable`；`--yolo` 免 pr/close-out 入口确认 |
-| complete-stage | `--stage verify\|catch-up`；证据充分时自勾并只提交本阶段文件，见下 |
+| complete-stage | `--stage verify`；证据充分时自勾并只提交本阶段文件，见下 |
 
 - `objectives.md` 记录 checklist 进度。PR mode 的 pr 与 close-out 按实际状态续办；主链不使用 `record/check` 选型。
 - design record 需要 `--policy-file <JSON>`，必须同时给出 `protected_paths` 与 named suite 列表 `suites`。
@@ -104,19 +104,21 @@
   - `verify`：`all_passed` 为真，`branch` 等于交付分支，`scope` 与步骤一致。
     - `branch` 还须覆盖必选 suite；`smart` 的 `results` 须非空且逐项通过。
     - 缺失或不符为 `stage_evidence_missing`。`verification-report.md` 存在时随报告一并提交。
-  - `catch-up`：三路均为 skip 才勾选并写入基线。非材料脏路径返回 `dirty_worktree`。
+  - catch-up 与 incremental-integration 使用各自 --complete 入口，并核对 reviewed-head 与验收摘要。
   - 须在 owner worktree 执行。存在 MERGE_HEAD 时返回 `unfinished_merge`。
-  - 两者的前置步骤未全部勾选时为 `stage_prerequisite`（details.pending）。
+  - verify 的前置步骤未全部勾选时为 `stage_prerequisite`（details.pending）。
   - lint、code-review、fact 需要外部执行或 LLM 判断，不属于纯证据阶段，返回 `invalid_stage`。
   - 执行前 index 含本阶段文件之外的暂存改动，立即返回 `unrelated_staged_changes`（details.paths），不改工作区与 index。
   - 仅暂存并提交本阶段白名单（objectives，verify 另含报告）；暂存集超出白名单时撤回并报错。
   - 已勾选且证据一致返回 `already_completed: true`，不产生空提交。
 
-### `catch-up-plan`
+### `incremental-integration-plan`
 
-`catch-up-plan --repo <仓库> [--base <catch_up_base>]`：只读，返回 base、head、merges、own_commits、incoming_commits 与三路动作。
+`incremental-integration-plan --repo <仓库> [--base <integration_base>]`：只读，返回 base、head、merges、own_commits、incoming_commits 与三路动作。
 
-- 缺省 base 取 `objectives.md` 的 `catch-up 基线` 或 `PR 返工` 左端点，再缺省取首次勾 fact 的提交；缺失为 `missing_catch_up_base`。
+- 显式 --base 优先，缺省取当前 incremental-integration 记录。
+- 无记录时依次取 objectives 的 incremental-integration 基线、PR 返工左端点、首次勾 fact 的提交。
+- 无法确定时返回 missing_integration_base。
 - merges 逐个给出 kind（`upstream` 为第二父可达目标分支，其余 `internal`）与 `--remerge-diff` 冲突解决路径；无法取得（含 octopus）记为未知。
 - merges 无法取得冲突解决改动时（含 octopus），`resolution_paths` 退化为 `M^1..M` 的整段改动，三路均按保守处理。
 - `review`：`skip` 须无冲突解决净改动、无基线后代码改动（含无 module 的根脚本、CI 与 lockfile）、无上游交互、无 module 接口层交互且规则/契约未变；否则 `focused`。
@@ -168,7 +170,7 @@
   命中项返回 `clear_commit`，不再执行该 suite。dirty 或 `--force` 时执行。
   clean 下强制重跑同内容时，旧记录失效，实跑通过后重新记录。
   - 入口声明与产物规则见 [modules](../../../skills/mdf/references/modules.md)。
-- `--report-file <路径>`：smart 成败结果仅写入指定文件，替代上述默认写入位置；用于 catch-up 保留基线报告。
+- `--report-file <路径>`：smart 成败结果仅写入指定文件，替代上述默认写入位置；用于 incremental-integration 保留基线报告。
   - 相对路径以 repo 为根；必须留在仓库内且不含符号链接，执行验证前检查路径。
   - branch/named 使用该参数返回 `invalid_verify_scope`。
 

@@ -2,12 +2,11 @@
 import re
 
 from mdf_core.foundation.errors import MDFError
-from mdf_core.lifecycle.catchup_plan import BASELINE, build_plan
 from mdf_core.lifecycle.delivery_state import git, read_json, safe, split_objectives_steps
 from mdf_core.workspace.merge_policy import sha
 
 ITEM = re.compile(r"(?m)^- \[([ xX])\] (.+?)[ \t]*$")
-AUTO = ("catch-up", "verify")
+AUTO = ("verify",)
 
 
 def parse_items(text):
@@ -58,13 +57,7 @@ def _verify_evidence(repo, root, data, item):
 
 def evidence(repo, root, data, item, stage):
     """返回 (证据, (原因, details))；证据为空表示该阶段不可自动完成。"""
-    if stage == "verify":
-        return _verify_evidence(repo, root, data, item)
-    plan = build_plan(repo, root, data)
-    pending = {k: plan[k]["action"] for k in ("review", "verify", "fact") if plan[k]["action"] != "skip"}
-    if pending:
-        return None, (f"catch-up 仍有待补检动作: {pending}", {"stage": stage, "pending": pending})
-    return {"baseline": plan["head"]}, None
+    return _verify_evidence(repo, root, data, item)
 
 
 def route(repo, root, data, yolo=False):
@@ -96,11 +89,25 @@ def _after_checklist(repo, root_data, result, yolo):
     def gated(nxt):
         return {**result, "next": nxt, "state": "ready" if yolo else "awaiting_decision_confirmation"}
 
-    if configured(repo)["mode"] == "pr":
-        return gated("pr")
-    target = root_data.get("target") or "develop"
-    if ancestor(repo, "HEAD", f"refs/heads/{target}"):
-        return {**result, "state": "complete", "next": None}
+    from mdf_core.lifecycle.late_decision import target_for
+    from mdf_core.lifecycle.publish import find_merge
+    from mdf_core.workspace.gitutil import branch_details
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    source = root_data["branch"]
+    target = target_for(repo, source, data=root_data)
+    mode = configured(repo)["mode"]
+    target_ref = f"refs/remotes/origin/{target}" if mode == "pr" else f"refs/heads/{target}"
+    exists = git(repo, "rev-parse", "--verify", target_ref, check=False).returncode == 0
+    merged = find_merge(repo, target_ref, sha(repo, "HEAD")) if exists else None
+    if merged is None:
+        return gated("pr" if mode == "pr" else "merge")
+    details = branch_details(source)
+    if details["kind"] in {"release", "hotfix", "on-demand-release"} and not is_github_flow(repo):
+        from mdf_core.lifecycle.release_publish import published_head
+        try:
+            published_head(repo, details["version"] or root_data.get("version"))
+        except MDFError:
+            return gated("publish")
     return gated("close-out")
 
 
@@ -112,12 +119,6 @@ def _tick(text, item, stage, found):
     label = item["label"]
     step = rf"(?m)^- \[[ xX]\] {re.escape(label)}[ \t]*$"
     checked = f"- [x] {label}"
-    if stage == "catch-up":
-        baseline = found["baseline"]
-        if BASELINE.search(text):
-            text = BASELINE.sub(lambda match: match[0].replace(match[1], baseline), text)
-        else:
-            checked += f"\n  - catch-up 基线：{baseline}"
     before, steps, after = split_objectives_steps(text)
     return before + re.sub(step, lambda _: checked, steps, count=1) + after
 
@@ -127,14 +128,7 @@ def _already_done(repo, rel, text, item, stage):
         return False
     if git(repo, "status", "--porcelain", "--", rel).stdout.strip():
         return False
-    if stage == "verify":
-        return True
-    baseline = BASELINE.findall(text)
-    if not baseline or git(repo, "merge-base", "--is-ancestor", baseline[-1], "HEAD", check=False).returncode:
-        return False
-    # 基线落后于“勾选提交”一个提交；其间只有 objectives 自身变化才算同一次完成。
-    changed = set(git(repo, "diff", "--name-only", "-z", baseline[-1], "HEAD").stdout.split("\0")) - {""}
-    return changed <= {rel}
+    return True
 
 
 def _dirty_names(repo):
@@ -156,12 +150,8 @@ def complete_stage(repo, root, data, stage):
     from mdf_core.workspace.gitutil import current_branch, git_in_progress_head
     if git_in_progress_head(repo):
         raise MDFError("存在未完成的 merge、cherry-pick 或 revert", code="unfinished_merge")
-    from mdf_core.lifecycle.release_integration import integration_version
-    branch = current_branch(repo)
-    version = integration_version(branch)
-    integration_catchup = stage == "catch-up" and version and data["branch"] == f"release/{version}"
-    if branch != data["branch"] and not integration_catchup:
-        raise MDFError("complete-stage 须在 owner 或对应集成分支的 catch-up 执行", code="not_owner")
+    if current_branch(repo) != data["branch"]:
+        raise MDFError("complete-stage 须在 owner worktree 执行", code="not_owner")
     if stage not in AUTO:
         raise MDFError(f"{stage} 不是纯证据可判定的阶段，仅支持 {', '.join(AUTO)}", code="invalid_stage")
     path, text = _objectives(repo, root)
@@ -184,11 +174,6 @@ def complete_stage(repo, root, data, stage):
     if unrelated:
         raise MDFError("index 存在本阶段之外的已暂存改动，已保留现场未做任何修改",
                        code="unrelated_staged_changes", details={"paths": unrelated})
-    if stage == "catch-up":
-        from mdf_core.lifecycle.catchup_plan import classify
-        foreign = sorted(p for p in _dirty_names(repo) if p != rel and classify(p) != "material")
-        if foreign:
-            raise MDFError("catch-up 不接受非材料的未提交改动", code="dirty_worktree", details={"paths": foreign})
     desired = _tick(text, item, stage, found)
     if git(repo, "status", "--porcelain", "--", rel).stdout.strip():
         if path.read_text(encoding="utf-8") != desired:

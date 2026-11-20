@@ -42,6 +42,6 @@ def test_pr_adhoc_requires_catch_up_and_no_pr_checkbox():
     checked = text.replace("[ ]", "[x]")
     assert require_objectives(checked, finishing=True, pr_mode=True) is None
     with pytest.raises(MDFError, match="未完成"):
-        require_objectives(checked.replace("[x] catch-up", "[ ] catch-up"), finishing=True, pr_mode=True)
+        require_objectives(checked.replace("[x] consolidate", "[ ] consolidate"), finishing=True, pr_mode=True)
     with pytest.raises(MDFError, match="固定顺序"):
         require_objectives(checked + "\n- [x] pr", finishing=True, pr_mode=True)

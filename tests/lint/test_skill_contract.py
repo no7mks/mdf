@@ -39,7 +39,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "bug create",
         "prp create",
         "prp review",
-        "archive", "sync-remote", "publish", "catch-up", "pr", "close-out", "squash [--dry-run]",
+        "archive", "catch-up", "consolidate", "merge", "publish", "incremental-integration", "pr", "close-out", "squash [--dry-run]",
         "fact audit",
         "prettify",
         "fact update",
@@ -397,8 +397,8 @@ def test_audit_is_reused_without_delivery_logic() -> None:
     assert "`release-closeout`" not in audit
     assert "`fact audit` 执行`全量审阅`" in migrate
     close_out = intent("close-out")
-    assert "交付前检查" in close_out
-    assert "不内嵌 verify branch" in close_out or "不内嵌、不委托 verify" in close_out
+    assert "前置验收和材料由对应阶段完成" in close_out
+    assert "verify --scope" not in close_out
     assert "release 为 `--scope full`" not in close_out
     assert "close-out 的 release 为 `full`" not in audit
     assert "`--base` 为上一正式发布" in audit
@@ -465,10 +465,10 @@ def test_start_and_finish_define_strict_gitflow_operations() -> None:
     assert "release-objectives.md" in start and "Open integrate" in start
     assert "needs_design" in start and "Confirm roster" in start
     assert "member、strategy 与 models" in start
-    assert "no-ff 合并到本地已确定目标" in finish
-    assert "no-ff 合并到" in finish and "master" in finish
-    assert "原子 push" in finish
-    assert "v<semver>" in finish
+    assert "no-ff 合入目标" in intent("merge")
+    assert "merge/pr" in finish and "develop" in finish
+    assert "原子推送" in intent("publish")
+    assert "annotated" in intent("publish")
 
 
 def test_common_rules_require_logs_before_truncation() -> None:

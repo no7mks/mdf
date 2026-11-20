@@ -125,7 +125,7 @@ def test_direct_only_release_archives_evidence_and_preserves_commits(python_exe,
     assert "修正健康检查" in (work / "CHANGELOG.md").read_text()
     commit(work)
     assert payload(checkpoint(python_exe, work))["result"]["ready"]
-    published = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    published = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert published["targets"] == ["master", "develop"]
 
 

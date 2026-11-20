@@ -20,10 +20,12 @@ def test_publish_resumes_without_remerging_or_retagging(
     write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
-    load_core_module()
-    from mdf_core.workspace import gitflow
+    seed_consolidation(work)
+    payload(mdf(python_exe, "merge", "--repo", str(work)))
+    from mdf_core.lifecycle import pull_publish
+    from mdf_core.lifecycle.release_publish import command_publish
     from mdf_core.foundation.errors import MDFError
-    original = gitflow._git
+    original = pull_publish.git
 
     def fail_push(repo, *args, **kwargs):
         if args and args[0] == "push":
@@ -33,11 +35,11 @@ def test_publish_resumes_without_remerging_or_retagging(
         return original(repo, *args, **kwargs)
 
     with monkeypatch.context() as patch:
-        patch.setattr(gitflow, "_git", fail_push)
+        patch.setattr(pull_publish, "git", fail_push)
         with pytest.raises(MDFError):
-            gitflow.command_finish_gitflow(SimpleNamespace(repo=str(work), source=None))
+            command_publish(SimpleNamespace(repo=str(work), source=None, pull=None))
     source = source_head(work)
-    before = {ref: git(repo, "rev-parse", ref).stdout for ref in ("master", "develop", "v1.2.1")}
+    before = {ref: git(repo, "rev-parse", ref).stdout for ref in ("master", "v1.2.1")}
     if remote_develop_changed:
         other = tmp_path / "other"
         git(tmp_path, "clone", "--branch", "develop", str(remote), str(other))
@@ -45,7 +47,7 @@ def test_publish_resumes_without_remerging_or_retagging(
         commit(other)
         git(other, "push", "origin", "develop")
     remote_develop = git(remote, "rev-parse", "develop").stdout
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert done["pushed"] is True
     assert done["retained_worktree"] == str(work)
     assert done["primary_worktree"] == str(repo)
@@ -67,7 +69,7 @@ def test_publish_resumes_without_remerging_or_retagging(
     # 从其他 linked worktree 恢复时，保留其分支并定位 detached owner。
     other_worktree = tmp_path / "other-worktree"
     git(repo, "worktree", "add", "-b", "other-work", str(other_worktree), "master")
-    recovered = payload(mdf(python_exe, "finish-gitflow", "--repo", str(other_worktree), "--source", "hotfix/1.2.1"))
+    recovered = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(other_worktree), "--source", "hotfix/1.2.1"))
     assert recovered["retained_worktree"] == str(work)
     assert git(other_worktree, "branch", "--show-current").stdout.strip() == "other-work"
     assert git(repo, "rev-parse", "v1.2.1").stdout == before["v1.2.1"]
@@ -90,6 +92,9 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     write_changelog_release(work, "1.2.1")
     (work / "src/service.py").write_text("fixed = True\n")
     commit(work)
+    seed_consolidation(work)
+    payload(mdf(python_exe, "merge", "--repo", str(work)))
+    payload(mdf(python_exe, "publish", "--repo", str(work)))
     load_core_module()
     from mdf_core.workspace import gitflow
     from mdf_core.foundation.errors import MDFError
@@ -108,7 +113,7 @@ def test_publish_recovers_unrecorded_develop_merge(python_exe, tmp_path, monkeyp
     if push_develop:
         git(repo, "push", "origin", "develop")
     remote_develop = git(remote, "rev-parse", "develop").stdout.strip()
-    assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))["pushed"] is True
+    assert payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))["pushed"] is True
     assert git(repo, "rev-parse", "develop").stdout.strip() == merged
     assert git(remote, "rev-parse", "develop").stdout.strip() == remote_develop
 
@@ -145,7 +150,7 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
 
     with monkeypatch.context() as patch:
         patch.setattr(gitflow, "_fetch", fetch_then_dirty)
-        assert "dirty_worktree" in mdf(python_exe, "finish-gitflow", "--repo", str(work)).stderr
+        assert "dirty_worktree" in finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)).stderr
     original_master = source_head(repo)
     dirty.unlink()
     git(repo, "checkout", advance)
@@ -155,7 +160,7 @@ def test_publish_resume_after_dirty_worktree_and_branch_advance(
     if pushed:
         git(repo, "push", "origin", advance)
     remote_develop = git(remote, "rev-parse", "develop").stdout.strip()
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     if advance == "master" and not pushed:
         assert "publish_state_changed" in result.stderr
         assert git(remote, "rev-parse", advance).stdout.strip() == original_master

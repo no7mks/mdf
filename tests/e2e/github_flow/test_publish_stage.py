@@ -22,7 +22,7 @@ def test_publish_precedes_integration_and_retries_without_moving_tag(python_exe,
     git(repo, "push", "origin", "main")
     main_head = git(remote, "rev-parse", "main").stdout
     objectives = (work / "changes/unreleased/1.3.0/objectives.md").read_text()
-    assert objectives.index("publish") < objectives.index("catch-up")
+    assert objectives.index("catch-up") < objectives.index("consolidate") < objectives.index("publish")
     assert error_of(mdf(python_exe, "publish", "--repo", str(work)))["error"] == "stage_prerequisite"
     head = publish_release(python_exe, work)
     assert platform.pulls == []
@@ -35,7 +35,8 @@ def test_publish_precedes_integration_and_retries_without_moving_tag(python_exe,
     assert again["release_head"] == head
     assert git(work, "rev-parse", "HEAD").stdout == before
     assert git(remote, "show-ref").stdout == refs
-    assert error_of(mdf(python_exe, "merge-no-ff", "--repo", str(work), "--commit", "origin/main"))["error"] == "frozen_cutpoint"
+    payload(mdf(python_exe, "merge-no-ff", "--repo", str(work), "--commit", "origin/main"))
+    assert git(remote, "rev-parse", "v1.3.0^{commit}").stdout.strip() == head
 
 
 def test_closeout_checks_remote_tag_without_republishing(python_exe, tmp_path, monkeypatch):

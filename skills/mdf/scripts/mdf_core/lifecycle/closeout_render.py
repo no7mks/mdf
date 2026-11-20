@@ -266,11 +266,49 @@ def changelog_excerpt(text: str, version: str) -> str:
     rest = text[match.end() :]
     nxt = re.search(r"^##\s+", rest, re.MULTILINE)
     end = match.end() + nxt.start() if nxt else len(text)
-    return text[start:end].strip()
+    excerpt = text[start:end].strip()
+    body = re.sub(r"<!--.*?-->", "", "\n".join(excerpt.splitlines()[1:]), flags=re.DOTALL)
+    meaningful = [line.strip() for line in body.splitlines()
+                  if line.strip() and not re.match(r"^\s*(?:#+\s|[-*_]{3,}\s*$)", line)]
+    content = [re.sub(r"^(?:[-*+]\s*|\d+[.)](?:\s+|$))(?:\[[ xX]\]\s*)?", "", line) for line in meaningful]
+    if not any(re.search(r"[^\W_]", line) for line in content):
+        raise MDFError(f"CHANGELOG 的 {version} 缺少实际发布内容", code="empty_release_notes")
+    return excerpt
 
 
 def release_tag_message(tag: str, excerpt: str) -> str:
+    if not excerpt.strip():
+        raise MDFError("发布 tag 正文不能为空", code="empty_release_notes")
     return f"chore(release): 发布 {tag}\n\n{excerpt}"
+
+
+def expected_tag_message(repo, version, head):
+    from mdf_core.workspace.merge_policy import git
+    changelog = git(repo, "show", f"{head}:CHANGELOG.md").stdout
+    return release_tag_message(f"v{version}", changelog_excerpt(changelog, version))
+
+
+def require_tag_content(repo, version, head=None, *, expected=None):
+    from mdf_core.workspace.merge_policy import git, sha
+    ref = f"refs/tags/v{version}"
+    fields = "%(refname)%00%(objectname)%00%(objecttype)%00%(*objectname)%00%(*objecttype)%00%(contents)%00%(contents:signature)"
+    raw = git(repo, "for-each-ref", "--count=1", f"--format={fields}", ref).stdout
+    if not raw:
+        raise MDFError("先执行 publish 创建并推送 final tag", code="release_not_published")
+    name, oid, kind, target, target_kind, message, signature = raw.split("\0", 6)
+    if name != ref:
+        raise MDFError("先执行 publish 创建并推送 final tag", code="release_not_published")
+    if kind != "tag":
+        raise MDFError("final tag 必须为 annotated tag", code="tag_conflict")
+    commit = target if target_kind == "commit" else sha(repo, ref)
+    expected = expected if expected is not None else expected_tag_message(repo, version, commit)
+    actual = message.rstrip()
+    signature = signature.rstrip()
+    if actual != expected and signature and actual.endswith(signature):
+        actual = actual[:-len(signature)].rstrip()
+    if (head is not None and commit != head) or actual != expected:
+        raise MDFError("final tag 的目标或发布正文与版本材料不符", code="tag_conflict")
+    return {"oid": oid, "head": commit}
 
 
 def update_changelog_text(

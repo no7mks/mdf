@@ -35,5 +35,5 @@
 - [ ] code-review（由 `$mdf code-review` 自勾；报告见 code-review.md）
 - [ ] verify branch（由 `$mdf verify` branch 自勾；报告见 verification-report.json）
 - [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）
-- [ ] catch-up（由 `$mdf catch-up` 自勾；仅增量补检改动文件，禁止全量重跑）
-- [ ] close-out（由 `$mdf close-out` 自勾）
+- [ ] catch-up（同步远端同名分支并增量验收）
+- [ ] consolidate（收敛交付文档与对象记录）

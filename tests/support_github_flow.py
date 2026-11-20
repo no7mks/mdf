@@ -46,15 +46,19 @@ def publish_release(python_exe, work):
     """为发布 CLI 准备已完成的基线 checklist。"""
     from mdf_test_support import mdf, payload
     from support_pull import squash_pending
-    version = git(work, "branch", "--show-current").stdout.strip().removeprefix("release/")
-    root = work / "changes/unreleased" / version
+    from mdf_core.lifecycle.delivery_state import locate
+    root, _ = locate(work)
     path = root / "objectives.md"
     text = path.read_text()
+    if "- [ ] publish" not in text:
+        return payload(mdf(python_exe, "publish", "--repo", str(work)))["release_head"]
     before, after = text.split("- [ ] publish", 1)
     path.write_text(before.replace("- [ ]", "- [x]") + "- [ ] publish" + after)
     commit(work, "test: 完成发布基线")
     squash_pending(work)
-    sync = payload(mdf(python_exe, "sync-remote", "--repo", str(work)))
-    payload(mdf(python_exe, "sync-remote", "--repo", str(work), "--complete",
+    sync = payload(mdf(python_exe, "catch-up", "--repo", str(work)))
+    payload(mdf(python_exe, "catch-up", "--repo", str(work), "--complete",
                 "--reviewed-head", sync["head"], "--summary", "已完成测试夹具增量验收"))
+    from support_delivery import seed_consolidation
+    seed_consolidation(work, mark=True)
     return payload(mdf(python_exe, "publish", "--repo", str(work)))["release_head"]

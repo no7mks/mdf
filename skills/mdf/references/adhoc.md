@@ -44,7 +44,7 @@
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的 Git 和平台状态与返工备注。
-命中时按 PR 实际状态选择 pr 或 close-out，跳过 adhoc-status；无 PR 恢复时执行下表与账本选型。
+命中时按 PR 实际状态选择 pr、适用的 publish 或 close-out，跳过 adhoc-status；无 PR 恢复时执行下表与账本选型。
 
 读取 `references/common.md` 与 `references/delivery-contract.md`；本页专用条款优先于普通交付主线。
 不执行 start 的 clarify、PRP 选择或 roster 确认。
@@ -58,13 +58,13 @@ PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的 Git 和平�
 
 ## 术语与数据结构
 
-PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
+PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr、适用的 publish 或 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
+交付清单止于 consolidate，github-flow 发布交付另含 publish；后续按实际 merge、tag 和清理结果推进。
 
 ### 范围与启动
 
@@ -79,7 +79,7 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
   - objectives 内容、slug 与固定 roster 直接生成，不另做确认。
   - 目标变更与测试门槛批准仍沿用各 intent 规则。
 - 已绑定本次 adhoc 时先用 adhoc-status 核对；completed 直接报告，不要求仍在原分支。
-  - 当前为无账本 adhoc 时保留真实分支与工作区；步骤 3 按 status.next_step 选择 pr 或 close-out，不重新 start。
+  - 当前为无账本 adhoc 时保留真实分支与工作区；步骤 3 按 status.next_step 选择 pr、适用的 publish 或 close-out，不重新 start。
   - 步骤 4 委托所选 intent，由其调用 adhoc-change；无账本不套用下方账本与勾选条款。
   - detached 现场必须有上下文已知 slug；缺失或不能证明收口时停止，不猜测身份或重新 start。
   - 用户明确发起不同新工作且旧工作已完成时，用返回的 primary_worktree 新建。
@@ -133,7 +133,7 @@ objectives 的固定清单须同序、完整，已勾项形成连续前缀；工
 | code-review | 委托 `references/code-review.md`；1 人独立审查，终稿与自勾 |
 | verify smart | 按下节委托 verify；通过的 smart report、自勾与提交 |
 | fact audit/update | 按下节审阅，必要时更新；报告结论、自勾与提交 |
-| catch-up | 委托 `references/catch-up.md`；仅对改动文件增量补检（严禁全量重跑），自勾与提交 |
+| incremental-integration | 委托 `references/incremental-integration.md`；仅对改动文件增量补检（严禁全量重跑），自勾与提交 |
 | pr（仅 PR mode） | 执行 `references/pr.md`；实际 merged、合并核验与关联 CI 收尾通过后结束 |
 | close-out | 仅此项读取并执行 `references/adhoc-close-out.md`；Change 与实际 Git 完成证据 |
 

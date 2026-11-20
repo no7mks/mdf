@@ -263,16 +263,16 @@ def command_start(args) -> None:
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
     before_steps, checklist, after_steps = split_objectives_steps(objectives)
-    if pr_mode:
-        checklist = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", checklist)
-    if github and args.kind == "release":
-        checklist = re.sub(r"(?m)^- \[[ x]\] (?:sync-remote|publish)[^\n]*\n", "", checklist)
-        checklist = re.sub(r"(?m)^(- \[[ x]\] catch-up)",
-                           "- [ ] sync-remote（同步远端同名 release 并增量补检）\n"
-                           "- [ ] publish（创建并推送 final tag）\n" + r"\1", checklist, count=1)
+    checklist = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", checklist)
+    for required in ("catch-up", "consolidate"):
+        if not re.search(rf"(?m)^- \[[ x]\] {required}(?:（|$)", checklist):
+            checklist = checklist.rstrip() + f"\n- [ ] {required}\n"
+    if github and args.kind in {"release", "hotfix"}:
+        if not re.search(r"(?m)^- \[[ x]\] publish(?:（|$)", checklist):
+            checklist = checklist.rstrip() + "\n- [ ] publish（创建并推送 final tag）\n"
     if args.kind == "on-demand-release":
         from mdf_core.lifecycle.odr_acceptance import ACCEPTANCE
-        before = r"catch-up(?:（[^\n]*）)?[ \t]*" if pr_mode else r"close-out\s*"
+        before = r"consolidate(?:（[^\n]*）)?[ \t]*"
         checklist = re.sub(rf"(?m)^(- \[[ x]\] {before})$",
                            "- [ ] " + ACCEPTANCE + r"\n\1", checklist, count=1)
         if ACCEPTANCE not in checklist:
@@ -284,11 +284,11 @@ def command_start(args) -> None:
                 checklist = re.sub(r"(?m)^- \[[ x]\] ", "- [ ] " + CHECKPOINT + "\n" + r"\g<0>", checklist, count=1)
             else:
                 checklist += "\n- [ ] " + CHECKPOINT + "\n"
-    if pr_mode:
-        items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", checklist)
-        steps = [item.split("（", 1)[0] for item in items]
-        if not steps or steps[-1] != "catch-up" or "pr" in steps:
-            raise MDFError("PR mode 的 checklist 必须止于 catch-up，且不包含 pr", code="invalid_objectives")
+    items = re.findall(r"(?m)^- \[[ x]\] (.+?)[ \t]*$", checklist)
+    steps = [item.split("（", 1)[0] for item in items]
+    expected_last = "publish" if github and args.kind in {"release", "hotfix"} else "consolidate"
+    if not steps or steps[-1] != expected_last or "catch-up" not in steps or "consolidate" not in steps:
+        raise MDFError("交付清单须依次包含 catch-up、consolidate，github-flow 发布分支还须 publish", code="invalid_objectives")
     objectives = before_steps + checklist + after_steps
     branch = f"{args.kind}/{suffix}"
     roster = freeze_roster(
@@ -391,6 +391,9 @@ def command_start(args) -> None:
             else:
                 message = f"docs(delivery): 确认 {suffix} 热修复目标"
             _git(work, "commit", "-m", message)
+            from mdf_core.workspace.squash import common_dir
+            for state_kind in ("catch-up", "consolidate", "incremental-integration"):
+                (common_dir(work) / "mdf" / state_kind / (branch + ".json")).unlink(missing_ok=True)
     except MDFError:
         _discard(repo, created)
         raise
@@ -460,6 +463,18 @@ def _merge(repo: Path, source: str, target: str, before_commit=None) -> None:
     _git(repo, "commit", "-m", message)
 
 
+def merge_preserving_checkout(repo, source, target):
+    """实际合入后恢复调用 worktree 的原分支，保留工作分支供后续阶段使用。"""
+    from mdf_core.workspace.gitutil import git_in_progress_head
+    original = current_branch(repo)
+    try:
+        _merge(repo, source, target)
+    finally:
+        if (original and current_branch(repo) != original and not git_in_progress_head(repo)
+                and not _git(repo, "status", "--porcelain").stdout.strip()):
+            _git(repo, "checkout", original)
+
+
 def command_finish_gitflow(args) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
@@ -481,6 +496,8 @@ def command_finish_gitflow(args) -> None:
             settings["mode"] == "pr" or details["kind"] != "hotfix" or details["version"] is not None):
         raise MDFError("--version 仅用于本地 slug hotfix 的收口", code="invalid_arguments")
     if settings["mode"] == "pr":
+        if getattr(args, "phase", "close-out") == "merge":
+            raise MDFError("merge 适用于 local 模式；PR mode 使用 pr", code="invalid_closeout")
         from mdf_core.lifecycle.pull_finish import finish
         finish(repo, source, settings, phase=getattr(args, "phase", "close-out"), number=getattr(args, "pull", None))
         return
@@ -494,9 +511,10 @@ def finish_local(repo, source, details, args):
         raise MDFError("pr intent 仅适用于 PR mode", code="invalid_closeout")
     if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_finish import finish
-        finish(repo, source, recovering=bool(args.source))
+        finish(repo, source, recovering=bool(args.source), merging=getattr(args, "phase", "close-out") == "merge")
         return
     kind = details["kind"]
+    merging = getattr(args, "phase", "close-out") == "merge"
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
     github = is_github_flow(repo)
     from mdf_core.workspace.merge_policy import local_head
@@ -528,7 +546,13 @@ def finish_local(repo, source, details, args):
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         ensure_clean(owner)
         require_fixed_outcomes(owner, source)
-    if kind == "on-demand-release":
+    from mdf_core.workspace.squash import common_dir
+    from mdf_core.lifecycle.delivery_state import read_json, write_json
+    from mdf_core.lifecycle.publish import merge_record_path
+    merge_record = merge_record_path(repo, source, details.get("version"))
+    saved_merge = read_json(merge_record) if merge_record.is_file() else {}
+    source_head = source_head or saved_merge.get("head")
+    if kind == "on-demand-release" and merging and not saved_merge:
         from mdf_core.lifecycle.late_decision import checkpoint, require_independent
         if owner is not None:
             checkpoint(owner, required=True, release=True)
@@ -545,12 +569,7 @@ def finish_local(repo, source, details, args):
         raise MDFError("--source 只用于发布恢复", code="unsupported_branch")
     if not publish and not _exists(repo, f"refs/heads/{target}"):
         raise MDFError(f"Branch {target} must exist", code="missing_branch")
-    complete_feature = None
-    if kind == "feature":
-        from mdf_core.lifecycle.manual import feature_completion
-        complete_feature, finish_roster = feature_completion(repo, source)
-    else:
-        finish_roster = resolve_roster(repo, source, kind)
+    finish_roster = resolve_roster(repo, source, kind)
     primary = primary_worktree(repo)
     # 先只读检查全部目标，避免部分发布后才发现别人的未提交工作或 merge。
     for target in targets:
@@ -563,24 +582,65 @@ def finish_local(repo, source, details, args):
     for name in role_branches(source, finish_roster):
         if _exists(repo, f"refs/heads/{name}") or name in trees:
             raise MDFError("角色分支尚未集成", code="roles_pending")
+    if kind == "feature":
+        from mdf_core.lifecycle.manual import feature_completion
+        feature_completion(repo, source)
 
-    def merge_into(target, incoming, hook=None):
+    def merge_into(target, incoming):
         occupant = worktree_map(primary).get(target)
-        merge_at = occupant if occupant is not None else repo
+        fallback = primary
+        merge_at = occupant if occupant is not None else fallback
         ensure_clean(merge_at)
-        _merge(merge_at, incoming, target, hook)
+        merge_preserving_checkout(merge_at, incoming, target)
         return merge_at
 
     merged_in = None
-    if kind in {"feature", "bugfix"}:
-        if source_head is None:
-            raise MDFError("源分支不存在", code="missing_branch")
-        from mdf_core.lifecycle.publish import find_merge
-        if find_merge(repo, f"refs/heads/{target}", source_head) is None:
-            merged_in = merge_into(target, source, complete_feature)
-    else:
-        from mdf_core.lifecycle.publish import publish as publish_release
-        source_head = publish_release(repo, source, details["version"], head=source_head)
+    actual_target = target if kind in {"feature", "bugfix"} or github else trunk_branch(repo)
+    from mdf_core.lifecycle.publish import find_merge
+    merged = find_merge(repo, f"refs/heads/{actual_target}", source_head) if source_head else None
+    if merging:
+        if publish and merged is None:
+            remote_ref = f"refs/remotes/origin/{actual_target}"
+            remote_tip = _git(repo, "rev-parse", "--verify", remote_ref, check=False)
+            local_tip = _git(repo, "rev-parse", actual_target).stdout.strip()
+            owned_pending = (saved_merge.get("pending") and saved_merge.get("merge_commit") == local_tip
+                             and saved_merge.get("target_parent") == remote_tip.stdout.strip())
+            if not remote_tip.returncode and remote_tip.stdout.strip() != local_tip and not owned_pending:
+                raise MDFError("本地发布目标与远端不同，先同步目标分支", code="publish_state_changed")
+        from mdf_core.lifecycle.target_integration import require_integrated
+        if merged is None:
+            require_integrated(repo, source, actual_target)
+        source_head = local_head(repo, source)
+        if merged is None:
+            merged_in = merge_into(actual_target, source)
+            merged = _git(repo, "rev-parse", actual_target).stdout.strip()
+        from mdf_core.workspace.merge_policy import ancestor
+        parents = _git(repo, "show", "-s", "--format=%P", merged).stdout.split()
+        if len(parents) != 2 or not ancestor(repo, parents[0], source_head):
+            write_json(merge_record, {"source": source, "head": source_head, "target": actual_target,
+                                     "merge_commit": merged, "target_parent": parents[0] if parents else None, "pending": True})
+            raise MDFError("target 在实际合入前前进，继续 incremental-integration 后重试 merge", code="integration_required")
+        if publish:
+            _git(repo, "push", "--atomic", "--no-follow-tags", "origin",
+                 f"{merged}:refs/heads/{actual_target}", f"{source_head}:refs/heads/{source}")
+        write_json(merge_record, {"source": source, "head": source_head, "target": actual_target, "merge_commit": merged})
+        emit({"ok": True, "operation": "merge", "completed": True, "source": source, "merge_commit": merged,
+              "next_intent": "publish" if publish and not github else "close-out"})
+        return
+    if merged is None:
+        raise MDFError("先完成 merge，再执行 close-out", code="merge_required")
+    if saved_merge.get("pending"):
+        raise MDFError("本次 merge 尚待增量验收", code="integration_required")
+    if publish:
+        from mdf_core.lifecycle.release_publish import published_head
+        released = published_head(repo, details["version"])
+        from mdf_core.workspace.merge_policy import ancestor
+        if (github and not ancestor(repo, released, source_head)) or (not github and released != merged):
+            raise MDFError("final tag 与已合入结果不符", code="tag_conflict")
+        if not github and not ancestor(repo, merged, "refs/heads/develop"):
+            merge_into("develop", merged)
+        from mdf_core.lifecycle.pull_finish import cleanup_remote
+        cleanup_remote(repo, source, source_head)
     source_wt = worktree_map(primary).get(source)
     from mdf_core.lifecycle.pull_finish import cleanup, retained_owner
     cleanup(repo, {"source": source, "head": source_head})

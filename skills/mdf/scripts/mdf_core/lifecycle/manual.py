@@ -4,11 +4,11 @@ import re
 from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle.delivery_state import split_objectives_steps
 
-STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "catch-up", "close-out")
+STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "catch-up", "consolidate")
 
 
 def require_manual_objectives(text, *, starting=False, finishing=False, pr_mode=False):
-    steps = STEPS[:-1] if pr_mode else STEPS
+    steps = STEPS
     _, checklist, _ = split_objectives_steps(text)
     items = re.findall(r"(?m)^- \[([ x])\] (.+?)\s*$", checklist)
     if tuple(name for _, name in items) != steps:
@@ -24,7 +24,7 @@ def feature_completion(repo, source, *, allow_candidate=False):
     """验证 feature Change，返回合入时的 PRP 更新与 roster。"""
     from mdf_core.lifecycle.delivery_state import locate, require_finish, git
     from mdf_core.documents.proposals import records
-    from mdf_core.foundation.yamlutil import read_frontmatter, set_frontmatter_field
+    from mdf_core.foundation.yamlutil import read_frontmatter
 
     root, data = locate(repo)
     from mdf_core.lifecycle.late_decision import target_for, require_feature_target
@@ -47,15 +47,6 @@ def feature_completion(repo, source, *, allow_candidate=False):
     if meta.get("proposals") != [data["proposal"]] or meta.get("source_branch") != source:
         raise MDFError("Change 必须对应本 feature 的唯一 PRP", code="invalid_change")
     path, proposal, _ = records(repo)[data["proposal"]]
-    candidate = allow_candidate and proposal["status"] == "implemented"
-    if proposal["status"] != "ready" and not candidate:
-        raise MDFError("交付 PRP 状态不正确", code="invalid_proposal")
-    proposal_rel = path.relative_to(repo)
-
-    def complete_feature(merge_repo):
-        target_path = merge_repo / proposal_rel
-        text = target_path.read_bytes().decode("utf-8")
-        target_path.write_bytes(set_frontmatter_field(text, "status", "implemented").encode("utf-8"))
-        git(merge_repo, "add", "--", str(proposal_rel))
-
-    return complete_feature, data["roster"]
+    if proposal["status"] != "implemented":
+        raise MDFError("先由 consolidate 更新 PRP 为 implemented", code="consolidation_required")
+    return None, data["roster"]

@@ -1,4 +1,4 @@
-"""catch-up-plan：按 base..HEAD 的拓扑图（0/1/多次 merge）独立判定 review/verify/fact 动作；只读。"""
+"""incremental-integration-plan：按 base..HEAD 的拓扑图（0/1/多次 merge）独立判定 review/verify/fact 动作；只读。"""
 import re
 
 from mdf_core.execution.verification import FIXED_INPUTS, LOCKFILES
@@ -9,9 +9,9 @@ from mdf_core.workspace.gitutil import repo_path, require_git_root
 from mdf_core.workspace.merge_policy import ancestor, git, sha
 from mdf_core.workspace.workflow_policy import integration_branch, trunk_branch
 
-MATERIAL_NAMES = {"objectives.md", "code-review.md", "fact-audit.md", "CHANGE.md", "catch-up-verification-report.json"}
+MATERIAL_NAMES = {"objectives.md", "code-review.md", "fact-audit.md", "CHANGE.md", "incremental-integration-verification-report.json"}
 CONTRACTS = {".mdf/manifest.yaml", ".mdf/modules.yaml", "AGENTS.md"}
-BASELINE = re.compile(r"(?m)^[ \t]*(?:- )?catch-up 基线：([0-9a-f]{40})")
+BASELINE = re.compile(r"(?m)^[ \t]*(?:- )?incremental-integration 基线：([0-9a-f]{40})")
 REWORK = re.compile(r"(?m)^[ \t]*(?:- )?PR 返工：([0-9a-f]{40})\.\.[0-9a-f]{40}")
 
 
@@ -48,7 +48,7 @@ def resolve_base(repo, root, explicit):
         _, steps, _ = split_objectives_steps(version.stdout)
         if not version.returncode and re.search(r"(?m)^- \[[xX]\] fact", steps):
             return commit
-    raise MDFError("无法确定 catch-up 基线，请用 --base 指定", code="missing_catch_up_base")
+    raise MDFError("无法确定 incremental-integration 基线，请用 --base 指定", code="missing_integration_base")
 
 
 def target_refs(repo, target):
@@ -115,7 +115,7 @@ def build_plan(repo, root, data, explicit_base=None):
     config = load_modules(repo)
     base, head = resolve_base(repo, root, explicit_base), sha(repo, "HEAD")
     if not ancestor(repo, base, "HEAD"):
-        raise MDFError("catch-up 基线不是 HEAD 的祖先", code="invalid_catch_up_base")
+        raise MDFError("incremental-integration 基线不是 HEAD 的祖先", code="invalid_integration_base")
     refs = target_refs(repo, data.get("target"))
     merges, own, incoming = graph(repo, base, refs)
     start = data.get("start_commit") or base
@@ -136,21 +136,21 @@ def build_plan(repo, root, data, explicit_base=None):
                                              config.modules_for_paths(repo, up_code))
     module_files = sorted(p for p in up_code if set(config.modules_for_paths(repo, [p])) & set(interaction_modules))
     contract = sorted((own_paths | up_paths | set(resolution)) & rule_paths(repo))
-    reasons = [name for name, hit in (("conflict_resolution", resolution or unknown), ("post_base_code", own_code),
+    reasons = [name for name, hit in (("conflict_resolution", resolution or unknown), ("post_base_code", own_code), ("upstream_code", up_code),
                                       ("interaction", shared), ("module_interaction", interaction_modules),
                                       ("rules_or_contract_changed", contract)) if hit]
     review = {"action": "skip" if not reasons else "focused", "reasons": reasons, "diff_range": f"{base}..HEAD",
-              "paths": sorted(set(own_code) | set(res_code) | set(shared) | set(module_files)),
+              "paths": sorted(set(own_code) | set(up_code) | set(res_code) | set(shared) | set(module_files)),
               "interaction": {"files": shared, "modules": interaction_modules,
                               "branch_paths": sorted(p for p in branch_code if set(config.modules_for_paths(repo, [p]))
                                                      & set(interaction_modules))},
               "unknown_merges": unknown}
     own_config, up_config = config_paths(own_paths | set(resolution)), config_paths(up_paths)
     upstream_and_branch = bool(up_code or up_config) and bool(branch_code or config_paths(branch_paths))
-    config_hit = bool(own_config) or (bool(up_config) and upstream_and_branch)
+    config_hit = bool(own_config or up_config)
     touched_paths = sorted(set(own_code) | set(res_code) | set(up_code) | set(own_config)
                            | (set(up_config) if config_hit else set()))
-    smart = bool(own_code or res_code or upstream_and_branch or config_hit or contract
+    smart = bool(own_code or up_code or res_code or upstream_and_branch or config_hit or contract
                  or ".mdf/modules.yaml" in up_paths)
     declared = any(m.depends_on for m in config.modules.values())
     touched_modules = set(config.modules_for_paths(repo, touched_paths))
@@ -172,8 +172,15 @@ def build_plan(repo, root, data, explicit_base=None):
             "incoming_commits": sorted(incoming), "review": review, "verify": verify, "fact": fact}
 
 
-def command_catch_up_plan(args):
+def command_incremental_plan(args):
     repo = repo_path(args.repo)
     require_git_root(repo)
     root, data = locate(repo)
-    emit({"ok": True, "operation": "catch-up-plan", "result": build_plan(repo, root, data, args.base)})
+    base = args.base
+    if base is None:
+        from mdf_core.lifecycle.target_integration import state_path
+        from mdf_core.lifecycle.delivery_state import read_json
+        path = state_path(repo, data["branch"])
+        if path.is_file():
+            base = read_json(path)["base"]
+    emit({"ok": True, "operation": "incremental-integration-plan", "result": build_plan(repo, root, data, base)})

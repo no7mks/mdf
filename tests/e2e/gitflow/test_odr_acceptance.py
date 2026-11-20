@@ -64,9 +64,13 @@ def test_feature_inclusion_defers_acceptance_and_preserves_context(python_exe, t
     commit(work)
     if mode == "pr":
         squash_pending(work)
+        payload(mdf(python_exe, "incremental-integration", "--repo", str(work)))
+        from support_delivery import seed_consolidation
+        seed_consolidation(work)
+        squash_pending(work)
         payload(mdf(python_exe, "pr", "--repo", str(work)))
         platform.merge(1, tmp_path)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert read_frontmatter(odr / "docs/proposals" / PRP_NAME)[0]["status"] == "ready"
     assert payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]["ready"]
     assert "odr_acceptance_pending" in mdf(python_exe, "delivery", "accept", "--repo", str(odr)).stderr
@@ -83,7 +87,7 @@ def test_feature_inclusion_defers_acceptance_and_preserves_context(python_exe, t
         squash_pending(odr)
         payload(mdf(python_exe, "pr", "--repo", str(odr)))
         platform.merge(2, tmp_path)
-    assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(odr)))["targets"] == ["master", "develop"]
+    assert payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(odr)))["targets"] == ["master", "develop"]
 
 
 @pytest.mark.parametrize("failure", ["missing_review", "missing_fact", "failed_tests", "smoke_only", "other_branch"])
@@ -93,7 +97,7 @@ def test_failed_odr_acceptance_keeps_prp_ready(python_exe, tmp_path, failure):
     repo = local_repo(tmp_path)
     odr = start_odr(python_exe, repo, tmp_path)
     work = start_feature(python_exe, repo, tmp_path, "--target", "on-demand-release/1.3.0")
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     root = odr / "changes/unreleased/1.3.0"
     obj = root / "objectives.md"
     obj.write_text(obj.read_text().replace("[ ]", "[x]").replace("[x] ODR 统一验收", "[ ] ODR 统一验收"))

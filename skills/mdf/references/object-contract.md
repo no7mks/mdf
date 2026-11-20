@@ -21,8 +21,8 @@ Proposal 字段为 id、type: proposal、status、depends_on。
 状态为 draft、ready、implemented、released、rejected、replaced。
 
 - 正常路径 draft → ready → implemented → released。
-- implemented 表示已验收合入选定的 develop 或 ODR；进入 ODR 后尚未发布。
-  - PR mode 允许在源分支准备 implemented 候选状态，合入选定目标后才算实际交付。
+- implemented 表示已验收合入选定的目标分支（develop、ODR 或 trunk）；进入 ODR 后尚未发布。
+  - consolidate 为普通 feature 准备 implemented 候选状态，合入目标后确认交付；ODR 的 implemented 由统一验收确认。
   - released 必须记录稳定 SemVer released_in；其他状态不得使用 released_in。
 - rejected 必须有 reject-reason: wont-do/obsolete/duplicate。
   - duplicate 还须有 duplicate_of，直接指向同类型的 canonical 非 duplicate PRP，

@@ -4,6 +4,7 @@ import json
 import pytest
 
 from mdf_test_support import git, mdf, payload
+from mdf_test_support import finish_delivery
 from support_delivery import commit, local_repo, write_change
 
 
@@ -29,7 +30,7 @@ def test_change_only_finish_preserves_real_branch_and_worktree(python_exe, tmp_p
     root = write_change(work, source, status["slug"])
     commit(work)
     head = git(work, "rev-parse", "HEAD").stdout.strip()
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["completed"] and result["source"] == source and not result["pushed"]
     assert git(repo, "rev-parse", "develop^2").stdout.strip() == head
     assert source not in git(repo, "for-each-ref", "--format=%(refname:short)", "refs/heads").stdout.splitlines()
@@ -42,7 +43,7 @@ def test_change_only_finish_preserves_real_branch_and_worktree(python_exe, tmp_p
         assert git(work, "branch", "--show-current").stdout.strip() == "develop"
     finished = payload(mdf(python_exe, "adhoc-status", "--repo", str(work), "--source", source))["result"]
     assert finished["completed"] and finished["next_step"] is None
-    repeated = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work), "--source", source))
+    repeated = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work), "--source", source))
     assert repeated["completed"] and repeated["merge_commit"] == result["merge_commit"]
 
 
@@ -69,7 +70,7 @@ def test_material_collision_does_not_reuse_inherited_delivery(python_exe, tmp_pa
     assert payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]["slug"] == result["slug"]
     root = write_change(work, "chore/readme", result["slug"])
     commit(work)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert (inherited / "delivery.json").read_text() == before
     assert root.is_dir()
 
@@ -80,7 +81,7 @@ def test_broken_ledger_never_falls_back_to_change_only(python_exe, tmp_path, mat
     root = write_change(work, "chore/readme", "chore-readme")
     (root / material).write_text("broken")
     commit(work)
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "invalid_delivery" in result.stderr
     assert git(work, "branch", "--show-current").stdout.strip() == "chore/readme"
 
@@ -88,7 +89,7 @@ def test_broken_ledger_never_falls_back_to_change_only(python_exe, tmp_path, mat
 @pytest.mark.parametrize("source", ["qa/feature/example", "dev/2/bugfix/bug-AB12", "codex/backmerge/1.2.3"])
 def test_internal_workflow_cannot_be_finished_as_adhoc(python_exe, tmp_path, source):
     _, work = manual_work(tmp_path, source)
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "stage_branch" in result.stderr
 
 
@@ -96,7 +97,7 @@ def test_empty_manual_branch_does_not_create_change_or_delete_source(python_exe,
     repo = local_repo(tmp_path)
     git(repo, "checkout", "-b", "scratch", "develop")
     before = git(repo, "status", "--porcelain").stdout
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo))
     assert result.returncode != 0 and "no_pending_commits" in result.stderr
     assert git(repo, "branch", "--show-current").stdout.strip() == "scratch"
     assert git(repo, "status", "--porcelain").stdout == before
@@ -114,14 +115,14 @@ def test_local_finish_resumes_after_merge_without_repeating_it(python_exe, tmp_p
         raise MDFError("模拟清理中断", code="test_interrupted")
 
     monkeypatch.setattr(pull_finish, "cleanup", interrupt)
-    failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    failed = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert failed.returncode != 0 and "test_interrupted" in failed.stderr
     merged = git(repo, "rev-parse", "develop").stdout.strip()
     monkeypatch.setattr(pull_finish, "cleanup", original)
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work), "--source", "chore/readme"))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work), "--source", "chore/readme"))
     assert result["completed"] and result["merge_commit"] == merged
     assert git(repo, "rev-parse", "develop").stdout.strip() == merged
-    again = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work), "--source", "chore/readme"))
+    again = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work), "--source", "chore/readme"))
     assert again["merge_commit"] == merged
 
 
@@ -154,7 +155,7 @@ def test_local_primary_detaches_when_develop_is_occupied_elsewhere(python_exe, t
     write_change(repo, "chore/readme", "chore-readme")
     commit(repo)
     head = git(repo, "rev-parse", "HEAD").stdout.strip()
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo)))
     assert result["completed"] and repo.is_dir()
     assert not git(repo, "branch", "--show-current").stdout.strip()
     assert git(repo, "rev-parse", "HEAD").stdout.strip() == head
@@ -172,7 +173,7 @@ def test_change_only_finish_rejects_unfixed_bug_before_merge(python_exe, tmp_pat
     change.write_text(change.read_text().replace("fixed: []", "fixed: [bug-0001]"))
     commit(work)
     target = git(repo, "rev-parse", "develop").stdout.strip()
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "change.fixed_status" in result.stderr
     assert git(repo, "rev-parse", "develop").stdout.strip() == target
     assert git(work, "branch", "--show-current").stdout.strip() == "chore/readme"

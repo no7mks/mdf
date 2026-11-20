@@ -2,6 +2,7 @@
 import pytest
 
 from mdf_test_support import git, mdf, payload
+from mdf_test_support import finish_delivery
 from support_delivery import commit, write_change
 from support_pull import prepare, squash_pending
 
@@ -24,13 +25,13 @@ def test_change_only_pr_and_closeout_keep_ci_independent(python_exe, tmp_path, m
     initial = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert initial["status"] == "waiting_for_merge" and initial["source"] == source
     assert platform.pulls[0]["target"] == "develop"
-    not_merged = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    not_merged = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert not_merged.returncode != 0 and "pr_not_merged" in not_merged.stderr
     merged = platform.merge(1, tmp_path)
     result = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert result["completed"] and result["merge_commit"] == merged
     assert git(work, "branch", "--show-current").stdout.strip() == source
-    finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))
+    finished = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))
     assert finished["completed"] and finished["remote_deleted"] and finished["merge_commit"] == merged
     assert not git(work, "branch", "--show-current").stdout.strip()
     assert source not in git(remote, "for-each-ref", "--format=%(refname:short)", "refs/heads").stdout.splitlines()
@@ -46,7 +47,7 @@ def test_closeout_adopts_actual_external_merge_without_pr_record(python_exe, tmp
     git(work, "push", "origin", source)
     platform.create(source, "develop", "test: 直接创建 PR", "")
     merged = platform.merge(1, tmp_path)
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["completed"] and result["remote_deleted"] and result["merge_commit"] == merged
     assert len(platform.pulls) == 1
     assert git(remote, "rev-parse", "develop").stdout.strip() == merged
@@ -73,6 +74,6 @@ def test_external_merge_is_verified_before_creating_recovery_record(python_exe, 
     git(work, "push", "origin", "chore/docs")
     platform.create("chore/docs", "develop", "test: 外部 PR", "")
     platform.pulls[0].update(state="merged", merge_commit=git(repo, "rev-parse", "develop").stdout.strip())
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "invalid_pull_merge" in result.stderr
     assert git(work, "branch", "--show-current").stdout.strip() == "chore/docs"

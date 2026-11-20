@@ -23,4 +23,4 @@
 - [ ] verify smoke
 - [ ] fact update
 - [ ] catch-up
-- [ ] close-out
+- [ ] consolidate

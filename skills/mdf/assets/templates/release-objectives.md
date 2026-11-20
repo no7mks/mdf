@@ -39,7 +39,7 @@
 联调例外：integrate 先打开工作线，内部完成适用的 design / 开发 / converge 后验收、冻结并自勾。
 这些开发阶段不依赖 integrate 已勾；code-review 仍须等联调收口。
 进度只认本清单，不以 `gates/*.json` 或 verify/fact 报告当通行证。
-github-flow release 由 start 在 catch-up 前依次写入 sync-remote、publish，先同步远端同名 release 并验收，再发布 final tag。
+github-flow 发布分支由 start 在 consolidate 后加入 publish。清单完成后按实际 Git 状态进入 merge/pr 与收尾。
 跳过项由 start 写入时即勾为 `[x]`（不靠缺席表示跳过）。
 
 - [ ] 确认工作线与范围（start）
@@ -52,5 +52,5 @@ github-flow release 由 start 在 catch-up 前依次写入 sync-remote、publish
 - [ ] code-review（由 `$mdf code-review` 自勾；报告见 code-review.md）
 - [ ] verify branch（由 `$mdf verify` branch 自勾；报告见 verification-report.json）
 - [ ] fact audit（由 `$mdf fact audit` 自勾；必要时先 fact update）
-- [ ] catch-up（由 `$mdf catch-up` 自勾；仅增量补检改动文件，禁止全量重跑）
-- [ ] close-out（由 `$mdf close-out` 自勾）
+- [ ] catch-up（同步远端同名分支并增量验收）
+- [ ] consolidate（收敛交付文档与对象记录）

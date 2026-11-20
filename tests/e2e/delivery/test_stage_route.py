@@ -4,7 +4,7 @@ import pytest
 from mdf_test_support import *  # noqa: F403
 from support_delivery import commit
 from support_github_flow import error_of
-from test_catch_up_plan import started
+from test_incremental_plan import started
 
 
 def set_steps(work, root, steps, *, intro=""):
@@ -18,6 +18,13 @@ def route(python_exe, work, *extra):
 
 
 def complete(python_exe, work, stage):
+    if stage == "catch-up":
+        result = mdf(python_exe, "catch-up", "--repo", str(work))
+        if result.returncode:
+            return result
+        head = payload(result)["head"]
+        return mdf(python_exe, "catch-up", "--repo", str(work), "--complete", "--reviewed-head", head,
+                   "--summary", "本轮同步验收通过")
     return mdf(python_exe, "delivery", "complete-stage", "--repo", str(work), "--stage", stage)
 
 
@@ -36,7 +43,7 @@ def passing_report(root, branch="feature/service-health", scope="branch"):
     ([("pr", False)], False, "awaiting_decision_confirmation", None),
     ([("close-out", False)], True, "ready", None),
     ([("lint", False)], False, "ready", None),
-    ([("lint", True), ("close-out", True)], False, "awaiting_decision_confirmation", "close-out"),
+    ([("lint", True), ("close-out", True)], False, "awaiting_decision_confirmation", "merge"),
 ])
 def test_route_keeps_confirmation_and_manual_nodes(python_exe, tmp_path, steps, yolo, state, nxt):
     _, work, root = started(python_exe, tmp_path)
@@ -154,33 +161,25 @@ def test_stage_without_evidence_or_not_pure_evidence_is_refused(python_exe, tmp_
 @pytest.mark.parametrize("checked", [False, True])
 def test_catch_up_completes_on_zero_increment_and_records_baseline(python_exe, tmp_path, checked):
     _, work, root = started(python_exe, tmp_path)
-    intro = (f"## 可验证验收\n\n- [ ] catch-up\n- [x] fact audit\n\n"
-             f"> catch-up 基线：{'a' * 40}\n> PR 返工：{'b' * 40}..{'c' * 40}\n\n")
-    set_steps(work, root, [("fact audit", False), ("catch-up", False)], intro=intro)
-    set_steps(work, root, [("fact audit", True), ("catch-up", checked)], intro=intro)
-    base = git(work, "rev-parse", "HEAD").stdout.strip()
-    plan = payload(mdf(python_exe, "catch-up-plan", "--repo", str(work)))["result"]
-    assert plan["base"] == base
+    set_steps(work, root, [("fact audit", True), ("catch-up", checked), ("consolidate", False)])
     if not checked:
-        assert route(python_exe, work)["auto_completable"] is True
-    done = payload(complete(python_exe, work, "catch-up"))["result"]
-    assert done["completed"] and done["evidence"] == {"baseline": base}
-    text = (root / "objectives.md").read_text()
-    assert intro in text
-    assert f"\n- [x] catch-up\n  - catch-up 基线：{base}\n" in text
+        assert route(python_exe, work)["auto_completable"] is False
+    done = payload(complete(python_exe, work, "catch-up"))
+    assert done["completed"] and done["next_intent"] == "consolidate"
+    assert "- [x] catch-up" in (root / "objectives.md").read_text()
     head = git(work, "rev-parse", "HEAD").stdout.strip()
-    assert payload(complete(python_exe, work, "catch-up"))["result"]["already_completed"] is True
-    assert git(work, "rev-parse", "HEAD").stdout.strip() == head
+    again = payload(mdf(python_exe, "catch-up", "--repo", str(work), "--complete", "--reviewed-head", head,
+                        "--summary", "已通过"))
+    assert again["head"] == head
 
 
 def test_catch_up_refuses_when_increment_needs_work(python_exe, tmp_path):
     _, work, root = started(python_exe, tmp_path)
     set_steps(work, root, [("fact audit", True), ("catch-up", False)])
-    (work / "src/service.py").write_text("VALUE = 2\n")
-    commit(work, "fix: 返工")
     assert route(python_exe, work)["auto_completable"] is False
-    error = error_of(complete(python_exe, work, "catch-up"))
-    assert error["error"] == "stage_evidence_missing"
+    result = mdf(python_exe, "catch-up", "--repo", str(work), "--complete", "--reviewed-head", "0" * 40,
+                 "--summary", "未核验")
+    assert error_of(result)["error"] == "catchup_required"
     assert "- [ ] catch-up" in (root / "objectives.md").read_text()
 
 
@@ -216,7 +215,7 @@ def test_complete_stage_rejects_missing_suite_empty_results_merge_and_dirty_code
     (work / "src/service.py").write_text("dirty = True\n")
     assert error_of(complete(python_exe, work, "catch-up"))["error"] == "dirty_worktree"
     (work / "src/service.py").unlink()
-    from test_catch_up_plan import upstream
+    from test_incremental_plan import upstream
     upstream(repo, "later.txt", "上游\n")
     assert run(["git", "merge", "--no-ff", "--no-commit", "develop"], cwd=work).returncode == 0
     assert error_of(complete(python_exe, work, "catch-up"))["error"] == "unfinished_merge"

@@ -93,12 +93,12 @@ def test_smart_separate_report_preserves_baseline_and_runs_selected_test(
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    git(repo, "checkout", "-b", "adhoc/catch-up")
+    git(repo, "checkout", "-b", "adhoc/incremental-integration")
     args = ("verify", "smart", "--repo", str(repo), "--paths", "src/service.py")
     assert_ok(mdf(python_exe, *args))
-    baseline = repo / "changes/unreleased/catch-up/verification-report.json"
+    baseline = repo / "changes/unreleased/incremental-integration/verification-report.json"
     original = baseline.read_bytes()
-    output = "changes/unreleased/catch-up/catch-up-verification-report.json"
+    output = "changes/unreleased/incremental-integration/incremental-integration-verification-report.json"
     result = mdf(python_exe, *args, "--test", command, "--report-file", output)
     assert (result.returncode == 0) is passed
     assert baseline.read_bytes() == original
@@ -113,6 +113,6 @@ def test_separate_report_is_only_available_for_smart(python_exe, tmp_path, scope
     repo = copy_fixture(tmp_path)
     init_git(repo)
     result = mdf(python_exe, "verify", scope, "--repo", str(repo),
-                 "--report-file", "catch-up.json")
+                 "--report-file", "incremental-integration.json")
     assert result.returncode != 0 and "invalid_verify_scope" in result.stderr
-    assert not (repo / "catch-up.json").exists()
+    assert not (repo / "incremental-integration.json").exists()

@@ -77,7 +77,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `review-report-check` | 外部复核报告校验 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `review-prepare` | 审查左端点、未审增量与体积 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `review-record` | 记录完整审查通过的 clean commit | [PR mode 与 CI reviewer](mdf-cli-review.md) |
-| `catch-up-plan` | 基线之后 review/verify/fact 三路动作 | [交付阶段与验证](mdf-cli-delivery.md) |
+| `incremental-integration-plan` | 基线之后 review/verify/fact 三路动作 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `doctor` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
 | `prepare-git` | 非 Git 目录初始化为 master | [仓库写入命令](mdf-cli-write.md) |
 | `merge-no-ff` | 在当前分支 no-ff 合并指定提交 | [仓库写入命令](mdf-cli-write.md) |
@@ -107,10 +107,14 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `pr-watch` | 等待 PR/MR、review 与关联 CI，fetch 目标 ref 核验合并 | [PR 与审查](mdf-cli-review.md) |
-| `release-integrate` | github-flow PR 发布的集成分支 | [仓库写入命令](mdf-cli-write.md) |
+| `incremental-integration` | merge/pr 内部合回 target 与增量验收 | [仓库写入命令](mdf-cli-write.md) |
 | `workflow` | 空闲态切换分支模型/trunk、渲染 CI 分支 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
-| `finish-gitflow` | Gitflow 合并 | [仓库写入命令](mdf-cli-write.md) |
+| `catch-up` | 同步远端同名分支并增量验收 | [仓库写入命令](mdf-cli-write.md) |
+| `consolidate` | 收敛交付文档、对象和版本材料 | [仓库写入命令](mdf-cli-write.md) |
+| `merge` | local target 集成、增量验收与实际合入 | [仓库写入命令](mdf-cli-write.md) |
+| `publish` | 发布带本版说明的 annotated tag | [仓库写入命令](mdf-cli-write.md) |
+| `finish-gitflow` | 核验、回合与分支清理 | [仓库写入命令](mdf-cli-write.md) |
 | `pre-gitflow-finish` | fact 前执行 hook 或检查其改动 | [仓库写入命令](mdf-cli-write.md) |
 | `upgrade` | 替换已安装 Skill | [仓库写入命令](mdf-cli-write.md) |
 | `integrate` | 联调 inbox 与可选 HTTP | [交付阶段与验证](mdf-cli-delivery.md) |
@@ -143,7 +147,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `trunk-pr` | `trunk-pr`：github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |
 | `pr` | `pr` 提交和核验合并，`pr-watch` 等待平台状态；通过后交给 close-out | [PR mode](mdf-cli-review.md) |
-| `close-out` | 还会调用 `branch`、`list`、`release-closeout` 和 `finish-gitflow` | [交付阶段与验证](mdf-cli-delivery.md) |
+| `close-out` | 调用 `finish-gitflow` 核验并清理已完成的交付 | [交付阶段与验证](mdf-cli-delivery.md) |
 
 - `next` intent 在 feature 交付分支上续办该 feature，否则优先续办在途流程，无在途时内部委托 tree。
 - `$mdf next?` 直接进入 tree，不走 next。
@@ -154,11 +158,11 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 ## 独立发布
 
 `mdf.py publish --repo <repo>` 在 github-flow release 的基线完成后创建并推送 final tag，
-核验远端后自勾 publish，再进入 catch-up 与主线集成。执行契约见
+github-flow 在发布后进入 merge/pr；Gitflow 在实际 merge 后 publish，再进入 close-out。执行契约见
 [publish](../../../skills/mdf/references/publish.md)。
 
 ## 远端同名分支同步
 
-`mdf.py sync-remote --repo <repo>` 同步 github-flow release 的远端同名分支并返回增量 plan。
+`mdf.py catch-up --repo <repo>` 同步 github-flow release 的远端同名分支并返回增量 plan。
 补检后使用 `--complete --reviewed-head <sha> --summary <结论>` 完成阶段，随后 publish 核对该同步点并原子推送。
-执行契约见 [sync-remote](../../../skills/mdf/references/sync-remote.md)。
+执行契约见 [catch-up](../../../skills/mdf/references/catch-up.md)。

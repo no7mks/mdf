@@ -1,6 +1,6 @@
 """PR 提交前必须分析并 squash；复用原 PR 且不改写已发布 head。"""
 from mdf_test_support import git, mdf, payload
-from support_delivery import commit
+from support_delivery import commit, seed_consolidation
 from support_pull import prepare, squash_pending
 
 
@@ -10,6 +10,7 @@ def test_push_blocks_unanalyzed_commits_then_accepts_squash(python_exe, tmp_path
         (work / 'src/service.py').write_text(f'value = {number}\n')
         commit(work)
     before = git(remote, 'show-ref').stdout
+    seed_consolidation(work)
     failed = mdf(python_exe, 'pr', '--repo', str(work))
     assert failed.returncode != 0 and 'squash_required' in failed.stderr
     assert git(remote, 'show-ref').stdout == before and platform.pulls == []
@@ -19,6 +20,7 @@ def test_push_blocks_unanalyzed_commits_then_accepts_squash(python_exe, tmp_path
     for number in range(2, 4):
         (work / 'src/service.py').write_text(f'value = {number}\n')
         commit(work)
+    seed_consolidation(work)
     failed = mdf(python_exe, 'pr', '--repo', str(work))
     assert failed.returncode != 0 and 'squash_required' in failed.stderr
     assert git(remote, 'rev-parse', first['source']).stdout.strip() == published

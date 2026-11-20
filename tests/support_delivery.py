@@ -143,3 +143,25 @@ def write_change(work, source, slug):
         "\n# Change\n\n## 结果\n\n完成本次修正。\n\n## 已更新的当前文档\n\n无。\n\n## 已知偏差\n\n无。\n"
     )
     return root
+
+
+def seed_consolidation(work, *, mark=False):
+    """Git 生命周期测试已单独验证材料准备，此处记录完成的 consolidate。"""
+    from mdf_core.lifecycle.consolidation import record_path
+    from mdf_core.lifecycle.delivery_state import locate, write_json
+    from mdf_core.foundation.errors import MDFError
+    try:
+        root, data = locate(work)
+    except MDFError:
+        return
+    if mark:
+        path = root / "objectives.md"
+        text = path.read_text()
+        desired = text.replace("- [ ] consolidate", "- [x] consolidate")
+        if desired != text:
+            path.write_text(desired)
+            commit(work, "test: 完成文档收敛")
+    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    write_json(record_path(work, data["branch"]), {"head": head})
+    from mdf_core.lifecycle.target_integration import state_path
+    write_json(state_path(work, data["branch"]), {"base": head, "accepted_head": head})

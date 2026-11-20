@@ -1,4 +1,4 @@
-"""catch-up-plan：0/1/多次 merge 拓扑下独立输出 review/verify/fact 动作，且只读。"""
+"""incremental-integration-plan：0/1/多次 merge 拓扑下独立输出 review/verify/fact 动作，且只读。"""
 from mdf_test_support import *  # noqa: F403
 from _support import run
 from support_delivery import commit, local_repo
@@ -48,7 +48,7 @@ def upstream(repo, name, content, message="feat: 上游改动"):
 
 
 def plan(python_exe, work, *extra):
-    return payload(mdf(python_exe, "catch-up-plan", "--repo", str(work), *extra))["result"]
+    return payload(mdf(python_exe, "incremental-integration-plan", "--repo", str(work), *extra))["result"]
 
 
 def merge(work, *, resolve=None):
@@ -82,7 +82,7 @@ def test_zero_merge_rework_requires_focused_review_and_smart_verify(python_exe, 
     assert result["fact"]["action"] == "audit" and result["fact"]["implementation"] == ["src/service.py"]
 
 
-def test_clean_upstream_merge_on_disjoint_modules_skips_review_but_not_verify(python_exe, tmp_path):
+def test_clean_upstream_merge_reviews_new_code_and_verifies_modules(python_exe, tmp_path):
     repo, work, root = started(python_exe, tmp_path, extra_module=lib_module())
     (work / "src/own.py").write_text("own = 1\n")
     commit(work, "feat: 本分支代码")
@@ -91,7 +91,7 @@ def test_clean_upstream_merge_on_disjoint_modules_skips_review_but_not_verify(py
     merge(work)
     result = plan(python_exe, work)
     assert [m["kind"] for m in result["merges"]] == ["upstream"] and len(result["incoming_commits"]) == 1
-    assert result["review"]["action"] == "skip" and result["review"]["reasons"] == []
+    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["upstream_code"]
     assert result["verify"]["action"] == "smart" and result["verify"]["paths"] == ["lib/other.py"]
     assert result["verify"]["modules"] == ["default", "lib"]
     assert result["fact"]["action"] == "audit"
@@ -105,7 +105,7 @@ def test_same_module_on_disjoint_files_is_a_module_interface_interaction(python_
     upstream(repo, "src/other.py", "other = 1\n")
     merge(work)
     result = plan(python_exe, work)
-    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["module_interaction"]
+    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["upstream_code", "module_interaction"]
     assert result["review"]["paths"] == ["src/other.py"]
     assert result["review"]["interaction"] == {"files": [], "modules": ["default"], "branch_paths": ["src/own.py"]}
 
@@ -118,7 +118,7 @@ def test_depends_on_between_modules_is_an_interaction_in_either_direction(python
     upstream(repo, "lib/other.py", "other = 1\n")
     merge(work)
     result = plan(python_exe, work)
-    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["module_interaction"]
+    assert result["review"]["action"] == "focused" and result["review"]["reasons"] == ["upstream_code", "module_interaction"]
     assert result["review"]["interaction"]["modules"] == ["default", "lib"]
     assert result["verify"]["modules"] == ["lib"] and result["verify"]["depends_on_declared"] is True
 
@@ -159,7 +159,7 @@ def test_consecutive_merges_aggregate_all_incoming_commits(python_exe, tmp_path)
     result = plan(python_exe, work)
     assert len(result["merges"]) == 2 and len(result["incoming_commits"]) == 2
     assert result["verify"]["paths"] == ["lib/one.py", "lib/two.py"]
-    assert result["review"]["action"] == "skip"
+    assert result["review"]["action"] == "focused"
 
 
 def test_upstream_rule_or_contract_change_blocks_review_skip(python_exe, tmp_path):
@@ -172,13 +172,13 @@ def test_upstream_rule_or_contract_change_blocks_review_skip(python_exe, tmp_pat
     assert result["review"]["reasons"] == ["rules_or_contract_changed"]
 
 
-def test_docs_only_branch_does_not_need_verify_for_upstream_code(python_exe, tmp_path):
+def test_docs_only_branch_still_verifies_new_target_code(python_exe, tmp_path):
     repo, work, root = started(python_exe, tmp_path)
     tick_fact(work, root)
     upstream(repo, "src/other.py", "other = 1\n")
     merge(work)
     result = plan(python_exe, work)
-    assert result["verify"]["action"] == "skip" and result["review"]["action"] == "skip"
+    assert result["verify"]["action"] == "smart" and result["review"]["action"] == "focused"
     assert result["fact"]["action"] == "audit"
 
 
@@ -217,12 +217,14 @@ def test_upstream_lockfile_or_testing_doc_with_branch_code_triggers_smart_for_al
     assert result["verify"]["paths"] == ["uv.lock"]
 
 
-def test_upstream_lockfile_alone_does_not_trigger_verify(python_exe, tmp_path):
+def test_upstream_lockfile_triggers_smart_verify(python_exe, tmp_path):
     repo, work, root = started(python_exe, tmp_path)
     tick_fact(work, root)
     upstream(repo, "uv.lock", "locked = 1\n")
     merge(work)
-    assert plan(python_exe, work)["verify"]["action"] == "skip"
+    result = plan(python_exe, work)
+    assert result["verify"]["action"] == "smart"
+    assert result["verify"]["modules"] == ["default"]
 
 
 def test_material_only_conflict_does_not_block_review_skip(python_exe, tmp_path):

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from mdf_test_support import git, mdf, payload, write_release_objectives
+from mdf_test_support import finish_delivery
 from support_pull import prepare
 from support_delivery import start_repo, commit
 
@@ -15,18 +16,18 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
     from mdf_core.lifecycle.delivery_state import locate
     text = (locate(work)[0] / "objectives.md").read_text()
     steps = re.findall(r"(?m)^- \[[ x]\] (.+)$", text)
-    assert steps[-1] == "catch-up"
+    assert steps[-1] == "consolidate"
     assert "pr" not in steps and "close-out" not in steps
     if kind == "adhoc":
         status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
         assert status["next_step"] == "pr" and not status["completed"]
     before = git(remote, "show-ref").stdout
-    rejected = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    rejected = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert rejected.returncode != 0 and "pr_not_merged" in rejected.stderr
     assert platform.pulls == [] and git(remote, "show-ref").stdout == before
     first = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert first["operation"] == "pr" and not first["completed"]
-    waiting = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    waiting = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert waiting.returncode != 0 and "pr_not_merged" in waiting.stderr
     if kind == "adhoc":
         status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
@@ -36,14 +37,14 @@ def test_pr_merge_returns_before_publication_or_cleanup(python_exe, tmp_path, mo
     for _ in range(2):
         result = payload(mdf(python_exe, "pr", "--repo", str(repo), "--source", first["source"]))
         assert result["completed"] and result["status"] == "merged"
-        assert result["merge_commit"] == merged and result["next_intent"] == "close-out"
+        assert result["merge_commit"] == merged and result["next_intent"] == ("publish" if kind in {"release", "hotfix"} else "close-out")
         assert git(remote, "show-ref").stdout == before
         assert git(work, "branch", "--show-current").stdout.strip() == first["source"]
         assert not git(remote, "for-each-ref", "refs/tags/v1.2.1").stdout
     if kind == "adhoc":
         status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
         assert status["next_step"] == "close-out" and not status["completed"]
-    finished = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    finished = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert finished["completed"] and finished["remote_deleted"]
     assert not git(work, "branch", "--show-current").stdout.strip()
     if kind == "adhoc":
@@ -85,12 +86,14 @@ def test_start_uses_mode_specific_tail_and_pr_rejects_local(python_exe, tmp_path
         assert criteria in text
         text = text.split("## 步骤\n", 1)[1]
     if mode == "pr":
+        blocked = mdf(python_exe, "merge", "--repo", str(work))
+        assert blocked.returncode != 0 and "invalid_closeout" in blocked.stderr
         steps = re.findall(r"(?m)^- \[[ x]\] (.+)$", text)
-        assert steps[-1] == "catch-up"
+        assert steps[-1] == "consolidate"
         assert "pr" not in steps and "close-out" not in steps
         if kind == "on-demand-release":
             assert steps[-2] == "ODR 统一验收"
     else:
-        assert "- [ ] close-out" in text and "- [ ] pr" not in text
+        assert "- [ ] consolidate" in text and "- [ ] pr" not in text and "- [ ] close-out" not in text
         result = mdf(python_exe, "pr", "--repo", str(work))
         assert result.returncode != 0 and "invalid_closeout" in result.stderr

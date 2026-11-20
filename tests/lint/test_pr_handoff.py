@@ -34,10 +34,9 @@ def test_pr_prepare_resumes_repairs_before_finish_or_polling():
 
 def test_pr_prepare_reuses_committed_candidate():
     text = workflow('pr').split('### 候选材料准备', 1)[1].split('### 完成与交接', 1)[0]
-    assert '前置齐全后核对当前 Git 与平台' in text
-    assert '按 source、交付身份与当前 HEAD 复核已提交的候选材料，只补缺项' in text
-    assert '按 source 查回当前平台 PR/MR' in text
-    assert '复用原版本与材料，不重复 release-closeout 或归档' in text
+    assert '统一由 [consolidate]' in text
+    assert 'PR Prepare 核对其结果' in text
+    assert 'incremental-integration 中执行 incr-consolidate' in text
 
 
 def test_parent_closeout_survives_nested_review_and_verify():
@@ -56,7 +55,7 @@ def test_pr_retains_branch_and_owner_until_merge_and_publication_finish():
     for rule in (
         'PR/MR 未完成时必须保留 source branch 和 owner worktree',
         '等待 review、返工、补验、等待合并和 closed 未 merged 都不进入清理',
-        '完成固定 M 的 tag 发布与 backmerge，之后才可清理远端及本地 source',
+        '须先完成 publish，close-out 再核对固定发布点与适用的 backmerge',
         'CLI 始终保留 owner worktree', '恢复容错不授权任何流程提前删除',
     ):
         assert rule in text
@@ -132,7 +131,7 @@ def test_pr_mode_default_completion_and_mandatory_unticked_continuation():
     assert '默认 local 与 PR mode 均无截止点，直到 close-out 完成' in policy
     assert '显式 `--until close-out` 允许 pr 等到 merged 后停止' in policy
     contract = workflow('delivery-contract')
-    assert 'checklist 止于 `catch-up`' in contract
+    assert '交付清单记录 catch-up、consolidate' in contract
     for name in ('deliver', 'next', 'manual-feature', 'adhoc'):
         assert '前置全勾后按 [PR 恢复路由]' in workflow(name)
     assert '实际 merged、合并核验与关联 CI 收尾均通过后，pr 完成' in workflow('pr')
@@ -140,10 +139,10 @@ def test_pr_mode_default_completion_and_mandatory_unticked_continuation():
 
 def test_pr_repairs_return_to_pr_and_submission_preserves_deliver_boundaries():
     bug = workflow('bug-close')
-    assert 'PR mode 的 pr | pr 步骤 2' in bug
+    assert 'consolidate | 当前材料收敛步骤' in bug
     pr = workflow('pr')
     assert '低 confidence 返回 deliver 步骤 6' in pr
     assert '被截止的 pr 不绑定新 Goal、不准备材料、不 push 或轮询' in pr
-    assert '不得回到合并后 close-out' in pr
+    assert '在当前 pr 调用内持续处理' in pr
     finish = workflow('pr-close-out')
     assert '│ 1 Check merged' in finish and '树形：not-tree。' not in finish

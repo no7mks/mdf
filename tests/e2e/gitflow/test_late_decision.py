@@ -38,12 +38,17 @@ def test_pending_target_blocks_finish_and_selection_is_persistent(python_exe, tm
     work = start_feature(python_exe, repo, tmp_path)
     assert not (work / "not-released.py").exists()
     feature_change(work)
-    failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    failed = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert "target_pending" in failed.stderr
     payload(mdf(python_exe, "delivery", "target", "--repo", str(work), "--target", "develop"))
     commit(work)
     git(work, "merge", "--no-ff", "--no-edit", "develop")
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    from mdf_core.lifecycle.delivery_state import locate
+    from mdf_core.lifecycle.consolidation import update_child_objects
+    root, data = locate(work)
+    update_child_objects(work, root, data)
+    commit(work)
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["targets"] == ["develop"]
     from mdf_core.foundation.yamlutil import read_frontmatter
     assert read_frontmatter(repo / "docs/proposals" / PRP_NAME)[0]["status"] == "implemented"
@@ -59,7 +64,7 @@ def test_feature_enters_odr_checkpoint_then_publishes_and_backmerges(python_exe,
     work = start_feature(python_exe, repo, tmp_path, "--target", "on-demand-release/1.3.0")
     feature_change(work)
     git(work, "merge", "--no-ff", "--no-edit", "on-demand-release/1.3.0")
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["targets"] == ["on-demand-release/1.3.0"]
     assert payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]["ready"]
     from mdf_core.foundation.yamlutil import read_frontmatter
@@ -69,7 +74,7 @@ def test_feature_enters_odr_checkpoint_then_publishes_and_backmerges(python_exe,
     assert read_frontmatter(odr / "docs/proposals" / PRP_NAME)[0]["status"] == "implemented"
     write_changelog_release(odr, "1.3.0")
     commit(odr)
-    published = payload(mdf(python_exe, "finish-gitflow", "--repo", str(odr)))
+    published = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(odr)))
     assert published["targets"] == ["master", "develop"]
     git(repo, "merge-base", "--is-ancestor", "master", "develop")
     assert git(remote, "rev-parse", "master").stdout == git(repo, "rev-parse", "master").stdout
@@ -136,7 +141,7 @@ def test_odr_full_version_materials_and_publication(python_exe, tmp_path, monkey
         assert first["pull_request"]["target"] == "on-demand-release/1.3.0"
         assert "target_locked" in mdf(python_exe, "delivery", "target", "--repo", str(work), "--target", "develop").stderr
         platform.merge(1, tmp_path)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]["ready"]
     obj = odr / "changes/unreleased/1.3.0/objectives.md"
     obj.write_text(obj.read_text().replace("[ ]", "[x]"))
@@ -154,14 +159,14 @@ def test_odr_full_version_materials_and_publication(python_exe, tmp_path, monkey
         second = payload(mdf(python_exe, "pr", "--repo", str(odr)))
         assert second["pull_request"]["target"] == "master"
         merged = platform.merge(2, tmp_path)
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(odr)))
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(odr)))
     assert done["targets"] == ["master", "develop"]
     git(repo, "merge-base", "--is-ancestor", "master", "develop")
     if mode == "pr":
         assert done["completed"] and done["merge_commit"] == merged
         git(remote, "merge-base", "--is-ancestor", merged, "develop")
         assert len(platform.pulls) == 2
-        assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo),
+        assert payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo),
                            "--source", "on-demand-release/1.3.0"))["completed"]
     assert git(remote, "rev-parse", "v1.3.0^{commit}").stdout == git(repo, "rev-parse", "master").stdout
 
@@ -183,7 +188,7 @@ def test_odr_prevents_starting_same_prp_after_feature_cleanup(python_exe, tmp_pa
     start_odr(python_exe, repo, tmp_path)
     work = start_feature(python_exe, repo, tmp_path, "--target", "on-demand-release/1.3.0")
     feature_change(work)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     git(repo, "worktree", "remove", str(work))
     result = mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature", "--from-master",
                  "--proposal", PRP_ID, "--roster", "solo", "--objectives-file", str(write_work_objectives(tmp_path)))
@@ -220,7 +225,7 @@ def test_odr_waits_for_all_selected_manual_features(python_exe, tmp_path):
         (work / f"{name}.py").write_text(f"{name} = True\n")
         commit(work)
         git(work, "merge", "--no-ff", "--no-edit", created["branch"])
-        payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+        payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
         state = payload(mdf(python_exe, "delivery", "checkpoint", "--repo", str(odr)))["result"]
         assert state["ready"] == (index == 1)
         assert state["pending"] == ([] if index == 1 else ["feature/second"])
@@ -232,7 +237,7 @@ def test_source_argument_cannot_bypass_pending_odr(python_exe, tmp_path):
     write_changelog_release(odr, "1.3.0")
     commit(odr)
     before = git(repo, "rev-parse", "master").stdout
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(odr),
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(odr),
                  "--source", "on-demand-release/1.3.0")
     assert result.returncode != 0
     assert git(repo, "rev-parse", "master").stdout == before

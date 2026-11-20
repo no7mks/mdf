@@ -75,6 +75,11 @@ def prepare(python_exe, tmp_path, monkeypatch, kind='hotfix', *, hotfix_name=Non
         if kind == 'adhoc':
             obj = root / 'objectives.md'
             obj.write_text(obj.read_text().replace('[ ]', '[x]'))
+    if kind == 'feature':
+        from mdf_core.lifecycle.delivery_state import locate
+        from mdf_core.lifecycle.consolidation import update_child_objects
+        material, data = locate(work)
+        update_child_objects(work, material, data)
     commit(work)
     pull_finish.preflight(work, git(work, "branch", "--show-current").stdout.strip())
     squash_pending(work)
@@ -90,3 +95,5 @@ def squash_pending(work):
         plan.update(start_commit=plan['floor'], segments=[
             {'tip': plan['old_tip'], 'message': 'test: 整理交付准备'}])
         execute(work.resolve(), plan, False, [])
+    from support_delivery import seed_consolidation
+    seed_consolidation(work)

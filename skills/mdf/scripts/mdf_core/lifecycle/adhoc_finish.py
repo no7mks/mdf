@@ -38,7 +38,7 @@ def status(repo, source, slug=None):
         from mdf_core.lifecycle.pull_finish import remote_source_head
         completed = remote_source_head(repo, source) is None
     result.update(completed=completed, merge_commit=merged,
-                  next_step=None if completed else ("close-out" if not pr or merged else "pr"),
+                  next_step=None if completed else ("close-out" if merged else "pr" if pr else "merge"),
                   owner_worktree=str(repo), primary_worktree=str(primary_worktree(repo)))
     if not merged and ancestor(repo, head, result["range"]["target_head"]):
         result.update(next_step=None, no_pending_commits=True)
@@ -48,10 +48,10 @@ def status(repo, source, slug=None):
     return result
 
 
-def finish(repo, source, *, recovering):
+def finish(repo, source, *, recovering, merging=False):
     from mdf_core.lifecycle.adhoc import completion
     from mdf_core.lifecycle.pull_finish import cleanup, retained_owner
-    from mdf_core.workspace.gitflow import _merge
+    from mdf_core.workspace.gitflow import merge_preserving_checkout
 
     require_source(source)
     integ = integration_branch(repo)
@@ -59,7 +59,7 @@ def finish(repo, source, *, recovering):
     source_owner = trees.get(source)
     owner = source_owner or repo
     ensure_clean(owner)
-    target = trees.get(integ, owner)
+    target = trees.get(integ, primary_worktree(repo))
     ensure_clean(target)
     head = local_head(repo, source)
     if head is None and recovering:
@@ -82,9 +82,22 @@ def finish(repo, source, *, recovering):
         from mdf_core.inspection.validate_records import require_fixed_outcomes
         require_fixed_outcomes(owner, source)
     completion(owner, source)
+    if merging:
+        if merged is None:
+            from mdf_core.lifecycle.target_integration import require_integrated
+            require_integrated(owner, source, integ)
+            head = local_head(repo, source)
+            merge_preserving_checkout(target, head, integ)
+            merged = find_merge(repo, ref, head)
+        from mdf_core.lifecycle.publish import merge_record_path
+        from mdf_core.lifecycle.delivery_state import write_json
+        write_json(merge_record_path(repo, source),
+                   {"source": source, "head": head, "target": integ, "merge_commit": merged})
+        emit({"ok": True, "operation": "merge", "completed": True, "source": source,
+              "merge_commit": merged, "next_intent": "close-out"})
+        return
     if merged is None:
-        _merge(target, head, integ)
-        merged = find_merge(repo, ref, head)
+        raise MDFError("先完成 merge，再执行 close-out", code="merge_required")
     if merged is None:
         raise MDFError("无法核对原双亲 merge", code="finish_state_changed")
     cleanup(repo, {"source": source, "head": head})

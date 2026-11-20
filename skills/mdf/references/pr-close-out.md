@@ -62,7 +62,7 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 - source 已删除、owner detached 或外部删除时，仍从同一 Git common dir 的主 worktree 恢复。
 - `completed=true` 须同时核对 merge_commit、远端目标、remote_deleted=true 与本地 source 删除。
   owner 存在时核 detached；owner 已外部删除时如实报告，不重建。
-- release/ODR/hotfix 还须核 tag 指向固定 M、远端 develop 包含已确认 backmerge HEAD。
+- Gitflow 发布交付核 tag 指向 M 和远端 develop 的回合；github-flow 核已发布 tag 的 commit 是 M 的 ancestor。
 - 部分成功只补剩余动作，不重复发布；finish_busy 等持锁调用结束，不删除 lock。
 - github-flow 的本地 trunk 有未共享 commit 时，`finish-gitflow` 返回 `upstream_diverged` 并保留现场。
   通过显式 [trunk-pr](trunk-pr.md) 或已确认的 sync PR 计划保全这些 commit 并对齐本地 trunk。
@@ -107,8 +107,8 @@ close-out 只执行合并后的剩余工作，不创建或更新 PR/MR、不等�
 | CLI 动作 | 证据 | 失败/缺失去向 |
 | --- | --- | --- |
 | 核 release/ODR/hotfix 平台合并 | master 第一父链中的双亲 M | 停止并保留现场 |
-| 在 M 创建 annotated `v<version>`，正文取 CHANGELOG，只 push tag | 远端 tag 指向 M | 读日志并核对当前 tag |
-| 独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
+| 核对前置 publish 的 annotated tag、目标 commit 与正文 | 远端 tag 与发布记录一致 | 续办 publish |
+| Gitflow 在独立 worktree 将 M no-ff 回合 develop | 远端 develop 包含完整回合 HEAD | 步骤 3 处理 backmerge |
 | 清理远端及本地 source，暂留临时目录供核验 | remote_deleted、deleted、owner 状态 | 步骤 3 核对后默认清理临时目录 |
 
 - 不跟随后来前进的 master HEAD；本地 master 只做同名 ff 同步，分歧时保留现场。

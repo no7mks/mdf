@@ -6,6 +6,7 @@ import pytest
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace import dev_pr
 from mdf_test_support import git, mdf, payload
+from mdf_test_support import finish_delivery
 from support_delivery import commit, write_change
 from support_sync import prepare, sync
 
@@ -41,7 +42,7 @@ def test_dev_pr_preserves_work_then_reuses_adhoc_pr(python_exe, tmp_path, monkey
     assert len(platform.pulls) == 1
     merged = platform.merge(1, tmp_path)
     assert payload(mdf(python_exe, "pr", "--repo", str(work)))["completed"]
-    assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))["completed"]
+    assert payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))["completed"]
     assert git(repo, "rev-parse", "develop").stdout.strip() == merged
     assert payload(sync(python_exe, repo, pr=False))["trunks"]["develop"]["push"] == "noop"
 

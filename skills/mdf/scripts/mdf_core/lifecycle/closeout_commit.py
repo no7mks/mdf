@@ -138,22 +138,13 @@ def apply_version_closeout(
         review_source.rmdir()
 
     release_dir.mkdir(parents=True, exist_ok=True)
-    from mdf_core.workspace.workflow_policy import is_github_flow
-    github = is_github_flow(repo)
-    if context["mode"] == "hotfix" or github:
+    if context["mode"] == "hotfix":
         from mdf_core.lifecycle.delivery_state import read_json, write_json
-        from mdf_core.workspace.gitutil import run
         record = release_dir / "delivery.json"
         if record.is_file():
             data = read_json(record)
             if context["mode"] == "hotfix":
                 data["version"] = context["version"]
-            if github and context["mode"] in {"release", "hotfix", "on-demand-release"}:
-                head = run(["git", "rev-parse", "HEAD"], cwd=repo).stdout.strip()
-                if data.get("release_head") not in (None, head):
-                    raise MDFError("归档 delivery.json 的 release_head 与定版 HEAD 不一致",
-                                   code="release_head_changed")
-                data["release_head"] = head
             write_json(record, data)
     found_in_transitions: list[str] = []
     for closure in closures:

@@ -7,6 +7,7 @@ from conftest import skill_dir
 from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle import pull_finish, pull_publish
 from mdf_test_support import git, mdf, payload
+from mdf_test_support import finish_delivery
 from support_delivery import commit
 from support_pull import prepare
 
@@ -66,8 +67,8 @@ def test_backmerge_worktree_creation_resumes_after_branch_was_created(python_exe
         raise MDFError('模拟 worktree 创建中断', code='test_interrupted')
     with monkeypatch.context() as patch:
         patch.setattr(pull_publish, 'add_linked_worktree', interrupted)
-        assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
-    resumed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+        assert finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+    resumed = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work))
     if changed_branch:
         assert resumed.returncode != 0 and 'pull_state_changed' in resumed.stderr
         assert git(repo, 'rev-parse', 'codex/backmerge/1.2.1').stdout.strip() == merged
@@ -94,10 +95,10 @@ def test_cleanup_interruption_resumes_without_republishing(python_exe, tmp_path,
         return result
     with monkeypatch.context() as patch:
         patch.setattr(pull_finish, 'git', interrupted_git)
-        assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+        assert finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
     assert fired
     snapshot = git(remote, 'show-ref').stdout
-    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    done = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert done['completed'] and git(remote, 'show-ref').stdout == snapshot
     assert not git(repo, 'for-each-ref', 'refs/heads/' + first['source']).stdout
 
@@ -108,6 +109,8 @@ def test_review_update_uses_owner_then_merged_cleanup_resumes_from_primary(pytho
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('review_fixed = True\n')
     commit(work)
+    from support_delivery import seed_consolidation
+    seed_consolidation(work)
     failed = mdf(python_exe, 'pr', '--repo', str(repo), '--source', first['source'])
     assert failed.returncode != 0 and 'stage_branch' in failed.stderr
     assert platform.get(1)['head'] == first['pull_request']['head']
@@ -116,7 +119,7 @@ def test_review_update_uses_owner_then_merged_cleanup_resumes_from_primary(pytho
     assert updated['pull_request']['head'] != first['pull_request']['head']
     assert updated['pull_request']['id'] == first['pull_request']['id'] and len(platform.pulls) == 1
     platform.merge(1, tmp_path)
-    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    done = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert done['completed']
 
 
@@ -131,10 +134,10 @@ def test_merged_cleanup_resumes_after_owner_worktree_was_removed(python_exe, tmp
         raise MDFError('模拟完成记录前中断', code='test_interrupted')
     with monkeypatch.context() as patch:
         patch.setattr(pull_finish, 'cleanup', interrupted)
-        assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+        assert finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
     snapshot = git(remote, 'show-ref').stdout
     git(repo, 'worktree', 'remove', str(work))
-    done = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    done = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert done['completed'] and not work.exists()
     assert git(remote, 'show-ref').stdout == snapshot
 
@@ -160,7 +163,7 @@ def test_cleanup_preserves_source_changed_by_another_git_process(python_exe, tmp
             git(repo, 'update-ref', 'refs/heads/' + source, new_head, head)
         return original(repo_path, *args, **kwargs)
     monkeypatch.setattr(pull_finish, 'git', advanced)
-    result = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+    result = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work))
     assert fired and result.returncode != 0 and 'pull_state_changed' in result.stderr
     assert git(repo, 'rev-parse', source).stdout.strip() == new_head
     assert git(repo, 'config', '--local', '--get', key).stdout == before
@@ -179,7 +182,7 @@ def test_cleanup_preserves_source_checked_out_in_another_worktree(python_exe, tm
             git(repo, 'worktree', 'add', str(other), source)
         return result
     monkeypatch.setattr(pull_finish, 'git', occupy)
-    result = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+    result = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work))
     assert result.returncode != 0
     assert git(other, 'branch', '--show-current').stdout.strip() == source
     assert git(repo, 'rev-parse', source).stdout.strip() == first['pull_request']['head']

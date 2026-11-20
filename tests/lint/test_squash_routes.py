@@ -20,13 +20,10 @@ def test_squash_plans_and_closeout_dry_run_before_heuristic():
     assert "不逐次请求用户确认" in squash
     assert "gitflow 的 `planning land` 在 local 和 PR mode" in squash
     assert "不可压或失败" in squash
-    assert "references/squash.md" in finish
-    assert "dry-run" in finish and "--dry-run" not in finish
-    assert "先内部执行" in finish and "dry-run" in finish
-    assert "地板取 dry-run 计划" in finish or "计划中的地板" in contract
-    assert "[委托 squash 后继续本步]" in finish
-    assert "dry-run 建议且 Agent 裁定" in finish
-    assert "不逐次确认" in finish
+    merge = workflow("merge")
+    assert "references/squash.md" in merge
+    assert "dry-run 建议由 Agent 裁定" in merge
+    assert "squash" not in finish
     assert "references/squash.md" in contract
     assert "公开 `$mdf squash` 负责" in squash or "公开 `$mdf squash` 承担" in squash
     assert "dry-run 计划" in squash

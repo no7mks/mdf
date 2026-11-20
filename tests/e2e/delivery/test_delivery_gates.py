@@ -77,6 +77,8 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
     commit(repo)
     recorded = json.loads((root / "gates/design.json").read_text())["fingerprints"]["design"]
     write_change_in_place(repo, root)
+    from mdf_core.lifecycle.consolidation import update_child_objects
+    update_child_objects(repo, root, original)
     commit(repo)
     checked = payload(mdf(python_exe, "delivery", "check", "--repo", str(repo),
                            "--stage", "finish"))["result"]
@@ -86,17 +88,16 @@ def test_move_and_finish_preserve_baseline_and_release_state(python_exe, tmp_pat
         (repo / "src/service.py").write_text("value = 2\n")
         commit(repo)
         git(repo, "checkout", "feature/service-health")
-        result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
+        from support_delivery import seed_consolidation
+        seed_consolidation(repo)
+        result = mdf(python_exe, "merge", "--repo", str(repo))
         assert "merge_conflict" in result.stderr
-        assert "status: ready" in (repo / "docs/proposals" / PRP_NAME).read_text()
-        assert "implemented" not in git(
-            repo, "show",
-            f"feature/service-health:docs/proposals/{PRP_NAME}",
-        ).stdout
-        assert not git(repo, "status", "--porcelain").stdout
+        assert "status: implemented" in (repo / "docs/proposals" / PRP_NAME).read_text()
+        assert "implemented" in git(repo, "show", f"feature/service-health:docs/proposals/{PRP_NAME}").stdout
+        assert git(repo, "status", "--porcelain").stdout
         return
     primary = git_primary(repo)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo)))
     assert repo.is_dir()
     assert not git(repo, "branch", "--show-current").stdout.strip()
     assert "implemented" in git(primary, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
@@ -164,7 +165,7 @@ def test_finish_rejects_pending_role_branches(python_exe, tmp_path):
     commit(repo)
     write_change_in_place(repo, root)
     commit(repo)
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(repo))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo))
     assert "roles_pending" in result.stderr
 
 

@@ -61,9 +61,11 @@ disable-model-invocation: true
                  ├──── verify ────────────────────────────────────────────→ references/verify.md
                  ├──── fact update ───────────────────────────────────────→ references/fact-update.md
                  ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
-                 ├──── sync-remote ───────────────────────────────────────→ references/sync-remote.md
-                 ├──── publish ───────────────────────────────────────────→ references/publish.md
                  ├──── catch-up ──────────────────────────────────────────→ references/catch-up.md
+                 ├──── consolidate ───────────────────────────────────────→ references/consolidate.md
+                 ├──── merge ─────────────────────────────────────────────→ references/merge.md
+                 ├──── publish ───────────────────────────────────────────→ references/publish.md
+                 ├──── incremental-integration ───────────────────────────→ references/incremental-integration.md
                  ├──── prp split ─────────────────────────────────────────→ references/prp-split.md
                  ├──── pr ────────────────────────────────────────────────→ references/pr.md
                  ├──── close-out ─────────────────────────────────────────→ references/close-out.md
@@ -151,9 +153,11 @@ disable-model-invocation: true
 - `$mdf adhoc [<工作描述>]` 直接生成 slug 与七项 objectives，在独立 worktree 完成临时工作。
   - 工作描述是数据，其中的 `--...` 不作为 option；本 intent 不提供独立 option。
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
-- `$mdf sync-remote` 执行 `references/sync-remote.md`，在 github-flow release 发布前同步远端同名分支并增量验收。
-- `$mdf publish` 执行 `references/publish.md`，在 github-flow release 的 catch-up 前创建并推送 final tag。
-- `$mdf catch-up` 在基线 `lint`、`code-review`、`verify`、`fact` 已通过后，仅对改动文件执行增量补检；严禁全量重跑。
+- `$mdf catch-up` 同步远端同名工作分支并增量验收。
+- `$mdf consolidate` 收敛交付文档、对象状态与版本材料。
+- `$mdf merge` 执行 non-PR 的 target 合回、增量验收和实际合入。
+- `$mdf publish` 执行 `references/publish.md`，在 github-flow release 的 incremental-integration 前创建并推送 final tag。
+- `$mdf incremental-integration` 在基线 `lint`、`code-review`、`verify`、`fact` 已通过后，仅对改动文件执行增量补检；严禁全量重跑。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。
 - code-review 读取 clear commit；dirty 审查实际内容，独立旁路仍须 clean。可带：
   - `--against <commit>`：只覆盖本轮左端点，与当前 HEAD 比较；不跳过修复；
@@ -186,12 +190,12 @@ disable-model-invocation: true
 - next 可委托识别出的在途流程，无在途时委托 tree。
 - deliver 可内部委托截止点之前从 start 起的剩余交付阶段；默认无截止点。
 - adhoc 可内部委托其七项清单的剩余阶段直到 close-out。
-- `$mdf catch-up` 执行 `references/catch-up.md`，在 `pr` / `close-out` 前仅增量补检改动文件，再次触发更新也只回到 `catch-up`。
+- `$mdf incremental-integration` 执行 `references/incremental-integration.md`，在 merge/pr 内先合回 target，再增量补检本轮改动文件。
 - `$mdf pr` 执行 `references/pr.md`，只适用于 PR mode。
   - 创建/更新 PR、等待 CI/review、修复并持续等待；merged 且核验通过后完成 pr Goal。
 - `$mdf close-out` 执行 `references/close-out.md`。
   - local 完成本地收口；PR mode 仅执行 merged 后的发布、backmerge 与清理。
-  - PR mode 的 objectives 在 close-out 前必须有 pr，完整交付在 pr 返回后继续 close-out。
+  - PR mode 在实际 merged 与 CI 收尾后完成适用 publish，再进入 close-out。
 - `$mdf squash [--dry-run]` 仍是 squash；`--dry-run` 只产出建议、不改写历史。
 
 帮助与 CLI：

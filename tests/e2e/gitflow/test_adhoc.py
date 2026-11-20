@@ -82,7 +82,7 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     before = git(repo, "show", f"develop:docs/proposals/{PRP_NAME}").stdout
     write_change(root, change_kind=change_kind)
     commit(work)
-    failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    failed = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert failed.returncode != 0 and "adhoc_work_pending" in failed.stderr
     assert git(work, "branch", "--show-current").stdout.strip() == "adhoc/update-readme"
     objectives = root / "objectives.md"
@@ -94,14 +94,14 @@ def test_adhoc_finish_requires_completed_work_and_preserves_prp(python_exe, tmp_
     findings = []
     validate_changes(work, findings)
     assert any(item.code == "change.proposals" for item in findings)
-    failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    failed = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert failed.returncode != 0 and "invalid_change" in failed.stderr
     write_change(root, change_kind=change_kind)
     commit(work)
     source = git(work, "rev-parse", "HEAD").stdout.strip()
     status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
     assert not status["completed"] and status["next_step"] == "close-out"
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["targets"] == ["develop"] and result["pushed"] is False
     assert result["retained_worktree"] == str(work) and work.is_dir()
     assert not git(work, "branch", "--show-current").stdout.strip()
@@ -167,7 +167,7 @@ def test_adhoc_finish_keeps_source_tip_when_develop_has_no_worktree(python_exe, 
     repo, work = prepare_finish(python_exe, tmp_path)
     source = git(work, "rev-parse", "HEAD").stdout.strip()
     git(repo, "checkout", "master")
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert git(repo, "branch", "--show-current").stdout.strip() == "master"
     assert git(work, "rev-parse", "HEAD").stdout.strip() == source
     status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work), "--slug", "update-readme"))["result"]
@@ -181,7 +181,7 @@ def test_adhoc_finish_resumes_cleanup_without_repeating_merge(python_exe, tmp_pa
     status = payload(mdf(python_exe, "adhoc-status", "--repo", str(work)))["result"]
     assert not status["completed"] and status["merge_commit"] == merged
     assert status["next_step"] == "close-out"
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert git(repo, "rev-parse", "develop").stdout.strip() == merged
     assert not git(repo, "for-each-ref", "refs/heads/adhoc/").stdout
     assert payload(mdf(python_exe, "adhoc-status", "--repo", str(work),
@@ -200,7 +200,7 @@ def test_detached_adhoc_needs_known_slug_and_actual_no_ff_merge(python_exe, tmp_
 
 def test_finished_adhoc_cannot_claim_changed_local_material_as_delivered(python_exe, tmp_path):
     _, work = prepare_finish(python_exe, tmp_path)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     path = work / "changes/unreleased/update-readme/delivery.json"
     data = json.loads(path.read_text())
     data["work"] = "另一个未交付的需求"

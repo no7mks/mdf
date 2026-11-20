@@ -91,23 +91,19 @@ def write_json(path, value):
 
 
 def material_root(repo, slug, *, owner=None):
-    """PR 候选发布使用已归入版本目录的同一份交付材料。"""
+    """consolidate 后继续使用已归入版本目录的同一份交付材料。"""
     owner = owner if owner is not None else current_branch(repo)
     root = safe(repo, repo / "changes" / "unreleased" / slug)
     details = branch_details(owner)
     if details["kind"] == "hotfix" and details["version"] is None:
         from mdf_core.lifecycle.hotfix_version import delivery_record
-        from mdf_core.workspace.merge_policy import configured
         record = delivery_record(repo, owner)
-        if record and configured(repo)["mode"] == "pr":
+        if record:
             return safe(repo, repo / record[0]).parent
     if details["kind"] in {"release", "on-demand-release", "hotfix"} and details["version"] == slug:
-        from mdf_core.workspace.merge_policy import configured
         candidate = safe(repo, repo / "changes" / slug)
         record = safe(repo, candidate / "delivery.json")
-        from mdf_core.workspace.workflow_policy import is_github_flow
-        candidate_release = is_github_flow(repo) and details["kind"] == "release"
-        if (configured(repo)["mode"] == "pr" or candidate_release) and record.is_file():
+        if record.is_file():
             if (root / "delivery.json").exists():
                 raise MDFError("候选发布材料存在多个目录", code="invalid_delivery")
             data = read_json(record)
@@ -118,13 +114,7 @@ def material_root(repo, slug, *, owner=None):
 
 
 def locate(repo, slug=None, *, owner=None):
-    if owner is None:
-        from mdf_core.lifecycle.release_integration import integration_version, release_head_of
-        branch = current_branch(repo)
-        version = integration_version(branch)
-        if version:
-            release_head_of(repo, branch)
-        owner = f"release/{version}" if version else owner_branch(branch)
+    owner = owner if owner is not None else owner_branch(current_branch(repo))
     if slug is None:
         slug = unreleased_slug(branch_details(owner))
     root = material_root(repo, slug, owner=owner)

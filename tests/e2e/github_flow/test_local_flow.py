@@ -48,7 +48,7 @@ def test_feature_and_bugfix_start_and_finish_on_trunk(python_exe, tmp_path, kind
         identity = json.loads((work / "changes/unreleased/manual-work/delivery.json").read_text())
         assert identity["target"] == "master" and "base_branch" not in identity
     source = git(work, "rev-parse", "HEAD").stdout.strip()
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert done["targets"] == ["master"]
     git(repo, "merge-base", "--is-ancestor", source, "master")
     assert not has_ref(repo, "develop")
@@ -58,10 +58,9 @@ def test_feature_and_bugfix_start_and_finish_on_trunk(python_exe, tmp_path, kind
 def test_publish_merges_only_trunk_and_tags_release_head(python_exe, tmp_path, kind):
     repo, remote, work, data = finishable(python_exe, tmp_path, kind)
     head = git(work, "rev-parse", "HEAD").stdout.strip()
-    if kind == "release":
-        head = publish_release(python_exe, work)
+    head = publish_release(python_exe, work)
     trunk_before = git(repo, "rev-parse", "master").stdout
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     target = "support/1.2" if kind == "hotfix" else "master"
     assert done["targets"] == [target] and done["tag"] == "v1.2.1" and done["pushed"] is True
     assert git(repo, "rev-parse", "v1.2.1^{commit}").stdout.strip() == head
@@ -87,8 +86,8 @@ def test_gitflow_only_start_entries_are_rejected(python_exe, tmp_path, entry):
 def test_published_release_reuses_tag_and_merge(python_exe, tmp_path):
     repo, remote, work, data = finishable(python_exe, tmp_path, "release")
     head = publish_release(python_exe, work)
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     refs = git(remote, "show-ref").stdout
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", data["branch"]))
     assert git(remote, "show-ref").stdout == refs
     assert git(repo, "rev-parse", f"{done['tag']}^{{commit}}").stdout.strip() == head

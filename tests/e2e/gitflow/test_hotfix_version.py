@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from mdf_test_support import BUG_ID, BUG_NAME, git, mdf, payload, seed_verify_branch, write_work_objectives
+from mdf_test_support import finish_delivery
 from support_delivery import commit, start_repo
 
 
@@ -136,20 +137,20 @@ def test_closeout_auto_version_resumes_committed_candidate(python_exe, tmp_path,
         assert not git(work, "status", "--porcelain").stdout
         assert not objectives.exists()
         merged = platform.merge(1, tmp_path)
-        done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
+        done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
         assert done["completed"] and done["tag"] == "v1.2.1"
         back = done["backmerge"]
         review = context(Path(back["worktree"]), back["source"], "HEAD", "master")
         assert review["publication"]["source"] == "hotfix/fix-login"
         assert review["publication"]["merge_commit"] == merged
     else:
-        done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+        done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
         assert done["tag"] == "v1.2.1"
         tagged = git(repo, "rev-parse", "v1.2.1").stdout
-        payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/fix-login"))
+        payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/fix-login"))
         assert git(repo, "rev-parse", "v1.2.1").stdout == tagged
         git(repo, "worktree", "remove", str(work))
-        payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/fix-login"))
+        payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", "hotfix/fix-login"))
         assert git(repo, "rev-parse", "v1.2.1").stdout == tagged
 
 
@@ -172,8 +173,8 @@ def test_pr_publishes_slug_with_frozen_version_and_resumes_after_source_removal(
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch, hotfix_name="fix-login")
     first = payload(mdf(python_exe, "pr", "--repo", str(work)))
     merged = platform.merge(1, tmp_path)
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))
     assert result["completed"] and result["tag"] == "v1.2.1"
     assert git(remote, "rev-parse", "v1.2.1^{commit}").stdout.strip() == merged
     git(remote, "merge-base", "--is-ancestor", merged, "develop")
-    assert payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))["completed"]
+    assert payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(repo), "--source", first["source"]))["completed"]

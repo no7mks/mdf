@@ -41,3 +41,11 @@ def test_release_tag_message_puts_excerpt_under_subject():
 
     message = release_tag_message("v1.2.1", "## [1.2.1] - 2026-07-30\n\n- 条目。")
     assert message.startswith("chore(release): 发布 v1.2.1\n\n## [1.2.1]")
+
+
+@pytest.mark.parametrize("body", ["", "\n### Added\n", "\n<!-- pending -->\n", "\n---\n", "\n- \n", "\n- [ ]\n", "\n- [x]\n", "\n- [X]\n", "\n1. \n", "\n- _\n"])
+def test_release_notes_require_actual_content(body):
+    from mdf_core.foundation.errors import MDFError
+    with pytest.raises(MDFError) as caught:
+        excerpt("# Changelog\n\n## [1.3.0] - 2026-11-20\n" + body, "1.3.0")
+    assert caught.value.code == "empty_release_notes"

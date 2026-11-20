@@ -14,4 +14,4 @@
 - [ ] verify smart
 - [ ] fact audit/update
 - [ ] catch-up
-- [ ] close-out
+- [ ] consolidate

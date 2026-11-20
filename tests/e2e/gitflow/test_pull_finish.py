@@ -4,6 +4,7 @@ import json
 import pytest
 
 from mdf_test_support import PRP_NAME, git, mdf, payload
+from mdf_test_support import finish_delivery
 from support_delivery import commit
 from support_pull import prepare, squash_pending
 
@@ -38,6 +39,8 @@ def test_pr_watch_reuses_original_pull_after_repair(python_exe, tmp_path, monkey
 
     (work / "README.md").write_text("# 修复 CI 反馈\n")
     commit(work)
+    from support_delivery import seed_consolidation
+    seed_consolidation(work)
     updated = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert updated["pull_request"]["id"] == 1
     assert len(platform.pulls) == 1
@@ -60,7 +63,7 @@ def test_published_backmerge_resumes_after_local_conflict(python_exe, tmp_path, 
     git(repo, 'checkout', 'develop')
     (repo / 'src/service.py').write_text('local_work = True\n')
     commit(repo)
-    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    failed = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
     assert failed.returncode != 0 and 'merge_conflict' in failed.stderr
     from mdf_core.workspace.gitutil import sibling_worktree
     branch = 'codex/backmerge/1.2.1'
@@ -76,7 +79,7 @@ def test_published_backmerge_resumes_after_local_conflict(python_exe, tmp_path, 
         (back / 'later.py').write_text('unrelated = True\n')
         commit(back)
         retained = git(back, 'rev-parse', 'HEAD').stdout
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed'] and result['merge_commit'] == merged
     assert git(remote, 'rev-parse', 'develop').stdout == before
     if action == 'advance':
@@ -95,7 +98,7 @@ def test_closeout_integrates_develop_without_publishing_local_commits(python_exe
     local = git(repo, 'rev-parse', 'HEAD').stdout.strip()
     if not occupied:
         git(repo, 'checkout', 'master')
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed'] and result['merge_commit'] == merged
     git(repo, 'merge-base', '--is-ancestor', local, 'develop')
     git(repo, 'merge-base', '--is-ancestor', 'origin/develop', 'develop')
@@ -104,7 +107,7 @@ def test_closeout_integrates_develop_without_publishing_local_commits(python_exe
     assert git(repo, 'rev-list', '--parents', '-n', '1', 'develop').stdout.split()[1:] == [
         local, git(repo, 'rev-parse', 'origin/develop').stdout.strip()]
     before = git(repo, 'rev-parse', 'develop').stdout
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))['completed']
+    assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))['completed']
     assert git(repo, 'rev-parse', 'develop').stdout == before
 
 
@@ -118,7 +121,7 @@ def test_closeout_keeps_develop_ahead_of_merged_remote(python_exe, tmp_path, mon
     (repo / 'local-only.py').write_text('local_work = True\n')
     commit(repo)
     before = git(repo, 'rev-parse', 'develop').stdout
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed']
     assert git(repo, 'rev-parse', 'develop').stdout == before
     assert git(remote, 'rev-parse', 'develop').stdout.strip() == merged
@@ -139,7 +142,7 @@ def test_closeout_develop_conflict_preserves_and_resumes(python_exe, tmp_path, m
     local = git(repo, 'rev-parse', 'develop').stdout.strip()
     if not occupied:
         git(repo, 'checkout', 'master')
-    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    failed = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
     assert failed.returncode != 0 and 'merge_conflict' in failed.stderr
     develop = worktree_map(repo)['develop']
     assert str(develop) in failed.stderr
@@ -147,11 +150,11 @@ def test_closeout_develop_conflict_preserves_and_resumes(python_exe, tmp_path, m
     assert git(repo, 'rev-parse', 'develop').stdout.strip() == local
     assert git(remote, 'rev-parse', first['source']).stdout.strip() == first['pull_request']['head']
     assert git(work, 'branch', '--show-current').stdout.strip() == first['source']
-    again = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    again = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
     assert again.returncode != 0 and 'dirty_worktree' in again.stderr
     (develop / 'src/service.py').write_text('local_work = True\nremote_work = True\n')
     commit(develop)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed']
     assert git(remote, 'rev-parse', 'develop').stdout.strip() == merged
     git(repo, 'merge-base', '--is-ancestor', local, 'develop')
@@ -174,7 +177,7 @@ def test_pr_finish_waits_then_resumes_idempotently(python_exe, tmp_path, monkeyp
         from mdf_core.foundation.yamlutil import read_frontmatter
         assert read_frontmatter(work / 'docs/proposals' / PRP_NAME)[0]['status'] == 'implemented'
     merged = platform.merge(1, tmp_path)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))
     assert result['completed'] and result['merge_commit'] == merged
     assert not git(work, 'branch', '--show-current').stdout.strip()
     assert not git(repo, 'for-each-ref', 'refs/heads/' + first['source']).stdout
@@ -182,7 +185,7 @@ def test_pr_finish_waits_then_resumes_idempotently(python_exe, tmp_path, monkeyp
         assert git(remote, 'rev-parse', 'v1.2.1^{}').stdout.strip() == merged
         git(remote, 'merge-base', '--is-ancestor', merged, 'develop')
     snapshot = git(remote, 'show-ref').stdout
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))['completed']
+    assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source']))['completed']
     assert git(remote, 'show-ref').stdout == snapshot
 
 
@@ -221,7 +224,7 @@ def test_publish_keeps_tag_on_fixed_merge_after_master_advances(python_exe, tmp_
     (other / 'later.txt').write_text('后来的发布\n')
     commit(other)
     git(other, 'push', 'origin', 'master')
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['completed']
     assert git(remote, 'rev-parse', 'v1.2.1^{}').stdout.strip() == merged
     assert git(remote, 'ls-tree', '-r', '--name-only', 'develop', 'later.txt').stdout == ''
@@ -236,7 +239,7 @@ def test_backmerge_conflict_stays_off_develop_and_resumes_directly(python_exe, t
     before = git(remote, 'rev-parse', 'develop').stdout
     payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
-    result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['status'] == 'published_pending_backmerge' and not result['completed']
     assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == result['source']
     assert git(remote, 'rev-parse', 'develop').stdout == before
@@ -244,7 +247,7 @@ def test_backmerge_conflict_stays_off_develop_and_resumes_directly(python_exe, t
     back = Path(result['backmerge']['worktree'])
     (back / 'src/service.py').write_text('future = True\nfixed = True\n')
     commit(back)
-    completed = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+    completed = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert completed['completed']
     assert len(platform.pulls) == 1
     assert git(remote, 'show', 'develop:src/service.py').stdout == 'future = True\nfixed = True\n'
@@ -255,11 +258,13 @@ def test_source_updates_reuse_existing_feature_pull(python_exe, tmp_path, monkey
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('fixed_after_review = True\n')
     commit(work)
+    from support_delivery import seed_consolidation
+    seed_consolidation(work)
     updated = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     assert updated['pull_request']['head'] != first['pull_request']['head']
     assert len(platform.pulls) == 1
     platform.merge(1, tmp_path)
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+    assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
 
 
 
@@ -293,7 +298,7 @@ def test_release_candidate_updates_original_pull_and_verification(python_exe, tm
     assert len(platform.pulls) == 1
     assert not git(remote, 'for-each-ref', 'refs/tags/v1.2.1').stdout
     merged = platform.merge(1, tmp_path)
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+    assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
     assert git(remote, 'rev-parse', 'v1.2.1^{}').stdout.strip() == merged
     assert git(remote, 'show', 'master:src/service.py').stdout == 'fixed_after_review = True\n'
 
@@ -319,6 +324,8 @@ def test_pull_update_response_loss_rechecks_platform_and_local_heads(python_exe,
     first = payload(mdf(python_exe, 'pr', '--repo', str(work)))
     (work / 'src/service.py').write_text('review_fix = True\n')
     commit(work)
+    from support_delivery import seed_consolidation
+    seed_consolidation(work)
     candidate = git(work, 'rev-parse', 'HEAD').stdout.strip()
     original = pull_finish.git
     def interrupted(repo_path, *args, **kwargs):
@@ -335,7 +342,7 @@ def test_pull_update_response_loss_rechecks_platform_and_local_heads(python_exe,
         assert failed.returncode != 0
     assert git(work, 'rev-parse', 'HEAD').stdout.strip() == candidate
     assert platform.get(1)['head'] == (candidate if accepted else first['pull_request']['head'])
-    result = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+    result = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work))
     if accepted:
         assert payload(result)['completed']
         assert git(remote, 'show', ('develop' if kind == 'feature' else 'master') + ':src/service.py').stdout == 'review_fix = True\n'
@@ -355,7 +362,7 @@ def test_merged_release_checks_source_before_publishing(python_exe, tmp_path, mo
     (work / 'src/service.py').write_text('late_change = True\n')
     if source_action == 'advance':
         commit(work)
-    result = mdf(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
+    result = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(repo), '--source', first['source'])
     assert result.returncode != 0
     assert not git(remote, 'for-each-ref', 'refs/tags/v1.2.1').stdout
     assert git(remote, 'rev-parse', 'develop').stdout == before
@@ -382,15 +389,15 @@ def test_candidate_material_identity_rejects_mismatch_and_duplicate(python_exe, 
     assert error.value.code == 'invalid_delivery'
 
 
-def test_dirty_target_stops_before_tag_and_preserves_source(python_exe, tmp_path, monkeypatch):
+def test_dirty_target_stops_cleanup_and_preserves_published_tag(python_exe, tmp_path, monkeypatch):
     repo, remote, work, platform = prepare(python_exe, tmp_path, monkeypatch)
     payload(mdf(python_exe, 'pr', '--repo', str(work)))
     platform.merge(1, tmp_path)
     (repo / 'dirty.txt').write_text('他人未提交的工作\n')
-    failed = mdf(python_exe, 'finish-gitflow', '--repo', str(work))
+    failed = finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work))
     assert failed.returncode != 0 and 'dirty_worktree' in failed.stderr
     assert (repo / 'dirty.txt').read_text() == '他人未提交的工作\n'
-    assert not git(remote, 'for-each-ref', 'refs/tags').stdout
+    assert git(remote, 'for-each-ref', 'refs/tags/v1.2.1').stdout
     assert git(work, 'branch', '--show-current').stdout.strip()
 
 
@@ -408,9 +415,9 @@ def test_tag_push_response_loss_does_not_retag(python_exe, tmp_path, monkeypatch
         return result
     with monkeypatch.context() as patch:
         patch.setattr(pull_publish, 'git', lost)
-        assert mdf(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
+        assert finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)).returncode != 0
     tagged = git(remote, 'rev-parse', 'v1.2.1').stdout
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+    assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
     assert git(remote, 'rev-parse', 'v1.2.1').stdout == tagged
 
 
@@ -427,10 +434,10 @@ def test_rejected_develop_push_preserves_pending_without_another_pull(python_exe
         return original(repo, *args, **kwargs)
     with monkeypatch.context() as patch:
         patch.setattr(pull_publish, 'git', rejected)
-        result = payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))
+        result = payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))
     assert result['status'] == 'published_pending_backmerge'
     assert work.is_dir() and git(work, 'branch', '--show-current').stdout.strip() == result['source']
     assert len(platform.pulls) == 1
     assert result['backmerge']['push_error'] == 'protected branch'
     assert 'pull' not in result['backmerge']
-    assert payload(mdf(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']
+    assert payload(finish_delivery(python_exe, 'finish-gitflow', '--repo', str(work)))['completed']

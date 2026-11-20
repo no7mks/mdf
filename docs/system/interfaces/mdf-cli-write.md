@@ -124,7 +124,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 - 要求 Git 根、clean worktree、`manifest.state: ready` 与 strict validation 零 error。
 - 必须提供 `--release-date`。
-- Core 只验证确定性审计；同次 `$mdf close-out` 的语义审阅与用户确认属于 intent 的职责。
+- Core 只验证确定性审计；consolidate 的语义审阅与对象处置属于 intent 的职责。
 
 收口输入：
 
@@ -166,7 +166,7 @@ github-flow（manifest 的 `workflow.model`）下基线改为 `workflow.trunk`�
 
 - feature、bugfix、release、hotfix、adhoc 均从 trunk 建分支并回到 trunk；`--from-master`、to develop、ODR 与 `dev-pr` 被拒绝。
 - `--from-commit <sha>`：release 的历史切点。要求位于 trunk 第一父链且晚于上一发布 tag；创建即冻结，之后不随 trunk 前进，
-  禁止 catch-up 引入切点之后的提交；publish 在集成前以固定的 `release_head` 打 tag 并推送，close-out 再核验其为 `<trunk>` 的 ancestor。
+  publish 在 target 集成前以验收完成的发布 commit 打 tag；随后工作分支可继续集成，close-out 核对 tag 已进入 trunk。
 - `--support <major.minor>`：hotfix 的维护线。多条发布线并存时必须显式指定。
   - 只有一条已发布线时可省略，自动走该 `support/<major.minor>`。
   - 没有任何发布 tag 时返回 `missing_release_tag`，应改走 `bugfix/*`。
@@ -273,16 +273,15 @@ python3 skills/mdf/scripts/mdf.py workflow ci --repo /path/to/repository --provi
 - `ci` 只读，按当前 workflow 返回需触发 CI 的分支（gitflow 为 develop 与 trunk；github-flow 为 trunk 与 `support/*`）
   及对应 provider 的渲染内容。
 
-## `release-integrate`
+## `incremental-integration`
 
 ```bash
-python3 skills/mdf/scripts/mdf.py release-integrate --repo /path/to/repository [--source release/1.2.3]
+python3 skills/mdf/scripts/mdf.py incremental-integration --repo /path/to/repository
 ```
 
-仅 github-flow 的 PR mode：release 与最新 `origin/<trunk>` 冲突时，在独立 `codex/integrate/release-<semver>` 分支合并并解决冲突，
-先完成 publish，再以该分支走 PR。已发布 final tag 保持原 release 的固定 `release_head`，集成分支用于后续主线对齐。
-- 集成提交的 `MDF-Release-Head` trailer 绑定发布 SHA，且必须与该提交的父节点一致。
-  纳入更新的 release 提交时如有冲突，解决后用 `git commit --no-edit` 保留 trailer。
+把 target 合回当前工作分支并返回增量 plan。解决冲突、incr-cr、verify smart、incr-fa 和适用的
+incr-consolidate 完成后，传 `--complete --reviewed-head <sha> --summary <结论>` 记录验收，再继续 merge/pr。
+github-flow 发布后的工作分支可以继续前进，final tag 保持固定发布 commit。
 
 ## `to`
 
@@ -354,70 +353,44 @@ python3 skills/mdf/scripts/mdf.py pre-gitflow-finish --repo /path/to/repository 
 - 不要求新建 Markdown 执行记录；没有实际改动时不制造文档或提交。
 - `finish-gitflow` 不触发此 hook；独立 fact 维护与 migrate 不触发。
 
-## `finish-gitflow`
+## `merge` 与 `finish-gitflow`
 
 ```bash
-python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py merge --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository [--source <source>]
 ```
 
-要求当前分支为支持的交付分支、worktree clean；普通分支归 adhoc，主线及内部角色不独立收口。
+- merge 为 local 的实际合入入口，先把 target 合回工作分支，有增量则返回 incremental-integration。
+- 验收完成后 no-ff 合入目标。发布交付推送实际主线 merge commit，保留 source 与 owner worktree。
+- feature / bugfix 合入后进入 close-out；Gitflow 发布交付先 publish，github-flow 发布交付已在 merge 前 publish。
+- finish-gitflow 核验已完成的合入和适用的远端 annotated tag，完成 Gitflow develop 回合，再清理 source。
+- PR mode 的实际合入由 pr 完成，finish-gitflow 只接受已 merged 的恢复。
+- 清理前核对 source tip 和目标拓扑，脏工作区、未完成 Git 操作或并发新增 source 提交均保留现场。
+- CLI 保留临时 worktree 供结果核验。Agent 按 [工作区清理](../../../skills/mdf/references/close-out.md#工作区清理) 完成清理。
+- 相同 hotfix slug 的不同版本保留独立 merge 记录；恢复旧版本可传 --version 或 PR 的 --pull。
 
-- 在 fetch、合并或发布记录写入前，一次性只读检查源与全部目标 worktree。
-  feature/bugfix/adhoc 检查 develop；release/hotfix 检查 master、develop。
-- 任一工作区有未提交改动或 `MERGE_HEAD` 等未结束操作即以 `dirty_worktree` 停止。
-  即使冲突已解决、已 add 或 diff 为空也保留现场；不为 clean 自动 abort、reset、stash 或 Commit。
-- 无关分支的脏状态不阻断 close-out，也不被整理。
+## `consolidate`
 
-外层 close-out intent 的前置流程（由 intent 执行，CLI 不代为集成或审查）：
+```bash
+python3 skills/mdf/scripts/mdf.py consolidate --repo /path/to/repository [--incremental]
+```
 
-1. 先在交付分支集成 develop（feature/bugfix/adhoc）或 master（release/hotfix），
-   由 Agent 自动尝试解决集成冲突。
-2. 集成产生新提交后：
-   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
-   - 否则执行 1 人增量新一轮 code-review 与所需 suite。
-3. 再核对本轮 1 份审查、主 Agent 复核与验证记录。
-4. 写入、检查并提交 `delivery-summary.html`；adhoc 的总结直接写入 Change。
+- 整理并提交前置准备好的 Change、总结、对象状态与版本材料。
+- feature 的 PRP 准备 implemented；已验证 Bug 准备 fixed；ODR 仍由统一验收确认 PRP。
+- release / hotfix 的版本聚合调用 release-closeout，可传发布日期、closures 和 hotfix 实际结果 JSON。
+- 校验文档与对象一致性，提交本次拥有的路径，自勾 consolidate，保留其他写入者的改动。
+- --incremental 用于 merge/pr 内的 incr-consolidate，更新当前交付材料后记录本轮收敛结果。
 
-非 feature 的语义审查记录由 intent 核对，finish-gitflow 不代替此检查。
+## `publish`
 
-feature/bugfix/adhoc：
+```bash
+python3 skills/mdf/scripts/mdf.py publish --repo /path/to/repository [--source <source>] [--pull <id>]
+```
 
-- 不 fetch、不 push。
-- 以 `--no-ff --no-commit` 合并到本地 `develop`，再以
-  `chore(gitflow): 合并 <source> 到 <target>` 提交。
-  - feature 的 implemented 转换包含在该 merge commit。
-  - 有账本 adhoc 要求清单完成；无账本不创建 delivery/objectives，核规范 Change。
-  - adhoc Change 可为 adhoc 或 fix，source_branch 保留真实名称且 `proposals: []`；不修改 PRP。
-- 角色分支或 worktree 仍在则失败。
-
-adhoc 的状态与恢复：
-
-- `adhoc-status --repo <owner> [--slug <slug>] [--source <source>]` 返回材料模式、目录及实际完成证据。
-- 无账本时还返回 range、paths；材料目录冲突不覆盖，smart report 使用同一目录。
-- 待合入的无账本 PR 还返回 `verification`（`smart`、`quick` 或 `smoke`）。接管来源与验收见
-  [Develop PR](../../../skills/mdf/references/dev-pr.md) 与 [Trunk PR](../../../skills/mdf/references/trunk-pr.md)。
-- local 根据目标的双亲 merge、源 ref 和 Change 核验 `finish-gitflow --source <source>`。
-  - 恢复核实际双亲 merge、源 tip 与目标第一父链；不重复 merge，不删除重新创建的源 ref。
-- 主 worktree 能切回 develop 时切回，否则 detach；独立 owner 保留在交付 tip。
-- PR mode 可接管只有规范 Change 的已合并外部 PR；先核平台 source/target/head，再续办清理。
-
-release/hotfix：
-
-1. 要求 origin，先 `fetch --prune`，并要求本地 `master` 与远端完全一致
-   （不要求源分支有 upstream）；`develop` 只要求本地 worktree clean，不核对远端。
-2. 先同样合并到 `master`，创建带注释的 `v<version>` tag，再把 `master` 合并到 `develop`。
-3. 最后原子推送 `master` 和 tag，删除本地源分支；`develop` 仅在本地合回，不推送。
-   - 不推送、不删除远端 `release/*`/`hotfix/*`。
-
-通用：
-
-- 合并/发布成功后，将源 worktree 切为 `detached HEAD`，删除本地源分支，保留工作区后退出。
-- JSON 含 `retained_worktree`（保留路径，无则为 null）与 `primary_worktree`（主路径）。
-- Agent 完成核验、Goal 与报告后默认删除临时 owner 和 backmerge worktree，不再单独确认。
-  - 从主 worktree 执行不带 `--force` 的 `git worktree remove`，报告结果并结束本对话。
-  - 主 worktree、planning/deploy 与失败现场保留；清理失败不影响已完成交付。
-  - 身份核对、恢复定位和执行顺序见 [工作区清理](../../../skills/mdf/references/close-out.md#工作区清理)。
-- ⚠️ 本次新产生的 merge 冲突才会 abort，不会推送或删除分支；Git 拒绝开始合并时保留现场。
+- Gitflow 给实际 merge commit 打 tag；github-flow 给已完成 consolidate 的工作分支 commit 打 tag。
+- annotated tag 正文取固定 commit 的本版 CHANGELOG，空章节、空条目或不符的已有 tag 均拒绝发布。
+- github-flow 原子推送工作分支和 tag，并核对同名远端的 expected SHA 与实际 pre-push 更新清单。
+- Gitflow 在 merge 之后推送 tag。发布成功后由 workflow 决定进入 merge/pr 或 close-out。
 
 ## `upgrade`
 
@@ -459,7 +432,7 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
 
 - `--manual` 仅支持 feature，与 `--proposal`、`--bug`、`--version` 互斥。
 - `--name` 为已确认的 kebab-case slug；roster 固定 `0,0,1`。
-- objectives 依次为 start、人工工作、lint、code-review、verify smoke、fact update、catch-up。local 模式另含 close-out。
+- objectives 依次为 start、人工工作、lint、code-review、verify smoke、fact update、catch-up、consolidate。
   start 时仅 start 已勾；人工工作由用户显式勾选。
 - 创建 owner worktree，写入 `manual: true` 与 `needs_design: false`，不写 proposal。
-- finish-gitflow 要求清单全部完成，Change 不引用 PRP；合入 develop 不更新 PRP。
+- merge/pr 要求前置清单完成；人工 feature 的 Change 不引用 PRP，实际合入保持其他 PRP 状态。

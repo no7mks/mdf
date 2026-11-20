@@ -70,7 +70,7 @@ def test_finish_preserves_develop_origin_merge(python_exe, tmp_path, kind, resol
         git(repo, "add", "src/service.py")
     before = snapshot(repo)
     remote_before = git(remote, "show-ref").stdout
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "dirty_worktree" in result.stderr
     assert snapshot(repo) == before
     assert git(remote, "show-ref").stdout == remote_before
@@ -85,7 +85,7 @@ def test_publish_checks_dirty_develop_before_changing_master(python_exe, tmp_pat
     (repo / "src/service.py").write_text("未提交的 develop 工作\n")
     before = snapshot(repo)
     remote_before = git(remote, "show-ref").stdout
-    result = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    result = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert result.returncode != 0 and "dirty_worktree" in result.stderr
     assert snapshot(repo) == before
     assert git(remote, "show-ref").stdout == remote_before
@@ -110,7 +110,7 @@ def test_publish_merges_develop_locally_without_remote_requirement(
         git(remote, "update-ref", "-d", "refs/heads/develop")
     local_develop = git(repo, "rev-parse", "develop").stdout.strip()
     remote_develop = git(remote, "for-each-ref", "refs/heads/develop").stdout
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["pushed"] is True
     master = git(repo, "rev-parse", "master").stdout.strip()
     assert git(repo, "show", "-s", "--format=%P", "develop").stdout.split() == [

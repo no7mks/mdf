@@ -16,7 +16,7 @@
   - `--origin-run <id>` 补充已确认的发起 PR/MR 或执行 merge 的 run/pipeline ID，可重复传入。允许 skipped 或 neutral 时使用 `--allow-skipped`。
   - `--handled-review <id>` 可重复传入已完成返工的 `change_requests` ID。平台 review 状态仍保留在快照。
   - `merged` 表示通过 Git 合并核验和关联 CI 即时复查。随后用 `pr` 确认交付现场并交接 close-out。
-  核验实际 merged 后返回 completed=true、status=merged、next_intent=close-out，不发布或清理。
+  核验实际 merged 后返回 completed=true、status=merged；Gitflow 发布交付的 next_intent 为 publish，其余为 close-out。
 - `finish-gitflow --repo <repo> [--source <source>] [--pull <id>]` 在 pr 模式支持所有交付 kind 的恢复。
 - 返回 mode、completed、status、pull_request、merge_commit、backmerge、tag、deleted、remote_deleted 与工作区路径。
 - finish-gitflow 仅续办 merged 后的操作；未 merged 返回 pr_not_merged，不创建/更新 PR。
@@ -103,6 +103,6 @@ code-review against 要求 clean；fact audit against / `--scope branch` 比较�
 
 ### Release 集成审查
 
-- `codex/integrate/release-<version>` 的 review-context 复用对应 release 材料，返回 `kind: integration`。
-- `delivery_base` 固定为已发布 final tag 的 commit，审查覆盖发布后主线集成的增量。
-- 集成 worktree 支持 catch-up-plan、delivery route、smart verify 与 catch-up 自勾，记录提交在集成分支。
+- github-flow 发布后，review-context 继续使用原 release 分支与其材料。
+- delivery_base 为已发布 final tag 的 commit，审查覆盖发布后在原分支完成的 target 集成增量。
+- incremental-integration、smart verify 和增量报告均在原工作分支执行与提交。

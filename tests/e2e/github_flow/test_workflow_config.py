@@ -354,7 +354,7 @@ def test_gitflow_main_pr_closeout_publishes_to_trunk(python_exe, tmp_path, monke
     opened = payload(mdf(python_exe, "pr", "--repo", str(work)))
     assert opened["status"] == "waiting_for_merge"
     platform.merge(1, tmp_path)
-    done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    done = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert done["completed"] is True
     assert "main" in done["targets"] and "master" not in done["targets"]
     assert git(remote, "rev-parse", "--verify", "refs/heads/main").returncode == 0

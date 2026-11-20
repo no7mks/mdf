@@ -78,9 +78,11 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf dev-pr [<slug>]` | 将 develop 未共享工作移到 adhoc，检查通过后创建 PR |
 | `$mdf trunk-pr [<slug>]` | 接管 github-flow 的本地 trunk 提交，纯项目记录走 `pm/*`，其余走 `adhoc/*`，再经 PR |
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
-| `$mdf sync-remote` | 发布前同步远端同名 release 并增量验收 |
-| `$mdf publish` | github-flow release 在集成前创建并推送 final tag |
-| `$mdf close-out` | local 材料与 Gitflow 收口；PR mode 仅 merged 后续办 |
+| `$mdf catch-up` | 同步远端同名工作分支并增量验收 |
+| `$mdf consolidate` | 收敛交付文档、对象状态和版本材料 |
+| `$mdf merge` | non-PR 模式下合回 target、增量验收并实际合入 |
+| `$mdf publish` | 给固定发布 commit 创建带本版说明的 annotated tag 并推送 |
+| `$mdf close-out` | 核验合入与发布结果、完成适用回合、清理分支和 worktree |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--against] [--quick]` | 只读事实审阅；`--quick` 只跳过 LLM |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
@@ -101,7 +103,13 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 
 统一骨架：
 
-`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact → catch-up → [pr（仅 PR mode）] → close-out`
+`start → [design?] → 开发 → converge → lint → code-review → verify branch → fact`
+
+| 交付类型 | 后段顺序 |
+| --- | --- |
+| Gitflow 发布交付 | catch-up → consolidate → merge/pr → publish → close-out |
+| github-flow 发布交付 | catch-up → consolidate → publish → merge/pr → close-out |
+| feature / bugfix | catch-up → consolidate → merge/pr → close-out |
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
 - converge 做 smart 验收；实际执行的 feature/release converge 另验可选 coverage。
@@ -126,21 +134,21 @@ github-flow 下所有交付从 trunk 出发并回到 trunk，不支持 ODR、`--
   - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
 - github-flow 的独立项目记录在本地 trunk 编辑并提交。PR mode 发 PR 时由 `trunk-pr` 接管整批提交。
   范围和命令见 [项目记录](skills/mdf/references/common.md#项目记录)。
-- github-flow release 按 `fact → sync-remote → publish → catch-up → pr（PR mode）→ close-out` 推进，final tag 在集成前发布。
-- release 与 trunk 冲突时用 `release-integrate` 经集成分支走 PR。
+- github-flow release 按 `fact → catch-up → consolidate → publish → merge/pr → close-out` 推进，final tag 在集成前发布。
+- merge/pr 先把 target 合回工作分支，有改动时完成 incremental-integration，再实际合入。
 - `workflow switch` 只在空闲态切换模型或 trunk；`workflow ci` 按当前配置渲染 CI 分支。
 
 ### Clear commit 与确定性规划
 
 - Git common dir 的 `mdf/clear-commits.json` 共享 smoke、release、code-review、fact-audit 各自最近通过的 commit。
 - 比较记录与当前内容，不要求 ancestor。dirty 照常读取作比较起点，执行检查，保留原记录。
-- `catch-up-plan` 按 merge 拓扑独立给出 review、verify、fact 三路动作；`review-prepare` 给出审查左端点、未审净增量与体积。
-- `delivery route` 返回等待状态；`delivery complete-stage` 只自动完成 verify 与 catch-up，且不连带提交无关暂存内容。
+- `incremental-integration-plan` 按 merge 拓扑独立给出 review、verify、fact 三路动作；`review-prepare` 给出审查左端点、未审净增量与体积。
+- `delivery route` 返回等待状态；`delivery complete-stage` 只自动完成 verify，且不连带提交无关暂存内容。
 
 ### 延迟选择发布路径
 
 feature 可使用 `$mdf start --from-master`，支持 `--manual`。
-显式 `--target` 不重复确认；未指定时询问，可暂不决定，但须在 catch-up 前确定。
+显式 `--target` 不重复确认；未指定时询问，可暂不决定，但须在 incremental-integration 前确定。
 
 - 目标为 develop 或具体 `on-demand-release/<version>`。
 - ODR 从 master 创建，支持 MDF feature、master 起点的非 MDF 分支、cherry-pick 与直接工作；按范围及证据验收。
@@ -193,9 +201,9 @@ fact audit 共用核：`resolve-base → diff → must-cover → stale → uncov
 ### close-out 与 deliver
 
 项目可选 PR/MR 收口：在 manifest 配置 `closeout: {mode: pr, provider: github}`（或 gitlab）。
-PR mode 的 objectives checklist 止于 catch-up；pr 与 close-out 按实际状态续办。
+交付清单止于 consolidate，github-flow 发布交付还包含 publish；之后按实际 Git 状态续办。
 pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
-实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；close-out 只负责后续发布、backmerge、清理与最终核验。
+实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；Gitflow 发布交付先完成 publish，close-out 再负责适用 backmerge、清理与最终核验。
 完整交付继续执行 close-out；默认 deliver 走完 close-out，非 yolo 在 pr、close-out 前分别取得用户确认，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 

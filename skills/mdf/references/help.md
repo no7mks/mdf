@@ -168,7 +168,7 @@ $mdf verify --scope branch
 $mdf code-review
 $mdf fact update
 $mdf fact update --scope full
-$mdf catch-up
+$mdf incremental-integration
 $mdf close-out
 $mdf squash
 $mdf fact audit
@@ -190,7 +190,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
-  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`sync-remote`、`publish`、`catch-up`、`pr`、`close-out`
+  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`catch-up`、`consolidate`、`merge`、`publish`、`incremental-integration`、`pr`、`close-out`
 - 维护：`archive`、`fact audit`、`prettify`、`upgrade`；
   `to`、`dev-pr`、`trunk-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -276,7 +276,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf start`
   - 用法：`$mdf start` 或 `$mdf start --manual`；可带 `--roster`、`--*-strategy`、`--*-model`
   - 人工 feature：无 PRP，先经 clarify 询问，再建议并确认 slug；固定 roster `0,0,1`。
-    - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → catch-up → close-out。
+    - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → catch-up → consolidate → merge/pr → close-out。
     - 人工工作仅由用户显式勾选，允许 Agent 介入。
   - 用途：按 Gitflow 创建本地交付分支。
   - 说明：
@@ -292,7 +292,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf adhoc [<工作描述>]`
   - 用法：`$mdf adhoc 更新配置说明`；省略描述时从已有 adhoc 的 work 或已明确对话恢复。
   - 用途：在独立 worktree 连续完成临时小工作；slug 与七项 objectives 直接生成。
-  - 顺序：工作 → lint → code-review → verify smart → fact audit/update → catch-up → close-out。
+  - 顺序：工作 → lint → code-review → verify smart → fact audit/update → catch-up → consolidate → merge/pr → close-out。
   - 说明：固定 roster `0,0,1`，不绑定 PRP；local 模式本地 no-ff 合入 develop，成功收尾后默认删除临时 worktree。
     PR mode 提交 PR/MR，实际合并并完成清理后才完成交付。
 - `$mdf design`
@@ -358,18 +358,23 @@ $mdf clarify 要不要把缓存放到 Redis
   - 用途：按实现对齐当前事实，再修范围内结构 finding，并委托事实审阅。
   - 说明：独立默认 `branch`；`full` 整理知识面全树。主链只用 branch/paths；
     release `--base` 为上一正式发布。独立调用须 manifest ready。
-- `$mdf sync-remote`
-  - 用法：`$mdf sync-remote`
+- `$mdf catch-up`
+  - 用法：`$mdf catch-up`
   - 发布前同步远端同名 release，完成新增内容的增量审查、验证和事实补检。
+
+- `$mdf consolidate`
+  - 收敛交付文档、对象状态和版本材料，完成适用的归档与提交。
+- `$mdf merge`
+  - non-PR 模式先合回 target 并增量验收，再实际合入。
 
 - `$mdf publish`
   - 用法：`$mdf publish`
-  - github-flow release 完成基线后创建并推送 final tag，再进入 catch-up 和主线集成。
+  - github-flow release 完成基线后创建并推送 final tag，再进入 incremental-integration 和主线集成。
 
-- `$mdf catch-up`
-  - 用法：`$mdf catch-up`
+- `$mdf incremental-integration`
+  - 用法：`$mdf incremental-integration`
   - 用途：在基线 lint、code-review、verify、fact 已通过后，仅对远端合入或收尾返工的改动文件做增量补检。
-  - 说明：严禁退勾已过基线四项，严禁跑全量 verify branch / 全员 code-review / 全量 fact audit；再次触发更新只退勾 catch-up。
+  - 说明：严禁退勾已过基线四项，严禁跑全量 verify branch / 全员 code-review / 全量 fact audit；再次触发更新在 merge/pr 内继续增量验收。
 - `$mdf pr`
   - 用法：`$mdf pr`
   - PR mode 专用；创建或更新 PR/MR，等待 CI/review，修复反馈，merged 后完成 Goal。

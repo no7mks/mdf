@@ -79,7 +79,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 
 ## 工作流（唯一执行契约）
 
-- PR mode 的 pr 在当前调用内等待平台合并，每 2 分钟查询结果，合并后按入口确认策略续办 close-out。
+- PR mode 的 pr 在当前调用内等待平台合并，每 2 分钟查询结果，合并后先完成适用 publish，再按入口确认策略续办 close-out。
   正常等待不属于外部阻塞；`waiting_for_merge` 时不结束当前调用、不进入步骤 5，也不要求用户再次调用。
   completed=false 时不声明交付/Goal 完成；等待与恢复细则见 [PR](pr.md)。
 
@@ -114,16 +114,16 @@ checklist 勾选选型（release 另读 `has_dev`；不靠 `0,0` 发明开发阶
 
 ## 术语与数据结构
 
-PR mode 的 checklist 到 `catch-up` 为止。前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
-merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验，通过后才选择 close-out。
+清单止于 consolidate，github-flow 发布交付还包含 publish。前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr、适用的 publish 或 close-out。
+merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr.md#当前调用内轮询) 核验，通过后按 workflow 选择适用 publish 或 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 Select 读取 `delivery route` 的 `next` 与 `state`：
 
 - `--yolo` 下 design 为 `ready`；非 yolo 的 design 为 `awaiting_design_approval`。
-- PR mode 清单勾完后，`delivery route` 返回 `pr`。Agent 以平台、关联 CI 和实际收口结果判断是否还需执行 `pr` 或 `close-out`。
+- PR mode 清单勾完后，`delivery route` 按实际合入和 tag 返回 merge/pr、publish 或 close-out；Agent 再核平台与关联 CI。
 - local 通过目标合并历史、适用的 tag 和实际 source refs 核验收口。
-- `delivery complete-stage` 只自动完成 verify 与 catch-up，且须在 owner worktree、无进行中的 merge。
+- `delivery complete-stage` 只自动完成 verify，且须在 owner worktree、无进行中的 merge。
 
 ### 目标与持续授权
 
@@ -138,7 +138,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 
 - 无截止点时，gitflow 的 local feature 完成本地已选目标合并，bugfix/adhoc 完成本地 develop 合并。
   - github-flow 的 local 交付合入 `workflow.trunk`，不使用 develop。
-  - PR mode 核对远端目标合并与清理。release/ODR/hotfix 包含 close-out 规定的 tag 与发版推送。
+  - PR mode 核对远端目标合并与清理。release/ODR/hotfix 包含 publish 的 tag 与发版推送，以及 close-out 的适用回合。
 - 只完成当前一个交付，不自动启动下一个 PRP、Bug 或 release。
 - 用户明确限制提交、推送或只读时遵守限制。
   - 与 close-out 完成条件冲突时说明并询问，不能声称完成。
@@ -288,12 +288,12 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | verify branch 已勾、fact audit 未勾且无待修复结论 | 核 hook 状态；委托 fact-audit，返回 Select |
 | fact audit 已报告可修 finding，尚未通过 | 核 until 后委托 fact-update，按其内部审阅交接 |
 | PR mode 的 ODR 已完成 fact、统一验收未勾 | 按 [统一验收](late-decision.md#纳入-checkpoint-与统一验收) 执行 `delivery accept`，返回 Select |
-| sync-remote 未勾（github-flow release） | 委托 `references/sync-remote.md`，在本步骤内同步并增量验收，保留基线四项 `[x]` |
-| publish 未勾（github-flow release） | 委托 `references/publish.md`，发布 final tag 后回 Select |
-| fact 已勾、publish 已完成或不适用、catch-up 未勾 | 委托 `references/catch-up.md`（仅对改动文件做增量补检；严禁退勾已过基线四项或全量重跑） |
-| catch-up 已勾、PR mode 且 pr 尚未完成 | 委托 `references/pr.md`，等待 merged、合并核验与关联 CI 收尾通过；完成后回 Select |
-| catch-up 已勾、local 或 pr 已实际完成，close-out 尚未实际完成 | 在 owner 委托 `references/close-out.md`；全勾但 Git 未完成也续办 |
-| close-out 实际完成 | 进入 5，不因 owner 已 detached 而重新识别新任务 |
+| catch-up 未勾 | 委托 `references/catch-up.md`，同步远端同名分支并增量验收 |
+| consolidate 未勾 | 委托 `references/consolidate.md`，收敛材料和对象状态 |
+| github-flow 发布交付且 publish 未完成 | 委托 `references/publish.md` |
+| merge/pr 未完成 | 按模式委托 `references/merge.md` 或 `references/pr.md`，内部完成 target 集成与增量验收 |
+| Gitflow 发布交付已 merged，publish 未完成 | 委托 `references/publish.md`，发布实际 merge commit |
+| 合入与适用 publish 已完成，close-out 尚未实际完成 | 委托 `references/close-out.md`，核验、回合及清理 |
 
 剩余工作与失败处理：
 
@@ -301,9 +301,9 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
   非文档改动退勾后回到本表补审补测；已执行的 hook 不因补测或 fact 重审而重跑。
 - release/ODR/hotfix 可修 Bug：不另开 bugfix，不写 bugfix child Change。
 - 步骤 3 的被委托 intent 完成后返回 2；各 intent 的“结束”只结束该次内部委托，不结束 deliver。
-- close-out 返回「待主链外续办」时结束该调用栈并返回 Select；保留已齐审查与修复窗。
-  - 只退勾 `catch-up`，在 close-out 外委托 `catch-up` 增量补检改动文件后再续办收口；不在 close-out 内绕跑 verify，严禁退勾已过基线四项。
-  - PR/MR 轮询收到可修 review/CI 反馈或冲突时同样只退勾 `catch-up` 并返回 Select；经 `catch-up` 增量补检后更新原 PR/MR，继续轮询。
+- merge/pr 的 target 前进、review/CI 反馈与冲突，在该调用内继续 incremental-integration。
+  增量验收通过后更新原 PR/MR 或重试本地 merge，保留已通过的基线步骤。
+- close-out 的 backmerge 返工按 pr-close-out 的回合验收规则续办，完成后继续核验和清理。
 
 - 内部委托到 until 时逐层返回截止点与未完成子步骤，直接进入 5；不把截止当作失败或自动重试。
 - fact audit 的可修 finding 交回 Select；外部阻塞、缺证据或低 confidence 待确认不擅自启动 fact update。

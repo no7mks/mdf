@@ -18,7 +18,7 @@ def prepare(python_exe, tmp_path, *, version="1.3.0"):
     work = start_feature(python_exe, repo, tmp_path, "--target", data["branch"])
     (work / "feature.py").write_text("value = 1\n")
     commit(work)
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     return repo, remote, odr, work
 
 
@@ -35,7 +35,7 @@ def test_new_feature_commits_require_new_odr_acceptance(python_exe, tmp_path, mo
     (work / "feature.py").write_text("value = 2\n")
     commit(work)
     if mode == "local":
-        payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+        payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     else:
         from support_pull import Platform
         from mdf_core.lifecycle.pull_finish import sync_local

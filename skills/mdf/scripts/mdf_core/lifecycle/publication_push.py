@@ -21,7 +21,7 @@ def push_release(repo, source, head, tag_ref, expected_remote):
             "updates = [line.split() for line in data.decode().splitlines()]\n"
             f"expected = {[head, branch_ref, expected_old]!r}\n"
             "if not any(len(row) == 4 and row[1:] == expected for row in updates):\n"
-            "    sys.stderr.write('release ref 未参与预期的原子更新；重新执行 sync-remote\\n')\n"
+            "    sys.stderr.write('release ref 未参与预期的原子更新；重新执行 catch-up\\n')\n"
             "    sys.exit(1)\n"
             f"original = {original_hook!r}\n"
             "if original:\n"

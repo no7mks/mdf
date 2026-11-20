@@ -67,7 +67,7 @@ ODR 是独立发布 kind，除本页规定的起点、范围与等待 checkpoint
 
 - start 事件允许尚无 delivery.json；步骤 2 只准备输入，由 start 创建分支与材料。
 - feature 的 design、code-review、verify、fact 不要求具体 target；步骤 3、4 不适用。
-- feature 的 catch-up、未合并 pr、local close-out 在集成前执行步骤 3。
+- feature 的 incremental-integration、未合并 pr、local close-out 在集成前执行步骤 3。
   - 已合并 PR 的 close-out 只核对原 PR 与远端合并历史；不重新选择目标，也不要求目标 ODR 尚在途。
 - ODR start 不执行步骤 4；next / deliver 恢复及后续阶段在 owner 执行步骤 4。
   - deliver 先核 until；被截止时直接返回，不勾 checkpoint 或推进后续阶段。
@@ -87,16 +87,16 @@ ODR 是独立发布 kind，除本页规定的起点、范围与等待 checkpoint
 
 ### Catch-up 前确定目标
 
-local close-out 与 PR mode 的 pr 均须在 catch-up 目标前应用本节；独立 catch-up 也不能绕过。
+local close-out 与 PR mode 的 pr 均须在 incremental-integration 目标前应用本节；独立 incremental-integration 也不能绕过。
 
 - 读取 `delivery.json` 的 `base_branch` 与 `target`；已确认的具体目标直接复用。
 - 尚未确定时询问；deliver 的 yolo 使用入口已确认的选择或授权的自动裁定，不在中途询问。
 - 仅在补齐或改变目标时，在 owner clean 下运行 `delivery target --repo <owner> --target <具体目标>`。
   - 退出 0 后回读 target 并提交 delivery.json；失败保留现场，未提交不得进入集成。
   - 已有相同具体 target 直接复用，不重复调用 setter；PR 创建后只核原目标，不触发 target_locked。
-- 核对目标 worktree、实际 Git 历史、PRP 依赖和发布范围，再按原流程 catch-up、补审补验。
+- 核对目标 worktree、实际 Git 历史、PRP 依赖和发布范围，再按原流程 incremental-integration、补审补验。
 
-- feature → develop：catch-up develop 后合入 develop；不自动创建 release。
+- feature → develop：incremental-integration develop 后合入 develop；不自动创建 release。
 - feature → ODR：目标 ODR 必须已 start，且本 feature 在其纳入清单内。
   - 纳入只核对 master 来源、实际提交、依赖与已确认范围；组合验收在 ODR 执行。
   - local close-out no-ff 合入具体 ODR；PR mode 的 PR 以具体 ODR 为 base。
@@ -170,7 +170,7 @@ objectives 分别记录「核对发布范围纳入」与「ODR 统一验收」�
 - `delivery checkpoint --repo <owner>` 返回 ready、pending 与 features，不修改 checklist。
   - ready 仅表示范围已完整纳入；MDF feature 不要求 merge 源提交中存在 Change。
   - 非 MDF 来源检查固定 tip 或 commits 已纳入，不要求来源独立提供 review、tests、fact 证据。
-  - 检查起点以来未登记提交，包括 merge 冲突解决的额外改动；master 已发布历史可正常 catch-up。
+  - 检查起点以来未登记提交，包括 merge 冲突解决的额外改动；master 已发布历史可正常 incremental-integration。
   - ODR 自身材料、发布元数据与归档链接维护由 release 契约检查，Agent 仍审阅完整 diff。
 - pending 允许继续范围内工作；范围外变更、来源缺失与未发布依赖必须先处理。
 - ready 后在 ODR 对最终组合执行 lint、code-review、verify branch（release suite）与 fact audit。
@@ -179,7 +179,7 @@ objectives 分别记录「核对发布范围纳入」与「ODR 统一验收」�
 - 全部通过且材料提交后，在 clean ODR owner 执行 `delivery accept --repo <owner>`。
   - CLI 核纳入、ODR 阶段勾选、review/fact 报告、通过的 release suite 及 PRP 依赖。
   - Agent 负责确认报告中的语义结论与每项范围验收；文件存在不等于验收通过。
-  - 成功后仅更新所选 PRP 为 implemented，并勾选 ODR 统一验收。PR mode 提交后进入 catch-up；local 进入发布准备。
+  - 成功后仅更新所选 PRP 为 implemented，并勾选 ODR 统一验收。PR mode 提交后进入 incremental-integration；local 进入发布准备。
 - 发布就绪另核统一验收；release-closeout、ODR → master PR 与首次发布均不能仅凭纳入 ready 通过。
 - 验收时在 ODR objectives 记录已纳入范围的 Git 基线；不是报告 fingerprint 或新的 gate 文件。
   - local 纳入新提交时取消统一验收勾选；PR 同步后也须核对新来源是否超出该基线。

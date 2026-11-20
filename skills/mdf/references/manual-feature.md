@@ -38,7 +38,7 @@ ODR 按 release 工作流执行，起点与纳入 checkpoint 按该页；feature
 ## 工作流（唯一执行契约）
 
 PR 恢复优先：调用方先按 [PR 的恢复路由](pr.md) 核原 source 的 Git 和平台状态与返工备注。
-命中时按 PR 实际状态选择 pr 或 close-out，跳过下表的 delivery status；没有 PR 恢复时才按人工清单续办。
+命中时按 PR 实际状态选择 pr、适用的 publish 或 close-out，跳过下表的 delivery status；没有 PR 恢复时才按人工清单续办。
 
 仅 next / deliver 在 `delivery.json` 的 `manual` 为 true 时内部执行本工作流。
 start 与各阶段 intent 只读取下文对应条款，不执行本续办工作流。
@@ -53,13 +53,13 @@ next 在 Resume 内执行本表；deliver 在 Select 内执行 1–2，再在 Ex
 
 ## 术语与数据结构
 
-PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr 或 close-out。
+PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下文) 选择 pr、适用的 publish 或 close-out。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。
 
 ### PR mode 的收尾步骤
 
 按 [交付契约](delivery-contract.md#pr-mode-的收尾步骤) 生成和续办 objectives。
-PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
+交付清单止于 consolidate，github-flow 发布交付另含 publish；后续按实际 merge、tag 和清理结果推进。
 
 ### 身份与启动
 
@@ -69,7 +69,7 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
 - start 通过 clarify 确认工作范围及 slug；独立调用先询问再建议，deliver 按其 confidence 策略裁定。
 - 从 develop 创建 `feature/<slug>` 与独立 owner worktree；roster 固定为 `0,0,1`。
 - objectives 使用 `assets/templates/manual-objectives.md`。
-  - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → catch-up → [pr（仅 PR mode）] → close-out。
+  - 顺序：start → 人工工作 → lint → code-review → verify smoke → fact update → catch-up → consolidate → merge/pr → close-out。
 - start 自勾 start；人工工作仅由用户显式勾选，Agent 不得代勾。
   - 用户可要求 Agent 介入实现与测试；介入不代表人工工作已完成。
   - next / deliver 先恢复未完成的 start 步骤 5；完成后人工工作未勾才交接给用户，不代勾或越过。
@@ -81,7 +81,7 @@ PR mode 的 checklist 止于 `catch-up`；local 仍含 close-out。
   - deliver 的 until 排除内部 fact audit 时，fact update 返回截止点与未完成步骤，不代勾 fact update。
   - 进入前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；仅文档继续，
     其他改动先补 code-review 与 verify smoke；失败仅汇报，续办不重跑。
-- catch-up 仅对事实后增量改动文件执行补检（严禁退勾基线四项或全量重跑），通过后自勾 catch-up。
+- incremental-integration 仅对事实后增量改动文件执行补检（严禁退勾基线四项或全量重跑），通过后记录本轮增量验收完成。
 - close-out 核对上述前置项及报告；不要求 design、converge 或独立 fact audit 项。
   - Change 的 `proposals: []`；无 PRP 状态更新。
   - local 模式沿用 feature 的 no-ff 合入 develop、源分支删除及 worktree 保留规则。
@@ -112,7 +112,7 @@ PR mode 前置全勾后进入 pr 的 Prepare 或恢复阶段；合并核验与�
 | code-review | `references/code-review.md` | 1 人审查终稿、勾选与提交 |
 | verify smoke | `references/verify.md`，branch scope | 通过的 branch 报告、必要增量复审、勾选与提交 |
 | fact update | 先可选 hook，再 `references/fact-update.md` | 适用补审补测、事实同步、内部审阅、勾选与提交 |
-| catch-up | `references/catch-up.md` | 增量改动文件的补检（无增量直通）、勾选与提交 |
+| incremental-integration | `references/incremental-integration.md` | 增量改动文件的补检（无增量直通）、勾选与提交 |
 | pr（仅 PR mode） | `references/pr.md` | 实际 merged、合并核验与关联 CI 收尾通过 |
 | close-out | `references/close-out.md` | Change、实际 Gitflow 结果 |
 

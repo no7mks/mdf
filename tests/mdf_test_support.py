@@ -47,6 +47,7 @@ def write_release_objectives(
         "- [ ] verify branch\n"
         "- [ ] fact audit\n"
         "- [ ] catch-up\n"
+        "- [ ] consolidate\n"
         "- [ ] close-out\n\n"
         "## 工作线\n\n不联调\n\n"
         "本版收口与预发布验收。\n",
@@ -61,7 +62,7 @@ def write_work_objectives(
     path = tmp_path / name
     path.write_text(
         "# 目标\n\n- needs_design: no\n\n"
-        "- [ ] 修复\n- [ ] converge\n- [ ] verify branch\n- [ ] fact audit\n- [ ] catch-up\n",
+        "- [ ] 修复\n- [ ] converge\n- [ ] verify branch\n- [ ] fact audit\n- [ ] catch-up\n- [ ] consolidate\n",
         encoding="utf-8",
     )
     return path
@@ -418,3 +419,55 @@ def closeout_context_for(core, repo: Path, tmp_path: Path, slug: str):
         json.loads(spec_path.read_text(encoding="utf-8")),
     )
     return context
+
+
+def finish_delivery(python_exe, command, *args, **kwargs):
+    """生命周期测试显式编排 merge、publish、close-out 三个入口。"""
+    from mdf_core.workspace.gitutil import branch_details
+    from mdf_core.workspace.workflow_policy import is_github_flow
+    from mdf_core.workspace.merge_policy import configured
+    from mdf_core.workspace.squash import common_dir
+    from support_delivery import seed_consolidation
+    values = list(args)
+    repo = Path(values[values.index("--repo") + 1])
+    source = values[values.index("--source") + 1] if "--source" in values else git(repo, "branch", "--show-current").stdout.strip()
+    details = branch_details(source)
+    versioned = details["kind"] in {"release", "hotfix", "on-demand-release"}
+    mode = configured(repo)["mode"]
+    github = is_github_flow(repo)
+    from mdf_core.lifecycle.publish import merge_record_path
+    version = details.get("version")
+    if "--version" in values:
+        version = values[values.index("--version") + 1]
+    elif details["kind"] == "hotfix" and version is None:
+        from mdf_core.lifecycle.hotfix_version import delivery_record
+        candidate = delivery_record(repo, source)
+        version = candidate[1].get("version") if candidate else None
+        if version is None:
+            from mdf_core.lifecycle.hotfix_version import source_version
+            version = source_version(repo, source)
+    record = merge_record_path(repo, source, version)
+    current_tip = git(repo, "for-each-ref", "--format=%(objectname)", f"refs/heads/{source}").stdout.strip()
+    saved_head = json.loads(record.read_text()).get("head") if record.is_file() else None
+    needs_merge = not record.is_file() or (current_tip and current_tip != saved_head)
+    if mode == "local" and needs_merge:
+        seed_consolidation(repo)
+        if github and versioned:
+            from support_github_flow import publish_release
+            publish_release(python_exe, repo)
+        result = mdf(python_exe, "merge", *args, **kwargs)
+        if result.returncode and '"error": "integration_required"' in result.stderr:
+            seed_consolidation(repo)
+            result = mdf(python_exe, "merge", *args, **kwargs)
+        if result.returncode:
+            return result
+    if versioned and not github:
+        publish_args = list(args)
+        if "--version" in publish_args:
+            index = publish_args.index("--version")
+            del publish_args[index:index + 2]
+        existing = git(repo, "ls-remote", "origin", f"refs/tags/v{version}").stdout if version else ""
+        result = mdf(python_exe, "publish", *publish_args, **kwargs) if not existing else None
+        if result is not None and result.returncode:
+            return result
+    return mdf(python_exe, command, *args, **kwargs)

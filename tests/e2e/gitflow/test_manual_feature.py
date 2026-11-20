@@ -2,7 +2,7 @@
 from mdf_test_support import *  # noqa: F403
 from support_delivery import local_repo, commit
 
-STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "catch-up", "close-out")
+STEPS = ("start", "人工工作", "lint", "code-review", "verify smoke", "fact update", "catch-up", "consolidate")
 
 
 def objectives(done=False):
@@ -37,11 +37,11 @@ def test_manual_feature_start_and_finish_without_changing_prp(python_exe, tmp_pa
         "---\nchange_kind: feature\nsource_branch: feature/manual-work\nproposals: []\n---\n成果\n"
     )
     commit(work)
-    failed = mdf(python_exe, "finish-gitflow", "--repo", str(work))
+    failed = finish_delivery(python_exe, "finish-gitflow", "--repo", str(work))
     assert "manual_work_pending" in failed.stderr
     (root / "objectives.md").write_text(objectives(done=True))
     commit(work)
-    result = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    result = payload(finish_delivery(python_exe, "finish-gitflow", "--repo", str(work)))
     assert result["targets"] == ["develop"]
     assert git(repo, "show", f"develop:docs/proposals/{PRP_NAME}").stdout == before
     assert not git(work, "branch", "--show-current").stdout.strip()

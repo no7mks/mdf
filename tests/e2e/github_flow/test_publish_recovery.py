@@ -1,13 +1,15 @@
 """发布更新清单、hook 保留和阶段提交的恢复。"""
 from mdf_test_support import *  # noqa: F403
 from support_github_flow import error_of
-from test_sync_remote import prepared, complete
+from test_catchup import prepared, complete
 
 
 def ready(python_exe, tmp_path, monkeypatch):
     repo, remote, work, peer = prepared(python_exe, tmp_path, monkeypatch)
-    synced = payload(mdf(python_exe, "sync-remote", "--repo", str(work)))
+    synced = payload(mdf(python_exe, "catch-up", "--repo", str(work)))
     payload(complete(python_exe, work, synced["head"]))
+    from support_delivery import seed_consolidation
+    seed_consolidation(work, mark=True)
     return repo, remote, work, peer
 
 
@@ -34,8 +36,10 @@ def test_noop_release_update_cannot_publish_tag(python_exe, tmp_path, monkeypatc
     failed = mdf(python_exe, "publish", "--repo", str(work))
     assert failed.returncode != 0 and pushed
     assert run(["git", "rev-parse", "--verify", "v1.3.0"], cwd=remote).returncode != 0
-    synced = payload(mdf(python_exe, "sync-remote", "--repo", str(work)))
+    synced = payload(mdf(python_exe, "catch-up", "--repo", str(work)))
     payload(complete(python_exe, work, synced["head"]))
+    from support_delivery import seed_consolidation
+    seed_consolidation(work, mark=True)
     payload(mdf(python_exe, "publish", "--repo", str(work)))
 
 
@@ -83,7 +87,7 @@ def test_original_pre_push_hook_receives_same_updates(python_exe, tmp_path, monk
 
 def test_sync_completion_retries_and_remains_idempotent(python_exe, tmp_path, monkeypatch):
     _repo, _remote, work, _peer = prepared(python_exe, tmp_path, monkeypatch)
-    synced = payload(mdf(python_exe, "sync-remote", "--repo", str(work)))
+    synced = payload(mdf(python_exe, "catch-up", "--repo", str(work)))
     hook = hook_path(work, "pre-commit")
     hook.write_text("#!/bin/sh\nexit 1\n")
     hook.chmod(0o755)

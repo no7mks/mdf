@@ -149,11 +149,9 @@ def test_lint_failures_have_an_explicit_authorized_retry_path():
 
 
 def test_closeout_never_runs_nested_smart_to_finish_review():
-    review = workflow("code-review")
-    assert "close-out 委托且本轮修复需要 smart" in review
-    assert "不运行 verify，不洗终稿、不勾选" in review
-    assert "由主链外恢复原修复窗" in workflow("close-out")
-    assert "close-out 返回「待主链外续办」" in workflow("deliver")
+    assert "verify --scope" not in workflow("close-out")
+    assert "verify smart" in workflow("incremental-integration")
+    assert "merge/pr 内部" in workflow("incremental-integration")
 
 
 def test_all_public_commands_have_a_discoverable_help_topic():
