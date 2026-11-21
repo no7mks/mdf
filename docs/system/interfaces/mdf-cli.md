@@ -143,7 +143,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
 | `adhoc` | `start --kind adhoc --name`、`verify smart` 与 `finish-gitflow` |
 | `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
-| `to` | `to --target`：规划 ensure、develop 复用、deploy 检出 master、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
+| `to` | `to --target`：规划 ensure、develop 复用、deploy 按 workflow 创建或复用、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | `trunk-pr`：github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `sync` | `sync`：三大 trunk 预览确认后同步；多余分支只报告 | [仓库写入命令](mdf-cli-write.md) |

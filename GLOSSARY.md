@@ -141,12 +141,12 @@ gitflow 专用的 `planning` 分支与 `<repo-name>-worktrees/planning` worktree
 
 ## Deploy 工作区
 
-`<repo-name>-worktrees/deploy`。`$mdf to deploy` 创建或进入，并检出已有 `master`。
+`<repo-name>-worktrees/deploy`。`$mdf to deploy` 创建或进入。
 
-- 存放 gitignore 的 deploy config；不提交这些文件。
-- 已跟踪改动干净才从其他分支切回 master。
-- master 不存在，或已被其他 worktree 占用时停止。
-- close-out 不拆除这棵树。
+- github-flow 首次从本地 trunk 创建 detached HEAD；再次进入保留当前部署 commit，不占用 trunk。
+- gitflow 检出已有 master；已跟踪改动干净才从其他分支切回，master 不存在或被占用时停止。
+- 存放 gitignore 的 deploy config；不提交这些文件，close-out 不拆除这棵树。
+- 完整行为见 [To](skills/mdf/references/to.md)。
 
 ## Roster
 

@@ -68,7 +68,7 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
         return _payload(raw, "develop", "develop", path, False)
     if key in DEPLOY_ALIASES:
         path, created = _ensure_deploy(primary, trees)
-        return _payload(raw, "deploy", trunk_branch(primary), path, created)
+        return _payload(raw, "deploy", _show_branch(path), path, created)
     if is_github_flow(repo) and key.startswith("pm/"):
         from mdf_core.workspace.pm import rework_source
         work = trees.get(raw)
@@ -107,6 +107,8 @@ def _resolve(repo: Path, raw: str) -> dict[str, Any]:
 def _ensure_deploy(
     primary: Path, trees: dict[str, Path],
 ) -> tuple[Path, bool]:
+    if is_github_flow(primary):
+        return _ensure_detached_deploy(primary)
     DEPLOY_BRANCH = trunk_branch(primary)
     if not _exists(primary, f"refs/heads/{DEPLOY_BRANCH}"):
         raise MDFError(f"需要已有 {DEPLOY_BRANCH} 分支", code="missing_branch")
@@ -142,6 +144,28 @@ def _ensure_deploy(
         )
     run(["git", "checkout", DEPLOY_BRANCH], cwd=work)
     return work, False
+
+
+def _ensure_detached_deploy(primary: Path) -> tuple[Path, bool]:
+    path = sibling_worktree(primary, "deploy")
+    work = _worktree_at(primary, path)
+    if work is not None:
+        if _show_branch(work):
+            if _tracked_dirty(work):
+                raise MDFError(
+                    "deploy worktree 有已跟踪改动，不能切换到 detached HEAD",
+                    code="dirty_worktree", details={"worktree": str(work)},
+                )
+            run(["git", "checkout", "--detach", "HEAD"], cwd=work)
+        return work, False
+    branch = trunk_branch(primary)
+    if not _exists(primary, f"refs/heads/{branch}"):
+        raise MDFError(f"需要已有 {branch} 分支", code="missing_branch")
+    if path.exists():
+        raise MDFError("并行分支或 worktree 已存在", code="collision")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    run(["git", "worktree", "add", "--detach", str(path), f"refs/heads/{branch}"], cwd=primary)
+    return path, True
 
 
 def _show_branch(repo: Path) -> str:

@@ -89,7 +89,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
 | `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
-| `$mdf to <target>` | 进入目标 worktree；gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy` 检出 trunk |
+| `$mdf to <target>` | 进入目标 worktree；gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy`：github-flow 使用 detached HEAD，gitflow 检出 trunk |
 | `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；PR mode 的受保护增量走 PR/MR；其他分支只报告 |
 | `$mdf integrate` | 按工作线联调；collab-mode 由接手 Agent 直接调度两端 worktree |
 
