@@ -33,6 +33,10 @@
 - needs_design: {{MDF_NEEDS_DESIGN}}
 - has_dev: {{MDF_HAS_DEV}}
 
+`has_dev` 仅表示是否有计划内 owner 开发阶段；`no` 仅跳过 owner 开发与 converge。
+后续 code-review、verify 等阶段仍可为本版目标修复代码，按对应阶段复审与验证。
+修复不因此改写 `has_dev` 或补走 converge。
+
 ## 步骤
 
 依赖链由上到下；完成一项由对应 intent **自勾** `[x]`。

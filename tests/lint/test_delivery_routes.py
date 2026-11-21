@@ -295,7 +295,7 @@ def test_delivery_forces_worktrees_and_shared_design_base():
     assert "| release 缺 integrate checklist 项或正文未写工作线 |" in deliver
     assert "integrate" in deliver
     assert "| release 跨 worktree 联调且对端验收未通过 |" in deliver
-    assert "| release 联调且尚未确认无更多代码修改 |" in deliver
+    assert "| release 联调且尚未确认计划内开发与联调改动已完成 |" in deliver
     assert "has_dev: no" in deliver or "has_dev" in deliver
     assert "verify branch" in deliver
     assert "close-out" in deliver
@@ -391,7 +391,7 @@ def test_code_review_covers_branch_starts_and_previous_release():
         "不取 master 合回 develop 的合并提交", "不重新追随分支或 tag",
         "进度只认 `objectives.md`",
         "选择 clear commit 或上一正式发布基线", "objectives.md",
-        "不再改代码",
+        "计划内开发与联调改动已完成",
         "不跑 verify branch", "洗成无 commit 终稿",
         "不运行 `delivery record --stage code-review`",
         "交付模式支持 dirty 审查", "--read-only", "--output",

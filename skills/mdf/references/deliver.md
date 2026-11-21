@@ -279,7 +279,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | objectives 的 owner 开发项未勾 | owner 按 objectives 完成开发（`has_dev: no` 时该项须已由 start 预勾） |
 | owner 开发（或等价开发项）已勾且 converge 未勾 | 在 owner 委托 `references/converge.md` |
 | release 跨 worktree 联调且对端验收未通过 | 保持通道，send 本端结果并等对端；不进入审查 |
-| release 联调且尚未确认无更多代码修改 | 按所选模式确认两端冻结；collab-mode 由接手 Agent 核实；不进入审查 |
+| release 联调且尚未确认计划内开发与联调改动已完成 | 按所选模式确认两端冻结；collab-mode 由接手 Agent 核实；不进入审查 |
 | converge 已勾（或无未勾 converge 项）、lint 未勾 | owner 委托 `references/lint.md` |
 | lint 已勾、code-review 未勾 | owner 委托 `code-review.md`（release 另须 integrate 已勾） |
 | code-review 已勾、verify branch 未勾 | 委托 `references/verify.md`（branch；失败现场修到绿） |

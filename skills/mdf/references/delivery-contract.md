@@ -49,17 +49,19 @@ adhoc 先读取 [专用契约](adhoc.md) 的当前阶段条款，使用其固定
 - release 的 objectives 写已选定工作线、本版收口范围、预发布工作、联调、
   `has_dev`、非目标与可验证验收，不引用单个 PRP。
   - 工作线只保留开分支前选定的一条，不罗列未选路径。
-  - 冻结 `has_dev: yes|no`：本 release 分支是否包含预发布/开发代码改动。
+  - 冻结 `has_dev: yes|no`：本 release 分支是否有计划内 owner 开发阶段。
     - `no`：start 写入时即将 owner 开发、converge（及无事务时的预发布工作）勾为
       `[x]`；不跑这些 intent。
     - `yes`：保留未勾，走 owner 开发 → converge。
+    - 后续 code-review、verify 等阶段仍可为本版目标修复代码，按对应阶段复审与验证。
+      修复不因此改写 `has_dev` 或补走 converge。
   - checklist **必须含** integrate 项；不联调由 start 写入时勾 `[x]`；其余模式由
     `$mdf integrate` 收口自勾。deliver/next **只读该勾选**。
   - 该分支不得实施新 PRP。工作线四选一，只写选定的一条。
   - 不联调不执行 integrate intent。同 worktree 执行 integrate，不打开消息通道。
   - 跨 worktree 切到 worktree 后先开通道。只改本仓，不得改、操作、启动或终止对端。
   - collab-mode：start 完成本仓准备后交接，由接手 Agent 操作两端；见 [专用契约](collab-mode.md)。
-  - 三种联调强制 Goal；Goal 完成前用户没让停就持续推进；双端验收且确认冻结、integrate 已勾才允许 code-review。
+  - 三种联调强制 Goal；Goal 完成前用户没让停就持续推进；双端验收且确认计划内改动完成、integrate 已勾才允许 code-review。
 - start 后四种工作分支均须有 `objectives.md`，含 `[ ]` / `[x]` 大步骤 checklist。
   - bugfix / hotfix：roster `0,0` 也由 start 写入；roster ≥1 可由 design 修订。
   - hotfix 在 `delivery status` 返回的材料目录记录已确认的热修复范围。

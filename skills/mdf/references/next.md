@@ -164,7 +164,7 @@ support hotfix 合入后，以原分支与版本从主 worktree 调用 `delivery
     - collab-mode 的 integrate 未勾且尚待接手时，按 [交接契约](collab-mode.md) 报告本仓材料并结束。
       已接手则操作两端；integrate 已勾时按本仓剩余步骤续办，不重做交接。
     - 跨 worktree 需要且通道未打开时先 `$mdf integrate`，续办已有通道不重复 init/poll。
-    - 双端验收且确认不再改代码后才委托 code-review；integrate 须已勾。
+    - 双端验收且确认计划内开发与联调改动已完成后才委托 code-review；integrate 须已勾。
   - 开发未完成时（对应 checklist 项仍为 `[ ]`）：
     - `needs_design: yes`：沿用 qa/dev 分工；无分工则先 write-tests 再 implement。
     - `needs_design: no`：在 owner 按 objectives 完成开发。

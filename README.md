@@ -240,13 +240,15 @@ github-flow support hotfix 始终用此流程，包括项目启用 PR mode 时�
     后续工作在主 worktree 开新对话。完整规则见 [deliver](skills/mdf/references/deliver.md)。
 - release 从 develop 开分支前确认发布目标。
   - 工作线四选一；目标里只写选中的那条。不实施新 PRP。
+  - `has_dev: no` 仅跳过计划内 owner 开发与 converge；
+    后续 code-review、verify 等阶段仍可为本版目标修复代码，按对应阶段复审与验证。
   - 不联调：`start → [design?] → 开发 → converge → lint → code-review → verify branch →
     fact audit → catch-up → consolidate → merge/pr → publish → close-out`。开发/converge 用 smart；branch 验证与 fact 在 code-review 之后。
-  - 同 worktree（同仓）：对齐计划、两端验收、确认不再改代码后才审查。不打开消息通道。
-  - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认不再改代码后才审查。
+  - 同 worktree（同仓）：对齐计划、两端验收、确认计划内开发与联调改动已完成后才审查。不打开消息通道。
+  - 跨 worktree（跨仓）：开通道、对齐计划、本端/双端验收、确认计划内开发与联调改动已完成后才审查。
   - 跨 worktree 每侧只改本仓；可启动本侧依赖（如数据库）；不得改、操作、启动或终止对端。
   - collab-mode：start Agent 建好本仓 release worktree 后交接；接手 Agent 直接操作前后端 worktree。
-    不打开消息通道；两端验收且确认不再改代码后才审查。见 [契约](skills/mdf/references/collab-mode.md)。
+    不打开消息通道；两端验收且确认计划内开发与联调改动已完成后才审查。见 [契约](skills/mdf/references/collab-mode.md)。
   - fact audit（必要时 fact update）在 verify branch 之后、close-out 之前。
     Goal 完成前，用户没让你停，永远不许停下来。
   - code-review 基线仍为上一正式发布。

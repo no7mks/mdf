@@ -145,10 +145,11 @@ start Agent 完成本仓步骤 5 后，将以下材料交给用户或接手 Agen
   - 在缺陷所属仓库按 delivery-contract「补覆盖」修复、复测与提交，不用跨仓 `bug-request`。
 - 不能现场修复时按该仓 Bug 流程处理；仍阻断验收则保持未完成，报告阻塞。
 - 步骤 6 分别保存两端报告；单端通过不能代替双端验收，失败不勾 integrate。
-- 步骤 7 核实两端无更多代码修改，提交冻结结论、报告与两仓 objectives 的 integrate `[x]`。
+- 步骤 7 核实两端计划内开发与联调改动已完成，提交冻结结论、报告与两仓 objectives 的 integrate `[x]`。
   - 已有勾选与提交不重复执行；仅两端证据都完整后进入步骤 8。
 - 步骤 8 独立调用报告收口；内部委托返回调用方，按已有 next / deliver 授权继续。
 
 - 从执行联调起强制 Goal。Goal 完成前，用户没让你停，永远不许停下来。
+- 冻结仅确认计划内改动完成；后续 code-review、verify 等阶段仍可为本版目标修复代码，按对应阶段复审与验证。
 - code-review 仍须等待双端验收、冻结与 integrate 勾选，各仓使用自己的审查基线。
 - 每仓随后执行 verify branch → fact audit → close-out；独立 integrate 不自行执行 close-out。

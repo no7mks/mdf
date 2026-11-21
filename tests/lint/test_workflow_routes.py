@@ -261,7 +261,7 @@ def test_next_resumes_all_workflows_before_showing_blueprint():
     assert "由选择树路由到 tree" in text
     assert "只委托 tree" in text
     assert "需要且通道未打开时先 `$mdf integrate`" in text
-    assert "双端验收且确认不再改代码后才委托 code-review" in text
+    assert "双端验收且确认计划内开发与联调改动已完成后才委托 code-review" in text
 
 def test_next_dispatch_allows_non_git_and_delegated_continuation():
     entry = workflow("entry")

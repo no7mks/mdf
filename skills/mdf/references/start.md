@@ -152,8 +152,10 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - PRP 不足时停止，提示 `$mdf prp review`。
 - release：
   - 对照 child Change 与 `assets/templates/release-objectives.md`。
-  - clarify 议题含工作线、是否联调、是否需要 design、是否有开发（`has_dev`）。
-  - 📌 必须写入 `has_dev: yes` 或 `has_dev: no`（本分支是否含预发布/开发代码改动）。
+  - clarify 议题含工作线、是否联调、是否需要 design、是否有计划内 owner 开发阶段（`has_dev`）。
+  - 📌 必须写入 `has_dev: yes` 或 `has_dev: no`（本分支是否有计划内 owner 开发阶段）。
+  - `has_dev: no` 仅跳过计划内 owner 开发与 converge；后续 code-review、verify 等阶段仍可为本版目标修复代码，按对应阶段复审与验证。
+    修复不因此改写 `has_dev` 或补走 converge。
   - checklist **必须含** integrate、owner 开发、converge 项；跳过项在写入临时文件时
     即勾 `[x]`（不联调 → integrate；`has_dev: no` → owner 开发与 converge；无预发布
     事务 → 预发布工作）。不得靠缺席表示跳过。
