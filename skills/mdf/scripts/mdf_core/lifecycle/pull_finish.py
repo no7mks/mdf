@@ -260,7 +260,7 @@ def submit(repo, forge, source, target, pull, *, pm, fixed_head):
     if pull is None and ancestor(repo, head, remote):
         raise MDFError("没有未合入提交；不创建 PR 或删除分支", code="no_pending_commits")
     if pm:
-        require_pm_diff(repo, remote, head)
+        require_pm_diff(repo, remote, head, source)
     elif pull is None or head != pull["head"]:
         preflight(repo, source)
         head = sha(repo, f"refs/heads/{source}")
@@ -309,7 +309,11 @@ def _finish(repo, source, settings, *, phase, number):
     pm = details["kind"] == "pm"
     if source.startswith("pm/rework/"):
         raise MDFError("pm PR 须使用原 source ref", code="unsupported_branch")
-    if pm:
+    from mdf_core.workspace.changelog_sync import sync_version
+    sync_pm = pm and sync_version(source)
+    if sync_pm and phase == "pr" and local_head(repo, source):
+        ensure_clean(worktree_map(repo).get(source) or repo)
+    if pm and not sync_pm:
         if repo != primary_worktree(repo) or current_branch(repo) != trunk or source in worktree_map(repo):
             raise MDFError("pm 的 PR 与 close-out 须在主 trunk worktree 执行", code="not_on_trunk")
         if local_head(repo, rework_branch(source)) is not None:
@@ -333,7 +337,7 @@ def _finish(repo, source, settings, *, phase, number):
         git(repo, "fetch", "origin", "--prune")
         merged = verified_merge(repo, pull, source, target, state["head"])
         if pm:
-            require_pm_merge(repo, f"{merged}^1", state["head"], merged)
+            require_pm_merge(repo, f"{merged}^1", state["head"], merged, source)
         if phase == "pr":
             emit({"ok": True, "operation": "pr", "mode": "pr", "source": source,
                   "completed": True, "status": "merged", "pull_request": pull,
@@ -352,11 +356,18 @@ def _finish(repo, source, settings, *, phase, number):
                 if not ledger:
                     from mdf_core.lifecycle.adhoc import completion
                     completion(owner, source)
-        for branch in ([trunk, "develop"] if publishes and not github else [target]):
-            occupant = worktree_map(repo).get(branch)
-            if occupant:
-                ensure_clean(occupant)
-        sync_local(repo, target, integrate_develop=True)
+        if sync_pm:
+            occupant = worktree_map(repo).get(target)
+            local = local_head(repo, target)
+            dirty = occupant and git(occupant, "status", "--porcelain").stdout
+            if not dirty and (local is None or ancestor(repo, local, f"refs/remotes/origin/{target}")):
+                sync_local(repo, target)
+        else:
+            for branch in ([trunk, "develop"] if publishes and not github else [target]):
+                occupant = worktree_map(repo).get(branch)
+                if occupant:
+                    ensure_clean(occupant)
+            sync_local(repo, target, integrate_develop=True)
         ready = True
         if publishes:
             from mdf_core.lifecycle.pull_publish import publish

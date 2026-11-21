@@ -62,8 +62,9 @@ def test_publish_merges_only_trunk_and_tags_release_head(python_exe, tmp_path, k
     if kind == "hotfix":
         prepare_release_materials(python_exe, work)
         payload(mdf(python_exe, "merge", "--repo", str(work)))
+        payload(mdf(python_exe, "publish", "--repo", str(work)))
         done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-        assert done["next_intent"] == "publish"
+        assert done["next_intent"] is None
         published = payload(mdf(python_exe, "publish", "--repo", str(repo), "--source", data["branch"]))
         assert published["release_head"] == git(repo, "rev-parse", target).stdout.strip()
         head = published["release_head"]

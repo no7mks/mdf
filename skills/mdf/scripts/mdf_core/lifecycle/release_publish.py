@@ -58,7 +58,7 @@ def command_publish(args):
             source = args.source or current_branch(repo)
             active_support = support_hotfix(repo, source)
             record = None
-            if args.source and (not active_support or args.version):
+            if active_support or args.source:
                 record = support_merge_record(repo, source, args.version)
             if record or active_support or (args.source and source.startswith("hotfix/")):
                 result = publish_support(repo, record)
@@ -72,9 +72,11 @@ def command_publish(args):
 def publish_support(repo, receipt):
     from mdf_core.lifecycle.publish import merge_record_path, require_support_merge
     from mdf_core.lifecycle.pull_publish import tag_release
-    if not receipt or not receipt[1].get("closed") or receipt[1].get("pending"):
-        raise MDFError("support hotfix 须先完成 close-out", code="closeout_required")
+    if not receipt or receipt[1].get("pending"):
+        raise MDFError("support hotfix 须先完成 merge", code="merge_required")
     version, record = receipt
+    from mdf_core.lifecycle.pull_finish import check_source
+    check_source(repo, record)
     merged = require_support_merge(repo, record)
     ref = f"refs/tags/v{version}"
     if (git(repo, "rev-parse", "--verify", ref, check=False).returncode
@@ -84,7 +86,9 @@ def publish_support(repo, receipt):
     tag_release(repo, state, version)
     published_head(repo, version, expected_oid=state["tag_oid"])
     write_json(merge_record_path(repo, record["source"], version), {**record, "published": True})
-    return {"completed": True, "tag": state["tag"], "release_head": merged, "next_intent": None}
+    from mdf_core.workspace.changelog_sync import sync_policy
+    nxt = None if record.get("closed") else ("sync-changelog" if sync_policy(repo, version)[2]["mode"] == "pr" else "close-out")
+    return {"completed": True, "tag": state["tag"], "release_head": merged, "next_intent": nxt}
 
 
 def publish_release(repo):

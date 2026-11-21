@@ -136,8 +136,8 @@ def support_completion(repo, source, version, result, yolo):
     from mdf_core.lifecycle.publish import require_support_merge, support_merge_record
     from mdf_core.lifecycle.release_publish import published_head
     receipt = support_merge_record(repo, source, version)
-    if not receipt or not receipt[1].get("closed"):
-        return {**result, "next": "close-out", "state": "ready" if yolo else "awaiting_decision_confirmation"}
+    if not receipt:
+        return {**result, "next": "merge", "state": "ready"}
     version, record = receipt
     merged = require_support_merge(repo, record)
     ref = f"refs/tags/v{version}"
@@ -146,6 +146,18 @@ def support_completion(repo, source, version, result, yolo):
         return {**result, "next": "publish", "state": "ready", "source": source, "version": version}
     if published_head(repo, version) != merged:
         raise MDFError("final tag 与 support merge 不符", code="tag_conflict")
+    if record.get("closed"):
+        return {**result, "next": None, "state": "completed", "source": source, "version": version}
+    from mdf_core.workspace.changelog_sync import require_synced
+    try:
+        require_synced(repo, version, merged)
+    except MDFError as exc:
+        if exc.code != "changelog_sync_required":
+            raise
+        return {**result, "next": "sync-changelog", "state": "ready", "source": source, "version": version}
+    if not record.get("closed"):
+        return {**result, "next": "close-out", "state": "ready" if yolo else "awaiting_decision_confirmation",
+                "source": source, "version": version}
     return {**result, "next": None, "state": "completed", "source": source, "version": version}
 
 

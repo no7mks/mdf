@@ -21,14 +21,23 @@ def require_pm_paths(changed):
                        code="pm_paths_forbidden", details={"paths": outside})
 
 
-def require_pm_diff(repo, target, head):
+def require_pm_diff(repo, target, head, source=""):
+    from mdf_core.workspace.changelog_sync import sync_version, require_sync_diff
+    if version := sync_version(source):
+        require_sync_diff(repo, git(repo, "merge-base", target, head).stdout.strip(), head, version)
+        return
     base = git(repo, "merge-base", target, head).stdout.strip()
     require_pm_paths(paths(repo, base, head))
     for commit in git(repo, "rev-list", f"{target}..{head}").stdout.split():
         require_pm_paths(commit_paths(repo, commit))
 
 
-def require_pm_merge(repo, first_parent, head, merged):
+def require_pm_merge(repo, first_parent, head, merged, source=""):
+    from mdf_core.workspace.changelog_sync import sync_version, require_sync_diff
+    if version := sync_version(source):
+        require_pm_diff(repo, first_parent, head, source)
+        require_sync_diff(repo, first_parent, merged, version)
+        return
     require_pm_diff(repo, first_parent, head)
     require_pm_paths(paths(repo, first_parent, merged))
 

@@ -5,7 +5,7 @@ from support_delivery import commit
 from support_release_flow import analyze_history
 
 
-def prepare_hotfix(python_exe, tmp_path, *, slug=False, protected_link=False, pr=False):
+def prepare_hotfix(python_exe, tmp_path, *, slug=False, protected_link=False, pr=False, version="1.2.1"):
     repo, remote = github_flow_repo(tmp_path, origin=True, pr=pr)
     if protected_link:
         prp = repo / "docs/proposals" / PRP_NAME
@@ -19,7 +19,7 @@ def prepare_hotfix(python_exe, tmp_path, *, slug=False, protected_link=False, pr
     path.write_text((repo / "docs/bugs" / BUG_NAME).read_text().replace(BUG_ID, "bug-EF56"))
     commit(repo)
     git(repo, "push", "origin", "master", "--tags")
-    name_args = ("--name", "support-timeout") if slug else ("--version", "1.2.1")
+    name_args = ("--name", "support-timeout") if slug else ("--version", version)
     started = payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "hotfix",
                           *name_args, "--objectives-file", str(write_work_objectives(tmp_path))))
     work = Path(started["worktree"])
@@ -85,6 +85,7 @@ def test_published_support_retries_after_trunk_status_changes(python_exe, tmp_pa
     merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
     advance_trunk(repo, remote)
     payload(mdf(python_exe, "doctor", "--repo", str(work)))
+    payload(mdf(python_exe, "publish", "--repo", str(work)))
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     args = ("--repo", str(repo), "--source", "hotfix/1.2.1")
     assert payload(mdf(python_exe, "publish", *args))["release_head"] == merged
@@ -105,6 +106,7 @@ def test_slug_hotfix_review_base_uses_published_tag(python_exe, tmp_path):
     _repo, _remote, work, change = prepare_hotfix(python_exe, tmp_path, slug=True)
     consolidate_hotfix(python_exe, work, change)
     merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
+    payload(mdf(python_exe, "publish", "--repo", str(work)))
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     published = payload(mdf(python_exe, "publish", "--repo", str(work), "--source", "hotfix/support-timeout"))
     from mdf_core.reviewing.context import context

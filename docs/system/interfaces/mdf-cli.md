@@ -113,6 +113,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `catch-up` | 同步远端同名分支并增量验收 | [仓库写入命令](mdf-cli-write.md) |
 | `consolidate` | 收敛交付文档、对象和版本材料 | [仓库写入命令](mdf-cli-write.md) |
 | `merge` | local target 集成、增量验收与实际合入 | [仓库写入命令](mdf-cli-write.md) |
+| `sync-changelog` | 准备或核验 support patch 的记录同步 PR | [仓库写入命令](mdf-cli-write.md) |
 | `publish` | 发布带本版说明的 annotated tag | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | 核验、回合与分支清理 | [仓库写入命令](mdf-cli-write.md) |
 | `pre-gitflow-finish` | fact 前执行 hook 或检查其改动 | [仓库写入命令](mdf-cli-write.md) |
@@ -159,7 +160,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 
 `mdf.py publish --repo <repo>` 在 github-flow release 的基线完成后创建并推送 final tag，
 该路径发布后进入 merge/pr。Gitflow 在实际 merge 后 publish，再进入 close-out。
-github-flow support hotfix 在 close-out 后用 `publish --source <原分支> --version <version>` 发布实际合入 commit。执行契约见
+github-flow support hotfix 在 merge 后用 `publish --source <原分支> --version <version>` 发布实际合入 commit。执行契约见
 [publish](../../../skills/mdf/references/publish.md)。
 
 ## 远端同名分支同步

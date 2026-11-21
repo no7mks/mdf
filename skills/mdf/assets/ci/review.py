@@ -68,6 +68,23 @@ def run(args):
         proof = {'source': args.source, 'target': target, 'base': base, 'head': head, 'decision': 'pass'}
         (output / 'workflow-switch.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n')
         return 0
+    from mdf_core.workspace.changelog_sync import sync_version
+    if sync_version(args.source or ''):
+        from mdf_core.workspace.pm import require_pm_diff
+        from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
+        if not args.head or not args.policy_ref:
+            raise MDFError('同步记录 CI 需要固定 head 和 policy-ref', code='invalid_arguments')
+        base, head = sha(repo, args.policy_ref), sha(repo, args.head)
+        original = snapshot(repo)
+        if (not is_github_flow(repo, base)
+                or args.target != trunk_branch(repo, base) or original[0] != head or any(original[1:])):
+            raise MDFError('同步记录 CI 需要固定干净 checkout 与正确的 trunk policy', code='invalid_review_context')
+        require_pm_diff(repo, base, head, args.source)
+        if snapshot(repo) != original:
+            raise MDFError('同步记录审查期间 checkout 已变化', code='reviewer_modified_checkout')
+        proof = {'source': args.source, 'target': args.target, 'base': base, 'head': head, 'decision': 'pass'}
+        (output / 'changelog-sync.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n')
+        return 0
     prior_path = getattr(args, 'previous_report', None)
     previous = read_json(Path(prior_path)) if prior_path else None
     ctx = context(repo, args.source, args.head, args.policy_ref, getattr(args, 'review_base', None), previous)

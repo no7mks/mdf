@@ -139,7 +139,7 @@ consolidate 后按 workflow 定序：
 | --- | --- |
 | Gitflow release / hotfix | merge/pr → publish → close-out |
 | github-flow release | publish → merge/pr → close-out |
-| github-flow support hotfix | merge → close-out → publish |
+| github-flow support hotfix | merge → publish → [sync-changelog（PR mode）] → close-out |
 | feature / bugfix / adhoc | merge/pr → close-out |
 
 merge/pr 内部先把 target 合回工作分支；有变化时完成 incremental-integration，才能实际合入。

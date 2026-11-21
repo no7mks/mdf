@@ -190,7 +190,8 @@ $mdf clarify 要不要把缓存放到 Redis
 - 规划：`intake`、`jot`、`jot promote`、`bug create`、`prp create`、`prp review`、`prp split`；
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
-  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`、`catch-up`、`consolidate`、`merge`、`publish`、`incremental-integration`、`pr`、`close-out`
+  `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`；
+  `catch-up`、`consolidate`、`merge`、`publish`、`sync-changelog`、`incremental-integration`、`pr`、`close-out`
 - 维护：`archive`、`fact audit`、`prettify`、`upgrade`；
   `to`、`dev-pr`、`trunk-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -366,6 +367,8 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf merge`
   - local 模式与 github-flow support hotfix 先合回 target 并增量验收，再本地合入。
 
+- `$mdf sync-changelog`
+  - 用法：`$mdf sync-changelog`。github-flow + PR 的 support hotfix 发布后同步记录，watch PR 合入并清理，再 close-out。
 - `$mdf publish`
   - 用法：`$mdf publish`
   - github-flow release 完成基线后创建并推送 final tag，再进入 incremental-integration 和主线集成。

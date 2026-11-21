@@ -35,7 +35,7 @@
 | 前置验收 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit） |
 | Gitflow 发布交付后段 | catch-up → consolidate → merge/pr → publish → close-out |
 | github-flow release 后段 | catch-up → consolidate → publish → merge/pr → close-out |
-| github-flow support hotfix 后段 | catch-up → consolidate → merge → close-out → publish |
+| github-flow support hotfix 后段 | catch-up → consolidate → merge → publish → [sync-changelog（PR mode）] → close-out |
 | feature / bugfix 后段 | catch-up → consolidate → merge/pr → close-out |
 | 人工 feature | start → 人工工作 → 前置验收 → catch-up → consolidate → merge/pr → close-out |
 | 已有 adhoc | 工作 → 前置验收 → catch-up → consolidate → merge/pr → close-out |

@@ -355,6 +355,13 @@ def build_parser() -> argparse.ArgumentParser:
     publish_cmd.add_argument("--version", help="恢复同名 support hotfix 时指定版本")
     publish_cmd.add_argument("--pull", type=int)
     publish_cmd.set_defaults(func=command_publish)
+    from mdf_core.workspace.changelog_sync import command_sync_changelog
+    sync_changelog = subparsers.add_parser("sync-changelog")
+    sync_changelog.add_argument("--repo", required=True)
+    sync_changelog.add_argument("--source")
+    sync_changelog.add_argument("--version")
+    sync_changelog.add_argument("--complete", action="store_true")
+    sync_changelog.set_defaults(func=command_sync_changelog)
     from mdf_core.lifecycle.target_integration import command_incremental_integration
     integration_cmd = subparsers.add_parser("incremental-integration")
     integration_cmd.add_argument("--repo", required=True)

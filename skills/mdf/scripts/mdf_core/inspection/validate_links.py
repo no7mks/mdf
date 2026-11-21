@@ -1,6 +1,8 @@
 from pathlib import Path
 import html
 import re
+import json
+import posixpath
 from html.parser import HTMLParser
 from typing import Iterable
 from urllib.parse import unquote
@@ -119,6 +121,49 @@ def document_link_target(path: Path, raw: str) -> str:
     return split_link_target(f"<{raw}>" if path.suffix == ".html" else raw)
 
 
+def published_support_head(repo: Path, path: Path) -> str | None:
+    """仅逐字匹配已发布 support 归档的文件，才能使用发布树解释历史链接。"""
+    from mdf_core.foundation.textutil import stable_semver
+    from mdf_core.workspace.merge_policy import git
+    from mdf_core.lifecycle.closeout_render import require_tag_content
+    parts = path.relative_to(repo).parts
+    if len(parts) < 3 or parts[0] != "changes" or stable_semver(parts[1]) is None:
+        return None
+    identity = repo / "changes" / parts[1] / "delivery.json"
+    if not identity.is_file() or identity.is_symlink() or not path_stays_in_repo(repo, identity):
+        return None
+    try:
+        data = json.loads(identity.read_text())
+        if (not isinstance(data, dict) or not str(data.get("base_branch", "")).startswith("support/")
+                or not str(data.get("branch", "")).startswith("hotfix/") or data.get("version") != parts[1]):
+            return None
+        head = require_tag_content(repo, parts[1])["head"]
+        for candidate in (path, identity):
+            rel = candidate.relative_to(repo).as_posix()
+            entry = git(repo, "ls-tree", head, "--", f":(literal){rel}").stdout.split()
+            if (len(entry) < 3 or entry[0] not in {"100644", "100755"}
+                    or git(repo, "hash-object", f"--path={rel}", str(candidate)).stdout.strip() != entry[2]):
+                return None
+        return head
+    except (MDFError, ValueError, OSError):
+        return None
+
+
+def published_link_exists(repo, head, path, target, fragment, check_anchors):
+    from mdf_core.workspace.merge_policy import git
+    from mdf_core.workspace.changelog_sync import blob_text
+    relative_target = posixpath.normpath(posixpath.join(path.relative_to(repo).parent.as_posix(), target))
+    if relative_target.startswith(("/", "../")) or relative_target == "..":
+        return False
+    entry = git(repo, "ls-tree", head, "--", f":(literal){relative_target}").stdout.split()
+    if len(entry) < 3 or entry[0] not in {"100644", "100755", "040000"}:
+        return False
+    suffix = Path(relative_target).suffix
+    if check_anchors and fragment and suffix in {".md", ".html"} and entry[1] == "blob":
+        return fragment in anchors_from_text(blob_text(repo, head, relative_target), suffix)
+    return True
+
+
 def collect_local_link_findings(
     repo: Path, path: Path, findings: list[Finding], *, targets: set[Path] | None = None,
     check_anchors: bool = False,
@@ -127,6 +172,7 @@ def collect_local_link_findings(
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return
+    published = published_support_head(repo, path)
     for _, _, raw in document_link_spans(path, text):
         target = document_link_target(path, raw)
         href = raw.strip()
@@ -148,6 +194,10 @@ def collect_local_link_findings(
             continue
         resolved = resolve_local_link(path, target)
         if targets is not None and resolved not in targets:
+            continue
+        if published:
+            if not published_link_exists(repo, published, path, target, fragment, check_anchors):
+                add_finding(findings, "link.broken", f"Broken published local link: {raw}", relative(repo, path))
             continue
         if not path_stays_in_repo(repo, resolved):
             add_finding(
@@ -190,7 +240,11 @@ def document_anchors(path: Path) -> set[str]:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return set()
-    if path.suffix != ".md":
+    return anchors_from_text(text, path.suffix)
+
+
+def anchors_from_text(text: str, suffix: str) -> set[str]:
+    if suffix != ".md":
         return set(re.findall(r'(?:id|name)=["\']([^"\']+)["\']', text))
     lines = text.splitlines()
     if lines and lines[0].strip() == "---":

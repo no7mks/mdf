@@ -64,6 +64,7 @@ disable-model-invocation: true
                  ├──── catch-up ──────────────────────────────────────────→ references/catch-up.md
                  ├──── consolidate ───────────────────────────────────────→ references/consolidate.md
                  ├──── merge ─────────────────────────────────────────────→ references/merge.md
+                 ├──── sync-changelog ────────────────────────────────────→ references/sync-changelog.md
                  ├──── publish ───────────────────────────────────────────→ references/publish.md
                  ├──── incremental-integration ───────────────────────────→ references/incremental-integration.md
                  ├──── prp split ─────────────────────────────────────────→ references/prp-split.md
@@ -154,6 +155,7 @@ disable-model-invocation: true
 - `$mdf catch-up` 同步远端同名工作分支并增量验收。
 - `$mdf consolidate` 收敛交付文档、对象状态与版本材料。
 - `$mdf merge` 执行 non-PR 的 target 合回、增量验收和实际合入。
+- `$mdf sync-changelog` 执行 `references/sync-changelog.md`，同步 support patch 发布记录，经 pm PR 合入 trunk。
 - `$mdf publish` 执行 `references/publish.md`，在 github-flow release 的 incremental-integration 前创建并推送 final tag。
 - `$mdf incremental-integration` 在基线 `lint`、`code-review`、`verify`、`fact` 已通过后，仅对改动文件执行增量补检；严禁全量重跑。
 - start、deliver 可带 `--roster`（尚未 start 时展开；已 start 则停止）。

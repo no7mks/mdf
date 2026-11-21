@@ -81,6 +81,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf catch-up` | 同步远端同名工作分支并增量验收 |
 | `$mdf consolidate` | 收敛交付文档、对象状态和版本材料 |
 | `$mdf merge` | 合回 target、增量验收并本地合入，适用范围见 [Merge](skills/mdf/references/merge.md) |
+| `$mdf sync-changelog` | 将 support patch 的发布记录通过 pm PR 汇入 trunk，等待合并并清理 |
 | `$mdf publish` | 给固定发布 commit 创建带本版说明的 annotated tag 并推送 |
 | `$mdf close-out` | 核验合入与发布结果、完成适用回合、清理分支和 worktree |
 | `$mdf squash [--dry-run]` | 定地板与切段并 soft-reset；`--dry-run` 只给建议 |
@@ -109,7 +110,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | --- | --- |
 | Gitflow 发布交付 | catch-up → consolidate → merge/pr → publish → close-out |
 | github-flow release | catch-up → consolidate → publish → merge/pr → close-out |
-| github-flow support hotfix | catch-up → consolidate → merge → close-out → publish |
+| github-flow support hotfix | catch-up → consolidate → merge → publish → [sync-changelog（PR mode）] → close-out |
 | feature / bugfix | catch-up → consolidate → merge/pr → close-out |
 
 - 是否 design 由 start clarify 冻结的 `needs_design` 决定。
@@ -195,7 +196,7 @@ fact audit 共用核：`resolve-base → diff → must-cover → stale → uncov
 交付清单止于 consolidate，github-flow release 还包含 publish；之后按实际 Git 状态续办。
 pr 创建或复用 Goal，持续创建/更新 PR、等待 CI/review 并修复问题。
 实际 merged、合并核验与关联 CI 收尾均通过后完成 pr；Gitflow 发布交付先完成 publish，close-out 再负责适用 backmerge、清理与最终核验。
-完整交付执行 close-out，github-flow support hotfix 随后发布。默认 deliver 推进到最后一个阶段，显式 until 仍生效。
+完整交付以 close-out 收尾；github-flow support hotfix 在 publish 后、close-out 前完成 PR mode 的 sync-changelog。默认 deliver 推进到最后一个阶段，显式 until 仍生效。
 完整规则见 [PR](skills/mdf/references/pr.md) 与 [合并后续办](skills/mdf/references/pr-close-out.md)。
 
 PR mode 在创建或更新 PR/MR 前 fetch workflow 推导的固定目标。
@@ -222,7 +223,7 @@ github-flow support hotfix 始终用此流程，包括项目启用 PR mode 时�
   - 仅非本交付 `docs/` 增量则跳过 code-review 与所需 suite。
   - 否则走 1 人增量新一轮 code-review 与所需 suite，再继续收口。
 - release/hotfix 的 publish 创建带本版内容的 annotated tag 并推送。
-  - Gitflow 在 merge/pr 后发布实际 merge commit。github-flow release 在集成前发布固定候选，support hotfix 在 close-out 后发布实际 merge commit。
+  - Gitflow 在 merge/pr 后发布实际 merge commit。github-flow release 在集成前发布固定候选，support hotfix 在 merge 后发布实际 merge commit。
   - close-out 核验远端合入与 tag；Gitflow 再将发布结果合回本地 develop，不推送远端 develop。
 - deliver 对可并行的 write-tests 与 implement 按 roster 强制分别分派 subagent。
   - 验证其已有 qa/dev worktree 身份，等待交接后再收敛。

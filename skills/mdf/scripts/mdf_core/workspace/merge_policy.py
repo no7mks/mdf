@@ -42,6 +42,14 @@ def configured(repo, ref=None):
 
 def configured_delivery(repo, source, *, data=None, ref=None):
     from mdf_core.lifecycle.support_line import support_hotfix
+    from mdf_core.workspace.changelog_sync import sync_version, state_path
+    from mdf_core.lifecycle.delivery_state import read_json
+    version = sync_version(source)
+    if version and state_path(repo, version).is_file():
+        state = read_json(state_path(repo, version))
+        if state.get("branch") != source:
+            raise MDFError("同步回执与 pm source 不符", code="pull_state_changed")
+        return config({"closeout": state["settings"]})
     settings = configured(repo)
     if settings["mode"] == "pr" and support_hotfix(repo, source, data=data, ref=ref):
         settings["mode"] = "local"

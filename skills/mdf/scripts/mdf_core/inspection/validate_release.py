@@ -1,4 +1,5 @@
 import re
+import json
 from pathlib import Path
 from typing import Any
 
@@ -105,6 +106,29 @@ def change_release_profile(path: Path) -> tuple[set[str], bool]:
     return categories, metadata.get("breaking") is True
 
 
+def published_support_previous(repo: Path, version: str) -> str | None:
+    """发布记录冻结实际基线；并行 trunk 版本不能重排 support 的历史。"""
+    from mdf_core.workspace.merge_policy import git, ancestor
+    from mdf_core.lifecycle.closeout_render import require_tag_content
+    from mdf_core.foundation.yamlutil import frontmatter_span, parse_yaml
+    if git(repo, "rev-parse", "--verify", f"refs/tags/v{version}", check=False).returncode:
+        return None
+    head = require_tag_content(repo, version)["head"]
+    identity = json.loads(git(repo, "show", f"{head}:changes/{version}/delivery.json").stdout)
+    if (not isinstance(identity, dict) or identity.get("version") != version
+            or not str(identity.get("base_branch", "")).startswith("support/")
+            or not str(identity.get("branch", "")).startswith("hotfix/")):
+        raise MDFError("发布 tag 不是本版 support 交付", code="invalid_release_history")
+    text = git(repo, "show", f"{head}:changes/{version}/CHANGE.md").stdout
+    start, end, _ = frontmatter_span(text)
+    previous = parse_yaml(text[start:end]).get("previous_version")
+    parsed = stable_semver(previous)
+    if (parsed is None or parsed >= stable_semver(version)
+            or not ancestor(repo, f"refs/tags/v{previous}^{{commit}}", head)):
+        raise MDFError("support 发布基线必须来自已发布祖先", code="invalid_release_history")
+    return previous
+
+
 def validate_release_history(
     repo: Path,
     manifest: dict[str, Any] | None,
@@ -145,6 +169,16 @@ def validate_release_history(
         versioning = manifest.get("versioning")
         if isinstance(versioning, dict):
             latest_release = versioning.get("latest_release")
+    support_versions = set()
+    for directory in release_dirs:
+        identity = directory / "delivery.json"
+        if identity.is_file():
+            try:
+                data = json.loads(identity.read_text())
+            except (ValueError, OSError):
+                continue
+            if isinstance(data, dict) and str(data.get("base_branch", "")).startswith("support/"):
+                support_versions.add(directory.name)
     known_versions = {
         version
         for version in (*changelog, *release_versions)
@@ -169,10 +203,10 @@ def validate_release_history(
             )
         else:
             expected_latest = max(
-                known_versions,
+                (known_versions - (support_versions - {latest_release})) or known_versions,
                 key=lambda version: stable_semver(version),
             )
-            if latest_release != expected_latest:
+            if latest_release not in known_versions or latest_release != expected_latest:
                 add_finding(
                     findings,
                     "manifest.latest_release_history",
@@ -183,9 +217,6 @@ def validate_release_history(
                     ".mdf/manifest.yaml",
                 )
 
-    ordered_changelog = sorted(
-        changelog_set, key=lambda version: stable_semver(version)
-    )
     for release_dir in release_dirs:
         if not global_history and not any(p == release_dir or release_dir in p.parents for p in paths):
             continue
@@ -197,23 +228,24 @@ def validate_release_history(
             release_metadata, _ = read_frontmatter(release_file)
         except MDFError:
             continue
-        prior_changelog = [
-            item
-            for item in ordered_changelog
-            if stable_semver(item) < stable_semver(version)
-        ]
-        expected_previous = prior_changelog[-1] if prior_changelog else "none"
         actual_previous = release_metadata.get("previous_version")
+        candidates = changelog_set - support_versions
+        if version in support_versions:
+            candidates = {v for v in changelog_set if stable_semver(v)[:2] == stable_semver(version)[:2]}
+        prior = [v for v in candidates if stable_semver(v) < stable_semver(version)]
+        expected_previous = max(prior, key=stable_semver) if prior else "none"
+        if version in support_versions:
+            try:
+                frozen = published_support_previous(repo, version)
+                if frozen is not None:
+                    expected_previous = frozen
+            except (MDFError, ValueError) as exc:
+                add_finding(findings, "release.previous_chain", str(exc), relative(repo, release_file))
+
         if actual_previous != expected_previous:
-            add_finding(
-                findings,
-                "release.previous_chain",
-                (
-                    f"Version CHANGE previous_version is {actual_previous!r}; "
-                    f"expected {expected_previous!r}"
-                ),
-                relative(repo, release_file),
-            )
+            add_finding(findings, "release.previous_chain",
+                        f"previous_version is {actual_previous!r}; expected {expected_previous!r}",
+                        relative(repo, release_file))
 
         change_files = sorted(
             path / "CHANGE.md"

@@ -54,7 +54,7 @@ def pending_support_publications(repo):
     pending = []
     for path in sorted(folder.glob("*/*.json")):
         record = read_json(path)
-        if "closed" in record and not record.get("published") and not record.get("pending"):
+        if "closed" in record and not record.get("closed") and not record.get("pending"):
             pending.append({"source": record["source"], "version": path.stem})
     return pending
 

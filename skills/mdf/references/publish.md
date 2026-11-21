@@ -19,7 +19,7 @@
 | Gitflow · local | merge 已合入并推送的实际 merge commit | close-out |
 | Gitflow · PR | 平台确认的 PR merge commit | close-out |
 | github-flow release | catch-up、consolidate 已完成的工作分支 commit | merge/pr |
-| github-flow support hotfix | close-out 已核验的 support 实际 merge commit | 完成交付 |
+| github-flow support hotfix | 已推送的 support 实际 merge commit | PR mode 先 sync-changelog，再 close-out；local 直接 close-out |
 
 - feature / bugfix 的交付材料留在 unreleased，后续 release 聚合并发布版本 tag。
 - github-flow release 发布后工作分支继续前进，可以合入 target、解决冲突并提交增量验收记录。
@@ -32,7 +32,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" publish --repo "$REPO_ROOT"
 从主 worktree 恢复 Gitflow 发布时，显式传入 `--source <原工作分支>`。
 
 github-flow support hotfix 从主 worktree 执行 `publish --source <原 hotfix 分支> --version <version>`。
-脚本从 close-out 回执读取固定合入 commit，核对其仍在远端 support 的第一父链后推送 tag。
+脚本从 merge 回执读取固定合入 commit，核对其仍在远端 support 的第一父链后推送 tag。
 
 ## Annotated tag 正文
 

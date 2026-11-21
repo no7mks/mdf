@@ -26,6 +26,6 @@ python3 "$MDF_ROOT/scripts/mdf.py" merge --repo "$REPO_ROOT"
 - merge 前 target 有新提交时，CLI 合回并返回 incremental-integration，完成验收后重试 merge。
 - feature / bugfix 完成后进入 close-out。
 - Gitflow release / hotfix 完成后进入 publish，再由 close-out 完成 develop 回合与清理。
-- github-flow release 在 merge 前发布 final tag。support hotfix 合入后进入 close-out，再发布指向实际 merge commit 的 tag。
+- github-flow release 在 merge 前发布 final tag。support hotfix 合入后发布实际 merge commit，PR mode 再完成 sync-changelog，最后 close-out。
 - 目标分支前进和 PR 返工采用相同的 [incremental-integration](incremental-integration.md) 验收方法。
 - merge 成功后保留工作分支及 worktree，供 publish 与 close-out 核验。

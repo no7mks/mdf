@@ -115,11 +115,12 @@ merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按 [PR 轮询](pr
 
 Select 读取 `delivery route` 的 `next` 与 `state`：
 
-- support hotfix 完成 close-out 后，从主 worktree 用 `delivery route --source <原分支> --version <version>` 续办。
-- 返回 `publish` 时先核 until，再传同一 `source` 与 `version` 调用 publish。返回 `completed` 后进入步骤 5。
+- support hotfix 合入后，从主 worktree 用 `delivery route --source <原分支> --version <version>` 续办。
+- 返回 `publish` 或 `sync-changelog` 时先核 until，再传同一 `source` 与 `version` 委托对应 intent。
+  子阶段完成后重新 route；只有交付状态 `completed` 才进入步骤 5。
 
 - `--yolo` 下 design 为 `ready`；非 yolo 的 design 为 `awaiting_design_approval`。
-- 清单勾完后，`delivery route` 按实际合入和 tag 返回 merge、pr、publish 或 close-out。走 pr 时再核平台与关联 CI。
+- 清单勾完后，`delivery route` 按实际合入、tag 与记录同步返回 merge、pr、publish、sync-changelog 或 close-out。走 pr 时再核平台与关联 CI。
 - local 通过目标合并历史、适用的 tag 和实际 source refs 核验收口。
 - `delivery complete-stage` 只自动完成 verify，且须在 owner worktree、无进行中的 merge。
 
@@ -291,7 +292,8 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | merge/pr 未完成 | 按模式委托 `references/merge.md` 或 `references/pr.md`，内部完成 target 集成与增量验收 |
 | Gitflow 发布交付已 merged，publish 未完成 | 委托 `references/publish.md`，发布实际 merge commit |
 | 合入及所有适用前置阶段已完成，close-out 尚未实际完成 | 委托 `references/close-out.md`，核验、回合及清理 |
-| support hotfix 已 close-out，publish 未完成 | 从主 worktree 使用原 source 和固定 version 委托 publish |
+| support hotfix 已 merge，publish 未完成 | 使用原 source 和固定 version 委托 publish |
+| support hotfix 已发布，PR mode 记录未同步 | 委托 `references/sync-changelog.md`，完成后再 close-out |
 
 剩余工作与失败处理：
 
@@ -392,7 +394,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 - 到 until 时核对允许操作的证据与仍在运行的执行者，报告已完成阶段、截止点与剩余工作。
   - 内部截止时列出尚未完成的父 intent 与 resume 子步骤，不要求父 intent 冒充完成。
   - 不勾选被排除 intent、不声称交付已收口。不自动调用 next 或另开 deliver 越过截止点。
-- 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。support hotfix 还须确认随后 publish 成功。
+- 无截止点时，步骤 5 必须取得 close-out 的实际成功结果。support hotfix 还须确认 publish 与适用的 sync-changelog 已成功。
   - 按分支核对合并、源分支删除，以及 release/hotfix 的 tag 和推送；owner 仍存在时核对其 detached 状态。
   - 走 pr 的交付另核远端 source 已删除及 remote_deleted=true；远端清理失败或不确定时不完成 Goal、不删除保留的 owner。
   - owner 已被外部删除时如实报告，以平台与实际 Git 完成证据核收口，不重建工作区，也不再执行删除。

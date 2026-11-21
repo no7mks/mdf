@@ -7,60 +7,63 @@ from test_support_consolidate import prepare_hotfix, consolidate_hotfix
 
 
 @pytest.mark.parametrize("existing,slug", [(False, False), (True, True)])
-def test_support_hotfix_merges_locally_in_pr_mode(python_exe, tmp_path, existing, slug):
+def test_support_hotfix_merges_locally_in_pr_mode(python_exe, tmp_path, monkeypatch, existing, slug):
+    from support_pull import Platform, squash_pending
+    from mdf_core.lifecycle import pull_finish
     repo, remote, work, change = prepare_hotfix(python_exe, tmp_path, pr=True, slug=slug)
-    target = "support/1.2"
     source = git(work, "branch", "--show-current").stdout.strip()
-    start = git(repo, "rev-parse", target).stdout.strip()
-    trunk = git(repo, "rev-parse", "master").stdout.strip()
+    platform = Platform()
+    platform.repo, platform.remote = repo, remote
+    monkeypatch.setattr(pull_finish, "origin", lambda *_: {})
+    monkeypatch.setattr(pull_finish, "Forge", lambda *_: platform)
     if existing:
-        git(repo, "push", "origin", target)
+        git(repo, "push", "origin", "support/1.2")
     consolidate_hotfix(python_exe, work, change)
-    assert error_of(mdf(python_exe, "publish", "--repo", str(work)))["error"] == "closeout_required"
-    assert "- [ ] publish" not in (work / "changes/1.2.1/objectives.md").read_text()
-    route = payload(mdf(python_exe, "delivery", "route", "--repo", str(work)))["result"]
-    assert route["next"] == "merge"
-    assert error_of(mdf(python_exe, "pr", "--repo", str(work)))["error"] == "invalid_closeout"
-    assert error_of(mdf(python_exe, "pr-watch", "--repo", str(work)))["error"] == "invalid_closeout"
-    integrated = payload(mdf(python_exe, "incremental-integration", "--repo", str(work)))
-    assert integrated["completed"] and integrated["target_head"] == start
-    assert git(remote, "branch", "--list", target).stdout.strip() == (target if existing else "")
-
-    head = git(work, "rev-parse", "HEAD").stdout.strip()
+    assert error_of(mdf(python_exe, "publish", "--repo", str(work)))["error"] == "merge_required"
+    payload(mdf(python_exe, "incremental-integration", "--repo", str(work)))
     merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
-    assert git(remote, "rev-parse", target).stdout.strip() == merged
-    assert git(repo, "show", "-s", "--format=%P", merged).stdout.split() == [start, head]
-    assert git(remote, "rev-parse", "master").stdout.strip() == trunk
-    assert git(remote, "tag", "--list", "v1.2.1").stdout == ""
-    assert error_of(mdf(python_exe, "publish", "--repo", str(work)))["error"] == "closeout_required"
-
-    before = start if existing else "0" * 40
-    audit = payload(mdf(python_exe, "audit-push", "--repo", str(repo), "--branch", target,
-                        "--before", before, "--after", merged, "--collect-evidence"))["result"]
-    assert audit["verdict"] == "pass" and audit["policy_ref"] == start
-    assert [item["reason"] for item in audit["commits"]] == ["local_support_merge"]
-    route = payload(mdf(python_exe, "delivery", "route", "--repo", str(work)))["result"]
-    assert route["next"] == "close-out"
-    closed = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    assert closed["next_intent"] == "publish" and closed["version"] == "1.2.1"
-    assert git(remote, "branch", "--list", source).stdout == ""
-    assert git(remote, "tag", "--list", "v1.2.1").stdout == ""
-    assert git(remote, "show", f"{target}:changes/1.2.1/CHANGE.md").stdout
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(repo), "--source", source))
+    assert payload(mdf(python_exe, "delivery", "route", "--repo", str(work)))["result"]["next"] == "publish"
+    assert error_of(mdf(python_exe, "finish-gitflow", "--repo", str(work)))["error"] == "release_not_published"
+    published = payload(mdf(python_exe, "publish", "--repo", str(work)))
+    assert published["release_head"] == merged and published["next_intent"] == "sync-changelog"
+    assert error_of(mdf(python_exe, "finish-gitflow", "--repo", str(work)))["error"] == "changelog_sync_required"
+    args = ("--repo", str(work), "--source", source, "--version", "1.2.1")
+    prepared = payload(mdf(python_exe, "sync-changelog", *args))
+    pm_work = Path(prepared["worktree"])
+    assert payload(mdf(python_exe, "sync-changelog", *args)) == prepared
+    assert git(work, "branch", "--show-current").stdout.strip() == source
+    assert git(repo, "branch", "--show-current").stdout.strip() == "master"
+    assert (pm_work / ".mdf/manifest.yaml").read_text() == (repo / ".mdf/manifest.yaml").read_text()
+    payload(mdf(python_exe, "doctor", "--repo", str(pm_work)))
+    squash_pending(pm_work)
+    payload(mdf(python_exe, "pr", "--repo", str(pm_work)))
+    payload(mdf(python_exe, "pr", "--repo", str(pm_work)))
+    assert len(platform.pulls) == 1
+    assert error_of(mdf(python_exe, "sync-changelog", *args, "--complete"))["error"] == "pr_not_merged"
+    if existing:
+        (repo / "main-only.txt").write_text("同步 PR 创建后的主线增量\n")
+        commit(repo)
+        git(repo, "push", "origin", "master")
+    platform.merge(1, tmp_path)
+    payload(mdf(python_exe, "pr", "--repo", str(pm_work)))
+    before = git(repo, "rev-parse", f"{platform.pulls[0]['merge_commit']}^1").stdout.strip()
+    evidence = tmp_path / "pm-evidence.json"
+    evidence.write_text(json.dumps({"pull_requests": platform.pulls}))
+    audit = payload(mdf(python_exe, "audit-push", "--repo", str(repo), "--branch", "master",
+                        "--before", before, "--after", platform.pulls[0]["merge_commit"],
+                        "--evidence-file", str(evidence)))["result"]
+    assert audit["verdict"] == "pass"
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(pm_work)))
+    git(repo, "worktree", "remove", str(pm_work))
+    payload(mdf(python_exe, "sync-changelog", *args, "--complete"))
+    assert payload(mdf(python_exe, "delivery", "route", *args))["result"]["next"] == "close-out"
+    assert "1.2.1" in (repo / "CHANGELOG.md").read_text()
+    assert git(repo, "diff", merged, "master", "--", "changes/1.2.1").stdout == ""
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     git(repo, "worktree", "remove", str(work))
     recovery = ("--repo", str(repo), "--source", source, "--version", "1.2.1")
-    assert payload(mdf(python_exe, "delivery", "route", *recovery))["result"]["next"] == "publish"
-    if existing:
-        support = tmp_path / "updated-support"
-        git(repo, "worktree", "add", str(support), target)
-        git(support, "commit", "--allow-empty", "-m", "test: 模拟维护线继续前进")
-        git(support, "push", "origin", target)
-        assert git(remote, "rev-parse", target).stdout.strip() != merged
-    published = payload(mdf(python_exe, "publish", *recovery))
-    assert published["release_head"] == merged
-    assert git(remote, "rev-parse", "v1.2.1^{commit}").stdout.strip() == merged
-    assert payload(mdf(python_exe, "publish", *recovery))["release_head"] == merged
     assert payload(mdf(python_exe, "delivery", "route", *recovery))["result"]["state"] == "completed"
+    assert payload(mdf(python_exe, "publish", *recovery))["release_head"] == merged
 
 
 def test_new_remote_support_tip_requires_sync_and_incremental_acceptance(python_exe, tmp_path):
@@ -115,12 +118,9 @@ def test_workflow_switch_waits_for_support_hotfix_publication(python_exe, tmp_pa
     repo, remote, work, change = prepare_hotfix(python_exe, tmp_path)
     consolidate_hotfix(python_exe, work, change)
     payload(mdf(python_exe, "merge", "--repo", str(work)))
-    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    git(repo, "worktree", "remove", str(work))
     git(repo, "branch", "develop", "master")
     switch = ("workflow", "switch", "--repo", str(repo), "--model", "gitflow")
     assert error_of(mdf(python_exe, *switch))["error"] == "workflow_not_idle"
-    assert git(remote, "tag", "--list", "v1.2.1").stdout == ""
     source = "hotfix/1.2.1"
     args = ("--repo", str(repo), "--source", source)
     published = payload(mdf(python_exe, "publish", *args))
@@ -134,4 +134,46 @@ def test_workflow_switch_waits_for_support_hotfix_publication(python_exe, tmp_pa
     assert error_of(mdf(python_exe, *switch))["error"] == "workflow_not_idle"
     resumed = payload(mdf(python_exe, "publish", *args))
     assert resumed["release_head"] == published["release_head"] and resumed["tag"] == published["tag"]
+    payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
+    git(repo, "worktree", "remove", str(work))
     assert payload(mdf(python_exe, *switch))["to"]["model"] == "gitflow"
+
+
+@pytest.mark.parametrize("mutation", ["code", "other-version", "other-note"])
+def test_sync_pr_rejects_unrelated_changes(python_exe, tmp_path, mutation):
+    from mdf_core.workspace.pm import require_pm_diff
+    from mdf_core.foundation.errors import MDFError
+    repo, remote, work, change = prepare_hotfix(python_exe, tmp_path, pr=True)
+    consolidate_hotfix(python_exe, work, change)
+    payload(mdf(python_exe, "merge", "--repo", str(work)))
+    payload(mdf(python_exe, "publish", "--repo", str(work)))
+    prepared = payload(mdf(python_exe, "sync-changelog", "--repo", str(work)))
+    pm_work = Path(prepared["worktree"])
+    published = git(remote, "rev-parse", "v1.2.1").stdout
+    if mutation == "other-note":
+        path = pm_work / "CHANGELOG.md"
+        path.write_text(path.read_text().replace("# Changelog", "# Changelog\n\n无关说明"))
+    else:
+        path = pm_work / ("src/unrelated.py" if mutation == "code" else "changes/9.9.9/CHANGE.md")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("unrelated = True\n")
+    commit(pm_work)
+    if mutation == "code":
+        git(pm_work, "revert", "--no-edit", "HEAD")
+    with pytest.raises(MDFError) as exc:
+        require_pm_diff(pm_work, "origin/master", "HEAD", prepared["source"])
+    assert exc.value.code == "pm_paths_forbidden"
+    assert git(remote, "rev-parse", "v1.2.1").stdout == published
+    assert git(work, "branch", "--show-current").stdout.strip() == "hotfix/1.2.1"
+
+
+def test_support_publish_preserves_unmerged_source_changes(python_exe, tmp_path):
+    repo, remote, work, change = prepare_hotfix(python_exe, tmp_path)
+    consolidate_hotfix(python_exe, work, change)
+    payload(mdf(python_exe, "merge", "--repo", str(work)))
+    (work / "src/later.py").write_text("later = True\n")
+    commit(work)
+    result = mdf(python_exe, "publish", "--repo", str(work))
+    assert error_of(result)["error"] == "pull_state_changed"
+    assert git(remote, "tag", "--list", "v1.2.1").stdout == ""
+    assert (work / "src/later.py").read_text() == "later = True\n"

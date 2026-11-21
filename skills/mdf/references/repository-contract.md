@@ -292,5 +292,9 @@ generated:
 
 ## CHANGELOG
 
+- github-flow + PR 的 trunk 汇总 support patch；sync-changelog 只导入本版 `changes/<version>/` 与 CHANGELOG 条目。
+- `previous_version` 是发布时的实际基线；主线基线排除导入的 support patch；已发布维护线以固定 tag 中的祖先版本为准。
+- 导入 support 记录不改 trunk 的 `versioning.latest_release`。
+
 根 `CHANGELOG.md` 只列稳定版本，不含 Unreleased 章节。版本目录的根 `CHANGE.md`
 记录该版本的结果、outcome、found-in 转换、SemVer 和审阅结果；CHANGELOG 只做读者索引。

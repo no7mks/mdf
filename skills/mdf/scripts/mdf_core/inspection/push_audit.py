@@ -100,7 +100,7 @@ def classify(repo, commit, branch, evidence, source_prefix, *, trunk, github):
                 if branch != trunk:
                     return "violation", "invalid_pm_target", changed
                 try:
-                    require_pm_merge(repo, parents[0], parents[1], commit)
+                    require_pm_merge(repo, parents[0], parents[1], commit, pull["source"])
                 except MDFError as exc:
                     if exc.code != "pm_paths_forbidden":
                         raise

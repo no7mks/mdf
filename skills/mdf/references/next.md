@@ -68,7 +68,7 @@ adhoc 按 `references/adhoc.md` 的续办条款替代普通主线选型，一次
 ## 术语与数据结构
 
 清单止于 consolidate，github-flow release 还包含 publish。前置全勾后按 `delivery route` 选择下一阶段。走 pr 的交付还须核对 [PR 恢复状态](pr.md#恢复路由与返工上下文)。
-support hotfix 完成 close-out 后，以原分支与版本从主 worktree 调用 `delivery route --source <原分支> --version <version>`。
+support hotfix 合入后，以原分支与版本从主 worktree 调用 `delivery route --source <原分支> --version <version>`。
 该路由返回 publish 时，执行 [发布](publish.md)；返回 completed 时报告完成。
 走 pr 的交付在选择 close-out 前须按 [PR 轮询](pr.md#当前调用内轮询) 确认关联 CI 收尾通过。
 已完成收口须有 finish-gitflow 的实际完成证据，不以 checklist 全勾跳过续办。

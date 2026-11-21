@@ -634,7 +634,7 @@ def finish_local(repo, source, details, args, *, recovered=None):
             from mdf_core.lifecycle.publish import require_remote_merge
             require_remote_merge(repo, actual_target, merged)
         emit({"ok": True, "operation": "merge", "completed": True, "source": source, "merge_commit": merged,
-              "next_intent": "publish" if publish and not github else "close-out"})
+              "next_intent": "publish" if publish and (not github or support) else "close-out"})
         return
     if merged is None:
         raise MDFError("先完成 merge，再执行 close-out", code="merge_required")
@@ -649,6 +649,12 @@ def finish_local(repo, source, details, args, *, recovered=None):
             }.items()):
                 raise MDFError("先执行 merge 记录已验收的 support 合入", code="merge_required")
             require_support_merge(repo, saved_merge)
+            from mdf_core.lifecycle.release_publish import published_head
+            if published_head(repo, details["version"]) != merged:
+                raise MDFError("final tag 与 support merge 不符", code="tag_conflict")
+            from mdf_core.workspace.changelog_sync import require_synced
+            if not saved_merge.get("closed"):
+                require_synced(repo, details["version"], merged)
         else:
             require_remote_merge(repo, actual_target, merged)
         if github and not support:
@@ -674,7 +680,7 @@ def finish_local(repo, source, details, args, *, recovered=None):
         retained = owner
     if retained is None:
         retained = retained_owner(repo, source, source_head)
-    tag = f"v{details['version']}" if publish and not support else None
+    tag = f"v{details['version']}" if publish else None
     emit(
         {
             "ok": True,
@@ -686,6 +692,6 @@ def finish_local(repo, source, details, args, *, recovered=None):
             "primary_worktree": str(primary),
             "tag": tag,
             "pushed": publish,
-            **({"next_intent": "publish", "version": details["version"]} if support else {}),
+            **({"next_intent": None, "version": details["version"]} if support else {}),
         }
     )

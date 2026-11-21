@@ -361,7 +361,7 @@ python3 skills/mdf/scripts/mdf.py finish-gitflow --repo /path/to/repository [--s
 
 - merge 为 local 的实际合入入口，先把 target 合回工作分支，有增量则返回 incremental-integration。
 - 验收完成后 no-ff 合入目标。发布交付推送实际主线 merge commit，保留 source 与 owner worktree。
-- feature / bugfix 合入后进入 close-out；Gitflow 发布交付先 publish，github-flow release 在 merge 前 publish，support hotfix 在 close-out 后向实际 merge commit 发布 tag。
+- feature / bugfix 合入后进入 close-out；Gitflow 发布交付先 publish，github-flow release 在 merge 前 publish，support hotfix 在 merge 后发布 tag，PR mode 同步记录后再 close-out。
 - finish-gitflow 核验已完成的合入和适用的远端 annotated tag，完成 Gitflow develop 回合，再清理 source。
 - 交付走 PR 时由 pr 实际合入，finish-gitflow 只接受已 merged 的恢复。
 - github-flow support hotfix 始终走 merge，包括项目启用 PR mode 时。
@@ -390,7 +390,7 @@ python3 skills/mdf/scripts/mdf.py publish --repo /path/to/repository [--source <
 - Gitflow 和 github-flow support hotfix 给实际 merge commit 打 tag。github-flow release 给已完成 consolidate 的工作分支 commit 打 tag。
 - annotated tag 正文取固定 commit 的本版 CHANGELOG，空章节、空条目或不符的已有 tag 均拒绝发布。
 - github-flow release 原子推送工作分支和 tag，并核对同名远端的 expected SHA 与实际 pre-push 更新清单。
-- Gitflow 在 merge 之后推送 tag。github-flow support hotfix 在 close-out 之后从主 worktree 传 `--source <原分支> --version <version>` 推送 tag。
+- Gitflow 在 merge 之后推送 tag。github-flow support hotfix 在 merge 之后从 owner 或主 worktree 传 `--source <原分支> --version <version>` 推送 tag。
 
 ## `upgrade`
 
@@ -435,3 +435,15 @@ python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-
   start 时仅 start 已勾；人工工作由用户显式勾选。
 - 创建 owner worktree，写入 `manual: true` 与 `needs_design: false`，不写 proposal。
 - merge/pr 要求前置清单完成；人工 feature 的 Change 不引用 PRP，实际合入保持其他 PRP 状态。
+
+## `sync-changelog`
+
+```bash
+python3 skills/mdf/scripts/mdf.py sync-changelog --repo /path/to/hotfix [--source hotfix/name] [--version 1.2.1] [--complete]
+```
+
+- 仅 github-flow + PR 的 support hotfix；merge 与 publish 完成后、hotfix close-out 前执行。
+- 默认核验发布来源，从远端 trunk 创建或恢复 `pm/patch-record-<version>` 与独立 worktree，提交本版记录。
+- 返回 `source`、`worktree`、`target` 与 `next_intent`；Agent 按 [intent](../../../skills/mdf/references/sync-changelog.md) 执行 PR 轮询与清理。
+- `--complete` 在 PR、关联 CI 与 pm 清理结束后执行，核验远端实际记录并保存完成回执。
+- 全程不改变 Agent root；CLI 的 `--repo` 与外部命令的执行路径须显式指定。

@@ -6,6 +6,10 @@ github-flow 的 PR 目标是 `workflow.trunk`。support hotfix 走 [merge](merge
 
 ## pm 分支
 
+- `sync-changelog` 创建的 `pm/patch-record-<version>` 使用独立 worktree，仅允许本版 `changes/` 与 CHANGELOG 条目。
+  此分支直接在返回的 worktree 提交、返工和调用 pr，不使用 `pm rework`；合入后调用 finish-gitflow，再清理 worktree。
+  Agent root 保持不变，按 [sync-changelog](sync-changelog.md) 显式指定所有执行路径。
+
 github-flow 的 [trunk-pr](trunk-pr.md) 把本地 trunk 的项目记录保全到 `pm/*`。主 worktree 始终检出 trunk。
 
 - 按现有 PR 授权和 Goal 规则，从干净的 trunk worktree 执行

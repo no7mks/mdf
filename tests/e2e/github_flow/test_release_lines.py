@@ -236,8 +236,9 @@ def test_support_hotfix_publishes_to_support_only_and_never_merges_back(python_e
     commit(work)
     prepare_release_materials(python_exe, work)
     payload(mdf(python_exe, "merge", "--repo", str(work)))
+    payload(mdf(python_exe, "publish", "--repo", str(work)))
     done = payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
-    assert done["targets"] == ["support/1.1"] and done["next_intent"] == "publish"
+    assert done["targets"] == ["support/1.1"] and done["next_intent"] is None
     published = payload(mdf(python_exe, "publish", "--repo", str(repo), "--source", data["branch"]))
     head = published["release_head"]
     assert head == git(repo, "rev-parse", "support/1.1").stdout.strip()
