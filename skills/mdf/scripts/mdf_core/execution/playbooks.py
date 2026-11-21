@@ -147,9 +147,9 @@ def load_pending(
     if state.get("scope") != scope:
         raise _invalid_report(f"pending scope 为 {state.get('scope')}，与本次 {scope} 不一致")
     if state.get("head") != _head(repo):
-        raise _invalid_report("HEAD 已变化；丢弃本轮 pending 并重跑验证")
+        raise _invalid_report("HEAD 已变化；保留本轮证据，按增量验证契约续办")
     if scope == "named" and state.get("tracked_state") != _tracked_state(repo):
-        raise _invalid_report("tracked 文件已变化；丢弃本轮 pending 并重跑验证")
+        raise _invalid_report("tracked 文件已变化；保留本轮证据，按增量验证契约续办")
     if evidence is not None:
         status = run(["git", "status", "--porcelain", "-z", "--untracked-files=all"], cwd=repo).stdout
         dirty = [entry[3:] for entry in status.split("\0") if entry]

@@ -68,7 +68,7 @@ def test_review_findings_are_reproduced_only_after_readonly_reports_are_complete
     assert "未发生拆分的文件不能仅因超过拆分目标被要求改写" in review
 
 
-def test_verify_repair_requires_one_incremental_review_and_original_verification():
+def test_verify_repair_preserves_review_and_original_scope_with_incremental_evidence():
     verify = workflow("verify")
     assert "人工 feature 的 verify smoke 与 adhoc 的主链 smart" in verify
     assert "独立调用和 deliver 均执行" in verify
@@ -102,7 +102,7 @@ def test_lint_tools_and_coverage_have_separate_responsibilities():
     assert "仅 feature/release 实际进入本 intent" in converge
     assert "未配置时记录未配置" in converge
     assert "沿用 has_dev: no 等既有 converge 跳过规则" in converge
-    assert "修复后重跑 smart 与 coverage" in converge
+    assert "verify-incremental.md" in converge
 
 
 def test_verify_loop_is_in_the_numbered_workflow_and_has_a_final_tick():
@@ -121,13 +121,13 @@ def test_resume_context_survives_child_report_finalization():
     verify = workflow("verify")
     assert "objectives 的非 checklist 备注" in verify
     assert "步骤 6 完成小 loop 后才清理" in verify
-    assert "新会话恢复先按备注重跑原验证" in verify
+    assert "新会话恢复先按备注恢复原请求与实跑/复用证据" in verify
     assert "不得删除 objectives 中父 verify" in workflow("code-review")
     assert "不按首个退勾项提前重开审查" in workflow("next")
     assert "完成后才返回 Select" in workflow("deliver")
     assert "推进操作左端点并更新、提交续办备注" in verify
     assert "更新实际命令基准" in verify
-    assert "报告被覆盖/不匹配时，回 3 重跑原验证范围" in verify
+    assert "报告被覆盖/不匹配时，回 3 恢复证据并增量补测" in verify
     assert "不能把子流程的部分验证冒充原主链结果" in verify
 
 

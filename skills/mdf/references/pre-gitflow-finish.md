@@ -114,7 +114,8 @@ deliver 委托时先核外层 fact 的 until，再承办本表；decision 继承
    - rule 按通用日志契约保留执行证据；无需另写 Markdown 执行记录。
    - 有 hook 改动或 objectives 退勾时，复核后提交实际改动；无改动不制造提交。
    - 非文档改动按 code-review 的增量新一轮补审。左端点为原 `before_head`，人数用冻结 roster。
-   - 补审后 adhoc 重跑 verify smart，人工重跑 verify smoke，其余重跑 verify branch，通过后进入 fact。
+   - 补审后按 [增量验证契约](verify-incremental.md) 补验：adhoc 用 smart，人工用 smoke，其余用 branch。
+     汇总通过后进入 fact。
    - 独立推进交付时依同一顺序承办；next 可先交接补审，由后续调用完成补测与 fact。
 
 ### 失败与日志

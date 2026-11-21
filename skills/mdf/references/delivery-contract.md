@@ -299,8 +299,8 @@ close-out 只查上表是否已交且声称通过；不复验对不对。
   - 路径可以是仓库相对文件、目录或 glob。
 - design policy 必须另含 `suites`：本交付改动涉及的全部功能块的 named suite 名。
   - 非空列表，不得使用 lint/build/quick/smoke/release/full。
-- 点名执行 test case 或 test 仅用于定位，不替代所需 suite 通过。
-- `$mdf verify` / 验证 report 必须写出 Core 实际跑过的 `suites`。
+- 点名执行 test 可用于定位；完整 case 的复测证据可与未受影响 case 的通过证据共同完成所需 suite 验收。
+- `$mdf verify` / 验证 report 保留原请求的 `suites`，区分 Core 实跑、增量复测和历史复用范围。
 
 补验（仅在**该** intent 内）：
 
@@ -351,13 +351,13 @@ Core 判定退出码与测试报告（见下节）。
   - 写明类别、来源模块与理由，记在 `docs/system/testing/`，新增或放宽须用户确认。
 #### 测试失败工作流
 
-converge（smart）与 verify branch **共用**：
+所有 verify variation 与内部调用**共用**；执行与汇总见 [增量验证契约](verify-incremental.md)。
 
 1. 测试运行必须有框架自带报告文件（JUnit 等），禁止靠 tee/tail 冒充报告。
 2. verify 的 quick、smoke 失败先按 [已知 Bug test 契约](known-bug-tests.md) 分诊；其他失败先复测**单用例**。
 3. 修一个用例 → 复测该单用例。
 4. 有 side effect 的 flaky 例外（须记录依据）。
-5. 相关单用例都绿后，才继续该轮 verify（smart 或 branch）。
+5. 相关单用例都绿后，补测受修复影响的 case，复用其他已通过且未受影响的结果，再汇总该轮 verify。
 #### 测试报告
 
 每次运行 suite（含 named suite）都必须产出 JUnit XML 报告。
@@ -373,7 +373,7 @@ converge（smart）与 verify branch **共用**：
 - 缺报告、报告无法解析、普通空报告，或含 failure、error、skipped（含 xfail）时，
   该 suite 失败，即使命令退出码为 0。
 - quick/smoke 的全豁免空报告仅按 [Bug test 契约](known-bug-tests.md) 校验通过；不适用于普通空报告。
-- 点名执行 test case 或 test 只用于定位；定位复测仍应尽量落盘框架报告。
+- 点名执行 test 可用于定位；选定 test case 的增量复测也可作为验收证据，须覆盖所需范围并落盘框架报告。
   有运行器报告则读报告；否则用 `mdf.py run` 落盘。
 #### 验证 suite
 
@@ -480,5 +480,5 @@ fact update / fact audit 可独立运行；交付主链在 verify branch 之后�
 
 - 所有交付在 code-review 前增加 lint checklist 项；具体执行见 references/lint.md。
 - 主链 verify 修绿后改了业务内容时，内部委托 1 人增量 code-review；完成后才勾验证项。
-- 增量审查修复后重跑原验证范围；内部 smart 不递归开启 loop。具体范围与续办见 references/verify.md。
+- 增量审查修复后只补测失败和受影响 case，复用未受影响的通过结果；内部 smart 不递归开启 loop。具体范围与续办见 references/verify.md。
 - reviewer 严格只读；main Agent 收齐报告后核实、复现、修复并落盘证据。

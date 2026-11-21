@@ -57,7 +57,7 @@
 
 | 条件 | 处理 |
 | --- | --- |
-| quick、smoke 的失败精确命中已有 `open` Bug 的关联 test | 核对失败依据、移除对应成员并重跑；其余检查通过后 verify 通过 |
+| quick、smoke 的失败精确命中已有 `open` Bug 的关联 test | 核对失败依据、移除对应成员并增量补验；其余检查通过后 verify 通过 |
 | `fixed` Bug 对应 test 再次失败 | 不豁免；重新确认缺陷与 Bug 状态，不自动改回 `open` |
 | Bug 为 `closed`、`rejected`，或没有对应 Bug | 不豁免，按调用方原失败流程处理 |
 | release、其他 named suite 或显式点名 test 失败 | 保留执行并阻断，不应用 quick、smoke 的豁免 |
@@ -105,12 +105,12 @@ verify 在 Select 阶段先检查所有现有 Bug 临时排除项，再运行验
 - 恢复不要求 test 已通过；恢复后失败按当前状态正常处理，不继续享受旧豁免。
 - 找不到原成员或无法判定排除归属时停止，不凭猜测删除配置，也不跳过检查。
 - 状态变更、归档与 Git merge 后同样检查；没有新的 test 失败也不能省略。
-- 此预检发生的选题修改纳入父 verify 的原范围重跑与主链增量复审。
+- 此预检发生的选题修改纳入父 verify 的影响分析与主链增量复审，补验范围按 [增量验证契约](verify-incremental.md)。
 
 1. 读取原始报告，以精确 test 身份查找已有 `open` Bug 的关联，核对本次失败依据。
 2. 将命中关联的记录标为 `removed` 并补齐排除与恢复方式；按 runner 选题从 quick、smoke 排除。
 3. 保留 test 源码和断言；确认 release 与显式点名执行仍选中该 test。
-4. 提交本次记录与选题改动，再重跑原 verify 请求，核对实际命令和新报告。
+4. 提交本次记录与选题改动，核对成员变化并补测受影响 case，复用未受影响的通过结果。
 5. 其余检查通过后，记录「通过，含已知 Bug 临时移除」及 Bug/test/报告引用。
 
 - 排除使用 deselection 或 suite 成员筛选；不得用全局 skip、xfail 或删除 test 实现。
@@ -119,7 +119,7 @@ verify 在 Select 阶段先检查所有现有 Bug 临时排除项，再运行验
 - 不得伪造通过 test；全豁免报告保留 `tests: 0`、`passed: 0` 与 `fully_exempted: true`。
 - 不覆盖原始失败报告，不把原失败命令的退出码或 `all_passed: false` 改写为通过。
 - 主链仍完成 verify 的增量 review 小 loop；选题配置变化属于需复审的业务改动。
-- 非主链也须重跑并返回真实结果；不以有 Bug 记录直接跳过其他检查。
+- 非主链也须增量补验并返回真实结果；不以有 Bug 记录直接跳过其他检查。
 - 最终报告逐项列出临时移除；不得将未执行的 test 声称为已通过。
 
 ### 全豁免空 suite 的报告
@@ -134,7 +134,7 @@ verify 在 Select 阶段先检查所有现有 Bug 临时排除项，再运行验
 - 未识别的退出状态、collection 错误、超时、缺报告或无效证据仍失败；不能统一忽略非零退出。
 - runner 若尚不支持该报告，Agent 先修改项目的持久 runner adapter，验证正常收集与故障分流，再重跑。
 - Core `execution/empty_suite.py` 做确定性证据校验；失败不得手改 verification-report 的通过字段。
-- 该证据不适用于 release、其他 named suite 或显式点名 test；部分豁免仍执行剩余 test。
+- 该证据不适用于 release、其他 named suite 或显式点名 test；部分豁免的剩余 test 须有实跑或有效复用证据。
 
 ### fix 恢复
 
@@ -145,7 +145,7 @@ verify 在 Select 阶段先检查所有现有 Bug 临时排除项，再运行验
 2. 修复实现，使全部关联 test 及该 Bug 所需回归证据通过；不使用本 Bug 豁免取得绿灯。
 3. 逐条核对全部关联 test；已移除的恢复原成员关系，未移除的保留正常成员关系。
    清除该 Bug 的精确排除项；保留其他 test 的排除项。
-4. 核对 runner 选题确实包含恢复的 test，并运行受影响的 quick、smoke 验证恢复结果。
+4. 核对 runner 选题确实包含恢复的 test，并补测 quick、smoke 中受影响的 case，复用未受影响的通过结果。
 5. 完成 fix 原有 smart 验证；已被同次验证完整覆盖的检查复用报告，不重复运行。
 6. 将记录改为 `restored`，保存成员核对与通过证据，再把 Bug 标为 `fixed` 并一起提交。
 

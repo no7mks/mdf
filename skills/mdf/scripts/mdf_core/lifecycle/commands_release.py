@@ -20,7 +20,7 @@ from mdf_core.workspace.gitutil import (
     run,
 )
 from mdf_core.foundation.paths import ensure_safe_managed_paths, load_manifest
-from mdf_core.execution.verification import recorded_suites
+from mdf_core.execution.verification import incremental_result_passed, recorded_suites
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
@@ -59,11 +59,13 @@ def reusable_results(repo: Path, commands: list[str]) -> dict[str, Any] | None:
     results = evidence.get("results") or []
     if [item.get("command") for item in results] != commands:
         return None
+    if any("incremental" in item and not incremental_result_passed(item) for item in results):
+        return None
     return {
         "path": str(evidence_path(repo).relative_to(repo)),
         "suites": recorded_suites(evidence),
         "results": [
-            {key: item[key] for key in ("command", "exit_code", "log", "report")
+            {key: item[key] for key in ("command", "exit_code", "log", "report", "passed", "incremental", "error", "details")
              if key in item}
             for item in results
         ],

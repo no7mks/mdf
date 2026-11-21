@@ -431,6 +431,7 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
   - 主链外完成 smart 与终稿后，再由原主链完成所需验证与 fact；旧通过报告不代替本轮结果。
 
 本轮 smart 按以下互斥条件处理，不越过调用方边界。
+失败修复后按 [增量验证契约](verify-incremental.md) 补测并汇总，不强制重跑整个 smart。
 
 | 调用与改动 | 处理 |
 | --- | --- |

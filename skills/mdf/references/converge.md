@@ -112,7 +112,7 @@ local 模式下本 intent **不**询问、执行或委托 `$mdf squash`。
    本分支相对 start_commit 新增/改动的测试；可加 Agent/Jev 选题）。
 3. ❌ 不得用 verify branch（smoke/release）冒充本步。
 4. 失败时遵守「测试失败工作流」（单用例复测 → 修一个复测一个 → 再继续）。
-5. 可修实现则修并**提交**相关实现/测试路径后再跑 smart；改测试/门槛须批准。
+5. 可修实现则修并**提交**相关实现/测试路径后按 [增量验证契约](verify-incremental.md) 补测并汇总 smart；改测试/门槛须批准。
 6. feature/release 的 smart 通过后运行已配置的 coverage。循环直至前置已勾、smart 与适用 coverage 均绿，或阻塞停止。
 
 阻塞写入 `changes/unreleased/<slug>/converge-blocked.md`
@@ -132,6 +132,6 @@ local 模式下本 intent **不**询问、执行或委托 `$mdf squash`。
 
 - 仅 feature/release 实际进入本 intent 时，在 smart 通过后运行 `$mdf verify coverage`。
 - 全部已配置 module 的 targets 均须通过；repo 级覆写时只运行该完整定义一次。
-- 未配置时记录未配置，继续 Tick；已配置失败时不勾 converge，修复后重跑 smart 与 coverage。
+- 未配置时记录未配置，继续 Tick；已配置失败时不勾 converge，修复后按增量验证契约补测 smart 与 coverage 的失败及受影响项，复用其余通过结果。
 - 沿用 has_dev: no 等既有 converge 跳过规则，不为跳过项额外运行 coverage。
 - 人工 feature、adhoc、bugfix、hotfix 不自动运行 coverage；可显式调用 verify coverage。

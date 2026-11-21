@@ -342,6 +342,8 @@ def _record_branch(repo, branch, kind, slug, raw) -> None:
 
 def record_completed_playbook_clear(repo, report, report_paths):
     """报告提交后，工作区重新 clean 时记录同一份已验证内容。"""
+    if any("incremental" in item for item in report.get("results", [])):
+        return
     raw = next((item["report"]["path"] for item in report.get("results", [])
                 if "playbook" in item and "report" in item), None)
     if not raw:

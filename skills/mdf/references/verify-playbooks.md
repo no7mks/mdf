@@ -1,6 +1,7 @@
 # Verify Playbooks
 
-仅由 verify 步骤 3 在 `verify-pending` 或恢复 pending 时读取；返回 verify 步骤 4。
+由 verify 步骤 3 在 `verify-pending` 或恢复 pending 时读取；返回 verify 步骤 4。
+修复后的 case 选择与跨轮汇总按 [增量验证契约](verify-incremental.md#playbook) 执行。
 
 ## 决策树
 
@@ -62,7 +63,7 @@
 - 核对 pending 的 scope、suite、HEAD；branch 还须匹配分支，且除 Core 报告外 worktree 干净。
 - named 允许运行前已有改动；创建 pending 后 tracked 状态不得变化，Core 在收录时校验摘要。
 - pending 期间不修改或提交 tracked 文件；branch 仅允许 Core 写本交付的 `verification-report.json`。
-- HEAD 或受约束状态变化时保留失败证据、停止本轮；回父流程处理改动后重跑原验证请求。
+- HEAD 或受约束状态变化时保留失败证据、停止本轮；回父流程按增量验证契约复测失败和受影响 case，复用其余通过结果。
 - 逐份核对观察 JSON 与 XML 的步骤覆盖；缺少观察才执行，已有失败如实保留，不凭 XML 存在判通过。
 - 多 suite 请求保留初轮 command 结果及全部 pending 目录；全部收录通过才报告整个请求通过。
   - 任一 suite 失败仍收录其余结果，合并交给 verify 步骤 4；不得仅凭最后一次收录结果返回成功。
@@ -104,6 +105,6 @@ python3 "$MDF_ROOT/scripts/playbook_junit.py" \
 | named | `mdf.py verify --scope named --suites <单个 suite> --record <report_dir>` |
 
 - `missing_test_report`、XML 格式错误或步骤不对应：按观察修复报告，回步骤 3。
-- pending 缺失、损坏、scope/suite/分支或 checkout 不匹配：保留现场并停止，回父流程重跑原请求。
+- pending 缺失、损坏、scope/suite/分支或 checkout 不匹配：保留现场并停止，回父流程恢复原请求证据，只补失败、受影响或缺失范围。
 - `verify_command_failed`：测试失败已经收录，连同成功结果返回 verify 步骤 4 分诊；本子流程不修业务。
 - 其他错误：保留报告与日志并停止，报告实际错误，不宣称通过。

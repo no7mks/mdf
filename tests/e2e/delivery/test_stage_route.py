@@ -80,7 +80,8 @@ def test_complete_verify_commits_only_stage_files_and_is_idempotent(python_exe, 
     assert again["already_completed"] is True and git(work, "rev-parse", "HEAD").stdout.strip() == head
 
 
-def test_playbook_verification_records_clear_after_committing_its_report(python_exe, tmp_path):
+@pytest.mark.parametrize("incremental", [False, True])
+def test_playbook_verification_records_clear_only_for_full_run(python_exe, tmp_path, incremental):
     from test_playbooks import _write_junit, _write_playbook
 
     repo, _, _ = started(python_exe, tmp_path)
@@ -97,7 +98,18 @@ def test_playbook_verification_records_clear_after_committing_its_report(python_
     payload(mdf(python_exe, *command, "--record", folder))
     state = repo / ".git/mdf/clear-commits.json"
     assert not state.exists()
+    if incremental:
+        report_path = root / "verification-report.json"
+        report = json.loads(report_path.read_text())
+        report["results"][-1]["incremental"] = {
+            "original": dict(report["results"][-1]), "reused": [folder], "reason": "该 case 未受修复影响",
+        }
+        report_path.write_text(json.dumps(report))
     payload(complete(python_exe, work, "verify"))
+    if incremental:
+        assert not state.exists()
+        assert "- [x] verify branch" in (root / "objectives.md").read_text()
+        return
     head = git(work, "rev-parse", "HEAD").stdout.strip()
     assert json.loads(state.read_text())["verify_release"] == head
     rerun = payload(mdf(python_exe, *command))["result"]
@@ -132,6 +144,41 @@ def test_verify_smart_needs_smart_scope_and_branch_summary_is_committed_when_pre
     done = payload(complete(python_exe, work, "verify"))["result"]
     assert sorted(Path(p).name for p in done["paths"]) == ["objectives.md", "verification-report.json",
                                                             "verification-report.md"]
+
+
+@pytest.mark.parametrize("results", [2, {}, None, "invalid"])
+def test_invalid_results_container_is_rejected_as_evidence(python_exe, tmp_path, results):
+    _, work, root = started(python_exe, tmp_path)
+    set_steps(work, root, [("verify smart", False)])
+    passing_report(root, scope="smart")
+    path = root / "verification-report.json"
+    report = json.loads(path.read_text())
+    report["results"] = results
+    path.write_text(json.dumps(report))
+    assert route(python_exe, work)["auto_completable"] is False
+    assert error_of(complete(python_exe, work, "verify"))["error"] == "stage_evidence_missing"
+
+
+@pytest.mark.parametrize("original_exit", [None, 1])
+def test_smart_incremental_completion_uses_aggregate_status_not_original_exit(python_exe, tmp_path, original_exit):
+    _, work, root = started(python_exe, tmp_path)
+    set_steps(work, root, [("verify smart", False)])
+    passing_report(root, scope="smart")
+    path = root / "verification-report.json"
+    report = json.loads(path.read_text())
+    item = report["results"][0]
+    item.pop("exit_code")
+    if original_exit is not None:
+        item["exit_code"] = original_exit
+    item.update(passed=False, incremental={"original": dict(item), "runs": [{"command": "true", "exit_code": 0}],
+                                           "reused": [], "reason": "失败 case 已修复"})
+    path.write_text(json.dumps(report))
+    assert route(python_exe, work)["auto_completable"] is False
+    item["passed"] = True
+    path.write_text(json.dumps(report))
+    assert payload(complete(python_exe, work, "verify"))["result"]["completed"]
+    recorded = json.loads(path.read_text())["results"][0]
+    assert recorded.get("exit_code") == original_exit
 
 
 def test_unrelated_staged_changes_abort_and_preserve_the_scene(python_exe, tmp_path):

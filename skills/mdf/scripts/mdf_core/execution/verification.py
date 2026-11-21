@@ -106,6 +106,16 @@ def recorded_suites(record):
     return raw
 
 
+def incremental_result_passed(item):
+    """增量验收读取综合状态，并要求原执行命令可追溯；不改写原退出码。"""
+    evidence = item.get("incremental")
+    if item.get("passed") is not True or not isinstance(evidence, dict):
+        return False
+    original = evidence.get("original")
+    return (isinstance(original, dict) and isinstance(original.get("command"), str)
+            and bool(original["command"].strip()))
+
+
 def suites_cover(recorded, required):
     """按 quick ⊆ smoke ⊆ release 判断覆盖；named suite 只按名称匹配。"""
     covered = set(recorded)

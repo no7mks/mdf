@@ -111,4 +111,8 @@
 
 ## 点名执行
 
-只用于定位：`python -m pytest -n0 tests/e2e/delivery/test_roster.py::<test 名>`。
+定位单个 test：`python -m pytest -n0 tests/e2e/delivery/test_roster.py::<test 名>`。
+
+- 修复后的验收只补测失败及受影响 case，复用其余已通过结果；所有 verify variation 统一适用。
+- 影响分析、报告汇总和原请求覆盖按 [增量验证契约](../../../skills/mdf/references/verify-incremental.md)。
+- case 级补测使用对应测试文件，保持默认并行；无需为了验收重新跑整个入口。

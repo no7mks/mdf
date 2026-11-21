@@ -101,24 +101,27 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 对清单中每个 Bug，对照其「所需回归证据」确认复现用例通过。
 
 - 取证：
-  - 本轮改过实现、测试或验证配置时，不复用修改前的报告；点名执行复现用例。
+  - 本轮改过实现、测试或验证配置时，复测失败和受影响的复现用例；未受影响的通过结果按增量验证契约复用。
   - 否则在 bugfix/hotfix/release 上，能证明报告覆盖当前实现时可读已绿的 verification-report.json：
     - 由本次执行记录确认报告之后未改相关实现/测试/配置；无法证明则点名执行。
     - results[].report.cases 仅含 test case 汇总，不含具体 test 清单。
     - 从 results[].log 读取 summary.json，用 cases[].tests[] 的 name/result
       精确匹配复现 test（结合 case 名消歧）；case/test 明确 passed 时才引用并不重跑。
     - 报告缺失、无法唯一匹配或未 passed 时，按 testing 文档点名执行；全绿不足以证明已覆盖。
+    - 增量条目从 `incremental.runs` / `reused` 定位对应 case 的有效来源，不把条目保留的原失败报告当成最终结果。
   - 其他分支按 docs/system/testing/ 的命令模板点名执行；Bug 有可执行命令则按其执行。
 - 核对 [已知 Bug test 契约](known-bug-tests.md) 的恢复已在 fixed 前完成。
   若仍有有效排除项则停止并交给 fix 补齐恢复；排除后的绿报告不能证明该 test 已通过。
 - 只要求这些复现用例通过。
-- 本步修改实现/测试/验证配置时，另对涉及 module 跑 smart（含 quick suite），须退出 0。
+- 本步修改实现/测试/验证配置时，另对涉及 module 做 smart 验收（含 quick suite）；首轮执行 CLI。
   - CLI：`verify --scope smart --repo "$REPO_ROOT"`。
   - 用 `--paths` / `--module` 圈定涉及 module。
-  - 成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
-  - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
+  - 首轮成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
+  - 首轮非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
   - 不把进度行当结果。
   - ❌ 不调用 `$mdf verify --scope branch` 冒充本步。
+- smart 失败再修复后，按 [增量验证契约](verify-incremental.md) 只复测失败和受影响 case，复用其他通过结果。
+  核对汇总覆盖原请求且 `all_passed: true`；不要求重新运行完整 smart CLI 取得退出 0。
 - 缺可执行复现命令时停止并报告，提示先 `$mdf fix` 补红灯，不在本步新造用例。
 - 失败且可修实现时原地修复并重验。
   - 可修复指同一失败连续无进展未满三轮且下一步明确；否则视为无法完成。
@@ -141,7 +144,7 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
   - 本 intent 已有未提交修复时，另审本轮工作区 diff；范围仅含非 `docs/`、非 `changes/` 修复与复现路径。
   - 范围为空或不唯一时停止询问，不改用整分支 diff。
 - 读取必要上下文，不能只看提交标题。
-- 主 Agent 裁定、修复实现；修复后回到步骤 2 重跑该 Bug 的复现用例，再审新 diff。
+- 主 Agent 裁定、修复实现；修复后回到步骤 2 补测失败和受影响的复现 case，复用其他通过结果，再审新 diff。
 - 降低验收或改目标须用户确认。
 - 审查结论写入本步记录，须含实际依据。
 - 可选加速（见 `common.md`「Jev 可选加速」）：
@@ -169,7 +172,7 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 - 字段：ID、复现命令与退出状态（或引用的报告路径与 test 名）、结果、审查路径范围、HEAD、结论。
 - 记录须使调用方能判断「该 ID 在当前 HEAD 上复现用例已通过且审查完成」。
 - 有效性：记录 HEAD 到当前 HEAD 只改记录文件自身、`docs/` 或 `changes/` 材料（无代码变化）时仍有效；
-  其他改动或复现命令变化则过期，须重跑步骤 2–3。
+  其他改动或复现命令变化则回步骤 2–3 评估影响、增量补测并审查新 diff，不因记录过期强制重跑整个 smart。
 - 先判断交付委托补验分支；本轮改了实现/测试/验证配置时提交修复与记录，保留 Bug
   当前状态并按调用方返回补验；本轮不调用关闭 CLI，不声称关闭完成。
 - 否则 fixed Bug 调用下方 CLI；内部重验的 closed Bug 仅更新记录。

@@ -133,14 +133,16 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
   1. 先让该红灯测试转绿。
   2. 再按所需回归证据重跑对应命令直到通过；记录命令、退出状态、结果及对应证据项。
   3. 核对全部关联 test；按专门契约恢复已移除成员、保留其余成员并全部验证通过，不等 bug close。
-  4. 随后对涉及 module 跑 smart（含 quick suite），须退出 0。
+  4. 随后对涉及 module 做 smart 验收（含 quick suite）；首轮执行 CLI，失败后的重试按增量验证契约完成。
      - CLI：`verify --scope smart --repo "$REPO_ROOT"`。
      - 用 `--paths` / `--module` 圈定涉及 module。
      - 不要求交付分支或交付材料；选题按本次修复路径与 Bug 所需回归证据。
-     - 成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
-     - 非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
+     - 首轮成功读 stdout 的 `result`：逐项 `log` 与 quick `report`。
+     - 首轮非零读 stderr 最后一行的 `details.results[]`（`passed` / `error`）。
      - 不把进度行当结果，不为查看输出而重跑。
-- 恢复成员时额外运行受影响的 quick、smoke；这是恢复验证，不按分支 kind 扩大范围。
+- smart 失败再修复后，按 [增量验证契约](verify-incremental.md) 只复测失败和受影响 case，复用其他通过结果。
+  核对汇总覆盖原请求且 `all_passed: true`；不要求重新运行完整 smart CLI 取得退出 0。
+- 恢复成员时补测 quick、smoke 中受影响的 case；这是恢复验证，不按分支 kind 扩大范围。
 - ❌ 不按分支 kind 选择 smoke 或 release，
   不调用 `$mdf verify --scope branch` 冒充本 intent 完成。
 - 不要求 feature 的 design/converge gate。

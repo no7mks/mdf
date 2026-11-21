@@ -8,6 +8,21 @@ from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
+def verification_audit_line(item: Any) -> str:
+    """区分命令实际执行与跨轮验收；增量证据完整保留在版本审计中。"""
+    if not isinstance(item, dict):
+        return f"  - `{item}`\n"
+    if "incremental" not in item:
+        return f"  - `{item.get('command')}` → exit {item.get('exit_code')}\n"
+    status = "通过" if item.get("passed") is True else "未通过"
+    details = json.dumps({
+        "original_execution": item["incremental"]["original"],
+        "incremental": item["incremental"],
+    }, ensure_ascii=False, indent=2)
+    return (f"  - 验证请求 `{item.get('command')}`：增量汇总{status}，非完整命令实跑。\n\n"
+            + "    ```json\n" + "\n".join("    " + line for line in details.splitlines()) + "\n    ```\n")
+
+
 def aggregate_release_changes(
     repo: Path,
     slugs: list[str],
@@ -231,11 +246,7 @@ def render_version_change(
         + "- 确定性的全量审计：已通过（由 Core 验证）。\n"
         + "- 验证命令：\n"
         + "".join(
-            (
-                f"  - `{item.get('command')}` → exit {item.get('exit_code')}\n"
-                if isinstance(item, dict)
-                else f"  - `{item}`\n"
-            )
+            verification_audit_line(item)
             for item in (
                 verify_command_results
                 or [

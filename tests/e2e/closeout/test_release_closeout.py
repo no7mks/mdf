@@ -84,6 +84,71 @@ def test_closeout_preview_is_optional_read_only_summary_then_apply(
     )
 
 
+@pytest.mark.parametrize("changed_command", [False, True])
+def test_closeout_preserves_failed_original_command_and_incremental_evidence(python_exe, tmp_path, changed_command):
+    repo = copy_fixture(tmp_path)
+    patch_module_command(repo, "release", lambda command: "printf release; " + command)
+    prepare_release(repo)
+    seed_verify_branch(python_exe, repo)
+    path = repo / "changes/unreleased/1.3.0/verification-report.json"
+    report = json.loads(path.read_text())
+    item = report["results"][-1]
+    item["exit_code"] = 1
+    original = dict(item)
+    original["passed"] = False
+    if changed_command:
+        patch_module_command(repo, "release", lambda command: "printf updated; " + command)
+        item["command"] = "printf updated; " + item["command"]
+    item["incremental"] = {
+        "original": original,
+        "reason": "仅失败 case 受修复影响",
+        "runs": [{"command": "pytest tests/test_fixed.py", "exit_code": 0,
+                  "report": ".mdf/reports/retry/junit.xml"}],
+        "reused": [{"case": "tests/test_unchanged.py", "report": item["report"]["path"],
+                    "reason": "未依赖修改的实现"}],
+    }
+    path.write_text(json.dumps(report))
+    git(repo, "add", str(path), ".mdf/modules.yaml")
+    git(repo, "commit", "-m", "test: 保存增量验证证据")
+
+    applied = payload(mdf(python_exe, *release_arguments(repo)))
+    retained = applied["verification"]["results"][-1]
+    assert retained["incremental"] == item["incremental"]
+    assert retained["exit_code"] == 1 and retained["passed"] is True
+    change = (repo / "changes/1.3.0/CHANGE.md").read_text()
+    assert f"`{item['command']}` → exit 0" not in change
+    assert "增量汇总通过" in change
+    assert '"exit_code": 1' in change
+    assert "pytest tests/test_fixed.py" in change
+    assert "tests/test_unchanged.py" in change
+    assert item["report"]["path"] in change
+    audit_json = change.split("    ```json\n", 1)[1].split("\n    ```", 1)[0]
+    audit = json.loads(audit_json)
+    assert audit["original_execution"] == original
+
+
+@pytest.mark.parametrize("passed", [False, None])
+def test_closeout_rejects_nonpassing_incremental_entry_despite_overall_pass(python_exe, tmp_path, passed):
+    repo = copy_fixture(tmp_path)
+    prepare_release(repo)
+    seed_verify_branch(python_exe, repo)
+    path = repo / "changes/unreleased/1.3.0/verification-report.json"
+    report = json.loads(path.read_text())
+    item = report["results"][-1]
+    item["incremental"] = {"original": dict(item), "runs": [], "reused": [], "reason": "待补验"}
+    if passed is None:
+        item.pop("passed")
+    else:
+        item["passed"] = passed
+    path.write_text(json.dumps(report))
+    git(repo, "add", str(path))
+    git(repo, "commit", "-m", "test: 保存尚未通过的增量条目")
+    result = mdf(python_exe, *release_arguments(repo))
+    assert result.returncode != 0
+    assert "verification_report_not_reusable" in result.stderr
+    assert not (repo / "changes/1.3.0/CHANGE.md").exists()
+
+
 def test_closeout_rejects_removed_semantic_attestation_argument(
     python_exe: str, tmp_path: Path
 ):

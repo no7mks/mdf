@@ -25,6 +25,8 @@ def _objectives(repo, root):
 
 
 def _verify_evidence(repo, root, data, item):
+    from mdf_core.execution.verification import incremental_result_passed
+
     path = safe(repo, root / "verification-report.json")
     if not path.is_file():
         return None, ("缺少 verification-report.json", {"missing": "verification-report.json"})
@@ -35,6 +37,12 @@ def _verify_evidence(repo, root, data, item):
     if (report.get("all_passed") is not True or report.get("scope") != expected["expected_scope"]
             or report.get("branch") != data["branch"]):
         return None, ("verification-report.json 未声称本分支本 scope 全部通过", expected)
+    results = report.get("results", [])
+    if not isinstance(results, list):
+        return None, ("verification-report.json 的 results 须为列表", expected)
+    if any(isinstance(result, dict) and "incremental" in result and not incremental_result_passed(result)
+           for result in results):
+        return None, ("增量条目须通过且保留原执行命令", expected)
     if report["scope"] == "branch":
         from mdf_core.execution.verification import recorded_suites, required_suites, suites_cover
         from mdf_core.workspace.gitutil import branch_details
@@ -42,10 +50,9 @@ def _verify_evidence(repo, root, data, item):
         if not suites_cover(recorded_suites(report), required_suites(kind)):
             return None, ("branch 报告未覆盖必选 suite", {**expected, "suites": report.get("suites")})
     else:
-        results = report.get("results")
         if (not isinstance(results, list) or not results
                 or any(not isinstance(item, dict) or item.get("passed") is False
-                       or item.get("exit_code") != 0 for item in results)):
+                       or ("incremental" not in item and item.get("exit_code") != 0) for item in results)):
             return None, ("smart 报告需要非空且逐项通过的 results", expected)
     found = {"report": path.relative_to(repo).as_posix()}
     if report["scope"] == "branch":
