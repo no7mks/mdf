@@ -11,6 +11,21 @@ disable-model-invocation: true
 调用示例写作 `$mdf <intent>`；Cursor 使用 `/mdf`，Codex 使用 `$mdf`。
 裸 `$mdf` 与 `$mdf help` 显示帮助目录。
 
+### 仓内副本升级交接
+
+从已跟踪的仓内副本重读本文件时，如果本轮仍在完成已确认的 `$mdf upgrade`，
+先完成安装交接，再报告升级完成。使用替换结果中的 `source` 和 `new_commit`，
+以及对应已替换副本的绝对路径。这是本次替换的最后一步，沿用本轮升级确认。
+
+```bash
+python3 -B "<已替换副本>/scripts/mdf_launcher.py" complete-upgrade \
+  --repo "<项目根>" --payload "<已替换副本>" --revision "<new_commit>" --source "<source>"
+```
+
+- CLI 成功后，运行输出中 `entry` 指定的脚本。确认它打印本次安装的 `root`，再从该目录读取 `SKILL.md`。
+- 报告已退出 Git 跟踪的旧副本和项目引导位置。删除项已暂存，仓库根 `.gitignore` 可随删除项提交。
+- 失败时报告实际错误并停止。没有本轮替换结果时，本节不授权写入。
+
 横幅只按 `references/common.md` 的 `s-banner` 条款计算与输出，所有 intent（含 help/clarify/upgrade）均适用。
 仅读取横幅条款，不执行 common 的其他规则或重新进入业务 workflow。
 

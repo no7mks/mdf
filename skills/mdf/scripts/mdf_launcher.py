@@ -56,6 +56,11 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument("--payload", required=True)
     install.add_argument("--repo", required=True)
     install.add_argument("--source", required=True)
+    handoff = sub.add_parser("complete-upgrade")
+    handoff.add_argument("--repo", required=True)
+    handoff.add_argument("--payload", required=True)
+    handoff.add_argument("--revision", required=True)
+    handoff.add_argument("--source", required=True)
     upgrade = sub.add_parser("upgrade")
     upgrade.add_argument("--source", default=mdf_home.DEFAULT_SOURCE)
     upgrade.add_argument("--dry-run", action="store_true")
@@ -72,6 +77,11 @@ def main(argv: list[str] | None = None) -> int:
             return command_root()
         if args.command == "install-payload":
             return command_install(args)
+        if args.command == "complete-upgrade":
+            from mdf_install_handoff import handoff
+
+            emit(handoff(args.repo, Path(args.payload), args.revision, args.source))
+            return 0
         return command_upgrade(args)
     except mdf_home.HomeError as exc:
         return fail(exc)

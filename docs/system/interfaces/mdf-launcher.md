@@ -20,6 +20,7 @@ MDF 本体是主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份�
 | `mdf root` | stdout 一行：版本目录的绝对路径 |
 | `mdf upgrade [--source URL] [--dry-run] [--expected-commit SHA] [--repo PATH]` | 预览或安装这一修订 |
 | `install-payload` | 由 upgrade 或薄入口把归档写入版本目录 |
+| `complete-upgrade --repo PATH --payload PATH --revision SHA --source URL` | 接管本轮已确认并替换的仓内副本 |
 
 `detach` 与 `contract-switch` 仍由该版本目录里的 `mdf.py` 执行。
 
@@ -41,3 +42,10 @@ linked worktree 与子目录都会失败。预览不写文件。
 唯一安装路径是项目主 worktree 的 `.agents/skills/mdf`。它包含 `SKILL.md`、
 `agents/openai.yaml` 和渲染后的 `mdf_entry.py`，并由仓库根 `.gitignore` 排除。
 从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`。入口从自身路径定位项目。
+
+## 已跟踪副本的升级交接
+
+旧版 upgrade 替换并提交仓内副本后，在同一轮重读新版 Skill 时完成交接。
+接管命令使用该轮确认的修订和来源，校验待清理的副本，再安装 Core 和项目引导。
+成功后暂存旧副本的删除，补齐仓库根 `.gitignore`，返回新入口路径供本轮验证。
+失败时还原旧副本、对应 Git index 条目及原 `.gitignore`。
