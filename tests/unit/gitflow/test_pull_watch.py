@@ -181,6 +181,108 @@ def test_github_snapshot_tracks_merge_commit_status_and_old_change_request(monke
     assert snapshot["checks"][0]["conclusion"] is None
 
 
+@pytest.fixture
+def github_gate_snapshot(monkeypatch):
+    pulls_endpoint = "repos/team/project/pulls"
+    runs_endpoint = "repos/team/project/actions/runs"
+    merged_at = "2026-11-14T00:03:00Z"
+
+    def make_forge(event, conclusion, listed, *, actions_check_first=True, merged=True):
+        raw = dict(number=1, head=dict(sha=MERGED["head"], ref=MERGED["source"]), created_at="2026-11-14T00:00:00Z",
+                   merged=merged, mergeable=True, merged_at=merged_at if merged else None, merge_commit_sha=MERGED["merge_commit"],
+                   merged_by=dict(login="github-actions[bot]") if merged else None)
+
+        def run(run_id, event, *, created_at=merged_at, conclusion="success", pull_requests=()):
+            return dict(id=run_id, event=event, head_sha=MERGED["merge_commit"], check_suite_id=run_id, run_attempt=1,
+                        status="completed" if conclusion else "in_progress", conclusion=conclusion, created_at=created_at,
+                        updated_at="2026-11-14T00:06:00Z", pull_requests=pull_requests)
+
+        runs = {
+            10: dict(run(10, "workflow_dispatch", created_at="2026-11-14T00:01:00Z"), head_sha="base"),
+            11: run(11, "push"),
+            12: run(12, event, created_at="2026-11-14T00:04:00Z", conclusion=conclusion),
+            13: run(13, "workflow_dispatch", pull_requests=[dict(number=1, head=dict(sha=MERGED["head"]))]),
+            14: run(14, "repository_dispatch"),
+        }
+        queried_jobs = []
+
+        class Forge:
+            github = True
+            endpoint = pulls_endpoint
+
+            def api(self, path):
+                if path == f"{pulls_endpoint}/1":
+                    return raw
+                prefix, run_id = path.rsplit("/", 1)
+                assert prefix == runs_endpoint
+                return runs[int(run_id)]
+
+            def normalize(self, response):
+                assert response == raw
+                return MERGED if merged else {**MERGED, "state": "open", "merge_commit": None}
+
+        def pages(forge, path, key=None, **query):
+            if path == runs_endpoint and query.get("head_sha") == MERGED["merge_commit"]:
+                return [runs[11], runs[13], runs[14], *([runs[12]] if listed else [])]
+            if path.endswith(f'/commits/{MERGED["merge_commit"]}/check-runs'):
+                check_ids = [20, 21] if actions_check_first else [21, 20]
+                return [dict(id=check_id, status=runs[run_id]["status"], conclusion=runs[run_id]["conclusion"],
+                             app=None if check_id == 21 else dict(slug="github-actions"), check_suite=dict(id=run_id),
+                             details_url=f"https://forge.invalid/team/project/actions/runs/{run_id}/job/{check_id}")
+                        for check_id, run_id in [(check_ids[0], 12), (check_ids[1], 12), (22, 14)]]
+            if key == "jobs":
+                run_id = int(path.split("/")[-4])
+                queried_jobs.append(run_id)
+                return [dict(id=100 + run_id, name="test", status=runs[run_id]["status"], conclusion=runs[run_id]["conclusion"])]
+            return []
+
+        monkeypatch.setattr(pull_status, "pages", pages)
+        return Forge(), queried_jobs
+
+    return make_forge
+
+
+@pytest.mark.parametrize("event, listed, actions_check_first", [
+    ("workflow_dispatch", True, True), ("workflow_dispatch", False, True),
+    ("workflow_dispatch", False, False), ("schedule", True, True),
+])
+def test_github_snapshot_excludes_unrelated_merge_commit_runs(github_gate_snapshot, event, listed, actions_check_first):
+    forge, queried_jobs = github_gate_snapshot(event, None, listed, actions_check_first=actions_check_first)
+    snapshot = pull_status.pull_status(forge, 1, [10], [("workflow", None, 14)])
+    assert [(check["kind"], check["id"]) for check in snapshot["checks"]] == [
+        (kind, run_id + offset) for run_id in (10, 11, 13, 14) for kind, offset in (("workflow", 0), ("job", 100))
+    ]
+    assert queried_jobs == [10, 11, 13, 14]
+
+
+def test_github_open_pr_keeps_associated_check_runs_on_test_merge_sha(github_gate_snapshot):
+    forge, queried_jobs = github_gate_snapshot("workflow_dispatch", "failure", False, actions_check_first=False, merged=False)
+    snapshot = pull_status.pull_status(forge, 1, [])
+    assert [(check["kind"], check["id"]) for check in snapshot["checks"]] == [
+        ("workflow", 11), ("job", 111), ("workflow", 13), ("job", 113)
+    ]
+    assert queried_jobs == [11, 13]
+
+
+@pytest.mark.parametrize("conclusion, listed, actions_check_first", [
+    (None, True, True), ("failure", False, True), (None, False, False), ("failure", False, False),
+])
+def test_watch_merges_without_waiting_for_next_gate_run(
+        monkeypatch, tmp_path, github_gate_snapshot, conclusion, listed, actions_check_first):
+    forge, queried_jobs = github_gate_snapshot("workflow_dispatch", conclusion, listed, actions_check_first=actions_check_first)
+    monkeypatch.setattr(pull_watch, "lookup_pull", lambda *args, **kwargs: (MERGED, MERGED["target"]))
+    monkeypatch.setattr(pull_watch, "git", lambda *args: None)
+    monkeypatch.setattr(pull_watch, "verified_merge", lambda *args: None)
+
+    def unexpected_sleep(seconds):
+        pytest.fail(f"已合并的 PR 不应等待其他 PR 的 CI（sleep {seconds}s）")
+
+    monkeypatch.setattr(pull_watch, "sleep", unexpected_sleep)
+    result = pull_watch.watch(tmp_path, MERGED["source"], forge, [10, 14], False)
+    assert result["status"] == "merged"
+    assert queried_jobs == [10, 11, 13, 14] * 2
+
+
 @pytest.mark.parametrize("visible_link", [True, False])
 def test_github_check_links_to_merge_workflow_on_another_sha(monkeypatch, visible_link):
     class Forge:
@@ -188,7 +290,8 @@ def test_github_check_links_to_merge_workflow_on_another_sha(monkeypatch, visibl
 
         def api(self, endpoint):
             assert endpoint == "repos/team/project/actions/runs/42"
-            return dict(id=42, name="Auto-merge", head_sha="base", run_attempt=1, status="in_progress", check_suite_id=8)
+            return dict(id=42, name="Auto-merge", head_sha="base", run_attempt=1, status="in_progress", check_suite_id=8,
+                        event="workflow_dispatch", created_at="2026-11-14T00:01:00Z", updated_at="2026-11-14T00:04:00Z")
 
     def pages(forge, endpoint, key=None, **query):
         if endpoint.endswith("/commits/merged/check-runs"):
@@ -199,7 +302,7 @@ def test_github_check_links_to_merge_workflow_on_another_sha(monkeypatch, visibl
 
     monkeypatch.setattr(pull_status, "pages", pages)
     raw = dict(number=1, head=dict(sha="tip", ref="adhoc/docs"), created_at="2026-11-14T00:00:00Z",
-               merged=True, merge_commit_sha="merged")
+               merged=True, merged_at="2026-11-14T00:03:00Z", merge_commit_sha="merged")
     if not visible_link:
         with pytest.raises(MDFError, match="缺少关联 run 证据"):
             pull_status.github_status(Forge(), "repos/team/project/pulls/1", raw, [])

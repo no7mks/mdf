@@ -72,6 +72,23 @@ def github_run_from_check(forge, project, runs_endpoint, item):
     return run
 
 
+def github_run_matches_pull(pulls, number, head):
+    return any(pr["number"] == number and pr["head"]["sha"] == head for pr in pulls)
+
+
+def github_merge_run_belongs(run, raw, tracked_ids):
+    head = raw["head"]["sha"]
+    pulls = run.get("pull_requests", ())
+    if (run["id"] in tracked_ids or run.get("head_sha") == head
+            or (run.get("event") == "push" and run.get("head_sha") == raw["merge_commit_sha"])
+            or github_run_matches_pull(pulls, raw["number"], head)):
+        return True
+    # A merge workflow can start on the old base SHA and finish after the merge.
+    merged_at = raw.get("merged_at")
+    created_at, updated_at = run.get("created_at"), run.get("updated_at")
+    return bool(not pulls and merged_at and created_at and updated_at and created_at < merged_at <= updated_at)
+
+
 def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
     number, head = raw["number"], raw["head"]["sha"]
     project = forge.endpoint.removesuffix("/pulls")
@@ -87,17 +104,22 @@ def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
     if ((raw.get("merged_at") or raw.get("merged") or raw.get("mergeable") is True)
             and raw.get("merge_commit_sha") and raw["merge_commit_sha"] != head):
         heads.append(raw["merge_commit_sha"])
-    runs = {}
+    known_ids = {run_id for kind, _, run_id in known_runs if kind == "workflow"}
+    origin_ids = set(origin_runs)
+    tracked_ids = origin_ids | known_ids
+    runs, excluded_suites = {}, set()
     for sha in heads:
         for run in pages(forge, runs_endpoint, "workflow_runs", head_sha=sha):
-            add_github_run(runs, run)
+            if sha == head or github_merge_run_belongs(run, raw, tracked_ids):
+                add_github_run(runs, run)
+            else:
+                excluded_suites.add(run["check_suite_id"])
     for event in ("pull_request", "pull_request_target"):
         for run in pages(forge, runs_endpoint, "workflow_runs", event=event, branch=raw["head"]["ref"],
                          created=f'>={raw["created_at"]}'):
-            if any(pr["number"] == number and pr["head"]["sha"] == head for pr in run["pull_requests"]):
+            if github_run_matches_pull(run["pull_requests"], number, head):
                 add_github_run(runs, run)
-    known_ids = {run_id for kind, _, run_id in known_runs if kind == "workflow"}
-    for run_id in sorted(set(origin_runs) | (known_ids - runs.keys())):
+    for run_id in sorted(origin_ids | (known_ids - runs.keys())):
         run = forge.api(f"{runs_endpoint}/{run_id}")
         if run["id"] != run_id:
             raise MDFError("GitHub 未返回指定的 run", code="forge_invalid_response")
@@ -106,11 +128,24 @@ def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
     workflow_suites = {run["check_suite_id"] for run in runs.values()}
     for sha in heads:
         commit = f"{project}/commits/{sha}"
+        commit_checks = []
         for item in pages(forge, f"{commit}/check-runs", "check_runs"):
             suite = (item.get("check_suite") or {}).get("id")
-            if suite not in workflow_suites and (item.get("app") or {}).get("slug") == "github-actions":
-                add_github_run(runs, github_run_from_check(forge, project, runs_endpoint, item))
-                workflow_suites.add(item["check_suite"]["id"])
+            commit_checks.append((suite, item))
+            if suite in workflow_suites or (sha != head and suite in excluded_suites):
+                continue
+            if (item.get("app") or {}).get("slug") != "github-actions":
+                continue
+            run = github_run_from_check(forge, project, runs_endpoint, item)
+            if sha != head and not github_merge_run_belongs(run, raw, tracked_ids):
+                excluded_suites.add(suite)
+                continue
+            add_github_run(runs, run)
+            workflow_suites.add(suite)
+        # Resolve suite ownership before emitting any checks, regardless of page order.
+        for suite, item in commit_checks:
+            if sha != head and suite in excluded_suites and suite not in workflow_suites:
+                continue
             if suite not in workflow_suites or item["status"] != "completed":
                 checks.append(github_check(item, "check"))
         for item in pages(forge, f"{commit}/status", "statuses"):
