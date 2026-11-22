@@ -35,7 +35,7 @@ smoke 未覆盖的 release_only 成员不得声称通过；确需验证时只补
   - 未传 `--home` 且未设置 `MDF_HOME` 时，安装根是 `~/.local/share/mdf`。
   - `MDF_HOME` 无效时停止，不回退到默认路径。
 - `$mdf upgrade` 更新本机安装。自检失败回滚到切换前的 `current`。
-  - 不修改业务仓，不重写 `AGENTS.md`。
+  - 除补齐仓库根 `.gitignore` 外不修改业务仓，不重写 `AGENTS.md`。
 - `mdf detach` 只移除业务仓里已跟踪的 Skill 副本。
 - ❌ install、upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 

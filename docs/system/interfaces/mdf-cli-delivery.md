@@ -219,7 +219,7 @@
 
 - lint 与 build 也各建运行目录。
 - 每个运行目录保存完整的 `stdout.log`、`stderr.log`，路径记入结果的 `log`。
-- `.mdf/reports/` 由其中的 `.gitignore` 忽略，保留 7 天。
+- `.mdf/reports/` 由仓库根 `.gitignore` 忽略，保留 7 天。
 
 以下情况即使退出码为 0 也判失败：
 

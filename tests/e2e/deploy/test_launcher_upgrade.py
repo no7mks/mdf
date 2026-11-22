@@ -21,7 +21,7 @@ from launcher_support import (
     root_of,
     upstream,
 )
-from mdf_test_support import git
+from mdf_test_support import git, init_git
 
 
 def head(repo: Path) -> str:
@@ -284,3 +284,118 @@ def test_clean_rollback_of_first_install_leaves_no_residue(tmp_path, monkeypatch
     assert not (root / "current").exists()
     assert not (root / "versions" / REV_A).exists()
     assert list(root.glob(".host-backup-*")) == []
+
+
+IGNORE = ("/.mdf/logs/", "/.mdf/tmp/", "/.mdf/reports/", "/.mdf/cache/")
+
+
+def make_project(path: Path, text: str = "node_modules/\n") -> Path:
+    path.mkdir()
+    (path / ".mdf").mkdir()
+    (path / ".mdf" / "manifest.yaml").write_text("schema_version: 3\n", encoding="utf-8")
+    (path / ".gitignore").write_text(text, encoding="utf-8")
+    init_git(path)
+    return path
+
+
+def test_upgrade_adds_gitignore_block_to_repo(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    repo = make_project(tmp_path / "repo")
+    original = (repo / ".gitignore").read_text(encoding="utf-8")
+    first = head(source)
+    launcher = source / "skills/mdf/scripts/mdf_launcher.py"
+    command = [
+        sys.executable, "-B", str(launcher), "upgrade",
+        "--source", str(source), "--expected-commit", first, "--repo", str(repo),
+    ]
+    installed = payload(invoke(home, command))
+    assert installed["gitignore_added"] == list(IGNORE)
+    text = (repo / ".gitignore").read_text(encoding="utf-8")
+    assert text.startswith(original)
+    for line in IGNORE:
+        assert text.count(line) == 1
+    again = payload(invoke(home, command))
+    assert again["gitignore_added"] == []
+    assert (repo / ".gitignore").read_text(encoding="utf-8") == text
+
+
+def test_upgrade_uses_cwd_repo_when_omitted(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    repo = make_project(tmp_path / "repo", "keep\n")
+    nested = repo / "src"
+    nested.mkdir()
+    first = head(source)
+    installed = payload(invoke(
+        home, [sys.executable, "-B", str(source / "skills/mdf/scripts/mdf_launcher.py"),
+               "upgrade", "--source", str(source), "--expected-commit", first],
+        cwd=nested,
+    ))
+    assert Path(installed["repo"]) == repo.resolve()
+    text = (repo / ".gitignore").read_text(encoding="utf-8")
+    assert text.startswith("keep\n")
+    for line in IGNORE:
+        assert line in text
+
+
+def test_upgrade_without_repo_skips_gitignore(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    first = head(source)
+    installed = payload(invoke(
+        home, [sys.executable, "-B", str(source / "skills/mdf/scripts/mdf_launcher.py"),
+               "upgrade", "--source", str(source), "--expected-commit", first],
+        cwd=tmp_path,
+    ))
+    assert installed["repo"] is None
+    assert installed["gitignore_added"] == []
+    assert not (tmp_path / ".gitignore").exists()
+
+
+def test_upgrade_dry_run_does_not_touch_gitignore(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    repo = make_project(tmp_path / "repo", "keep\n")
+    before = (repo / ".gitignore").read_bytes()
+    preview = payload(invoke(
+        home, [sys.executable, "-B", str(source / "skills/mdf/scripts/mdf_launcher.py"),
+               "upgrade", "--source", str(source), "--dry-run", "--repo", str(repo)],
+    ))
+    assert "gitignore_added" not in preview
+    assert (repo / ".gitignore").read_bytes() == before
+
+
+def test_upgrade_rejects_explicit_non_mdf_repo(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "README.md").write_text("plain\n", encoding="utf-8")
+    init_git(other)
+    failed = error(invoke(
+        home, [sys.executable, "-B", str(source / "skills/mdf/scripts/mdf_launcher.py"),
+               "upgrade", "--source", str(source), "--dry-run", "--repo", str(other)],
+    ))
+    assert failed["error"] == "upgrade_repo_invalid"
+    assert not (home / ".local" / "share" / "mdf" / "current").exists()
+
+
+def test_upgrade_rejects_gitignore_symlink_before_switch(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    repo = make_project(tmp_path / "repo")
+    outside = tmp_path / "outside-ignore"
+    outside.write_text("secret\n", encoding="utf-8")
+    ignore = repo / ".gitignore"
+    ignore.unlink()
+    ignore.symlink_to(outside)
+    first = head(source)
+    failed = error(invoke(
+        home, [sys.executable, "-B", str(source / "skills/mdf/scripts/mdf_launcher.py"),
+               "upgrade", "--source", str(source), "--expected-commit", first,
+               "--repo", str(repo)],
+    ))
+    assert failed["error"] == "managed_symlink"
+    assert outside.read_text(encoding="utf-8") == "secret\n"
+    assert not (home / ".local" / "share" / "mdf" / "current").exists()

@@ -365,7 +365,7 @@ Core 判定退出码与测试报告（见下节）。
 - Core 为每次运行新建 `.mdf/reports/<时间戳>-<suite>/`，以环境变量 `MDF_REPORT_DIR` 传给入口命令，
   命令把 XML 写进该目录；lint 与 build 也各有运行目录。
 - 每个运行目录都保存该命令完整的 `stdout.log` 与 `stderr.log`。
-- `.mdf/reports/` 由 Core 自带 `.gitignore` 忽略，7 天前的条目自动清理，见 `common.md`「日志与报告」。
+- `.mdf/reports/` 由仓库根 `.gitignore` 忽略，7 天前的条目自动清理，见 `common.md`「日志与报告」。
 - test case 取 `<testcase>` 的 `classname`，缺失时取所在 `<testsuite>` 的 `name`；
   项目须配置运行器使其对应 test case。
 - Core 解析后在同目录写 `summary.json`：test case 级的结果与用时，及其下 test 级的

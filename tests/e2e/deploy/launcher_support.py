@@ -15,7 +15,10 @@ REV_A = "a" * 40
 REV_B = "b" * 40
 
 
-def invoke(home: Path, args: list[str], *, mdf_home: str | None = None, path_first: bool = False):
+def invoke(
+    home: Path, args: list[str], *, mdf_home: str | None = None,
+    path_first: bool = False, cwd: Path | None = None,
+):
     env = os.environ.copy()
     env["HOME"] = str(home)
     if mdf_home is None:
@@ -24,7 +27,9 @@ def invoke(home: Path, args: list[str], *, mdf_home: str | None = None, path_fir
         env["MDF_HOME"] = mdf_home
     if path_first:
         env["PATH"] = str(home / ".local" / "bin") + os.pathsep + env.get("PATH", "")
-    return run(args, env=env)
+    if cwd is None:
+        cwd = home if home.is_dir() else home.parent
+    return run(args, env=env, cwd=cwd)
 
 
 def plant(root: Path, revision: str) -> Path:

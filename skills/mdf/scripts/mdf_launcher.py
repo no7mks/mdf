@@ -63,6 +63,7 @@ def command_upgrade(args: argparse.Namespace) -> int:
     root, _code = mdf_home.select_root(args.home)
     emit(mdf_home.upgrade(
         root, args.source, dry_run=args.dry_run, expected=args.expected_commit,
+        repo=args.repo,
     ))
     return 0
 
@@ -85,6 +86,7 @@ def build_parser() -> argparse.ArgumentParser:
     upgrade.add_argument("--source", default=mdf_home.DEFAULT_SOURCE)
     upgrade.add_argument("--dry-run", action="store_true")
     upgrade.add_argument("--expected-commit")
+    upgrade.add_argument("--repo")
     upgrade.add_argument("--home")
     restore = sub.add_parser("restore")
     restore.add_argument("--revision")

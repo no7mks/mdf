@@ -33,11 +33,14 @@
 | 命令 | 作用 |
 | --- | --- |
 | `mdf root` | stdout 一行：本次版本目录绝对路径 |
-| `mdf upgrade [--source URL] [--dry-run] [--expected-commit SHA]` | 预览或切换到新修订 |
+| `mdf upgrade [--source URL] [--dry-run] [--expected-commit SHA] [--repo PATH]` | 预览或切换到新修订 |
 | `mdf restore [--revision SHA]` | 列出已安装修订，或切回其中一版 |
 | `install-payload` | 由 `mdf-deploy.sh` 写入一个修订 |
 
 `detach` 与 `contract-switch` 仍由固定版本里的 `mdf.py` 执行。
+
+`--repo` 省略时，当前目录属于带 `.mdf/manifest.yaml` 的 Git 仓库才补齐根 `.gitignore`。
+不是这种仓库则跳过。显式 `--repo` 必须是该 Git 根目录，否则升级失败。预览不写 `.gitignore`。
 
 ## 引导壳
 

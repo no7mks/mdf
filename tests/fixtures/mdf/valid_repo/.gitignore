@@ -1,0 +1,5 @@
+# MDF local artifacts
+/.mdf/logs/
+/.mdf/tmp/
+/.mdf/reports/
+/.mdf/cache/

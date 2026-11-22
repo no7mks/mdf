@@ -218,7 +218,7 @@ def command_init(args: argparse.Namespace) -> None:
         files,
         replace_allowed={
             path
-            for path in (repo / "AGENTS.md", manifest_path(repo))
+            for path in (repo / "AGENTS.md", manifest_path(repo), repo / ".gitignore")
             if path.exists()
         },
     )

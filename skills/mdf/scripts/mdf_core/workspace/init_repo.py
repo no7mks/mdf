@@ -11,6 +11,7 @@ from mdf_core.foundation.constants import (
     TESTING_CONVENTIONS,
     TESTING_INDEX,
 )
+import mdf_home
 from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.paths import load_manifest, manifest_path
 from mdf_core.foundation.yamlutil import parse_yaml, yaml_quote
@@ -294,6 +295,14 @@ def init_files(
             "system-testing-conventions.md",
             "# 测试约定\n",
         )
+    gitignore = repo / ".gitignore"
+    problem = mdf_home.gitignore_problem(gitignore)
+    if problem:
+        raise MDFError(problem, code="managed_symlink")
+    old = gitignore.read_text(encoding="utf-8") if gitignore.is_file() else ""
+    new = mdf_home.project_gitignore_text(old)
+    if new != old:
+        files[gitignore] = new
     return files
 
 

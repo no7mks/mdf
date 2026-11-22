@@ -52,14 +52,14 @@ def unique_dir(root, name):
 
 
 def ignored_dir(path):
-    """建目录并在其中放 `*` 的 .gitignore，使内容不进 Git、不影响 clean 与指纹。"""
+    """建目录。父目录是 symbolic link 时拒绝。"""
     path = Path(path)
-    ignore = path / ".gitignore"
-    if path.parent.is_symlink() or ignore.is_symlink():
-        raise MDFError(f"日志与报告的父目录及 .gitignore 不允许 symbolic link: {path}", code="managed_symlink")
+    if path.parent.is_symlink():
+        raise MDFError(
+            f"日志与报告的父目录不允许 symbolic link: {path}",
+            code="managed_symlink",
+        )
     path.mkdir(parents=True, exist_ok=True)
-    if not ignore.is_file():
-        ignore.write_text("*\n")
     return path
 
 
@@ -73,8 +73,6 @@ def prune(root, days=RETENTION_DAYS):
         return
     limit = time.time() - days * 86400
     for entry in entries:
-        if entry.name == ".gitignore":
-            continue
         try:
             if entry.lstat().st_mtime >= limit:
                 continue

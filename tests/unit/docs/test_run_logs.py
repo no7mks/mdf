@@ -19,11 +19,11 @@ def test_prune_removes_entries_older_than_seven_days(tmp_path):
     new_dir.mkdir()
     old_file.write_text("x")
     stale = time.time() - 8 * 86400
-    for path in (old_dir, old_file, root / ".gitignore"):
+    for path in (old_dir, old_file):
         os.utime(path, (stale, stale))
     prune(root)
-    assert sorted(path.name for path in root.iterdir()) == [".gitignore", "new"]
-    assert (root / ".gitignore").read_text() == "*\n"
+    assert sorted(path.name for path in root.iterdir()) == ["new"]
+    assert not (root / ".gitignore").exists()
 
 
 def test_strip_control_removes_csi_and_splits_cr():
@@ -34,21 +34,35 @@ def test_strip_control_removes_csi_and_splits_cr():
     assert strip_control("ab\rcd") == "ab\ncd"
 
 
-@pytest.mark.parametrize("name", [".mdf", ".mdf/reports/.gitignore"])
-def test_report_creation_rejects_symlink_at_write_target(tmp_path, name):
+def test_report_creation_rejects_symlinked_mdf(tmp_path):
     from mdf_core.execution.reports import new_report_dir
     from mdf_core.foundation.errors import MDFError
 
     outside = tmp_path / "outside"
     outside.mkdir()
-    link = tmp_path / name
-    link.parent.mkdir(parents=True, exist_ok=True)
-    link.symlink_to(outside if link.name != ".gitignore" else outside / "ignore")
+    link = tmp_path / ".mdf"
+    link.symlink_to(outside)
 
     with pytest.raises(MDFError) as error:
         new_report_dir(tmp_path, "quick")
 
     assert error.value.code == "managed_symlink"
+    assert list(outside.iterdir()) == []
+
+
+def test_report_creation_does_not_follow_a_gitignore_symlink(tmp_path):
+    from mdf_core.execution.reports import new_report_dir
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / ".mdf" / "reports" / ".gitignore"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(outside / "ignore")
+
+    created = new_report_dir(tmp_path, "quick")
+
+    assert created.is_dir()
+    assert link.is_symlink()
     assert list(outside.iterdir()) == []
 
 
@@ -103,7 +117,7 @@ def test_local_artifact_symlink_allows_writes_and_skips_pruning(tmp_path, name):
     link.symlink_to(outside, target_is_directory=True)
 
     assert ignored_dir(link) == link
-    assert (outside / ".gitignore").read_text() == "*\n"
+    assert not (outside / ".gitignore").exists()
     prune(link)
     assert old.read_text() == "keep"
 
@@ -196,23 +210,24 @@ def test_prune_oserror_does_not_abort_or_block_fallback(tmp_path, monkeypatch, e
     run_logs.prune(root)
 
 
-def test_run_log_preserves_symlink_security_error_without_fallback(tmp_path, monkeypatch):
+def test_run_log_does_not_follow_a_gitignore_symlink(tmp_path, monkeypatch):
     load_core_module()
     import mdf_core.execution.run_logs as run_logs
-    from mdf_core.foundation.errors import MDFError
 
     repo = tmp_path / "repo"
     (repo / ".mdf" / "logs").mkdir(parents=True)
     outside = tmp_path / "outside"
     outside.mkdir()
-    (repo / ".mdf" / "logs" / ".gitignore").symlink_to(outside / "ignore")
+    link = repo / ".mdf" / "logs" / ".gitignore"
+    link.symlink_to(outside / "ignore")
     fallback = tmp_path / "fallback"
     monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
 
-    with pytest.raises(MDFError) as error:
-        run_logs.RunLog(["validate", "--repo", str(repo)])
+    log = run_logs.RunLog(["validate", "--repo", str(repo)])
 
-    assert error.value.code == "managed_symlink"
+    assert log.path.parent == (repo / ".mdf" / "logs").resolve()
+    assert link.is_symlink()
+    assert list(outside.iterdir()) == []
     assert not fallback.exists()
 
 

@@ -31,6 +31,8 @@ HOST_SKILLS = (
     ".openclaw/skills",
 )
 HOST_SCRIPTS = ("mdf_launcher.py", "mdf_home.py")
+MDF_IGNORE_HEADER = "# MDF local artifacts"
+MDF_IGNORE_LINES = ("/.mdf/logs/", "/.mdf/tmp/", "/.mdf/reports/", "/.mdf/cache/")
 
 
 class HomeError(Exception):
@@ -161,6 +163,95 @@ def _git_text(args: list[str], cwd: Path) -> str:
             "command_failed",
         )
     return completed.stdout.strip()
+
+
+def gitignore_problem(path: Path) -> str | None:
+    if path.is_symlink():
+        return f".gitignore 不允许 symbolic link: {path}"
+    if path.exists() and not path.is_file():
+        return f".gitignore 必须是普通文件: {path}"
+    return None
+
+
+def project_gitignore_text(text: str) -> str:
+    """补齐四条根目录 ignore。四条都在时原样返回。"""
+    raw_lines = text.splitlines(keepends=True)
+    stripped = [line.strip() for line in raw_lines]
+    missing = [item for item in MDF_IGNORE_LINES if item not in stripped]
+    if not missing:
+        return text
+    block = "".join(f"{item}\n" for item in missing)
+    header_at = next(
+        (index for index, line in enumerate(stripped) if line == MDF_IGNORE_HEADER),
+        None,
+    )
+    if header_at is None:
+        if not text:
+            return f"{MDF_IGNORE_HEADER}\n{block}"
+        prefix = text if text.endswith("\n") else text + "\n"
+        return f"{prefix}\n{MDF_IGNORE_HEADER}\n{block}"
+    end = header_at + 1
+    while end < len(stripped) and stripped[end]:
+        end += 1
+    head = "".join(raw_lines[:end])
+    if head and not head.endswith("\n"):
+        head += "\n"
+    return head + block + "".join(raw_lines[end:])
+
+
+def read_project_gitignore(repo: Path) -> str:
+    path = repo / ".gitignore"
+    problem = gitignore_problem(path)
+    if problem:
+        raise HomeError(problem, "managed_symlink")
+    try:
+        return path.read_text(encoding="utf-8") if path.is_file() else ""
+    except UnicodeDecodeError as exc:
+        raise HomeError(f".gitignore 不是 UTF-8: {path}", "gitignore_unreadable") from exc
+
+
+def ensure_project_gitignore(repo: Path) -> list[str]:
+    path = repo / ".gitignore"
+    old = read_project_gitignore(repo)
+    new = project_gitignore_text(old)
+    if new == old:
+        return []
+    present = {line.strip() for line in old.splitlines()}
+    path.write_bytes(new.encode("utf-8"))
+    return [item for item in MDF_IGNORE_LINES if item not in present]
+
+
+def _is_mdf_root(root: Path) -> bool:
+    mdf_dir = root / ".mdf"
+    manifest = mdf_dir / "manifest.yaml"
+    return (
+        mdf_dir.is_dir() and not mdf_dir.is_symlink()
+        and manifest.is_file() and not manifest.is_symlink()
+    )
+
+
+def _upgrade_repo(explicit: str | None) -> Path | None:
+    if explicit is not None and not explicit.strip():
+        raise HomeError("--repo 已设置但为空", "upgrade_repo_invalid")
+    if explicit is None:
+        start = Path.cwd()
+    else:
+        start = Path(explicit).expanduser().resolve()
+        if not start.is_dir():
+            raise HomeError("upgrade --repo 不是目录", "upgrade_repo_invalid")
+    completed = _run(["git", "-C", str(start), "rev-parse", "--show-toplevel"])
+    if completed.returncode:
+        if explicit is not None:
+            raise HomeError("upgrade --repo 不是 Git 仓库", "upgrade_repo_invalid")
+        return None
+    root = Path(completed.stdout.strip()).resolve()
+    if explicit is not None and root != start:
+        raise HomeError("upgrade --repo 必须是 Git 根目录", "upgrade_repo_invalid")
+    if not _is_mdf_root(root):
+        if explicit is not None:
+            raise HomeError("upgrade --repo 不是 MDF 项目", "upgrade_repo_invalid")
+        return None
+    return root
 
 
 def write_log(root: Path, operation: str, payload: dict) -> str:
@@ -525,9 +616,14 @@ def _fetch(source: str) -> tuple[str, Path, tempfile.TemporaryDirectory[str]]:
     return commit, clone, temp
 
 
-def upgrade(root: Path, source: str, *, dry_run: bool, expected: str | None) -> dict:
+def upgrade(
+    root: Path, source: str, *, dry_run: bool, expected: str | None, repo: str | None = None,
+) -> dict:
     if not dry_run and not COMMIT_RE.fullmatch(expected or ""):
         raise HomeError("替换需要预览确认的完整 commit", "missing_expected_commit")
+    project = _upgrade_repo(repo)
+    if project is not None:
+        read_project_gitignore(project)
     commit, clone, temp = _fetch(source)
     try:
         if not dry_run and commit != expected:
@@ -547,6 +643,7 @@ def upgrade(root: Path, source: str, *, dry_run: bool, expected: str | None) -> 
             "revision": old,
             "history": history,
             "home": str(root),
+            "repo": None if project is None else str(project),
         }
         if dry_run:
             payload["log"] = write_log(root, "upgrade", payload)
@@ -584,6 +681,9 @@ def upgrade(root: Path, source: str, *, dry_run: bool, expected: str | None) -> 
             raise HomeError(detail, code)
         payload["revision"] = commit
         payload["rolled_back"] = False
+        payload["gitignore_added"] = (
+            ensure_project_gitignore(project) if project is not None else []
+        )
         payload["log"] = write_log(root, "upgrade", payload)
         return payload
     finally:

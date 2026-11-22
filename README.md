@@ -88,7 +88,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--against] [--quick]` | 只读事实审阅；`--quick` 只跳过 LLM |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
-| `$mdf upgrade` | 更新本机仓外安装，不改业务仓文件 |
+| `$mdf upgrade` | 更新本机仓外安装。除补齐仓库根 `.gitignore` 外不改业务仓文件 |
 | `$mdf to <target>` | 进入目标 worktree；gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy`：github-flow 使用 detached HEAD，gitflow 检出 trunk |
 | `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；PR mode 的受保护增量走 PR/MR；其他分支只报告 |
 | `$mdf integrate` | 按工作线联调；collab-mode 由接手 Agent 直接调度两端 worktree |
@@ -333,7 +333,7 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 - `MDF_HOME` 为空或 `current` 无效时停止，不改用默认路径。
 - 每个修订位于 `versions/<commit>/`。`current` 指向启用的版本。
 - 引导壳写入 `~/.agents/skills/mdf`，以及 Claude、Kiro、OpenClaw 的用户级目录。
-- `$mdf upgrade` 更新本机安装。自检失败会回滚，不改业务仓文件。
+- `$mdf upgrade` 更新本机安装。自检失败会回滚。除补齐仓库根 `.gitignore` 外不改业务仓文件。
 - 已跟踪的仓内副本用 `mdf detach --repo <仓库>` 移除。
 - ❌ install、upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 

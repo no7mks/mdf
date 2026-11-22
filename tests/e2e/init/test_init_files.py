@@ -109,7 +109,15 @@ def test_init_writes_files_from_assets_templates(
         *all_not_applicable_baselines(),
         *verification_args(),
     ]
-    payload(mdf(python_exe, *arguments))
+    applied = payload(mdf(python_exe, *arguments))
+    assert ".gitignore" in applied["plan"]["create"]
+    assert (repo / ".gitignore").read_text(encoding="utf-8") == (
+        "# MDF local artifacts\n"
+        "/.mdf/logs/\n"
+        "/.mdf/tmp/\n"
+        "/.mdf/reports/\n"
+        "/.mdf/cache/\n"
+    )
 
     templates = skill_dir("mdf") / "assets" / "templates"
     docs_index = (repo / "docs" / "README.md").read_text(encoding="utf-8")
@@ -229,3 +237,39 @@ def test_init_executes_directly_without_plan_digest(
         python_exe, *arguments, "--plan-digest", "sha256:" + "0" * 64
     )
     assert rejected.returncode != 0
+
+
+def test_init_gitignore_is_idempotent_and_keeps_user_rules(
+    python_exe: str, tmp_path: Path
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "README.md").write_text("# Test repository\n", encoding="utf-8")
+    (repo / ".gitignore").write_text("node_modules/\n/.mdf/tmp/\n", encoding="utf-8")
+    init_git(repo)
+    arguments = [
+        "init",
+        "--repo",
+        str(repo),
+        "--latest-release",
+        "none",
+        *all_not_applicable_baselines(),
+        *verification_args(),
+    ]
+    first = payload(mdf(python_exe, *arguments))
+    assert ".gitignore" in first["plan"]["update"]
+    text = (repo / ".gitignore").read_text(encoding="utf-8")
+    assert text.startswith("node_modules/\n/.mdf/tmp/\n\n# MDF local artifacts\n")
+    assert text.count("/.mdf/tmp/") == 1
+    for line in ("/.mdf/logs/", "/.mdf/reports/", "/.mdf/cache/"):
+        assert text.count(line) == 1
+    second = payload(mdf(python_exe, *arguments))
+    assert ".gitignore" not in second["plan"]["create"]
+    assert ".gitignore" not in second["plan"]["update"]
+    assert (repo / ".gitignore").read_text(encoding="utf-8") == text
+    tracked = run(["git", "check-ignore", "-q", ".mdf/manifest.yaml"], cwd=repo)
+    assert tracked.returncode == 1
+    ignored = run(
+        ["git", "check-ignore", "-q", ".mdf/cache/mdf-core/current"], cwd=repo,
+    )
+    assert ignored.returncode == 0

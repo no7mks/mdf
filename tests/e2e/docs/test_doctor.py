@@ -269,7 +269,8 @@ def test_doctor_allows_ignored_runtime_files(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    (repo / ".gitignore").write_text(".lark/\n", encoding="utf-8")
+    gitignore = repo / ".gitignore"
+    gitignore.write_text(gitignore.read_text(encoding="utf-8") + ".lark/\n", encoding="utf-8")
     init_git(repo)
     token_dir = repo / ".lark"
     token_dir.mkdir()

@@ -1,7 +1,7 @@
 # Upgrade
 
 `$mdf upgrade` 更新本机仓外 MDF。
-它不修改业务仓，也不 push。
+除补齐仓库根 `.gitignore` 外，不修改业务仓，也不 push。
 
 - 默认源为 `https://github.com/no7mks/mdf.git`。
 - 版本目录在 `<安装根>/versions/<revision>/`。
