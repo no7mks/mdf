@@ -372,7 +372,7 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert table[1][5] == "3"
     assert table[2][5] == "4"
     assert "拒绝则结束" in table[2][6]
-    assert "http://10.1.5.65:8929/mars/mdf" in text
+    assert "https://github.com/no7mks/mdf.git" in text
     assert "不读取 `references/common.md`" in text
     assert "`history`" in text
     assert "不 push" in text

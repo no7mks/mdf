@@ -3,7 +3,7 @@
 `$mdf upgrade` 更新本机仓外 MDF。
 它不修改业务仓，也不 push。
 
-- 默认源为 `http://10.1.5.65:8929/mars/mdf`。
+- 默认源为 `https://github.com/no7mks/mdf.git`。
 - 版本目录在 `<安装根>/versions/<revision>/`。
 - `current` 用一次原子替换切换。
 - 自检失败时切回旧版本，并删除本次新建的目录。

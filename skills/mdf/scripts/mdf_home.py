@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover - 非 POSIX
     fcntl = None
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40,64}$")
-DEFAULT_SOURCE = "http://10.1.5.65:8929/mars/mdf"
+DEFAULT_SOURCE = "https://github.com/no7mks/mdf.git"
 SOURCE_SKILL = "skills/mdf"
 # Codex 与 Cursor 读取 ~/.agents/skills。再写入二者的专属目录会显示两个同名 Skill。
 HOST_SKILLS = (
