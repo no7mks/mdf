@@ -8,7 +8,7 @@ from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.paths import ensure_safe_managed_paths, managed_symlinks
 
 
-@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp", "cache"])
 def test_managed_paths_do_not_descend_into_local_artifacts(tmp_path, monkeypatch, name):
     root = tmp_path / ".mdf" / name
     root.mkdir(parents=True)
@@ -41,7 +41,7 @@ def test_managed_paths_still_reject_symlinks(tmp_path, name):
     assert error.value.details["paths"] == [name]
 
 
-@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp", "cache"])
 def test_local_artifact_symlink_does_not_block_managed_paths(tmp_path, name):
     path = tmp_path / ".mdf" / name
     path.parent.mkdir()

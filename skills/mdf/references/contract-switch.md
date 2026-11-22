@@ -23,7 +23,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 | --- | --- |
 | 等于本机契约 | `changed: false`，不提交 |
 | 小于本机契约 | 只改这一行并提交 |
-| 大于本机契约 | 错误 `contract_tool_outdated`，提示 `mdf upgrade` |
+| 大于本机契约 | 错误 `contract_tool_outdated`，提示 `$mdf upgrade` |
 
 - 提交说明是 `chore(mdf): 切换 MDF 契约到 N`。
 - PR mode 使用分支 `codex/contract-switch`。

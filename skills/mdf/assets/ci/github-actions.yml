@@ -16,8 +16,8 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
     env:
-      # runner 用 mdf-deploy.sh install --home /opt/mdf 安装。job 的 MDF_HOME 优先于默认路径。
-      MDF_HOME: /opt/mdf
+      MDF_SOURCE: https://github.com/no7mks/mdf.git
+      MDF_REVISION: ${{ vars.MDF_REVISION }}
       MDF_BACKEND: codex
       # 首次 release 填已确认的固定基线；增量复核的上轮报告由项目下载为 artifact。
       MDF_REVIEW_BASE: ${{ vars.MDF_REVIEW_BASE }}
@@ -31,7 +31,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: ${{ github.event_name == 'push' }}
-      # MDF_HOME 由 runner 固定安装，不指向被审 checkout。
+      - name: 按固定修订取出本体
+        run: |
+          git init "$RUNNER_TEMP/mdf"
+          git -C "$RUNNER_TEMP/mdf" fetch --depth 1 "$MDF_SOURCE" "$MDF_REVISION"
+          git -C "$RUNNER_TEMP/mdf" checkout --detach FETCH_HEAD
       - name: 外部复核
         if: github.event_name == 'pull_request'
         env:
@@ -40,7 +44,7 @@ jobs:
           HEAD: ${{ github.event.pull_request.head.sha }}
           POLICY: ${{ github.event.pull_request.base.sha }}
         run: |
-          MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
+          MDF_ROOT="$RUNNER_TEMP/mdf/skills/mdf"
           python3 -B "$MDF_ROOT/assets/ci/review.py" \
             --repo "$GITHUB_WORKSPACE" --source "$SOURCE" --target "$TARGET" --head "$HEAD" \
             --policy-ref "$POLICY" --backend "$MDF_BACKEND" \
@@ -51,7 +55,7 @@ jobs:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.event.after }}
         run: |
-          MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
+          MDF_ROOT="$RUNNER_TEMP/mdf/skills/mdf"
           python3 -B "$MDF_ROOT/scripts/mdf.py" audit-push --repo "$GITHUB_WORKSPACE" \
             --branch "$GITHUB_REF_NAME" --before "$BEFORE" --after "$AFTER" \
             --collect-evidence > "$RUNNER_TEMP/mdf-audit.json"

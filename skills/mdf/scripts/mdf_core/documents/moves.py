@@ -143,6 +143,8 @@ def replacement_plan(
         path_relative = path.relative_to(repo)
         if path_relative.parts and path_relative.parts[0] == ".git":
             continue
+        if path_relative.parts[:2] == (".mdf", "cache"):
+            continue
         if (
             not rewrite_inside_sources
             and moved_destination(path, moves) != path

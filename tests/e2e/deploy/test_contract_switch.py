@@ -22,6 +22,10 @@ def repository(tmp_path: Path, schema: int, *, pr: bool = False) -> Path:
         text += "closeout:\n  mode: pr\n  provider: github\n"
     (repo / ".mdf" / "manifest.yaml").write_text(text, encoding="utf-8")
     (repo / "README.md").write_text("app\n", encoding="utf-8")
+    (repo / ".gitignore").write_text(
+        "# MDF local artifacts\n/.mdf/logs/\n/.mdf/tmp/\n/.mdf/reports/\n/.mdf/cache/\n/.agents/skills/mdf/\n",
+        encoding="utf-8",
+    )
     init_git(repo)
     git(repo, "branch", "-M", "master")
     return repo
@@ -45,7 +49,7 @@ def test_newer_declaration_asks_for_upgrade(python_exe: str, tmp_path: Path) -> 
     result = mdf(python_exe, "contract-switch", "--repo", str(repo))
     assert result.returncode != 0
     assert "contract_tool_outdated" in result.stderr
-    assert "更新命令：mdf upgrade" in result.stderr
+    assert "更新命令：$mdf upgrade" in result.stderr
     assert "schema_version: 4\n" in (repo / ".mdf" / "manifest.yaml").read_text(encoding="utf-8")
 
 
@@ -116,7 +120,7 @@ def test_ordinary_command_hints_when_the_declaration_is_newer(python_exe: str, t
     result = mdf(python_exe, "doctor", "--repo", str(nested))
     assert "MDF 提示：" in result.stderr
     assert ".mdf/manifest.yaml 声明的 4" in result.stderr
-    assert "更新命令：mdf upgrade" in result.stderr
+    assert "更新命令：$mdf upgrade" in result.stderr
     findings = []
     validate_manifest(repo, findings)
     assert any(item.code == "manifest.tool_outdated" for item in findings)
@@ -143,4 +147,4 @@ def test_drift_hint_reads_origin_trunk_even_when_worktree_matches(python_exe: st
     git(repo, "reset", "--hard", "HEAD~1")
     result = mdf(python_exe, "doctor", "--repo", str(repo))
     assert "origin/main 声明的 4" in result.stderr
-    assert "更新命令：mdf upgrade" in result.stderr
+    assert "更新命令：$mdf upgrade" in result.stderr

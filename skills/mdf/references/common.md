@@ -125,7 +125,7 @@ upgrade 不读取本文件。
   - clarify 与 help 不要求 Git 仓库。
   - init/bootstrap/migrate 由 initialization 公共流程处理普通目录与父仓库边界。
   - tree 的 CLI 从目标目录解析 Git 根，调用见 `references/tree.md`。
-  - upgrade 更新本机安装，不要求业务仓 manifest ready。
+  - upgrade 替换本项目的 MDF 本体，不要求 manifest ready。
     当前目录是 Git 仓库时建议 detach。规则见 `references/upgrade.md`。
   - integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
   - sync 解析 Git 根且不要求 manifest ready，规则见 `references/sync.md`。

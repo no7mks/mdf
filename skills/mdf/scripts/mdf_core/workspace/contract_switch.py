@@ -61,7 +61,7 @@ def drift_hint(repo: Path) -> str | None:
         return None
     return (
         f"MDF 提示：本机 MDF 契约 {SCHEMA_VERSION} 低于 {label} 声明的 {best}；"
-        "更新命令：mdf upgrade"
+        "更新命令：$mdf upgrade"
     )
 
 
@@ -123,7 +123,7 @@ def switch(repo: Path) -> dict:
         )
     if declared > SCHEMA_VERSION:
         raise MDFError(
-            f"本机契约 {SCHEMA_VERSION} 低于声明的 {declared}；更新命令：mdf upgrade",
+            f"本机契约 {SCHEMA_VERSION} 低于声明的 {declared}；更新命令：$mdf upgrade",
             code="contract_tool_outdated",
         )
     if declared == SCHEMA_VERSION:

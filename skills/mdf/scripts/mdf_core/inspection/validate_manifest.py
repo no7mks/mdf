@@ -108,7 +108,7 @@ def validate_manifest(
             add_finding(
                 findings,
                 "manifest.tool_outdated",
-                f"schema_version {declared} 高于本机契约 {SCHEMA_VERSION}；更新命令：mdf upgrade",
+                f"schema_version {declared} 高于本机契约 {SCHEMA_VERSION}；更新命令：$mdf upgrade",
                 ".mdf/manifest.yaml",
             )
         else:

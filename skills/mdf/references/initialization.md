@@ -141,6 +141,7 @@ migrate 维护；initializing 不代表老仓库，应继续检查实际内容�
 入口允许普通目录和无提交的 Git 仓库。先用 `git rev-parse --show-toplevel` 检查边界；
 位于其他仓库内部时先澄清，不直接嵌套 `git init`，不把父仓库默认为目标。
 bootstrap 必须先通过新仓库判定，再执行本节，不能在拒绝老仓库前写入 `.git/`。
+`.mdf/cache/` 是本体缓存，不算已有事实。
 migrate 必须先通过已有事实、已 ready，或不符合当前契约的判定，再执行本节。
 不能在拒绝符合契约的新仓库前写入 `.git/`。
 

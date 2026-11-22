@@ -203,7 +203,7 @@ disable-model-invocation: true
 - **帮助**：裸调用、未知调用读取并执行 `references/help.md`。
   - help intent 经 CLI 检查后同样执行该流程。
   - 不读取其他 intent、不检查仓库、不写入。
-- **MDF_ROOT**：引导 Skill 输出的版本目录。本文件必须位于该目录。
+- **MDF_ROOT**：项目主 worktree 的 `.mdf/cache/mdf-core/<commit>`。本文件必须位于该目录。
   - `info` 的 `mdf_root` 必须等于该目录。不一致则停止。
   - 同一次调用的后续 Core 都使用这个目录。下一次调用由引导 Skill 重新给出。
   - code-review 的 `--read-only` 或 `--against`，以及 fact audit 带 `--against` 时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。

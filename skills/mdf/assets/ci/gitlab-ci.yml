@@ -3,8 +3,7 @@ mdf-review:
   tags: [mdf]
   variables:
     GIT_DEPTH: "0"
-    # runner 用 mdf-deploy.sh install --home /opt/mdf 安装。job 的 MDF_HOME 优先。
-    MDF_HOME: /opt/mdf
+    MDF_SOURCE: https://github.com/no7mks/mdf.git
     MDF_BACKEND: codex
     # 首次 release 由项目变量 MDF_REVIEW_BASE 指定确认后的固定基线。
     # 增量复核可通过 MDF_PREVIOUS_REPORT 指向项目已下载的上轮报告。
@@ -17,20 +16,23 @@ mdf-review:
       # OPENAI_API_KEY 或 CURSOR_API_KEY 由项目变量提供。
       # CLI 脚本由 runner 固定安装，或从目标规则版本提取。
       MDF_OUTPUT="$CI_BUILDS_DIR/mdf-review-$CI_JOB_ID"
+      MDF_TREE="$CI_BUILDS_DIR/mdf-$CI_JOB_ID"
       mkdir -p "$MDF_OUTPUT"
+      git init "$MDF_TREE"
+      git -C "$MDF_TREE" fetch --depth 1 "$MDF_SOURCE" "$MDF_REVISION"
+      git -C "$MDF_TREE" checkout --detach FETCH_HEAD
+      MDF_ROOT="$MDF_TREE/skills/mdf"
       if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
         git fetch --tags origin
         git fetch origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
         MDF_POLICY="$(git rev-parse FETCH_HEAD)"
         MDF_HEAD="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
         git checkout --detach "$MDF_HEAD"
-        MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
         python3 -B "$MDF_ROOT/assets/ci/review.py" --repo "$CI_PROJECT_DIR" \
           --source "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" --head "$MDF_HEAD" \
           --target "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" \
           --policy-ref "$MDF_POLICY" --backend "$MDF_BACKEND" --output-dir "$MDF_OUTPUT"
       else
-        MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
         python3 -B "$MDF_ROOT/scripts/mdf.py" audit-push --repo "$CI_PROJECT_DIR" \
           --branch "$CI_COMMIT_BRANCH" --before "$CI_COMMIT_BEFORE_SHA" --after "$CI_COMMIT_SHA" \
           --collect-evidence > "$MDF_OUTPUT/audit.json"

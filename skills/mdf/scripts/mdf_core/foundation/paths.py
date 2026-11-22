@@ -22,13 +22,13 @@ def path_stays_in_repo(repo: Path, path: Path) -> bool:
 
 
 def is_local_artifact_root(repo: Path, path: Path) -> bool:
-    return path in {repo / ".mdf" / name for name in ("logs", "reports", "tmp")}
+    return path in {repo / ".mdf" / name for name in ("logs", "reports", "tmp", "cache")}
 
 
 def managed_symlinks(repo: Path) -> list[Path]:
     """检查托管路径；本地日志、报告与临时目录只检查目录本身，不递归扫描产物。"""
     found: set[Path] = set()
-    local_artifacts = {repo / ".mdf" / name for name in ("logs", "reports", "tmp")}
+    local_artifacts = {repo / ".mdf" / name for name in ("logs", "reports", "tmp", "cache")}
     for name in MANAGED_ROOTS:
         root = repo / name
         if root.is_symlink():

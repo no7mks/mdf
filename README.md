@@ -88,7 +88,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--against] [--quick]` | 只读事实审阅；`--quick` 只跳过 LLM |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
-| `$mdf upgrade` | 更新本机仓外安装。除补齐仓库根 `.gitignore` 外不改业务仓文件 |
+| `$mdf upgrade` | 替换本项目的 MDF 本体并发布项目引导 |
 | `$mdf to <target>` | 进入目标 worktree；gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy`：github-flow 使用 detached HEAD，gitflow 检出 trunk |
 | `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；PR mode 的受保护增量走 PR/MR；其他分支只报告 |
 | `$mdf integrate` | 按工作线联调；collab-mode 由接手 Agent 直接调度两端 worktree |
@@ -317,25 +317,22 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 `docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。
 当一条 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
-具体 intent、对象约束和仓库契约在仓外版本目录的 `references/`、`assets/` 与 `scripts/`。
-业务仓只保留 `.mdf/`、`docs/` 和 `AGENTS.md` 中的薄声明。
+具体 intent、对象约束和仓库契约在项目 `.mdf/cache/mdf-core/<commit>` 的 `references/`、`assets/` 与 `scripts/`。
+业务仓只保留 `.mdf/`、`docs/` 和 `AGENTS.md` 中的薄声明。本体不进 Git。
 
-## 安装
-
-在 MDF 源仓库工作区干净时，把当前 `HEAD` 装到本机：
+## 首次获取
 
 ```bash
-./mdf-deploy.sh install
-./mdf-deploy.sh install --home /opt/mdf
+tmp=$(mktemp -d) && git clone --depth 1 https://github.com/no7mks/mdf.git "$tmp/mdf"
+python3 -B "$tmp/mdf/skills/mdf/scripts/mdf_launcher.py" upgrade --repo "<项目根>" --dry-run
+python3 -B "$tmp/mdf/skills/mdf/scripts/mdf_launcher.py" upgrade --repo "<项目根>" --expected-commit <new_commit>
 ```
 
-- 未设置 `MDF_HOME` 时，安装根是 `~/.local/share/mdf`。
-- `MDF_HOME` 为空或 `current` 无效时停止，不改用默认路径。
-- 每个修订位于 `versions/<commit>/`。`current` 指向启用的版本。
-- 引导壳写入 `~/.agents/skills/mdf`，以及 Claude、Kiro、OpenClaw 的用户级目录。
-- `$mdf upgrade` 更新本机安装。自检失败会回滚。除补齐仓库根 `.gitignore` 外不改业务仓文件。
-- 已跟踪的仓内副本用 `mdf detach --repo <仓库>` 移除。
-- ❌ install、upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
+- 本体是主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份。薄入口缺这一版时会自动安装。
+- 引导 Skill 只安装到项目主 worktree 的 `.agents/skills/mdf`。本体和引导均由仓库根 `.gitignore` 排除。
+- `$mdf upgrade` 安装这一修订。自检失败时旧版本目录和项目引导不变。
+- 已跟踪的仓内副本用 `python3 -B "$MDF_ROOT/scripts/mdf.py" detach --repo <仓库>` 移除。
+- ❌ upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 
 ## 维护
 

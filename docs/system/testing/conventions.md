@@ -9,7 +9,7 @@
 - `tests/lint/`：Skill 文档、契约文本、模板与文件规模检查，属于 lint 入口，不是 suite 成员。
 - `tests/unit/<功能块>/`：直接调用 `mdf_core` 的 UT；PT 以固定种子的 `random`
   生成输入（如 `test_semver_rules.py`、`test_yaml_subset.py`）。
-- `tests/e2e/<功能块>/`：在临时 Git 仓库中以子进程调用 `mdf.py` 或 `mdf-deploy.sh`
+- `tests/e2e/<功能块>/`：在临时 Git 仓库中以子进程调用 `mdf.py` 或 `mdf_launcher.py`
   的 CLI E2E。
 - 全部测试 hermetic：只依赖 Python 标准库、Git、pytest 与 pytest-xdist，不访问网络。
 - macOS 的 PATH 命中 `/usr/bin/git` 时，测试启动阶段用 `xcrun --find git` 定位当前 toolchain，
@@ -92,7 +92,7 @@
 | docs | 是 | audit、doctor、validate_*、doc_size |
 | init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
 | integrate | 否 | integrate、integrate_http、integrate_store |
-| deploy | 否 | `mdf-deploy.sh`、仓外 upgrade、detach |
+| deploy | 否 | 项目本体 upgrade、detach |
 
 ### 复用已有报告
 

@@ -9,7 +9,7 @@ from mdf_core.foundation.constants import BASELINES
 from mdf_core.foundation.errors import MDFError
 from mdf_core.workspace.init_repo import init_files
 from mdf_home import HomeError, _upgrade_repo, ensure_project_gitignore, project_gitignore_text
-from mdf_test_support import init_git
+from mdf_test_support import git, init_git
 
 BLOCK = (
     "# MDF local artifacts\n"
@@ -17,6 +17,7 @@ BLOCK = (
     "/.mdf/tmp/\n"
     "/.mdf/reports/\n"
     "/.mdf/cache/\n"
+    "/.agents/skills/mdf/\n"
 )
 
 
@@ -47,6 +48,7 @@ def test_header_inserts_missing_lines_at_the_segment_end() -> None:
         "/.mdf/tmp/\n"
         "/.mdf/reports/\n"
         "/.mdf/cache/\n"
+        "/.agents/skills/mdf/\n"
         "\nkeep\n"
     )
 
@@ -112,17 +114,17 @@ def test_explicit_repo_must_be_the_git_root(tmp_path: Path, monkeypatch) -> None
     assert _upgrade_repo(None) == repo.resolve()
 
 
-def test_explicit_repo_expands_home_and_rejects_a_manifest_symlink(
+def test_explicit_repo_expands_home_and_accepts_a_plain_directory(
     tmp_path: Path, monkeypatch
 ) -> None:
     repo = _mdf_repo(tmp_path / "repo")
     monkeypatch.setenv("HOME", str(tmp_path))
     assert _upgrade_repo("~/repo") == repo.resolve()
-    manifest = repo / ".mdf" / "manifest.yaml"
-    outside = tmp_path / "manifest.yaml"
-    outside.write_text(manifest.read_text(encoding="utf-8"), encoding="utf-8")
-    manifest.unlink()
-    manifest.symlink_to(outside)
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    assert _upgrade_repo(str(plain)) == plain.resolve()
+    linked = tmp_path / "linked"
+    git(repo, "worktree", "add", "--detach", str(linked))
     with pytest.raises(HomeError) as info:
-        _upgrade_repo(str(repo))
+        _upgrade_repo(str(linked))
     assert info.value.code == "upgrade_repo_invalid"

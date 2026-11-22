@@ -64,7 +64,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
     - start、delivery roster-join、finish-gitflow、planning、pm。
     - detach、`contract-switch`、`sync` 与 `merge-no-ff`。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
-  `detach` 中有效。仓外 `mdf upgrade --dry-run` 见 [仓外入口](mdf-launcher.md)。
+  `detach` 中有效。项目本体 `mdf upgrade --dry-run` 见 [项目入口](mdf-launcher.md)。
 
 ## 命令表
 
@@ -144,7 +144,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `archive` | `list` 与 `archive` | [仓库写入命令](mdf-cli-write.md) |
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
 | `adhoc` | `start --kind adhoc --name`、`verify smart` 与 `finish-gitflow` |
-| `upgrade` | 仓外 `mdf upgrade`，不经过 `mdf.py` | [仓外入口](mdf-launcher.md) |
+| `upgrade` | 项目本体 `mdf upgrade`，不经过 `mdf.py` | [项目入口](mdf-launcher.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 按 workflow 创建或复用、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | `trunk-pr`：github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |

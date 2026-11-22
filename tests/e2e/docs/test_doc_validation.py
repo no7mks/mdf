@@ -93,7 +93,7 @@ def test_validation_rejects_symlink_in_managed_docs(
     assert "path.symlink" in result.stdout
 
 
-@pytest.mark.parametrize("name", ["logs", "reports", "tmp"])
+@pytest.mark.parametrize("name", ["logs", "reports", "tmp", "cache"])
 def test_validation_ignores_symlinks_inside_local_artifacts(python_exe, tmp_path, name):
     from mdf_core.execution.run_logs import ignored_dir
 

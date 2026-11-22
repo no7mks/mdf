@@ -23,7 +23,6 @@ ROOT_TEXT_FILES = (
     "README.md",
     "PROJECT.md",
     "GLOSSARY.md",
-    "mdf-deploy.sh",
 )
 
 

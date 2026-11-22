@@ -119,7 +119,7 @@
 - `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
   主链在 verify branch 之后、close-out 之前
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
-- `$mdf upgrade [--source <url>]`：更新本机仓外 MDF。除补齐仓库根 `.gitignore` 外不改业务仓文件
+- `$mdf upgrade [--source <url>]`：替换本项目的 MDF 本体并发布项目引导
 - `$mdf to <target>`：进 worktree（`plan`/`develop`/`deploy`）
 - `$mdf dev-pr [<slug>]`：保全 develop 到 adhoc，reset 对齐远端，审查与 smoke 通过后 PR
 - `$mdf trunk-pr [<slug>]`：接管 github-flow 的本地 trunk 提交，按内容进入 `pm/*` 或 `adhoc/*` 并走 PR
@@ -409,8 +409,9 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
-  - 用途：预览并更新本机仓外 MDF。失败自动回滚。除补齐仓库根 `.gitignore` 外不修改业务仓，不 push。
-  - 说明：当前目录是 Git 仓库且仍跟踪 Skill 副本时，建议接着 `mdf detach`。
+  - 用途：预览并安装本项目的 MDF 本体及 `.agents/skills/mdf` 引导。自检失败时旧版本目录和项目引导不变。
+  - 说明：当前目录是 Git 仓库且仍跟踪 Skill 副本时，建议接着
+    `python3 -B "$MDF_ROOT/scripts/mdf.py" detach --repo <仓库>`。
 - `$mdf to <target>`
   - 用法：`$mdf to plan|develop|deploy|<分支>`
   - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。

@@ -416,7 +416,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" contract-switch --repo /path/to/repository
 - 声明值更高时返回 `contract_tool_outdated`。相等时 `changed` 为 false。
 - PR mode 在 `codex/contract-switch` 提交。不跑其他门禁。不 push。
 
-仓外升级、回滚与版本发现见 [仓外入口](mdf-launcher.md)。
+项目本体的替换见 [项目入口](mdf-launcher.md)。
 
 ## `bug close`
 

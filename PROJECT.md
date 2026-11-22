@@ -30,14 +30,11 @@ smoke 未覆盖的 release_only 成员不得声称通过；确需验证时只补
 ## 发布与安装
 
 - 只关注当前 MDF 发布后的可用性，不保留、解释、检测或兼容历史版本。
-- `install` 要求源仓库工作区干净，并只归档当前 `HEAD`。
-  - 修订写入 `<安装根>/versions/<commit>/`，再原子切换 `current`。
-  - 未传 `--home` 且未设置 `MDF_HOME` 时，安装根是 `~/.local/share/mdf`。
-  - `MDF_HOME` 无效时停止，不回退到默认路径。
-- `$mdf upgrade` 更新本机安装。自检失败回滚到切换前的 `current`。
-  - 除补齐仓库根 `.gitignore` 外不修改业务仓，不重写 `AGENTS.md`。
-- `mdf detach` 只移除业务仓里已跟踪的 Skill 副本。
-- ❌ install、upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
+- 本体位于项目主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份。
+- `$mdf upgrade` 在自检通过后写入 `<commit>` 目录并发布项目薄入口，再删除其他版本。自检失败时旧版本目录和项目引导不变。
+  - 引导只写入主 worktree 的 `.agents/skills/mdf`，由仓库根 `.gitignore` 排除。
+- `mdf.py detach` 只移除业务仓里已跟踪的 Skill 副本。
+- ❌ upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 
 ## 文件规模
 

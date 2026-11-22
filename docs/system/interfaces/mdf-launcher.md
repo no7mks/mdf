@@ -1,30 +1,15 @@
-# 仓外 MDF 入口
+# 项目入口
 
-业务仓不保存 MDF 本体。本机用版本目录提供脚本、协议和模板。
+MDF 本体是主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份。该目录是 Skill 树。
+薄入口缺这个 commit 时会自动拉取并安装。
 
-## 安装根
-
-| 条件 | 行为 |
+| 位置 | 内容 |
 | --- | --- |
-| `MDF_HOME` 已设置且 `current` 有效 | 使用该安装根 |
-| `MDF_HOME` 为空，或 `current` 无效 | 报错并停止，不回退 |
-| `MDF_HOME` 未设置 | 使用 `~/.local/share/mdf` |
+| `.mdf/cache/mdf-core/<commit>` | 这一修订的本体 |
+| `.mdf/cache/mdf-core/.lock` | 安装时的文件锁 |
+| `.mdf/cache/mdf-core/.staging-*` | 安装过程中的临时目录，成功后删除 |
 
-两处都有效时，显式 `MDF_HOME` 优先。CI job 应设置 `MDF_HOME`。
-
-## 布局
-
-```text
-<root>/current -> versions/<revision>/
-<root>/versions/<revision>/
-<root>/.lock
-<root>/logs/
-```
-
-- `<revision>` 是完整 commit hash。
-- 每次启动解析一次 `current`，之后固定该版本目录。
-- 升级或回滚只原子替换 `current`。
-- 已启动进程继续使用原目录。
+`mdf root` 的 stdout 只有一行：该版本目录的绝对路径。launcher 不在 `.mdf/cache/mdf-core/<commit>` 下时返回 `mdf_core_invalid`。
 
 ## 命令
 
@@ -32,39 +17,27 @@
 
 | 命令 | 作用 |
 | --- | --- |
-| `mdf root` | stdout 一行：本次版本目录绝对路径 |
-| `mdf upgrade [--source URL] [--dry-run] [--expected-commit SHA] [--repo PATH]` | 预览或切换到新修订 |
-| `mdf restore [--revision SHA]` | 列出已安装修订，或切回其中一版 |
-| `install-payload` | 由 `mdf-deploy.sh` 写入一个修订 |
+| `mdf root` | stdout 一行：版本目录的绝对路径 |
+| `mdf upgrade [--source URL] [--dry-run] [--expected-commit SHA] [--repo PATH]` | 预览或安装这一修订 |
+| `install-payload` | 由 upgrade 或薄入口把归档写入版本目录 |
 
-`detach` 与 `contract-switch` 仍由固定版本里的 `mdf.py` 执行。
+`detach` 与 `contract-switch` 仍由该版本目录里的 `mdf.py` 执行。
 
-`--repo` 省略时，当前目录属于带 `.mdf/manifest.yaml` 的 Git 仓库才补齐根 `.gitignore`。
-不是这种仓库则跳过。显式 `--repo` 必须是该 Git 根目录，否则升级失败。预览不写 `.gitignore`。
+`--repo` 省略时，当前目录必须属于主 worktree，目标就是该主 worktree。
+显式 `--repo` 必须是主 worktree 根；不是 Git 仓库的普通目录也可以。
+linked worktree 与子目录都会失败。预览不写文件。
 
-## 引导壳
+## 替换
 
-安装写入用户级 Skill。`SKILL.md` 来自 `assets/host/SKILL.md`。
-`scripts/` 是激活版本的 `mdf_launcher.py` 与 `mdf_home.py` 副本，每次激活时原子覆盖。
+1. 解析项目并检查 `.gitignore` 与 cache 路径不是 symbolic link。
+2. 取上游 `HEAD`。与 `--expected-commit` 不符则停止，已有版本目录不动。
+3. 自检通过后，把版本目录放到 `.mdf/cache/mdf-core/<commit>`。
+4. 再发布项目主 worktree 的 `.agents/skills/mdf`。入口里的 `mdf_entry.py` 写明该 commit 和来源。
+5. 最后删除其他版本目录。发布失败时保留已就绪的本体，重试同一修订时复用该目录。
+6. 自检失败时删除 staging。旧版本目录和项目引导都不变。
 
-| 目录 | 宿主 |
-| --- | --- |
-| `~/.agents/skills/mdf` | Cursor、Codex |
-| `~/.claude/skills/mdf` | Claude Code |
-| `~/.kiro/skills/mdf` | Kiro |
-| `~/.openclaw/skills/mdf` | OpenClaw |
+## 引导路径
 
-不另写入 `~/.codex/skills` 或 `~/.cursor/skills`。
-这两个宿主已经读取 `~/.agents/skills`，再写一份会显示两个同名 Skill。
-
-引导入口不依赖 `~/.local/bin/mdf`。
-该链接只在不存在时创建，供人和 CI 直接调用。
-
-## 凭证
-
-兼容修订不改 clear commit 的通过含义。
-新的运行日志记录 `tool_revision` 与 `mdf_root`。
-
-- 只有 `schema_version` 变化，或 `.mdf/`、`AGENTS.md` 等业务规则变化，才使对应凭证失效。
-- code-review 的 `rules_sha256` 使用协议版本号，不使用协议全文。
-- 本机契约低于业务仓声明时，stderr 输出一行：`更新命令：mdf upgrade`。
+唯一安装路径是项目主 worktree 的 `.agents/skills/mdf`。它包含 `SKILL.md`、
+`agents/openai.yaml` 和渲染后的 `mdf_entry.py`，并由仓库根 `.gitignore` 排除。
+从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`。入口从自身路径定位项目。

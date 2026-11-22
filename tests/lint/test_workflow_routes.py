@@ -125,7 +125,7 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "不使用空值或上次调用的变量" in dispatch
     assert "clarify 与 help 不要求 Git 仓库" in dispatch
     assert "init/bootstrap/migrate" in dispatch and "普通目录" in dispatch
-    assert "upgrade 更新本机安装" in dispatch
+    assert "upgrade 替换本项目的 MDF 本体" in dispatch
     assert "建议 detach" in dispatch
     assert "sync 解析 Git 根" in dispatch
     assert "不要求 manifest ready" in dispatch
@@ -378,10 +378,9 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "不 push" in text
     assert "不修改业务仓" in text
     assert "自检失败" in text
-    assert "回滚" in text
+    assert "旧版本未变" in text
+    assert "--repo" in text
     assert "detach" in text
-    assert "下一次" in text
-    assert "已启动的调用" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)
 

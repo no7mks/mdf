@@ -29,3 +29,17 @@ def test_html_evidence_links_survive_move_with_spaces_and_entities(tmp_path):
     assert 'href="https://example.invalid/a?x=1&amp;y=2"' in text
     collect_local_link_findings(repo, destination, findings)
     assert findings == []
+
+
+def test_replacement_plan_does_not_read_the_core_cache(tmp_path):
+    load_core_module()
+    from mdf_core.documents.moves import replacement_plan
+    repo = tmp_path / "repo"
+    cache = repo / ".mdf/cache/mdf-core" / ("a" * 40)
+    cache.mkdir(parents=True)
+    (cache / "SKILL.md").write_text("body\n", encoding="utf-8")
+    page = repo / "docs/README.md"
+    page.parent.mkdir()
+    page.write_text("stay\n", encoding="utf-8")
+    rewrites = replacement_plan(repo, {page: repo / "docs/index.md"})
+    assert cache / "SKILL.md" not in rewrites

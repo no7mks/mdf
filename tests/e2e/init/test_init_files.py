@@ -117,6 +117,7 @@ def test_init_writes_files_from_assets_templates(
         "/.mdf/tmp/\n"
         "/.mdf/reports/\n"
         "/.mdf/cache/\n"
+        "/.agents/skills/mdf/\n"
     )
 
     templates = skill_dir("mdf") / "assets" / "templates"
@@ -261,7 +262,7 @@ def test_init_gitignore_is_idempotent_and_keeps_user_rules(
     text = (repo / ".gitignore").read_text(encoding="utf-8")
     assert text.startswith("node_modules/\n/.mdf/tmp/\n\n# MDF local artifacts\n")
     assert text.count("/.mdf/tmp/") == 1
-    for line in ("/.mdf/logs/", "/.mdf/reports/", "/.mdf/cache/"):
+    for line in ("/.mdf/logs/", "/.mdf/reports/", "/.mdf/cache/", "/.agents/skills/mdf/"):
         assert text.count(line) == 1
     second = payload(mdf(python_exe, *arguments))
     assert ".gitignore" not in second["plan"]["create"]
@@ -270,6 +271,6 @@ def test_init_gitignore_is_idempotent_and_keeps_user_rules(
     tracked = run(["git", "check-ignore", "-q", ".mdf/manifest.yaml"], cwd=repo)
     assert tracked.returncode == 1
     ignored = run(
-        ["git", "check-ignore", "-q", ".mdf/cache/mdf-core/current"], cwd=repo,
+        ["git", "check-ignore", "-q", ".mdf/cache/mdf-core/" + "a" * 40], cwd=repo,
     )
     assert ignored.returncode == 0
