@@ -28,8 +28,8 @@
   - 长期复用的脚本移入项目正式目录并纳入 Git，结论和证据归入相应文档或报告。
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（不得省略前缀或只写序号/短码/slug）。
 - MDF 的调用与续办按 Skill 入口规则执行。
-- MDF 本体位于主 worktree 的 `.mdf/cache/mdf-core/<commit>`，由引导 Skill 给出。缺这一版时引导会自动安装。
-- ❌ 不得跟踪或手改 MDF Skill、脚本或模板；本体只由 `$mdf upgrade` 替换。
+- MDF 本体路径由引导 Skill 给出。缺这一版时引导会自动安装。
+- ❌ 本体的 Skill、脚本和模板不得跟踪或手改。
 - 直接在 develop 上改动时，按事项创建 `changes/unreleased/<slug>/`，至少留存 `CHANGE.md`。
   - `CHANGE.md` 参照 MDF 本体 `assets/templates/change.md` 编写。
 

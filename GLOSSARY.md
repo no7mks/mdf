@@ -329,5 +329,5 @@ collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
 
 ## 引导 Skill
 
-项目主 worktree 的 `.agents/skills/mdf` 中的指针。它运行同目录的 `mdf_entry.py`。
+项目 `.agents/skills/mdf` 中的薄入口。它运行同目录的 `mdf_entry.py`。
 该脚本发现项目缺少自己的修订目录时自动拉取并安装，再输出 `MDF_ROOT`。

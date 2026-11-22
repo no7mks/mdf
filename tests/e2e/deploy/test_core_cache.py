@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -471,6 +472,50 @@ def test_missing_revision_dir_is_installed_on_start(tmp_path: Path) -> None:
     assert started.stdout.strip() == str((core_dir(repo) / commit).resolve())
     assert {path.name for path in core_dir(repo).iterdir()} == {commit, ".lock"}
     assert list(other.iterdir()) == []
+
+
+def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    revision = head(source)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "README.md").write_text("app\n", encoding="utf-8")
+    init_git(repo)
+    payload(upgrade(home, source, repo, revision))
+    (repo / ".gitignore").write_text("/.mdf/logs/\n/.mdf/reports/\n/.mdf/cache/\n/.mdf/tmp/\n", encoding="utf-8")
+    commit_all(repo, "test: 提交薄入口")
+    (source / "skills/mdf/SKILL.md").write_text("new upstream HEAD\n", encoding="utf-8")
+    commit_all(source, "test: 推进上游 HEAD")
+
+    worktree = tmp_path / "linked"
+    git(repo, "worktree", "add", "--detach", str(worktree), head(repo))
+    entry_dir = ".agents/skills/mdf"
+    tracked = git(worktree, "ls-files", "--stage", "--", entry_dir).stdout
+    assert len(tracked.splitlines()) == 3
+    assert not (worktree / ".mdf/cache").exists()
+
+    started = invoke(home, [sys.executable, "-B", f"{entry_dir}/mdf_entry.py"], cwd=worktree)
+    assert started.returncode == 0, started.stderr
+    root = core_dir(worktree) / revision
+    assert started.stdout.strip() == str(root.resolve())
+    assert (root / "references/.version").read_text(encoding="utf-8").strip() == revision
+    skill = (worktree / entry_dir / "SKILL.md").read_text(encoding="utf-8")
+    command = shlex.split(skill.split("```bash\n", 1)[1].split("```", 1)[0])
+    assert command[0] == "python3"
+    from_skill = invoke(home, [sys.executable, *command[1:]], cwd=worktree / entry_dir)
+    assert from_skill.returncode == 0, from_skill.stderr
+    assert from_skill.stdout.strip() == str(root.resolve())
+    info = payload(invoke(home, [sys.executable, "-B", str(root / "scripts/mdf.py"), "info"], cwd=worktree))
+    assert info["revision"] == revision
+    assert info["mdf_root"] == str(root.resolve())
+
+    assert git(worktree, "ls-files", "--stage", "--", entry_dir).stdout == tracked
+    assert git(worktree, "status", "--porcelain", "--untracked-files=all").stdout == ""
+    logs = list((worktree / ".mdf/logs").glob("*-install-*.json"))
+    assert logs
+    for path in (root / "scripts/mdf.py", logs[0], worktree / ".mdf/reports/probe", worktree / ".mdf/tmp/probe"):
+        assert git(worktree, "check-ignore", "-v", str(path.relative_to(worktree))).stdout.startswith(".gitignore:")
 
 
 def test_project_upgrade_keeps_other_project_revision(tmp_path: Path) -> None:

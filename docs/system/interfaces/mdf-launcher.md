@@ -1,7 +1,7 @@
 # 项目入口
 
-MDF 本体是主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份。该目录是 Skill 树。
-薄入口缺这个 commit 时会自动拉取并安装。
+MDF 本体是 `.mdf/cache/mdf-core/<commit>` 下的 Skill 树。每个安装目录只保留当前修订。
+upgrade 把本体装到主 worktree。薄入口缺指定修订时会自动拉取并安装。
 
 | 位置 | 内容 |
 | --- | --- |
@@ -39,9 +39,12 @@ linked worktree 与子目录都会失败。预览不写文件。
 
 ## 引导路径
 
-唯一安装路径是项目主 worktree 的 `.agents/skills/mdf`。它包含 `SKILL.md`、
-`agents/openai.yaml` 和渲染后的 `mdf_entry.py`，并由仓库根 `.gitignore` 排除。
-从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`。入口从自身路径定位项目。
+upgrade 把薄入口发布到项目主 worktree 的 `.agents/skills/mdf`，并在仓库根 `.gitignore` 中排除它。
+薄入口包含 `SKILL.md`、`agents/openai.yaml` 和渲染后的 `mdf_entry.py`。
+`SKILL.md` 运行同目录的 `mdf_entry.py`。脚本从自身路径定位 worktree。
+从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`，也可运行当前 worktree 已跟踪的薄入口。
+已跟踪的薄入口按 `SOURCE` 和 `REVISION` 在当前 worktree 补装本体，保留薄入口、`.gitignore` 和 Git index。
+项目的 `.gitignore` 排除 `.mdf/cache/`、`.mdf/logs/`、`.mdf/reports/` 和 `.mdf/tmp/`。
 
 ## 已跟踪副本的升级交接
 

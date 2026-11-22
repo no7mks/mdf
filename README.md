@@ -328,10 +328,10 @@ python3 -B "$tmp/mdf/skills/mdf/scripts/mdf_launcher.py" upgrade --repo "<项目
 python3 -B "$tmp/mdf/skills/mdf/scripts/mdf_launcher.py" upgrade --repo "<项目根>" --expected-commit <new_commit>
 ```
 
-- 本体是主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份。薄入口缺这一版时会自动安装。
-- 引导 Skill 只安装到项目主 worktree 的 `.agents/skills/mdf`。本体和引导均由仓库根 `.gitignore` 排除。
+- `$mdf upgrade` 把本体和薄入口装到主 worktree，并在仓库根 `.gitignore` 中排除它们。
+- 已跟踪的薄入口可在当前 worktree 自动补装固定修订。见[项目入口](docs/system/interfaces/mdf-launcher.md#引导路径)。
 - `$mdf upgrade` 安装这一修订。自检失败时旧版本目录和项目引导不变。
-- 已跟踪的仓内副本用 `python3 -B "$MDF_ROOT/scripts/mdf.py" detach --repo <仓库>` 移除。
+- 已跟踪的完整 Skill 副本可用 `python3 -B "$MDF_ROOT/scripts/mdf.py" detach --repo <仓库>` 移除。
 - ❌ upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 
 ## 维护

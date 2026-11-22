@@ -7,12 +7,12 @@ disable-model-invocation: true
 
 # Mars Development Flow
 
-本文件是指针，不含 MDF 本体。运行本目录的 `mdf_entry.py`。
+本文件是指针，不含 MDF 本体。
 
-1. 运行：
+1. 在当前读取的 `SKILL.md` 所在目录执行：
 
    ```bash
-   python3 -B "__MDF_ENTRY__"
+   python3 -B ./mdf_entry.py
    ```
 
 2. 退出码非 0：原样报告 stderr 并停止，不模拟 CLI。

@@ -30,7 +30,8 @@ smoke 未覆盖的 release_only 成员不得声称通过；确需验证时只补
 ## 发布与安装
 
 - 只关注当前 MDF 发布后的可用性，不保留、解释、检测或兼容历史版本。
-- 本体位于项目主 worktree 的 `.mdf/cache/mdf-core/<commit>`，只留这一份。
+- upgrade 把本体装到项目主 worktree。已跟踪的薄入口在自身所在的 worktree 补装本体。
+- 每个安装目录 `.mdf/cache/mdf-core/` 只保留当前修订。
 - `$mdf upgrade` 在自检通过后写入 `<commit>` 目录并发布项目薄入口，再删除其他版本。自检失败时旧版本目录和项目引导不变。
   - 引导只写入主 worktree 的 `.agents/skills/mdf`，由仓库根 `.gitignore` 排除。
 - `mdf.py detach` 只移除业务仓里已跟踪的 Skill 副本。

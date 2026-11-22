@@ -56,7 +56,7 @@ def install(root: Path, launcher: Path) -> None:
         installed = payload / "scripts" / "mdf_launcher.py"
         completed = subprocess.run(
             [
-                sys.executable, "-B", str(installed), "install-payload",
+                sys.executable, "-B", str(installed), "install-payload", "--from-entry",
                 "--revision", REVISION, "--payload", str(payload),
                 "--repo", str(root), "--source", SOURCE,
             ],

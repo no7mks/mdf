@@ -36,6 +36,7 @@ def command_root() -> int:
 def command_install(args: argparse.Namespace) -> int:
     emit(mdf_home.install_payload(
         Path(args.repo), args.revision, Path(args.payload), args.source,
+        from_entry=args.from_entry,
     ))
     return 0
 
@@ -56,6 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument("--payload", required=True)
     install.add_argument("--repo", required=True)
     install.add_argument("--source", required=True)
+    install.add_argument("--from-entry", action="store_true")
     handoff = sub.add_parser("complete-upgrade")
     handoff.add_argument("--repo", required=True)
     handoff.add_argument("--payload", required=True)

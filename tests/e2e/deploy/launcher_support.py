@@ -61,4 +61,4 @@ def assert_pointer(repo: Path, commit: str, source: str) -> None:
     text = entry.read_text(encoding="utf-8")
     assert f"REVISION = {json.dumps(commit)}" in text
     assert f"SOURCE = {json.dumps(source)}" in text
-    assert str(entry.resolve()) in (base / "SKILL.md").read_text(encoding="utf-8")
+    assert (base / "SKILL.md").read_bytes() == (SKILL / "assets/host/SKILL.md").read_bytes()

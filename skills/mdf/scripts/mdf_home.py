@@ -341,14 +341,16 @@ def _replace_dir(src: Path, dest: Path) -> None:
     shutil.rmtree(src)
 
 
-def _entry_destination(project: Path) -> Path:
+def _entry_destination(project: Path, *, from_entry: bool) -> Path | None:
     cursor = project
     for part in ENTRY_DIR.parts:
         cursor = cursor / part
         if cursor.is_symlink() or (cursor.exists() and not cursor.is_dir()):
             raise HomeError(f"{cursor} 必须是实际目录", "managed_symlink")
-    tracked = _run(["git", "ls-files", "--", ENTRY_DIR.as_posix()], project)
+    tracked = _run(["git", "ls-files", "-z", "--", ENTRY_DIR.as_posix()], project, text=False)
     if tracked.returncode == 0 and tracked.stdout:
+        if from_entry and os.fsencode(ENTRY_DIR / "mdf_entry.py") in tracked.stdout.split(b"\0"):
+            return None
         raise HomeError(f"{ENTRY_DIR} 含已跟踪文件，请先执行 detach", "entry_tracked")
     return cursor
 
@@ -359,7 +361,7 @@ def _render_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
-def _host_files(tree: Path, revision: str, source: str, entry_path: Path) -> dict[str, bytes]:
+def _host_files(tree: Path, revision: str, source: str) -> dict[str, bytes]:
     skill = tree / "assets" / "host" / "SKILL.md"
     spec = tree / "agents" / "openai.yaml"
     entry = tree / "assets" / "host" / "mdf_entry.py"
@@ -367,9 +369,8 @@ def _host_files(tree: Path, revision: str, source: str, entry_path: Path) -> dic
         raise HomeError("版本缺少引导指针", "install_missing_host_skill")
     rendered_entry = _render_once(entry.read_text(encoding="utf-8"), 'REVISION = ""', "REVISION = " + json.dumps(revision), "REVISION")
     rendered_entry = _render_once(rendered_entry, 'SOURCE = ""', "SOURCE = " + json.dumps(source), "SOURCE")
-    rendered_skill = _render_once(skill.read_text(encoding="utf-8"), "__MDF_ENTRY__", str(entry_path), "__MDF_ENTRY__")
     return {
-        "SKILL.md": rendered_skill.encode("utf-8"),
+        "SKILL.md": skill.read_bytes(),
         "agents/openai.yaml": spec.read_bytes(),
         "mdf_entry.py": rendered_entry.encode("utf-8"),
     }
@@ -388,7 +389,7 @@ def _host_matches(dest: Path, files: dict[str, bytes]) -> bool:
 
 
 def install_entry(dest: Path, tree: Path, revision: str, source: str) -> None:
-    files = _host_files(tree, revision, source, dest / "mdf_entry.py")
+    files = _host_files(tree, revision, source)
     if _host_matches(dest, files):
         return
     stage: Path | None = None
@@ -425,7 +426,7 @@ def _version_ready(dest: Path, revision: str, log_dir: Path) -> bool:
     return True
 
 
-def install_payload(project: Path, revision: str, payload: Path, source: str) -> dict:
+def install_payload(project: Path, revision: str, payload: Path, source: str, *, from_entry: bool = False) -> dict:
     if not COMMIT_RE.fullmatch(revision):
         raise HomeError("revision 必须是完整 commit hash", "invalid_revision")
     project = project.resolve()
@@ -443,7 +444,7 @@ def install_payload(project: Path, revision: str, payload: Path, source: str) ->
         raise HomeError("payload 缺少本体文件", "install_missing_payload")
     read_project_gitignore(project)
     _reject_cache_symlinks(project)
-    entry = _entry_destination(project)
+    entry = _entry_destination(project, from_entry=from_entry)
     core = _prepare_core(project)
     dest = core / revision
     log_dir = project / ".mdf" / "logs"
@@ -476,8 +477,9 @@ def install_payload(project: Path, revision: str, payload: Path, source: str) ->
                 if placed:
                     _drop(dest)
                 raise HomeError(f"自检失败：{exc}", "install_self_check_failed") from exc
-        ensure_project_gitignore(project)
-        install_entry(entry, dest, revision, source)
+        if entry is not None:
+            ensure_project_gitignore(project)
+            install_entry(entry, dest, revision, source)
         try:
             _keep_only(core, revision)
         except OSError as exc:
