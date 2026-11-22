@@ -40,8 +40,9 @@ linked worktree 与子目录都会失败。预览不写文件。
 
 ## 引导路径
 
-upgrade 把薄入口发布到项目主 worktree 的 `.agents/skills/mdf`，并在仓库根 `.gitignore` 中排除它。
-薄入口包含 `SKILL.md`、`agents/openai.yaml` 和渲染后的 `mdf_entry.py`。
+upgrade 在项目主 worktree 生成或更新 `.agents/skills/mdf`，由项目提交入口和根 `.gitignore` 的改动。
+首次安装生成 `SKILL.md`、`agents/openai.yaml` 和渲染后的 `mdf_entry.py`。普通 upgrade 保持 Git index 不变。
+更新已跟踪的薄入口时，覆盖会影响本地修改或额外文件则返回 `entry_dirty`。
 `SKILL.md` 运行同目录的 `mdf_entry.py`。脚本从自身路径定位 worktree。
 从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`，也可运行当前 worktree 已跟踪的薄入口。
 
@@ -49,12 +50,13 @@ upgrade 把薄入口发布到项目主 worktree 的 `.agents/skills/mdf`，并�
 
 - linked worktree 先检查主 worktree 的 cache。版本目录名和 `references/.version` 都与 `REVISION` 一致时，薄入口持主 cache 的锁复制本体，再对副本自检。
 - 主 cache 没有可用的同版副本时，薄入口从 `SOURCE` 拉取固定的 `REVISION`。
+- 共享薄入口所用的 `SOURCE` 须能从其他机器访问。以本机路径安装时，入口会记录该绝对路径。
 
-项目的 `.gitignore` 排除 `.mdf/cache/`、`.mdf/logs/`、`.mdf/reports/` 和 `.mdf/tmp/`。
+项目的 `.gitignore` 排除 `.mdf/cache/`、`.mdf/logs/`、`.mdf/reports/` 和 `.mdf/tmp/`。init 和 upgrade 移除 `/.agents/skills/mdf/` 规则。
 
 ## 已跟踪副本的升级交接
 
 旧版 upgrade 替换并提交仓内副本后，在同一轮重读新版 Skill 时完成交接。
 接管命令使用该轮确认的修订和来源，校验待清理的副本，再安装 Core 和项目引导。
-成功后暂存旧副本的删除，补齐仓库根 `.gitignore`，返回新入口路径供本轮验证。
+成功后暂存旧副本的删除，更新仓库根 `.gitignore`，返回新入口路径供本轮验证。将新入口和 `.gitignore` 随删除项提交。
 失败时还原旧副本、对应 Git index 条目及原 `.gitignore`。

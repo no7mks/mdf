@@ -90,7 +90,7 @@ module 的 `size_limits` 可 override 上限及拆分比例，所有适用配置
 ## 验证 suite
 
 - **quick**：只含 hermetic 的 UT 与 PT，预算 30s；任何改动都跑。
-- **smoke**：包含 quick，可含任意种类，预算 300s；feature、bugfix、hotfix 的 branch 验证
+- **smoke**：包含 quick，可含任意种类，预算 500s；feature、bugfix、hotfix 的 branch 验证
   跑到此。
 - **release**：包含 smoke，发版所需的 test case，无预算上限；release 的 branch 验证跑到此。
 - **named suite**：某一功能块的 test case 集合，跨交付长期复用；每个 suite 必须有

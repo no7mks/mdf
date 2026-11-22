@@ -13,7 +13,7 @@ RESERVED = (*ALL_ENTRIES, "full")
 FIXED_INPUTS = (".mdf/modules.yaml", ".mdf/manifest.yaml", "docs/system/testing/**", "tests/playbooks/**")
 LOCKFILES = ("uv.lock", "poetry.lock", "Pipfile.lock", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
              "Cargo.lock", "go.sum", "Gemfile.lock", "composer.lock")
-DEFAULT_BUDGETS = {"quick": 30, "smoke": 300}
+DEFAULT_BUDGETS = {"quick": 30, "smoke": 500}
 NAME_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 MIGRATE_HINT = "；用 $mdf migrate 收敛到当前契约"
 

@@ -117,7 +117,6 @@ def test_init_writes_files_from_assets_templates(
         "/.mdf/tmp/\n"
         "/.mdf/reports/\n"
         "/.mdf/cache/\n"
-        "/.agents/skills/mdf/\n"
     )
 
     templates = skill_dir("mdf") / "assets" / "templates"
@@ -246,7 +245,7 @@ def test_init_gitignore_is_idempotent_and_keeps_user_rules(
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "README.md").write_text("# Test repository\n", encoding="utf-8")
-    (repo / ".gitignore").write_text("node_modules/\n/.mdf/tmp/\n", encoding="utf-8")
+    (repo / ".gitignore").write_text("node_modules/\n/.mdf/tmp/\n/.agents/skills/mdf/\n", encoding="utf-8")
     init_git(repo)
     arguments = [
         "init",
@@ -262,8 +261,9 @@ def test_init_gitignore_is_idempotent_and_keeps_user_rules(
     text = (repo / ".gitignore").read_text(encoding="utf-8")
     assert text.startswith("node_modules/\n/.mdf/tmp/\n\n# MDF local artifacts\n")
     assert text.count("/.mdf/tmp/") == 1
-    for line in ("/.mdf/logs/", "/.mdf/reports/", "/.mdf/cache/", "/.agents/skills/mdf/"):
+    for line in ("/.mdf/logs/", "/.mdf/reports/", "/.mdf/cache/"):
         assert text.count(line) == 1
+    assert "/.agents/skills/mdf/" not in text
     second = payload(mdf(python_exe, *arguments))
     assert ".gitignore" not in second["plan"]["create"]
     assert ".gitignore" not in second["plan"]["update"]

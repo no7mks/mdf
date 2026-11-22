@@ -399,7 +399,7 @@ python3 skills/mdf/scripts/mdf.py publish --repo /path/to/repository [--source <
 python3 "$MDF_ROOT/scripts/mdf.py" detach --repo /path/to/repository [--dry-run]
 ```
 
-- 只 `git rm -r` 六个宿主目录下已跟踪的 `skills/mdf`。
+- 用 `git rm -r` 移除六个宿主目录下已跟踪的完整 `skills/mdf` 副本，保留项目薄入口。
 - 副本有本地修改或未跟踪文件时返回 `detach_dirty`，不写入。
 - 路径一旦越出这些副本，或命中 `.mdf/`、`docs/`，返回 `detach_forbidden_path`。
 - 按当前模板重渲染已有托管块，并 `commit --only`。不 push。

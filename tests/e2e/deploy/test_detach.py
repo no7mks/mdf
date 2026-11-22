@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from mdf_core.workspace.detach import _allowed
 from mdf_test_support import git, init_git, mdf, payload
 
@@ -23,13 +25,25 @@ def repository(tmp_path: Path) -> Path:
     return repo
 
 
-def test_detach_removes_only_the_skill_copy(python_exe: str, tmp_path: Path) -> None:
+@pytest.mark.parametrize("track_entry", [True, False])
+def test_detach_removes_only_the_skill_copy(python_exe: str, tmp_path: Path, track_entry: bool) -> None:
     repo = repository(tmp_path)
+    entry = repo / ".agents/skills/mdf"
+    (entry / "agents").mkdir(parents=True)
+    names = ("SKILL.md", "agents/openai.yaml", "mdf_entry.py")
+    for name in names:
+        (entry / name).write_text(f"thin entry {name}\n", encoding="utf-8")
+    if track_entry:
+        git(repo, "add", "--", str(entry.relative_to(repo)))
+        git(repo, "commit", "-m", "test: 跟踪项目引导")
+    tracked = git(repo, "ls-files", "--stage", "--", str(entry.relative_to(repo))).stdout
     data = payload(mdf(python_exe, "detach", "--repo", str(repo)))
     assert data["action"] == "created"
     assert not (repo / ".codex" / "skills" / "mdf").exists()
     assert (repo / "docs" / "README.md").read_text(encoding="utf-8") == "keep-docs\n"
     assert (repo / ".mdf" / "manifest.yaml").is_file()
+    assert git(repo, "ls-files", "--stage", "--", str(entry.relative_to(repo))).stdout == tracked
+    assert all((entry / name).read_text(encoding="utf-8") == f"thin entry {name}\n" for name in names)
     assert "keep\n" in (repo / "AGENTS.md").read_text(encoding="utf-8")
     message = git(repo, "log", "-1", "--format=%s").stdout.strip()
     assert message == "chore(mdf): 移除仓内 MDF Skill 副本"

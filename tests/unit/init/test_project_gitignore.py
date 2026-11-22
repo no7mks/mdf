@@ -17,7 +17,6 @@ BLOCK = (
     "/.mdf/tmp/\n"
     "/.mdf/reports/\n"
     "/.mdf/cache/\n"
-    "/.agents/skills/mdf/\n"
 )
 
 
@@ -48,7 +47,6 @@ def test_header_inserts_missing_lines_at_the_segment_end() -> None:
         "/.mdf/tmp/\n"
         "/.mdf/reports/\n"
         "/.mdf/cache/\n"
-        "/.agents/skills/mdf/\n"
         "\nkeep\n"
     )
 
@@ -57,6 +55,13 @@ def test_unanchored_pattern_is_not_treated_as_present() -> None:
     result = project_gitignore_text(".mdf/tmp/\n")
     assert result.startswith(".mdf/tmp/\n\n# MDF local artifacts\n")
     assert "/.mdf/tmp/\n" in result
+
+
+def test_removes_entry_ignore_with_all_local_rules_present() -> None:
+    text = BLOCK + "/.agents/skills/mdf/\n/.agents/skills/other/\n"
+    expected = BLOCK + "/.agents/skills/other/\n"
+    assert project_gitignore_text(text) == expected
+    assert project_gitignore_text(expected) == expected
 
 
 def test_ensure_rejects_a_symlink_without_following_it(tmp_path: Path) -> None:

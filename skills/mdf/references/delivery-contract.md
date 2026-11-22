@@ -380,7 +380,7 @@ Core 判定退出码与测试报告（见下节）。
 | suite | 成员 | 预算 | 何时必跑 |
 | --- | --- | --- | --- |
 | quick | 只含 hermetic 的 UT 与 PT | 30s | 任何改动 / smart |
-| smoke | 任意种类，包含 quick 的全部成员 | 300s | feature/bugfix/hotfix 的 verify branch |
+| smoke | 任意种类，包含 quick 的全部成员 | 500s | feature/bugfix/hotfix 的 verify branch |
 | release | 发版所需的 test case，包含 smoke 的全部成员 | 无 | 仅 release 的 verify branch |
 | 项目自定义 suite | 某一功能块的 test case；一 suite 一文档 | 无 | smart 选题，不默认整 suite |
 

@@ -26,8 +26,9 @@ DEFAULT_SOURCE = "https://github.com/no7mks/mdf.git"
 SOURCE_SKILL = "skills/mdf"
 CORE_PARENTS = (".mdf", "cache", "mdf-core")
 ENTRY_DIR = Path(".agents/skills/mdf")
+ENTRY_PATHS = frozenset((ENTRY_DIR / name).as_posix() for name in ("SKILL.md", "agents/openai.yaml", "mdf_entry.py"))
 MDF_IGNORE_HEADER = "# MDF local artifacts"
-MDF_IGNORE_LINES = ("/.mdf/logs/", "/.mdf/tmp/", "/.mdf/reports/", "/.mdf/cache/", f"/{ENTRY_DIR.as_posix()}/")
+MDF_IGNORE_LINES = ("/.mdf/logs/", "/.mdf/tmp/", "/.mdf/reports/", "/.mdf/cache/")
 
 
 class HomeError(Exception):
@@ -95,9 +96,11 @@ def gitignore_problem(path: Path) -> str | None:
 
 def project_gitignore_text(text: str) -> str:
     """补齐 MDF 本地产物的根目录 ignore。"""
-    raw_lines = text.splitlines(keepends=True)
+    entry_ignore = f"/{ENTRY_DIR.as_posix()}/"
+    raw_lines = [line for line in text.splitlines(keepends=True) if line.rstrip("\r\n ") != entry_ignore]
     stripped = [line.strip() for line in raw_lines]
     missing = [item for item in MDF_IGNORE_LINES if item not in stripped]
+    text = "".join(raw_lines)
     if not missing:
         return text
     block = "".join(f"{item}\n" for item in missing)
@@ -341,7 +344,7 @@ def _replace_dir(src: Path, dest: Path) -> None:
     shutil.rmtree(src)
 
 
-def _entry_destination(project: Path, *, from_entry: bool) -> Path | None:
+def _entry_destination(project: Path, *, from_entry: bool) -> tuple[Path | None, bool]:
     cursor = project
     for part in ENTRY_DIR.parts:
         cursor = cursor / part
@@ -349,10 +352,11 @@ def _entry_destination(project: Path, *, from_entry: bool) -> Path | None:
             raise HomeError(f"{cursor} 必须是实际目录", "managed_symlink")
     tracked = _run(["git", "ls-files", "-z", "--", ENTRY_DIR.as_posix()], project, text=False)
     if tracked.returncode == 0 and tracked.stdout:
-        if from_entry and os.fsencode(ENTRY_DIR / "mdf_entry.py") in tracked.stdout.split(b"\0"):
-            return None
-        raise HomeError(f"{ENTRY_DIR} 含已跟踪文件，请先执行 detach", "entry_tracked")
-    return cursor
+        paths = set(os.fsdecode(tracked.stdout).split("\0")[:-1])
+        if paths != ENTRY_PATHS:
+            raise HomeError(f"{ENTRY_DIR} 含已跟踪的 Skill 副本，请先执行 detach", "entry_tracked")
+        return (None if from_entry else cursor), True
+    return cursor, False
 
 
 def _render_once(text: str, old: str, new: str, label: str) -> str:
@@ -388,8 +392,7 @@ def _host_matches(dest: Path, files: dict[str, bytes]) -> bool:
     return all((dest / name).read_bytes() == data for name, data in files.items())
 
 
-def install_entry(dest: Path, tree: Path, revision: str, source: str) -> None:
-    files = _host_files(tree, revision, source)
+def install_entry(dest: Path, files: dict[str, bytes]) -> None:
     if _host_matches(dest, files):
         return
     stage: Path | None = None
@@ -448,11 +451,18 @@ def install_payload(project: Path, revision: str, payload: Path, source: str, *,
     require_payload(payload)
     read_project_gitignore(project)
     _reject_cache_symlinks(project)
-    entry = _entry_destination(project, from_entry=from_entry)
+    entry, tracked = _entry_destination(project, from_entry=from_entry)
     core = _prepare_core(project)
     dest = core / revision
     log_dir = project / ".mdf" / "logs"
     with core_lock(core):
+        entry_files = _host_files(payload, revision, source) if entry is not None else {}
+        if entry is not None and tracked and not _host_matches(entry, entry_files):
+            status = _git_text(
+                ["git", "--no-optional-locks", "status", "--porcelain", "-uall", "--ignored", "--", str(ENTRY_DIR)], project,
+            )
+            if status:
+                raise HomeError(f"{ENTRY_DIR} 有本地修改或额外文件，请先处理", "entry_dirty")
         _clear_staging(core)
         if dest.is_symlink():
             raise HomeError(f"{dest} 不允许 symbolic link", "managed_symlink")
@@ -483,7 +493,7 @@ def install_payload(project: Path, revision: str, payload: Path, source: str, *,
                 raise HomeError(f"自检失败：{exc}", "install_self_check_failed") from exc
         if entry is not None:
             ensure_project_gitignore(project)
-            install_entry(entry, dest, revision, source)
+            install_entry(entry, entry_files)
         try:
             _keep_only(core, revision)
         except OSError as exc:
@@ -513,7 +523,7 @@ def _extract_tar(data: bytes, dest: Path) -> None:
 
 
 def _clone(source: str, dest: Path) -> None:
-    completed = _run(["git", "clone", "--depth", "1", "--", source, str(dest)])
+    completed = _run(["git", "clone", "--no-local", "--depth", "1", "--", source, str(dest)])
     if completed.returncode:
         raise HomeError(
             completed.stderr.strip() or f"git clone 失败：{source}",

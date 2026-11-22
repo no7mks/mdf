@@ -15,7 +15,7 @@ def test_plan_runs_steps_then_quick_then_target_with_budgets():
     verification, _ = core()
     config = verification.validate_verification({**ENTRIES, "budgets": {"quick": 45}})
     assert [(item["id"], item["budget"]) for item in config.plan("smoke")] == [
-        ("lint", None), ("build", None), ("quick", 45), ("smoke", 300),
+        ("lint", None), ("build", None), ("quick", 45), ("smoke", 500),
     ]
     assert [item["id"] for item in config.plan("quick")] == ["lint", "build", "quick"]
     assert config.plan("release")[-1] == {

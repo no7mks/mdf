@@ -2,8 +2,8 @@
 
 `$mdf upgrade` 把指定 commit 装进主 worktree 的 `.mdf/cache/mdf-core/<commit>`。
 薄入口缺这一版时会自动安装，不问用户。
-引导写入主 worktree 的 `.agents/skills/mdf`，由仓库根 `.gitignore` 排除。
-除发布引导与补齐根 `.gitignore` 外，不修改业务仓文件。升级不 push。
+项目通过 Git 跟踪主 worktree 的 `.agents/skills/mdf` 引导。根 `.gitignore` 排除本地 Core 和运行产物。
+除发布引导与更新根 `.gitignore` 外，不修改业务仓文件。升级保留 Git index，不 push。
 
 - 默认源为 `https://github.com/no7mks/mdf.git`。
 - 本体目录名就是该 commit。稳态只留这一份。
@@ -85,16 +85,18 @@ python3 -B "$MDF_ROOT/scripts/mdf_launcher.py" upgrade --repo "<主 worktree 根
 - 上游 HEAD 变化时返回 `upgrade_source_changed`，回到预览。
 - 新版本的入口执行安装。旧 Core 损坏时仍可升级。
 - 自检失败则停止，旧版本目录和项目薄入口未变。
-- 若 `.agents/skills/mdf` 含已跟踪的副本，先通过 `detach` 移除该副本，再重新升级。
+- 若 `.agents/skills/mdf` 是已跟踪的完整 Skill 副本，先通过 `detach` 移除该副本，再重新升级。
+- 若更新薄入口会覆盖本地改动或额外文件，先处理 `entry_dirty` 指出的目录，再重新升级。
 
 ### 报告
 
 报告旧修订、新修订和 `history` 摘要。
 
 - 报告使用本次返回的新 `root`。
-- 仍跟踪 `.<host>/skills/mdf` 时，用该 `root` 执行
+- 提示将 `.agents/skills/mdf` 和根 `.gitignore` 的改动提交到项目仓库。
+- 仍跟踪完整 Skill 副本时，用该 `root` 执行
   `python3 -B "<root>/scripts/mdf.py" detach --repo <仓库>`。
-- detach 只删除那六处副本，并提交 `chore(mdf): 移除仓内 MDF Skill 副本`。
+- detach 保留薄入口，移除已跟踪的完整副本，并提交 `chore(mdf): 移除仓内 MDF Skill 副本`。
 - ❌ detach 不得删除 `.mdf/` 或 `docs/`。
 
 ## 契约切换

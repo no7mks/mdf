@@ -71,12 +71,14 @@ def test_first_install_keeps_one_untracked_copy(tmp_path: Path) -> None:
     assert (current / "references" / ".version").read_text(encoding="utf-8").startswith(commit)
     assert {path.name for path in core_dir(repo).iterdir()} == {commit, ".lock"}
     assert installed["root"] == str(current.resolve())
-    status = git(repo, "status", "--porcelain").stdout
+    status = git(repo, "status", "--porcelain", "-uall").stdout
     assert ".gitignore" in status
     assert ".mdf/" not in status
     assert list((repo / ".mdf" / "logs").glob("*-install-*.json"))
     assert not home.exists()
-    assert ".agents/" not in status
+    assert "?? .agents/skills/mdf/SKILL.md" in status
+    assert "?? .agents/skills/mdf/agents/openai.yaml" in status
+    assert "?? .agents/skills/mdf/mdf_entry.py" in status
     assert_pointer(repo, commit, str(source))
 
 
@@ -98,7 +100,7 @@ def test_dry_run_does_not_create_current_or_gitignore(tmp_path: Path) -> None:
     assert rejected["error"] == "upgrade_source_changed", rejected
 
 
-def test_second_upgrade_drops_the_old_tree(tmp_path: Path) -> None:
+def test_second_upgrade_updates_tracked_entry_and_drops_old_core(tmp_path: Path) -> None:
     home = tmp_path / "home"
     source = upstream(tmp_path)
     repo = tmp_path / "repo"
@@ -107,6 +109,12 @@ def test_second_upgrade_drops_the_old_tree(tmp_path: Path) -> None:
     init_git(repo)
     first = head(source)
     assert upgrade(home, source, repo, first).returncode == 0
+    commit_all(repo, "test: 跟踪项目引导")
+    entry = ".agents/skills/mdf"
+    tracked = git(repo, "ls-files", "--stage", "--", entry).stdout
+    assert len(tracked.splitlines()) == 3
+    ignore = repo / ".gitignore"
+    ignore.write_text(ignore.read_text(encoding="utf-8") + f"/{entry}/\n", encoding="utf-8")
     marker = core_dir(repo) / first / "OLD-MARKER"
     marker.write_text("old\n", encoding="utf-8")
     (source / "skills" / "mdf" / "SKILL.md").write_text("second\n", encoding="utf-8")
@@ -119,6 +127,10 @@ def test_second_upgrade_drops_the_old_tree(tmp_path: Path) -> None:
     assert (current / "references" / ".version").read_text(encoding="utf-8").startswith(second)
     assert {path.name for path in core_dir(repo).iterdir()} == {second, ".lock"}
     assert_pointer(repo, second, str(source))
+    assert git(repo, "ls-files", "--stage", "--", entry).stdout == tracked
+    assert f"/{entry}/" not in ignore.read_text(encoding="utf-8")
+    assert git(repo, "diff", "--name-only").stdout.strip() == f"{entry}/mdf_entry.py"
+    assert upgrade(home, source, repo, second).returncode == 0
 
 
 def test_failed_self_check_leaves_current_unchanged(tmp_path: Path) -> None:
@@ -390,6 +402,33 @@ def test_install_preserves_tracked_entry_files(tmp_path: Path) -> None:
     assert git(repo, "status", "--porcelain").stdout == ""
 
 
+@pytest.mark.parametrize("change", ["staged", "ignored"])
+def test_upgrade_preserves_local_changes_to_tracked_entry(tmp_path: Path, change: str) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".gitignore").write_text("private.txt\n", encoding="utf-8")
+    init_git(repo)
+    first = head(source)
+    payload(upgrade(home, source, repo, first))
+    commit_all(repo, "test: 跟踪项目引导")
+    entry = repo / ".agents/skills/mdf"
+    changed = entry / ("SKILL.md" if change == "staged" else "private.txt")
+    changed.write_text("local edit\n", encoding="utf-8")
+    if change == "staged":
+        git(repo, "add", "--", str(changed.relative_to(repo)))
+    index = git(repo, "ls-files", "--stage").stdout
+    git(source, "commit", "--allow-empty", "-m", "test: 发布下一版")
+    second = head(source)
+
+    assert error(upgrade(home, source, repo, second))["error"] == "entry_dirty"
+    assert changed.read_text(encoding="utf-8") == "local edit\n"
+    assert git(repo, "ls-files", "--stage").stdout == index
+    assert (core_dir(repo) / first).is_dir()
+    assert not (core_dir(repo) / second).exists()
+
+
 def test_file_current_is_replaced_without_staging(tmp_path: Path, monkeypatch) -> None:
     import mdf_home
     home = tmp_path / "home"
@@ -474,8 +513,10 @@ def test_missing_revision_dir_is_installed_on_start(tmp_path: Path) -> None:
     assert list(other.iterdir()) == []
 
 
-@pytest.mark.parametrize("main_cache", ["same-revision", "other-revision", "wrong-marker", "broken-core", "empty-launcher"])
-def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path, main_cache: str) -> None:
+@pytest.mark.parametrize(
+    "main_cache", ["same-revision", "other-revision", "wrong-marker", "broken-core", "empty-launcher", "fresh-clone"],
+)
+def test_tracked_entry_installs_pinned_core_on_checkout(tmp_path: Path, main_cache: str) -> None:
     home = tmp_path / "home"
     source = upstream(tmp_path)
     revision = head(source)
@@ -484,7 +525,6 @@ def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path,
     (repo / "README.md").write_text("app\n", encoding="utf-8")
     init_git(repo)
     payload(upgrade(home, source, repo, revision))
-    (repo / ".gitignore").write_text("/.mdf/logs/\n/.mdf/reports/\n/.mdf/cache/\n/.mdf/tmp/\n", encoding="utf-8")
     commit_all(repo, "test: 提交薄入口")
     (source / "skills/mdf/SKILL.md").write_text("new upstream HEAD\n", encoding="utf-8")
     commit_all(source, "test: 推进上游 HEAD")
@@ -506,8 +546,11 @@ def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path,
     else:
         (cached / "scripts/mdf_launcher.py").write_text("", encoding="utf-8")
 
-    worktree = tmp_path / "linked"
-    git(repo, "worktree", "add", "--detach", str(worktree), head(repo))
+    worktree = tmp_path / "checkout"
+    if main_cache == "fresh-clone":
+        git(tmp_path, "clone", "--no-local", str(repo), str(worktree))
+    else:
+        git(repo, "worktree", "add", "--detach", str(worktree), head(repo))
     entry_dir = ".agents/skills/mdf"
     tracked = git(worktree, "ls-files", "--stage", "--", entry_dir).stdout
     assert len(tracked.splitlines()) == 3

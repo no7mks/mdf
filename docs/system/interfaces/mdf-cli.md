@@ -42,7 +42,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   - 失败 JSON 带 `log` 路径；内部异常先把 traceback 写入 stderr。
   - 每次调用清理 `.mdf/logs/` 与当前仓库 `.mdf/reports/` 中 7 天前的条目。
 - suite 预算：
-  - suite 命令受预算限时（默认 quick 30、smoke 300 秒，可由 `verification.budgets` 覆盖）。
+  - suite 命令受预算限时（默认 quick 30、smoke 500 秒，可由 `verification.budgets` 覆盖）。
   - lint、build 与未设预算的 release 不限时。
   - 超出预算按 process group 终止并失败，错误 details 含已捕获的
     `stdout_tail` / `stderr_tail`。

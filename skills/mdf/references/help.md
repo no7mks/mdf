@@ -410,7 +410,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
   - 用途：预览并安装本项目的 MDF 本体及 `.agents/skills/mdf` 引导。自检失败时旧版本目录和项目引导不变。
-  - 说明：当前目录是 Git 仓库且仍跟踪 Skill 副本时，建议接着
+  - 说明：提交项目薄入口和根 `.gitignore` 的改动。仍跟踪完整 Skill 副本时，建议接着
     `python3 -B "$MDF_ROOT/scripts/mdf.py" detach --repo <仓库>`。
 - `$mdf to <target>`
   - 用法：`$mdf to plan|develop|deploy|<分支>`

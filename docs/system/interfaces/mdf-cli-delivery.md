@@ -148,7 +148,7 @@
   - 可选 30 秒心跳 `[i/N] running <id> (Ns)`。
   - 以及 `[i/N] done exit=<code> (Ns)`。
 - suite 超出预算即终止 process group 并失败，details 含 partial tail。
-  - 预算默认 quick 30、smoke 300，可由 `verification.budgets` 覆盖。
+  - 预算默认 quick 30、smoke 500，可由 `verification.budgets` 覆盖。
   - lint、build 与未设预算的 release 不限时。
 - 结果写入 `changes/unreleased/<slug>/verification-report.json`，含 `suites`，不含 commit。
   - feature/bugfix 与 slug hotfix 的 `<slug>` 为交付 slug；release 与 SemVer hotfix 为分支版本。

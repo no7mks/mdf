@@ -318,7 +318,7 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 当一条 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
 具体 intent、对象约束和仓库契约在项目 `.mdf/cache/mdf-core/<commit>` 的 `references/`、`assets/` 与 `scripts/`。
-业务仓只保留 `.mdf/`、`docs/` 和 `AGENTS.md` 中的薄声明。本体不进 Git。
+业务仓保留 `.mdf/`、`docs/`、`AGENTS.md` 中的薄声明和 `.agents/skills/mdf` 引导。本体不进 Git。
 
 ## 首次获取
 
@@ -328,9 +328,9 @@ python3 -B "$tmp/mdf/skills/mdf/scripts/mdf_launcher.py" upgrade --repo "<项目
 python3 -B "$tmp/mdf/skills/mdf/scripts/mdf_launcher.py" upgrade --repo "<项目根>" --expected-commit <new_commit>
 ```
 
-- `$mdf upgrade` 把本体和薄入口装到主 worktree，并在仓库根 `.gitignore` 中排除它们。
-- 已跟踪的薄入口可在当前 worktree 自动补装固定修订。见[项目入口](docs/system/interfaces/mdf-launcher.md#引导路径)。
-- `$mdf upgrade` 安装这一修订。自检失败时旧版本目录和项目引导不变。
+- `$mdf upgrade` 把本体和薄入口装到主 worktree。提交 `.agents/skills/mdf` 和根 `.gitignore` 的改动。
+- 已跟踪的薄入口可在当前 worktree 自动补装固定修订。Core 由 `.gitignore` 排除。见[项目入口](docs/system/interfaces/mdf-launcher.md#引导路径)。
+- 自检失败时，保留旧版本目录和项目引导。
 - 已跟踪的完整 Skill 副本可用 `python3 -B "$MDF_ROOT/scripts/mdf.py" detach --repo <仓库>` 移除。
 - ❌ upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 

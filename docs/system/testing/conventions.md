@@ -57,7 +57,7 @@
 | lint | `python -m pytest tests/lint` | 无 | 约 2s | 任何改动 |
 | build | `python -m compileall -q skills/mdf/scripts` | 无 | <1s | 任何改动 |
 | quick | `python -m pytest tests/unit` | 30s | 约 6s | 任何改动 |
-| smoke | `python -m pytest tests/unit tests/e2e -m 'not release_only'` | 300s | 按报告核对 | 改动收口 |
+| smoke | `python -m pytest tests/unit tests/e2e -m 'not release_only'` | 500s | 按报告核对 | 改动收口 |
 | release | `python -m pytest tests/unit tests/e2e` | 无 | 按报告核对 | 发布前 |
 
 全部 test case 的检查命令为 `python -m pytest`，等于 lint 与 release 之和，没有单独入口。

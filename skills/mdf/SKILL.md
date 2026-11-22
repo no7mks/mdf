@@ -23,7 +23,7 @@ python3 -B "<已替换副本>/scripts/mdf_launcher.py" complete-upgrade \
 ```
 
 - CLI 成功后，运行输出中 `entry` 指定的脚本。确认它打印本次安装的 `root`，再从该目录读取 `SKILL.md`。
-- 报告已退出 Git 跟踪的旧副本和项目引导位置。删除项已暂存，仓库根 `.gitignore` 可随删除项提交。
+- 报告已暂存删除的旧副本和项目引导位置。将新入口和仓库根 `.gitignore` 随删除项提交。
 - 失败时报告实际错误并停止。没有本轮替换结果时，本节不授权写入。
 
 横幅只按 `references/common.md` 的 `s-banner` 条款计算与输出，所有 intent（含 help/clarify/upgrade）均适用。

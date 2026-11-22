@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 import shutil
 
+from mdf_home import ENTRY_DIR, ENTRY_PATHS
 from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.foundation.paths import load_manifest, manifest_path, tool_root
 from mdf_core.workspace.agents_block import block_span, render_block
@@ -75,6 +76,8 @@ def detach(repo, *, dry_run: bool) -> dict:
     copies = []
     for relative in HOST_COPIES:
         tracked = _tracked(repo, relative)
+        if relative == ENTRY_DIR.as_posix() and (not tracked or set(tracked) == ENTRY_PATHS):
+            continue
         if not tracked and not _dirty(repo, relative):
             continue
         if _dirty(repo, relative):

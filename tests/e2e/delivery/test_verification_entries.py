@@ -39,7 +39,7 @@ def test_feature_verify_branch_runs_lint_build_quick_smoke(python_exe, tmp_path)
         "lint:default", "build:default", "quick:default", "smoke:default",
     ]
     assert [item["budget"] for item in evidence["results"]] == [
-        None, None, 30, 300,
+        None, None, 30, 500,
     ]
     assert evidence["suites"] == ["quick", "smoke"]
     assert evidence["all_passed"] is True
