@@ -59,7 +59,19 @@
 - 优先级：第 0 阶底座（绝对第一顺位）；无前置依赖。
 - 现状：`mdf-deploy.sh` 与 `upgrade.py` 均绑定业务仓内 `.<host>/skills/mdf` 拷贝、重渲染 `AGENTS.md` 托管块并在业务仓提交，修工具缺陷易受旧门禁自指死锁。
 - 实施范围：
-  - 将 `scripts/`、`references/`、`assets/` 改为本机用户级/环境级（及 CI runner 级）版本化独立安装与发现，单次执行期间固定工具路径与版本。
+  - 将 `scripts/`、`references/`、`assets/` 改为本机用户级/环境级（及 CI runner 级）版本化独立安装。
+  - 所有仓外 Core 入口（含宿主引导、CLI 与 CI）按下表选择安装根目录，再通过 `current` 解析实际版本。
+
+    | 环境变量状态 | 安装根目录选择 |
+    | --- | --- |
+    | `MDF_HOME` 已设置且有效 | 使用 `MDF_HOME` 指定的安装根目录。 |
+    | `MDF_HOME` 已设置但无效（含空值或 `current` 无法解析到有效版本） | 报错并停止，指出 `MDF_HOME` 及失败原因，禁止 fallback。 |
+    | `MDF_HOME` 未设置 | 使用 `${HOME}/.local/share/mdf`。 |
+
+    - 两种安装根目录采用相同布局。每个工具修订存放在 `<root>/versions/<revision>/`，`<root>/current` 指向当前启用的版本目录。
+    - 例如 `MDF_HOME=/opt/mdf` 时，入口通过 `/opt/mdf/current` 解析 `/opt/mdf/versions/<revision>/`。默认安装通过 `${HOME}/.local/share/mdf/current` 解析。
+    - 入口在每次执行开始时解析并固定实际版本目录和修订号。升级或回滚原子切换 `current`，后续执行使用切换后的版本。
+
   - 业务仓仅保留极薄稳定引导壳（含精简固定的 `AGENTS.md` 引导声明）与私有配置（`.mdf/manifest.yaml`、`.mdf/modules.yaml`、契约兼容版本声明）。
   - 提供既有仓库去寄生清理路径，移除业务仓已跟踪的 `mdf` 技能副本并完整保留 `.mdf/` 与 `docs/`。
   - 重做升级与恢复入口为仓外原子操作（失败自动回滚到可用旧版），兼容范围内的脚本修复与提示词打磨在本机更新后对所有下游仓零改动生效。
@@ -74,6 +86,8 @@
   - 业务仓不再跟踪 MDF 脚本、协议与模板全文；日常工具修复与提示词调整无需在业务仓建分支、跑审查或提 PR 即可生效。
   - 即使旧版工具或远端旧门禁存在故障，仍可独立完成本机工具升级、回滚或受控契约版本切换，不产生半更新残态。
   - 多宿主、多 worktree、双机与 CI 均能准确识别工具版本，兼容更新不引发全仓无意义重审，既有项目 `.mdf/` 与 `docs/` 零丢失。
+  - 各入口通过同一组发现验收。两处均有有效安装时，CI job 的 `MDF_HOME` 优先。未设置时用默认路径。显式无效时即使默认安装可用也报错。
+  - 执行期间切换 `current` 后，已启动的 MDF 调用继续使用原版本，后续启动的 MDF 调用使用切换后的版本。
 - 参考起点：
   - [部署脚本](mdf-deploy.sh)
   - [升级实现](skills/mdf/scripts/mdf_core/workspace/upgrade.py)
