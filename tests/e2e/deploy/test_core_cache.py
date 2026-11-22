@@ -474,11 +474,12 @@ def test_missing_revision_dir_is_installed_on_start(tmp_path: Path) -> None:
     assert list(other.iterdir()) == []
 
 
-def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path) -> None:
+@pytest.mark.parametrize("main_cache", ["same-revision", "other-revision", "wrong-marker", "broken-core", "empty-launcher"])
+def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path, main_cache: str) -> None:
     home = tmp_path / "home"
     source = upstream(tmp_path)
     revision = head(source)
-    repo = tmp_path / "repo"
+    repo = tmp_path / "main worktree"
     repo.mkdir()
     (repo / "README.md").write_text("app\n", encoding="utf-8")
     init_git(repo)
@@ -487,6 +488,23 @@ def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path)
     commit_all(repo, "test: 提交薄入口")
     (source / "skills/mdf/SKILL.md").write_text("new upstream HEAD\n", encoding="utf-8")
     commit_all(source, "test: 推进上游 HEAD")
+
+    cached = core_dir(repo) / revision
+    original_skill = (cached / "SKILL.md").read_bytes()
+    if main_cache == "same-revision":
+        source.rename(tmp_path / "offline")
+    elif main_cache == "other-revision":
+        newer = head(source)
+        installed = cached.rename(core_dir(repo) / newer)
+        (installed / "references/.version").write_text(f"{newer}\n", encoding="utf-8")
+        (installed / "SKILL.md").write_text("newer cached revision\n", encoding="utf-8")
+    elif main_cache == "wrong-marker":
+        (cached / "references/.version").write_text(f"{head(source)}\n", encoding="utf-8")
+        (cached / "SKILL.md").write_text("mismatched cache\n", encoding="utf-8")
+    elif main_cache == "broken-core":
+        (cached / "scripts/mdf.py").write_text("raise SystemExit(1)\n", encoding="utf-8")
+    else:
+        (cached / "scripts/mdf_launcher.py").write_text("", encoding="utf-8")
 
     worktree = tmp_path / "linked"
     git(repo, "worktree", "add", "--detach", str(worktree), head(repo))
@@ -500,6 +518,9 @@ def test_tracked_entry_installs_pinned_core_in_detached_worktree(tmp_path: Path)
     root = core_dir(worktree) / revision
     assert started.stdout.strip() == str(root.resolve())
     assert (root / "references/.version").read_text(encoding="utf-8").strip() == revision
+    if main_cache == "same-revision":
+        (cached / "SKILL.md").write_text("changed after install\n", encoding="utf-8")
+    assert (root / "SKILL.md").read_bytes() == original_skill
     skill = (worktree / entry_dir / "SKILL.md").read_text(encoding="utf-8")
     command = shlex.split(skill.split("```bash\n", 1)[1].split("```", 1)[0])
     assert command[0] == "python3"

@@ -426,11 +426,7 @@ def _version_ready(dest: Path, revision: str, log_dir: Path) -> bool:
     return True
 
 
-def install_payload(project: Path, revision: str, payload: Path, source: str, *, from_entry: bool = False) -> dict:
-    if not COMMIT_RE.fullmatch(revision):
-        raise HomeError("revision 必须是完整 commit hash", "invalid_revision")
-    project = project.resolve()
-    source = _entry_source(source)
+def require_payload(payload: Path) -> None:
     required = (
         payload / "scripts" / "mdf.py",
         payload / "scripts" / "mdf_launcher.py",
@@ -442,6 +438,14 @@ def install_payload(project: Path, revision: str, payload: Path, source: str, *,
     )
     if not payload.is_dir() or any(not path.is_file() for path in required):
         raise HomeError("payload 缺少本体文件", "install_missing_payload")
+
+
+def install_payload(project: Path, revision: str, payload: Path, source: str, *, from_entry: bool = False) -> dict:
+    if not COMMIT_RE.fullmatch(revision):
+        raise HomeError("revision 必须是完整 commit hash", "invalid_revision")
+    project = project.resolve()
+    source = _entry_source(source)
+    require_payload(payload)
     read_project_gitignore(project)
     _reject_cache_symlinks(project)
     entry = _entry_destination(project, from_entry=from_entry)

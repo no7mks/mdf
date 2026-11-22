@@ -1,4 +1,4 @@
-"""薄入口：缺本修订的项目本体时自动拉取安装，再执行 root。"""
+"""薄入口：缺本修订的项目本体时自动补装，再执行 root。"""
 from __future__ import annotations
 
 import io
@@ -11,6 +11,11 @@ import tarfile
 import tempfile
 from pathlib import Path
 
+try:
+    import fcntl
+except ImportError:  # 非 POSIX
+    fcntl = None
+
 REVISION = ""
 SOURCE = ""
 
@@ -19,6 +24,54 @@ def fail(code: str, message: str) -> None:
     print(message, file=sys.stderr)
     print(json.dumps({"ok": False, "error": code, "message": message}, ensure_ascii=False), file=sys.stderr)
     raise SystemExit(1)
+
+
+def main_worktree(root: Path) -> Path | None:
+    result = subprocess.run(["git", "worktree", "list", "--porcelain", "-z"], cwd=root, capture_output=True)
+    if result.returncode:
+        return None
+    record = result.stdout.split(b"\0\0", 1)[0].split(b"\0")
+    prefix = b"worktree "
+    if not record[0].startswith(prefix) or b"bare" in record[1:]:
+        return None
+    main = Path(os.fsdecode(record[0][len(prefix):])).resolve()
+    return main if main != root else None
+
+
+def cached_payload(root: Path, temp: Path) -> Path | None:
+    if fcntl is None:
+        return None
+    snapshot = temp / "cached-skill"
+    try:
+        main = main_worktree(root)
+        if main is None:
+            return None
+        core = main / ".mdf/cache/mdf-core"
+        lock = core / ".lock"
+        if any(path.is_symlink() for path in (lock, core, *core.parents[:2])) or not lock.is_file():
+            return None
+        with lock.open("rb") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_SH)
+            candidate = core / REVISION
+            version = candidate / "references/.version"
+            if any(path.is_symlink() for path in (candidate, version.parent, version)) or not version.is_file():
+                return None
+            with version.open(encoding="utf-8") as marker:
+                if marker.readline().strip() != REVISION:
+                    return None
+            shutil.copytree(candidate, snapshot, symlinks=True)
+        if any(path.is_symlink() for path in snapshot.rglob("*")):
+            return None
+    except (OSError, UnicodeError):
+        return None
+    checked = subprocess.run(
+        [sys.executable, "-B", str(snapshot / "scripts/mdf_launcher.py"), "check-payload",
+         "--revision", REVISION, "--log-dir", str(temp / "logs")],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+    )
+    if checked.returncode == 0 and checked.stdout == f"{REVISION}\n".encode():
+        return snapshot
+    return None
 
 
 def fetch_payload(temp: Path) -> Path:
@@ -52,7 +105,7 @@ def fetch_payload(temp: Path) -> Path:
 def install(root: Path, launcher: Path) -> None:
     temp = Path(tempfile.mkdtemp(prefix="mdf-entry-"))
     try:
-        payload = fetch_payload(temp)
+        payload = cached_payload(root, temp) or fetch_payload(temp)
         installed = payload / "scripts" / "mdf_launcher.py"
         completed = subprocess.run(
             [

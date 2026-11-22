@@ -52,6 +52,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="项目内 MDF 入口")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("root")
+    check = sub.add_parser("check-payload")
+    check.add_argument("--revision", required=True)
+    check.add_argument("--log-dir", required=True)
     install = sub.add_parser("install-payload")
     install.add_argument("--revision", required=True)
     install.add_argument("--payload", required=True)
@@ -77,6 +80,12 @@ def main(argv: list[str] | None = None) -> int:
         args = build_parser().parse_args(argv)
         if args.command == "root":
             return command_root()
+        if args.command == "check-payload":
+            tree = _SCRIPTS.parent
+            mdf_home.require_payload(tree)
+            mdf_home.self_check(tree, Path(args.log_dir), args.revision)
+            print(args.revision, flush=True)
+            return 0
         if args.command == "install-payload":
             return command_install(args)
         if args.command == "complete-upgrade":

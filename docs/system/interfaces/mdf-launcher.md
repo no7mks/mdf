@@ -1,7 +1,7 @@
 # 项目入口
 
 MDF 本体是 `.mdf/cache/mdf-core/<commit>` 下的 Skill 树。每个安装目录只保留当前修订。
-upgrade 把本体装到主 worktree。薄入口缺指定修订时会自动拉取并安装。
+upgrade 把本体装到主 worktree。薄入口缺指定修订时会自动补装。
 
 | 位置 | 内容 |
 | --- | --- |
@@ -19,7 +19,8 @@ upgrade 把本体装到主 worktree。薄入口缺指定修订时会自动拉取
 | --- | --- |
 | `mdf root` | stdout 一行：版本目录的绝对路径 |
 | `mdf upgrade [--source URL] [--dry-run] [--expected-commit SHA] [--repo PATH]` | 预览或安装这一修订 |
-| `install-payload` | 由 upgrade 或薄入口把归档写入版本目录 |
+| `check-payload` | 供薄入口检查本体文件，完成自检后输出修订号 |
+| `install-payload` | 由 upgrade 或薄入口把本体写入版本目录 |
 | `complete-upgrade --repo PATH --payload PATH --revision SHA --source URL` | 接管本轮已确认并替换的仓内副本 |
 
 `detach` 与 `contract-switch` 仍由该版本目录里的 `mdf.py` 执行。
@@ -43,7 +44,12 @@ upgrade 把薄入口发布到项目主 worktree 的 `.agents/skills/mdf`，并�
 薄入口包含 `SKILL.md`、`agents/openai.yaml` 和渲染后的 `mdf_entry.py`。
 `SKILL.md` 运行同目录的 `mdf_entry.py`。脚本从自身路径定位 worktree。
 从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`，也可运行当前 worktree 已跟踪的薄入口。
-已跟踪的薄入口按 `SOURCE` 和 `REVISION` 在当前 worktree 补装本体，保留薄入口、`.gitignore` 和 Git index。
+
+当前 worktree 缺少固定的 `REVISION` 时，已跟踪的薄入口在当前 worktree 生成独立的版本目录，保留薄入口、`.gitignore` 和 Git index。
+
+- linked worktree 先检查主 worktree 的 cache。版本目录名和 `references/.version` 都与 `REVISION` 一致时，薄入口持主 cache 的锁复制本体，再对副本自检。
+- 主 cache 没有可用的同版副本时，薄入口从 `SOURCE` 拉取固定的 `REVISION`。
+
 项目的 `.gitignore` 排除 `.mdf/cache/`、`.mdf/logs/`、`.mdf/reports/` 和 `.mdf/tmp/`。
 
 ## 已跟踪副本的升级交接
