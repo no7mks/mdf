@@ -219,6 +219,54 @@ def _replace_file(src: Path, dest: Path) -> None:
             temporary.unlink()
 
 
+def _host_paths() -> list[Path]:
+    return [Path.home() / relative / "mdf" for relative in HOST_SKILLS]
+
+
+def _backup_hosts(backup: Path) -> None:
+    records: list[dict[str, str]] = []
+    for index, dest in enumerate(_host_paths()):
+        record = {"index": str(index), "dest": str(dest)}
+        slot = backup / str(index)
+        if dest.is_symlink():
+            record["kind"] = "symlink"
+            record["target"] = os.readlink(dest)
+        elif dest.is_dir():
+            record["kind"] = "dir"
+            shutil.copytree(dest, slot, symlinks=True)
+        elif dest.exists():
+            record["kind"] = "file"
+            shutil.copy2(dest, slot)
+        else:
+            record["kind"] = "absent"
+        records.append(record)
+    (backup / "manifest.json").write_text(
+        json.dumps(records), encoding="utf-8",
+    )
+
+
+def _restore_hosts(backup: Path) -> None:
+    records = json.loads((backup / "manifest.json").read_text(encoding="utf-8"))
+    for record in records:
+        dest = Path(record["dest"])
+        if dest.is_symlink() or dest.exists():
+            if dest.is_dir() and not dest.is_symlink():
+                shutil.rmtree(dest)
+            else:
+                dest.unlink()
+        kind = record["kind"]
+        if kind == "absent":
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        slot = backup / record["index"]
+        if kind == "symlink":
+            dest.symlink_to(record["target"])
+        elif kind == "dir":
+            shutil.copytree(slot, dest, symlinks=True)
+        else:
+            shutil.copy2(slot, dest)
+
+
 def install_hosts(version: Path) -> list[str]:
     skill = version / "assets" / "host" / "SKILL.md"
     spec = version / "agents" / "openai.yaml"
@@ -253,23 +301,99 @@ def ensure_bin(root: Path) -> str | None:
     return str(link)
 
 
+def _current_restored(root: Path, previous: str | None, version_dir: Path) -> bool:
+    """current 已回到切换前的目标，且该目标不是即将删除的新版本目录。"""
+    current = root / "current"
+    try:
+        if previous is None:
+            return not current.is_symlink() and not current.exists()
+        if not current.is_symlink() or os.readlink(current) != previous:
+            return False
+        target = root / previous
+        if not target.exists():
+            return False
+        return target.resolve() != version_dir.resolve()
+    except OSError:
+        return False
+
+
+def _discard_tree(path: Path) -> None:
+    """先把目录改名再删除，避免删到一半时原路径仍被占用。"""
+    if not path.exists() and not path.is_symlink():
+        return
+    holding = Path(tempfile.mkdtemp(prefix=f".discard-{path.name}-", dir=path.parent))
+    os.replace(path, holding / "tree")
+    shutil.rmtree(holding)
+
+
 def _activate(root: Path, revision: str, *, created: bool) -> str | None:
-    version = (root / "versions" / revision).resolve()
+    version_dir = root / "versions" / revision
+    version = version_dir.resolve()
     try:
         self_check(version, root / "logs", revision)
     except Exception:
         if created:
-            shutil.rmtree(root / "versions" / revision, ignore_errors=True)
+            shutil.rmtree(version_dir, ignore_errors=True)
         raise
-    previous = _switch(root, revision)
+    backup: Path | None = None
+    switched = False
+    previous: str | None = None
     try:
+        root.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+        prefix = f".host-backup-{stamp}-{os.getpid()}-"
+        backup = Path(tempfile.mkdtemp(prefix=prefix, dir=root))
+        _backup_hosts(backup)
+        previous = _switch(root, revision)
+        switched = True
         install_hosts(version)
         ensure_bin(root)
-    except Exception:
-        _restore_link(root, previous)
-        if created:
-            shutil.rmtree(root / "versions" / revision, ignore_errors=True)
-        raise
+    except (Exception, KeyboardInterrupt) as exc:
+        failures: list[str] = []
+        current_restored = not switched
+        if switched:
+            try:
+                _restore_hosts(backup)
+            except Exception as restore_exc:
+                failures.append(f"宿主引导壳：{restore_exc}")
+            try:
+                _restore_link(root, previous)
+            except Exception as restore_exc:
+                failures.append(f"current：{restore_exc}")
+            else:
+                current_restored = _current_restored(root, previous, version_dir)
+                if not current_restored:
+                    failures.append("current：未恢复到先前有效目标")
+        if created and current_restored:
+            try:
+                _discard_tree(version_dir)
+            except OSError as discard_exc:
+                failures.append(f"新版本目录：{discard_exc}")
+        if failures:
+            joined = "；".join(failures)
+            details: dict[str, object] = {
+                "backup": str(backup),
+                "cause": str(exc),
+                "rollback_failures": failures,
+            }
+            kept = f"备份保留在 {backup}"
+            if version_dir.exists():
+                details["version"] = str(version_dir)
+                kept = f"新版本目录保留在 {version_dir}；{kept}"
+            raise HomeError(
+                f"宿主引导壳更新失败且回滚未完成：{exc}；{joined}；{kept}",
+                "host_rollback_incomplete",
+                details,
+            ) from exc
+        if backup is not None:
+            shutil.rmtree(backup, ignore_errors=True)
+        if isinstance(exc, KeyboardInterrupt):
+            raise
+        if isinstance(exc, HomeError):
+            raise
+        raise HomeError(f"宿主引导壳更新失败：{exc}", "host_update_failed") from exc
+    if backup is not None:
+        shutil.rmtree(backup, ignore_errors=True)
     return previous
 
 

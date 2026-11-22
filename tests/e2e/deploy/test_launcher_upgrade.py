@@ -1,13 +1,26 @@
 """仓外升级：预览、回滚，以及旧 Core 损坏时仍能升级。"""
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import sys
 from pathlib import Path
 
-from _support import run
-from launcher_support import assert_host_copies, error, invoke, payload, upstream
+import pytest
+
+from launcher_support import (
+    REV_A,
+    REV_B,
+    SKILL,
+    assert_host_copies,
+    copy_skill,
+    error,
+    invoke,
+    payload,
+    root_of,
+    upstream,
+)
 from mdf_test_support import git
 
 
@@ -72,6 +85,38 @@ def test_upgrade_installs_and_rolls_back_a_broken_payload(tmp_path: Path) -> Non
     assert_host_copies(home, root / "versions" / first)
 
 
+def test_host_shell_rolls_back_when_a_later_host_write_fails(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    launcher = source / "skills/mdf/scripts/mdf_launcher.py"
+    first = head(source)
+    assert invoke(
+        home, [sys.executable, "-B", str(launcher), "upgrade",
+               "--source", str(source), "--expected-commit", first],
+    ).returncode == 0
+    root = home / ".local" / "share" / "mdf"
+    host_skill = source / "skills" / "mdf" / "assets" / "host" / "SKILL.md"
+    host_skill.write_text(host_skill.read_text(encoding="utf-8") + "\nHOST-NEW\n", encoding="utf-8")
+    commit_all(source, "test: 更新引导壳")
+    second = head(source)
+    claude = home / ".claude"
+    shutil.rmtree(claude)
+    claude.write_text("block\n", encoding="utf-8")
+    failed = error(invoke(
+        home, [sys.executable, "-B", str(root / "current" / "scripts" / "mdf_launcher.py"),
+               "upgrade", "--source", str(source), "--expected-commit", second],
+    ))
+    assert failed["error"] == "host_update_failed"
+    assert os.readlink(root / "current") == f"versions/{first}"
+    assert not (root / "versions" / second).exists()
+    assert claude.read_text(encoding="utf-8") == "block\n"
+    assert "HOST-NEW" not in (home / ".agents/skills/mdf/SKILL.md").read_text(encoding="utf-8")
+    for folder in (".agents", ".kiro", ".openclaw"):
+        path = home / folder / "skills" / "mdf" / "SKILL.md"
+        assert path.is_file() and not path.is_symlink()
+        assert path.read_bytes() == (root / "versions" / first / "assets/host/SKILL.md").read_bytes()
+
+
 def test_upgrade_works_when_the_old_core_is_broken(tmp_path: Path) -> None:
     home = tmp_path / "home"
     source = upstream(tmp_path)
@@ -127,3 +172,115 @@ def test_restore_repairs_a_dangling_current(tmp_path: Path) -> None:
     ))
     assert first in listed["versions"]
     assert listed["current"] == first
+
+
+def test_failed_host_restore_still_restores_current_and_keeps_backup(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location("mdf_home_under_test", SKILL / "scripts" / "mdf_home.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    home = tmp_path / "home"
+    monkeypatch.setenv("HOME", str(home))
+    root = tmp_path / "root"
+    (root / "versions").mkdir(parents=True)
+    for revision in (REV_A, REV_B):
+        copy_skill(root / "versions" / revision)
+        (root / "versions" / revision / "references" / ".version").write_text(
+            f"{revision}\n", encoding="utf-8",
+        )
+    current = root / "current"
+    current.symlink_to(Path("versions") / REV_A)
+    module.install_hosts(root / "versions" / REV_A)
+    skill = root / "versions" / REV_B / "assets" / "host" / "SKILL.md"
+    skill.write_text(skill.read_text(encoding="utf-8") + "\nHOST-NEW\n", encoding="utf-8")
+    claude = home / ".claude"
+    shutil.rmtree(claude)
+    claude.write_text("block\n", encoding="utf-8")
+    monkeypatch.setattr(module, "self_check", lambda *args: None)
+
+    def fail_restore(backup):
+        raise OSError("injected restore failure")
+
+    monkeypatch.setattr(module, "_restore_hosts", fail_restore)
+    with pytest.raises(module.HomeError) as info:
+        module._activate(root, REV_B, created=True)
+    assert info.value.code == "host_rollback_incomplete"
+    assert os.readlink(root / "current") == f"versions/{REV_A}"
+    backup = Path(info.value.details["backup"])
+    assert backup.parent == root and backup.name.startswith(".host-backup-")
+    assert backup.is_dir()
+    assert (backup / "manifest.json").is_file()
+    assert str(backup) in info.value.message
+    assert info.value.details["backup"] == str(backup)
+    assert "injected restore failure" in "；".join(info.value.details["rollback_failures"])
+    assert not (root / "versions" / REV_B).exists()
+    assert "HOST-NEW" in (home / ".agents/skills/mdf/SKILL.md").read_text(encoding="utf-8")
+
+
+def test_failed_current_restore_keeps_version_and_backup(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location("mdf_home_link_fail", SKILL / "scripts" / "mdf_home.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    home = tmp_path / "home"
+    monkeypatch.setenv("HOME", str(home))
+    root = tmp_path / "root"
+    (root / "versions").mkdir(parents=True)
+    for revision in (REV_A, REV_B):
+        copy_skill(root / "versions" / revision)
+        (root / "versions" / revision / "references" / ".version").write_text(
+            f"{revision}\n", encoding="utf-8",
+        )
+    (root / "current").symlink_to(Path("versions") / REV_A)
+    module.install_hosts(root / "versions" / REV_A)
+    skill = root / "versions" / REV_B / "assets" / "host" / "SKILL.md"
+    skill.write_text(skill.read_text(encoding="utf-8") + "\nHOST-NEW\n", encoding="utf-8")
+    claude = home / ".claude"
+    shutil.rmtree(claude)
+    claude.write_text("block\n", encoding="utf-8")
+
+    def fail_link(target_root, previous):
+        raise OSError("injected current restore failure")
+
+    monkeypatch.setattr(module, "_restore_link", fail_link)
+    with pytest.raises(module.HomeError) as info:
+        module._activate(root, REV_B, created=True)
+    version_dir = root / "versions" / REV_B
+    assert info.value.code == "host_rollback_incomplete"
+    assert os.readlink(root / "current") == f"versions/{REV_B}"
+    assert version_dir.is_dir()
+    backup = Path(info.value.details["backup"])
+    assert backup.is_dir() and (backup / "manifest.json").is_file()
+    assert info.value.details["version"] == str(version_dir)
+    assert str(version_dir) in info.value.message and str(backup) in info.value.message
+    assert "injected current restore failure" in "；".join(info.value.details["rollback_failures"])
+    assert "HOST-NEW" not in (home / ".agents/skills/mdf/SKILL.md").read_text(encoding="utf-8")
+    started = root_of(invoke(
+        home, [sys.executable, "-B", str(home / ".agents/skills/mdf/scripts/mdf_launcher.py"), "root"],
+        mdf_home=str(root),
+    ))
+    assert started == version_dir.resolve()
+    claude.unlink()
+    monkeypatch.undo()
+    monkeypatch.setenv("HOME", str(home))
+    module._activate(root, REV_A, created=False)
+    assert os.readlink(root / "current") == f"versions/{REV_A}"
+    assert backup.is_dir() and (backup / "manifest.json").is_file()
+
+
+def test_clean_rollback_of_first_install_leaves_no_residue(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location("mdf_home_first", SKILL / "scripts" / "mdf_home.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setattr(module, "self_check", lambda *args: None)
+    root = tmp_path / "first"
+    (root / "versions").mkdir(parents=True)
+    copy_skill(root / "versions" / REV_A)
+    (home / ".claude").write_text("block\n", encoding="utf-8")
+    with pytest.raises(module.HomeError) as info:
+        module._activate(root, REV_A, created=True)
+    assert info.value.code == "host_update_failed"
+    assert not (root / "current").exists()
+    assert not (root / "versions" / REV_A).exists()
+    assert list(root.glob(".host-backup-*")) == []
