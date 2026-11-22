@@ -16,8 +16,8 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
     env:
-      # runner 固定安装的受信任 Skill 路径；由项目修改，不指向被审 checkout。
-      MDF_SKILL: /opt/mdf
+      # runner 用 mdf-deploy.sh install --home /opt/mdf 安装。job 的 MDF_HOME 优先于默认路径。
+      MDF_HOME: /opt/mdf
       MDF_BACKEND: codex
       # 首次 release 填已确认的固定基线；增量复核的上轮报告由项目下载为 artifact。
       MDF_REVIEW_BASE: ${{ vars.MDF_REVIEW_BASE }}
@@ -31,8 +31,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: ${{ github.event_name == 'push' }}
-      # 项目在此运行必需的 lint/tests，保存完整日志及报告。
-      # MDF_SKILL 及脚本应由 runner 固定安装，或从 policy_ref 提取后运行。
+      # MDF_HOME 由 runner 固定安装，不指向被审 checkout。
       - name: 外部复核
         if: github.event_name == 'pull_request'
         env:
@@ -40,18 +39,20 @@ jobs:
           TARGET: ${{ github.event.pull_request.base.ref }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           POLICY: ${{ github.event.pull_request.base.sha }}
-        run: >-
-          python3 "$MDF_SKILL/assets/ci/review.py"
-          --repo "$GITHUB_WORKSPACE" --source "$SOURCE" --target "$TARGET" --head "$HEAD"
-          --policy-ref "$POLICY" --backend "$MDF_BACKEND"
-          --output-dir "$RUNNER_TEMP/mdf-review"
+        run: |
+          MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
+          python3 -B "$MDF_ROOT/assets/ci/review.py" \
+            --repo "$GITHUB_WORKSPACE" --source "$SOURCE" --target "$TARGET" --head "$HEAD" \
+            --policy-ref "$POLICY" --backend "$MDF_BACKEND" \
+            --output-dir "$RUNNER_TEMP/mdf-review"
       - name: Push 审计
         if: github.event_name == 'push'
         env:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.event.after }}
         run: |
-          python3 "$MDF_SKILL/scripts/mdf.py" audit-push --repo "$GITHUB_WORKSPACE" \
+          MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
+          python3 -B "$MDF_ROOT/scripts/mdf.py" audit-push --repo "$GITHUB_WORKSPACE" \
             --branch "$GITHUB_REF_NAME" --before "$BEFORE" --after "$AFTER" \
             --collect-evidence > "$RUNNER_TEMP/mdf-audit.json"
           python3 -c 'import json,sys; sys.exit(json.load(open(sys.argv[1]))["result"]["verdict"] != "pass")' "$RUNNER_TEMP/mdf-audit.json"

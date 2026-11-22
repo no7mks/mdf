@@ -31,6 +31,14 @@ def fingerprint(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
+def rules_fingerprint(rules):
+    """协议全文仍交给 reviewer；指纹只记协议版本，兼容修订不使上轮报告失效。"""
+    from mdf_core.foundation.constants import PROTOCOL_VERSION
+    stamped = dict(rules)
+    stamped["mdf"] = PROTOCOL_VERSION
+    return fingerprint(stamped)
+
+
 def backmerge_identity(repo, source, head):
     version = source.removeprefix("codex/backmerge/")
     if stable_semver(version) is None:
@@ -165,7 +173,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
         if (previous.get("review_head") != left or previous.get("source") != source
                 or previous.get("delivery_base") != base):
             raise MDFError("上轮报告与增量左端点不符", code="invalid_previous_review")
-        if (previous.get("rules_sha256") != fingerprint(rules) or previous.get("incomplete")
+        if (previous.get("rules_sha256") != rules_fingerprint(rules) or previous.get("incomplete")
                 or previous.get("decision") not in {"pass", "changes_requested"}
                 or len(previous.get("reviewers", [])) != roster["reviewers"]
                 or any(r.get("incomplete") for r in previous.get("reviewers", []))):
@@ -179,7 +187,7 @@ def context(repo, source=None, head=None, policy_ref=None, review_base=None, pre
               "target_paths": target_paths,
               "target_diff": target_diff,
               "round": "incremental" if previous is not None else "initial", "roster": roster,
-              "rules": rules, "rules_sha256": fingerprint(rules), "artifacts": artifacts,
+              "rules": rules, "rules_sha256": rules_fingerprint(rules), "artifacts": artifacts,
               "paths": review_paths,
               "diff": review_diff,
               "incomplete": incomplete, "previous_report": previous,

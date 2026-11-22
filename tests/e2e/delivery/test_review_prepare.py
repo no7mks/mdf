@@ -125,3 +125,47 @@ def test_requires_explicit_left_outside_delivery(python_exe, tmp_path):
     repo, _, _ = started(python_exe, tmp_path)
     git(repo, "checkout", "-q", "develop")
     assert error_of(mdf(python_exe, "review-prepare", "--repo", str(repo)))["error"] == "missing_review_base"
+
+
+def test_schema_version_change_counts_as_rules_changed(python_exe, tmp_path):
+    _, work, _ = started(python_exe, tmp_path)
+    plan = prepare(python_exe, work)
+    assert record(python_exe, work, plan)
+    clear = plan["head"]
+    manifest = work / ".mdf" / "manifest.yaml"
+    manifest.write_text(manifest.read_text(encoding="utf-8").replace(
+        "schema_version: 3", "schema_version: 2", 1,
+    ), encoding="utf-8")
+    commit(work, "chore: 降低契约声明")
+    result = prepare(python_exe, work)
+    assert result["rules_changed"] is True
+    assert result["clear_commit"] == clear
+    assert result["left"] != clear
+
+
+def test_another_tool_revision_reuses_the_clear_commit(python_exe, tmp_path):
+    import shutil
+    import subprocess
+    from conftest import skill_dir
+
+    _, work, _ = started(python_exe, tmp_path)
+    plan = prepare(python_exe, work)
+    assert record(python_exe, work, plan)
+    copy = tmp_path / "tool-b"
+    shutil.copytree(skill_dir("mdf"), copy, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    (copy / "references" / ".version").write_text("b" * 40 + "\n", encoding="utf-8")
+    info = subprocess.run(
+        [python_exe, "-B", str(copy / "scripts" / "mdf.py"), "info"],
+        capture_output=True, text=True, check=False,
+    )
+    assert info.returncode == 0, info.stderr
+    assert json.loads(info.stdout)["revision"] == "b" * 40
+    reviewed = subprocess.run(
+        [python_exe, "-B", str(copy / "scripts" / "mdf.py"), "review-prepare", "--repo", str(work)],
+        capture_output=True, text=True, check=False,
+    )
+    assert reviewed.returncode == 0, reviewed.stderr
+    result = json.loads(reviewed.stdout)["result"]
+    assert result["rules_changed"] is False
+    assert result["clear_commit"] == plan["head"]
+    assert result["left"] == plan["head"]

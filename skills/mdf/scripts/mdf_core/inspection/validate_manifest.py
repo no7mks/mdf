@@ -102,13 +102,22 @@ def validate_manifest(
             findings, "manifest.invalid", str(exc), ".mdf/manifest.yaml"
         )
         return None
-    if manifest.get("schema_version") != SCHEMA_VERSION:
-        add_finding(
-            findings,
-            "manifest.schema",
-            f"schema_version must be {SCHEMA_VERSION}；用 $mdf migrate 收敛到当前契约",
-            ".mdf/manifest.yaml",
-        )
+    declared = manifest.get("schema_version")
+    if declared != SCHEMA_VERSION:
+        if isinstance(declared, int) and not isinstance(declared, bool) and declared > SCHEMA_VERSION:
+            add_finding(
+                findings,
+                "manifest.tool_outdated",
+                f"schema_version {declared} 高于本机契约 {SCHEMA_VERSION}；更新命令：mdf upgrade",
+                ".mdf/manifest.yaml",
+            )
+        else:
+            add_finding(
+                findings,
+                "manifest.schema",
+                f"schema_version must be {SCHEMA_VERSION}；用 $mdf migrate 收敛到当前契约",
+                ".mdf/manifest.yaml",
+            )
     from mdf_core.workspace.hooks import validate_hooks
     from mdf_core.workspace.merge_policy import config
     try:

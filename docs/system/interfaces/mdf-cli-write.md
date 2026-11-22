@@ -393,30 +393,30 @@ python3 skills/mdf/scripts/mdf.py publish --repo /path/to/repository [--source <
 - github-flow release 原子推送工作分支和 tag，并核对同名远端的 expected SHA 与实际 pre-push 更新清单。
 - Gitflow 在 merge 之后推送 tag。github-flow support hotfix 在 merge 之后从 owner 或主 worktree 传 `--source <原分支> --version <version>` 推送 tag。
 
-## `upgrade`
+## `detach`
 
 ```bash
-python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --dry-run
-python3 skills/mdf/scripts/mdf.py upgrade --repo /path/to/repository --expected-commit <预览commit>
+python3 "$MDF_ROOT/scripts/mdf.py" detach --repo /path/to/repository [--dry-run]
 ```
 
-要求 Git 根，不要求 manifest、ready 或 clean worktree。
+- 只 `git rm -r` 六个宿主目录下已跟踪的 `skills/mdf`。
+- 副本有本地修改或未跟踪文件时返回 `detach_dirty`，不写入。
+- 路径一旦越出这些副本，或命中 `.mdf/`、`docs/`，返回 `detach_forbidden_path`。
+- 按当前模板重渲染已有托管块，并 `commit --only`。不 push。
+- 没有副本时 `action` 为 `none`。
 
-- 上游：
-  - 默认源为 `http://10.1.5.65:8929/mars/mdf`，克隆远程默认分支 HEAD，并归档 `skills/mdf`。
-  - `--source` 可覆盖上游。
-  - 非预览必须传 `--expected-commit`，在写入前比对上游 HEAD。
-  - 变化报 `upgrade_source_changed`，须重新预览并确认。
-- 写入范围：
-  - 命令只替换已存在的 Agent Skills 目录中的 `mdf`，写入 `references/.version`。
-  - 并更新已有 `AGENTS.md` 的唯一 MDF 托管区块；无该文件或无区块则跳过，不新建或追加。
-  - ❌ 不创建未安装位置，不覆盖 `skills/mdf`，不修改 `.mdf/` 或 `docs/`。
-- 提交：
-  - 非预览写入后仅提交本次替换路径与已更新的 `AGENTS.md`，不夹带其他改动，不 push。
-  - 无变更则不创建提交。
-- `--dry-run` 只拉取并报告 `new_commit`、各目标当前基线、`history`、`agents` 与 `commit` 计划。
-  - `history` 按已安装 `.version` 分组，列出上游 `skills/mdf` 在该基线到 HEAD 之间的提交与文件变更。
-  - 无法对照时带 `status`，不视为失败。
+## `contract-switch`
+
+```bash
+python3 "$MDF_ROOT/scripts/mdf.py" contract-switch --repo /path/to/repository
+```
+
+- 要求 Git 根、clean worktree，且当前分支为 workflow trunk。
+- 只把 `schema_version` 一行改成工具的 `SCHEMA_VERSION`。
+- 声明值更高时返回 `contract_tool_outdated`。相等时 `changed` 为 false。
+- PR mode 在 `codex/contract-switch` 提交。不跑其他门禁。不 push。
+
+仓外升级、回滚与版本发现见 [仓外入口](mdf-launcher.md)。
 
 ## `bug close`
 

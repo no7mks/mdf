@@ -29,15 +29,15 @@ smoke 未覆盖的 release_only 成员不得声称通过；确需验证时只补
 
 ## 发布与安装
 
-- 只关注当前 MDF skill set 发布后的可用性，不保留、解释、检测或兼容历史版本。
-- `install`：只在目标 Agent Skills 目录中尚无 `mdf` 时运行。
-  - 从干净工作区的 `HEAD` 写入当前发布内容。
-  - 在 `references/.version` 写入完整 commit hash。
-  - 维护者升级须先运行 `unistall`。
-  - 已安装项目可用 `$mdf upgrade` 从上游默认分支替换已安装 Skill，并更新已有
-    `AGENTS.md` 的 MDF 托管区块。
-- `diff`：以该 commit 为基线，分别比较本地与目标。
-- ⚠️ install、diff 与 upgrade 都不得删除目标仓库的 `.mdf/` 或 `docs/` 产出物。
+- 只关注当前 MDF 发布后的可用性，不保留、解释、检测或兼容历史版本。
+- `install` 要求源仓库工作区干净，并只归档当前 `HEAD`。
+  - 修订写入 `<安装根>/versions/<commit>/`，再原子切换 `current`。
+  - 未传 `--home` 且未设置 `MDF_HOME` 时，安装根是 `~/.local/share/mdf`。
+  - `MDF_HOME` 无效时停止，不回退到默认路径。
+- `$mdf upgrade` 更新本机安装。自检失败回滚到切换前的 `current`。
+  - 不修改业务仓，不重写 `AGENTS.md`。
+- `mdf detach` 只移除业务仓里已跟踪的 Skill 副本。
+- ❌ install、upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 
 ## 文件规模
 

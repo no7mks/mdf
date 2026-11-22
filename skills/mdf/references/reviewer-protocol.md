@@ -24,7 +24,7 @@
 | --- | --- |
 | source、delivery_base | 交付身份与固定起点；默认 release 为上一正式版本 |
 | review_base、review_head | 本轮实际审查范围；增量复核包括上轮问题 |
-| policy_ref、rules_sha256 | 固定 target commit 与实际加载的规则内容指纹 |
+| policy_ref、rules_sha256 | 固定 target commit。指纹含协议版本号，不含协议全文 |
 | merge_base、target_paths、target_diff | 两端共同祖先与 target 独有变化；用于合入影响分析 |
 | context_sha256 | 本轮输入身份；每份报告必须一致 |
 | roster、paths | 冻结人数、review strategy 与需覆盖路径 |

@@ -88,7 +88,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf fact audit [<path>...] [--scope branch\|full\|paths] [--against] [--quick]` | 只读事实审阅；`--quick` 只跳过 LLM |
 | `$mdf prettify [<path>...] [--scope branch\|full\|paths]` | 按文档结构规则把大段文字改写为列表、表格与图，不改语义 |
 | `$mdf clarify <议题>` | 压力测试计划、决策或想法 |
-| `$mdf upgrade` | 从上游拉取最新 Skill 并替换已安装副本 |
+| `$mdf upgrade` | 更新本机仓外安装，不改业务仓文件 |
 | `$mdf to <target>` | 进入目标 worktree；gitflow 的 `plan` 进 planning，`develop` 回主树；`deploy`：github-flow 使用 detached HEAD，gitflow 检出 trunk |
 | `$mdf sync` | 先展示分支关系图，确认后同步三大 trunk；PR mode 的受保护增量走 PR/MR；其他分支只报告 |
 | `$mdf integrate` | 按工作线联调；collab-mode 由接手 Agent 直接调度两端 worktree |
@@ -317,25 +317,25 @@ Proposal/Bug 是计划与偏差，完成后不会自动成为当前事实。
 `docs/JOTS.md` 是可随手追加的原始记录本；它不替代 Proposal、Bug 或任务管理。
 当一条 Jot 被提升为 Proposal 或 Bug 后，原条目会在同一份待提交改动中移除。
 
-具体 intent、对象约束和仓库契约随唯一 Skill 一同安装，位于其内部的
-`references/`、`assets/` 与 `scripts/`。
+具体 intent、对象约束和仓库契约在仓外版本目录的 `references/`、`assets/` 与 `scripts/`。
+业务仓只保留 `.mdf/`、`docs/` 和 `AGENTS.md` 中的薄声明。
 
 ## 安装
 
-请从 MDF 仓库获取完整技能集。先在目标仓库创建 Agent 的 Skills 目录，例如
-`.codex/skills`，确认 MDF 源仓库工作区干净后安装：
+在 MDF 源仓库工作区干净时，把当前 `HEAD` 装到本机：
 
 ```bash
-mkdir -p /absolute/path/to/target-repository/.codex/skills
-./mdf-deploy.sh install --target /absolute/path/to/target-repository
+./mdf-deploy.sh install
+./mdf-deploy.sh install --home /opt/mdf
 ```
 
-- `install` 只从当前 `HEAD` 安装，并在 `mdf/references/.version` 写入完整 commit hash。
-  - 目标已有 `mdf` 时终止；维护者升级须先运行 `unistall`，再运行 `install`。
-- `diff` 分别显示本地与目标相对该基线的改动。
-- 已安装项目可用 `$mdf upgrade` 从上游默认分支拉取并替换已安装 Skill。
-  - 同时更新已有 `AGENTS.md` 的 MDF 托管区块。
-- 脚本与 upgrade 都不会修改目标仓库的 `.mdf/`、`docs/` 或业务文件。
+- 未设置 `MDF_HOME` 时，安装根是 `~/.local/share/mdf`。
+- `MDF_HOME` 为空或 `current` 无效时停止，不改用默认路径。
+- 每个修订位于 `versions/<commit>/`。`current` 指向启用的版本。
+- 引导壳写入 `~/.agents/skills/mdf`，以及 Claude、Kiro、OpenClaw 的用户级目录。
+- `$mdf upgrade` 更新本机安装。自检失败会回滚，不改业务仓文件。
+- 已跟踪的仓内副本用 `mdf detach --repo <仓库>` 移除。
+- ❌ install、upgrade 与 detach 都不得删除目标仓库的 `.mdf/` 或 `docs/`。
 
 ## 维护
 

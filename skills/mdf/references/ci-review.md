@@ -69,7 +69,7 @@
 
 - Python3、Git、MDF 为必需依赖；平台采集另需已登录的 gh/glab。
 - LLM 工具执行发生在 runner；模型推理使用所选服务，不要求原生平台 reviewer。
-- 工具从项目当前安装位置加载。
+- 工具从 runner 的 `MDF_HOME` 加载。job 先运行 `mdf_launcher.py root`，以输出的一行作为本次 `MDF_ROOT`。
 - 第一版支持 origin 同仓；平台权限、分支保护、必需检查与通知由项目负责。
 - 项目提供 checkout 外已存在且可写的绝对 `CI_ARTIFACT_DIR`；context、audit 与运行日志均置于该目录。
   每次调用 Core 前设置 `MDF_LOG_DIR="$CI_ARTIFACT_DIR/mdf-logs"`，Python 使用 `-B`；不把输入、日志或 bytecode 写进被审 checkout。

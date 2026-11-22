@@ -3,8 +3,8 @@ mdf-review:
   tags: [mdf]
   variables:
     GIT_DEPTH: "0"
-    # runner 固定安装的受信任 Skill 路径；由项目修改，不指向被审 checkout。
-    MDF_SKILL: /opt/mdf
+    # runner 用 mdf-deploy.sh install --home /opt/mdf 安装。job 的 MDF_HOME 优先。
+    MDF_HOME: /opt/mdf
     MDF_BACKEND: codex
     # 首次 release 由项目变量 MDF_REVIEW_BASE 指定确认后的固定基线。
     # 增量复核可通过 MDF_PREVIOUS_REPORT 指向项目已下载的上轮报告。
@@ -24,12 +24,14 @@ mdf-review:
         MDF_POLICY="$(git rev-parse FETCH_HEAD)"
         MDF_HEAD="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
         git checkout --detach "$MDF_HEAD"
-        python3 "$MDF_SKILL/assets/ci/review.py" --repo "$CI_PROJECT_DIR" \
+        MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
+        python3 -B "$MDF_ROOT/assets/ci/review.py" --repo "$CI_PROJECT_DIR" \
           --source "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" --head "$MDF_HEAD" \
           --target "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" \
           --policy-ref "$MDF_POLICY" --backend "$MDF_BACKEND" --output-dir "$MDF_OUTPUT"
       else
-        python3 "$MDF_SKILL/scripts/mdf.py" audit-push --repo "$CI_PROJECT_DIR" \
+        MDF_ROOT="$(python3 -B "$MDF_HOME/current/scripts/mdf_launcher.py" root)"
+        python3 -B "$MDF_ROOT/scripts/mdf.py" audit-push --repo "$CI_PROJECT_DIR" \
           --branch "$CI_COMMIT_BRANCH" --before "$CI_COMMIT_BEFORE_SHA" --after "$CI_COMMIT_SHA" \
           --collect-evidence > "$MDF_OUTPUT/audit.json"
         python3 -c 'import json,sys; sys.exit(json.load(open(sys.argv[1]))["result"]["verdict"] != "pass")' "$MDF_OUTPUT/audit.json"

@@ -15,6 +15,7 @@ from mdf_core.reviewing.context import context
 from mdf_core.reviewing.report import validate  # noqa: E402
 from mdf_core.workspace.merge_policy import git, sha  # noqa: E402
 from mdf_core.workspace.workflow_switch import SWITCH_BRANCH, valid_switch_source  # noqa: E402
+from mdf_core.workspace.contract_switch import CONTRACT_BRANCH, valid_contract_source  # noqa: E402
 
 
 def invoke(repo, backend, prompt, body, schema, prefix):
@@ -67,6 +68,17 @@ def run(args):
                            code='invalid_workflow_switch')
         proof = {'source': args.source, 'target': target, 'base': base, 'head': head, 'decision': 'pass'}
         (output / 'workflow-switch.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n')
+        return 0
+    if args.source == CONTRACT_BRANCH:
+        base, head = sha(repo, args.policy_ref), sha(repo, args.head)
+        target = args.target
+        original = snapshot(repo)
+        if (not target or original[0] != head or original[1] or original[2]
+                or not valid_contract_source(repo, base, head, target)):
+            raise MDFError('契约切换 PR/MR 须从目标 tip 出发，且只改 schema_version 一行',
+                           code='invalid_contract_switch')
+        proof = {'source': args.source, 'target': target, 'base': base, 'head': head, 'decision': 'pass'}
+        (output / 'contract-switch.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n')
         return 0
     from mdf_core.workspace.changelog_sync import sync_version
     if sync_version(args.source or ''):

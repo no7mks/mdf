@@ -119,7 +119,7 @@
 - `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
   主链在 verify branch 之后、close-out 之前
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
-- `$mdf upgrade [--source <url>]`：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块
+- `$mdf upgrade [--source <url>]`：更新本机仓外 MDF，不改业务仓文件
 - `$mdf to <target>`：进 worktree（`plan`/`develop`/`deploy`）
 - `$mdf dev-pr [<slug>]`：保全 develop 到 adhoc，reset 对齐远端，审查与 smoke 通过后 PR
 - `$mdf trunk-pr [<slug>]`：接管 github-flow 的本地 trunk 提交，按内容进入 `pm/*` 或 `adhoc/*` 并走 PR
@@ -409,8 +409,8 @@ $mdf clarify 要不要把缓存放到 Redis
   - 说明：`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
-  - 用途：从上游替换已安装 Skill 与 `AGENTS.md` 托管区块并提交（不 push），随后重读。
-  - 说明：不符当前契约，或 history 显示文档契约变化时建议 `$mdf migrate`。
+  - 用途：预览并更新本机仓外 MDF。失败自动回滚。不修改业务仓，不 push。
+  - 说明：当前目录是 Git 仓库且仍跟踪 Skill 副本时，建议接着 `mdf detach`。
 - `$mdf to <target>`
   - 用法：`$mdf to plan|develop|deploy|<分支>`
   - 用途：进入目标 worktree；缺树时建立。不创建新交付分支。

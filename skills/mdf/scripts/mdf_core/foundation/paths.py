@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import Any
@@ -66,3 +68,17 @@ def load_manifest(repo: Path) -> dict[str, Any]:
 
 def relative(repo: Path, path: Path) -> str:
     return path.resolve().relative_to(repo).as_posix()
+
+
+def tool_root() -> Path:
+    """本次进程所在的 MDF 版本目录。路径在启动时已固定，不跟随之后的 current。"""
+    return Path(__file__).resolve().parents[3]
+
+
+def tool_revision() -> str | None:
+    path = tool_root() / "references" / ".version"
+    if not path.is_file():
+        return None
+    lines = path.read_text(encoding="utf-8").splitlines()
+    text = lines[0].strip() if lines else ""
+    return text or None

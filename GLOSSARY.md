@@ -322,3 +322,18 @@ collab-mode 由接手 Agent 直接调度两端，也不打开消息通道。
 ## Coverage
 
 代码覆盖测量。coverage 是可选验证入口；target 是某个 metric 的最低百分比，covered/total 是命中数与总数。
+
+## 安装根
+
+`MDF_HOME` 有效时，MDF 使用该目录。未设置时使用 `~/.local/share/mdf`。
+该值已设置但为空，或 `current` 不能解析到有效修订时，入口停止且不回退。
+
+## 修订号
+
+安装根下 `versions/<revision>/` 的目录名，即安装时的完整 commit hash。
+`current` 是指向该目录的相对符号链接。入口在启动时解析一次并固定该目录。
+
+## 引导 Skill
+
+用户级宿主目录中的薄入口。它运行同目录 `scripts/mdf_launcher.py root`，再读取输出目录里的 `SKILL.md`。
+MDF 本体不放在业务仓，也不放在引导目录里。

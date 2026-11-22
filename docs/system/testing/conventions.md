@@ -92,7 +92,7 @@
 | docs | 是 | audit、doctor、validate_*、doc_size |
 | init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
 | integrate | 否 | integrate、integrate_http、integrate_store |
-| deploy | 否 | `mdf-deploy.sh`、upgrade |
+| deploy | 否 | `mdf-deploy.sh`、仓外 upgrade、detach |
 
 ### 复用已有报告
 

@@ -94,7 +94,7 @@ disable-model-invocation: true
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Accept call | 约束 | 解析用户指定的 intent | 选择树所列 intent | 2 | 裸或未知则帮助；非 tree 的未知 option 则询问 |
-| 2 | Check CLI | 脚本 | 定位 MDF_ROOT，运行 `info` 并核对版本 | CLI 结果、三个版本为 3 | 3 | 停止 |
+| 2 | Check CLI | 脚本 | 核对引导给出的 MDF_ROOT，运行 info | mdf_root 相同且三个版本为 3 | 3 | 停止 |
 | 3 | Dispatch | 约束 | 先核目标根再按选择树执行 | 目标根或豁免、流程结果 | 按选择树返回 | 不明回 3；缺材料停止并报告 |
 
 ## 术语与数据结构
@@ -203,13 +203,15 @@ disable-model-invocation: true
 - **帮助**：裸调用、未知调用读取并执行 `references/help.md`。
   - help intent 经 CLI 检查后同样执行该流程。
   - 不读取其他 intent、不检查仓库、不写入。
-- **MDF_ROOT**：本文件所在目录的绝对路径。
+- **MDF_ROOT**：引导 Skill 输出的版本目录。本文件必须位于该目录。
+  - `info` 的 `mdf_root` 必须等于该目录。不一致则停止。
+  - 同一次调用的后续 Core 都使用这个目录。下一次调用由引导 Skill 重新给出。
   - code-review 的 `--read-only` 或 `--against`，以及 fact audit 带 `--against` 时，在 info 前先核 Git 根并设置该 checkout 外的 `MDF_LOG_DIR`。
     后续复用该根与日志目录；目录无法安全确认则停止，不在被审 checkout 落盘。
     `--output` 不豁免日志落点。日志、context 与草稿仍在 checkout 外。调用方路径可在仓内外。
   - 确认 `scripts/mdf.py` 后运行 `python3 -B "$MDF_ROOT/scripts/mdf.py" info`；
     协议、工具与 schema 版本均须为数字 `3`。
-  - 上述调用的后续 Core 调用同样使用 `python3 -B`，避免在 checkout 内的安装副本生成 bytecode。
+  - 上述调用的后续 Core 调用同样使用 `python3 -B`，避免在被审 checkout 内生成 bytecode。
   - ❌ 工具缺失或检查失败时停止，不得模拟 CLI。
 
 步骤 3 的执行顺序：

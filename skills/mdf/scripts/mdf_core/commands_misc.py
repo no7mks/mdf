@@ -29,6 +29,8 @@ from mdf_core.foundation.paths import (
     manifest_path,
     path_stays_in_repo,
     relative,
+    tool_revision,
+    tool_root,
 )
 from mdf_core.foundation.semver import bump_kind, required_bump
 from mdf_core.foundation.textutil import is_object_id_slug, new_short_id, slugify, stable_semver
@@ -42,6 +44,8 @@ def command_info(_: argparse.Namespace) -> None:
             "tool_version": TOOL_VERSION,
             "protocol_version": PROTOCOL_VERSION,
             "schema_version": SCHEMA_VERSION,
+            "mdf_root": str(tool_root()),
+            "revision": tool_revision(),
         }
     )
 

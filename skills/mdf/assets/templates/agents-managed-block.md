@@ -16,9 +16,8 @@
   MDF Skill 中的文档结构与写作规则执行并人工复核。
 - 执行的每条命令都要留下完整日志或报告。
   - 优先使用工具自己的日志与报告体系。
-  - 工具没有落盘能力时，用 Core `run`：
-    `python3 "$MDF_ROOT/scripts/mdf.py" run --repo "$REPO_ROOT" -- <命令>`；
-    详见 [日志与报告]($MDF_ROOT/references/common.md#logs)。
+  - 工具没有落盘能力时，用 Core `run`：`mdf run --repo "$REPO_ROOT" -- <命令>`。
+    日志规则见 MDF 本体 `references/common.md` 的「日志与报告」。
   - Core 不可用时用 `tee` 兜底，并用 `pipefail` 保留退出码。
   - 日志保存到 `.mdf/logs/`。
   - 报告保存到 `.mdf/reports/`。
@@ -29,8 +28,9 @@
   - 长期复用的脚本移入项目正式目录并纳入 Git，结论和证据归入相应文档或报告。
 - 沟通 Bug、Proposal、Jot、ADR 时写完整 ID（不得省略前缀或只写序号/短码/slug）。
 - MDF 的调用与续办按 Skill 入口规则执行。
-- 不允许直接改动 MDF Skill 及其文件。
+- MDF 本体安装在仓外，版本目录由引导 Skill 给出；调用与续办按其中 Skill 入口规则执行。
+- ❌ 不得在本仓添加、跟踪或修改 MDF Skill、脚本或模板副本。
 - 直接在 develop 上改动时，按事项创建 `changes/unreleased/<slug>/`，至少留存 `CHANGE.md`。
-  - `CHANGE.md` 参照 [MDF Change 模板]($MDF_ROOT/assets/templates/change.md) 编写。
+  - `CHANGE.md` 参照 MDF 本体 `assets/templates/change.md` 编写。
 
 <!-- MDF:END -->

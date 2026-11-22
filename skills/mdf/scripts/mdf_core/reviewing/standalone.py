@@ -6,7 +6,7 @@ from mdf_core.execution.modules import parse_modules
 from mdf_core.foundation.yamlutil import parse_yaml
 from mdf_core.reviewing.scope import review_changes
 from mdf_core.reviewing.worktree import sha
-from mdf_core.reviewing.context import fingerprint
+from mdf_core.reviewing.context import fingerprint, rules_fingerprint
 from mdf_core.reviewing.policy import current_policy
 from mdf_core.workspace.gitutil import ensure_clean
 from mdf_core.workspace.project_rules import load_project_rule
@@ -26,7 +26,7 @@ def against_context(repo, against):
     result = {'schema_version': 3, 'mode': 'against', 'scope': 'head',
               'against': base, 'head': head, 'paths': selected,
               'diff': diff,
-              'rules': rules, 'rules_sha256': fingerprint(rules), 'incomplete': []}
+              'rules': rules, 'rules_sha256': rules_fingerprint(rules), 'incomplete': []}
     result['context_sha256'] = fingerprint(result)
     return result
 
@@ -44,7 +44,7 @@ def validate_against_report(context, report):
     require(isinstance(context['incomplete'], list), 'context incomplete 无效')
     original = {k: v for k, v in context.items() if k != 'context_sha256'}
     require(context['context_sha256'] == fingerprint(original), 'context 内容与指纹不符')
-    require(context['rules_sha256'] == fingerprint(context['rules']), 'context 规则与指纹不符')
+    require(context['rules_sha256'] == rules_fingerprint(context['rules']), 'context 规则与指纹不符')
     for key in ('mode', 'against', 'head', 'rules_sha256', 'context_sha256'):
         require(report[key] == context[key], f'报告 {key} 与本轮不符')
     require(set(report['paths']) == set(context['paths']), '报告路径覆盖不完整')

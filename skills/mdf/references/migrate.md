@@ -4,6 +4,11 @@
 经`当前事实文档`的事实复核后使 `manifest` 进入 `ready`。
 接受 `$mdf init migrate` 或 `$mdf migrate` 显式调用，或 init 依据公共分流规则的内部委托。
 新项目停止并提示 `$mdf bootstrap`。
+声明的 `schema_version` 低于本机契约时，先用本次固定的 `MDF_ROOT` 运行 `contract-switch`，再继续本流程。
+
+```bash
+python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
+```
 
 ## 决策树
 

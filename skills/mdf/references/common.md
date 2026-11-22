@@ -125,7 +125,8 @@ upgrade 不读取本文件。
   - clarify 与 help 不要求 Git 仓库。
   - init/bootstrap/migrate 由 initialization 公共流程处理普通目录与父仓库边界。
   - tree 的 CLI 从目标目录解析 Git 根，调用见 `references/tree.md`。
-  - upgrade 解析 Git 根且不要求 manifest ready，规则见 `references/upgrade.md`。
+  - upgrade 更新本机安装，不要求业务仓 manifest ready。
+    当前目录是 Git 仓库时建议 detach。规则见 `references/upgrade.md`。
   - integrate 解析 Git 根且不要求 manifest ready，规则见 `references/integrate.md`。
   - sync 解析 Git 根且不要求 manifest ready，规则见 `references/sync.md`。
 
@@ -195,10 +196,8 @@ upgrade 不读取本文件。
 进入已有 worktree 时，目标为绝对路径与完整分支名。
 已在该路径且当前分支正确即通过；不得再 `git worktree add`，不得只在原根 `cd` 冒充已进入。
 
-判定当前 agent：先看本会话可用工具，再看 `$MDF_ROOT` 是否位于下列目录之一。
-工具与路径冲突时以工具为准。
-
-- `.cursor/skills`、`.codex/skills`、`.kiro/skills`、`.claude/skills` 或 `.openclaw/skills`。
+判定当前 agent：只看本会话可用工具。
+不按 `$MDF_ROOT` 的路径判断宿主。
 
 按角色进入目标：
 
@@ -240,8 +239,8 @@ clean 以 `git status --porcelain` 输出为空为准；不为 Skill 写入的�
   - 已跟踪改动干净才切回 master。close-out 不拆除这棵树。
 - gitflow 的 master 不直接修改或提交内容；hotfix 的修改在 hotfix 分支完成。
   init/bootstrap/migrate 的初始化落地及 close-out 的 Gitflow 合并按各自专门契约执行。
-  upgrade 替换已安装 Skill 并提交本次路径时，可在当前分支（含 master）提交这些路径，
-  不改 `.mdf/` 与 `docs/`；该例外只约束 upgrade，见 `references/upgrade.md`。
+  detach 移除仓内 Skill 副本并提交这些路径时，可在当前分支（含 master）提交，
+  不改 `.mdf/` 与 `docs/`；该例外只约束 detach，见 `references/upgrade.md`。
 - 与当前交付分支工作相关的文档在当前分支更新，随该分支交付，包括规划记录和事实文档。
   当前事实文档记录该 checkout 的实际状态，不把未实现的计划写成事实。
   调研、已确认决策与当前事实文档分开，不把候选方案当作已实现行为，不替代任务管理。
@@ -309,7 +308,6 @@ converge（smart）与 verify branch 共用（详见 `delivery-contract.md`）�
     （含 stdout/stderr、JUnit、`summary.json`）。
   - 工具按本次调用参数自己写的日志或报告（如 `--junitxml`、`--log`）。
 - Core CLI 日志位于主仓库，交付 worktree 被删除后仍在；失败 JSON 的 `log` 给出路径。
-  - 尚无 `.mdf/` 或主仓库日志目录不可写时写到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
 - 调用有日志能力的工具时打开其落盘参数，读那份产物。
   - pytest / JUnit 写 `$MDF_REPORT_DIR` 或 `--junitxml`，不 tee。
 - Agent 直接运行、且没有任何落盘产物时，用 Core `run` 代跑，不要 tee。

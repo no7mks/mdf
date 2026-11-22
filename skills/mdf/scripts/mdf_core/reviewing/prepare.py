@@ -6,7 +6,7 @@ from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.foundation.paths import load_manifest
 from mdf_core.foundation.yamlutil import parse_yaml
 from mdf_core.lifecycle.delivery_state import locate
-from mdf_core.reviewing.context import effective_rules, fingerprint
+from mdf_core.reviewing.context import effective_rules, rules_fingerprint
 from mdf_core.reviewing.scope import review_document, review_changes
 from mdf_core.workspace import clear_commits
 from mdf_core.workspace.gitutil import branch_details, git_is_clean, repo_path, require_git_root
@@ -47,7 +47,10 @@ def rule_changes(repo, base, head, dirty):
     old_rule = (old.get("rules") or {}).get("code-review")
     new_rule = (new.get("rules") or {}).get("code-review")
     paths.update(p for p in (old_rule, new_rule) if p)
-    return old_rule != new_rule or bool(clear_commits.changed_paths(repo, base, head, dirty=dirty) & paths)
+    schema_changed = old.get("schema_version") != new.get("schema_version")
+    return schema_changed or old_rule != new_rule or bool(
+        clear_commits.changed_paths(repo, base, head, dirty=dirty) & paths
+    )
 
 
 def numstat(repo, left, head, paths, dirty):
@@ -103,7 +106,7 @@ def build(repo, against, force, initial_base=None):
     return {"left": left, "head": head, "policy_ref": head, "paths": paths, "net_increment": paths,
             "clear_commit": clear, "dirty": dirty, "rules_changed": changed_rules, "numstat": rows, "skip_review": skip,
             "size": {"lines": lines, "files": len(paths), "per_reviewer": LINES_PER_REVIEWER, "reviewers": reviewers},
-            "project_rules": rules["project"], "rules_sha256": fingerprint(rules), "force": force}
+            "project_rules": rules["project"], "rules_sha256": rules_fingerprint(rules), "force": force}
 
 
 def command_review_prepare(args):

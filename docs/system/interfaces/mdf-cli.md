@@ -36,7 +36,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
     `stdout_tail` / `stderr_tail`。
 - 调用日志：
   - 每次调用在主仓库 `.mdf/logs/<时间戳>-<命令>/` 写日志；参数错误也记录。
-    内容为 `stdout.log`、`stderr.log` 与 `meta.json`（argv、cwd、退出码、用时）。
+  内容为 `stdout.log`、`stderr.log` 与 `meta.json`（argv、cwd、退出码、用时、`tool_revision`、`mdf_root`）。
   - 尚无 `.mdf/` 或主仓库日志目录不可写时回退到 `MDF_LOG_DIR`，未设时为 `~/.mdf/logs/`。
   - 所有候选日志目录均不可写时以 `log_dir_unwritable` 失败（`log` 为 `null`）。
   - 失败 JSON 带 `log` 路径；内部异常先把 traceback 写入 stderr。
@@ -53,7 +53,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
   - `run` 只要求 `--repo` 是目录；不要求 Git 根、manifest 或 clean worktree。
   - `prepare-git` 接受普通目录；已是其他仓库内部路径时失败，不嵌套 `git init`。
   - `make-id --type proposal` 需要 Git 根且当前分支符合模型：gitflow 为 `planning`，github-flow 为配置的 trunk。
-  - `upgrade`、`integrate`、`to` 与 `sync` 要求 Git 根，不要求 manifest；
+  - `detach`、`contract-switch`、`integrate`、`to` 与 `sync` 要求 Git 根。
+    `contract-switch` 另要求 clean worktree，且当前分支为 workflow trunk。
     `sync` 另要求占用三大 trunk 的 worktree（及必要时主 worktree）干净。
 - 提交：
   - 对象写入类 CLI 本身不创建提交。
@@ -61,9 +62,9 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
     不夹带无关改动，不替代用户确认或验收。
   - 以下命令按各自协议做提交、集成或远端操作：
     - start、delivery roster-join、finish-gitflow、planning、pm。
-    - upgrade、`sync` 与 `merge-no-ff`。
+    - detach、`contract-switch`、`sync` 与 `merge-no-ff`。
 - `--dry-run` 只在 `archive`、`prp-split`、`release-closeout` 和
-  `upgrade` 中有效。
+  `detach` 中有效。仓外 `mdf upgrade --dry-run` 见 [仓外入口](mdf-launcher.md)。
 
 ## 命令表
 
@@ -117,7 +118,8 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `publish` | 发布带本版说明的 annotated tag | [仓库写入命令](mdf-cli-write.md) |
 | `finish-gitflow` | 核验、回合与分支清理 | [仓库写入命令](mdf-cli-write.md) |
 | `pre-gitflow-finish` | fact 前执行 hook 或检查其改动 | [仓库写入命令](mdf-cli-write.md) |
-| `upgrade` | 替换已安装 Skill | [仓库写入命令](mdf-cli-write.md) |
+| `detach` | 移除仓内 Skill 副本 | [仓库写入命令](mdf-cli-write.md) |
+| `contract-switch` | 只改 schema_version 一行 | [仓库写入命令](mdf-cli-write.md) |
 | `integrate` | 联调 inbox 与可选 HTTP | [交付阶段与验证](mdf-cli-delivery.md) |
 
 ## 与 intent 的关系
@@ -142,7 +144,7 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 | `archive` | `list` 与 `archive` | [仓库写入命令](mdf-cli-write.md) |
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
 | `adhoc` | `start --kind adhoc --name`、`verify smart` 与 `finish-gitflow` |
-| `upgrade` | `upgrade` | [仓库写入命令](mdf-cli-write.md) |
+| `upgrade` | 仓外 `mdf upgrade`，不经过 `mdf.py` | [仓外入口](mdf-launcher.md) |
 | `to` | `to --target`：规划 ensure、develop 复用、deploy 按 workflow 创建或复用、已有分支可建树 | [仓库写入命令](mdf-cli-write.md) |
 | `dev-pr` | 保全 develop 到 adhoc 并 reset 对齐远端 | [PR 与审查](mdf-cli-review.md) |
 | `trunk-pr` | `trunk-pr`：github-flow 下保全 trunk 本地提交并对齐远端 | [PR 与审查](mdf-cli-review.md) |

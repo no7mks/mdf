@@ -146,6 +146,7 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
 - `--read-only` 不改 HEAD/index/refs/objects；不跑 hooks/filters/tests；不修、不 commit、不勾 objectives。单独 `--against` 仍可进入 Repair。
 - findings 含位置、触发、影响、证据与 P0–P3。未审查不得写入 incomplete，也不得把 decision 写成 needs-review。
 - context/report 记录 against、head、rules_sha256 与 context_sha256。
+- `rules_sha256` 使用协议版本号，不使用 reviewer-protocol 全文。兼容修订不使上轮报告失效。
 - `--read-only` 在步骤 2 保存 context.json；步骤 5 用原 against 重跑 review-context，核对 context_sha256 与 head。
   - 一致才出报告；否则回 2 重审；不复用旧通过结论；失败读日志报 error。
   - 交付进入过步骤 3 或 4 后，步骤 5 不再重跑 review-context，也不回步骤 2。

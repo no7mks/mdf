@@ -161,6 +161,8 @@ def test_run_log_falls_back_when_main_log_dir_is_unwritable(
     assert log.path.name.endswith("-validate")
     assert (log.path / "stdout.log").read_text(encoding="utf-8") == "ok\n"
     assert json.loads((log.path / "meta.json").read_text(encoding="utf-8"))["exit_code"] == 0
+    meta = json.loads((log.path / "meta.json").read_text(encoding="utf-8"))
+    assert "tool_revision" in meta and "mdf_root" in meta
 
 
 @pytest.mark.parametrize("err_no", [errno.EROFS, errno.EACCES])

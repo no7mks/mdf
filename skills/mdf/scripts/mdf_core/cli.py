@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 import traceback
+from pathlib import Path
 
 from mdf_core.commands_misc import (
     command_archive,
@@ -20,7 +21,6 @@ from mdf_core.lifecycle.commands_release import command_release_closeout
 from mdf_core.foundation.errors import MDFError
 from mdf_core.execution.run_logs import RunLog, command_run
 from mdf_core.workspace.gitflow import command_finish_gitflow, command_start
-from mdf_core.workspace.upgrade import DEFAULT_SKILL_SOURCE, command_upgrade
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -459,12 +459,16 @@ def build_parser() -> argparse.ArgumentParser:
     finish_hook.add_argument("--after")
     finish_hook.set_defaults(func=command_pre_gitflow_finish)
 
-    upgrade = subparsers.add_parser("upgrade")
-    upgrade.add_argument("--repo", required=True)
-    upgrade.add_argument("--source", default=DEFAULT_SKILL_SOURCE)
-    upgrade.add_argument("--dry-run", action="store_true")
-    upgrade.add_argument("--expected-commit")
-    upgrade.set_defaults(func=command_upgrade)
+    from mdf_core.workspace.detach import command_detach
+    detach = subparsers.add_parser("detach")
+    detach.add_argument("--repo", required=True)
+    detach.add_argument("--dry-run", action="store_true")
+    detach.set_defaults(func=command_detach)
+
+    from mdf_core.workspace.contract_switch import command_contract_switch
+    contract = subparsers.add_parser("contract-switch")
+    contract.add_argument("--repo", required=True)
+    contract.set_defaults(func=command_contract_switch)
 
     run = subparsers.add_parser("run")
     run.add_argument("--repo", required=True)
@@ -519,9 +523,23 @@ def _failure(code: str, message: str, details, log: RunLog | None = None) -> int
     return 1
 
 
+def _drift(args) -> None:
+    repo = getattr(args, "repo", None)
+    if not isinstance(repo, str) or not repo:
+        return
+    try:
+        from mdf_core.workspace.contract_switch import drift_hint
+        hint = drift_hint(Path(repo))
+    except Exception:
+        return
+    if hint:
+        print(hint, file=sys.stderr)
+
+
 def _run(argv: list[str], log: RunLog) -> int:
     args = build_parser().parse_args(argv)
     args.log_path = log.path
+    _drift(args)
     try:
         args.func(args)
         return 0

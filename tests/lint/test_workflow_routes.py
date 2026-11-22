@@ -58,6 +58,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
                 "modules.md", "repository-documents.md", "hotfix-version.md",
             "repository-contract.md", "object-contract.md", "doc-structure.md", "html-materials.md",
                 "project-rules.md", "temporary-work.md", "reviewer-protocol.md", "ci-review.md",
+                "contract-switch.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
     assert len(workflows) == 63
@@ -124,7 +125,8 @@ def test_independent_intents_resolve_the_current_target_before_dispatch():
     assert "不使用空值或上次调用的变量" in dispatch
     assert "clarify 与 help 不要求 Git 仓库" in dispatch
     assert "init/bootstrap/migrate" in dispatch and "普通目录" in dispatch
-    assert "upgrade 解析 Git 根" in dispatch
+    assert "upgrade 更新本机安装" in dispatch
+    assert "建议 detach" in dispatch
     assert "sync 解析 Git 根" in dispatch
     assert "不要求 manifest ready" in dispatch
 
@@ -372,19 +374,14 @@ def test_upgrade_previews_then_confirms_before_replace():
     assert "拒绝则结束" in table[2][6]
     assert "http://10.1.5.65:8929/mars/mdf" in text
     assert "不读取 `references/common.md`" in text
-    assert "AGENTS.md" in text
-    assert "托管区块" in text
-    assert "`agents`" in text
     assert "`history`" in text
-    assert "提交摘要" in text
     assert "不 push" in text
-    assert "提交本次路径" in text
-    assert "不自动提交" not in text
-    assert "重读" in text
-    assert "建议用户运行 `$mdf migrate`" in text
-    assert "`$mdf fact update --scope full`" in text
-    assert "同会话" in text
-    assert "提示在新会话" not in text
+    assert "不修改业务仓" in text
+    assert "自检失败" in text
+    assert "回滚" in text
+    assert "detach" in text
+    assert "下一次" in text
+    assert "已启动的调用" in text
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"拒绝 ─+→ \[结束\]", diagram)
 

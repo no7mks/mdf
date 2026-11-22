@@ -274,9 +274,11 @@ class RunLog:
         return self
 
     def finish(self, code):
+        from mdf_core.foundation.paths import tool_revision, tool_root
         meta = {"argv": self.argv, "cwd": os.getcwd(), "exit_code": code,
                 "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.started)),
-                "seconds": round(time.time() - self.started, 3)}
+                "seconds": round(time.time() - self.started, 3),
+                "tool_revision": tool_revision(), "mdf_root": str(tool_root())}
         self.path.mkdir(parents=True, exist_ok=True)
         (self.path / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n")
 

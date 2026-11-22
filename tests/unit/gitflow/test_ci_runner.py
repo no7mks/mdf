@@ -77,6 +77,24 @@ def test_ci_runner_rejects_output_directory_in_checkout(tmp_path):
         module.run(args)
 
 
+def test_contract_switch_fast_path_skips_reviewers(monkeypatch, tmp_path):
+    module = load('review')
+    repo = tmp_path / 'checkout'
+    repo.mkdir()
+    head = 'a' * 40
+    monkeypatch.setattr(module, 'sha', lambda *args: head)
+    monkeypatch.setattr(module, 'snapshot', lambda *args: [head, '', '', ''])
+    monkeypatch.setattr(module, 'valid_contract_source', lambda *args: True)
+    args = SimpleNamespace(
+        repo=str(repo), source='codex/contract-switch', head='HEAD', policy_ref='master',
+        target='master', backend='codex', output_dir=str(tmp_path / 'output'),
+    )
+    assert module.run(args) == 0
+    proof = json.loads((tmp_path / 'output' / 'contract-switch.json').read_text())
+    assert proof['decision'] == 'pass'
+    assert proof['source'] == 'codex/contract-switch'
+
+
 def test_publisher_stale_head_does_not_publish(monkeypatch, tmp_path):
     module, context = load('publish'), ctx()
     reviewers = [{'id': f'r{i}', 'rules_sha256': 'rules', 'paths': [path], 'incomplete': [],
