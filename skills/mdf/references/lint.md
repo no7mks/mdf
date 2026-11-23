@@ -52,8 +52,8 @@
 本节确定独立检查与交付主链的执行边界。
 
 - 调用 `$mdf lint`，不接受额外参数；先解析当前目标 Git 根。
-- 交付主链在 converge 之后、code-review 之前执行；无 converge 的人工 feature、adhoc 在工作完成后执行。
-- 普通交付须已勾 converge；人工 feature 须用户显式勾人工工作；有账本 adhoc 须已勾工作。
+- 交付主链在 code-review 之前执行。普通开发须已勾 converge，[修复移植](fix-pick.md) 须已勾 pick。
+- 人工 feature 须用户显式勾人工工作；有账本 adhoc 须已勾工作。
 - 无账本 adhoc 按 adhoc-change 的实际范围运行，不调用 delivery status 或创建 objectives；报告返回调用方。
 - 无交付身份时检查当前 Git 根，不创建 objectives；有交付上下文时先用 delivery status 解析并绑定 owner。
 - qa/dev 路径不作为交付 lint 的落盘位置；按 common 的工作区规则返回 owner，再核对对应前置。

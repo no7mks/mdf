@@ -114,8 +114,10 @@ deliver 委托时继承 `references/deliver-policy.md`；进入内部 intent 前
 - 普通 feature 用户未指定 PRP 时运行 `list --repo "$REPO_ROOT" --type proposal --status ready`：
   - 只把 `blocked_by` 为空且 `in_progress` 为 `false` 的条目作为候选。
   - 按 `id` 与 `title` 供用户选择；不逐篇翻阅 `docs/proposals/`。
-- 用户未指定 Bug 时运行 `list --repo "$REPO_ROOT" --type bug --status open`：
+- 普通修复未指定 Bug 时运行 `list --repo "$REPO_ROOT" --type bug --status open`：
   - 按 `id` 与 `title` 供用户选择；不逐篇翻阅 `docs/bugs/`。
+- GitHub Flow hotfix 要移植已知的 trunk 修复时，按 [来源识别](fix-pick.md#识别来源)
+  定位其 Bug，包括已 fixed 或 closed 的记录。
 
 验收：明确参数；feature 另确认 PRP，bugfix 另确认 Bug，release 另确认版本。
 
@@ -172,7 +174,9 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - ❌ 不得因 roster `0,0` 强行保留未勾的 owner 开发 / converge。
 - bugfix / hotfix：
   - 对照 Bug 与 `assets/templates/objectives.md`。
-  - 精简 checklist 至少含：修复/范围、converge、lint、code-review、verify branch、
+  - GitHub Flow 先按 [Pick 已有修复](fix-pick.md#识别来源) 判定另一条线是否已有同一修复。
+    使用 pick 时按该页确认来源、目标与 roster，由 CLI 生成对应 checklist。
+  - 普通开发的精简 checklist 至少含：修复/范围、converge、lint、code-review、verify branch、
     fact audit、catch-up、consolidate；并含 `needs_design`。
   - 可不走 grilling；必须落盘临时文件供 `--objectives-file`。
 - 共同理解确认后，将确认文本放在仓外临时文件，供 CLI 写入新 worktree。
@@ -264,6 +268,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
 | release | `--version <semver> --objectives-file <步骤 2 确认文件>` | — |
 | hotfix | `--version <semver>` 或 `--name <slug>`，均传 `--objectives-file` | slug 可另传 `--version` 提前定版 |
 
+- 使用 pick 时追加 [来源参数](fix-pick.md#识别来源)。
 - 将步骤 3 确认的 roster 传给 CLI，不得改写已确认值：
   - 选用 named 时传 `--roster`。
   - 人数以 `--qa`、`--dev`、`--reviewers` 传入。
@@ -335,7 +340,7 @@ feature 与 release 另经 clarify 确认目标；bugfix/hotfix 可用精简确�
   - deliver 内部委托时返回调用方并说明待接手，不进入 6、不接管另一仓的 start 或联调。
 - release 且为同 worktree 或跨 worktree 则进入 6，不得先结束。
 - 其他 kind，或不联调的 release：
-  - 独立调用结束，由用户手动触发 design 或通过 next 委托。
+  - 独立调用结束。修复移植通过 `$mdf next` 续办 pick；普通交付可手动触发适用的 design 或通过 next 续办。
   - deliver 内部委托时返回调用方。
 
 验收：已切到 owner 且 Post-start check 通过；collab-mode 已交接；同/跨 worktree 联调进入 6，否则结束或返回。

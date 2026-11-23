@@ -32,6 +32,7 @@
 | 交付路径 | 可用截止点与调用关系 |
 | --- | --- |
 | 普通交付前段 | start（联调时内部 integrate）→ design → write-tests / implement → converge |
+| GitHub Flow 已有修复移植前段 | start → pick |
 | 前置验收 | lint → code-review → verify → fact audit → 必要时 fact update（内部 fact audit） |
 | Gitflow 发布交付后段 | catch-up → consolidate → merge/pr → publish → close-out |
 | github-flow release 后段 | catch-up → consolidate → publish → merge/pr → close-out |
@@ -43,6 +44,8 @@
 
 - 只读解析目标时确定路径；不适用该路径的 intent 报参数错误，不悄悄忽略，不先执行 start。
   - 工作是 adhoc 的账本项，不是 intent；子 intent 按括号中的调用位置判断边界，不另启动调用方。
+  - 尚未 start 的 GitHub Flow bugfix/hotfix 按 [来源识别](fix-pick.md#识别来源) 只读确认是否走 pick。
+    已 start 时以当前 objectives 的 pick 项判定。
 - 可选阶段未启用时仍保留其顺序位置：到该位置即停，不越过它进入后续 intent。
 - 无独立 implement 项的 owner 开发项对应 implement 的边界位置，不改变原阶段执行方式。
 - qa/dev 的截止先后按 write-tests → implement 判断；只用于边界，不改变两路可并行的执行规则。

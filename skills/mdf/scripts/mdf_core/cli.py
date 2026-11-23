@@ -230,6 +230,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--version")
     start.add_argument("--from-commit", help="github-flow release 的历史切点 SHA；创建即冻结")
     start.add_argument("--support", help="github-flow hotfix 的维护线 <major.minor>")
+    start.add_argument("--pick-commit", action="append", help="github-flow 修复来源的完整 SHA，可按移植顺序重复")
+    start.add_argument("--pick-from", help="github-flow bugfix 的来源 support/<major.minor>")
     start.add_argument("--qa", type=int)
     start.add_argument("--dev", type=int)
     start.add_argument("--reviewers", type=int)

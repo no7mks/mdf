@@ -260,6 +260,7 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
 - 人工 feature：仅要求用户显式勾选人工工作，不要求 converge；使用 1 个 reviewer。
 - adhoc：工作项已勾即可，不要求 converge；使用 1 个 reviewer。
   - 目标取自 delivery.work；重开审查时退勾 code-review 及后续项，成功后仅勾本项。
+- [修复移植](fix-pick.md)：objectives 的 pick 须已勾；按本次 roster 审查。
 - 其他交付进度只认 `objectives.md`：converge 项须已 `[x]`（含 start 对 `has_dev: no` 的预勾）；
   未勾停止，提示先 `$mdf converge`。
   - `needs_design: yes` 时可读 design.md 作审查上下文；不以 design/converge gate 文件为通行证。

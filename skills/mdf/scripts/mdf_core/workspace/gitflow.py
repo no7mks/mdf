@@ -173,6 +173,8 @@ def command_start(args) -> None:
         manifest = {}
     workflow = parse_workflow(manifest, repo)
     trunk, github = workflow["trunk"], workflow["model"] == GITHUB_FLOW
+    from mdf_core.lifecycle.fix_pick import pick_objectives, pick_source
+    pick = pick_source(repo, args, trunk, github=github)
     pr_mode = config(manifest)["mode"] == "pr"
     if not git_is_clean(repo):
         print("警告：原 worktree 有未提交改动或未完成的 Git 操作，启动时仅使用已提交的基线。", file=sys.stderr)
@@ -250,6 +252,8 @@ def command_start(args) -> None:
             suffix = _require_version(args.version)
         objectives = _read_objectives(args.objectives_file)
         _unreleased_collision(repo, base, suffix)
+    if pick:
+        objectives = pick_objectives(objectives)
     before_steps, checklist, after_steps = split_objectives_steps(objectives)
     checklist = re.sub(r"(?m)^- \[[ x]\] close-out(?:（[^\n]*）)?[ \t]*(?:\n|$)", "", checklist)
     for required in ("catch-up", "consolidate"):
@@ -276,6 +280,8 @@ def command_start(args) -> None:
     if manual and (roster["qa"], roster["dev"], roster["reviewers"]) != (0, 0, 1):
         raise MDFError("人工 feature 的 roster 固定为 0,0,1", code="invalid_manual")
     needs_design = False if manual or adhoc else parse_needs_design(objectives)
+    if pick and (needs_design or roster["qa"] or roster["dev"]):
+        raise MDFError("pick 需要 needs_design: no 且 qa/dev 为 0,0", code="invalid_pick")
     if manual:
         from mdf_core.lifecycle.manual import require_manual_objectives
         require_manual_objectives(objectives, starting=True, pr_mode=pr_mode)
@@ -344,6 +350,8 @@ def command_start(args) -> None:
                 identity["proposal"] = args.proposal
             elif args.kind == "bugfix":
                 identity["bug"] = args.bug
+            if pick:
+                identity["pick"] = pick
             if objectives is not None:
                 dest = target / "objectives.md"
                 from mdf_core.documents.moves import rewrite_repo_root_style_links
@@ -374,6 +382,7 @@ def command_start(args) -> None:
     payload = {
         "ok": True, "operation": "start", "branch": branch, "base": base,
         "start_commit": start_commit, "worktree": str(work), "pushed": False,
+        **({"pick": pick} if pick else {}),
         "roster": roster,
         "roles": {
             role: [

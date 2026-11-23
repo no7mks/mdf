@@ -272,6 +272,7 @@ Goal 指宿主提供的目标/待办设施（如 Cursor 的 CreateGoal/UpdateGoa
 | release 缺 integrate checklist 项或正文未写工作线 | 停止；须有 integrate 项且工作线四选一 |
 | release collab-mode 联调未完成且尚待接手 | 按 `collab-mode.md` 交接并结束；保留未完成进度与 Goal |
 | release integrate 未勾 | 执行 `$mdf integrate`；同 worktree / collab-mode 不开通道；不联调不得留未勾 |
+| pick 未勾 | 在 owner 委托 [Pick 已有修复](fix-pick.md)，完成后返回 Select |
 | `needs_design: yes` 且 design 未勾 | 在 owner 委托 `references/design.md` |
 | roster ≥1、未完成路数 ≥2 且前置满足 | 并行委托 write-tests / implement |
 | roster ≥1 且全部 qa/dev 中恰好一路未完成 | 主 Agent 用 git -C 续办，不切会话 |

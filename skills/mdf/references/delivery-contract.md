@@ -135,6 +135,9 @@ python3 "$MDF_ROOT/scripts/render_summary.py" --repo "$REPO_ROOT" --body-file <�
 10. catch-up（同步远端同名工作分支并增量验收）
 11. consolidate（收敛交付材料、对象状态与适用版本归档）
 
+GitHub Flow 的 bugfix/hotfix 可在 start 固定[已有修复的来源](fix-pick.md)。
+该路径在 start 后执行 pick，再从 lint 续行。
+
 consolidate 后按 workflow 定序：
 
 | 交付类型 | 后续顺序 |

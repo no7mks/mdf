@@ -12,6 +12,10 @@
   - 缺 PRP、依赖阻塞或已开工时拒绝。
 - release start 要求 `--version <semver> --objectives-file <文件>`。
   - 确认的发布目标写入 `changes/unreleased/<semver>/`，不 push。
+- GitHub Flow 的 bugfix/hotfix 可通过可重复的 `--pick-commit <完整 SHA>` 冻结已有修复。
+  - hotfix 使用 `--bug <Bug-ID>` 关联 trunk Bug，bugfix 使用 `--pick-from support/<major.minor>`。
+  - 有 origin 时核对其实际来源分支 tip，否则使用同名本地分支。
+  - start 核对 commit 在来源分支可达，写入 `delivery.json.pick`，生成从 pick 开始的待办清单。
 - adhoc start 使用 `--kind adhoc --name <名称>`，CLI 规范化 slug 并直接生成六项 objectives。
   - 不接受 PRP、Bug、版本、`--manual` 或 `--objectives-file`；固定 roster `0,0,1`、`needs_design: false`。
   - 创建 `adhoc/<slug>` 与同级独立 worktree；merge no-ff 合入目标，close-out 核对并清理。

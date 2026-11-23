@@ -150,6 +150,7 @@ support hotfix 合入后，以原分支与版本从主 worktree 调用 `delivery
 - 当前交付 intent 已完成、交付未结束时，可委托下一阶段。
   - 四种 kind 共用主线；续办前读 `references/delivery-contract.md`。
   - 主线前半：start → integrate（仅 release）→ 可选 design → 开发 → converge。
+  - 有待办 pick 时，委托 [Pick 已有修复](fix-pick.md)，本次只完成 pick。
   - 主线后半：lint → code-review → verify branch → fact audit → catch-up → consolidate。
   - 后续按 [交付阶段顺序](delivery-contract.md) 的 workflow 表执行。
   - 进入 fact 前按 [pre-gitflow-finish](pre-gitflow-finish.md) 执行可选 hook；

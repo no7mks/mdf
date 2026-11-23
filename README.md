@@ -136,6 +136,7 @@ feature 的起点与合入目标由 workflow 固定：gitflow 为 develop，gith
 - github-flow 已有发布 tag 时 hotfix 走 `support/<major.minor>`；单线可省略 `--support`。
   无 tag 时改走 `bugfix/*`。
   - support hotfix 只发布到维护线。`urgent_support_first` 要求 trunk 上 Bug 为 `open`。
+  - trunk 与 support 间移植已有修复时，按 [Pick 已有修复](skills/mdf/references/fix-pick.md) 推进。
 - github-flow 的独立项目记录在本地 trunk 编辑并提交。PR mode 发 PR 时由 `trunk-pr` 接管整批提交。
   范围和命令见 [项目记录](skills/mdf/references/common.md#项目记录)。
 - github-flow release 按 `fact → catch-up → consolidate → publish → merge/pr → close-out` 推进，final tag 在集成前发布。
