@@ -119,9 +119,7 @@ def test_explicit_repo_must_be_the_git_root(tmp_path: Path, monkeypatch) -> None
     assert _upgrade_repo(None) == repo.resolve()
 
 
-def test_explicit_repo_expands_home_and_accepts_a_plain_directory(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_explicit_repo_expands_home_and_accepts_worktrees_and_plain_directories(tmp_path: Path, monkeypatch) -> None:
     repo = _mdf_repo(tmp_path / "repo")
     monkeypatch.setenv("HOME", str(tmp_path))
     assert _upgrade_repo("~/repo") == repo.resolve()
@@ -130,6 +128,14 @@ def test_explicit_repo_expands_home_and_accepts_a_plain_directory(
     assert _upgrade_repo(str(plain)) == plain.resolve()
     linked = tmp_path / "linked"
     git(repo, "worktree", "add", "--detach", str(linked))
-    with pytest.raises(HomeError) as info:
-        _upgrade_repo(str(linked))
-    assert info.value.code == "upgrade_repo_invalid"
+    assert _upgrade_repo(str(linked)) == linked.resolve()
+
+
+def test_explicit_repo_rejects_git_directories_without_a_worktree(tmp_path: Path) -> None:
+    repo = _mdf_repo(tmp_path / "repo")
+    bare = tmp_path / "bare.git"
+    git(tmp_path, "init", "--bare", str(bare))
+    for directory in (repo / ".git", bare):
+        with pytest.raises(HomeError) as info:
+            _upgrade_repo(str(directory))
+        assert info.value.code == "upgrade_repo_invalid"

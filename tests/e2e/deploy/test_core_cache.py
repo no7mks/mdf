@@ -250,7 +250,7 @@ def test_root_only_accepts_the_project_cache(tmp_path: Path) -> None:
     assert rejected["error"] == "mdf_core_invalid"
 
 
-def test_repo_discovery_uses_the_main_worktree(tmp_path: Path) -> None:
+def test_repo_discovery_uses_the_current_worktree(tmp_path: Path) -> None:
     home = tmp_path / "home"
     source = upstream(tmp_path)
     repo = tmp_path / "repo"
@@ -270,12 +270,14 @@ def test_repo_discovery_uses_the_main_worktree(tmp_path: Path) -> None:
     assert Path(found["repo"]) == repo.resolve()
     linked = tmp_path / "linked"
     git(repo, "worktree", "add", "--detach", str(linked))
-    rejected = error(invoke(
+    (linked / "src").mkdir()
+    preview = payload(invoke(
         home, [sys.executable, "-B", str(launcher_of(source)), "upgrade",
                "--source", str(source), "--dry-run"],
-        cwd=linked,
+        cwd=linked / "src",
     ))
-    assert rejected["error"] == "upgrade_repo_invalid"
+    assert Path(preview["repo"]) == linked.resolve()
+    assert not core_dir(linked).exists()
     outside = error(invoke(
         home, [sys.executable, "-B", str(launcher_of(source)), "upgrade", "--dry-run"],
         cwd=tmp_path,
@@ -286,6 +288,52 @@ def test_repo_discovery_uses_the_main_worktree(tmp_path: Path) -> None:
     plain_result = payload(upgrade(home, source, plain, commit))
     assert (core_dir(plain) / commit).is_dir()
     assert plain_result["repo"] == str(plain.resolve())
+
+
+def test_linked_upgrade_publishes_entry_then_main_bootstraps_after_merge(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = upstream(tmp_path)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "README.md").write_text("app\n", encoding="utf-8")
+    init_git(repo)
+    first = head(source)
+    payload(upgrade(home, source, repo, first))
+    commit_all(repo, "test: 提交旧薄入口")
+    entry = Path(".agents/skills/mdf/mdf_entry.py")
+    linked = tmp_path / "linked"
+    git(repo, "worktree", "add", "-b", "upgrade-test", str(linked))
+    started = invoke(home, [sys.executable, "-B", str(linked / entry)], cwd=linked)
+    assert started.stdout.strip() == str((core_dir(linked) / first).resolve()), started.stderr
+
+    old_entry = (repo / entry).read_bytes()
+    old_core = tree_hash(core_dir(repo) / first)
+    source_marker = source / "skills/mdf/SKILL.md"
+    source_marker.write_text("new MDF revision\n", encoding="utf-8")
+    commit_all(source, "test: 推进 MDF 修订")
+    second = head(source)
+    result = payload(upgrade(home, source, linked, second, cwd=repo))
+    assert result["root"] == str((core_dir(linked) / second).resolve())
+    assert {path.name for path in core_dir(linked).iterdir()} == {second, ".lock"}
+    assert_pointer(linked, second, str(source))
+    started = invoke(home, [sys.executable, "-B", str(linked / entry)], cwd=linked)
+    assert started.stdout.strip() == result["root"], started.stderr
+    assert git(linked, "diff", "--cached", "--name-only").stdout == ""
+    assert git(linked, "status", "--porcelain", "-uall").stdout.splitlines() == [f" M {entry.as_posix()}"]
+    assert (repo / entry).read_bytes() == old_entry
+    assert {path.name for path in core_dir(repo).iterdir()} == {first, ".lock"}
+    assert tree_hash(core_dir(repo) / first) == old_core
+    assert git(repo, "status", "--porcelain", "-uall").stdout == ""
+
+    commit_all(linked, "test: 在分支升级薄入口")
+    git(repo, "merge", "--no-ff", "upgrade-test")
+    assert not (core_dir(repo) / second).exists()
+    source_marker.write_text("later MDF revision\n", encoding="utf-8")
+    commit_all(source, "test: 上游再次前进")
+    started = invoke(home, [sys.executable, "-B", str(repo / entry)], cwd=repo)
+    assert started.stdout.strip() == str((core_dir(repo) / second).resolve()), started.stderr
+    assert {path.name for path in core_dir(repo).iterdir()} == {second, ".lock"}
+    assert git(repo, "status", "--porcelain", "-uall").stdout == ""
 
 
 def test_symlink_targets_are_rejected_before_any_write(tmp_path: Path) -> None:

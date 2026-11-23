@@ -1,7 +1,7 @@
 # 项目入口
 
 MDF 本体是 `.mdf/cache/mdf-core/<commit>` 下的 Skill 树。每个安装目录只保留当前修订。
-upgrade 把本体装到主 worktree。薄入口缺指定修订时会自动补装。
+upgrade 把本体装到目标 worktree。薄入口缺指定修订时会自动补装。
 
 | 位置 | 内容 |
 | --- | --- |
@@ -25,26 +25,27 @@ upgrade 把本体装到主 worktree。薄入口缺指定修订时会自动补装
 
 `detach` 与 `contract-switch` 仍由该版本目录里的 `mdf.py` 执行。
 
-`--repo` 省略时，当前目录必须属于主 worktree，目标就是该主 worktree。
-显式 `--repo` 必须是主 worktree 根；不是 Git 仓库的普通目录也可以。
-linked worktree 与子目录都会失败。预览不写文件。
+`--repo` 省略时，目标是当前目录所属的 Git worktree 根。
+显式 `--repo` 接受任一 Git worktree 根或 Git 仓库外的普通目录。传入 worktree 子目录会失败。
+预览不写文件。
 
 ## 替换
 
 1. 解析项目并检查 `.gitignore` 与 cache 路径不是 symbolic link。
 2. 取上游 `HEAD`。与 `--expected-commit` 不符则停止，已有版本目录不动。
 3. 自检通过后，把版本目录放到 `.mdf/cache/mdf-core/<commit>`。
-4. 再发布项目主 worktree 的 `.agents/skills/mdf`。入口里的 `mdf_entry.py` 写明该 commit 和来源。
-5. 最后删除其他版本目录。发布失败时保留已就绪的本体，重试同一修订时复用该目录。
+4. 再发布目标 worktree 的 `.agents/skills/mdf`。入口里的 `mdf_entry.py` 写明该 commit 和来源。
+5. 最后删除目标 cache 中的其他版本目录。发布失败时保留已就绪的本体，重试同一修订时复用该目录。
 6. 自检失败时删除 staging。旧版本目录和项目引导都不变。
 
 ## 引导路径
 
-upgrade 在项目主 worktree 生成或更新 `.agents/skills/mdf`，由项目提交入口和根 `.gitignore` 的改动。
+upgrade 在目标 worktree 生成或更新 `.agents/skills/mdf`，由项目提交入口和根 `.gitignore` 的改动。
 首次安装生成 `SKILL.md`、`agents/openai.yaml` 和渲染后的 `mdf_entry.py`。普通 upgrade 保持 Git index 不变。
 更新已跟踪的薄入口时，覆盖会影响本地修改或额外文件则返回 `entry_dirty`。
 `SKILL.md` 运行同目录的 `mdf_entry.py`。脚本从自身路径定位 worktree。
 从 linked worktree 调用时，可运行主 worktree 的 `mdf_entry.py`，也可运行当前 worktree 已跟踪的薄入口。
+在 linked worktree 升级后，运行该 worktree 的薄入口验证。合入入口改动后，由各 worktree 的薄入口按需补装。
 
 当前 worktree 缺少固定的 `REVISION` 时，已跟踪的薄入口在当前 worktree 生成独立的版本目录，保留薄入口、`.gitignore` 和 Git index。
 

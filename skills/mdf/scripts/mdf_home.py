@@ -144,16 +144,6 @@ def ensure_project_gitignore(repo: Path) -> list[str]:
     return [item for item in MDF_IGNORE_LINES if item not in present]
 
 
-def _main_worktree(start: Path) -> Path | None:
-    completed = _run(["git", "-C", str(start), "worktree", "list", "--porcelain"])
-    if completed.returncode:
-        return None
-    for line in completed.stdout.splitlines():
-        if line.startswith("worktree "):
-            return Path(line[len("worktree "):]).resolve()
-    return None
-
-
 def _upgrade_repo(explicit: str | None) -> Path:
     if explicit is not None and not explicit.strip():
         raise HomeError("--repo 已设置但为空", "upgrade_repo_invalid")
@@ -163,19 +153,15 @@ def _upgrade_repo(explicit: str | None) -> Path:
         start = Path(explicit).expanduser().resolve()
         if not start.is_dir():
             raise HomeError("upgrade --repo 不是目录", "upgrade_repo_invalid")
-    main = _main_worktree(start)
-    if main is None:
-        if explicit is None:
-            raise HomeError("当前目录不是 Git 仓库", "upgrade_repo_invalid")
-        return start
-    if explicit is not None:
-        if main != start:
-            raise HomeError("upgrade --repo 必须是主 worktree 根目录", "upgrade_repo_invalid")
-        return main
-    toplevel = Path(_git_text(["git", "rev-parse", "--show-toplevel"], start)).resolve()
-    if toplevel != main:
-        raise HomeError("必须在主 worktree 中升级", "upgrade_repo_invalid")
-    return main
+    result = _run(["git", "rev-parse", "--show-toplevel"], start)
+    if result.returncode:
+        if explicit is not None and _run(["git", "rev-parse", "--git-dir"], start).returncode:
+            return start
+        raise HomeError("upgrade 需要 Git worktree", "upgrade_repo_invalid")
+    root = Path(result.stdout.removesuffix("\n")).resolve()
+    if explicit is not None and root != start:
+        raise HomeError("upgrade --repo 必须是 worktree 根目录", "upgrade_repo_invalid")
+    return root
 
 
 def _reject_cache_symlinks(project: Path) -> None:

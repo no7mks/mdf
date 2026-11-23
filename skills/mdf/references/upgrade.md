@@ -1,8 +1,8 @@
 # Upgrade
 
-`$mdf upgrade` 把指定 commit 装进主 worktree 的 `.mdf/cache/mdf-core/<commit>`。
+`$mdf upgrade` 把指定 commit 装进目标 worktree 的 `.mdf/cache/mdf-core/<commit>`。
 薄入口缺这一版时会自动安装，不问用户。
-项目通过 Git 跟踪主 worktree 的 `.agents/skills/mdf` 引导。根 `.gitignore` 排除本地 Core 和运行产物。
+项目通过 Git 跟踪 `.agents/skills/mdf` 引导。根 `.gitignore` 排除本地 Core 和运行产物。
 除发布引导与更新根 `.gitignore` 外，不修改业务仓文件。升级保留 Git index，不 push。
 
 - 默认源为 `https://github.com/no7mks/mdf.git`。
@@ -65,8 +65,11 @@
 
 ### 预览
 
+从任务工作目录确定其所属 worktree 根。预览与替换使用同一个根目录。
+`MDF_ROOT` 仅用于定位 launcher。
+
 ```bash
-python3 -B "$MDF_ROOT/scripts/mdf_launcher.py" upgrade --repo "<主 worktree 根>" --dry-run
+python3 -B "$MDF_ROOT/scripts/mdf_launcher.py" upgrade --repo "<目标 worktree 根>" --dry-run
 ```
 
 有其他源时追加 `--source <url>`。
@@ -78,7 +81,7 @@ python3 -B "$MDF_ROOT/scripts/mdf_launcher.py" upgrade --repo "<主 worktree 根
 ### 替换
 
 ```bash
-python3 -B "$MDF_ROOT/scripts/mdf_launcher.py" upgrade --repo "<主 worktree 根>" --expected-commit <步骤2确认的new_commit>
+python3 -B "$MDF_ROOT/scripts/mdf_launcher.py" upgrade --repo "<目标 worktree 根>" --expected-commit <步骤2确认的new_commit>
 ```
 
 - 必须传入预览确认的完整 commit。
