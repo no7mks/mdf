@@ -60,6 +60,60 @@ def test_watch_waits_for_merge_workflow(merged_watch, conclusion, expected):
     assert sleeps == [120]
 
 
+@pytest.mark.parametrize("dispatch_conclusion", ["success", "failure", "skipped"])
+def test_watch_accepts_skipped_entry_jobs_and_waits_for_dispatch(monkeypatch, tmp_path, dispatch_conclusion):
+    pulls_endpoint = "repos/team/project/pulls"
+    runs_endpoint = "repos/team/project/actions/runs"
+    raw = dict(number=1, head=dict(sha=MERGED["head"], ref=MERGED["source"]), created_at="2026-11-14T00:00:00Z")
+    entry = dict(id=10, event="pull_request_target", head_sha="workflow-ref", pull_requests=[raw],
+                 run_attempt=1, check_suite_id=10, status="completed", conclusion="success")
+    dispatch_results = iter([None, dispatch_conclusion, dispatch_conclusion])
+    dispatch = dict(id=11, event="workflow_dispatch", head_sha="workflow-ref", run_attempt=1, check_suite_id=11)
+    entry_jobs = ["Prepare Workspace", "Checks", "build", "summary"]
+
+    class Forge:
+        github = True
+        endpoint = pulls_endpoint
+
+        def api(self, path):
+            if path == f"{pulls_endpoint}/1":
+                return raw
+            assert path == f"{runs_endpoint}/11"
+            conclusion = next(dispatch_results)
+            dispatch.update(status="in_progress" if conclusion is None else "completed", conclusion=conclusion)
+            return dispatch
+
+        def normalize(self, response):
+            assert response == raw
+            return MERGED
+
+    def pages(forge, path, key=None, **query):
+        if path == runs_endpoint and query.get("event") == "pull_request_target":
+            return [entry]
+        if path == f"{runs_endpoint}/10/attempts/1/jobs":
+            return [dict(id=job_id, name=name, status="completed", conclusion="skipped", steps=[
+                dict(name="conditional", number=1, status="completed", conclusion="skipped")])
+                for job_id, name in enumerate(entry_jobs, 20)]
+        if path == f"{runs_endpoint}/11/attempts/1/jobs":
+            return [dict(id=24, name="build", status=dispatch["status"], conclusion=dispatch["conclusion"])]
+        return []
+
+    sleeps = []
+    monkeypatch.setattr(pull_status, "pages", pages)
+    monkeypatch.setattr(pull_watch, "lookup_pull", lambda *args, **kwargs: (MERGED, MERGED["target"]))
+    monkeypatch.setattr(pull_watch, "sleep", sleeps.append)
+    monkeypatch.setattr(pull_watch, "git", lambda *args: None)
+    monkeypatch.setattr(pull_watch, "verified_merge", lambda *args: None)
+
+    result = pull_watch.watch(tmp_path, MERGED["source"], Forge(), [11], False)
+    assert result["status"] == ("merged" if dispatch_conclusion == "success" else "ci_failed")
+    assert sleeps == [120]
+    assert [check["name"] for check in result["checks"]
+            if check["kind"] == "job" and check["run_id"] == 10 and check["conclusion"] == "skipped"] == entry_jobs
+    if dispatch_conclusion != "success":
+        assert [(check["kind"], check["id"]) for check in result["failures"]] == [("workflow", 11), ("job", 24)]
+
+
 @pytest.mark.parametrize("run_id, attempt, conclusion", [(10, 1, None), (9, 2, None), (9, 2, "success")])
 def test_watch_restarts_after_new_run_or_attempt(merged_watch, run_id, attempt, conclusion):
     passing = [{"id": 9, "attempt": 1, "conclusion": "success"}]

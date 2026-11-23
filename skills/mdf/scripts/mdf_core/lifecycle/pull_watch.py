@@ -51,7 +51,15 @@ def watch(repo, source, forge, origin_runs, allow_skipped, *, number=None, expec
             return {**result, "status": "closed_without_merge"}
 
         checks = snapshot["checks"]
-        failures = [item for item in checks if item["conclusion"] is not None and item["conclusion"] not in accepted]
+        successful_entry_runs = {
+            item["id"] for item in checks if item.get("kind") == "workflow"
+            and item.get("event") == "pull_request_target" and item["conclusion"] == "success"
+        }
+        failures = [
+            item for item in checks if item["conclusion"] is not None and item["conclusion"] not in accepted
+            and not (item["conclusion"] == "skipped" and item.get("kind") in {"job", "step"}
+                     and item.get("run_id") in successful_entry_runs)
+        ]
         if failures:
             return {**result, "status": "ci_failed", "failures": failures}
         if pull["state"] == "open" and (snapshot.get("review_identity_unknown")
@@ -65,7 +73,7 @@ def watch(repo, source, forge, origin_runs, allow_skipped, *, number=None, expec
         if missing_runs:
             record_poll(report, {"source": source, "code": "forge_invalid_response", "error": "此前已关联的运行未出现在查询结果中"})
         associated_runs.update(runs)
-        if pull["state"] == "merged" and not missing_runs and all(item["conclusion"] in accepted for item in checks):
+        if pull["state"] == "merged" and not missing_runs and all(item["conclusion"] is not None for item in checks):
             merged = pull.get("merge_commit")
             if isinstance(merged, str) and re.fullmatch(r"[0-9a-f]{40}", merged):
                 # Ignore pagination order. Compare run IDs, attempts and CI status along with the PR identity.

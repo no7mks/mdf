@@ -159,7 +159,7 @@ def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
             raise MDFError("GitHub Actions 已执行合并，但尚无关联 run 证据", code="forge_invalid_response")
     for run_id, run in sorted(runs.items()):
         attempt = run["run_attempt"]
-        checks.append(github_check(run, "workflow", attempt=attempt))
+        checks.append({**github_check(run, "workflow", attempt=attempt), "event": run.get("event")})
         for job, job_attempt in github_jobs(forge, f"{runs_endpoint}/{run_id}", attempt,
                                             completed=run["status"] == "completed"):
             checks.append({**github_check(job, "job", attempt=job_attempt), "run_id": run_id})

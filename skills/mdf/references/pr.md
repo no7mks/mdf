@@ -233,7 +233,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" pr-watch --repo "$REPO_ROOT" --source "$SOURC
   - open、CI pending、查询失败或证据缺失时等待 120 秒重试；等待无固定轮数或总超时。
 - CLI 返回 `merged` 后回步骤 3，执行 `pr --repo <主路径> --source <原分支>` 核验 Git 合并结果。
   - CLI 仅核验实际合并；`status=merged` 且 `completed=true` 后，关联运行也全部结束且结论通过才返回 pr 完成。
-  - 仅在项目 policy 允许 skipped / neutral 时传 `--allow-skipped`；cancelled、timed_out、action_required 不算通过。
+  - GitHub `pull_request_target` run 成功时，所属 job 和 step 的 `skipped` 无需 `--allow-skipped`，关联的 `workflow_dispatch` run 仍按自身检查结果判定。
+  - 其他 `skipped` 或 `neutral` 仅在项目 policy 允许时传 `--allow-skipped`；cancelled、timed_out、action_required 不算通过。
   - 调用方继续选择适用的 publish 或 close-out；不得将 pr 完成报告成整个交付完成。
 - 关联运行失败时读取失败 job / step 的日志与报告，按证据修复或处理阻塞；不能因 PR 已 merged 忽略失败。
   - 合并后的失败不得向已合入的 source 追加提交、重开原 PR 或改写固定 M；需要代码修改时按调用边界另行交付。
