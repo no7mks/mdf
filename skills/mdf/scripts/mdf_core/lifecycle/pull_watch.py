@@ -59,6 +59,7 @@ def watch(repo, source, forge, origin_runs, allow_skipped, *, number=None, expec
             item for item in checks if item["conclusion"] is not None and item["conclusion"] not in accepted
             and not (item["conclusion"] == "skipped" and item.get("kind") in {"job", "step"}
                      and item.get("run_id") in successful_entry_runs)
+            and not (item["conclusion"] == "skipped" and item.get("kind") == "job" and item.get("expected_skip") is True)
         ]
         if failures:
             return {**result, "status": "ci_failed", "failures": failures}

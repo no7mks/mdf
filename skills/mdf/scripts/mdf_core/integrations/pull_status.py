@@ -6,6 +6,10 @@ from urllib.parse import urlencode, urlsplit
 from mdf_core.foundation.errors import MDFError
 
 
+INTEGRATION_GATE_BOT = "integration-gate[bot]"
+INTEGRATION_GATE_PUSH_SKIPS = {"Prepare Workspace", "matrix.job_id || 'Checks'", "build", "summary"}
+
+
 def pages(forge, endpoint, key=None, **query):
     page = 1
     while True:
@@ -89,6 +93,20 @@ def github_merge_run_belongs(run, raw, tracked_ids):
     return bool(not pulls and merged_at and created_at and updated_at and created_at < merged_at <= updated_at)
 
 
+def github_verified_gate_push(run, pull, checks):
+    merge = pull.get("merge_commit_sha")
+    return (
+        pull.get("merged") is True and bool(merge)
+        and (pull.get("merged_by") or {}).get("login") == INTEGRATION_GATE_BOT
+        and run.get("event") == "push" and run["status"] == "completed" and run.get("conclusion") == "success"
+        and run.get("head_sha") == merge and run.get("head_branch") == pull["base"]["ref"]
+        and (run.get("actor") or {}).get("login") == INTEGRATION_GATE_BOT
+        and run.get("path") == ".github/workflows/integration-gate-checks.yml"
+        and any(check["kind"] == "commit_status" and check["head"] == merge
+                and check["name"] == "integration-gate/verified-merge" and check["conclusion"] == "success" for check in checks)
+    )
+
+
 def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
     number, head = raw["number"], raw["head"]["sha"]
     project = forge.endpoint.removesuffix("/pulls")
@@ -160,9 +178,15 @@ def github_status(forge, endpoint, raw, origin_runs, known_runs=()):
     for run_id, run in sorted(runs.items()):
         attempt = run["run_attempt"]
         checks.append({**github_check(run, "workflow", attempt=attempt), "event": run.get("event")})
-        for job, job_attempt in github_jobs(forge, f"{runs_endpoint}/{run_id}", attempt,
-                                            completed=run["status"] == "completed"):
-            checks.append({**github_check(job, "job", attempt=job_attempt), "run_id": run_id})
+        jobs = list(github_jobs(forge, f"{runs_endpoint}/{run_id}", attempt, completed=run["status"] == "completed"))
+        expected_gate_skips = github_verified_gate_push(run, raw, checks) and any(
+            job["name"] == "ig-entry" and job["status"] == "completed" and job.get("conclusion") == "success" for job, _ in jobs
+        )
+        for job, job_attempt in jobs:
+            job_check = {**github_check(job, "job", attempt=job_attempt), "run_id": run_id}
+            if expected_gate_skips and job_check["conclusion"] == "skipped" and job["name"] in INTEGRATION_GATE_PUSH_SKIPS:
+                job_check["expected_skip"] = True
+            checks.append(job_check)
             for step in job.get("steps", []):
                 check = github_check(step, "step", url=job.get("html_url"), attempt=job_attempt)
                 check.update(job_id=job["id"], run_id=run_id)

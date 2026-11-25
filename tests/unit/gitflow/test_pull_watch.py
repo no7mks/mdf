@@ -114,6 +114,102 @@ def test_watch_accepts_skipped_entry_jobs_and_waits_for_dispatch(monkeypatch, tm
         assert [(check["kind"], check["id"]) for check in result["failures"]] == [("workflow", 11), ("job", 24)]
 
 
+@pytest.fixture
+def watch_gate_merge(monkeypatch, tmp_path):
+    project = "repos/team/project"
+    merge = MERGED["merge_commit"]
+    gate = {"login": "integration-gate[bot]"}
+    skipped_names = ("Prepare Workspace", "matrix.job_id || 'Checks'", "build", "summary")
+
+    def watch(*, run_fields=None, pull_fields=None, status_head=merge, status_state="success", entry="success",
+              extra_jobs=(), allow_skipped=False):
+        raw = dict(number=1, merged=True, merged_by=gate, merge_commit_sha=merge, base=dict(ref=MERGED["target"]),
+                   head=dict(sha=MERGED["head"], ref=MERGED["source"]), created_at="2026-11-14T00:00:00Z")
+        raw.update(pull_fields or {})
+        run = dict(id=10, event="push", actor=gate, path=".github/workflows/integration-gate-checks.yml", head_sha=merge,
+                   head_branch=MERGED["target"], run_attempt=1, check_suite_id=10, status="completed", conclusion="success")
+        run.update(run_fields or {})
+        skipped_jobs = [dict(id=index, name=name, status="completed", conclusion="skipped")
+                        for index, name in enumerate(skipped_names, 21)]
+
+        class Forge:
+            endpoint = f"{project}/pulls"
+            github = True
+
+            def api(self, path):
+                assert path == f"{self.endpoint}/1"
+                return raw
+
+            def normalize(self, response):
+                assert response is raw
+                if not raw["merged"]:
+                    return {**MERGED, "state": "open", "merge_commit": None}
+                return MERGED
+
+        def pages(forge, path, key=None, **query):
+            if path == f"{project}/actions/runs" and query.get("head_sha") == run["head_sha"]:
+                return [run]
+            if path == f"{project}/actions/runs/10/attempts/1/jobs":
+                return [dict(id=20, name="ig-entry", status="completed", conclusion=entry), *skipped_jobs, *extra_jobs]
+            if path == f"{project}/commits/{status_head}/status":
+                return [dict(id=30, context="integration-gate/verified-merge", state=status_state)]
+            return []
+
+        def unexpected_sleep(seconds):
+            pytest.fail(f"无需等待时执行了 sleep({seconds})")
+
+        monkeypatch.setattr(pull_status, "pages", pages)
+        monkeypatch.setattr(pull_watch, "lookup_pull", lambda *args, **kwargs: (MERGED, MERGED["target"]))
+        monkeypatch.setattr(pull_watch, "sleep", unexpected_sleep)
+        monkeypatch.setattr(pull_watch, "git", lambda *args: None)
+        monkeypatch.setattr(pull_watch, "verified_merge", lambda *args: None)
+        return pull_watch.watch(tmp_path, MERGED["source"], Forge(), [], allow_skipped)
+
+    return watch
+
+
+def test_watch_accepts_only_expected_skips_in_verified_gate_merge_push(watch_gate_merge):
+    result = watch_gate_merge()
+    assert result["status"] == "merged"
+    assert [item["id"] for item in result["checks"] if item["conclusion"] == "skipped"] == [21, 22, 23, 24]
+
+
+@pytest.mark.parametrize("overrides", [
+    {"run_fields": {"actor": {"login": "human"}}},
+    {"run_fields": {"path": ".github/workflows/other.yml"}},
+    {"run_fields": {"head_branch": "other"}},
+    {"run_fields": {"head_sha": MERGED["head"]}},
+    {"run_fields": {"event": "workflow_dispatch", "head_sha": MERGED["head"]}},
+    {"run_fields": {"conclusion": "failure"}},
+    {"pull_fields": {"merged_by": {"login": "human"}}},
+    {"pull_fields": {"merged": False, "mergeable": True}},
+    {"status_head": None},
+    {"status_head": MERGED["head"]},
+    {"status_state": "pending"},
+    {"entry": "skipped"},
+])
+def test_watch_counts_gate_skips_without_verified_merge_evidence(watch_gate_merge, overrides):
+    result = watch_gate_merge(**overrides)
+    assert result["status"] == "ci_failed"
+    assert {21, 22, 23, 24} <= {item["id"] for item in result["failures"]}
+
+
+@pytest.mark.parametrize("allow_skipped", [False, True])
+def test_watch_preserves_real_failures_and_allow_skipped_during_gate_merge(watch_gate_merge, allow_skipped):
+    jobs = (
+        dict(id=25, name="other", status="completed", conclusion="skipped"),
+        dict(id=26, name="other neutral", status="completed", conclusion="neutral"),
+        dict(id=27, name="build", status="completed", conclusion="failure", steps=[
+            dict(number=1, name="test", status="completed", conclusion="failure"),
+        ]),
+    )
+    result = watch_gate_merge(extra_jobs=jobs, allow_skipped=allow_skipped)
+    assert result["status"] == "ci_failed"
+    assert [(item["kind"], item["id"]) for item in result["failures"]] == (
+        [] if allow_skipped else [("job", 25), ("job", 26)]
+    ) + [("job", 27), ("step", 1)]
+
+
 @pytest.mark.parametrize("run_id, attempt, conclusion", [(10, 1, None), (9, 2, None), (9, 2, "success")])
 def test_watch_restarts_after_new_run_or_attempt(merged_watch, run_id, attempt, conclusion):
     passing = [{"id": 9, "attempt": 1, "conclusion": "success"}]
