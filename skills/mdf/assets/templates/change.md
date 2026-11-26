@@ -6,6 +6,8 @@ fixed: []
 closed: []
 deferred: []
 adrs: []
+# 按 references/changelog-writing.md 选 Added/Changed/Deprecated/Removed/Fixed/Security
+# 纯文档、未实施提案或内部测试/CI 变更写 release_notes: none
 release_notes:
   Changed:
     - "{{MDF_RELEASE_NOTE}}"

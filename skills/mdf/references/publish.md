@@ -38,6 +38,9 @@ github-flow support hotfix 从主 worktree 执行 `publish --source <原 hotfix 
 
 - 读取固定发布 commit 中的本版 CHANGELOG，生成版本标题和实际变更正文。
 - 空版本章节、仅有标题或空分类时停止，返回 consolidate 补齐发布说明。
+- 打 tag 前按 [CHANGELOG 编写规范](changelog-writing.md) 核对本版 CHANGELOG：
+  确认仅含标准 6 分类、无未实施提案或纯测试/CI 噪音、升级注意已提炼且术语可读。
+  若仍为未经整理的原始拼接且尚未冻结提交，返回 consolidate 润色后再 publish。
 - 复用已有 tag 时核对类型、commit 和完整正文。远端 tag 必须与本地 tag 对象一致。
 - Gitflow 在实际 merge 后推送 tag。github-flow release 在 merge 前原子推送工作分支与 tag。
 - github-flow 在 push 前核对同名远端 SHA，pre-push 检查实际更新清单，保留原有 hook 行为。

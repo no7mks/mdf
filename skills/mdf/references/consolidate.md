@@ -18,9 +18,12 @@
 - 核对 objectives 的验收目标、实际交付范围和关联 Proposal / Bug。
 - 整理 `CHANGE.md`、交付总结和 [HTML 总结](html-materials.md)，按交付契约固化。
 - 核对 CR、verify、FA 和各轮增量证据；补齐引用、结论与已知偏差。
-- feature / bugfix 的材料位于 `changes/unreleased/<slug>/`，Change 写明成果、outcomes 和证据。
+- feature / bugfix 的材料位于 `changes/unreleased/<slug>/`，Change 写明成果、outcomes 和证据；`release_notes` 按 [CHANGELOG 编写规范](changelog-writing.md) 选类与过滤 `none`。
 - release 聚合 child Change，生成版本根 Change，更新 CHANGELOG 和 manifest.latest_release。
 - 归档本版适用的交付材料、PRP 与 Bug，重写链接，执行结构和内容一致性校验。
+- 发布交付在首次 CLI 聚合后，须按 [CHANGELOG 编写规范](changelog-writing.md) 润色本版 CHANGELOG：
+  重排、校准分类、提炼升级注意、翻译内部术语并加反引号，提交后执行 `consolidate --incremental` 锁定。
+  hotfix 构造 `--hotfix-change-json` 时遵循同一规范。
 - 本版 CHANGELOG 必须有实际变更条目，publish 据此生成 annotated tag 正文。
 
 ## Release 变更核对
@@ -74,6 +77,7 @@ release 在步骤 1–2 核对已交付工作，补齐遗漏的 Change；Gitflow
 - 首次 release 聚合仍须至少一份合法 child 及实际 release notes；仅有 release 自身工作而不满足此条件时停止并报告。
   - 不制造空壳 child、不伪造 source，也不提前造版本根绕过该约束。
 - 已 revert 且无剩余效果的改动、纯项目记录等写明排除理由；部分 revert 按候选保留的实际效果记录。
+  - 已在 `support/*` hotfix 发布的条目合入主线后，本版 CHANGELOG 不重复照抄（确需提及则注明同步自原 patch 版本）。
   - 同步修订已有 child 的失效 `release_notes`、Proposal/Bug 引用与 outcomes；无可发布条目时用 `release_notes: none`，保留历史证据。
   - 按真实对象处置与 closures 规则处理，不让聚合把已撤回的功能或修复标为 released/closed；归属不明时先澄清。
 - 缺少必要验收证据时交回当前增量验收，不能把 PR merged 当作验收通过。
@@ -94,7 +98,9 @@ release 在步骤 1–2 核对已交付工作，补齐遗漏的 Change；Gitflow
   - GitHub 使用 `[pr#123](<实际 PR URL>)`；GitLab 使用 `[mr!123](<实际 MR URL>)`。
 - 同一条目对应多项 PR/MR 时列出全部已确认链接并去重；已有条目也按核对结果补齐。
 - 无对应 PR/MR 的直接提交不加标识；兜底时只保留可核实的关联，不从标题或任意 `#数字` 猜测。
-- 版本材料已生成时同步更新原 child Change、版本根 Change 与 CHANGELOG，核对条目和链接一致。
+- 版本材料已生成时同步更新原 child Change、版本根 Change 与 CHANGELOG；
+  核对两者覆盖的应发布事实与已核实 PR/MR 链接一致。
+  CHANGELOG 按 [CHANGELOG 编写规范](changelog-writing.md) 面向读者组织，不要求与 YAML 字符串逐字相同。
 
 ## 对象状态
 

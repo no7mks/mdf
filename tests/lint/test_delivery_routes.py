@@ -42,6 +42,24 @@ def test_finish_keeps_pending_closeout_on_the_release_path():
     assert "实际合入" in workflow("close-out")
     assert "annotated" in workflow("publish") and "CHANGELOG" in workflow("publish")
 
+
+def test_changelog_writing_contract_wired_into_consolidate_and_publish():
+    guide = (skill_dir("mdf") / "references/changelog-writing.md").read_text(encoding="utf-8")
+    for term in (
+        "Added", "Changed", "Deprecated", "Removed", "Fixed", "Security",
+        "release_notes: none", "升级注意", "[运维]", "consolidate --incremental", "support/*",
+        "empty_release_notes", "patch 版本按 SemVer 只允许 `Fixed` 或 `Security`",
+    ):
+        assert term in guide
+    prepare = workflow("consolidate")
+    assert "changelog-writing.md" in prepare
+    assert "不要求与 YAML 字符串逐字相同" in prepare
+    pub = workflow("publish")
+    assert "changelog-writing.md" in pub
+    assert "返回 consolidate 润色后再 publish" in pub
+    for ref in ("object-contract.md", "repository-contract.md"):
+        assert "changelog-writing.md" in (skill_dir("mdf") / "references" / ref).read_text(encoding="utf-8")
+
 def test_start_clarifies_feature_objectives_before_branch():
     text = workflow("start")
     table = rows(text)

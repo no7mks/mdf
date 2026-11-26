@@ -57,6 +57,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
     nonprocedural = {
                 "modules.md", "repository-documents.md", "hotfix-version.md",
             "repository-contract.md", "object-contract.md", "doc-structure.md", "html-materials.md",
+                "changelog-writing.md",
                 "project-rules.md", "temporary-work.md", "reviewer-protocol.md", "ci-review.md",
                 "contract-switch.md",
     }
