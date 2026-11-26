@@ -12,10 +12,10 @@
   - uncovered：must-cover 每项须有文档覆盖或显式 ignored；只裁定该集合，不是全库。
 - stale：检查变更的事实页，以及 `evidence` 或 `generated` 引用命中未被有效 ignore 的 diff 的事实页。
 - 交付与独立 branch：CLI `--scope branch` / Agent resolve-base 后均走 against 核（同一核）。
-- `$mdf fact audit --quick`：**只**跳过 LLM；不换工作对象；可与 `--against` / `--scope branch` 或 full/paths 组合。
+- `$mdf fact audit --quick`：仅与 `--against <commit>` 组合，跳过 LLM，保留快照与机械检查。
 - `$mdf fact audit --output <path>`：会话参数，不传给 `fact-audit` CLI。与 `--against`、`--quick` 组合。
   缺少 `--against` 或与 `--scope` 同用则停止，不写文件。未传不写调用方文件。
-  只执行 [旁路与报告](fact-audit-against.md) 五步，不进入本页七步，不写交付 Markdown。
+  只执行 [旁路与报告](fact-audit-against.md) 五步，不进入本页六步，不写交付 Markdown。
 - 旁路 / CI 将 context 与报告草稿写在 checkout 外；交付主链另写 Markdown 摘要。
 - 交付主链按 [交付事实审阅](fact-audit-delivery.md)；旁路见 [旁路与报告](fact-audit-against.md)。
 - CLI `--scope full|paths` 仍为确定性机械入口（无 against 左端点时）。
@@ -36,7 +36,7 @@
 
 ## 决策树
 
-交付 / against 旁路在步骤 1–2 使用对应外壳 CLI，语义仍用本表；`--quick` 在步骤 2 后跳到 7。
+交付 / against 旁路在步骤 1–2 使用对应外壳 CLI，语义仍用本表；`--quick` 在步骤 2 后跳到 6。
 传入 `--output` 时在步骤 1 离开本树，只执行旁路五步。
 
 ```text
@@ -53,7 +53,7 @@
 └────────────────┬─────────────────┘
                  │
                  ├──── 无法审阅 ────→ [停止]
-                 ├──── --quick ─────→ 7 Report result
+                 ├──── --quick ─────→ 6 Report result
                  │
                  ▼ 可审阅
 ┌──────────────────────────────────┐
@@ -78,16 +78,7 @@
                  │
                  ▼ 通过（含逐条处置记录）
 ┌──────────────────────────────────┐
-│ 6 Validate                       │
-└────────────────┬─────────────────┘
-                 │
-                 ├──── 失败且独立调用 ──────────────→ [停止]
-                 ├──── 失败且 update 仅结构问题 ────→ [返回仅结构 finding，调用方修结构]
-                 ├──── 其他失败且内部委托 ──────────→ [返回未通过，调用方走失败分支]
-                 │
-                 ▼ 通过
-┌──────────────────────────────────┐
-│ 7 Report result                  │
+│ 6 Report result                  │
 └────────────────┬─────────────────┘
                  │
                  ├──── 通过 ────────────────→ [审阅通过]
@@ -98,7 +89,7 @@
 ## 工作流（唯一执行契约）
 
 表中操作与证据按下方同名条目核对；顺序与跳转只由本表规定。
-传入 `--output` 时步骤 1 改走旁路，不执行步骤 2–7，不写交付 Markdown。
+传入 `--output` 时步骤 1 改走旁路，不执行步骤 2–6，不写交付 Markdown。
 
 完整读取 `references/common.md` 与 `references/repository-contract.md`。
 主链调用方进入本 intent 前须按 [pre-gitflow-finish](pre-gitflow-finish.md)
@@ -109,22 +100,20 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve scope | 约束 | 调用方与 base / `--against` 或 `--scope`；合法 `--output` 只走旁路 | 类型、scope、范围 | 无 output 则 2 | 停止且不写文件 |
-| 2 | Audit CLI | 脚本 | against / branch→against 或 full/paths 机械 CLI | 映射、结构、findings | 可审阅→3；quick→7 | 无法审阅则停止 |
+| 2 | Audit CLI | 脚本 | 运行本轮范围的 closeout 静态规则 | 映射、结构、findings | 可审阅→3；quick→6 | 无法审阅则停止 |
 | 3 | Review facts | 约束 | 逐份核对事实与 evidence，并审阅结构 | 事实复核、语义发现、warning | 4 | 无法复核则停止 |
 | 4 | Review coverage | 约束 | 从实现反查用户与系统各面的文档覆盖 | 覆盖、遗漏与错误 | 5 | 无法复核则停止 |
 | 5 | Review warnings | 约束 | 逐条审阅 CLI 与步骤 3 的 warning | 逐条处置 | 6 | 无法审阅则停止 |
-| 6 | Validate | 脚本 | 运行 strict validation，处置新增 warning | validation findings、处置记录 | 7 | update 仅结构返回；其余未通过 |
-| 7 | Report result | 约束 | 按证据与 findings 判定并报告结论 | 摘要、审阅结论 | 审阅通过 | 报告未通过；独立结束，委托返回 |
+| 6 | Report result | 约束 | 按证据与 findings 判定并报告结论 | 摘要、审阅结论 | 审阅通过 | 报告未通过；独立结束，委托返回 |
 
-against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md) 与 [交付事实审阅](fact-audit-delivery.md)；语义标准仍用下方 s3–s7。
+against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md) 与 [交付事实审阅](fact-audit-delivery.md)；语义标准仍用下方 s3–s6。
 ## 术语与数据结构
 
 ### 逐项进度
 
-- 全局固定 7 个阶段：确定范围 → Audit CLI → 事实复核 → 覆盖复核 → warning 审阅 → validation → 报告结论。
-  - 开始先列完整清单；所有播报保留 `fact audit · 阶段 i/7 阶段名`。
+- 全局固定 6 个阶段：确定范围 → Audit CLI → 事实复核 → 覆盖复核 → warning 审阅 → 报告结论。
+  - 开始先列完整清单；所有播报保留 `fact audit · 阶段 i/6 阶段名`。
   - 不使用固定三组计数协议；CLI 返回后只报告 scope、实现文件数、文档数与 warning 数。
-  - validation 结束后仍须汇总审阅结论，不提前报告整体完成。
   - fact update 委托时使用父级全局阶段与本流程子阶段，保留轮次，不重置最外层进度。
 - CLI 返回后核对 state，报告 scope、实现文件数、文档数与 warning 数；范围未知时不填总数。
   - warning 数包含 `warnings` 与 `findings` 中 `severity: warning` 的项。
@@ -136,9 +125,7 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
   - 未触及项单列数量与理由，不计入已复核数，不把已复核误报为全部覆盖。
 - 长阶段按 `common.md` 的 60 秒要求更新，连续短项可合并播报。
   - 单项未完成时保持计数，说明当前核对内容或等待的命令，不虚构百分比或预计完成时间。
-- strict validation 开始前说明实际命令；等待期间转述已取得的具体检查位置。
-  validation 结束后报告 findings，再汇总结论或按失败去向返回。
-- 复核与 validation 全部完成后，按通过条件报告审阅结论。
+- 复核和 warning 处置完成后，按通过条件报告审阅结论。
   以上计数只在会话中播报，不生成持久报告或进度文件。
 
 ### 范围与确定性映射
@@ -175,7 +162,7 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
 | 已收口 release/hotfix（直接委托） | resolve-base 后 against，或等价 `paths`，不得改用 `full` |
 | 主链其他（含待收口 release） | 由 fact update 委托或直接使用 `--scope branch --base <SHA>` |
 
-direct 调用不再为读取 state 运行入口 doctor；fact update 写入前的 doctor 仍由调用方执行。
+direct 调用不再为读取 state 运行入口 check entry；fact update 写入前的 check entry 仍由调用方执行。
 
 首次发布无上一版本时停止确认初始基线。
 不强制 clean，也不替调用方提交。主链与普通 branch 使用 `--scope branch`，固定最终候选和显式旁路使用 `--against`。
@@ -200,7 +187,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   - 无交付基线时，比较 integration 分支与 HEAD 的 merge-base。gitflow 用 develop，github-flow 用 `workflow.trunk`。
 - branch 模式读 `fact_audit` clear commit，`skip_audit: true` 时可跳过语义审阅。
   `--force` 使用正常基线，`--quick` 只做机械检查。显式 `--against` 用固定范围。
-- 完成 full 范围的语义审阅和 strict validation 且通过后，在 clean worktree 执行
+- 完成 full 范围的语义审阅和静态检查且通过后，在 clean worktree 执行
   `fact-audit-record-full --repo <repo> --head <本轮审阅的 HEAD>`。dirty、quick、paths 均不调用。
 - `paths` 每个路径一个参数，至少一个：当前事实文档传 `--document-path`，module sourceset 内的已跟踪实现文件（含配置与测试）传
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
@@ -347,31 +334,9 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 
 <a id="s6"></a>
 
-#### 校验
-
-- 运行 `validate --repo "$REPO_ROOT" --level strict`（即 strict validation），不运行验证命令。
-- migrate 只豁免 `manifest.initializing` error。
-- validation 新增的 warning 按步骤 5 补做处置后再形成结论；已处置且内容未变的项不重复审阅。
-
-验收：validation findings。
-
-通过条件：输出可解析且无 `severity: error`（migrate 仅豁免 `manifest.initializing`），全部 warning 已处置。
-存在未豁免 error、未处置 warning、无输出或不可解析均未通过；CLI 仅有 warning 时退出码为 0。
-
-异常与交接：
-
-- fact-update 委托的例外须同时满足：
-  - 本轮语义、CLI 与 validation 问题均仅属步骤 7 定义的结构 finding。
-  - 没有未完成处置的 warning。
-  满足时返回「仅结构 finding」与清单，由调用方步骤 4 修结构。
-  不宣称审阅通过，不勾选进度。
-- 其余失败：独立调用报告并停止；内部委托返回未通过，调用方走失败分支。
-
-<a id="s7"></a>
-
 #### 结论
 
-返回审阅类型、两类范围、映射、warnings、复核文档、语义/validation findings 与未触及理由。
+返回审阅类型、两类范围、映射、warnings、复核文档、语义与机械 findings 与未触及理由。
 
 验收：会话摘要、复核证据与审阅结论。审阅结论由执行者按下列通过条件判定，无需用户确认，
 也不作为 deliver 的 confidence decision。
@@ -385,13 +350,13 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   - adhoc 只返回审阅结果；有账本时由 adhoc 保存 report 并勾 fact audit/update。
   - 无账本时由 adhoc-change 在 status 返回目录保存并提交 report，不创建或勾选 objectives。
   - 独立调用与独立 fact update 的委托无材料目录，不落盘，只在会话中报告结论。
-    against 旁路的 `--output` 除外。本七步不写该文件。只按 [旁路与报告](fact-audit-against.md) 在 `result.valid` 为 true 后写入报告 JSON。
+    against 旁路的 `--output` 除外。本六步不写该文件。只按 [旁路与报告](fact-audit-against.md) 在 `result.valid` 为 true 后写入报告 JSON。
 
 通过条件：同时满足以下各项时通过；migrate 仅豁免 `manifest.initializing`。
-validation 已由步骤 6 判定通过，本步不再复核。
+机械 findings 来自步骤 2 的 closeout 静态规则。
 
 - 无语义 finding（含结构 finding）。
-- 无 `size.hard`、无 `prose.*`、无 `overview.core_modules`、无 `project.entry_links`。
+- 无 `size.hard`、`prose.*`、`doc_style.*`、`reference.*`、`overview.core_modules`、`project.entry_links`。
 - 无未完成处置的 warning。
 - 无其他 `severity: error` 的 CLI finding（如 `modules.invalid`、`audit.scope`）。
 - 范围内应复核的事实、实现覆盖与 warning 已全部复核；明确按契约排除的项不计入应复核范围。
@@ -405,7 +370,7 @@ validation 已由步骤 6 判定通过，本步不再复核。
   不得推进依赖审阅通过的步骤。
 - 调用方是 fact-update，且未通过项只有结构 finding 时，返回「仅结构 finding」。
   fact-update 进入其步骤 4，不走失败停止。
-  - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
+  - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`reference.*`、`overview.core_modules`、`project.entry_links`。
 - 修复、补充证据或重审由调用方按其契约处理；fact audit 保持只读，不自行修复或自动重试。
 
 Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查：
@@ -429,8 +394,6 @@ Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查�
 不替代交付主链的完整 fact audit，不勾选 objectives。不读取 common.md 的交付前置。
 
 ```bash
-python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --scope full
-python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --scope branch --base <commit>
 python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --quick --against <commit>
 ```
 

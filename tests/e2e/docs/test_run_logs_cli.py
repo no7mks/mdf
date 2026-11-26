@@ -12,12 +12,12 @@ def latest(root):
 def test_cli_call_logs_full_output_and_error_points_to_log(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     run = latest(repo / ".mdf/logs")
-    assert run.name.endswith("-doctor")
+    assert run.name.endswith("-check")
     assert json.loads((run / "stdout.log").read_text())["ok"] is True
     meta = json.loads((run / "meta.json").read_text())
-    assert meta["argv"][0] == "doctor" and meta["exit_code"] == 0
+    assert meta["argv"][0] == "check" and meta["exit_code"] == 0
     failed = mdf(python_exe, "verify", "--scope", "branch", "--repo", str(repo))
     error = json.loads(failed.stderr.strip().splitlines()[-1])
     log = Path(error["log"])
@@ -30,10 +30,10 @@ def test_cli_call_logs_full_output_and_error_points_to_log(python_exe, tmp_path)
 def test_usage_errors_are_logged(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    mdf(python_exe, "doctor", "--repo", str(repo), "--bogus")
+    mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo), "--bogus")
     run = latest(repo / ".mdf/logs")
     assert "--bogus" in (run / "stderr.log").read_text()
-    assert json.loads((run / "meta.json").read_text())["exit_code"] == 2
+    assert json.loads((run / "meta.json").read_text())["exit_code"] == 1
 
 
 def test_worktree_calls_log_to_main_repository(python_exe, tmp_path):
@@ -50,9 +50,9 @@ def test_unmanaged_directory_logs_to_fallback(python_exe, tmp_path, monkeypatch)
     monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
     plain = tmp_path / "plain"
     plain.mkdir()
-    mdf(python_exe, "doctor", "--repo", str(plain))
+    mdf(python_exe, "check", "--profile", "entry", "--repo", str(plain))
     assert not (plain / ".mdf").exists()
-    assert latest(fallback).name.endswith("-doctor")
+    assert latest(fallback).name.endswith("-check")
 
 
 def test_verify_keeps_full_output_of_every_entry(python_exe, tmp_path):
@@ -108,8 +108,8 @@ def test_linked_worktree_with_readonly_main_repo_falls_back_to_mdf_log_dir(
             path.chmod(0o555)
 
         assert_ok(mdf(python_exe, "validate", "--repo", str(worktree), "--level", "strict"))
-        assert_ok(mdf(python_exe, "doctor", "--repo", str(worktree)))
-        assert_ok(mdf(python_exe, "prose-check", "--repo", str(worktree)))
+        assert_ok(mdf(python_exe, "check", "--profile", "entry", "--repo", str(worktree)))
+        assert_ok(mdf(python_exe, "check", "--repo", str(worktree), "--scope", "full", "--only", "prose"))
         run_res = payload(
             mdf(
                 python_exe, "run", "--repo", str(worktree), "--name", "probe",
@@ -182,7 +182,7 @@ def test_linked_worktree_with_readonly_main_repo_falls_back_to_mdf_log_dir(
 
         names = [item.name for item in fallback.iterdir() if item.is_dir()]
         for suffix in (
-            "-validate", "-doctor", "-prose-check", "-probe",
+            "-validate", "-check", "-check", "-probe",
             "-review-context", "-review-report-check",
             "-fact-audit", "-fact-audit-report-check",
         ):

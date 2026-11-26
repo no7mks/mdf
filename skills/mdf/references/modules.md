@@ -37,11 +37,11 @@ budgets:
 - **ignore**：`pattern` + `reason`，路径与 pattern 均相对 repo 根；可排除源代码、测试源代码与文档。
   - `modules.<name>.ignore` 仅在自身 `sourceset` 内生效，不能排除其他 module 或未归属文件。
   - 重叠 `sourceset` 中仍有 module 未忽略该文件时，保留该 module 的验证与检查。
-  - verify、lint、prose-check 与审阅共用 module ignore 的归属判断。
+  - verify、lint、check 与审阅共用 module ignore 的归属判断。
   - fact audit 与 code-review 的实现范围先与 `sourceset` 并集求交，再应用 module ignore。
   - 未归属实现不进入审阅；事实页、文档入口及交付材料仍按各自契约检查。
   - 命中路径不触发 verify，也不产生 uncovered / `agents.project_content` 类提示。
-  - lint 跳过命中文件的代码规模检查，package 计数排除命中文件；fact audit 与 prose-check 跳过其文档规模与结构检查。
+  - lint 跳过命中文件的代码规模检查，package 计数排除命中文件；fact audit 与 check 跳过其文档规模与结构检查。
   - 命中文件不受长度与 70% 拆分要求约束；审阅不得再按这些规则要求拆分，报告匹配路径与理由。
   - `fact-audit` 的 `ignored` 保留命中路径、pattern 与 reason；未匹配的已跟踪文件仍正常检查。
   - fact audit 各 scope 均排除有效 ignore 命中的语义审阅路径；项目事实页独立判定。

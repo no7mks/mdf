@@ -7,7 +7,8 @@ from support_pull import Platform, squash_pending
 
 @pytest.mark.parametrize("github,pr", [(False, False), (False, True), (True, False), (True, True)])
 def test_release_delivery_matrix(python_exe, tmp_path, monkeypatch, github, pr):
-    repo, remote = github_flow_repo(tmp_path, origin=True, pr=pr) if github else start_repo(tmp_path)
+    repo, remote = (github_flow_repo(tmp_path, origin=True, pr=pr, previous_release=True) if github
+                    else start_repo(tmp_path, previous_release=True))
     if pr and not github:
         path = repo / ".mdf/manifest.yaml"
         path.write_text(path.read_text() + "\ncloseout:\n  mode: pr\n  provider: github\n")
@@ -125,7 +126,7 @@ def test_unreleased_delivery_matrix(python_exe, tmp_path, monkeypatch, github, p
 
 @pytest.mark.parametrize("pr", [False, True])
 def test_hotfix_slug_consolidation_keeps_versioned_materials_available(python_exe, tmp_path, monkeypatch, pr):
-    repo, remote = start_repo(tmp_path)
+    repo, remote = start_repo(tmp_path, previous_release=True)
     bug = repo / "docs/bugs" / BUG_NAME
     bug.write_text(bug.read_text().replace("status: open", "status: closed\nfixed_in: 1.2.1"))
     if pr:

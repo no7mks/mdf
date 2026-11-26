@@ -15,9 +15,9 @@ from mdf_core.foundation.textutil import stable_semver
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
-def validate_changelog(repo: Path, findings: list[Finding]) -> None:
+def validate_changelog(repo: Path, findings: list[Finding], *, scan=None) -> None:
     path = repo / "CHANGELOG.md"
-    if not path.is_file():
+    if not path.is_file() or (scan is not None and not scan.contains(path)):
         add_finding(
             findings,
             "changelog.missing",
@@ -50,7 +50,7 @@ def validate_changelog(repo: Path, findings: list[Finding]) -> None:
         )
 
 
-def changelog_versions(repo: Path, findings: list[Finding]) -> list[str]:
+def changelog_versions(repo: Path, findings: list[Finding], *, scan=None) -> list[str]:
     path = repo / "CHANGELOG.md"
     if not path.is_file() or path.is_symlink():
         return []
@@ -133,10 +133,13 @@ def validate_release_history(
     repo: Path,
     manifest: dict[str, Any] | None,
     findings: list[Finding],
-    *, paths: set[Path] | None = None,
+    *, paths: set[Path] | None = None, scan=None,
 ) -> None:
+    def visible(path):
+        return scan is None or scan.contains(path)
+
     global_history = paths is None or bool(paths & {repo / "CHANGELOG.md", repo / ".mdf/manifest.yaml"})
-    changelog = changelog_versions(repo, findings if global_history else [])
+    changelog = changelog_versions(repo, findings if global_history else [], scan=scan)
     changelog_set = set(changelog)
     release_root = repo / "changes"
     release_dirs = (
@@ -144,7 +147,7 @@ def validate_release_history(
             (
                 path
                 for path in release_root.iterdir()
-                if path.is_dir()
+                if path.is_dir() and visible(path)
                 and not path.is_symlink()
                 and stable_semver(path.name) is not None
             ),
@@ -172,7 +175,7 @@ def validate_release_history(
     support_versions = set()
     for directory in release_dirs:
         identity = directory / "delivery.json"
-        if identity.is_file():
+        if identity.is_file() and visible(identity):
             try:
                 data = json.loads(identity.read_text())
             except (ValueError, OSError):
@@ -222,10 +225,10 @@ def validate_release_history(
             continue
         version = release_dir.name
         release_file = release_dir / "CHANGE.md"
-        if not release_file.is_file():
+        if not release_file.is_file() or not visible(release_file):
             continue
         try:
-            release_metadata, _ = read_frontmatter(release_file)
+            release_metadata, _ = (scan.frontmatter if scan else read_frontmatter)(release_file)
         except MDFError:
             continue
         actual_previous = release_metadata.get("previous_version")

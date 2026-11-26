@@ -6,7 +6,7 @@ from support_github_flow import error_of
 
 def test_consolidate_preserves_concurrent_unrelated_changes(python_exe, tmp_path, monkeypatch):
     from mdf_core.lifecycle.manual import STEPS
-    from mdf_core.inspection import doctor
+    from mdf_core.inspection import check_engine
     repo, _ = start_repo(tmp_path)
     obj = tmp_path / "manual.md"
     obj.write_text("# 目标\n\n" + "".join(f"- [{'x' if name == 'start' else ' '}] {name}\n" for name in STEPS))
@@ -20,14 +20,14 @@ def test_consolidate_preserves_concurrent_unrelated_changes(python_exe, tmp_path
     objective.write_text(objective.read_text().replace("[ ]", "[x]").replace("[x] consolidate", "[ ] consolidate"))
     commit(work)
     before = git(work, "rev-parse", "HEAD").stdout
-    original = doctor.collect_findings
+    original = check_engine.check_payload
 
-    def concurrent(repo, **kwargs):
-        findings = original(repo, **kwargs)
+    def concurrent(repo, *args, **kwargs):
+        findings = original(repo, *args, **kwargs)
         (repo / "other-work.txt").write_text("其他写入者的内容\n")
         return findings
 
-    monkeypatch.setattr(doctor, "collect_findings", concurrent)
+    monkeypatch.setattr(check_engine, "check_payload", concurrent)
     failed = mdf(python_exe, "consolidate", "--repo", str(work))
     assert error_of(failed)["error"] == "unrelated_staged_changes"
     assert git(work, "rev-parse", "HEAD").stdout == before

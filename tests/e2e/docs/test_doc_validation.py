@@ -21,9 +21,9 @@ def test_manifest_not_applicable_baseline_requires_reason(
     replace(manifest, documented, not_applicable)
     (repo / "docs" / "system" / "operations" / "runbook.md").unlink()
     init_git(repo)
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
     replace(manifest, "    reason: 该仓库不交付运行时服务\n", "")
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
 
 
@@ -57,7 +57,7 @@ def test_validation_rejects_local_link_outside_repository(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "link.outside_repo" in result.stdout
 
@@ -74,7 +74,7 @@ def test_validation_rejects_leading_slash_as_site_root(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "link.outside_repo" in result.stdout
 
@@ -88,7 +88,7 @@ def test_validation_rejects_symlink_in_managed_docs(
     (repo / "docs" / "system" / "escape.md").symlink_to(outside)
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "path.symlink" in result.stdout
 
@@ -102,9 +102,9 @@ def test_validation_ignores_symlinks_inside_local_artifacts(python_exe, tmp_path
     (root / "escape").symlink_to(tmp_path / "outside")
     init_git(repo)
 
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["normal_workflows_allowed"] is True
     assert not any(item["code"] == "path.symlink" for item in data["findings"])
 
@@ -142,16 +142,16 @@ def test_local_artifact_directory_symlink_is_nonblocking_warning(python_exe, tmp
     link.symlink_to(outside, target_is_directory=True)
     init_git(repo)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["normal_workflows_allowed"] is True
     warnings = [item for item in data["findings"] if item["code"] == "path.symlink"]
     assert len(warnings) == 1
     assert warnings[0]["severity"] == "warning"
     assert warnings[0]["path"] == f".mdf/{name}"
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert_ok(result)
     assert payload(result)["ok"] is True
     assert_ok(mdf(python_exe, "archive", "--repo", str(repo), "--epoch", "1.3", "--dry-run"))
     assert_ok(mdf(python_exe, "fact-audit", "--repo", str(repo), "--scope", "full"))
     if name == "logs":
-        assert any(outside.glob("*-doctor/meta.json"))
+        assert any(outside.glob("*-check/meta.json"))

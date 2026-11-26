@@ -60,7 +60,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 运行 `doctor`，核对已初始化 | doctor 结构化结果 | 2 | 未就绪则停 |
+| 1 | Check entry | 脚本 | 运行 `check --profile entry`，核对已初始化 | check entry 结构化结果 | 2 | 未就绪则停 |
 | 2 | Resolve bug | 脚本 | 用 `list` 查重并确认单个 Bug | list 结果、唯一对象 | 3 | 非 closed 命中则停；否则留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐行为、复现、影响及必填字段 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | Confirm | 约束 | 展示边界和排除范围，取得明确 open 确认 | 用户确认 | 5 | 未确认留 4；取消停；来源变 2；事实变 3 |
@@ -75,7 +75,7 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。
+解析 `REPO_ROOT` 并运行 `check --profile entry`。
 核对 `is_git_root: true`、`initialized: true`、`state: ready`。
 
 - 不将 `normal_workflows_allowed: true` 作为前置条件。
@@ -140,7 +140,7 @@
   - 须在 active Proposal 与 Bug 中唯一，且不得与对象 ID 同形。
 - 使用 `make-id --type bug --repo "$REPO_ROOT" --slug <slug>` 生成 ID 与规范化文件名。
   再以模板写入 `docs/bugs/`，状态为 `open`。
-- 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
+- 写入后运行 `check --repo "$REPO_ROOT" --profile objects --scope paths --document-path <对象路径>`。
   - 回读对象并对照模板、确认事实与完整 diff。
   - 核对 schema、必填章节、`open` 状态及 test 关联证据；空关联必须有用户明确确认。
   - 创建流程一并提交新增复现 test、关联记录与必要选题配置；github-flow 的混合路径走普通交付。

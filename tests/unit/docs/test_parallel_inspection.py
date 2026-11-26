@@ -136,12 +136,12 @@ def overlap(monkeypatch, module, names):
 
 
 def test_doctor_check_groups_overlap(monkeypatch, tmp_path):
-    from mdf_core.inspection import doctor
+    from mdf_core.inspection import strict_validation
 
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    overlap(monkeypatch, doctor, ["validate_jots", "validate_links"])
-    assert doctor.collect_findings(repo, full=True) == []
+    overlap(monkeypatch, strict_validation, ["validate_jots", "validate_links"])
+    assert strict_validation.collect_findings(repo) == []
 
 
 def test_evidence_documents_overlap(monkeypatch, tmp_path):
@@ -164,11 +164,11 @@ def test_evidence_documents_overlap(monkeypatch, tmp_path):
 
 
 def test_audit_structure_checks_overlap(monkeypatch, tmp_path):
-    from mdf_core.inspection import audit
+    from mdf_core.inspection import audit, check_engine
 
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    overlap(monkeypatch, audit, ["size_findings", "structure_findings"])
+    overlap(monkeypatch, check_engine, ["size_findings", "structure_findings"])
     payload, code = audit.audit_payload(repo, "full", [], [])
     assert code == 0
     assert payload["findings"] == []
@@ -176,7 +176,7 @@ def test_audit_structure_checks_overlap(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize("scope", ["full", "branch", "paths"])
 def test_parallel_and_serial_audit_payloads_match(scope, monkeypatch, tmp_path):
-    from mdf_core.inspection import audit, doctor, validate_evidence
+    from mdf_core.inspection import audit, check_engine, strict_validation, validate_evidence
 
     repo = copy_fixture(tmp_path)
     init_git(repo)
@@ -188,10 +188,10 @@ def test_parallel_and_serial_audit_payloads_match(scope, monkeypatch, tmp_path):
     documents = [document] if scope == "paths" else []
     audit_base = base if scope == "branch" else None
     parallel = audit.audit_payload(repo, scope, implementation, documents, audit_base)
-    parallel_doctor = doctor.collect_findings(repo, full=True)
-    for module in (audit, doctor, validate_evidence):
+    parallel_doctor = strict_validation.collect_findings(repo)
+    for module in (check_engine, strict_validation, validate_evidence):
         monkeypatch.setattr(module, "collect_parallel", serial_checks)
     assert audit.audit_payload(repo, scope, implementation, documents, audit_base) == parallel
-    assert doctor.collect_findings(repo, full=True) == parallel_doctor
+    assert strict_validation.collect_findings(repo) == parallel_doctor
     assert parallel[1] == 2
     assert "evidence.stale" in {finding["code"] for finding in parallel[0]["findings"]}

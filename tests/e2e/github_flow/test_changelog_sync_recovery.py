@@ -153,7 +153,7 @@ def test_synced_archive_links_use_published_tree(python_exe, tmp_path, crlf):
     findings = []
     collect_local_link_findings(pm, pm / "changes/1.2.1/CHANGE.md", findings)
     assert not findings
-    payload(mdf(python_exe, "doctor", "--repo", str(pm)))
+    payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(pm)))
     # 未发布的改写不能借用 tag 的历史链接豁免。
     path = pm / "changes/1.2.1/CHANGE.md"
     path.write_text(path.read_text() + "\n[缺失](../../not-published.txt)\n")
@@ -182,7 +182,7 @@ def test_support_baseline_does_not_follow_parallel_trunk_release(python_exe, tmp
     findings = []
     validate_release_history(pm, load_manifest(pm), findings)
     assert not findings
-    payload(mdf(python_exe, "doctor", "--repo", str(pm)))
+    payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(pm)))
 
 
 def test_active_sync_finishes_after_trunk_switches_to_local(python_exe, tmp_path, monkeypatch):

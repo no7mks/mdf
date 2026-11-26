@@ -7,7 +7,6 @@ from pathlib import Path
 from mdf_core.commands_misc import (
     command_archive,
     command_branch,
-    command_doctor,
     command_info,
     command_init,
     command_make_id,
@@ -16,7 +15,7 @@ from mdf_core.commands_misc import (
     command_validate,
 )
 from mdf_core.inspection.audit import command_audit, command_fact_record_full
-from mdf_core.inspection.doc_size import command_prose_check
+from mdf_core.inspection.check_engine import PROFILES, command_check
 from mdf_core.lifecycle.commands_release import command_release_closeout
 from mdf_core.foundation.errors import MDFError
 from mdf_core.execution.run_logs import RunLog, command_run
@@ -48,9 +47,16 @@ def build_parser() -> argparse.ArgumentParser:
     rules.add_argument("--stage", choices=RULE_STAGES, required=True)
     rules.set_defaults(func=command_project_rules)
 
-    doctor = subparsers.add_parser("doctor")
-    doctor.add_argument("--repo", required=True)
-    doctor.set_defaults(func=command_doctor)
+    check = subparsers.add_parser("check")
+    check.add_argument("--repo", required=True)
+    check.add_argument("--profile", choices=PROFILES, default="dev")
+    check.add_argument("--scope", choices=("full", "branch", "paths"))
+    check.add_argument("--base")
+    check.add_argument("--against")
+    check.add_argument("--implementation-path", action="append", default=[])
+    check.add_argument("--document-path", action="append", default=[])
+    check.add_argument("--only")
+    check.set_defaults(func=command_check)
 
     from mdf_core.workspace.git_ops import command_merge_no_ff, command_prepare_git
 
@@ -82,9 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = subparsers.add_parser("validate")
     validate.add_argument("--repo", required=True)
-    validate.add_argument(
-        "--level", choices=("basic", "strict"), default="basic"
-    )
+    validate.add_argument("--level")
     validate.set_defaults(func=command_validate)
 
     audit = subparsers.add_parser("fact-audit")
@@ -111,11 +115,6 @@ def build_parser() -> argparse.ArgumentParser:
     fact_record.add_argument("--repo", required=True)
     fact_record.add_argument("--head", required=True)
     fact_record.set_defaults(func=command_fact_record_full)
-
-    prose = subparsers.add_parser("prose-check")
-    prose.add_argument("--repo", required=True)
-    prose.add_argument("--path", action="append", default=[])
-    prose.set_defaults(func=command_prose_check)
 
     make_id = subparsers.add_parser("make-id")
     make_id.add_argument(
@@ -539,7 +538,12 @@ def _drift(args) -> None:
 
 
 def _run(argv: list[str], log: RunLog) -> int:
-    args = build_parser().parse_args(argv)
+    try:
+        args = build_parser().parse_args(argv)
+    except SystemExit as exc:
+        if exc.code == 2 and argv and argv[0] in {"check", "validate", "fact-audit"}:
+            return _failure("invalid_arguments", "命令参数无效", None, log)
+        raise
     args.log_path = log.path
     _drift(args)
     try:

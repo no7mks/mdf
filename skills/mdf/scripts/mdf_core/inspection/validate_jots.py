@@ -14,7 +14,7 @@ ENTRY_RE = re.compile(
 )
 
 
-def validate_jots(repo: Path, findings: list[Finding]) -> None:
+def validate_jots(repo: Path, findings: list[Finding], *, scan=None) -> None:
     path = repo / "docs/JOTS.md"
     relative = "docs/JOTS.md"
     if not path.exists() and not path.is_symlink():

@@ -203,7 +203,7 @@ def test_start_uses_local_base_without_upstream(
         assert identity["branch"] == result["branch"]
         assert identity["start_commit"] == result["start_commit"]
         if kind == "release":
-            doctor = payload(mdf(python_exe, "doctor", "--repo", str(work)))
+            doctor = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(work)))
             assert doctor["findings"] == []
     assert git(work, "rev-parse", "HEAD").stdout.strip() == expected
     tracking = run(["git", "rev-parse", "--abbrev-ref", "@{upstream}"], cwd=work)
@@ -223,7 +223,7 @@ def test_preview_then_committed_closeout_can_finish_without_reapplying(
     else:
         repo = copy_fixture(tmp_path)
         replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: fixed")
-        init_git(repo)
+        init_git(repo, previous_release=True)
         git(repo, "branch", "master")
         git(repo, "branch", "develop")
         version = "1.2.1"

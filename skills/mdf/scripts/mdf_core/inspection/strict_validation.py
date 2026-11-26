@@ -6,6 +6,7 @@ from mdf_core.foundation.progress import (
     progress, register_progress_groups, report_count, report_progress, skip_progress_group,
 )
 from mdf_core.inspection.parallel import collect_parallel
+from mdf_core.inspection.scan_context import RepoScanContext
 from mdf_core.inspection.validate_changes import validate_changes
 from mdf_core.inspection.validate_evidence import validate_agents_block, validate_evidence
 from mdf_core.inspection.validate_jots import validate_jots
@@ -26,16 +27,44 @@ def collect_uninitialized_findings(repo: Path) -> list[Finding]:
     report_progress("契约检查计划", "共 1 个检查组：未初始化布局")
     report_count("契约检查", 0, 1)
     with progress("契约：未初始化布局"):
+        validate_managed_symlinks(repo, findings)
         validate_layout(repo, findings)
     report_count("契约检查", 1, 1)
     return findings
 
 
-def collect_findings(
-    repo: Path,
-    *,
-    full: bool,
-) -> list[Finding]:
+def validate_managed_symlinks(repo, findings):
+    for path in managed_symlinks(repo):
+        add_finding(
+            findings,
+            "path.symlink",
+            ("本地产物目录为 symlink；允许继续工作，过期清理跳过此目录"
+             if is_local_artifact_root(repo, path) else "MDF-managed paths must not be symbolic links"),
+            path.relative_to(repo).as_posix(),
+            severity="warning" if is_local_artifact_root(repo, path) else "error",
+        )
+
+
+
+def validate_control(repo: Path, findings: list[Finding], *, documents=None, paths=None, scan=None):
+    validate_managed_symlinks(repo, findings)
+    manifest = validate_manifest(repo, findings, documents=documents, scan=scan)
+    validate_modules(repo, findings, paths=paths, scan=scan)
+    validate_layout(repo, findings, scan=scan)
+    validate_agents_block(repo, findings, scan=scan)
+    if manifest and manifest.get("state") != "ready":
+        add_finding(
+            findings,
+            "manifest.initializing",
+            "manifest 未 ready 前使用 $mdf init 或 $mdf migrate；"
+            "符合新仓库条件时可用 $mdf bootstrap",
+            ".mdf/manifest.yaml",
+        )
+    return manifest
+
+
+def collect_findings(repo: Path) -> list[Finding]:
+    """IG strict 的固定规则集与 severity 判定。"""
     findings: list[Finding] = []
     report_progress(
         "契约检查计划",
@@ -44,19 +73,8 @@ def collect_findings(
     )
     report_count("契约检查", 0, 5)
     with progress("契约：配置、布局与 Agent 控制面"):
-        for path in managed_symlinks(repo):
-            add_finding(
-                findings,
-                "path.symlink",
-                ("本地产物目录为 symlink；允许继续工作，过期清理跳过此目录"
-                 if is_local_artifact_root(repo, path) else "MDF-managed paths must not be symbolic links"),
-                path.relative_to(repo).as_posix(),
-                severity="warning" if is_local_artifact_root(repo, path) else "error",
-            )
-        manifest = validate_manifest(repo, findings)
-        validate_modules(repo, findings)
-        validate_layout(repo, findings)
-        validate_agents_block(repo, findings)
+        manifest = validate_control(repo, findings)
+    initializing = findings.pop() if findings and findings[-1].code == "manifest.initializing" else None
     report_count("契约检查", 1, 5)
 
     def objects() -> list[Finding]:
@@ -82,9 +100,11 @@ def collect_findings(
         validate_release_history(repo, manifest, result)
         return result
 
+    scan = RepoScanContext(repo, include_ignored=True)
+
     def evidence() -> list[Finding]:
         result: list[Finding] = []
-        validate_evidence(repo, result, check_staleness=full)
+        validate_evidence(repo, result, check_staleness=True, scan=scan)
         return result
 
     findings.extend(collect_parallel([
@@ -93,12 +113,6 @@ def collect_findings(
         ("契约：发布历史", releases),
         ("契约：事实文档与 evidence", evidence),
     ], label="契约检查", completed_before=1))
-    if manifest and manifest.get("state") != "ready":
-        add_finding(
-            findings,
-            "manifest.initializing",
-            "manifest 未 ready 前使用 $mdf init 或 $mdf migrate；"
-            "符合新仓库条件时可用 $mdf bootstrap",
-            ".mdf/manifest.yaml",
-        )
+    if initializing:
+        findings.append(initializing)
     return findings

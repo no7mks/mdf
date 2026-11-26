@@ -52,7 +52,7 @@ def test_new_project_can_reach_ready_without_fact_pages_or_remote(
     assert [item["code"] for item in findings] == ["manifest.initializing"]
     # 模拟调用方取得启用确认后的状态写入，不调用 fact-audit。
     replace(repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready")
-    payload(mdf(python_exe, "validate", "--repo", str(repo), "--level", "basic"))
+    payload(mdf(python_exe, "check", "--profile", "objects", "--repo", str(repo)))
     git(repo, "add", "--", ".mdf/manifest.yaml")
     git(repo, "commit", "-m", "chore: 启用 MDF 工作流")
     git(repo, "branch", "develop", "master")

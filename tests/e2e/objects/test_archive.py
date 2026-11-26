@@ -127,7 +127,7 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     )
     proposal.write_text(
         proposal.read_text(encoding="utf-8")
-        + f'\n[Known bug](../bugs/{BUG_NAME}#impact "Regression context")\n',
+        + f'\n[Known bug](../bugs/{BUG_NAME}#观察到的行为 "Regression context")\n',
         encoding="utf-8",
     )
     init_git(repo)
@@ -161,7 +161,7 @@ def test_archive_dry_run_then_moves_closed_item_and_rewrites_links(
     assert archived.is_file()
     assert not proposal.exists()
     archived_text = archived.read_text(encoding="utf-8")
-    assert f'[Known bug](../../../bugs/{BUG_NAME}#impact "Regression context")' in archived_text
+    assert f'[Known bug](../../../bugs/{BUG_NAME}#观察到的行为 "Regression context")' in archived_text
 
     reference = (
         repo / "docs" / "user-guide" / "README.md"

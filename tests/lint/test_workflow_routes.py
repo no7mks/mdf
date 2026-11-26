@@ -62,7 +62,7 @@ def test_workflows_have_one_complete_table_and_matching_unicode_steps():
                 "contract-switch.md",
     }
     workflows = [p for p in documents if p.name not in nonprocedural]
-    assert len(workflows) == 64
+    assert len(workflows) == 65
     assert not (root / "intents").exists()
     for path in workflows:
         text = path.read_text(encoding="utf-8")
@@ -113,7 +113,7 @@ def test_archive_preview_is_terminal_and_apply_requires_non_preview():
 def test_init_accepts_initializing_at_entry_before_readiness_gate():
     text = workflow("migrate")
     entry = text.split('<a id="s1"></a>', 1)[1].split('<a id="s2"></a>', 1)[0]
-    assert "doctor finding 不是拒绝理由" in entry
+    assert "check entry finding 不是拒绝理由" in entry
     assert "全部 finding 记入盘点清单，由步骤 3 逐项处置" in entry
     assert "非本地产物目录的纳管路径 `path.symlink`）报告后停止" in entry
     assert "依 `SKILL.md`「用户确认」接受 yes 等明确肯定答复后收口" in text
@@ -178,17 +178,17 @@ def test_initialization_and_init_have_explicit_reaudit_routes():
 def test_fact_audit_failure_returns_without_advancing_the_caller():
     text = workflow("fact-audit")
     assert "unverified" not in text
-    assert rows(text)[6][6] == "报告未通过；独立结束，委托返回"
+    assert rows(text)[5][6] == "报告未通过；独立结束，委托返回"
     diagram = text.split("```text\n", 1)[1].split("```", 1)[0]
     assert re.search(r"未通过且独立调用 ─+→ \[报告未通过并结束\]", diagram)
     assert re.search(r"未通过且内部委托 ─+→ \[返回未通过，调用方走失败分支\]", diagram)
-    result = compact(text.split('<a id="s7"></a>', 1)[1])
+    result = compact(text.split('<a id="s6"></a>', 1)[1])
     for condition in ("存在未豁免error或语义finding", "未完成处置的warning", "应复核但未触及的项"):
         assert condition in result
     assert "阻断原因与未完成项" in result
     assert "不得推进依赖审阅通过的步骤" in result
     assert "不自行修复或自动重试" in result
-    assert rows(text)[6][1] == "Report result"
+    assert rows(text)[5][1] == "Report result"
     assert "无需用户确认" in result
     assert "warning由执行者依据evidence逐条处置" in result
     for name in ("fact-audit", "fact-update", "close-out", "adhoc", "adhoc-change",
@@ -204,7 +204,7 @@ def test_fact_audit_failure_returns_without_advancing_the_caller():
 
 def test_bug_create_checks_ready_without_blocking_stale_docs():
     text = workflow("bug-create")
-    assert rows(text)[0][3] == "运行 `doctor`，核对已初始化"
+    assert rows(text)[0][3] == "运行 `check --profile entry`，核对已初始化"
     assert rows(text)[0][6] == "未就绪则停"
     assert "不将 `normal_workflows_allowed: true` 作为前置条件" in text
     assert "evidence.stale" in text
@@ -214,7 +214,7 @@ def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
     text = workflow("fact-update")
     entry = text.split("### 范围与写入边界", 1)[1].split("支持用户独立调用", 1)[0]
     assert rows(text)[0][6] == "写入前停止并报告"
-    assert '任何写入或提交前运行 `doctor --repo "$REPO_ROOT"`' in entry
+    assert '任何写入或提交前运行 `check --profile entry --repo "$REPO_ROOT"`' in entry
     for field in ("is_git_root: true", "initialized: true", "state: ready"):
         assert field in entry
     assert "独立调用与主链委托均须满足" in entry
@@ -412,8 +412,8 @@ def test_init_entry_is_read_only_and_existing_git_runs_doctor():
     assert "转入前不写入 `.git/`" in text
     assert "内部执行 bootstrap 或 migrate" in text
     migrate = workflow("migrate")
-    assert "入口一律运行 doctor" in migrate
-    assert "可运行 doctor" not in migrate
+    assert "入口一律运行 check entry" in migrate
+    assert "可运行 check entry" not in migrate
     table = rows(migrate)
     assert table[0][2] == "约束"
     assert table[0][3] == "只读判定分流"

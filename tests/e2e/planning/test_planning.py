@@ -218,7 +218,7 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
     for name in (PRP_NAME, "prp-0003-part-0003.md", "prp-0004-part-0004.md"):
         metadata, _ = read_frontmatter(work / "docs/proposals" / name)
         assert metadata.get("milestone") == milestone
-    assert_ok(mdf(python_exe, "validate", "--repo", str(work)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(work), "--level", "strict"))
 
 
 @pytest.mark.parametrize("value", ['"first-purchase"', '"首次购买"', '"prp-0001"',
@@ -226,7 +226,7 @@ def test_split_preview_then_transaction_and_downstream(python_exe, tmp_path, mil
 def test_proposal_optional_milestone_validation(python_exe, tmp_path, value):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    args = ["validate", "--repo", str(repo)]
+    args = ["validate", "--repo", str(repo), "--level", "strict"]
     assert_ok(mdf(python_exe, *args))
     replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []",
             f"depends_on: []\nmilestone: {value}")
@@ -280,7 +280,7 @@ def test_implemented_dependencies_unlock_next_and_replaced_relations_validate(py
     source = repo / "docs/proposals" / PRP_NAME
     source.write_text(source.read_text().replace("status: implemented", "status: replaced")
                       .replace("depends_on: []", "depends_on: []\nreplaced_by: [prp-0099, prp-0009]"))
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert "proposal.replaced_by" in result.stdout
 
 

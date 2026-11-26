@@ -118,6 +118,7 @@
 - `$mdf archive`：归档终态 Proposal 及 closed/rejected Bug
 - `$mdf fact audit [<path>...] [--scope branch|full|paths]`：只读审阅覆盖、证据、语义与文档结构；
   主链在 verify branch 之后、close-out 之前
+- `$mdf check [<path>...] [--scope full|branch|paths]`：运行静态检查
 - `$mdf prettify [<path>...] [--scope branch|full|paths]`：把文档改写为列表、表格与图，不改语义
 - `$mdf upgrade [--source <url>]`：替换本项目的 MDF 本体并发布项目引导
 - `$mdf to <target>`：进 worktree（`plan`/`develop`/`deploy`）
@@ -192,7 +193,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
   `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`；
   `catch-up`、`consolidate`、`merge`、`publish`、`sync-changelog`、`incremental-integration`、`pr`、`close-out`
-- 维护：`archive`、`fact audit`、`prettify`、`upgrade`；
+- 维护：`check`、`archive`、`fact audit`、`prettify`、`upgrade`；
   `to`、`dev-pr`、`trunk-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
   - 用法：`$mdf bootstrap`
@@ -225,7 +226,7 @@ $mdf clarify 要不要把缓存放到 Redis
 - `$mdf bug create`
   - 用法：`$mdf bug create`
   - 用途：按已确认内容手动创建一个 open Bug。
-  - 说明：一次只创建一个对象；外部来源应走 intake。不要求 doctor 零 finding。
+  - 说明：一次只创建一个对象；外部来源应走 intake。不要求 check entry 零 finding。
 - `$mdf prp create`
   - 用法：`$mdf prp create`
   - 用途：按已确认内容手动创建一个 draft Proposal。
@@ -403,10 +404,14 @@ $mdf clarify 要不要把缓存放到 Redis
   - `--scope branch`：resolve-base 后等同 against；`--quick` 只跳过 LLM，不换工作对象。
   - 用途：只读审阅覆盖、证据、语义与加载质量。
   - 说明：不执行 `verification`；`size.hard` 阻断。主链 release base 为上一正式发布。
+- `$mdf check`
+  - 用法：`$mdf check [<path>...] [--scope full|branch|paths]`
+  - 说明：默认检查 branch。传入路径时检查 paths；报告 blocking 与 advisory findings。
+
 - `$mdf prettify`
   - 用法：`$mdf prettify [<path>...] [--scope branch|full|paths]`（省略为 branch）
   - 用途：按 `doc-structure.md` 改写为大列表/表格/图，不改语义。
-  - 说明：`prose-check` 零违例、validate 无新增 finding 且逐份对照语义后提交。
+  - 说明：`check` 结构零违例、链接 findings 无新增 且逐份对照语义后提交。
 - `$mdf upgrade`
   - 用法：`$mdf upgrade [--source <url>]`
   - 用途：预览并安装本项目的 MDF 本体及 `.agents/skills/mdf` 引导。自检失败时旧版本目录和项目引导不变。

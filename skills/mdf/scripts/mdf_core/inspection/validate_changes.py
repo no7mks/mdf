@@ -8,7 +8,7 @@ from mdf_core.inspection.validate_change_schema import validate_change_file, val
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
-def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None) -> None:
+def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None, scan=None) -> None:
     root = repo / "changes"
     if (
         not root.is_dir()
@@ -16,10 +16,16 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
         or not path_stays_in_repo(repo, root)
     ):
         return
+    def present(path):
+        return path.is_file() and (scan is None or scan.contains(path))
+
+    def included(path):
+        return scan is None or scan.contains(path) or not scan.ignored_directory(path)
+
     for directory in sorted(
         path
         for path in root.iterdir()
-        if path.is_dir()
+        if path.is_dir() and included(path)
         and not path.is_symlink()
         and path_stays_in_repo(repo, path)
     ):
@@ -29,7 +35,7 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             for change_dir in sorted(
                 path
                 for path in directory.iterdir()
-                if path.is_dir()
+                if path.is_dir() and included(path)
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             ):
@@ -50,7 +56,7 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
                 review = change_dir / "code-review.md"
                 if semver:
                     identity = change_dir / "delivery.json"
-                    if not identity.is_file() and not review.is_file():
+                    if not present(identity) and not present(review):
                         add_finding(
                             findings,
                             "change.missing",
@@ -63,14 +69,14 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
                 identity = change_dir / "delivery.json"
                 # start 写入身份；CHANGE.md 到 finish 才补齐。
                 # bugfix 可在补齐 CHANGE.md 前先写入 code-review.md。
-                if change.is_file():
+                if present(change):
                     validate_change_file(
                         repo,
                         change,
                         findings,
                         expected_slug=change_dir.name,
                     )
-                elif not identity.is_file() and not review.is_file():
+                elif not present(identity) and not present(review):
                     add_finding(
                         findings,
                         "change.missing",
@@ -87,7 +93,7 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             )
             continue
         release = directory / "CHANGE.md"
-        if not release.is_file():
+        if not present(release):
             add_finding(
                 findings,
                 "release.missing",
@@ -106,7 +112,7 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             child_dirs = sorted(
                 path.name
                 for path in directory.iterdir()
-                if path.is_dir()
+                if path.is_dir() and included(path)
                 and not path.is_symlink()
                 and path_stays_in_repo(repo, path)
             )
@@ -138,7 +144,7 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
             }
             for child_dir in child_dirs:
                 child = directory / child_dir / "CHANGE.md"
-                if not child.is_file():
+                if not present(child):
                     continue
                 try:
                     child_metadata, _ = read_frontmatter(child)
@@ -174,12 +180,12 @@ def validate_changes(repo: Path, findings: list[Finding], *, paths: set[Path] | 
         for change_dir in sorted(
             path
             for path in directory.iterdir()
-            if path.is_dir()
+            if path.is_dir() and included(path)
             and not path.is_symlink()
             and path_stays_in_repo(repo, path)
         ):
             change = change_dir / "CHANGE.md"
-            if not change.is_file():
+            if not present(change):
                 if paths is None or release in paths or any(
                     p == change_dir or change_dir in p.parents for p in paths
                 ):

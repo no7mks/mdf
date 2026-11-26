@@ -51,7 +51,7 @@ PR 恢复优先：按 [PR 的恢复路由](pr.md) 核原 source 的 Git 和平�
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Resolve | 约束 | 先核 PR 恢复；否则核目标、work 与 ready | 记录或上下文、doctor | PR 委托并返回；其余2 | 范围不明询问；其余停 |
+| 1 | Resolve | 约束 | 先核 PR 恢复；否则核目标、work 与 ready | 记录或上下文、check entry | PR 委托并返回；其余2 | 范围不明询问；其余停 |
 | 2 | Prepare | 脚本 | 复用已知 owner，或自动命名创建；运行 adhoc-status | 身份、work、绝对路径 | 3 | 保留现场并报告 |
 | 3 | Select | 脚本 | adhoc-status 按模式选下一项 | 身份、材料模式、Git | 未完 4；完成或无增量结束 | 身份或账本不符则停 |
 | 4 | Execute | 约束 | 按阶段表执行并交接 | 产物、账本、缺项 | 收尾清理结束；其他直调 3；委托返回 | 补前置同路由；阻塞交接 |
@@ -84,7 +84,7 @@ PR mode 前置全勾后按 [PR 恢复路由](pr.md#恢复路由与返工上下�
   - detached 现场必须有上下文已知 slug；缺失或不能证明收口时停止，不猜测身份或重新 start。
   - 用户明确发起不同新工作且旧工作已完成时，用返回的 primary_worktree 新建。
     不复用旧目标或工作区。
-- 新建或续办未完成工作时运行 doctor 与 branch。
+- 新建或续办未完成工作时运行 check entry 与 branch。
   要求 ready、`normal_workflows_allowed: true`。
   - 新建前核对本地基线。gitflow 使用 develop，github-flow 使用 trunk。
   - 原 worktree 有未提交改动时按 [start](start.md#s4) 提示并继续，改动留在原处。

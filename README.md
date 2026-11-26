@@ -74,6 +74,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf verify [arg]` | module 级验证；开发用 smart，closeout 前用 branch |
 | `$mdf lint` | 运行统一 lint：代码规模与项目工具检查 |
 | `$mdf code-review` | 审查并修复实现、测试和 code smell |
+| `$mdf check [<path>...] [--scope full\|branch\|paths]` | 按范围运行静态检查 |
 | `$mdf fact update [<path>...] [--scope branch\|full\|paths]` | 按实现对齐当前事实，再修范围内文档结构；closeout 在 verify branch 之后 |
 | `$mdf dev-pr [<slug>]` | 将 develop 未共享工作移到 adhoc，检查通过后创建 PR |
 | `$mdf trunk-pr [<slug>]` | 接管 github-flow 的本地 trunk 提交，纯项目记录走 `pm/*`，其余走 `adhoc/*`，再经 PR |
@@ -188,7 +189,7 @@ fact audit 共用核：`resolve-base → diff → must-cover → stale → uncov
 - `$mdf fact audit --scope branch`：resolve-base 后等同 against。
 - `$mdf fact audit --quick`：只跳过 LLM；不换工作对象；可与 `--against` / scope 组合。
 - 交付主链复用同一核并写 `fact-audit.md` / 勾选；见 [交付事实审阅](skills/mdf/references/fact-audit-delivery.md)。
-- CI 可用 `mdf.py fact-audit --repo <repo> --quick --scope full` 或 `--quick --against <sha>`；
+- CI 可用 `mdf.py fact-audit --repo <repo> --quick --against <sha>`；
   退出码 0 通过、2 为 finding；需要完整 Git history。
 
 ### close-out 与 deliver
@@ -276,7 +277,7 @@ gitflow 的规划写入共用一个 `planning` 分支与 worktree。
 MDF 仅实现当前契约：不识别、维护或兼容历史 Skill、目录或调用形式。
 
 - 协议、工具与 schema 版本均为数字 `3`。
-- manifest 或 `docs/` 布局不符合当前契约时，doctor 只给出指向 `$mdf migrate` 的 finding。
+- manifest 或 `docs/` 布局不符合当前契约时，check entry 只给出指向 `$mdf migrate` 的 finding。
   - 由 migrate 一次性收敛，不提供旧版运行分支。
 - init、bootstrap 与 migrate 都负责项目 Git 化，准备本地 master/develop，不强制远端。
 - bootstrap 不搭建业务工程或测试，也不调用 fact audit。

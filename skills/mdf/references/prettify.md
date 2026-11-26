@@ -51,9 +51,9 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Resolve scope | 约束 | 解析参数与文档清单 | 分支、文档清单 | 有清单则 2；空则结束 | 冲突则询问；否则停 |
-| 2 | Check | 脚本 | 记基线并运行 prose-check | 基线、违例、审阅发现 | 有待改写 3；否则报告结束 | 输出失败则停止报告 |
+| 2 | Check | 脚本 | 记录链接基线并定位结构问题 | 基线、违例、审阅发现 | 有待改写 3；否则报告结束 | 输出失败则停止报告 |
 | 3 | Rewrite | 约束 | 逐份结构化改写，不改语义 | 改写后的文档、改写次数 | 4 | 语义不明则停止询问 |
-| 4 | Verify | 脚本 | 复跑两项检查并对照语义 | 零违例、不新增 finding、语义对照 | 5 | 未过且不足两次回 3；否则停止报告 |
+| 4 | Verify | 脚本 | 复跑同一检查并对照语义 | 零违例、不新增 finding、语义对照 | 5 | 未过且不足两次回 3；否则停止报告 |
 | 5 | Record | 约束 | 提交本次改写并报告 | 提交、改写清单 | 结束 | 停止并报告 |
 
 `$mdf prettify [<path>...] [--scope branch|full|paths]` 执行本流程。
@@ -80,8 +80,8 @@
   - 没有时取 git config `branch.<owner 分支>.mdf-start-commit`，再没有则取 `git merge-base develop HEAD`。
   - 取不到起点时停止并报告。
   - 用 `git diff --name-only <base>`（含未提交改动）与 `git ls-files --others --exclude-standard` 列出改动。
-  - 从中筛出仍存在、带角色且不在下方「不改」之列的 Markdown，逐个作为 `--path`。
-  - 清单为空时报告「无待美化文档」并结束，不调用 `prose-check`。
+  - 从中筛出仍存在、带角色且不在下方「不改」之列的 Markdown，逐个作为 `--document-path`。
+  - 清单为空时报告「无待美化文档」并结束，不调用 `check`。
 - 步骤 1 拒绝不允许的路径：`docs/JOTS.md`、非 Markdown 或仓库外路径。
   - 显式列出这类路径时停止并报告，不静默跳过。
   - full 与 branch 的自动清单选取 Markdown 文件。
@@ -97,17 +97,12 @@
 
 ### 检查与改写
 
-先记录 validate 基线，再用 CLI 列出硬限制违例，最后按审阅规则找出需要结构化的段落。
+使用同一文档清单检查结构和链接。
 
-- 运行 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT"`，记录基线 finding code。
-- 运行 `python3 "$MDF_ROOT/scripts/mdf.py" prose-check --repo "$REPO_ROOT"`。
-  - 所有 scope 都按步骤 1 的 Markdown 清单逐个附加 `--path`，不使用 CLI 默认全库范围。
-  - 清单为空时不调用，禁止退化成全库检查。
-- ⚠️ 两个命令有 finding 或违例时退出码为 2：
-  - 退出码 2 且输出可解析的 JSON payload，表示有 finding 或违例，按 payload 继续。
-  - 仅退出码 0 或 2 且对应命令的结构化结果完整时继续。
-  - 退出 2 且仅因 findings/违例而 `ok:false` 仍按检查结果处理，不单独视为工具错误。
-  - 其他退出码、含 `error` 而无检查结果的错误 envelope、缺预期字段、无输出或不可解析均失败。
+- 运行 `check --repo "$REPO_ROOT" --profile dev --scope paths --only prose,links`。
+- 为每份 Markdown 附加一个 `--document-path`。清单为空时结束。
+- 退出码 2 时解析 `findings`，保留链接 findings 基线并定位结构违例。
+
 - 必须按 `doc-structure.md` 的硬限制、超限后的 70% 拆分要求与内容形态改写，不得当作可选审阅。
 - 同时按 `doc-structure.md` 的 ASD-STE100 写作约定简化表达并人工复核，保持下方语义不变。
 - 违例全部属于 `AGENTS.md` 托管区块且审阅无发现时，无待改写文档，报告模板问题后结束。
@@ -132,9 +127,7 @@
 
 改写后用确定性检查与逐份对照两层确认；步骤 3 最多执行两次。
 
-- 复跑 `prose-check`，范围内除 `AGENTS.md` 托管区块外零违例；退出码 2 按上方规则解析。
-- 复跑 `validate --repo "$REPO_ROOT"`，与步骤 2 基线相比不新增 finding code；
-  退出码 2 且可解析时按 payload 比较。
+- 复跑步骤 2 的 `check`。要求结构零违例、链接 findings 无新增。
 - 逐份对照改写前后的 diff，列出每条原有规则在新文本中的位置；缺失即语义丢失。
 - 仍有违例、新增 finding 或语义丢失即未通过：
   - 改写不足两次时回步骤 3。

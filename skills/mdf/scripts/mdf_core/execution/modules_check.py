@@ -20,10 +20,10 @@ from mdf_core.execution.verification import DEFAULT_BUDGETS, SUITES
 
 
 def validate_modules(
-    repo: Path, findings: list[Finding], *, paths: set[Path] | None = None,
+    repo: Path, findings: list[Finding], *, paths: set[Path] | None = None, scan=None,
 ) -> ModulesConfig | None:
     path = modules_path(repo)
-    if not path.is_file():
+    if not path.is_file() or (scan is not None and not scan.contains(path)):
         add_finding(
             findings,
             "modules.missing",
@@ -51,7 +51,7 @@ def validate_modules(
             _validate_sourceset(module, findings)
             _validate_suite_inclusion(module, tracked, findings)
         _validate_named_docs(
-            repo, module, findings, paths=paths, playbook_suites=playbook_suites, playbook_errors=playbook_errors,
+            repo, module, findings, paths=paths, playbook_suites=playbook_suites, playbook_errors=playbook_errors, scan=scan,
         )
     return config
 
@@ -215,6 +215,7 @@ def _validate_named_docs(
     repo: Path, module: Module, findings: list[Finding], *, paths: set[Path] | None = None,
     playbook_suites: set[str] = frozenset(),
     playbook_errors: dict[str, list[str]] | None = None,
+    scan=None,
 ) -> None:
     from mdf_core.foundation.yamlutil import read_frontmatter
     from mdf_core.execution.verification import parse_named_commands
@@ -224,7 +225,7 @@ def _validate_named_docs(
         path = repo / rel
         if paths is not None and path not in paths and modules_path(repo) not in paths:
             continue
-        if not path.is_file() or path.is_symlink():
+        if not path.is_file() or path.is_symlink() or (scan is not None and not scan.contains(path)):
             add_finding(
                 findings,
                 "modules.named_doc",

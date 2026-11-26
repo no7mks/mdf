@@ -10,11 +10,11 @@
 │ 1 Check entry                    │
 └────────────────┬─────────────────┘
                  │
-                 ├──── doctor 通过且 jot promote ────→ 4 Select jot
-                 ├──── 未知子动作 ───────────────────→ [停止]
-                 ├──── doctor 失败 ──────────────────→ [停止]
+                 ├──── check entry 通过且 jot promote ────→ 4 Select jot
+                 ├──── 未知子动作 ────────────────────────→ [停止]
+                 ├──── check entry 失败 ──────────────────→ [停止]
                  │
-                 ▼ doctor 通过且 jot
+                 ▼ check entry 通过且 jot
 ┌──────────────────────────────────┐
 │ 2 Read input                     │
 └────────────────┬─────────────────┘
@@ -81,7 +81,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 运行 `doctor`；按追加或提升分流 | 允许正常流程 | 追加 2；提升 4 | 未知或 doctor 失败则停 |
+| 1 | Check entry | 脚本 | 运行 `check --profile entry`；按追加或提升分流 | 允许正常流程 | 追加 2；提升 4 | 未知或 check entry 失败则停 |
 | 2 | Read input | 约束 | 取得一条完整原文，不预判类型 | 完整输入 | 3 | 留在 2 询问 |
 | 3 | Append | 脚本 | 生成 ID，追加完整 marker 并 basic 校验 | 条目、校验、diff | 结束 | 保留现场，停止 |
 | 4 | Select jot | 约束 | 按 jot-ID 读取唯一条目的完整 marker | 唯一 ID 与原文 | 5 | 留在 4 消歧 |
@@ -98,7 +98,7 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。
+解析 `REPO_ROOT` 并运行 `check --profile entry`。
 
 验收：`normal_workflows_allowed: true`。
 
@@ -254,3 +254,7 @@
 - 将本次创建与移除作为同一个独立 commit，按 [项目记录](common.md#项目记录) 的模式矩阵或 Bug 的写入归属提交。
 - 提交或收口失败时保留现场，报告已完成的步骤。
 - Proposal 已提交到写入分支后，提示用户显式调用 `$mdf prp review`。
+
+Jot 追加后用 `check --repo "$REPO_ROOT" --profile objects` 检查对象约束。
+提升后，对每个变更的 PRP 或 Bug 传入一个 `--document-path`，
+运行 `check --repo "$REPO_ROOT" --profile objects --scope paths`。

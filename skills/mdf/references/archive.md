@@ -51,7 +51,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check epoch | 约束 | 校验 RELEASE_EPOCH 为精确 MAJOR.MINOR | 有效 epoch | 2 | 首次缺询问回 1；仍缺或无效停 |
-| 2 | Check entry | 脚本 | 在目标根运行 `doctor`，确认 ready | doctor 结果 | 3 | 停止 |
+| 2 | Check entry | 脚本 | 在目标根运行 `check --profile entry`，确认 ready | check entry 结果 | 3 | 停止 |
 | 3 | Preview | 脚本 | 仅预览请求：确认 clean 并运行 dry-run | 预览结果或非预览跳过 | 预览结束；非预览 4 | 停止 |
 | 4 | Check group | 脚本 | 用 `list` 列终态对象，核对 duplicate/canonical 完整组 | list 结果、archive group | 5 | 停止 |
 | 5 | Archive | 脚本 | 确认 clean，归档、全量校验并复核提交 | 产物、零 finding、diff | 结束 | 保留现场，停止 |
@@ -73,7 +73,7 @@
 
 **入口**
 
-解析 `REPO_ROOT`、运行 `doctor --repo "$REPO_ROOT"`。
+解析 `REPO_ROOT`、运行 `check --profile entry --repo "$REPO_ROOT"`。
 
 验收：`normal_workflows_allowed: true`。
 
@@ -117,7 +117,7 @@
 - 非预览操作前按公共规则确认工作区 clean。github-flow 的独立归档在 trunk 准备。
   - 范围不明或存在无关改动时澄清，不夹带提交。
 - 仅非预览调用授权运行 `archive --repo "$REPO_ROOT" --epoch "$RELEASE_EPOCH"`。
-  - 之后运行 `validate --repo "$REPO_ROOT" --level strict`。
+  - CLI 在锁内检查输入与归档后的改动范围，写后使用新扫描。
 - 验收：对象、`moves`、`rewrites` 数量与 validation。
 - 异常与交接：
   - `duplicate_group_open` 时停止且不得单独移动。

@@ -40,7 +40,7 @@ def test_mdf_is_the_only_public_skill_and_dispatches_commands() -> None:
         "prp create",
         "prp review",
         "archive", "catch-up", "consolidate", "merge", "publish", "sync-changelog", "incremental-integration", "pr", "close-out", "squash [--dry-run]",
-        "fact audit",
+        "check", "fact audit",
         "prettify",
         "fact update",
         "design", "write-tests", "implement", "converge", "lint",
@@ -419,16 +419,17 @@ def test_audit_is_reused_without_delivery_logic() -> None:
 
 
 
-def test_direct_audit_uses_cli_state_and_preserves_final_validation() -> None:
+def test_direct_audit_uses_cli_state_and_scoped_static_inspection() -> None:
     text = intent("fact-audit")
     assert '步骤 1 运行 `doctor' not in text
     assert '步骤 2 读取 Audit CLI 的 `state`' in text
     assert '缺失或非 `ready` 即停止，不进入语义审阅' in text
-    assert 'fact update 写入前的 doctor 仍由调用方执行' in text
-    assert 'validate --repo "$REPO_ROOT" --level strict' in text
+    assert 'fact update 写入前的 check entry 仍由调用方执行' in text
+    assert 'validate --repo "$REPO_ROOT" --level strict' not in text
+    assert "机械 findings 来自步骤 2 的 closeout 静态规则" in text
     assert 'CLI `findings` 中 `severity: warning`' in text
-    assert 'validation 新增的 warning 按步骤 5 补做处置' in text
-    assert 'CLI 仅有 warning 时退出码为 0' in text
+    assert '逐条审阅 CLI' in text
+    assert '无未完成处置的 warning' in text
 
 
 def test_delivery_intents_consume_current_fact_pages() -> None:

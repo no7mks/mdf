@@ -7,6 +7,7 @@ from mdf_core.execution.modules import parse_modules
 from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.yamlutil import parse_yaml, read_frontmatter
 from mdf_core.inspection.audit import audit_payload
+from mdf_core.inspection.scan_context import RepoScanContext
 from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
 from mdf_core.reviewing.context import fingerprint
 from mdf_core.reviewing.fact_identity import input_identity
@@ -32,9 +33,10 @@ def inventory(repo):
     return result
 
 
-def fact_context(repo, against, *, include_index=False):
+def fact_context(repo, against, *, include_index=False, global_objects=False):
     base = sha(repo, against)
     identity = input_identity(repo)
+    tracked = RepoScanContext(repo).tracked
     with TemporaryDirectory(prefix='mdf-fact-') as folder:
         before, after = Path(folder).resolve() / 'base', Path(folder).resolve() / 'worktree'
         snapshot(repo, base, before)
@@ -45,7 +47,7 @@ def fact_context(repo, against, *, include_index=False):
         rules = {**local, 'mdf': {name: (references / name).read_text(encoding='utf-8') for name in
                  ('fact-audit-against.md', 'fact-audit-delivery.md', 'fact-audit.md', 'repository-contract.md',
                   'repository-documents.md', 'modules.md', 'doc-structure.md')}}
-        changed = git(after, 'diff', '--no-renames', '--name-only', '-z', base, '--').stdout.split('\0')
+        changed = git(after, 'diff', '--no-renames', '--ignore-submodules=none', '--name-only', '-z', base, '--').stdout.split('\0')
         changed = [p for p in changed if p]
         if include_index:
             from mdf_core.workspace.clear_commits import changed_paths
@@ -69,7 +71,8 @@ def fact_context(repo, against, *, include_index=False):
                                 for e in [posixpath.normpath(raw)] for c in changed if c not in ignored))})
         audit, _ = audit_payload(after, 'branch', [], [], base,
                                  extra_documents=documents, ignore_modules=config, ignore_paths=validation_paths,
-                                 scope_changes=[p for p in changed if config.owns(p) or review_document(p)])
+                                 scope_changes=[p for p in changed if config.owns(p) or review_document(p)],
+                                 global_objects=global_objects, original_tracked=tracked)
         audit.pop('repo')
         result = {'schema_version': 3, 'mode': 'against', 'operation': 'fact-audit',
                   'against': base, 'worktree_sha256': fingerprint(files), 'input_identity': identity,

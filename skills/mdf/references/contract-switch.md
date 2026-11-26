@@ -15,7 +15,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 - manifest 恰好有一行 `schema_version: <整数>`。
 - 进程持有 finish lock。
 
-不检查 doctor、在途分支或其他门禁。
+不检查 check entry、在途分支或其他门禁。
 
 ## 结果
 

@@ -7,7 +7,7 @@
 本节说明可选模式与 close-out 返回状态。
 
 - manifest.closeout.mode 为 local/pr，省略为 local；pr 需 provider: github/gitlab。
-- init 保留已有 closeout，doctor 报 manifest.closeout finding；schema_version 仍为 3。
+- init 保留已有 closeout，check entry 报 manifest.closeout finding；schema_version 仍为 3。
 - `pr --repo <repo> [--source <source>] [--pull <id>]` 创建/更新 PR，返回 waiting_for_merge 或 closed_without_merge。
 - `pr-watch --repo <repo> [--source <source>] [--pull <id>] [--head <sha>]` 查询平台 PR/MR、review 与关联 CI，合并核验时 fetch 目标远端 ref。
   - 返回 `merged`、`closed_without_merge`、`changes_requested`、`ci_failed` 或 `merge_conflict`，附平台快照。

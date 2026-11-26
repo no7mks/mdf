@@ -50,7 +50,7 @@ def test_support_consolidate_keeps_bug_truth_on_trunk(python_exe, tmp_path):
     root = work / "changes/1.2.1/CHANGE.md"
     assert "bug-EF56" in root.read_text() and "trunk_fixes:" in root.read_text()
     git(work, "checkout", "--detach")
-    payload(mdf(python_exe, "doctor", "--repo", str(work)))
+    payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(work)))
 
 
 def consolidate_hotfix(python_exe, work, change):
@@ -84,7 +84,7 @@ def test_published_support_retries_after_trunk_status_changes(python_exe, tmp_pa
     consolidate_hotfix(python_exe, work, change)
     merged = payload(mdf(python_exe, "merge", "--repo", str(work)))["merge_commit"]
     advance_trunk(repo, remote)
-    payload(mdf(python_exe, "doctor", "--repo", str(work)))
+    payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(work)))
     payload(mdf(python_exe, "publish", "--repo", str(work)))
     payload(mdf(python_exe, "finish-gitflow", "--repo", str(work)))
     args = ("--repo", str(repo), "--source", "hotfix/1.2.1")

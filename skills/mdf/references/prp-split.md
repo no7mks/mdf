@@ -45,7 +45,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Inspect | 脚本 | 运行 doctor 并进入项目记录写入分支 | 工作区、clean | 2 | 未切换留 1；其他停止 |
+| 1 | Inspect | 脚本 | 运行 check entry 并进入项目记录写入分支 | 工作区、clean | 2 | 未切换留 1；其他停止 |
 | 2 | Design | 约束 | 确认拆分单元，dry-run 取全量下游 | 确认、覆盖、downstream | 需拆分 3；无需结束 | 停止并报告 |
 | 3 | Preview | 脚本 | 确认 clean，预检并展示候选 | diff、非预览写入确认 | 确认写入 4；仅预览结束 | 失败或未确认则停止 |
 | 4 | Apply | 脚本 | 改写下游依赖；提交后 land | 校验、提交、land | 结束 | 写入失败已恢复则停；提交或 land 失败留现场 |
@@ -60,7 +60,7 @@
 
 - `prp-split` CLI（包括 dry-run）操作前要求当前分支符合写入归属，且 worktree clean；
   预览不提交。
-- 入口先运行 `doctor --repo "$REPO_ROOT"`，再按 [项目记录](common.md#项目记录) 准备写入位置。
+- 入口先运行 `check --profile entry --repo "$REPO_ROOT"`，再按 [项目记录](common.md#项目记录) 准备写入位置。
   - 须 `normal_workflows_allowed`。
   - 按 `references/common.md` 的「切换工作区」规则进入返回的 worktree。
 - 未开工以 `list --repo "$REPO_ROOT" --type proposal` 的 `in_progress` 为准，
@@ -120,3 +120,6 @@
 - 已足够小则说明无需拆分，不强制造多个 PRP；各子项经 prp review 后再 start。
 - 非预览写入成功后按 [项目记录](common.md#项目记录) 提交。
   - 提交或收口失败时已写入的拆分保留在工作区，不回滚；保留现场并报告实际状态。
+
+对象状态写入后，对每个变更的 PRP 或 Bug 传入一个 `--document-path`，
+运行 `check --repo "$REPO_ROOT" --profile objects --scope paths`。

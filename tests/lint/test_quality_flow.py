@@ -206,7 +206,7 @@ def test_fact_audit_output_writes_only_a_checked_report():
         assert phrase in against, phrase
     assert "against 旁路的 `--output` 除外" in audit
     assert "缺少 `--against` 或与 `--scope` 同用则停止，不写文件" in audit
-    assert "不进入本页七步" in audit
+    assert "不进入本页六步" in audit
     assert "核末尾的 `[output]` 是会话结论" in audit
     assert "不是 context，也不是 report-check 信封" in readme
     assert "不是 context 或信封" in help_text

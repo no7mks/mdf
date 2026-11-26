@@ -119,7 +119,7 @@ collab-mode 在步骤 1 委托 [专用契约](collab-mode.md) 并返回；步骤
 
 **根** <a id="s1"></a>
 `integrate` 各动作都带 `--repo`。用 `git rev-parse --show-toplevel` 核对这个目录。
-不读取 manifest，不运行 doctor。不要求 shell 当前目录就是该根。
+不读取 manifest，不运行 check entry。不要求 shell 当前目录就是该根。
 
 验收：`--repo` 指向的目录是 Git 根。
 

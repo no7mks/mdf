@@ -8,7 +8,7 @@ from mdf_core.inspection.validate_objects import iter_object_files
 from mdf_core.foundation.yamlutil import read_frontmatter
 
 
-def validate_adrs(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None) -> None:
+def validate_adrs(repo: Path, findings: list[Finding], *, paths: set[Path] | None = None, scan=None) -> None:
     root = repo / ADR_ROOT
     if (
         not root.is_dir()
@@ -17,7 +17,7 @@ def validate_adrs(repo: Path, findings: list[Finding], *, paths: set[Path] | Non
     ):
         return
     for path in sorted(root.glob("*.md")):
-        if paths is not None and path not in paths:
+        if (paths is not None and path not in paths) or (scan is not None and not scan.contains(path)):
             continue
         if path.is_symlink() or not path_stays_in_repo(repo, path):
             continue
@@ -82,9 +82,8 @@ def _trunk_bug_ids(repo: Path, path: Path, metadata: dict) -> set[str]:
     from mdf_core.workspace.workflow_policy import is_github_flow
     version = metadata.get("version")
     source = metadata.get("source_branch")
-    if (not is_github_flow(repo) or not isinstance(version, str)
-            or path != repo / "changes" / version / "CHANGE.md"
-            or not isinstance(source, str) or not source.startswith("hotfix/")):
+    if (not isinstance(version, str) or path != repo / "changes" / version / "CHANGE.md"
+            or not isinstance(source, str) or not source.startswith("hotfix/") or not is_github_flow(repo)):
         return set()
     try:
         identity = read_json(path.parent / "delivery.json")
@@ -123,8 +122,10 @@ def _trunk_bug_ids(repo: Path, path: Path, metadata: dict) -> set[str]:
 
 def validate_record_references(
     repo: Path, findings: list[Finding], *, paths: set[Path] | None = None,
-    touched_ids: set[str] | None = None,
+    touched_ids: set[str] | None = None, scan=None,
 ) -> None:
+    read = scan.frontmatter if scan is not None else read_frontmatter
+
     def selected(path, metadata):
         if paths is None or path in paths:
             return True
@@ -140,6 +141,8 @@ def validate_record_references(
     object_paths: list[Path] = []
     for kind in ("proposal", "bug"):
         for path in iter_object_files(repo, kind):
+            if scan is not None and not scan.contains(path):
+                continue
             object_paths.append(path)
             match = OBJECT_FILE_RE.fullmatch(path.name)
             if match and len(path.relative_to(repo / "docs").parts) == 2:
@@ -157,7 +160,7 @@ def validate_record_references(
                 else:
                     slug_paths[slug] = path
             try:
-                metadata, _ = read_frontmatter(path)
+                metadata, _ = read(path)
             except MDFError:
                 continue
             identifier = metadata.get("id")
@@ -180,7 +183,7 @@ def validate_record_references(
     adr_root = repo / ADR_ROOT
     if adr_root.is_dir():
         for path in adr_root.glob("*.md"):
-            if path.is_symlink() or not path_stays_in_repo(repo, path):
+            if path.is_symlink() or not path_stays_in_repo(repo, path) or (scan is not None and not scan.contains(path)):
                 continue
             match = ADR_FILE_RE.fullmatch(path.name)
             if match and not is_object_id_slug(match.group(1)):
@@ -215,7 +218,7 @@ def validate_record_references(
 
     for path in object_paths:
         try:
-            metadata, _ = read_frontmatter(path)
+            metadata, _ = read(path)
         except MDFError:
             continue
         primary = metadata.get("duplicate_of")
@@ -246,7 +249,7 @@ def validate_record_references(
             primary_path = identifier_paths.get(primary)
             if primary_path is not None:
                 try:
-                    primary_metadata, _ = read_frontmatter(primary_path)
+                    primary_metadata, _ = read(primary_path)
                 except MDFError:
                     primary_metadata = {}
                 if primary_metadata.get("type") != metadata.get("type"):
@@ -272,10 +275,10 @@ def validate_record_references(
     if not changes.is_dir():
         return
     for path in changes.rglob("CHANGE.md"):
-        if path.is_symlink() or not path_stays_in_repo(repo, path):
+        if path.is_symlink() or not path_stays_in_repo(repo, path) or (scan is not None and not scan.contains(path)):
             continue
         try:
-            metadata, _ = read_frontmatter(path)
+            metadata, _ = read(path)
         except MDFError:
             continue
         trunk_bugs = _trunk_bug_ids(repo, path, metadata)
@@ -309,7 +312,7 @@ def validate_record_references(
                     record_path = identifier_paths.get(identifier)
                     if record_path is not None:
                         try:
-                            record_metadata, _ = read_frontmatter(record_path)
+                            record_metadata, _ = read(record_path)
                         except MDFError:
                             record_metadata = {}
                         if (key == "fixed" and path.is_relative_to(changes / "unreleased")

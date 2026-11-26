@@ -62,7 +62,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 运行 doctor 并进入项目记录写入分支 | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 1 | Check entry | 脚本 | 运行 check entry 并进入项目记录写入分支 | check entry、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | Resolve proposal | 脚本 | 用 `list` 查重单个 Proposal | list、唯一对象 | 3 | draft/ready 交接；其他状态停；留 2 |
 | 3 | Clarify | 约束 | 内部 clarify 补齐目标、范围、验收与直接依赖 | 完整必填事实 | 4 | 不写对象，停止 |
 | 4 | Confirm | 约束 | 展示边界、排除项与依赖并确认 draft | 用户明确确认 | 5 | 未确认留 4；取消停；来源变 2；事实变 3 |
@@ -77,7 +77,7 @@
 
 **入口**
 
-1. 解析 `REPO_ROOT` 并运行 `doctor`；先核对 `normal_workflows_allowed: true`。
+1. 解析 `REPO_ROOT` 并运行 `check --profile entry`；先核对 `normal_workflows_allowed: true`。
    未通过时按下方异常规则停止。
 2. 按 [项目记录](common.md#项目记录) 的模式矩阵准备写入位置。
 3. 按 `references/common.md` 的「切换工作区」规则进入 JSON `worktree`。
@@ -150,7 +150,7 @@ findings 后停止。尚未进入写入位置时留在本步。
   与规范化文件名，避开已有 ID。
   - 以模板写入 `docs/proposals/`，初始状态为 `draft`。
 - 仅在已确认阶段归属时添加非空字符串 `milestone`；否则省略字段，不写 `null`。
-- 写入后运行 `validate --repo "$REPO_ROOT" --level basic`。
+- 写入后运行 `check --repo "$REPO_ROOT" --profile objects --scope paths --document-path <对象路径>`。
   - 回读对象并对照模板、确认事实与完整 diff。
   - 核对 schema、必填章节、`draft` 状态和依赖。
 - 通过后按 [项目记录](common.md#项目记录) 提交本次 draft。

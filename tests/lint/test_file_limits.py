@@ -67,11 +67,25 @@ def describe(path: Path, line_count: int, widths: list[tuple[int, int]]) -> str:
     return f"{relative_path} ({'; '.join(details)})"
 
 
+def lint_document_style(rel, text, limit):
+    from mdf_test_support import load_core_module
+    load_core_module()
+    from mdf_core.foundation.constants import SIZE_FACT
+    from mdf_core.inspection.doc_size import size_role
+    from mdf_core.inspection.reference_style import document_style
+    role = "fact" if size_role(rel) == SIZE_FACT else "other"
+    return document_style(rel, text, role, limit)
+
+
 def test_file_limits():
     failures: list[str] = []
     for path in checked_files():
         line_count, widths = file_measurement(path)
         limit = 1000 if path.suffix in {".py", ".sh"} else MAX_FILE_LINES
+        if path.suffix == ".md":
+            rel = path.relative_to(REPO_ROOT).as_posix()
+            _, limit, findings = lint_document_style(rel, path.read_text(encoding="utf-8"), limit)
+            failures.extend(f"{finding.path}: {finding.code} {finding.message}" for finding in findings)
         over_line_limit = path.suffix != ".html" and line_count > limit
         if over_line_limit or widths:
             failures.append(describe(path, line_count, widths))

@@ -26,7 +26,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" project-rules --repo "$REPO_ROOT" --stage <de
 - 输出 `stage` 与 `project_rule`；未配置时后者为 null。
 - 已配置时返回 `path`、`content` 完整原文与文件字节的 `sha256` 内容指纹。
 - CLI 只读取文件，不执行文件，也不生成合并文件；规则语义由 Agent 判断。
-- doctor / validate 校验全部已配置 rule；运行本命令只加载所选阶段。
+- `check --profile entry` 与 IG strict 校验全部已配置 rule；运行本命令只加载所选阶段。
 
 ## Merge 与分派
 

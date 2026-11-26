@@ -51,7 +51,8 @@ def test_fact_clear_reuses_same_tree_and_loads_on_dirty(python_exe, tmp_path):
 
 def test_quick_and_explicit_against_do_not_move_branch_clear(python_exe, tmp_path):
     repo, base = repository(tmp_path)
-    assert not audit(python_exe, repo, base, "--quick")["skip_audit"]
+    quick = payload(mdf(python_exe, "fact-audit", "--repo", str(repo), "--against", base, "--quick"))
+    assert not quick["skip_audit"]
     explicit = payload(mdf(python_exe, "fact-audit", "--repo", str(repo), "--against", base))
     assert not record(python_exe, tmp_path, repo, explicit["result"]).get("recorded")
     assert clear_commits.load(repo, "fact_audit") is None

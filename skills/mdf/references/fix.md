@@ -54,7 +54,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 脚本 | 核对入口、Bug、回归与成员 | doctor、list、回归 | open/未过 2；缺恢复 4；其余只读结束 | 停止并报告 |
+| 1 | Check | 脚本 | 核对入口、Bug、回归与成员 | check entry、list、回归 | open/未过 2；缺恢复 4；其余只读结束 | 停止并报告 |
 | 2 | Clarify | 约束 | 内部 clarify 修复范围与方案 | 共同理解 | 3 | 不修复，停止 |
 | 3 | Reproduce | 约束 | 确认或编写该 Bug 的有效红灯测试 | 命令、退出状态、失败断言 | 4 | 停止并报告 |
 | 4 | Repair | 约束 | 修复或仅恢复成员并验证、smart | 命令、恢复证据、smart | 5 | 未满三轮且下一步明确则 4；否则停 |
@@ -66,7 +66,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 
 本节确定入口前置、Bug 定位与写入边界。
 
-- 解析 `REPO_ROOT` 并运行 `doctor`。验收：`normal_workflows_allowed: true`。
+- 解析 `REPO_ROOT` 并运行 `check --profile entry`。验收：`normal_workflows_allowed: true`。
 - 运行 `git branch --show-current`：为 `master` 或为空（detached HEAD）时在任何写入前停止并报告。
 - 参数：
   - 位置参数恰好一个 Bug ID；`--yolo` 可在其前或后。
@@ -165,7 +165,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 本节把 Bug 标为 `fixed`，校验后提交。
 
 1. 核对临时移除记录均已恢复并通过验证，再将 Bug `status` 改为 `fixed`，不得写 `fixed_in`，不得改为 `closed`。
-2. 运行 `validate --repo "$REPO_ROOT" --level basic`，回读对象并核对 `fixed` 与完整 diff。
+2. 运行 `check --repo "$REPO_ROOT" --profile objects --scope paths --document-path <对象路径>`，回读对象并核对 `fixed` 与完整 diff。
    - 校验退出 0 且零 finding。
 3. 按 `common.md` 提交本次红灯测试、修复、回归验证与对象状态；不夹带无关改动。
    - 提交说明须含完整 Bug ID；release/hotfix 上的直接修复同样适用，供 bug close 定位审查范围。

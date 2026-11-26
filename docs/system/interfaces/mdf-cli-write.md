@@ -81,10 +81,10 @@ python3 skills/mdf/scripts/mdf.py archive --repo /path/to/repository \
   --epoch 1.2 --dry-run
 ```
 
-要求 Git 根、有效 manifest、clean worktree 和零个 strict-validation finding。
+要求 Git 根、有效 manifest、clean worktree 和收口检查无 blocking finding。
 `--epoch` 指定一个发布切片。命令计算 Proposal/Bug 的移动，以及仓库内
 canonical 链接重写。`--dry-run` 仅返回计划；正常运行会应用移动与重写，随后再次
-strict validation。后校验失败时保留现场，供人工检查。
+closeout 静态规则。后校验失败时保留现场，供人工检查。
 
 ## `prp-review`
 
@@ -121,7 +121,8 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
 
 仅接受 `release/<version>`、`hotfix/<version>` 或 `hotfix/<slug>` 当前分支。
 
-- 要求 Git 根、clean worktree、`manifest.state: ready` 与 strict validation 零 error。
+- 要求 Git 根、clean worktree、`manifest.state: ready` 与收口检查无 blocking finding。
+- 发布范围从上一版本 tag 到当前工作区。首次发布检查全库。
 - 必须提供 `--release-date`。
 - Core 只验证确定性审计；consolidate 的语义审阅与对象处置属于 intent 的职责。
 
@@ -140,7 +141,7 @@ python3 skills/mdf/scripts/mdf.py release-closeout \
    - 满足时直接复用其结果，输出 `verification.reused` 为证据路径。
    - 否则返回 `verification_report_not_reusable`；不在 closeout 内运行验证命令。
 2. 随后保持 worktree clean 后写入版本 Change、归档对象和链接重写。
-3. 在最后再次执行 strict validation；后校验失败时 details 含 `findings` 与已写入路径 `written`。
+3. 在锁内用新扫描复验发布范围。后校验失败时 details 含 `findings` 与已写入路径 `written`。
 
 `--dry-run` 不执行验证命令或写入。
 

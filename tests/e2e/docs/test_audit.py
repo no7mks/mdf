@@ -57,8 +57,9 @@ def test_independent_audit_modes_do_not_add_readiness(python_exe, tmp_path, mode
     repo = copy_fixture(tmp_path)
     replace(repo / ".mdf/manifest.yaml", "state: ready", "state: initializing")
     init_git(repo)
-    options = (["--quick"] if mode == "quick" else
-               ["--against", git(repo, "rev-parse", "HEAD").stdout.strip()])
+    options = ["--against", git(repo, "rev-parse", "HEAD").stdout.strip()]
+    if mode == "quick":
+        options.append("--quick")
     result = mdf(python_exe, "fact-audit", "--repo", str(repo), *options)
     data = json.loads(result.stdout)
     if mode == "against":
@@ -66,7 +67,7 @@ def test_independent_audit_modes_do_not_add_readiness(python_exe, tmp_path, mode
         assert "state" not in data["result"]["audit"]
     else:
         assert result.returncode == 2
-        assert "manifest.initializing" in {f["code"] for f in data["findings"]}
+        assert "manifest.initializing" in {f["code"] for f in data["result"]["audit"]["findings"]}
 
 
 def test_audit_reports_evidence_mapping_without_running_commands(
@@ -270,7 +271,7 @@ def test_bug_found_in_accepts_only_bare_unreleased_or_stable(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "bug.found_in" in result.stdout
 
@@ -286,7 +287,7 @@ def test_unreleased_sentinel_is_rejected_in_proposal_found_in(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "version.sentinel_scope" in result.stdout
 

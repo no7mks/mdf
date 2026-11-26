@@ -166,7 +166,7 @@ def published_link_exists(repo, head, path, target, fragment, check_anchors):
 
 def collect_local_link_findings(
     repo: Path, path: Path, findings: list[Finding], *, targets: set[Path] | None = None,
-    check_anchors: bool = False,
+    check_anchors: bool = False, scan=None,
 ) -> None:
     try:
         text = path.read_text(encoding="utf-8")
@@ -207,8 +207,8 @@ def collect_local_link_findings(
                 relative(repo, path),
             )
             continue
-        if not resolved.exists() or (check_anchors and fragment and resolved.suffix in {".md", ".html"}
-                                     and resolved.is_file() and fragment not in document_anchors(resolved)):
+        if not resolved.exists() or (scan is not None and not scan.contains(resolved)) or (check_anchors and fragment and resolved.suffix in {".md", ".html"}
+                                     and resolved.is_file() and fragment not in (scan.anchors(resolved) if scan else document_anchors(resolved))):
             add_finding(
                 findings,
                 "link.broken",

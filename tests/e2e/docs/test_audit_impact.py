@@ -1,7 +1,7 @@
 """against 的影响集隔离与删除目标保护。"""
 from mdf_test_support import copy_fixture, init_git, git
 from mdf_core.reviewing.fact_context import fact_context
-from mdf_core.inspection import doctor
+from mdf_core.inspection import strict_validation
 
 
 def repository(tmp_path):
@@ -20,7 +20,7 @@ def test_unrelated_invalid_fact_is_excluded(tmp_path):
     (repo / 'src/service.py').write_text('changed = True\n')
     context = fact_context(repo, base)
     assert not any(f.get('path') == bad.relative_to(repo).as_posix() for f in context['audit']['findings'])
-    assert any(f.path == bad.relative_to(repo).as_posix() for f in doctor.collect_findings(repo, full=True))
+    assert any(f.path == bad.relative_to(repo).as_posix() for f in strict_validation.collect_findings(repo))
 
 
 def test_incoming_anchor_and_unrelated_outgoing_link(tmp_path):
@@ -58,11 +58,11 @@ def test_deleted_record_keeps_incoming_id_reference(tmp_path):
 
 
 def test_against_never_runs_full_doctor_and_only_registers_selected_facts(tmp_path, monkeypatch):
-    from mdf_core.inspection import impact
+    from mdf_core.inspection import check_engine
     repo = repository(tmp_path)
     base = git(repo, 'rev-parse', 'HEAD').stdout.strip()
     selected = []
-    original = impact.validate_evidence
+    original = check_engine.validate_evidence
 
     def evidence(repo, findings, **kwargs):
         selected.extend(p.relative_to(repo).as_posix() for p in kwargs['documents'])
@@ -71,8 +71,8 @@ def test_against_never_runs_full_doctor_and_only_registers_selected_facts(tmp_pa
     def forbidden(*args, **kwargs):
         raise AssertionError('against must not run full doctor')
 
-    monkeypatch.setattr(impact, 'validate_evidence', evidence)
-    monkeypatch.setattr(doctor, 'collect_findings', forbidden)
+    monkeypatch.setattr(check_engine, 'validate_evidence', evidence)
+    monkeypatch.setattr(strict_validation, 'collect_findings', forbidden)
     doc = repo / 'docs/system/interfaces/api.md'
     doc.write_text(doc.read_text() + '\n<!-- changed -->\n')
     context = fact_context(repo, base)

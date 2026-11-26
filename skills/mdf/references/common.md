@@ -34,11 +34,10 @@ upgrade 不读取本文件。
   - 每项新 decision 按同一 confidence 策略处理；低分交回外层步骤 6，确认后 resume 原位置。
   - CLI 内部操作不是独立 intent；不把一次已授权的确定性命令拆开来模拟新的截止点。
 
-- intent 要求正常流程可用时，以 `doctor` 的 `normal_workflows_allowed` 为准。
-  - `evidence.stale`、`generated.stale` 只报告，不单独阻断正常流程。
-  - `severity: warning` 的 finding 仅报告，不阻断任何工作；验收中的零 finding 要求仅计 error。
-  - 其他 findings 与各操作的 clean 要求仍按原规则处理。
-  - `validate --level strict` 与 fact audit 仍严格检查 stale，不因此放宽验收。
+- 入口检查命令为 `check --repo "$REPO_ROOT" --profile entry`。下文简称 entry 检查。
+- intent 要求正常流程可用时，以 `check --profile entry` 的 `normal_workflows_allowed` 为准。
+  - 入口只检查控制面。对象写入后按 `objects` 检查；收口与 fact audit 在审阅范围内检查 stale。
+  - 各操作的 clean 要求仍按原规则处理。
 
 ### 执行进度
 

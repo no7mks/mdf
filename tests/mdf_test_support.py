@@ -149,7 +149,7 @@ def git(repo: Path, *args: str):
     return result
 
 
-def init_git(repo: Path) -> None:
+def init_git(repo: Path, *, previous_release: bool = False) -> None:
     # 提交身份由 conftest 通过环境变量提供，省去逐仓库 config 调用。
     # 一次 shell 完成 init/add/commit，少两次 git 进程启动。
     result = run(
@@ -163,6 +163,8 @@ def init_git(repo: Path) -> None:
         cwd=repo,
     )
     assert_ok(result)
+    if previous_release:
+        git(repo, "tag", "-a", "v1.2.0", "-m", "test: 发布 1.2.0")
 
 
 def checkout_develop(repo: Path) -> None:
@@ -180,10 +182,10 @@ def load_core_module():
     if scripts_str not in sys.path:
         sys.path.insert(0, scripts_str)
     # mdf_core 是正常 package；白盒 monkeypatch 必须打到符号的
-    # 定义模块（如 "mdf_core.inspection.doctor.collect_findings"），因为消费模块
+    # 定义模块（如 "mdf_core.inspection.strict_validation.collect_findings"），因为消费模块
     # 对可 patch 的函数一律使用 `模块.函数()` 限定访问。
     from mdf_core import commands_misc
-    from mdf_core.inspection import doctor
+    from mdf_core.inspection import strict_validation
     from mdf_core.foundation import errors
     from mdf_core.workspace import gitutil, init_repo
     from mdf_core.documents import moves
@@ -198,7 +200,7 @@ def load_core_module():
         close_object_text=closeout_objects.close_object_text,
         summarize_closeout=closeout_stage.summarize_closeout,
         validate_closeout_shape=closeout_shape.validate_closeout_shape,
-        collect_findings=doctor.collect_findings,
+        collect_findings=strict_validation.collect_findings,
         command_archive=commands_misc.command_archive,
         git_directory=gitutil.git_directory,
         replacement_plan=moves.replacement_plan,
@@ -400,7 +402,7 @@ def prepare_release_closeout_repo(
         "status: open",
         "status: closed\nfixed_in: 1.3.0",
     )
-    init_git(repo)
+    init_git(repo, previous_release=True)
     replace(repo / "docs/proposals" / PRP_NAME, "status: ready", "status: implemented")
     write_unreleased_change(repo, slug)
     git(repo, "add", "--all")

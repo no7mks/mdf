@@ -44,12 +44,11 @@ def test_prose_check_honors_module_ignore(python_exe, tmp_path, explicit):
     modules = repo / ".mdf/modules.yaml"
     modules.write_text(modules.read_text().replace('"src/**"', '"**"', 1).replace("    ignore: []", f"    ignore:\n      - pattern: {name}\n        reason: 保留外部手册"))
     init_git(repo)
-    extra = ["--path", name] if explicit else []
-    data = payload(mdf(python_exe, "prose-check", "--repo", str(repo), *extra))
-    assert data["issues"] == []
+    extra = ["--scope", "paths", "--document-path", name] if explicit else ["--scope", "full"]
+    data = payload(mdf(python_exe, "check", "--only", "prose", "--repo", str(repo), *extra))
+    assert data["findings"] == []
     assert data["ignored"] == [name]
-    if explicit:
-        assert data["checked"] == 0
+    assert "prose" in data["executed_checks"]
 
 
 def test_prose_check_without_modules_still_checks_explicit_documents(python_exe, tmp_path):
@@ -57,6 +56,6 @@ def test_prose_check_without_modules_still_checks_explicit_documents(python_exe,
     repo.mkdir()
     (repo / "note.md").write_text("长" * 101 + "。\n")
     init_git(repo)
-    result = mdf(python_exe, "prose-check", "--repo", str(repo), "--path", "note.md")
+    result = mdf(python_exe, "check", "--only", "prose", "--repo", str(repo), "--scope", "paths", "--document-path", "note.md")
     assert result.returncode == 2
-    assert [item["code"] for item in json.loads(result.stdout)["issues"]] == ["prose.sentence"]
+    assert [item["code"] for item in json.loads(result.stdout)["findings"]] == ["prose.sentence"]

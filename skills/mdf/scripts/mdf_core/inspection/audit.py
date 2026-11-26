@@ -1,45 +1,20 @@
 import argparse
-from functools import partial
 from pathlib import Path
 from typing import Any
 
-from mdf_core.inspection import doctor
 from mdf_core.inspection.audit_quick import affected_documents, quick_exit_code
 from mdf_core.inspection.code_size import is_source
-from mdf_core.inspection.doc_size import sizable_documents, size_findings, size_role, structure_findings
+from mdf_core.inspection.doc_size import sizable_documents, size_role
+from mdf_core.inspection.check_engine import GROUPS, inspect_scope, is_shallow
+from mdf_core.inspection.scan_context import RepoScanContext
 from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, has_errors, serialize_findings
 from mdf_core.workspace.gitutil import git_path_tracked, repo_path, require_git_root, run
-from mdf_core.inspection.overview_modules import overview_core_module_findings, project_entry_link_findings
 from mdf_core.foundation.paths import path_stays_in_repo, relative
 from mdf_core.foundation.progress import ProgressPlan, report_progress
 from mdf_core.execution.modules import MODULES_PATH, ModulesConfig, load_modules, match
-from mdf_core.inspection.validate_evidence import fact_documents, frontmatter_evidence
+from mdf_core.inspection.validate_evidence import frontmatter_evidence
 from mdf_core.inspection.validate_manifest import implementation_roots
-from mdf_core.inspection.parallel import collect_parallel
 from mdf_core.foundation.yamlutil import read_frontmatter
-
-# 不承载行为的被跟踪实现文件：版本钉、锁文件与本地配置。
-# 它们不产生 audit.uncovered warning，也无需写入 evidence 或 ignorelist。
-NON_BEHAVIORAL_NAMES = {
-    ".gitattributes",
-    ".gitignore",
-    ".node-version",
-    ".nvmrc",
-    ".python-version",
-    ".tool-versions",
-    "Cargo.lock",
-    "Gemfile.lock",
-    "Pipfile.lock",
-    "composer.lock",
-    "go.sum",
-    "package-lock.json",
-    "pnpm-lock.yaml",
-    "poetry.lock",
-    "rust-toolchain.toml",
-    "uv.lock",
-    "yarn.lock",
-}
-
 
 def _tracked_files(repo: Path, roots: list[Path]) -> list[Path]:
     result = run(["git", "ls-files", "-z"], cwd=repo)
@@ -240,15 +215,17 @@ def audit_payload(
     ignore_modules: ModulesConfig | None = None,
     ignore_paths: list[str] | None = None,
     scope_changes: list[str] | None = None,
+    global_objects: bool = True,
+    original_tracked: set[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
-    plan = ProgressPlan("fact-audit", ("解析范围", "全量契约校验" if scope == "full" else "影响集契约校验",
-                                       "检查文档结构", "映射 evidence 与覆盖"),
+    plan = ProgressPlan("fact-audit", ("解析范围", "检查契约", "检查文档结构", "映射 evidence 与覆盖"),
                         groups=("契约检查", "事实文档", "文档结构检查"))
     findings: list[Finding] = []
+    scan = RepoScanContext(repo, original_tracked=original_tracked)
     with plan.stage(1):
         from mdf_core.foundation.paths import load_manifest
         roots = implementation_roots(repo, load_manifest(repo), [])
-        facts = set(fact_documents(repo))
+        facts = scan.facts
         all_tracked = _tracked_files(repo, [repo])
         try:
             size_config = ignore_modules if ignore_modules is not None else load_modules(repo)
@@ -267,7 +244,7 @@ def audit_payload(
                     findings, "audit.scope", "full audit accepts no explicit paths"
                 )
             sources, documents = all_sources, sorted(facts)
-            sized = sizable_documents(repo)
+            sized = [path for path in sizable_documents(repo) if scan.contains(path)]
             code_paths = all_tracked
         elif scope == "branch":
             if implementation_paths or document_paths:
@@ -317,50 +294,24 @@ def audit_payload(
             "fact-audit 范围",
             f"scope={scope}，实现 {len(sources)} 份，文档 {len(documents)} 份",
         )
-    with plan.stage(2):
-        if scope == "full":
-            findings.extend(doctor.collect_findings(repo, full=True))
-        else:
-            from mdf_core.inspection.impact import collect_impact_findings
-            changes = _changed_paths(repo, resolved_base) if resolved_base else sources + sized
-            findings.extend(collect_impact_findings(repo, changes, documents, resolved_base))
-    with plan.stage(3):
-        findings.extend(collect_parallel([
-            ("文档体积", partial(size_findings, repo, sized)),
-            ("文档结构", partial(structure_findings, repo, sized)),
-            ("核心模块表", partial(overview_core_module_findings, repo, documents)),
-            ("项目入口", partial(project_entry_link_findings, repo, sized)),
-        ], label="文档结构检查"))
-    with plan.stage(4):
-        mappings: list[dict[str, Any]] = []
-        covered: set[Path] = set()
-        source_set = set(sources)
-        for document in documents:
-            try:
-                metadata, _ = read_frontmatter(document)
-            except MDFError:
-                evidence: list[str] = []
-            else:
-                evidence = frontmatter_evidence(metadata)
-            resolved = []
-            for raw in evidence:
-                candidate = (repo / raw).resolve()
-                covered.update(path for path in source_set
-                               if path == candidate or candidate in path.parents)
-                resolved.append(raw)
-            mappings.append(
-                {"document": relative(repo, document), "evidence": resolved}
-            )
-        warnings = [
-            Finding(
-                "audit.uncovered", "implementation file has no fact evidence",
-                relative(repo, path), "warning",
-            )
-            for path in sources
-            if path not in covered
-            and path not in ignored
-            and path.name not in NON_BEHAVIORAL_NAMES
-        ]
+    scan.base = resolved_base
+    if scope == "branch":
+        names = scan.changed if resolved_base else set()
+        if scope_changes is not None:
+            names.update(scope_changes)
+        changes = {repo / name for name in names if path_stays_in_repo(repo, repo / name)}
+        previous = scan.base_frontmatter(names)
+        extra = scan.affected_facts({name for name in names if not size_config.is_ignored(name)}, previous)
+        documents = sorted(set(documents) | {p for p in extra if not size_config.is_ignored(scan.name(p))})
+        sized = sorted(set(sized) | set(documents))
+    else:
+        changes = set(sources + sized) if scope == "paths" else set()
+        previous = {}
+    result, mappings, warnings = inspect_scope(
+        scan, set(GROUPS), changes, documents, sized, sources, previous,
+        full=scope == "full", global_objects=global_objects, plan=plan, require_history=global_objects,
+    )
+    findings.extend(result)
     payload = {
         "ok": not has_errors(findings),
         "operation": "audit",
@@ -398,12 +349,10 @@ def _branch_fact_context(repo, base, force):
     clear = clear_commits.load(repo, "fact_audit")
     clean, head = git_is_clean(repo), sha(repo, "HEAD")
     changed = clear_commits.changed_paths(repo, clear, head, dirty=not clean) if clear else set()
-    if clear and clean and not force and not changed:
-        return {"against": clear, "paths": [], "document_paths": []}, clear, True
     rules_changed = bool(changed & rule_paths(repo))
     left = clear if clear and not force and not rules_changed else base
-    result = fact_context(repo, left, include_index=not clean)
-    expected = fact_context(repo, clear) if clean and clear and left != clear else result
+    result = fact_context(repo, left, include_index=not clean, global_objects=True)
+    expected = fact_context(repo, clear, global_objects=True) if clean and clear and left != clear else result
     trusted = clean and (left == clear or (left != head and _default_base_matches(repo, left)))
     complete = trusted and all(set(expected.get(key, [])) <= set(result[key]) for key in ("paths", "document_paths"))
     if clean and clear and left != clear:
@@ -412,7 +361,7 @@ def _branch_fact_context(repo, base, force):
     same_scope = bool(clear and clean and not rules_changed
                       and (not changed or not any((expected["paths"], expected["document_paths"],
                                                    expected["audit"]["findings"], expected["audit"]["warnings"]))))
-    skip = same_scope and not force
+    skip = same_scope and not force and not result["audit"]["findings"] and not result["audit"]["warnings"]
     result["clear_state"] = ({"base": clear, "head": head, "complete": complete, "same_scope": same_scope}
                              if clean else None)
     result["context_sha256"] = fingerprint({k: v for k, v in result.items() if k != "context_sha256"})
@@ -435,7 +384,10 @@ def command_fact_record_full(args):
 def command_audit(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
-    if args.quick and run(["git", "rev-parse", "--is-shallow-repository"], cwd=repo).stdout.strip() == "true":
+    if args.quick and (not args.against or args.scope is not None or args.base is not None
+                       or args.document_path or args.implementation_path or args.force):
+        raise MDFError("quick 仅接受 --against <commit>", code="invalid_arguments")
+    if args.quick and is_shallow(repo):
         emit({'ok': False, 'mode': 'quick', 'semantic_review': False, 'findings': serialize_findings([
             Finding('audit.shallow', 'quick 需要完整 Git history，无法在 shallow checkout 判断 stale'),
         ])})
@@ -444,7 +396,7 @@ def command_audit(args: argparse.Namespace) -> None:
         if not args.against or args.scope is not None or args.base is not None or args.implementation_path or args.document_path:
             raise MDFError('against 不能混用 scope/base/paths', code='invalid_arguments')
         from mdf_core.reviewing.fact_context import fact_context
-        result = fact_context(repo, args.against)
+        result = fact_context(repo, args.against, global_objects=not args.quick)
         # --quick 只跳过 LLM，不换 against 工作对象。
         exit_code = quick_exit_code(result['audit']) if args.quick else 0
         emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick,
@@ -452,7 +404,7 @@ def command_audit(args: argparse.Namespace) -> None:
         if exit_code:
             raise SystemExit(exit_code)
         return
-    # branch 收成 against 核：resolve-base → fact_context；--quick 仍只跳过 LLM。
+    # branch 收成 against 核：resolve-base → fact_context。
     if args.scope == 'branch':
         if args.implementation_path or args.document_path:
             raise MDFError('branch audit accepts no explicit paths', code='invalid_arguments')
@@ -463,17 +415,9 @@ def command_audit(args: argparse.Namespace) -> None:
                 findings[0].message if findings else 'branch audit 需要可解析 base',
                 code=findings[0].code if findings else 'audit.base',
             )
-        from mdf_core.reviewing.fact_context import fact_context
-        clear, skip = None, False
-        if args.quick:
-            result = fact_context(repo, base)
-        else:
-            result, clear, skip = _branch_fact_context(repo, base, args.force)
-        exit_code = quick_exit_code(result['audit']) if args.quick else 0
-        emit({'ok': not exit_code, 'result': result, 'semantic_review': not args.quick and not skip,
-              'mode': 'against' if not args.quick else 'quick', 'clear_commit': clear, 'skip_audit': skip})
-        if exit_code:
-            raise SystemExit(exit_code)
+        result, clear, skip = _branch_fact_context(repo, base, args.force)
+        emit({'ok': True, 'result': result, 'semantic_review': not skip,
+              'mode': 'against', 'clear_commit': clear, 'skip_audit': skip})
         return
     payload, exit_code = audit_payload(
         repo,
@@ -484,9 +428,6 @@ def command_audit(args: argparse.Namespace) -> None:
     )
     from mdf_core.foundation.paths import load_manifest
     payload["state"] = load_manifest(repo).get("state")
-    if args.quick:
-        exit_code = quick_exit_code(payload)
-        payload.update(mode='quick', semantic_review=False, ok=not exit_code)
     emit(payload)
     if exit_code:
         raise SystemExit(exit_code)

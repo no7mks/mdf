@@ -42,7 +42,7 @@ def test_review_updates_status_in_place_and_preserves_markdown(python_exe, tmp_p
     assert path.read_bytes() == original.replace(b"status: draft", b"status: ready", 1)
     assert index.read_bytes() == links
     assert list(path.parent.iterdir()) == [path]
-    assert_ok(mdf(python_exe, "validate", "--repo", str(work)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(work), "--level", "strict"))
     payload(review(python_exe, work, "draft"))
     assert path.read_bytes() == original
 
@@ -63,8 +63,11 @@ def test_html_proposal_is_invalid(python_exe, tmp_path):
     path = repo / "docs/proposals" / PRP_NAME
     path.rename(path.with_suffix(".html"))
     init_git(repo)
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
-    assert not data["normal_workflows_allowed"]
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"]
+    checked = mdf(python_exe, "check", "--profile", "objects", "--repo", str(repo))
+    assert checked.returncode == 2
+    data = json.loads(checked.stdout)
     assert "object.filename" in {item["code"] for item in data["findings"]}
 
 
@@ -84,8 +87,8 @@ def test_markdown_proposals_validate_without_changes(python_exe, tmp_path, statu
         path.rename(target)
         replace(repo / "docs/user-guide/README.md", PRP_NAME, f"archive/1.2/{PRP_NAME}")
     init_git(repo)
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["findings"] == []
     assert data["normal_workflows_allowed"] is True
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
     assert git(repo, "status", "--porcelain").stdout == ""

@@ -22,57 +22,41 @@ python3 skills/mdf/scripts/mdf.py project-rules --repo /path/to/repository --sta
 
 - 要求 Git 根和 manifest，不额外要求 ready 或 clean。
 - 输出 `stage`、`project_rule`；未配置为 null，否则含 `path`、完整 `content` 与 `sha256`。
-- 配置或文件无效时以 `invalid_rules` 非零退出；doctor / validate 同类 finding 为 `manifest.rules`。
+- 配置或文件无效时以 `invalid_rules` 非零退出；`check --profile entry` 与 IG strict 同类 finding 为 `manifest.rules`。
 - 配置、文件约束和 Agent merge 契约见
   [项目阶段 rule 契约](../../../skills/mdf/references/project-rules.md)。
 
-## `doctor`
+## `check`
 
 ```bash
-python3 skills/mdf/scripts/mdf.py doctor --repo /path/to/repository
+python3 skills/mdf/scripts/mdf.py check --repo /path/to/repository --profile entry
+python3 skills/mdf/scripts/mdf.py check --repo /path/to/repository --profile dev --scope branch
 ```
 
-报告目标路径的仓库状态：
+| Profile | Scope | 检查 |
+| --- | --- | --- |
+| `entry` | 省略 | Git 身份、manifest、modules、布局、Agent 控制面 |
+| `objects` | full（默认）、paths | 全局对象与引用约束；paths 复验显式 PRP、Bug 的结构 |
+| `dev`（默认） | branch（默认）、full、paths | 影响集链接、anchors、文档结构、evidence、覆盖 |
+| `closeout` | branch（默认）、full、paths | 全局对象约束与影响集机械规则，含 Git freshness |
 
-- Git 根、是否为 Git 根、worktree 是否 clean，及当前分支的解析结果。
-- `.mdf/manifest.yaml` 是否存在和 manifest 校验 findings。
-- 已初始化仓库会给出 manifest state。
-  - state 为 `ready` 且没有阻断性 finding 时，`normal_workflows_allowed` 为 `true`。
-  - `evidence.stale`、`generated.stale` 仍完整报告，但不阻断正常工作流。
-  - warning 仅报告，不阻断任何工作；其他 error 仍阻断；`validate --level strict` 与 fact audit 仍因 stale 失败。
-- 进行中的 `changes/unreleased/<slug>/` 只要有 `delivery.json`，缺少 CHANGE.md 不构成 finding。
-- clean 单独报告，由具体操作决定是否要求，不作为正常工作流的统一门槛。
+- branch 接受 `--base <commit>`；可用 `--against <commit>`，互斥 scope、base 与路径。
+- paths 至少传一个路径。可重复传 `--document-path`；dev、closeout 也接受 `--implementation-path`。
+- `--only` 仅供 dev，逗号分隔 `contract,links,size,prose,overview,evidence`。
+- 每条 finding 保留 `severity` 并提供 `disposition`。覆盖提示和本地产物 symlink 为 advisory。
+- JSON 的 `executed_checks` 与 `skipped_checks` 列出检查组。
+- entry 允许未初始化目录；采集成功退出 0，准入看 `normal_workflows_allowed`。
+- 其余 Profile 有 blocking finding 退出 2，无阻断退出 0；参数或执行错误退出 1。
+- 运行期间保持工作区稳定。entry、objects、dev 跳过 Git freshness。
 
-| 条件 | finding |
-| --- | --- |
-| `schema_version` 不是当前值 | `manifest.schema` |
-| `docs/product/` 或 `docs/adr/` 目录、根 `docs/testing.md` 存在 | `layout.migrate` |
-| 缺少 `docs/system/testing/index.md` 或其主题叶 | `layout.testing` |
-
-schema 与 `layout.migrate` 指向 `$mdf migrate`。
-
-stderr 依次报告仓库识别、MDF 契约检查与状态汇总；契约检查细分为配置与布局、
-工作对象、链接与记录、发布历史、事实与 evidence。未初始化时只检查布局。
-
-事实与 evidence 阶段先报告文档扫描，再逐项报告已检查数量、总数、当前路径与用时。
-文档与每页 evidence 分别计数；当前项完成后才增加已检查数。
-generated 另报告 source、generator 及其 Git history 检查位置。
-
-## `validate`
+## `validate --level strict`
 
 ```bash
-python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository \
-  --level basic
+python3 skills/mdf/scripts/mdf.py validate --repo /path/to/repository --level strict
 ```
 
-`--level` 可为 `basic`（默认）或 `strict`。两者扫描相同的 MDF 管理范围；
-`strict` 额外检查 evidence 与 generated 的 Git 跟踪、脏状态和提交先后。
-`basic` 仍检查配置、布局、记录、事实页格式与 evidence 路径。
-JSON 结果用 `level` 返回校验级别；不接受文件路径列表。
-存在 finding 时仍输出完整 JSON 结果；仅有 warning 时成功，
-存在 error 时以状态码 `2` 失败。
-
-stderr 报告 scope 与契约检查阶段；检查结束不代表没有 finding。
+IG 的全库契约检查。显式 `--level strict` 必填；退出码按固有 `severity` 判定，有 error 返回 2。
+冻结规则包含 evidence freshness，链接只检查目标是否存在。文档体裁、散文与覆盖规则由 `check` 和 `fact-audit` 检查。
 
 ## `fact-audit`
 
@@ -82,7 +66,7 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 
 `--scope` 可为 `full`（默认）、`branch` 或 `paths`。
 
-`--quick` **只**跳过 LLM；不换工作对象；可与 scope/base/paths 或 `--against` 组合（against 不与 scope 混用）。
+`--quick` 仅与 `--against <commit>` 组合，跳过 LLM，保留快照及机械检查。
 不强制 clean；`--scope branch` 经 resolve-base 后等同 against。
 
 - 复用完整 audit 的确定性检查：契约、文档结构、evidence / generated 的有效性、Git tracked、提交先后与 must-cover uncovered。
@@ -90,7 +74,6 @@ python3 skills/mdf/scripts/mdf.py fact-audit --repo /path/to/repository
 - branch/against 包含删除、目录 evidence 与 generated 依赖；paths 自动纳入指定实现影响页。
 - shallow checkout 报 `audit.shallow`，不自动 fetch；CI 应准备完整 history。
 - against/branch：`mode`/`semantic_review` + `result` context；非 quick 的 exit 0 只表示 context 成功。
-- full/paths quick：输出 `mode: quick`、state、范围、findings 与 warnings；与非 quick 共用机械 payload。
 - 所有 quick：无 finding/warning 返回 0；存在 finding 或未处置 warning（含 uncovered）返回 2。
 
 全量审计遍历 module `sourceset` 并集中的已跟踪实现文件与全部当前事实文档。
@@ -115,7 +98,7 @@ stderr 依次报告全量契约校验、范围解析、文档结构检查、evid
 | 路由页（`docs/README.md`、`docs/user-guide/README.md`、`docs/system/overview.md`、切面 `index.md`） | 100 |
 | `AGENTS.md` 托管块与 `PROJECT.md` | 100 |
 | 根 `README.md` | 200 |
-| `docs/user-guide/`、`docs/system/` 主题叶 | 450 |
+| `docs/user-guide/`、`docs/system/` 主题叶 | 450，合格 `doc_style: reference` 为 1200 |
 | `docs/context/adr/` | 300 |
 | Bug | 500 |
 | Proposal、`docs/JOTS.md` | 不限 |
@@ -187,21 +170,6 @@ python3 -B skills/mdf/scripts/mdf.py fact-audit-report-check \
 - report-check 验证指纹与覆盖；工作区或 HEAD 身份变化须重建 context。
 - Agent 契约见 [旁路与报告](../../../skills/mdf/references/fact-audit-against.md)；
   交付外壳见 [交付事实审阅](../../../skills/mdf/references/fact-audit-delivery.md)。
-
-## `prose-check`
-
-```bash
-python3 skills/mdf/scripts/mdf.py prose-check --repo /path/to/repository [--path docs/a.md ...]
-```
-
-按 `skills/mdf/references/doc-structure.md` 列出结构硬限制违例，供 `$mdf prettify` 使用。
-
-- 省略 `--path` 时检查全部带角色文档（`docs/JOTS.md` 除外）；`--path` 可重复，
-  接受任意仓库内 Markdown。
-- `AGENTS.md` 只查托管区块；不要求 manifest ready。
-- 存在 `.mdf/modules.yaml` 时遵守 module `ignore` 的适用范围，显式 `--path` 同样生效；`ignored` 列出排除路径。
-- 输出 `checked`（不含排除文件）、`issue_count` 与逐条 `issues`（`path`、`line`、`code`、`message`）；
-  有违例时以状态码 `2` 退出。
 
 ## `list`
 

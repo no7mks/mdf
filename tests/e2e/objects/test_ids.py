@@ -160,7 +160,7 @@ def test_id_validation_accepts_numeric_prp_and_homogeneous_bug_suffixes(
         bug.replace("bug-CD34", "bug-0101")
     )
     init_git(repo)
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_make_id_bug_uses_the_type_specific_format_and_normalized_slug(

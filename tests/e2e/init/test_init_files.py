@@ -89,7 +89,7 @@ def test_init_rejects_dry_run_then_preserves_existing_agents_content(
     replace(
         repo / ".mdf" / "manifest.yaml", "state: initializing", "state: ready"
     )
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "check", "--profile", "objects", "--repo", str(repo)))
 
 
 def test_init_writes_files_from_assets_templates(

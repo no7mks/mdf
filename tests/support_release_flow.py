@@ -19,7 +19,8 @@ def analyze_history(work):
 
 
 def prepared_release(python_exe, tmp_path, monkeypatch, *, github=True, pr=False, consolidate=True):
-    repo, remote = github_flow_repo(tmp_path, origin=True, pr=pr) if github else start_repo(tmp_path)
+    repo, remote = (github_flow_repo(tmp_path, origin=True, pr=pr, previous_release=True) if github
+                    else start_repo(tmp_path, previous_release=True))
     if pr and not github:
         manifest = repo / ".mdf/manifest.yaml"
         manifest.write_text(manifest.read_text() + "\ncloseout:\n  mode: pr\n  provider: github\n")

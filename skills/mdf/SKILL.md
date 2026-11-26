@@ -74,6 +74,7 @@ python3 -B "<已替换副本>/scripts/mdf_launcher.py" complete-upgrade \
                  ├──── bug close <bug-id> --fixed-in <version> ───────────→ references/bug-close.md
                  ├──── code-review ───────────────────────────────────────→ references/code-review.md
                  ├──── verify ────────────────────────────────────────────→ references/verify.md
+                 ├──── check ─────────────────────────────────────────────→ references/check.md
                  ├──── fact update ───────────────────────────────────────→ references/fact-update.md
                  ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
                  ├──── catch-up ──────────────────────────────────────────→ references/catch-up.md
@@ -184,12 +185,13 @@ python3 -B "<已替换副本>/scripts/mdf_launcher.py" complete-upgrade \
   - `--*-model` 值为口语描述，可点名一个或多个模型。
 - fact audit 共用核见 `references/fact-audit.md`。不强制 clean。可带：
   - `--against <commit>`：覆盖左端点，与当前工作区比较；
-  - `--quick`：只跳过 LLM（不换工作对象；可与 against / scope 组合）；
+  - `--quick`：只跳过 LLM（仅与 against 组合）；
   - `--scope branch`：resolve-base 后等同 against；`full|paths` 为机械入口（与 against 互斥）。
   - `--output <path>`：会话参数，不传给 `fact-audit` CLI。未传不写文件。
     只与 `--against <commit>`、`--quick` 组合。缺少 `--against` 或与 `--scope` 同用则停止，不写文件。
-    只走 against 旁路五步，不走七步。校验前不写。
+    只走 against 旁路五步，不走六步。校验前不写。
     `fact-audit-report-check` 返回 ok 且 valid 为 true 后，写入报告 JSON。不是 context，也不是信封。
+- check 可带 `--scope branch|full|paths` 或列出路径；两者的冲突由 Check intent 处理。
 - fact update、prettify 可带 `--scope branch|full|paths`（省略为 branch）。
   - fact update 的 `branch`：resolve-base 后内部委托 `--scope branch --base`（不得 `--quick`）。
   - 也可列出 `<path>...`，即 `--scope paths`；路径与冲突处理由对应 intent 解析。

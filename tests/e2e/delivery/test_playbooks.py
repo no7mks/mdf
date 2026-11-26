@@ -137,7 +137,7 @@ def test_validate_reports_invalid_playbook(python_exe, tmp_path, suites, steps):
     repo = copy_fixture(tmp_path)
     _write_playbook(repo, "bad.md", suites, steps)
     init_git(repo)
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert "playbooks.invalid" in result.stdout
 
 
@@ -145,7 +145,7 @@ def test_validate_requires_command_or_playbook_for_named(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     _register_named(repo, "empty-suite")
     init_git(repo)
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert "modules.named_doc_command" in result.stdout
 
 

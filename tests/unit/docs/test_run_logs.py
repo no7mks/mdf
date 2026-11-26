@@ -166,7 +166,7 @@ def test_run_log_falls_back_when_main_log_dir_is_unwritable(
     monkeypatch.setattr(run_logs, "ignored_dir", fake_ignored_dir)
     monkeypatch.setattr(run_logs, "unique_dir", fake_unique_dir)
 
-    log = run_logs.RunLog(["validate", "--repo", str(worktree)])
+    log = run_logs.RunLog(["validate", "--repo", str(worktree), "--level", "strict"])
     with log:
         print("ok")
         log.finish(0)
@@ -223,7 +223,7 @@ def test_run_log_does_not_follow_a_gitignore_symlink(tmp_path, monkeypatch):
     fallback = tmp_path / "fallback"
     monkeypatch.setenv("MDF_LOG_DIR", str(fallback))
 
-    log = run_logs.RunLog(["validate", "--repo", str(repo)])
+    log = run_logs.RunLog(["validate", "--repo", str(repo), "--level", "strict"])
 
     assert log.path.parent == (repo / ".mdf" / "logs").resolve()
     assert link.is_symlink()
@@ -253,7 +253,7 @@ def test_run_log_and_cli_fail_explicitly_when_all_candidates_unwritable(
     monkeypatch.setattr(run_logs, "ignored_dir", fail_ignored_dir)
 
     with pytest.raises(MDFError) as error:
-        run_logs.RunLog(["validate", "--repo", str(repo)])
+        run_logs.RunLog(["validate", "--repo", str(repo), "--level", "strict"])
 
     assert error.value.code == "log_dir_unwritable"
     assert error.value.details["candidates"] == [
@@ -262,7 +262,7 @@ def test_run_log_and_cli_fail_explicitly_when_all_candidates_unwritable(
     ]
     assert not (home / ".mdf" / "logs").exists()
 
-    code = cli.main(["validate", "--repo", str(repo)])
+    code = cli.main(["validate", "--repo", str(repo), "--level", "strict"])
     assert code == 1
     err = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
     assert err["ok"] is False

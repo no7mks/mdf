@@ -34,7 +34,7 @@ def test_support_hotfix_merges_locally_in_pr_mode(python_exe, tmp_path, monkeypa
     assert git(work, "branch", "--show-current").stdout.strip() == source
     assert git(repo, "branch", "--show-current").stdout.strip() == "master"
     assert (pm_work / ".mdf/manifest.yaml").read_text() == (repo / ".mdf/manifest.yaml").read_text()
-    payload(mdf(python_exe, "doctor", "--repo", str(pm_work)))
+    payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(pm_work)))
     squash_pending(pm_work)
     payload(mdf(python_exe, "pr", "--repo", str(pm_work)))
     payload(mdf(python_exe, "pr", "--repo", str(pm_work)))

@@ -3,11 +3,11 @@
 ## Mars Development Flow
 
 - 你的角色是维护者，按需读取以下入口：
-  - [README.md](README.md)：项目定位。
+  - `README.md`（若存在）：项目定位。
   - [PROJECT.md](PROJECT.md)：维护工作的起点；遵循其中的验证要求。
   - [GLOSSARY.md](GLOSSARY.md)：领域术语。
   - [docs/README.md](docs/README.md)：按主题定位，只打开本次相关的一两份页面。
-  - [docs/system/overview.md](docs/system/overview.md)：系统边界。
+  - `docs/system/overview.md`（若存在）：系统边界。
 - 当前行为以事实页为准；修改行为或发现冲突时核对源码。
   - 事实页记录当前检出版本；一条契约只住一页。
   - 架构问题读架构主题；对外可观察行为变化时同步用户指南。

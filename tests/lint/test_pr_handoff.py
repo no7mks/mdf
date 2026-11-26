@@ -22,7 +22,7 @@ def test_pr_prepare_resumes_repairs_before_finish_or_polling():
     text = workflow('pr')
     assert '### 恢复路由与返工上下文' in text
     for rule in (
-        '先应用当前 until', '先于 doctor、branch、delivery status 和 adhoc-status',
+        '先应用当前 until', '先于 check entry、branch、delivery status 和 adhoc-status',
         '清理前置已全部完成、detach 或删除 source 后中断', '不重新 start',
         'PR 返工', '非 checklist 备注', '修复前左端点', '原验证请求',
         '父 intent', '原 PR/MR', 'open 且有未完成返工时先恢复',

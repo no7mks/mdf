@@ -2,17 +2,16 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from mdf_core.inspection import doctor
+from mdf_core.inspection import strict_validation
+from mdf_core.inspection.check_engine import check_payload
 from mdf_core.documents.archive import archive_plan
 from mdf_core.foundation.constants import PROTOCOL_VERSION, SCHEMA_VERSION, TOOL_VERSION
 from mdf_core.foundation.digests import text_diff
-from mdf_core.foundation.errors import Finding, MDFError, emit, has_errors, serialize_findings
+from mdf_core.foundation.errors import MDFError, emit, has_errors, serialize_findings
 from mdf_core.workspace.gitutil import (
     branch_details,
     current_branch,
     ensure_clean,
-    git_is_clean,
-    git_root,
     repo_path,
     require_planning,
     require_git_root,
@@ -48,63 +47,6 @@ def command_info(_: argparse.Namespace) -> None:
             "revision": tool_revision(),
         }
     )
-
-
-def command_doctor(args: argparse.Namespace) -> None:
-    plan = ProgressPlan("doctor", ("识别仓库", "检查 MDF 契约", "汇总 Git 与初始化状态"),
-                        groups=("契约检查", "事实文档"))
-    with plan.stage(1):
-        repo = repo_path(args.repo)
-        root = git_root(repo)
-        initialized = manifest_path(repo).is_file()
-    with plan.stage(2):
-        if initialized:
-            findings = doctor.collect_findings(repo, full=True)
-        else:
-            findings = doctor.collect_uninitialized_findings(repo)
-    with plan.stage(3):
-        branch: dict[str, Any] | None = None
-        branch_error: str | None = None
-        if root == repo:
-            try:
-                branch = branch_details(current_branch(repo))
-            except MDFError as exc:
-                branch_error = str(exc)
-                findings.append(
-                    Finding(
-                        "branch.invalid",
-                        branch_error,
-                        severity="error",
-                    )
-                )
-        payload = {
-            "ok": True,
-            "operation": "doctor",
-            "repo": str(repo),
-            "git_root": str(root) if root else None,
-            "is_git_root": root == repo,
-            "clean": git_is_clean(repo) if root == repo else None,
-            "branch": branch,
-            "branch_error": branch_error,
-            "initialized": initialized,
-            "state": None,
-            "normal_workflows_allowed": False,
-            "findings": serialize_findings(findings),
-        }
-        if initialized:
-            try:
-                payload["state"] = load_manifest(repo).get("state")
-            except MDFError:
-                payload["state"] = "invalid"
-            payload["normal_workflows_allowed"] = (
-                payload["state"] == "ready"
-                and not any(
-                    finding.severity == "error"
-                    and finding.code not in {"evidence.stale", "generated.stale"}
-                    for finding in findings
-                )
-            )
-    emit(payload)
 
 
 def _init_workflow(repo: Path, args: argparse.Namespace) -> dict[str, str] | None:
@@ -211,7 +153,7 @@ def command_init(args: argparse.Namespace) -> None:
         ],
         "next": (
             "按调用 intent 完成核对与校验，取得启用确认后改为 ready，"
-            "再次运行 strict validation 并提交就绪结果。"
+            "复验启用增量并提交就绪结果。"
         ),
     }
     write_files(
@@ -235,7 +177,7 @@ def command_init(args: argparse.Namespace) -> None:
 def validation_payload(repo: Path, level: str) -> tuple[dict[str, Any], int]:
     plan = ProgressPlan("validate", (f"{level} 契约校验",), groups=("契约检查", "事实文档"))
     with plan.stage(1):
-        findings = doctor.collect_findings(repo, full=level == "strict")
+        findings = strict_validation.collect_findings(repo)
     payload = {
         "ok": not has_errors(findings),
         "operation": "validate",
@@ -248,6 +190,8 @@ def validation_payload(repo: Path, level: str) -> tuple[dict[str, Any], int]:
 
 
 def command_validate(args: argparse.Namespace) -> None:
+    if args.level != "strict":
+        raise MDFError("validate 要求显式指定 --level strict", code="invalid_arguments")
     repo = repo_path(args.repo)
     require_git_root(repo)
     payload, exit_code = validation_payload(repo, args.level)
@@ -356,17 +300,23 @@ def command_semver(args: argparse.Namespace) -> None:
 
 
 def command_archive(args: argparse.Namespace) -> None:
+    from mdf_core.lifecycle.pull_finish import finish_lock
     repo = repo_path(args.repo)
     require_git_root(repo)
+    with finish_lock(repo):
+        archive(repo, args)
+
+
+def archive(repo, args) -> None:
     ensure_safe_managed_paths(repo)
     load_manifest(repo)
     ensure_clean(repo)
-    input_findings = doctor.collect_findings(repo, full=True)
-    if has_errors(input_findings):
+    input_check, code = check_payload(repo, "closeout", "branch", base="HEAD")
+    if code:
         raise MDFError(
-            "Archive input does not pass strict validation",
+            "Archive input does not pass closeout checks",
             code="invalid_object",
-            details={"findings": serialize_findings(input_findings)},
+            details={"findings": input_check["findings"]},
         )
     moves, rewrites = archive_plan(repo, args.epoch)
     move_details = describe_moves(repo, moves)
@@ -380,16 +330,16 @@ def command_archive(args: argparse.Namespace) -> None:
         "moves": move_details,
         "rewrites": [relative(repo, path) for path in sorted(rewrites)],
         "rewrite_details": rewrite_details,
-        "validation": {"level": "strict", "finding_count": 0},
+        "validation": {"profile": "closeout", "finding_count": 0},
     }
     if not args.dry_run:
         apply_moves_and_rewrites(moves, rewrites)
-        post_findings = doctor.collect_findings(repo, full=True)
-        if has_errors(post_findings):
+        post_check, code = check_payload(repo, "closeout", "branch", base="HEAD")
+        if code:
             raise MDFError(
                 "Archive post-validation failed; leave the git worktree for "
                 "manual inspection",
                 code="post_validation_failed",
-                details={"findings": serialize_findings(post_findings)},
+                details={"findings": post_check["findings"]},
             )
     emit(payload)

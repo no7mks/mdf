@@ -77,14 +77,21 @@ def validate_evidence(
     check_staleness: bool,
     documents: list[Path] | None = None,
     freshness_only: bool = False,
+    scan=None,
 ) -> None:
+    def exists(path):
+        return path.exists() and (scan is None or scan.contains(path))
+
     with progress("事实文档：扫描文档"):
-        all_documents = list(fact_documents(repo))
+        all_documents = sorted(scan.facts) if scan else list(fact_documents(repo))
         fact_paths = {doc.resolve() for doc in all_documents}
         if documents is None:
             documents = all_documents
     # 小范围继续按需查询；较多页面共享一次有限 history 预取。
     index = GitPathIndex(repo, batch_history=check_staleness and len(documents) >= 8)
+    def tracked(path):
+        return path.relative_to(repo).as_posix() in scan.tracked_with_dirs if scan else index.tracked(path)
+
     register_progress_groups(
         [f"evidence：{relative(repo, doc)}" for doc in documents], reason="文档扫描完成",
     )
@@ -98,7 +105,7 @@ def validate_evidence(
         findings: list[Finding] = []
         rel = relative(repo, doc)
         try:
-            metadata, body = read_frontmatter(doc)
+            metadata, body = scan.frontmatter(doc) if scan else read_frontmatter(doc)
         except MDFError as exc:
             add_finding(findings, "fact.frontmatter", str(exc), rel)
             skip_progress_group(f"evidence：{rel}", "页面无法解析，总量无法确定")
@@ -150,7 +157,7 @@ def validate_evidence(
                 "Current-fact document needs at least one evidence path",
                 rel,
             )
-        doc_tracked = index.tracked(doc) if check_staleness else True
+        doc_tracked = tracked(doc) if check_staleness else True
         if check_staleness and not doc_tracked:
             add_finding(
                 findings,
@@ -180,7 +187,7 @@ def validate_evidence(
                     rel,
                 )
                 continue
-            if not candidate.exists():
+            if not exists(candidate):
                 add_finding(
                     findings,
                     "evidence.missing_path",
@@ -200,7 +207,7 @@ def validate_evidence(
             # 事实页之间的引用只是链接；不比较先后。
             if not check_staleness or candidate in fact_paths:
                 continue
-            if not index.tracked(candidate):
+            if not tracked(candidate):
                 add_finding(
                     findings,
                     "evidence.untracked",
@@ -252,7 +259,7 @@ def validate_evidence(
                         rel,
                     )
                     source_path = None
-                elif not source_path.exists():
+                elif not exists(source_path):
                     add_finding(
                         findings,
                         "generated.source_missing",
@@ -260,7 +267,7 @@ def validate_evidence(
                         rel,
                     )
                     source_path = None
-                elif check_staleness and not index.tracked(source_path):
+                elif check_staleness and not tracked(source_path):
                     add_finding(
                         findings,
                         "generated.untracked",
@@ -288,7 +295,7 @@ def validate_evidence(
                         rel,
                     )
                     generator_path = None
-                elif not generator_path.is_file():
+                elif not generator_path.is_file() or not exists(generator_path):
                     add_finding(
                         findings,
                         "generated.generator_missing",
@@ -304,7 +311,7 @@ def validate_evidence(
                         rel,
                     )
                     generator_path = None
-                elif check_staleness and not index.tracked(generator_path):
+                elif check_staleness and not tracked(generator_path):
                     add_finding(
                         findings,
                         "generated.untracked",
@@ -344,9 +351,9 @@ def validate_evidence(
     ], label="事实文档"))
 
 
-def validate_agents_block(repo: Path, findings: list[Finding]) -> None:
+def validate_agents_block(repo: Path, findings: list[Finding], *, scan=None) -> None:
     path = repo / "AGENTS.md"
-    if not path.is_file():
+    if not path.is_file() or (scan is not None and not scan.contains(path)):
         add_finding(
             findings, "agents.missing", "Missing AGENTS.md", "AGENTS.md"
         )

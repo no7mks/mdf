@@ -7,7 +7,7 @@ def test_removed_verify_command_argument_is_a_hard_failure(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    init_git(repo)
+    init_git(repo, previous_release=True)
     result = mdf(
         python_exe,
         "release-closeout",
@@ -39,7 +39,7 @@ def closeout_args(repo: Path, *extra: str) -> list[str]:
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.3.0")
-    init_git(repo)  # noqa: F405
+    init_git(repo, previous_release=True)  # noqa: F405
     write_unreleased_change(repo, slug)  # noqa: F405
     git(repo, "add", "--all")  # noqa: F405
     git(repo, "commit", "-m", "test: 准备发布")  # noqa: F405
@@ -95,7 +95,7 @@ def test_release_closeout_handles_quoted_object_values_end_to_end(
                 'status: "closed" # accepted\nfixed_in: 1.3.0')
     if outcome != "fixed":
         replace(bug, "severity: major", "severity: trivial")  # noqa: F405
-    init_git(repo)  # noqa: F405
+    init_git(repo, previous_release=True)  # noqa: F405
     write_unreleased_change(repo, "quoted-object")  # noqa: F405
     change = repo / "changes" / "unreleased" / "quoted-object" / "CHANGE.md"
     if outcome == "closed":
@@ -147,9 +147,9 @@ def test_change_evidence_requires_non_empty_string_elements(
         "  tests: [tests/test_service.py]",
         '  tests: [""]',
     )
-    init_git(repo)  # noqa: F405
+    init_git(repo, previous_release=True)  # noqa: F405
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))  # noqa: F405
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")  # noqa: F405
 
     assert result.returncode != 0
     assert "change.evidence" in result.stdout
@@ -218,7 +218,7 @@ def test_hotfix_rejects_missing_empty_and_unknown_input(
     ]
     for raw in invalid_inputs:
         repo = copy_fixture(tmp_path / str(len(str(raw))))  # noqa: F405
-        init_git(repo)  # noqa: F405
+        init_git(repo, previous_release=True)  # noqa: F405
         git(repo, "checkout", "-b", "hotfix/1.2.1")  # noqa: F405
         args = closeout_args(repo)
         if raw is not None:
@@ -236,7 +236,7 @@ def test_hotfix_injects_identity_and_aggregates_evidence_in_order(
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.2.1")  # noqa: F405
-    init_git(repo)  # noqa: F405
+    init_git(repo, previous_release=True)  # noqa: F405
     git(repo, "checkout", "-b", "hotfix/1.2.1")  # noqa: F405
     seed_verify_branch(python_exe, repo)  # noqa: F405
     hotfix = json.dumps(
@@ -274,7 +274,7 @@ def test_release_aggregates_child_evidence_before_manifest_commands(
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.3.0")  # noqa: F405
-    init_git(repo)  # noqa: F405
+    init_git(repo, previous_release=True)  # noqa: F405
     write_unreleased_change(repo, "alpha")  # noqa: F405
     write_unreleased_change(repo, "zeta")  # noqa: F405
     zeta = repo / "changes" / "unreleased" / "zeta" / "CHANGE.md"
@@ -318,7 +318,7 @@ def test_duplicate_can_close_before_canonical_but_manual_archive_rejects(
 ):
     repo = copy_fixture(tmp_path)  # noqa: F405
     write_closed_duplicate(repo)
-    init_git(repo)  # noqa: F405
+    init_git(repo, previous_release=True)  # noqa: F405
 
     assert_ok(
         mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")

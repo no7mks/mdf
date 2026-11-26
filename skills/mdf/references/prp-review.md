@@ -65,7 +65,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 运行 doctor 并进入项目记录写入分支 | doctor、工作区 | 2 | 未切换留 1；其他停止 |
+| 1 | Check entry | 脚本 | 运行 check entry 并进入项目记录写入分支 | check entry、工作区 | 2 | 未切换留 1；其他停止 |
 | 2 | Select proposal | 脚本 | 按 ID 或路径确定唯一 PRP；未指定时用 `list` 列候选 | 唯一对象 | 3 | 留在 2 消歧 |
 | 3 | Check state | 脚本 | 核对未开工及目标文件，再准备 draft | list 结果、状态检查 | 新评审与 draft 到 4；续办 ready 到 5 | 保留对象，报告后停止 |
 | 4 | Clarify | 约束 | 查证并内部 clarify 目标、范围与验收 | 完整 draft、证据 | 5 | 需补稿留 4；其余保留 draft，停止 |
@@ -80,7 +80,7 @@
 
 **入口**
 
-1. 解析 `REPO_ROOT` 并运行 `doctor`；先核对 `normal_workflows_allowed: true`。
+1. 解析 `REPO_ROOT` 并运行 `check --profile entry`；先核对 `normal_workflows_allowed: true`。
    未通过时按下方异常规则停止。
 2. 按 [项目记录](common.md#项目记录) 的模式矩阵准备写入位置。
    github-flow 的 trunk 使用 `pm prepare --repo "$REPO_ROOT" --for-prp-review`，允许 worktree 有未提交改动。
@@ -211,3 +211,6 @@ github-flow 的 `ready` 与 `commit` 均检查目标 PRP 上的暂存改动及�
 - github-flow 已写入 `ready` 但提交失败：修复失败原因，使用已确认的 `ready` 摘要重试 `commit`。
 - 写回 `ready`、回读、提交或收口失败时保留现场，报告写回、提交及会话内已执行的合入状态。
 - 不得关闭对象或填写 `released_in`。
+
+对象状态写入后，对每个变更的 PRP 或 Bug 传入一个 `--document-path`，
+运行 `check --repo "$REPO_ROOT" --profile objects --scope paths`。

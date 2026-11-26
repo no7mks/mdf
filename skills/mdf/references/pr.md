@@ -105,7 +105,7 @@ closeout:
   provider: github # 或 gitlab
 ```
 
-- 省略 closeout 时使用 local；init 保留配置，doctor 校验。
+- 省略 closeout 时使用 local；init 保留配置，check entry 校验。
 - origin fetch/push 地址须一致且唯一，支持 SSH/HTTPS 与自建 host；第一版只支持同仓 PR/MR。
 - 项目安装并登录 gh/glab；MDF 不自动配置账号、CI、runner 或 branch protection。
 - 普通交付首次 pr 先完成主链前置，再按下方材料准备条款生成候选材料。
@@ -171,7 +171,7 @@ closeout:
 
 恢复先核调用边界，再用 chat 中的交付身份查询 Git 和平台。
 
-- PR 恢复优先于 doctor、branch、delivery status 和 adhoc-status；先应用当前 until。
+- PR 恢复优先于 check entry、branch、delivery status 和 adhoc-status；先应用当前 until。
   未 merged 选 pr；已 merged 且 CI 收尾通过后，Gitflow 发布交付先选 publish，其余选 close-out；显式 until pr 不进入这两个阶段。
   merged 但关联 CI 未收尾或缺少证据时先恢复 pr，按下方轮询规则查回关联运行。
 - source 来自 chat、当前完整分支或用户指定。身份不足或多个候选时，向用户确认 source 和 PR/MR ID。

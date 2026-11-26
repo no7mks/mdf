@@ -89,7 +89,7 @@
 | closeout | 是 | closeout_*、commands_release、semver、validate_release |
 | planning | 否 | planning、prp_split、tree_view、list_objects、proposals |
 | objects | 是 | bugs、archive、moves、jot、make-id、对象校验、yamlutil |
-| docs | 是 | audit、doctor、validate_*、doc_size |
+| docs | 是 | audit、check entry、validate_*、doc_size |
 | init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
 | integrate | 否 | integrate、integrate_http、integrate_store |
 | deploy | 否 | 项目本体 upgrade、detach |
@@ -116,3 +116,5 @@
 - 修复后的验收只补测失败及受影响 case，复用其余已通过结果；所有 verify variation 统一适用。
 - 影响分析、报告汇总和原请求覆盖按 [增量验证契约](../../../skills/mdf/references/verify-incremental.md)。
 - case 级补测使用对应测试文件，保持默认并行；无需为了验收重新跑整个入口。
+
+静态检查性能与 IG 等价性复现见 [Check Benchmark](check-benchmark.md)。

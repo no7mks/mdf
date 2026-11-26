@@ -85,7 +85,7 @@ def test_modules_verification_shape(python_exe, tmp_path, mutate):
     init_git(repo)
     path = modules_yaml(repo)
     path.write_text(mutate(path.read_text()))
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert "modules.invalid" in result.stdout or "modules." in result.stdout
 
 
@@ -103,7 +103,7 @@ def test_manifest_verification_moved_finding(python_exe, tmp_path):
             1,
         )
     )
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert "manifest.verification_moved" in result.stdout
     assert "$mdf migrate" in result.stdout
 
@@ -113,4 +113,4 @@ def test_modules_accepts_budget_overrides(python_exe, tmp_path):
     init_git(repo)
     set_modules_budget(repo, "quick", 45)
     set_modules_budget(repo, "release", 3600)
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))

@@ -26,7 +26,7 @@ def test_jots_allow_free_markdown_in_marked_entries(
     )
     init_git(repo)
 
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_jots_require_marked_nonempty_entries(
@@ -38,6 +38,6 @@ def test_jots_require_marked_nonempty_entries(
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "jot.format" in result.stdout

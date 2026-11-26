@@ -13,7 +13,7 @@ def write_adr(repo: Path, name: str, identifier: str) -> None:
 
 
 def adr_codes(python_exe: str, repo: Path) -> set[str]:
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     return {item["code"] for item in json.loads(result.stdout)["findings"]}
 
@@ -22,7 +22,7 @@ def test_adr_id_equals_filename_slug(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     write_adr(repo, "use-sqlite.md", "adr-use-sqlite")
     init_git(repo)
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_adr_rejects_legacy_numeric_id(python_exe: str, tmp_path: Path):

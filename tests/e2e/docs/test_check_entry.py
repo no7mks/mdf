@@ -15,7 +15,7 @@ def test_info_reports_protocol_versions(python_exe: str):
     assert data["schema_version"] == 3
 
 
-def test_doctor_reports_only_core_and_repository_state(
+def test_entry_reports_only_core_and_repository_state(
     python_exe: str, tmp_path: Path
 ):
     repo = tmp_path / "repo"
@@ -23,30 +23,30 @@ def test_doctor_reports_only_core_and_repository_state(
     (repo / "README.md").write_text("# demo\n", encoding="utf-8")
     init_git(repo)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["initialized"] is False
     assert {item["code"] for item in data["findings"]} == {"layout.testing"}
     assert data["normal_workflows_allowed"] is False
     assert "entry_skills" not in data
 
 
-def test_doctor_reports_retired_layout_without_manifest(python_exe: str, tmp_path: Path):
+def test_entry_reports_retired_layout_without_manifest(python_exe: str, tmp_path: Path):
     repo = tmp_path / "repo"
     (repo / "docs/product").mkdir(parents=True)
     (repo / "docs/product/note.md").write_text("旧产品说明。\n", encoding="utf-8")
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["initialized"] is False
     codes = {item["code"] for item in data["findings"]}
     assert "layout.migrate" in codes
     assert data["is_git_root"] is False
 
 
-def test_doctor_reports_ready_v2_repository(python_exe: str, tmp_path: Path):
+def test_entry_reports_ready_v2_repository(python_exe: str, tmp_path: Path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["initialized"] is True
     assert data["state"] == "ready"
     assert data["normal_workflows_allowed"] is True
@@ -54,14 +54,14 @@ def test_doctor_reports_ready_v2_repository(python_exe: str, tmp_path: Path):
     assert "entry_skills" not in data
 
 
-def test_doctor_reports_dirty_without_blocking_normal_workflows(
+def test_entry_reports_dirty_without_blocking_normal_workflows(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     (repo / "untracked.txt").write_text("dirty\n", encoding="utf-8")
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["clean"] is False
     assert data["normal_workflows_allowed"] is True
     assert data["findings"] == []
@@ -69,7 +69,7 @@ def test_doctor_reports_dirty_without_blocking_normal_workflows(
 
 
 @pytest.mark.parametrize("change_state", ["dirty", "staged", "committed"])
-def test_doctor_allows_stale_evidence_but_full_checks_reject_it(
+def test_entry_allows_stale_evidence_but_full_checks_reject_it(
     python_exe: str, tmp_path: Path, change_state: str,
 ):
     repo = copy_fixture(tmp_path)
@@ -81,9 +81,9 @@ def test_doctor_allows_stale_evidence_but_full_checks_reject_it(
     if change_state == "committed":
         git(repo, "commit", "-m", "test: 更新 evidence")
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
-    assert {item["code"] for item in data["findings"]} == {"evidence.stale"}
-    assert all(item["severity"] == "error" for item in data["findings"])
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
+    assert data["findings"] == []
+    assert "freshness" in data["skipped_checks"]
     assert data["normal_workflows_allowed"] is True
     assert data["clean"] is (change_state == "committed")
     for command in ("validate", "fact-audit"):
@@ -98,7 +98,7 @@ def test_doctor_allows_stale_evidence_but_full_checks_reject_it(
 
 @pytest.mark.parametrize("changed_path", ["schema.yaml", "generate.py"])
 @pytest.mark.parametrize("committed", [False, True])
-def test_doctor_allows_stale_generated_facts_but_full_checks_reject_them(
+def test_entry_allows_stale_generated_facts_but_full_checks_reject_them(
     python_exe: str, tmp_path: Path, changed_path: str, committed: bool,
 ):
     repo = copy_fixture(tmp_path)
@@ -113,16 +113,16 @@ def test_doctor_allows_stale_generated_facts_but_full_checks_reject_them(
         "generated:\n  source: schema.yaml\n  generator: generate.py\n",
     )
     init_git(repo)
-    assert payload(mdf(python_exe, "doctor", "--repo", str(repo)))["findings"] == []
+    assert payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))["findings"] == []
     changed = repo / changed_path
     changed.write_text(changed.read_text() + "\n# 更新 generated 输入\n")
     if committed:
         git(repo, "add", changed_path)
         git(repo, "commit", "-m", "test: 更新 generated 输入")
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
-    assert {item["code"] for item in data["findings"]} == {"generated.stale"}
-    assert all(item["severity"] == "error" for item in data["findings"])
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
+    assert data["findings"] == []
+    assert "freshness" in data["skipped_checks"]
     assert data["normal_workflows_allowed"] is True
     assert data["clean"] is committed
     for command in ("validate", "fact-audit"):
@@ -139,7 +139,7 @@ def test_doctor_allows_stale_generated_facts_but_full_checks_reject_them(
     "evidence.missing_path", "evidence.untracked", "evidence.outside_repo",
     "manifest.schema", "layout.migrate", "manifest.initializing",
 ])
-def test_doctor_still_blocks_other_findings_alongside_stale_evidence(
+def test_entry_still_blocks_other_findings_alongside_stale_evidence(
     python_exe: str, tmp_path: Path, other_error: str,
 ):
     repo = copy_fixture(tmp_path)
@@ -166,13 +166,20 @@ def test_doctor_still_blocks_other_findings_alongside_stale_evidence(
         (repo / "docs/product").mkdir()
         (repo / "docs/product/note.md").write_text("# 错误布局\n")
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     codes = {item["code"] for item in data["findings"]}
-    assert {"evidence.stale", other_error} <= codes
-    assert data["normal_workflows_allowed"] is False
+    assert "evidence.stale" not in codes
+    if other_error.startswith("evidence."):
+        assert other_error not in codes
+        assert data["normal_workflows_allowed"] is True
+        checked = mdf(python_exe, "check", "--profile", "closeout", "--repo", str(repo), "--base", "HEAD")
+        assert {other_error, "evidence.stale"} <= {item["code"] for item in json.loads(checked.stdout)["findings"]}
+    else:
+        assert other_error in codes
+        assert data["normal_workflows_allowed"] is False
 
 
-def test_doctor_allows_in_progress_unreleased_delivery_without_change(
+def test_entry_allows_in_progress_unreleased_delivery_without_change(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -201,14 +208,14 @@ def test_doctor_allows_in_progress_unreleased_delivery_without_change(
     assert (root / "objectives.md").is_file()
     assert not (root / "CHANGE.md").exists()
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(work)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(work)))
     assert data["state"] == "ready"
     assert data["findings"] == []
     assert data["normal_workflows_allowed"] is True
     assert data["clean"] is True
 
 
-def test_doctor_rejects_unreleased_dir_without_change_or_identity(
+def test_entry_rejects_unreleased_dir_without_change_or_identity(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -216,13 +223,16 @@ def test_doctor_rejects_unreleased_dir_without_change_or_identity(
     folder = repo / "changes/unreleased/orphan-slug"
     folder.mkdir(parents=True)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
-    assert data["normal_workflows_allowed"] is False
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"] is True
+    checked = mdf(python_exe, "check", "--profile", "objects", "--repo", str(repo))
+    assert checked.returncode == 2
+    data = json.loads(checked.stdout)
     codes = {item["code"] for item in data["findings"]}
     assert "change.missing" in codes
 
 
-def test_doctor_allows_semver_unreleased_review_dir(
+def test_entry_allows_semver_unreleased_review_dir(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -231,12 +241,12 @@ def test_doctor_allows_semver_unreleased_review_dir(
     (folder / "code-review.md").write_text("# 审查\n\n通过。\n", encoding="utf-8")
     init_git(repo)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["findings"] == []
     assert data["normal_workflows_allowed"] is True
 
 
-def test_doctor_allows_semver_unreleased_identity_without_review(
+def test_entry_allows_semver_unreleased_identity_without_review(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -246,12 +256,12 @@ def test_doctor_allows_semver_unreleased_identity_without_review(
     (folder / "objectives.md").write_text("# 发布目标\n\n本版收口。\n")
     init_git(repo)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["findings"] == []
     assert data["normal_workflows_allowed"] is True
 
 
-def test_doctor_rejects_empty_semver_unreleased_dir(
+def test_entry_rejects_empty_semver_unreleased_dir(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -259,13 +269,16 @@ def test_doctor_rejects_empty_semver_unreleased_dir(
     folder.mkdir(parents=True)
     init_git(repo)
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
-    assert data["normal_workflows_allowed"] is False
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
+    assert data["normal_workflows_allowed"] is True
+    checked = mdf(python_exe, "check", "--profile", "objects", "--repo", str(repo))
+    assert checked.returncode == 2
+    data = json.loads(checked.stdout)
     codes = {item["code"] for item in data["findings"]}
     assert "change.missing" in codes
 
 
-def test_doctor_allows_ignored_runtime_files(
+def test_entry_allows_ignored_runtime_files(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
@@ -276,7 +289,7 @@ def test_doctor_allows_ignored_runtime_files(
     token_dir.mkdir()
     (token_dir / "token.json").write_text("{}\n", encoding="utf-8")
 
-    data = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    data = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert data["clean"] is True
 
 

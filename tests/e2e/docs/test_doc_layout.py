@@ -20,12 +20,12 @@ def test_fact_pages_allow_product_macros(python_exe: str, tmp_path: Path):
         encoding="utf-8",
     )
     init_git(repo)
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
     replace(page, "`{{char}}`", "`{{MDF_EVIDENCE_PATH}}`")
     git(repo, "add", "--all")
     git(repo, "commit", "-q", "-m", "test: 留下模板占位")
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "fact.marker" in _codes(result)
 
@@ -41,7 +41,7 @@ def test_user_guide_pages_require_user_guide_doc_type(python_exe: str, tmp_path:
     )
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "fact.doc_type_path" in _codes(result)
 
@@ -58,7 +58,7 @@ def test_retired_docs_directories_report_layout_migrate(python_exe: str, tmp_pat
     (repo / "docs" / "adr").mkdir()
     init_git(repo)
 
-    result = mdf(python_exe, "doctor", "--repo", str(repo))
+    result = mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo))
     data = payload(result)
     codes = [item["code"] for item in data["findings"]]
     assert codes.count("layout.migrate") == 2
@@ -73,7 +73,7 @@ def test_docs_testing_handbook_reports_layout_migrate(
     (repo / "docs" / "testing.md").write_text("# 旧测试手册\n", encoding="utf-8")
     init_git(repo)
 
-    result = mdf(python_exe, "doctor", "--repo", str(repo))
+    result = mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo))
     data = payload(result)
     codes = [item["code"] for item in data["findings"]]
     assert "layout.migrate" in codes
@@ -90,7 +90,7 @@ def test_missing_testing_facet_reports_layout_testing(
         path.unlink()
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "layout.testing" in _codes(result)
 
@@ -103,14 +103,14 @@ def test_testing_pages_require_system_testing_doc_type(
     replace(page, "doc_type: system-testing", "doc_type: system-operations")
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     assert "fact.doc_type_path" in _codes(result)
 
     replace(page, "doc_type: system-operations", "doc_type: system-testing")
     git(repo, "add", "--all")
     git(repo, "commit", "-q", "-m", "test: 修正 testing doc_type")
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_schema_version_mismatch_points_to_migrate(python_exe: str, tmp_path: Path):
@@ -118,7 +118,7 @@ def test_schema_version_mismatch_points_to_migrate(python_exe: str, tmp_path: Pa
     replace(repo / ".mdf" / "manifest.yaml", "schema_version: 3", "schema_version: 2")
     init_git(repo)
 
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     finding = next(
         item for item in json.loads(result.stdout)["findings"]
@@ -139,7 +139,7 @@ def test_adrs_live_under_context(python_exe: str, tmp_path: Path):
     assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
     replace(adr, "id: adr-use-sqlite", "id: adr-other")
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert "adr.id" in _codes(result)
 
 
@@ -475,13 +475,13 @@ def test_prose_check_lists_issues_for_given_paths(python_exe, tmp_path):
     note.parent.mkdir(parents=True, exist_ok=True)
     note.write_text("# 笔记\n\n" + "".join(f"第{i}行。\n" for i in range(7)))
     init_git(repo)
-    assert_ok(mdf(python_exe, "prose-check", "--repo", str(repo)))
-    result = mdf(python_exe, "prose-check", "--repo", str(repo),
-                 "--path", "docs/context/research/note.md")
+    assert_ok(mdf(python_exe, "check", "--only", "prose", "--repo", str(repo), "--scope", "full"))
+    result = mdf(python_exe, "check", "--only", "prose", "--repo", str(repo),
+                 "--scope", "paths", "--document-path", "docs/context/research/note.md")
     assert result.returncode == 2
     data = json.loads(result.stdout)
-    assert [(item["path"], item["line"], item["code"]) for item in data["issues"]] == [
-        ("docs/context/research/note.md", 3, "prose.block"),
+    assert [(item["path"], item["code"]) for item in data["findings"]] == [
+        ("docs/context/research/note.md", "prose.block"),
     ]
-    outside = mdf(python_exe, "prose-check", "--repo", str(repo), "--path", "../x.md")
-    assert "invalid_path" in outside.stderr
+    outside = mdf(python_exe, "check", "--only", "prose", "--repo", str(repo), "--scope", "paths", "--document-path", "../x.md")
+    assert "invalid_arguments" in outside.stderr

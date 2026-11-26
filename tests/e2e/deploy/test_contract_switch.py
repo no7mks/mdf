@@ -117,7 +117,7 @@ def test_ordinary_command_hints_when_the_declaration_is_newer(python_exe: str, t
     repo = repository(tmp_path, 4)
     nested = repo / "src"
     nested.mkdir()
-    result = mdf(python_exe, "doctor", "--repo", str(nested))
+    result = mdf(python_exe, "check", "--profile", "entry", "--repo", str(nested))
     assert "MDF 提示：" in result.stderr
     assert ".mdf/manifest.yaml 声明的 4" in result.stderr
     assert "更新命令：$mdf upgrade" in result.stderr
@@ -145,6 +145,6 @@ def test_drift_hint_reads_origin_trunk_even_when_worktree_matches(python_exe: st
     git(repo, "commit", "-m", "test: 远端更高契约")
     git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     git(repo, "reset", "--hard", "HEAD~1")
-    result = mdf(python_exe, "doctor", "--repo", str(repo))
+    result = mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo))
     assert "origin/main 声明的 4" in result.stderr
     assert "更新命令：$mdf upgrade" in result.stderr

@@ -11,7 +11,7 @@
 | 根 | CLI 参数、命令组装与公共命令适配 | `cli`、`commands_misc` |
 | `foundation` | 共享类型、错误、路径、文本与 YAML | `errors`、`paths`、`yamlutil` |
 | `documents` | Proposal、Bug、HTML 工作材料及对象操作 | `proposals`、`prp_split`、`html_documents` |
-| `inspection` | 仓库、事实、evidence、体积与结构检查 | `doctor`、`audit`、`code_size` |
+| `inspection` | 仓库、事实、evidence、体积与结构检查 | `check --profile entry`、`audit`、`code_size` |
 | `lifecycle` | 交付身份、roster、阶段、版本收口与发布 | `delivery_state`、`roster`、`closeout_stage` |
 | `execution` | module 验证配置、命令执行与测试报告 | `modules`、`module_verify`、`verify_run`、`reports` |
 | `workspace` | Git、worktree、初始化、同步、hook 与仓外切换 | `gitflow`、`gitutil`、`squash`、`init_repo`、`detach` |

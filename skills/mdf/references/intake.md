@@ -68,7 +68,7 @@
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check entry | 脚本 | 解析 REPO_ROOT 并运行 doctor | doctor 结构化结果 | 2 | 停止 |
+| 1 | Check entry | 脚本 | 解析 REPO_ROOT 并运行 check entry | check entry 结构化结果 | 2 | 停止 |
 | 2 | Resolve source | 约束 | 确认一次性来源及采用范围 | 来源、已确认范围 | 3 | 等待澄清，2 |
 | 3 | Classify | 脚本 | `list` 查重，按状态剔除或转回归 | list 结果、对象清单 | 4 | 全部剔除停；无法判定回 2 |
 | 4 | Clarify | 约束 | 内部 clarify 补齐各 Proposal/Bug 必填事实 | 完整必填事实 | 5 | 不写对象，停止 |
@@ -84,7 +84,7 @@
 
 **入口**
 
-解析 `REPO_ROOT` 并运行 `doctor`。本步不切换工作区；写入落点在步骤 6
+解析 `REPO_ROOT` 并运行 `check --profile entry`。本步不切换工作区；写入落点在步骤 6
 按对象类型确定。
 
 验收：`normal_workflows_allowed: true`。
@@ -216,7 +216,7 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 每处写入后在该工作区完成以下核对：
 
-1. 运行 `validate --repo "$REPO_ROOT" --level basic`。
+1. 运行 `check --repo "$REPO_ROOT" --profile objects --scope paths --document-path <对象路径>`。
 2. 回读对象并对照模板、确认清单与完整 diff。
 3. 核对 schema、必填章节、初始状态和依赖；`depends_on` 不得残留 `new:` 临时引用。
 

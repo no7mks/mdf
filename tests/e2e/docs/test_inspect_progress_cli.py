@@ -6,18 +6,19 @@ import time
 from mdf_test_support import *  # noqa: F403
 
 
-@pytest.mark.parametrize("command", ["doctor", "validate", "fact-audit"])
+@pytest.mark.parametrize("command", ["validate", "fact-audit"])
 def test_inspect_progress_keeps_json_and_is_logged(command, python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     init_git(repo)
-    result = mdf(python_exe, command, "--repo", str(repo))
+    options = ["--level", "strict"] if command == "validate" else []
+    result = mdf(python_exe, command, "--repo", str(repo), *options)
     data = payload(result)
     assert len(result.stdout.splitlines()) == 1
     assert "开始" in result.stderr and "检查结束，用时" in result.stderr
     assert "契约：事实文档与 evidence" in result.stderr
     assert "[事实文档] 已检查 0/" in result.stderr
     assert "[evidence：docs/system/interfaces/api.md] 已检查 1/1" in result.stderr
-    total, stage = {"doctor": (3, 2), "validate": (1, 1), "fact-audit": (4, 2)}[command]
+    total, stage = {"validate": (1, 1), "fact-audit": (4, 2)}[command]
     assert f"[{command}] 全局共 {total} 个阶段：" in result.stderr.splitlines()[0]
     evidence_lines = [line for line in result.stderr.splitlines() if "[evidence：" in line]
     assert evidence_lines
@@ -51,14 +52,14 @@ def test_inspect_progress_keeps_json_and_is_logged(command, python_exe, tmp_path
         ) in result.stderr
 
 
-def test_uninitialized_doctor_reports_layout_progress(python_exe, tmp_path):
+def test_uninitialized_check_reports_layout_progress(python_exe, tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
-    result = mdf(python_exe, "doctor", "--repo", str(repo))
+    result = mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo))
     assert payload(result)["initialized"] is False
     assert "契约：未初始化布局" in result.stderr
     assert "共 2 组｜完成 1｜运行 0｜待开始 0｜中断 0｜跳过 1" in result.stderr
-    assert "doctor 3/3" in result.stderr
+    assert "check 1/1" in result.stderr
 
 
 @pytest.mark.parametrize("command", ["validate", "fact-audit"])
@@ -77,25 +78,25 @@ def test_findings_still_fail_after_progress(command, python_exe, tmp_path):
     assert "检查结束" in result.stderr
 
 
-def test_doctor_failure_keeps_error_json_last(python_exe, tmp_path, monkeypatch):
+def test_strict_failure_keeps_error_json_last(python_exe, tmp_path, monkeypatch):
     repo = copy_fixture(tmp_path)
     init_git(repo)
     load_core_module()
-    from mdf_core.inspection import doctor
+    from mdf_core.inspection import strict_validation
     from mdf_core.foundation.errors import MDFError
 
     def fail(*args, **kwargs):
         raise MDFError("检查无法继续", code="inspection_failed")
 
-    monkeypatch.setattr(doctor, "validate_evidence", fail)
-    result = mdf(python_exe, "doctor", "--repo", str(repo))
+    monkeypatch.setattr(strict_validation, "validate_evidence", fail)
+    result = mdf(python_exe, "validate", "--level", "strict", "--repo", str(repo))
     assert result.returncode != 0
     assert not result.stdout
     assert "中断，用时" in result.stderr
     assert json.loads(result.stderr.splitlines()[-1])["error"] == "inspection_failed"
 
 
-def test_doctor_progress_arrives_before_check_finishes(python_exe, tmp_path):
+def test_strict_progress_arrives_before_check_finishes(python_exe, tmp_path):
     repo = copy_fixture(tmp_path)
     (repo / "src/blocked.py").write_text("# evidence\n")
     doc = repo / "docs/system/interfaces/api.md"
@@ -115,7 +116,7 @@ def wait_for_input(self, path):
         sys.stdin.readline()
     return original(self, path)
 GitPathIndex.last_commit = wait_for_input
-sys.exit(main(["doctor", "--repo", sys.argv[1]]))
+sys.exit(main(["validate", "--level", "strict", "--repo", sys.argv[1]]))
 """
     proc = subprocess.Popen(
         [python_exe, "-c", probe, str(repo)],
@@ -139,7 +140,7 @@ sys.exit(main(["doctor", "--repo", sys.argv[1]]))
         assert not select.select([proc.stdout], [], [], 0)[0]
         stdout, stderr = proc.communicate(input=b"\n", timeout=10)
         assert proc.returncode == 0, (received + stderr).decode()
-        assert json.loads(stdout)["operation"] == "doctor"
+        assert json.loads(stdout)["operation"] == "validate"
         assert "[evidence：docs/system/interfaces/api.md] 已检查 2/2" in stderr.decode()
     finally:
         if proc.poll() is None:

@@ -134,7 +134,7 @@ def test_git_is_clean_treats_sequencer_heads_as_dirty(python_exe, tmp_path):
     from mdf_core.workspace.gitutil import git_directory, git_is_clean
 
     assert git_is_clean(repo) is False
-    doctor = payload(mdf(python_exe, "doctor", "--repo", str(repo)))
+    doctor = payload(mdf(python_exe, "check", "--profile", "entry", "--repo", str(repo)))
     assert doctor["clean"] is False
     land = mdf(python_exe, "planning", "land", "--repo", str(repo))
     assert land.returncode != 0

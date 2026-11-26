@@ -76,10 +76,10 @@ def implementation_roots(
 def validate_manifest(
     repo: Path,
     findings: list[Finding],
-    *, documents: set[Path] | None = None,
+    *, documents: set[Path] | None = None, scan=None,
 ) -> dict[str, Any] | None:
     path = manifest_path(repo)
-    if not path.is_file():
+    if not path.is_file() or (scan is not None and not scan.contains(path)):
         add_finding(
             findings,
             "manifest.missing",
@@ -280,7 +280,7 @@ def validate_manifest(
                 continue
             if documents is not None and candidate not in documents:
                 continue
-            if not candidate.is_file():
+            if not candidate.is_file() or (scan is not None and not scan.contains(candidate)):
                 add_finding(
                     findings,
                     "baseline.document",
@@ -290,7 +290,7 @@ def validate_manifest(
                 resolved = False
             elif name in BASELINE_DOC_TYPES:
                 try:
-                    metadata, _ = read_frontmatter(candidate)
+                    metadata, _ = (scan.frontmatter if scan else read_frontmatter)(candidate)
                 except MDFError as exc:
                     add_finding(
                         findings,

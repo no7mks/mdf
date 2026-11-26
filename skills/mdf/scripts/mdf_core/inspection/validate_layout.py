@@ -5,7 +5,7 @@ from mdf_core.foundation.errors import Finding, add_finding
 from mdf_core.foundation.paths import path_stays_in_repo
 
 
-def validate_layout(repo: Path, findings: list[Finding]) -> None:
+def validate_layout(repo: Path, findings: list[Finding], *, scan=None) -> None:
     """docs 布局必须符合当前契约；不属于当前布局的目录由 migrate 收敛。"""
     for raw in RETIRED_DOC_DIRS:
         path = repo / raw
@@ -31,13 +31,14 @@ def validate_layout(repo: Path, findings: list[Finding]) -> None:
             "迁入 docs/system/testing/ 后运行 $mdf migrate",
             RETIRED_TESTING_HANDBOOK,
         )
-    _validate_testing_facet(repo, findings)
+    _validate_testing_facet(repo, findings, scan)
 
 
-def _validate_testing_facet(repo: Path, findings: list[Finding]) -> None:
+def _validate_testing_facet(repo: Path, findings: list[Finding], scan) -> None:
     index = repo / TESTING_INDEX
     if (
         not index.is_file()
+        or (scan is not None and not scan.contains(index))
         or index.is_symlink()
         or not path_stays_in_repo(repo, index)
     ):
@@ -52,6 +53,7 @@ def _validate_testing_facet(repo: Path, findings: list[Finding]) -> None:
         path
         for path in index.parent.glob("*.md")
         if path.is_file()
+        and (scan is None or scan.contains(path))
         and not path.is_symlink()
         and path.name != "index.md"
         and path_stays_in_repo(repo, path)

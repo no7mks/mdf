@@ -29,7 +29,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
 - 只读原仓库，不改 HEAD/index/refs/objects；不跑 tests/hooks/filters。
   - `--output` 只在步骤 5 校验通过后写入该路径。步骤 1–4 不创建、不覆盖它。
 - 规则、manifest、modules 来自当前工作区；must-cover 见 fact-audit 审阅核。
-- 步骤 3–4 只读 [双向复核标准](fact-audit.md#s3) 至 warnings；不跑普通七步的 scope 默认。
+- 步骤 3–4 只读 [双向复核标准](fact-audit.md#s3) 至 warnings；不跑普通六步的 scope 默认。
 - `--quick` **只**跳过步骤 3–4 的 LLM，不换工作对象；仍保留 context 内确定性 audit / stale / uncovered。
   - 这些确定性结果仍进入报告，包括写入 `--output` 的报告。不改变它的含义。
 - `--output` 不是 `fact-audit` 或 `fact-audit-report-check` 的 CLI 参数。不要放进这两条命令。
@@ -74,4 +74,4 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" fact-audit-report-check \
   目标的 anchor 缺失也报 `link.broken`。
 - 对象与发布记录校验变更来源及受影响的引用约束；读取 inventory 不代表全库校验。
 - 范围外事实页不注册 evidence 进度组，也不进入本轮失败结果。
-- 显式 full 入口保留全库 doctor；不通过 base/after finding 差集裁定影响集。
+- 显式 full 入口按全库范围运行 closeout 静态规则。

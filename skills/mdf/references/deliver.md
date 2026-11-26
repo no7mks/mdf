@@ -155,7 +155,7 @@ Select 读取 `delivery route` 的 `next` 与 `state`：
 步骤 1 先解析策略参数并只读判定路径，核对该路径的 until 合法性；随后才能委托 start 或写入。
 走 pr 的交付先只读核原 source 的平台 PR；已命中者进入步骤 2 的恢复路由，不先运行普通身份检查。
 未命中且已锁定 adhoc 时先运行 adhoc-status；detached 传入已知 slug，completed 进入 2 的完成路由。
-其余情况解析目标 Git 根并运行 doctor、branch，要求 ready。按下列顺序锁定交付：
+其余情况解析目标 Git 根并运行 check entry、branch，要求 ready。按下列顺序锁定交付：
 
 1. 先由当前 feature/qa/dev、bugfix、hotfix、release 或 adhoc 分支推导在途交付。
    - 任一 kind 的 qa/dev 角色分支归属其 owner；使用 `delivery status` 返回的 `worktrees.owner.path`。

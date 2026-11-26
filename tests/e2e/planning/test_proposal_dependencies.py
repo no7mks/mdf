@@ -33,7 +33,7 @@ def write_proposal(
 
 
 def validation_codes(python_exe: str, repo: Path) -> set[str]:
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     assert result.returncode != 0
     return {item["code"] for item in json.loads(result.stdout)["findings"]}
 
@@ -47,7 +47,7 @@ def test_proposal_accepts_direct_active_proposal_dependency(
     replace(repo / "docs/proposals" / PRP_NAME, "depends_on: []", f"depends_on: [{identifier}]")
     init_git(repo)
 
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 @pytest.mark.parametrize(
@@ -100,7 +100,7 @@ def test_proposal_accepts_released_dependency(
     )
     init_git(repo)
 
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_proposal_accepts_archived_released_dependency(
@@ -129,7 +129,7 @@ def test_proposal_accepts_archived_released_dependency(
         )
     )
 
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 @pytest.mark.parametrize("resolution", ["rejected", "obsolete", "duplicate"])
@@ -204,7 +204,7 @@ def test_proposal_accepts_existing_milestone_dependency(
     )
     init_git(repo)
 
-    assert_ok(mdf(python_exe, "validate", "--repo", str(repo)))
+    assert_ok(mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict"))
 
 
 def test_proposal_rejects_unknown_milestone_dependency(

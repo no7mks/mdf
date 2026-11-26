@@ -63,7 +63,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check and scope | 脚本 | 运行 doctor，确定 scope 与 resolve-base | doctor、调用方、scope、路径 | 2 | 写入前停止并报告 |
+| 1 | Check and scope | 脚本 | 运行 check entry，确定 scope 与 resolve-base | check entry、调用方、scope、路径 | 2 | 写入前停止并报告 |
 | 2 | Align facts | 约束 | 按实现同步范围内当前事实、五类专用叶及 evidence | 事实 diff | 3 | 停止并报告 |
 | 3 | Audit | 约束 | 提交后委托 fact audit 共用核；按变更验证 | 审阅、验证 | 通过或仅结构则 4 | 其他未通过或验证失败则停 |
 | 4 | Refine structure | 约束 | 修结构；人工成功后自勾 | diff、提交 | 可重审3；无 finding 结束 | 超次或无法改则停 |
@@ -109,7 +109,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 
 **入口**
 
-任何写入或提交前运行 `doctor --repo "$REPO_ROOT"`；
+任何写入或提交前运行 `check --profile entry --repo "$REPO_ROOT"`；
 核对命令成功且结果包含 `is_git_root: true`、`initialized: true`、`state: ready`。
 
 - 独立调用与主链委托均须满足。
@@ -147,7 +147,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
   有失败 audit context 时沿用其 against 与范围；不得到步骤 3 才切换 CI base。
   - 按 against must-cover 纳入双侧 evidence、目录和 generated 依赖；paths 只定位修复，不缩小完成审阅。
 
-验收：doctor 结果、调用方类型、scope、事实与实现范围。
+验收：check entry 结果、调用方类型、scope、事实与实现范围。
 
 异常与交接：未初始化或范围不明时写入前停止并报告。
 
@@ -195,7 +195,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 （保证 `fact.untracked` / stale 可判定；不是因为 audit 强制 clean）。
 
 - ❌ 内部委托不得带 `--quick`。
-- strict validation 按已提交内容判 `fact.untracked` 与 `evidence.stale`。
+- fact audit 步骤 2 按最新提交重新运行 closeout 静态规则，判定 `fact.untracked` 与 `evidence.stale`。
 - 未提交的同次写入会变成其他未通过，到不了步骤 4。
 - 主链委托时，这次事实提交由本 intent 完成。
   调用方随后提交 Change 等其余材料。

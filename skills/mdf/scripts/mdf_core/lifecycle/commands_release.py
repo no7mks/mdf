@@ -3,13 +3,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from mdf_core.inspection import doctor
+from mdf_core.inspection.check_engine import check_payload
 from mdf_core.lifecycle.closeout_objects import active_objects
 from mdf_core.lifecycle.closeout_stage import apply_closeout, summarize_closeout
 from mdf_core.lifecycle.closeout_shape import unreleased_change_slugs, validate_closeout_shape
 from mdf_core.lifecycle.closeout_validate import normalize_hotfix_change
 from mdf_core.foundation.constants import SCHEMA_VERSION
-from mdf_core.foundation.errors import MDFError, emit, has_errors, serialize_findings
+from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.workspace.gitutil import (
     _status_paths,
     branch_details,
@@ -239,6 +239,12 @@ def derive_closeout_spec(
 def command_release_closeout(args: argparse.Namespace) -> None:
     repo = repo_path(args.repo)
     require_git_root(repo)
+    from mdf_core.lifecycle.pull_finish import finish_lock
+    with finish_lock(repo):
+        release_closeout(repo, args)
+
+
+def release_closeout(repo, args) -> None:
     ensure_safe_managed_paths(repo)
     ensure_clean(repo)
     from mdf_core.lifecycle.support_line import forbid_bug_edits
@@ -249,15 +255,18 @@ def command_release_closeout(args: argparse.Namespace) -> None:
             "release closeout 要求 manifest state 为 ready",
             code="manifest_not_ready",
         )
-    pre_findings = doctor.collect_findings(repo, full=True)
-    if has_errors(pre_findings):
-        raise MDFError(
-            "release closeout 要求全量确定性审计零 error",
-            code="audit_not_passed",
-            details={"findings": serialize_findings(pre_findings)},
-        )
     spec = derive_closeout_spec(repo, args)
     context = validate_closeout_shape(repo, spec)
+    previous = spec["previous_version"]
+    base = f"refs/tags/v{previous}" if previous else None
+    scope = "branch" if base else "full"
+    pre_check, code = check_payload(repo, "closeout", scope, base=base)
+    if code:
+        raise MDFError(
+            "release closeout 发布范围的确定性检查未通过",
+            code="audit_not_passed",
+            details={"findings": pre_check["findings"]},
+        )
     if args.dry_run:
         emit(
             {
@@ -283,13 +292,13 @@ def command_release_closeout(args: argparse.Namespace) -> None:
     context["require_release_notes"] = getattr(args, "require_release_notes", False)
     result = apply_closeout(repo, context)
 
-    post_findings = doctor.collect_findings(repo, full=True)
-    if has_errors(post_findings):
+    post_check, code = check_payload(repo, "closeout", scope, base=base)
+    if code:
         raise MDFError(
             "release closeout 的 post-validation 失败；写入已落在工作树且未提交",
             code="post_validation_failed",
             details={
-                "findings": serialize_findings(post_findings),
+                "findings": post_check["findings"],
                 "written": written_paths(repo),
             },
         )

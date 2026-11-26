@@ -15,9 +15,9 @@ def attach_origin(repo: Path, tmp_path: Path) -> Path:
     return remote
 
 
-def start_repo(tmp_path: Path) -> tuple[Path, Path]:
+def start_repo(tmp_path: Path, *, previous_release: bool = False) -> tuple[Path, Path]:
     repo = copy_fixture(tmp_path)
-    init_git(repo)
+    init_git(repo, previous_release=previous_release)
     git(repo, "branch", "-m", "master")
     git(repo, "branch", "develop")
     return repo, attach_origin(repo, tmp_path)

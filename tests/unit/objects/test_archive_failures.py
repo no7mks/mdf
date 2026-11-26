@@ -24,12 +24,10 @@ def test_archive_post_validation_failure_leaves_worktree(
     def fake_findings(*_args, **_kwargs):
         calls["n"] += 1
         if calls["n"] == 1:
-            return []
-        return [
-            core.Finding("injected.failure", "forced post-validation failure")
-        ]
+            return {"findings": []}, 0
+        return {"findings": [core.Finding("injected.failure", "forced post-validation failure").as_dict()]}, 2
 
-    monkeypatch.setattr("mdf_core.inspection.doctor.collect_findings", fake_findings)
+    monkeypatch.setattr("mdf_core.commands_misc.check_payload", fake_findings)
     args = SimpleNamespace(repo=str(repo), epoch="1.2", dry_run=False)
     with pytest.raises(core.MDFError) as caught:
         core.command_archive(args)

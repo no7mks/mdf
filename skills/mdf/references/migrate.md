@@ -107,14 +107,14 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
   - 提示前不写入 `.git/`。
 - 已 ready 的空仓库仍在 migrate 调整配置。
 - MDF 内容不符合当前契约时，即使尚无业务事实也继续 migrate。
-- 入口一律运行 doctor，不要求已是 Git 根，也不要求已有 manifest；finding 记入盘点。
-- 没有 manifest 时 doctor 只报布局 finding。`layout.migrate` 继续 migrate，不提示 bootstrap。
+- 入口一律运行 check entry，不要求已是 Git 根，也不要求已有 manifest；finding 记入盘点。
+- 没有 manifest 时 check entry 只报布局 finding。`layout.migrate` 继续 migrate，不提示 bootstrap。
 - 不因普通目录、无提交或 dirty 一概拒绝。
-- doctor finding 不是拒绝理由：本 intent 正是收敛这些 finding。
+- check entry finding 不是拒绝理由：本 intent 正是收敛这些 finding。
   - 全部 finding 记入盘点清单，由步骤 3 逐项处置。
   - 如 `manifest.schema`、`layout.migrate`、`manifest.verification` 由步骤 3 决定目录去处并重写 manifest。
 
-验收：明确项目根与判定依据；doctor finding 已全部记入盘点，无 migrate 无法安全处理的状态。
+验收：明确项目根与判定依据；check entry finding 已全部记入盘点，无 migrate 无法安全处理的状态。
 
 异常与交接：
 
@@ -127,16 +127,16 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 **盘点**
 
 盘点全部顶层项目项并检查项目原有的全部文档，区分 MDF 固定项、治理/生态入口、实现、测试、
-生成物与文档；登记入口 doctor 的全部 finding。
+生成物与文档；登记入口 check entry 的全部 finding。
 
 可选加速（见 `common.md`「Jev 可选加速」）：
 
 - 时机：材料已列全、写定分类清单前；tool 可用时。
 - 调用：对每个待分类项 `choice`，或一次 `run` 多题。
-- state：路径、职责摘要与 doctor finding 摘录。
+- state：路径、职责摘要与 check entry finding 摘录。
 - 选项键见下表；采信后写入同结构分类清单。
 - `ask` 或未采信走主 Agent，必要时澄清后回 2。
-- 路径职责已由契约或 doctor 明确时 ❌ 不调。
+- 路径职责已由契约或 check entry 明确时 ❌ 不调。
 - ❌ 不替代步骤 3–4 的去处澄清与用户确认，不因 Jev 移动或删除。
 
 | 键 | 含义 |
@@ -169,7 +169,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 
 使用内部 clarify intent，议题为材料去处、顶层例外、基线与验证。
 
-- 盘点中的每项 doctor finding 在方案中写明处置。
+- 盘点中的每项 check entry finding 在方案中写明处置。
 - 确认非生态必需且非 MDF 固定顶层目录的去处或顶层例外。
 - 调研与决策材料：
   - 本地或外部调研材料归入 `docs/context/research/`。
@@ -236,7 +236,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 **落地**
 
 - 执行 `init` 建立或更新完整 scaffold 前，按 `initialization.md` 段 2
-  依已确认方案准备 Git 基础并运行 doctor。
+  依已确认方案准备 Git 基础并运行 check entry。
 - 按 `initialization.md` 段 4 调用 `init` CLI，保持 manifest `initializing`，
   传入核对后的完整配置与验证命令。
 - 只按方案归位/保留/排除原材料与顶层项。
@@ -268,10 +268,10 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 - 步骤 5 的阶段提交就是审阅基线。本步不再另做一次提交。
 - 比较调用前后的 `GLOSSARY.md`、`docs/user-guide/**`、`docs/system/**` 与 `docs/context/adr/**`。
 - 内部委托 `fact audit` 执行`全量审阅`（`--scope full`），审的是已提交内容。
-- 按 `initialization.md` 段 5 核对 strict validation；同次 fact audit 已校验且内容未变时复用结果。
+- 按 `initialization.md` 段 5 核对 closeout 静态检查；同次 fact audit 已校验且内容未变时复用结果。
 - 审阅发现问题时修正、提交并重验，不要求用户手动 commit 后重调。
 
-验收：事实复核、diff 与 strict validation；仅允许 `manifest.initializing` finding。
+验收：事实复核、diff 与 closeout 静态检查；仅允许 `manifest.initializing` finding。
 
 通过条件：审阅与校验通过后进入 7。
 
@@ -290,7 +290,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 2. 按 initialization 段 6 询问是否启用，依 `SKILL.md`「用户确认」接受 yes 等明确肯定答复后收口。
    核对增量、改 ready、校验并提交，再核对本地 master/develop。
 
-验收：事实审阅与 strict validation 仍有效，启用增量校验零 finding、就绪结果已提交、本地分支可用。
+验收：事实审阅与 closeout 静态检查 仍有效，启用增量校验零 finding、就绪结果已提交、本地分支可用。
 
 异常与交接：
 

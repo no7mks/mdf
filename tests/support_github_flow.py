@@ -11,14 +11,14 @@ def set_workflow(repo: Path, model: str = "github-flow", trunk: str = "master") 
     manifest.write_text(text.replace("implementation_roots:", block + "implementation_roots:", 1), encoding="utf-8")
 
 
-def github_flow_repo(tmp_path: Path, *, trunk: str = "master", origin: bool = False, pr: bool = False):
+def github_flow_repo(tmp_path: Path, *, trunk: str = "master", origin: bool = False, pr: bool = False, previous_release: bool = False):
     """trunk 上无 develop 分支的 github-flow 仓库；origin=True 时附带裸远端。"""
     repo = copy_fixture(tmp_path)
     set_workflow(repo, trunk=trunk)
     if pr:
         manifest = repo / ".mdf" / "manifest.yaml"
         manifest.write_text(manifest.read_text() + "closeout:\n  mode: pr\n  provider: github\n", encoding="utf-8")
-    init_git(repo)
+    init_git(repo, previous_release=previous_release)
     git(repo, "branch", "-m", trunk)
     remote = None
     if origin:

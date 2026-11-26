@@ -22,6 +22,7 @@ from mdf_core.foundation.constants import (
 from mdf_core.foundation.errors import Finding
 from mdf_core.foundation.paths import path_stays_in_repo, relative
 from mdf_core.inspection.prose import structure_issues
+from mdf_core.inspection.reference_style import document_style
 
 ROUTER_PATHS = {
     "AGENTS.md",
@@ -97,63 +98,35 @@ def size_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
     for path in sorted(set(paths)):
         rel = relative(repo, path)
         role = size_role(rel)
-        if (path.suffix == ".html" or rel.startswith("docs/proposals/")
-                or rel == "docs/JOTS.md" or role is None or not path.is_file()):
+        if path.suffix != ".md" or role is None or not path.is_file():
             continue
         name, limit = role
+        _, actual_limit, style_issues = document_style(
+            rel, path.read_text(encoding="utf-8"), "fact" if role == SIZE_FACT else name, limit,
+        )
+        findings.extend(style_issues)
+        if rel.startswith("docs/proposals/") or rel == "docs/JOTS.md":
+            continue
         count = line_count(path, rel)
-        if count > limit:
+        if count > actual_limit:
             findings.append(
                 Finding(
                     "size.hard",
-                    f"{name} 文档 {count} 行，超过限制 {limit}；须按主题拆页或下沉，"
-                    f"每个结果最多 {limit * 7 // 10} 行",
+                    f"{name} 文档 {count} 行，超过限制 {actual_limit}；须按主题拆页或下沉，"
+                    f"每个结果最多 {actual_limit * 7 // 10} 行",
                     rel,
                 )
             )
     return findings
 
 
-def structure_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
+def structure_findings(repo: Path, paths: Iterable[Path], *, explicit: bool = False) -> list[Finding]:
     findings: list[Finding] = []
     for path in sorted(set(paths)):
         rel = relative(repo, path)
-        if size_role(rel) is None or rel == "docs/JOTS.md" or not path.is_file():
+        if ((not explicit and size_role(rel) is None) or rel == "docs/JOTS.md"
+                or path.suffix not in {".md", ".html"} or not path.is_file()):
             continue
         for number, code, message in structure_issues(role_text(path, rel)):
             findings.append(Finding(code, f"第 {number} 行：{message}", rel))
     return findings
-
-
-def command_prose_check(args) -> None:
-    """列出结构硬限制违例：默认检查全部带角色文档，--path 指定任意仓库内 Markdown。"""
-    from mdf_core.foundation.errors import MDFError, emit
-    from mdf_core.workspace.gitutil import repo_path, require_git_root
-    from mdf_core.execution.modules import MODULES_PATH, load_modules
-
-    repo = repo_path(args.repo)
-    require_git_root(repo)
-    if args.path:
-        paths = []
-        for raw in args.path:
-            path = (repo / raw).resolve()
-            if (Path(raw).is_absolute() or not path_stays_in_repo(repo, path)
-                    or not path.is_file() or path.suffix not in {".md", ".html"}):
-                raise MDFError(f"--path 必须是仓库内的 Markdown 文件: {raw}", code="invalid_path")
-            paths.append(path)
-    else:
-        paths = [path for path in sizable_documents(repo)
-                 if relative(repo, path) != "docs/JOTS.md"]
-    config = load_modules(repo) if (repo / MODULES_PATH).exists() else None
-    ignored = sorted({relative(repo, path) for path in paths
-                      if config and config.is_ignored(relative(repo, path))})
-    paths = [path for path in paths if relative(repo, path) not in ignored]
-    issues = [
-        {"path": relative(repo, path), "line": number, "code": code, "message": message}
-        for path in sorted(set(paths))
-        for number, code, message in structure_issues(role_text(path, relative(repo, path)))
-    ]
-    emit({"ok": not issues, "operation": "prose-check", "checked": len(set(paths)),
-          "issue_count": len(issues), "issues": issues, "ignored": ignored})
-    if issues:
-        raise SystemExit(2)

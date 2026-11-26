@@ -114,7 +114,7 @@ python3 -B "$MDF_ROOT/scripts/mdf.py" contract-switch --repo "$REPO_ROOT"
 - 只改 manifest 里 `schema_version` 那一行。
 - 声明值高于本机契约时失败，并提示 `$mdf upgrade`。
 - PR mode 在 `codex/contract-switch` 提交。其他模式在 trunk 提交。
-- 不跑 doctor、idle 或其他门禁。
+- 不跑 check entry、idle 或其他门禁。
 
 声明值低于本机工具时，先 contract-switch，再继续 migrate。
 规则见 [contract-switch](contract-switch.md)。

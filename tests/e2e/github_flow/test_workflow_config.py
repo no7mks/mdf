@@ -56,7 +56,7 @@ def test_doctor_reports_invalid_workflow(python_exe, tmp_path):
     repo = github_flow_repo(tmp_path)
     manifest = repo / ".mdf/manifest.yaml"
     manifest.write_text(manifest.read_text().replace("trunk: master", "trunk: develop"), encoding="utf-8")
-    result = mdf(python_exe, "validate", "--repo", str(repo))
+    result = mdf(python_exe, "validate", "--repo", str(repo), "--level", "strict")
     codes = {item["code"] for item in json.loads(result.stdout)["findings"]}
     assert "manifest.workflow" in codes
 

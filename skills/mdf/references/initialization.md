@@ -87,7 +87,7 @@
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Check boundary | 约束 | 写入前核对边界、事实与状态 | 项目根与分流依据 | 返回调用方 | 不明回 1；否则按分流表返回 |
-| 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；doctor | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
+| 2 | Prepare Git | 脚本 | 运行 prepare-git；再提交基线；check entry | Git、允许的 findings | 返回调用方 | 保留现场并报告 |
 | 3 | Configure | 约束 | 核对基线、版本、验证、实现根及收口模式 | 配置、保留范围确认 | 返回调用方落地 | 返回调用方澄清 |
 | 4 | Save baseline | 约束 | init 后核 closeout、完成材料并提交，保持 initializing | 配置、提交、diff | 返回调用方 | 配置不符3；其他保留现场并报告 |
 | 5 | Validate | 约束 | 按调用方审阅并全量校验 | 按 state 允许的 finding（s5） | 返回调用方 | 可修则 5；两轮后停 |
@@ -111,8 +111,8 @@ migrate 维护；initializing 不代表老仓库，应继续检查实际内容�
 
 不符合当前契约的既有 MDF 内容由 migrate 收敛，即使尚无业务事实；不推断历史语义：
 
-- 入口一律运行 `doctor`，不要求 Git 根，也不要求已有 manifest。
-- 没有 manifest 时 doctor 仍报告布局 finding。
+- 入口一律运行 `check --profile entry`，不要求 Git 根，也不要求已有 manifest。
+- 没有 manifest 时 check entry 仍报告布局 finding。
   - `layout.migrate` 即不符合契约，走 migrate，不先 bootstrap。
 - 不符合当前契约只看 finding code，不看文案里有没有 `$mdf migrate`：
   - 收敛类：`manifest.schema`、`layout.migrate`、`manifest.verification`。
@@ -168,7 +168,7 @@ migrate 必须先通过已有事实、已 ready，或不符合当前契约的判
 - 不要求远端；保留已有远端，不自动创建托管仓库或推送。远端设置变更按已确认方案授权，
   无法完成时明确交接。开分支、切换和合并前按操作要求检查工作区。
 
-Git 基础准备后运行 `doctor`：
+Git 基础准备后运行 `check --profile entry`：
 
 - bootstrap 且尚未初始化：允许继续。
 - bootstrap 且已有 manifest：仅允许 `manifest.initializing` 与 `layout.testing`。
@@ -235,7 +235,7 @@ init、bootstrap 与 migrate 共用该 CLI，不新增 bootstrap 或 migrate CLI
 - 变更收口配置时传 `--closeout-mode local|pr`。PR mode 需要已有 provider 或显式传入 `--closeout-provider github|gitlab`。
 
 init CLI 按最终配置同时写入 manifest 与 `AGENTS.md` 托管区块。回读 mode/provider 并检查 diff；
-不符回步骤 3 澄清或修正，按步骤 5 strict validation 验收后才启用。
+不符回步骤 3 澄清或修正，按步骤 5 closeout 静态检查 验收后才启用。
 
 init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent 按确认的验证配置填写并清除模板说明：
 
@@ -247,11 +247,11 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
 
 <a id="s5"></a>
 
-按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 strict validation，
-即 `python3 "$MDF_ROOT/scripts/mdf.py" validate --repo "$REPO_ROOT" --level strict`。
+按调用方验收：migrate 完成事实审阅，bootstrap 核对起步材料；均执行 closeout 静态检查，
+即 `python3 "$MDF_ROOT/scripts/mdf.py" check --repo "$REPO_ROOT" --profile closeout --scope full`。
 
-- bootstrap 不调用 fact audit，strict validation 是确定性契约校验，不是事实审阅。
-- migrate 的同次 fact audit 已执行 strict validation，且后续项目内容未变时，复用其结果，
+- bootstrap 不调用 fact audit，closeout 静态检查 是确定性契约校验，不是事实审阅。
+- migrate 的同次 fact audit 已执行 closeout 静态检查，且后续项目内容未变时，复用其结果，
   不在本段再次运行；核对仓库、scope、提交与工作区 diff，并检查完整 findings。
 - `manifest.state` 为 initializing 时仅允许 `manifest.initializing` finding；
   已是 ready 时须零 finding。
@@ -275,16 +275,16 @@ init CLI 仅在缺失时写入 `docs/system/testing/` 的静态模板；Agent �
   不按文件数、行数或「只是 flag」判断结果是否有效。
   同次全量结果缺失、不符合步骤 5 的允许项或无法核对时，先返回调用方补验。
   bootstrap 回步骤 5，migrate 回步骤 6，取得本文件步骤 5 要求的结果。
-- 同次启用增量仅含以下内容时，复用步骤 5 的 strict validation 与事实审阅：
+- 同次启用增量仅含以下内容时，复用步骤 5 的 closeout 静态检查 与事实审阅：
   - `.mdf/manifest.yaml` 的 `state: initializing → ready`。
   - Change 等收口记录中对本次启用状态的说明，不包含新的事实、承诺或配置变更。
   - 这些改动不构成事实变化，不重新调用 fact update 或 fact audit，不重复执行事实审阅。
-- 写 ready 后运行一次 `validate --repo "$REPO_ROOT" --level basic`，零 finding 后提交。
-  - basic 仍检查 ready 状态、配置、布局、记录与 evidence 路径，不重查 Git history。
-  - 它只补验上述启用增量，不能替代步骤 5 的 strict validation。
+- 写 ready 后运行一次 `check --repo "$REPO_ROOT" --profile dev --base HEAD`，无 blocking finding 后提交。
+  - dev 检查 ready 状态、配置与启用增量，跳过 stale。
+  - 它只补验上述启用增量，不能替代步骤 5 的 closeout 静态检查。
 - 提交后核对实际 commit diff、manifest 的 ready 值及工作区改动与预期一致。
-  没有新增变化时直接进入 8，不再次运行 doctor、validate 或事实审阅。
-- 配置、布局或其他材料有新增变化时补做 strict validation；不因确定性校验而自动重做事实审阅。
+  没有新增变化时直接进入 8，直接复用已有检查与事实审阅结果。
+- 配置、布局或其他材料有新增变化时补做 closeout 静态检查；不因确定性校验而自动重做事实审阅。
 - 事实发生变化时返回调用方：bootstrap 回其步骤 5，migrate 回其步骤 6，再按本页步骤 5 补审补验。
   本页步骤 5 按当前 `manifest.state` 验收。
   - 可观察契约、实现、测试、事实页、evidence 或生成源/生成器变化影响对应事实结论。

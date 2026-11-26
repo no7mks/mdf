@@ -55,7 +55,7 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 
 | # | 步骤 | 类型 | 做什么 | 证据 | 通过 → | 失败/缺失 → |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Check | 脚本 | 核对 ready、版本与验收清单 | doctor、list、参数 | 有清单则 2；空清单则结束 | 停止并报告 |
+| 1 | Check | 脚本 | 核对 ready、版本与验收清单 | check entry、list、参数 | 有清单则 2；空清单则结束 | 停止并报告 |
 | 2 | Verify | 约束 | 跑复现用例；失败则修并 smart（quick suite） | 命令、结果、smart | 3 | 可修或获批回 2；否则停 |
 | 3 | Review | 约束 | 只审这次修复的代码并裁定 | 范围 diff、结论 | 4 | 有可修回 2；需决定则停 |
 | 4 | Record | 脚本 | 先判断补验交接；否则写记录并关闭 | 记录、对象、提交 | 无补验则结束；有则按调用方返回补验 | 停止 |
@@ -64,7 +64,7 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 
 ### 范围与前置条件
 
-- 解析 `REPO_ROOT` 并运行 `doctor`。验收：`normal_workflows_allowed: true`。
+- 解析 `REPO_ROOT` 并运行 `check --profile entry`。验收：`normal_workflows_allowed: true`。
 - 独立调用：`$mdf bug close <bug-id> --fixed-in <version>`；Bug ID 与版本必填。
 - `--fixed-in` 只接受稳定 SemVer；release 上须等于分支版本。
   - hotfix 须等于 [已固定发布版本](hotfix-version.md)，slug 分支未定版时先 resolve-version 并提交。
@@ -185,3 +185,6 @@ PR mode 由 pr 的材料准备委托，完成或补验交接返回 pr 步骤 2�
 
 验收：正常完成时，每个 Bug 复现与审查通过、已 closed、fixed_in 正确，记录与对象已提交。
 补验交接时仅报告已提交的修改、待关闭/重验 ID 与外部补验要求，返回调用方，不宣称完成。
+
+对象状态写入后，对每个变更的 PRP 或 Bug 传入一个 `--document-path`，
+运行 `check --repo "$REPO_ROOT" --profile objects --scope paths`。

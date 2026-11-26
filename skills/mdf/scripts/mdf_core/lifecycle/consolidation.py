@@ -3,7 +3,7 @@ import contextlib
 import io
 import json
 
-from mdf_core.foundation.errors import MDFError, emit, has_errors, serialize_findings
+from mdf_core.foundation.errors import MDFError, emit
 from mdf_core.lifecycle.delivery_state import locate, read_json, write_json
 from mdf_core.lifecycle.stage_route import parse_items, _tick
 from mdf_core.workspace.gitutil import branch_details, current_branch, ensure_clean, repo_path, require_git_root
@@ -123,7 +123,7 @@ def commit_materials(repo, source, start_head, changed):
 
 
 def consolidate(repo, args):
-    from mdf_core.inspection import doctor
+    from mdf_core.inspection.check_engine import check_payload
     ensure_clean(repo)
     source = current_branch(repo)
     start_head = sha(repo, "HEAD")
@@ -148,10 +148,10 @@ def consolidate(repo, args):
     owned = set()
     if versioned:
         if not (repo / "changes" / str(version) / "CHANGE.md").exists():
-            from mdf_core.lifecycle.commands_release import command_release_closeout
+            from mdf_core.lifecycle.commands_release import release_closeout
             args.require_release_notes = True
             with contextlib.redirect_stdout(io.StringIO()) as captured:
-                command_release_closeout(args)
+                release_closeout(repo, args)
             result = json.loads(captured.getvalue())
             owned.update(release_paths(repo, result, result["version"]))
     else:
@@ -161,10 +161,11 @@ def consolidate(repo, args):
     if versioned:
         from mdf_core.lifecycle.closeout_render import changelog_excerpt
         changelog_excerpt((repo / "CHANGELOG.md").read_text(), version)
-    findings = doctor.collect_findings(repo, full=True) if result is None else []
-    if has_errors(findings):
-        raise MDFError("consolidate 文档检查未通过，保留材料供修复", code="post_validation_failed",
-                       details={"findings": serialize_findings(findings)})
+    if result is None:
+        checked, code = check_payload(repo, "closeout", "branch", base=data["start_commit"])
+        if code:
+            raise MDFError("consolidate 文档检查未通过，保留材料供修复", code="post_validation_failed",
+                           details={"findings": checked["findings"]})
     path = root / "objectives.md"
     text = path.read_text()
     item = next(i for i in parse_items(text) if i["name"] == "consolidate")

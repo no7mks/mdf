@@ -18,7 +18,7 @@ def release_arguments(repo: Path, **extra: str) -> list[str]:
 
 def prepare_release(repo: Path, slug: str = "service-health") -> None:
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.3.0")
-    init_git(repo)
+    init_git(repo, previous_release=True)
     write_unreleased_change(repo, slug)
     git(repo, "add", "--all")
     git(repo, "commit", "-m", "test: 准备发布变更")
@@ -194,7 +194,7 @@ def test_closeout_rejects_unclassified_unreleased_bug_on_apply(
     python_exe: str, tmp_path: Path
 ):
     repo = copy_fixture(tmp_path)
-    init_git(repo)
+    init_git(repo, previous_release=True)
     write_unreleased_change(repo, "service-health")
     replace(
         repo / "changes" / "unreleased" / "service-health" / "CHANGE.md",
@@ -222,7 +222,7 @@ def test_critical_bug_cannot_be_wont_fixed_at_closeout(
         "status: open",
         "status: rejected\nreject-reason: wont-fix",
     )
-    init_git(repo)
+    init_git(repo, previous_release=True)
     write_unreleased_change(repo, "timeout-close")
     change = repo / "changes" / "unreleased" / "timeout-close" / "CHANGE.md"
     replace(change, f"fixed: [{BUG_ID}]", "fixed: []")
@@ -243,7 +243,7 @@ def prepare_wont_fix_release(repo: Path) -> None:
         "status: open",
         "status: rejected\nreject-reason: wont-fix",
     )
-    init_git(repo)
+    init_git(repo, previous_release=True)
     write_unreleased_change(repo, "service-health")
     change = repo / "changes" / "unreleased" / "service-health" / "CHANGE.md"
     replace(change, f"fixed: [{BUG_ID}]", "fixed: []")
@@ -298,7 +298,7 @@ def test_hotfix_closeout_uses_manifest_commands(
 ):
     repo = copy_fixture(tmp_path)
     replace(repo / "docs/bugs" / BUG_NAME, "status: open", "status: closed\nfixed_in: 1.2.1")
-    init_git(repo)
+    init_git(repo, previous_release=True)
     git(repo, "checkout", "-b", "hotfix/1.2.1")
     review = repo / "changes/unreleased/1.2.1"
     review.mkdir(parents=True)

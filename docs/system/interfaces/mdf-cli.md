@@ -18,13 +18,13 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 - 输出与错误：
   - 成功时命令向 stdout 输出 JSON。`tree --markdown` 输出可直接展示的 Markdown。
   - 业务规则拒绝时 stderr 最后一行为 JSON 错误，并以非零状态退出。
-  - `doctor`、`validate`、`fact-audit` 向 stderr 实时输出检查阶段与阶段用时。
+  - `check`、`validate`、`fact-audit` 向 stderr 实时输出检查阶段与阶段用时。
     「检查结束」仅表示阶段执行完毕，是否通过仍以 JSON findings 为准。
-  - 开始列出全局阶段清单（doctor 3 阶段、validate 1 阶段、fact-audit 4 阶段）。
+  - 开始列出全局阶段清单（check entry 1 阶段、validate 1 阶段、fact-audit 4 阶段）。
     阶段内每行保留当前全局阶段与已完成阶段数，并行子检查也继承该位置；阶段数不代表耗时比例。
   - 契约检查先列检查组总数；文档扫描后报告局部计数组总数（1 组文档汇总 + 每页 1 组 evidence）。
     各页 evidence 总量在读取该页后确定；无法解析的页面明确报告该组跳过。
-  - 局部计数组共享稳定编号；doctor/validate 预登记契约检查与文档汇总，fact-audit 另预登记文档结构检查。
+  - 局部计数组共享稳定编号；validate 预登记契约检查与文档汇总，fact-audit 另预登记文档结构检查。
     扫描后为逐页 evidence 追加编号，显示组数变化与完整清单；扫描前标为后续分组待扫描。
   - 每条局部计数显示组编号及全局组数汇总：完成、运行、待开始、中断、跳过，并列出运行组编号。
     各状态数量之和等于总组数；运行与待开始之和表示尚未结束的组数，全局阶段不计入局部组数。
@@ -79,14 +79,13 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `review-prepare` | 审查左端点、未审增量与体积 | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `review-record` | 记录完整审查通过的 clean commit | [PR mode 与 CI reviewer](mdf-cli-review.md) |
 | `incremental-integration-plan` | 基线之后 review/verify/fact 三路动作 | [交付阶段与验证](mdf-cli-delivery.md) |
-| `doctor` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
+| `check` | 仓库状态 | [只读命令](mdf-cli-inspect.md) |
 | `prepare-git` | 非 Git 目录初始化为 master | [仓库写入命令](mdf-cli-write.md) |
 | `merge-no-ff` | 在当前分支 no-ff 合并指定提交 | [仓库写入命令](mdf-cli-write.md) |
 | `init` | 初始化写入 | [仓库写入命令](mdf-cli-write.md) |
 | `validate` | 确定性校验 | [只读命令](mdf-cli-inspect.md) |
 | `fact-audit-report-check` | 独立事实 report 校验 | [只读命令](mdf-cli-inspect.md) |
 | `fact-audit` | 确定性审计与独立 commit context | [只读命令](mdf-cli-inspect.md) |
-| `prose-check` | 文档结构硬限制检查 | [只读命令](mdf-cli-inspect.md) |
 | `make-id` | 对象 ID | [只读命令](mdf-cli-inspect.md) |
 | `make-jot-id` | Jot ID | [只读命令](mdf-cli-inspect.md) |
 | `branch` | 分支解析 | [只读命令](mdf-cli-inspect.md) |
@@ -135,11 +134,11 @@ CLI 不负责询问用户、判定文档语义或决定交付范围。它由 int
 
 | intent | 使用的 CLI |
 | --- | --- |
-| `init`、`bootstrap`、`migrate` | `doctor`、`init` 与 `validate` |
+| `init`、`bootstrap`、`migrate` | `check` 与 `init` |
 | `tree` | 只读 `tree` CLI，展示 draft/ready 混态依赖视图 | [交付阶段与验证](mdf-cli-delivery.md) |
-| `intake`、`prp create`、`prp review` 与 `prp split` | `doctor`、`planning` 或 `pm`、`list` 与 `make-id` |
+| `intake`、`prp create`、`prp review` 与 `prp split` | `check`、`planning` 或 `pm`、`list` 与 `make-id` |
 | `prp review` | 用 `prp-review` 校验确认稿并更新 Markdown 的状态 |
-| `bug create` | `doctor`、`list` 与 `make-id` | [交付阶段与验证](mdf-cli-delivery.md) |
+| `bug create` | `check`、`list` 与 `make-id` | [交付阶段与验证](mdf-cli-delivery.md) |
 | `jot` | `make-jot-id`；`jot promote` 另用 `list` 查重 | [交付阶段与验证](mdf-cli-delivery.md) |
 | `archive` | `list` 与 `archive` | [仓库写入命令](mdf-cli-write.md) |
 | `start` | `list` 与 `start` | [仓库写入命令](mdf-cli-write.md) |
