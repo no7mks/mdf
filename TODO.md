@@ -117,6 +117,7 @@
   - 使用者与 Agent 仅需按两层模型调用检查，开发态与收口态准入边界清晰可解释，重复扫描显著消除。
   - 完整的配置字典、错误码表与接口总表可内聚保存在单页内，混杂冗长的叙述文档仍被准确拦截。
 - 参考起点：
+  - [T04 分析与方案对比（Issue #2）](https://github.com/no7mks/mdf/issues/2)
   - [只读检查命令](docs/system/interfaces/mdf-cli-inspect.md)
   - [doctor 扫描](skills/mdf/scripts/mdf_core/inspection/doctor.py)
   - [文档体积与结构检查](skills/mdf/scripts/mdf_core/inspection/doc_size.py)
