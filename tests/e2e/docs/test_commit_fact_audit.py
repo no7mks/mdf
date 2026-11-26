@@ -59,6 +59,27 @@ def test_against_includes_dirty_worktree(python_exe, tmp_path):
     assert '+dirty = True' in ctx['diff']
 
 
+def test_against_checks_evidence_outside_module_sourcesets(python_exe, tmp_path):
+    repo, _ = repository(tmp_path)
+    evidence = repo / 'maintenance/bootstrap.py'
+    evidence.parent.mkdir()
+    evidence.write_text('VERSION = 1\n')
+    doc_path = 'docs/system/interfaces/api.md'
+    doc = repo / doc_path
+    doc.write_text(doc.read_text().replace('path: src/service.py', 'path: maintenance/bootstrap.py'))
+    base = commit(repo)
+    evidence.write_text('VERSION = 2\n')
+    commit(repo)
+
+    result = mdf(python_exe, 'fact-audit', '--repo', str(repo), '--against', base, '--quick')
+    assert result.returncode == 2
+    ctx = json.loads(result.stdout)['result']
+    assert ctx['document_paths'] == [doc_path]
+    assert [(f['code'], f['path']) for f in ctx['audit']['findings']] == [('evidence.stale', doc_path)]
+    assert ctx['implementation_paths'] == ctx['audit']['implementation_paths'] == []
+    assert ctx['audit']['warnings'] == []
+
+
 @pytest.mark.parametrize('change', ['delete', 'rename', 'remove-evidence', 'delete-doc'])
 def test_commit_audit_keeps_base_evidence_impacts(tmp_path, change):
     repo, base = repository(tmp_path)
@@ -140,6 +161,10 @@ def test_vendor_ignore_keeps_project_code_and_fact_pages_in_review(python_exe, t
     vendor = repo / '.codex/skills/mdf/tool.py'
     vendor.parent.mkdir(parents=True)
     vendor.write_text('VALUE = 1\n')
+    modules = repo / '.mdf/modules.yaml'
+    modules.write_text(modules.read_text().replace(
+        '    ignore: []', '      - ".codex/skills/mdf/**"\n'
+        '    ignore:\n      - pattern: ".codex/skills/mdf/**"\n        reason: 排除已安装的 MDF'))
     doc = repo / 'docs/system/interfaces/api.md'
     doc.write_text(doc.read_text().replace('evidence:\n',
                    'evidence:\n  - path: .codex/skills/mdf/tool.py\n'))
@@ -149,6 +174,7 @@ def test_vendor_ignore_keeps_project_code_and_fact_pages_in_review(python_exe, t
     ctx = fact_context(repo, target)
     assert ctx['paths'] == ctx['implementation_paths'] == []
     assert ctx['document_paths'] == []
+    assert [item['path'] for item in ctx['ignored']] == ['.codex/skills/mdf/tool.py']
     (repo / 'src/service.py').write_text('def healthy():\n    return True\n\n# project change\n')
     doc.write_text(doc.read_text() + '\n项目事实变更。\n')
     commit(repo)

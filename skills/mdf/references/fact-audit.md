@@ -9,8 +9,8 @@
 - 核末尾的 `[output]` 是会话结论，不是调用方文件。调用方文件只由 against 旁路在 report-check 通过后写入。
 - 不强制 clean；against 比较基线与**当前工作区**（可含 dirty）。
 - `must-cover` = `diff(base, 当前工作区) ∩ sourceset ∩ ¬module-ignore` 的实现路径。
-  - stale：frontmatter evidence 落在 must-cover 内的事实页。
   - uncovered：must-cover 每项须有文档覆盖或显式 ignored；只裁定该集合，不是全库。
+- stale：检查变更的事实页，以及 `evidence` 或 `generated` 引用命中未被有效 ignore 的 diff 的事实页。
 - 交付与独立 branch：CLI `--scope branch` / Agent resolve-base 后均走 against 核（同一核）。
 - `$mdf fact audit --quick`：**只**跳过 LLM；不换工作对象；可与 `--against` / `--scope branch` 或 full/paths 组合。
 - `$mdf fact audit --output <path>`：会话参数，不传给 `fact-audit` CLI。与 `--against`、`--quick` 组合。
@@ -161,8 +161,7 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
   - 都没有才由 CLI 取 integration 分支与 HEAD 的 merge-base：gitflow 为 develop，github-flow 为 trunk。
   - 主链 release（verify branch 之后、close-out 之前）的 `--base` 为上一正式发布；
     CLI 收成 against 时使用同一 SHA。
-  - 范围是该起点以来改动的实现文件、改动到的事实页，以及 evidence
-    引用这些实现的事实页；同时检查改动到的入口页体积。
+  - 范围按上方审阅核计算实现覆盖与受影响事实页，同时检查改动到的入口页体积。
 - `full`：全部当前事实、实现面、入口根文档、ADR 与工作对象体积。
 - `paths`：调用方或独立调用给出精确实现/文档路径；未给路径时停止询问。
 
@@ -207,7 +206,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   `--implementation-path`；两者都不是时停止询问。`full` 不带路径与 `--base`。
 - CLI 按 `repository-documents.md` 的文档体积表检查 size.hard、prose.*；命中 module ignore 时保留排除依据。
 - `implementation_paths`、`document_paths` 与 mappings 仅包含未被有效 ignore 排除的语义审阅范围。
-  - 实现范围先与 sourceset 并集求交并排除 module ignore，再推导受影响事实页。
+  - 实现范围与 sourceset 并集求交并排除 module ignore；事实页按未被有效 ignore 的 diff 匹配依赖。
   - 项目事实页自身变化独立纳入，不要求归属 module；`ignored` 保留排除路径及理由。
 - 代码文件行数与 package 文件数检查由统一 lint 执行；本 intent 不产生 code.size 或 package.size。
 - 范围内的 `docs/system/overview.md` 由 CLI 检查核心模块表，
