@@ -167,6 +167,7 @@ evidence:
   每个元素必须是非空字符串。
   - 无账本 adhoc 可用 `evidence.range` 固定 base、source_head 与 target_head，值为完整 commit hash。
   - 范围记录不替代实际验收；业务 source_head 与材料提交后的合并 tip 分开。
+- `release_notes` 服务于对象审计与 SemVer 分类校验；选类、`none` 过滤与面向人的根 CHANGELOG 润色遵循 [CHANGELOG 编写规范](changelog-writing.md)。
 - 正文必须包含“结果”“已更新的当前文档”和“已知偏差”章节。
 
 ## 版本根 Change

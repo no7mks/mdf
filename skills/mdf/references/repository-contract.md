@@ -296,5 +296,7 @@ generated:
 - `previous_version` 是发布时的实际基线；主线基线排除导入的 support patch；已发布维护线以固定 tag 中的祖先版本为准。
 - 导入 support 记录不改 trunk 的 `versioning.latest_release`。
 
-根 `CHANGELOG.md` 只列稳定版本，不含 Unreleased 章节。版本目录的根 `CHANGE.md`
-记录该版本的结果、outcome、found-in 转换、SemVer 和审阅结果；CHANGELOG 只做读者索引。
+根 `CHANGELOG.md` 只列稳定版本，不含 Unreleased 章节，且直接作为 `publish` annotated tag 的正文源。
+版本目录的根 `CHANGE.md` 承担结果、outcome、found-in 转换、SemVer 与审阅审计。
+根 `CHANGELOG.md` 按 [CHANGELOG 编写规范](changelog-writing.md) 面向读者组织，
+要求应发布事实与已核实 PR/MR 链接一致，不要求与 `CHANGE.md` 的 YAML 字符串逐字相同。
