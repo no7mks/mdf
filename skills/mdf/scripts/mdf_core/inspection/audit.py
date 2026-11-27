@@ -11,7 +11,7 @@ from mdf_core.foundation.errors import Finding, MDFError, add_finding, emit, has
 from mdf_core.workspace.gitutil import git_path_tracked, repo_path, require_git_root, run
 from mdf_core.foundation.paths import path_stays_in_repo, relative
 from mdf_core.foundation.progress import ProgressPlan, report_progress
-from mdf_core.execution.modules import MODULES_PATH, ModulesConfig, load_modules, match
+from mdf_core.execution.modules import ModulesConfig, load_modules, match
 from mdf_core.inspection.validate_evidence import frontmatter_evidence
 from mdf_core.inspection.validate_manifest import implementation_roots
 from mdf_core.foundation.yamlutil import read_frontmatter
@@ -181,25 +181,12 @@ def _branch_scope(
     return implementation, sorted(documents)
 
 
-def _ignored_paths(
-    repo: Path, sources: list[Path], findings: list[Finding], config: ModulesConfig,
-    *, validation_paths: list[str] | None = None,
-) -> tuple[dict[Path, dict[str, str]], set[str]]:
-    """返回命中记录与完整 pattern 集，删除路径仍按全部规则判定范围。"""
+def _ignored_paths(repo: Path, sources: list[Path], config: ModulesConfig):
+    """返回命中记录与完整 pattern 集，规则有效性由共享检查层验证。"""
     result: dict[Path, dict[str, str]] = {}
     for owner, rule in config.all_ignore_rules():
-        matched = [item for item in sources
-                   if config.ignore_matches(relative(repo, item), owner, rule)]
-        valid = bool(matched) if validation_paths is None else any(
-            config.ignore_matches(path, owner, rule) for path in validation_paths
-        )
-        if not valid:
-            add_finding(findings, "audit.ignore_empty",
-                        "ignore pattern matches no tracked file in its scope",
-                        f"{owner or 'repo'}:{rule.pattern}")
-            continue
-        for item in matched:
-            if config.is_ignored(relative(repo, item)):
+        for item in sources:
+            if config.ignore_matches(relative(repo, item), owner, rule) and config.is_ignored(relative(repo, item)):
                 result.setdefault(item, {"path": rule.pattern, "reason": rule.reason, "module": owner})
     return result, {rule.pattern for _, rule in config.all_ignore_rules()}
 
@@ -229,11 +216,9 @@ def audit_payload(
         all_tracked = _tracked_files(repo, [repo])
         try:
             size_config = ignore_modules if ignore_modules is not None else load_modules(repo)
-        except MDFError as exc:
-            add_finding(findings, "modules.invalid", str(exc), MODULES_PATH)
+        except MDFError:
             size_config = ModulesConfig()
-        ignored, ignored_patterns = _ignored_paths(repo, all_tracked, findings, size_config,
-                                                  validation_paths=ignore_paths)
+        ignored, ignored_patterns = _ignored_paths(repo, all_tracked, size_config)
         all_sources = [path for path in all_tracked if size_config.owns(relative(repo, path))
                        and size_role(relative(repo, path)) is None]
         resolved_base: str | None = None
@@ -310,6 +295,7 @@ def audit_payload(
     result, mappings, warnings = inspect_scope(
         scan, set(GROUPS), changes, documents, sized, sources, previous,
         full=scope == "full", global_objects=global_objects, plan=plan, require_history=global_objects,
+        ignore_modules=size_config, ignore_paths=ignore_paths,
     )
     findings.extend(result)
     payload = {

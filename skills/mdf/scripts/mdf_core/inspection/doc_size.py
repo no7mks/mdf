@@ -101,8 +101,13 @@ def size_findings(repo: Path, paths: Iterable[Path]) -> list[Finding]:
         if path.suffix != ".md" or role is None or not path.is_file():
             continue
         name, limit = role
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeError as exc:
+            findings.append(Finding("document.encoding", f"文档必须使用 UTF-8：{exc}", rel))
+            continue
         _, actual_limit, style_issues = document_style(
-            rel, path.read_text(encoding="utf-8"), "fact" if role == SIZE_FACT else name, limit,
+            rel, text, "fact" if role == SIZE_FACT else name, limit,
         )
         findings.extend(style_issues)
         if rel.startswith("docs/proposals/") or rel == "docs/JOTS.md":
@@ -127,6 +132,11 @@ def structure_findings(repo: Path, paths: Iterable[Path], *, explicit: bool = Fa
         if ((not explicit and size_role(rel) is None) or rel == "docs/JOTS.md"
                 or path.suffix not in {".md", ".html"} or not path.is_file()):
             continue
-        for number, code, message in structure_issues(role_text(path, rel)):
+        try:
+            text = role_text(path, rel)
+        except UnicodeError as exc:
+            findings.append(Finding("document.encoding", f"文档必须使用 UTF-8：{exc}", rel))
+            continue
+        for number, code, message in structure_issues(text):
             findings.append(Finding(code, f"第 {number} 行：{message}", rel))
     return findings

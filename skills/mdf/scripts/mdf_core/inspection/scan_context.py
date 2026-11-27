@@ -2,9 +2,10 @@
 
 import posixpath
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path, PurePosixPath
+from threading import RLock
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.paths import path_stays_in_repo
@@ -31,32 +32,52 @@ def _with_dirs(names):
     return names | {"."} | {parent.as_posix() for name in names for parent in PurePosixPath(name).parents}
 
 
+class locked_cached_property(cached_property):
+    """同一 scan 的缓存只计算一次，包括并行首次读取。"""
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+        with instance._lock:
+            return super().__get__(instance, owner)
+
+
 @dataclass
 class RepoScanContext:
     repo: Path
     base: str | None = None
     include_ignored: bool = False
     original_tracked: set[str] | None = None
+    _lock: object = field(default_factory=RLock, init=False, repr=False, compare=False)
 
-    @cached_property
+    @locked_cached_property
     def tracked(self):
         return self._paths("ls-files", "-z")
 
-    @cached_property
+    @locked_cached_property
     def untracked(self):
         return self._paths("ls-files", "--others", "--exclude-standard", "-z")
 
-    @cached_property
+    @locked_cached_property
     def visible(self):
         return self.tracked | self.untracked
 
-    @cached_property
+    @locked_cached_property
     def visible_with_dirs(self):
         return _with_dirs(self.visible)
 
-    @cached_property
+    @locked_cached_property
     def tracked_with_dirs(self):
         return _with_dirs(self.tracked if self.original_tracked is None else self.original_tracked)
+
+    @locked_cached_property
+    def ignore_validation_paths(self):
+        if not self.base:
+            return {name for name in self.tracked if self.safe_file(self.repo / name)}
+        # against 与 snapshot 共用 base + 当前候选口径，包含未跟踪文件和 index 删除后仍存在的 HEAD 文件。
+        head = self._paths("ls-tree", "-rz", "--name-only", "HEAD")
+        current = {name for name in self.visible | head if self.safe_file(self.repo / name)}
+        return current | self._paths("ls-tree", "-rz", "--name-only", self.base)
 
     def contains(self, path):
         return self.include_ignored or self.name(path) in self.visible_with_dirs
@@ -65,27 +86,28 @@ class RepoScanContext:
         result = run(["git", "check-ignore", "-q", "--", self.name(path) + "/"], cwd=self.repo, check=False)
         return result.returncode == 0
 
-    @cached_property
+    @locked_cached_property
     def changed(self):
         flags = ("--name-only", "--no-renames", "--ignore-submodules=none", "-z")
         return (self.untracked | self._paths("diff", *flags, self.base, "--")
                 | self._paths("diff", "--cached", *flags, self.base, "--"))
 
-    @cached_property
+    @locked_cached_property
     def facts(self):
         return {path for path in fact_documents(self.repo) if self.include_ignored or self.name(path) in self.visible}
 
-    @cached_property
+    @locked_cached_property
     def _anchors(self):
         return {}
 
     def anchors(self, path):
-        from mdf_core.inspection.validate_links import document_anchors
-        if path not in self._anchors:
-            self._anchors[path] = document_anchors(path)
-        return self._anchors[path]
+        with self._lock:
+            from mdf_core.inspection.validate_links import document_anchors
+            if path not in self._anchors:
+                self._anchors[path] = document_anchors(path)
+            return self._anchors[path]
 
-    @cached_property
+    @locked_cached_property
     def _metadata_cache(self):
         return {}
 
@@ -96,16 +118,19 @@ class RepoScanContext:
         return not path.is_symlink() and path_stays_in_repo(self.repo, path) and path.is_file()
 
     def frontmatter(self, path):
-        if path not in self._metadata_cache:
-            try:
-                data = _metadata(path.read_text(encoding="utf-8"))
-            except (MDFError, UnicodeError) as exc:
-                data = exc
-            self._metadata_cache[path] = data
-        data = self._metadata_cache[path]
-        if isinstance(data, Exception):
-            raise data
-        return data
+        with self._lock:
+            if path not in self._metadata_cache:
+                try:
+                    data = _metadata(path.read_text(encoding="utf-8"))
+                except UnicodeError as exc:
+                    data = MDFError(f"文档必须使用 UTF-8：{exc}")
+                except MDFError as exc:
+                    data = exc
+                self._metadata_cache[path] = data
+            data = self._metadata_cache[path]
+            if isinstance(data, Exception):
+                raise data
+            return data
 
     def _paths(self, *args):
         result = run(["git", *args], cwd=self.repo)

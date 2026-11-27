@@ -41,6 +41,7 @@ def test_ig_strict_requires_explicit_level(python_exe, tmp_path, level):
 
 def test_static_dev_and_entry_skip_history_and_snapshots(python_exe, tmp_path, monkeypatch):
     from mdf_core.reviewing import fact_context
+    from mdf_core.inspection.check_engine import check_payload
     from mdf_core.workspace.gitutil import GitPathIndex
 
     repo = copy_fixture(tmp_path)
@@ -53,8 +54,8 @@ def test_static_dev_and_entry_skip_history_and_snapshots(python_exe, tmp_path, m
     monkeypatch.setattr(fact_context, "snapshot", forbidden)
     monkeypatch.setattr(fact_context, "working_snapshot", forbidden)
     monkeypatch.setattr(GitPathIndex, "last_commit", forbidden)
-    for args in (("--profile", "entry"), ("--profile", "dev", "--base", "HEAD")):
-        data = payload(mdf(python_exe, "check", "--repo", str(repo), *args))
+    for profile in ("entry", "dev"):
+        data, _ = check_payload(repo, profile, base="HEAD" if profile == "dev" else None)
         assert "freshness" in data["skipped_checks"]
         assert not any(f["code"] == "evidence.stale" for f in data["findings"])
 

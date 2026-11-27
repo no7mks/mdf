@@ -1,4 +1,4 @@
-"""info、doctor 与 validate 报告的仓库状态。"""
+"""info 与 check 报告的仓库状态。"""
 from __future__ import annotations
 from mdf_test_support import *  # noqa: F403
 

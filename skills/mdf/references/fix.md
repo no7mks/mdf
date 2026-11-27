@@ -58,7 +58,7 @@ CLI 使用 `python3 "$MDF_ROOT/scripts/mdf.py"`。
 | 2 | Clarify | 约束 | 内部 clarify 修复范围与方案 | 共同理解 | 3 | 不修复，停止 |
 | 3 | Reproduce | 约束 | 确认或编写该 Bug 的有效红灯测试 | 命令、退出状态、失败断言 | 4 | 停止并报告 |
 | 4 | Repair | 约束 | 修复或仅恢复成员并验证、smart | 命令、恢复证据、smart | 5 | 未满三轮且下一步明确则 4；否则停 |
-| 5 | Record | 脚本 | 标为 `fixed`、校验并提交 | 对象、validate、提交 | 结束 | 停止并报告 |
+| 5 | Record | 脚本 | 标为 `fixed`、校验并提交 | 对象、check、提交 | 结束 | 停止并报告 |
 
 ## 术语与数据结构
 

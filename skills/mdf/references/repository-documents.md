@@ -57,7 +57,7 @@
 - 对外可见行为仍只住 user-guide，只链接。其他页面只链接，不复述。
 - 架构问题以 `system/architecture/` 为准，ADR 不作为当前结构来源。
 
-**体积**（物理行；超出为 `size.hard` finding，由 fact-audit CLI 检查）：
+**体积**（物理行；超出为 `size.hard` finding，由 `check` 与 `fact-audit` CLI 检查）：
 
 | 角色 | 限制 |
 | --- | --- |

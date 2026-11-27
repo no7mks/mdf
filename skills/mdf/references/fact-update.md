@@ -210,7 +210,7 @@ deliver 委托时在内部 Audit 前应用 `references/deliver-policy.md`；到 
 结果分四类：
 
 - 通过。
-- 仅剩结构 finding：加载质量清单、`size.hard`、`prose.*`、`overview.core_modules`、`project.entry_links`。
+- 仅剩结构 finding：加载质量清单、`size.hard`、`prose.*`、`doc_style.*`、`reference.*`、`overview.core_modules`、`project.entry_links`。
 - 其他未通过：事实错误、覆盖遗漏、validation 阻断、未完成处置的 warning。
 - 验证失败：所需验证命令失败或缺少结果。
 

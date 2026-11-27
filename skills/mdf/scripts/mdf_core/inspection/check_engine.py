@@ -54,12 +54,25 @@ def _warnings(scan, sources, documents):
 
 
 def inspect_scope(scan, groups, changes, documents, sized, sources, previous, *,
-                  full=False, global_objects=False, plan=None, require_history=True):
+                  full=False, global_objects=False, plan=None, require_history=True,
+                  ignore_modules=None, ignore_paths=None):
     """check 与 fact-audit 在各自工作树上复用相同规则。"""
     repo = scan.repo
     findings = []
     with plan.stage(2) if plan else nullcontext():
         if "contract" in groups:
+            try:
+                config = ignore_modules if ignore_modules is not None else load_modules(repo)
+            except MDFError:
+                config = ModulesConfig()
+            rules = list(config.all_ignore_rules())
+            paths = ignore_paths
+            if rules and paths is None:
+                paths = scan.ignore_validation_paths
+            for owner, rule in rules:
+                if not any(config.ignore_matches(path, owner, rule) for path in paths):
+                    findings.append(Finding("audit.ignore_empty", "ignore pattern matches no tracked file in its scope",
+                                            f"{owner or 'repo'}:{rule.pattern}"))
             report_count("契约检查", 0, 1)
             with progress("契约：配置、布局、对象与记录"):
                 findings.extend(contract_findings(scan, changes, documents, previous,
@@ -237,10 +250,10 @@ def check_payload(repo, profile="dev", scope=None, *, base=None, against=None,
         sized = {p for p in explicit if scan.name(p).startswith(("docs/proposals/", "docs/bugs/"))
                  and not config.is_ignored(scan.name(p))}
     sources = {p for p in candidates if config.owns(scan.name(p)) and not size_role(scan.name(p))
-               and not config.is_ignored(scan.name(p))}
+               and not config.is_ignored(scan.name(p)) and scan.safe_file(p)}
     findings, _, warnings = inspect_scope(
         scan, groups, changes, documents, sized, sources, previous, full=scope == "full",
-        global_objects=profile in {"objects", "closeout"} or scope == "full",
+        global_objects=profile in {"objects", "closeout"} or scope == "full", ignore_modules=config,
     )
     metadata.update(
         base=resolved, document_paths=sorted(scan.name(path) for path in documents),

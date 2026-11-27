@@ -27,14 +27,14 @@
   同内容的阻断结论使旧记录失效。局部 base 与最终候选的显式 `--against` 仅用于本轮复核。
 - 首次 release 无已发布基线且无 clear 时，按已确认的显式 base 审阅。建立首个全局 clear 需 full 语义审阅。
 - fact update 委托时，完整复核后仅剩结构 finding 且 warning 已处置，可返回「仅结构 finding」。
-  结构分类沿用 [普通结论](fact-audit.md#s7)。
+  结构分类沿用 [普通结论](fact-audit.md#s6)。
 
 ## 主链报告与进度
 
 - `fact-audit.md` 记录实际 base SHA、被审 HEAD、指纹、JSON 与校验结果位置。
 - 摘要含逐页陈述与 evidence、覆盖、warning 处置、findings；无问题也要写核对依据。
 - JSON/context 在仓外；Markdown 是已完成审阅记录。
-- 沿用 [报告与 objectives 归属](fact-audit.md#s7) 保存、提交和勾选；人工 feature 由 fact update 自勾。
+- 沿用 [报告与 objectives 归属](fact-audit.md#s6) 保存、提交和勾选；人工 feature 由 fact update 自勾。
 
 ## PR 最终候选复核
 

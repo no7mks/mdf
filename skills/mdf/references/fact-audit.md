@@ -136,7 +136,7 @@ against / 交付旁路的五步细则见 [旁路与报告](fact-audit-against.md
 
 本流程只读，不写入、移动、提交、生成持久报告；
 不执行 `.mdf/modules.yaml` 验证入口，也不调用 `$mdf verify`。
-步骤 7 的审阅报告由有材料目录的调用方写入并提交。
+步骤 6 的审阅报告由有材料目录的调用方写入并提交。
 
 `--scope` 三选一，与 fact update 共用；列出 `<path>...` 即 `paths`，
 与 `--scope full` 或 `--scope branch` 同用时停止询问：
@@ -247,7 +247,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
 - 测试、modules 或 suite 声明变化时，核对 suite/testcase 索引与列表中的新增、删除和 rename 成员。
 - 「收集/声明」类陈述须核对实际配置和入口源码（如 modules 与 suite runner），不能仅凭旁证判定成立。
 - 文档声称报告齐全或验证通过时，按上述输入边界读取对应报告内容；空文件、仅存在路径或 CLI clear 均不支持该声明。
-- 范围内未复核的文档逐份记录未触及理由，供步骤 7 报告。
+- 范围内未复核的文档逐份记录未触及理由，供步骤 6 报告。
 - 同时按加载质量清单审阅范围内文档结构（`full` 覆盖 `docs/**` 与根文档）。
   结构与契约问题记语义 finding；`agents.project_content` 记 warning。
 
@@ -370,7 +370,7 @@ python3 "$MDF_ROOT/scripts/mdf.py" fact-audit --repo "$REPO_ROOT" --scope paths 
   不得推进依赖审阅通过的步骤。
 - 调用方是 fact-update，且未通过项只有结构 finding 时，返回「仅结构 finding」。
   fact-update 进入其步骤 4，不走失败停止。
-  - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`reference.*`、`overview.core_modules`、`project.entry_links`。
+  - 结构 finding 指加载质量清单、`size.hard`、`prose.*`、`doc_style.*`、`reference.*`、`overview.core_modules`、`project.entry_links`。
 - 修复、补充证据或重审由调用方按其契约处理；fact audit 保持只读，不自行修复或自动重试。
 
 Audit 不检查以下内容；这些属于 `$mdf close-out` 的交付前检查：

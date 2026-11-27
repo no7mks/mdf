@@ -237,5 +237,5 @@ Proposal 仅在已确认阶段归属时写入非空字符串 `milestone`；否�
 
 异常与交接：本步展示步骤 6 已验收对象；无法展示时停止。
 
-- Proposal 进入目标分支后，可显式调用 `$mdf prp review`，经 draft basic validation 后转为 `ready`。
+- Proposal 进入目标分支后，可显式调用 `$mdf prp review`，经 draft 状态的 `check --profile objects` 后转为 `ready`。
 - Bug 创建后即为 `open`，不得关闭普通对象或填写 `released_in`/`fixed_in`。

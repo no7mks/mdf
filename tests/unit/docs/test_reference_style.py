@@ -79,3 +79,23 @@ def test_new_scan_reads_updated_frontmatter(tmp_path):
     assert scan.frontmatter(path)[0]["title"] == "Before"
     path.write_text("---\ntitle: After\n---\n")
     assert RepoScanContext(tmp_path).frontmatter(path)[0]["title"] == "After"
+
+
+@pytest.mark.parametrize("body, expected", [
+    ("- item\n\n  散文", ["list", "blank", "prose"]),
+    ("```inline``` 散文\n正文", ["prose", "prose"]),
+    ("用 `<!-- jot: marker` 开头。\n## 标题", ["prose", "heading"]),
+    ("用 `` `<!--` `` 开头。\n## 标题", ["prose", "heading"]),
+])
+def test_reference_markdown_boundaries(body, expected):
+    assert [kind for kind, _, _ in classify_lines(body)] == expected
+
+
+@pytest.mark.parametrize("prefix", ["- item\n\n", "```inline``` 散文\n"])
+def test_reference_prose_cannot_hide_after_list_or_inline_fence(prefix):
+    body = "".join(f"## 节 {i}\n" + prefix + "  散文。\n" * 120 for i in range(4))
+    assert "reference.prose_heavy" in codes("---\ndoc_style: reference\n---\n" + body)[1]
+
+
+def test_reference_inline_comment_marker_preserves_sections():
+    assert codes(reference_page(fill="| 用 `<!-- jot: marker` 开头 | 值 |")) == (1200, set())

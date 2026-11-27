@@ -40,7 +40,10 @@ def overview_core_module_findings(
         return [
             Finding("overview.core_modules", "overview.md 无法读取", rel)
         ]
-    lines = overview.read_text(encoding="utf-8").splitlines()
+    try:
+        lines = overview.read_text(encoding="utf-8").splitlines()
+    except UnicodeError as exc:
+        return [Finding("document.encoding", f"文档必须使用 UTF-8：{exc}", rel)]
     start = next(
         (
             index + 1
@@ -116,7 +119,10 @@ def project_entry_link_findings(
         return []
     if not path.is_file() or path.is_symlink():
         return []
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeError as exc:
+        return [Finding("document.encoding", f"文档必须使用 UTF-8：{exc}", "PROJECT.md")]
     missing = [
         target for target in _PROJECT_ENTRY_PATHS if target not in text
     ]

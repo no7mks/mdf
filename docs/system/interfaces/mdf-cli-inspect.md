@@ -48,6 +48,11 @@ python3 skills/mdf/scripts/mdf.py check --repo /path/to/repository --profile dev
 - entry 允许未初始化目录；采集成功退出 0，准入看 `normal_workflows_allowed`。
 - 其余 Profile 有 blocking finding 退出 2，无阻断退出 0；参数或执行错误退出 1。
 - 运行期间保持工作区稳定。entry、objects、dev 跳过 Git freshness。
+- 删除路径仍触发影响页和引用检查，但不进入 `implementation_paths` 或产生 `audit.uncovered`。
+- 非 entry 的契约检查与 `fact-audit` 共用 `audit.ignore_empty`。
+  - full、paths 的 ignore 规则须命中当前已跟踪文件。
+  - branch、against 按基线与当前候选路径并集匹配，当前候选包含未跟踪文件；删除仍可命中基线。
+- 非 UTF-8 事实页以 `fact.frontmatter` 报错；文档体积与结构检查以 `document.encoding` 报错，退出 2。
 
 ## `validate --level strict`
 
@@ -198,7 +203,7 @@ python3 skills/mdf/scripts/mdf.py list --repo /path/to/repository \
 - Bug 额外给出 `severity`、`found_in`、`fixed_in`、`reject-reason` 与 `duplicate_of`。
 - 缺失字段为 `null`。
 - frontmatter 损坏、文件名不合规或缺少 `id`/`status` 的 active 文件不使命令失败。
-  - 而是列入 `skipped` 并附原因；契约校验仍由 `validate` 负责。
+  - 而是列入 `skipped` 并附原因；契约校验由 `check` 负责。
 
 ## `make-id`
 

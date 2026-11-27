@@ -7,7 +7,7 @@ from mdf_core.foundation.errors import Finding, MDFError
 from mdf_core.foundation.yamlutil import frontmatter_span, parse_yaml
 from mdf_core.inspection.prose import width
 
-FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
+FENCE = re.compile(r"^\s*(?:(`{3,})[^`]*|(~{3,}).*)$")
 HEADING = re.compile(r"^(#{1,6})\s")
 LIST = re.compile(r"^(\s*)(?:[-*+]|\d+[.)])\s+")
 ANCHOR = re.compile(r"""\s*<a\s+id=(?:"[^"]+"|'[^']+')\s*>\s*</a>\s*""")
@@ -28,7 +28,7 @@ def classify_lines(body):
             continue
         opened = FENCE.match(line) if not in_comment else None
         if opened:
-            fence = opened[1]
+            fence = opened[1] or opened[2]
             list_indent = None
             yield "code", line, 0
             continue
@@ -37,6 +37,16 @@ def classify_lines(body):
         visible = ""
         while line:
             marker = "-->" if in_comment else "<!--"
+            if not in_comment:
+                token = re.search(r"`+|<!--", line)
+                if token and token[0].startswith("`"):
+                    visible += line[:token.end()]
+                    line = line[token.end():]
+                    closing = re.search(rf"(?<!`){token[0]}(?!`)", line)
+                    if closing:
+                        visible += line[:closing.end()]
+                        line = line[closing.end():]
+                    continue
             before, found, line = line.partition(marker)
             if not in_comment:
                 visible += before
@@ -45,11 +55,12 @@ def classify_lines(body):
             in_comment = not in_comment
             comment = True
         if not visible.strip():
+            list_indent = None
             yield ("comment" if comment else "blank"), visible, 0
         elif ANCHOR.fullmatch(visible):
             yield "comment", visible, 0
         elif opened := FENCE.match(visible):
-            fence = opened[1]
+            fence = opened[1] or opened[2]
             list_indent = None
             yield "code", visible, 0
         elif item := LIST.match(visible):

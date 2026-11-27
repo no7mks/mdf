@@ -183,7 +183,7 @@ findings 后停止。尚未进入写入位置时留在本步。
 
 **就绪**
 
-- 首次写入 `ready` 时，先在 `draft` 状态运行 `basic validation`。
+- 首次写入 `ready` 时，先在 `draft` 状态运行 `check --profile objects`。
 - 通过后，用步骤 5 的摘要在原 Markdown 文件中写入 ready 状态。
 
 ```bash

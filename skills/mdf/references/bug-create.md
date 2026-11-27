@@ -79,7 +79,7 @@
 核对 `is_git_root: true`、`initialized: true`、`state: ready`。
 
 - 不将 `normal_workflows_allowed: true` 作为前置条件。
-- 活干到一半时文档 stale 是正常的；`evidence.stale` 等 findings 报告后继续。
+- entry 不检查 freshness；按入口 findings 判断是否可继续创建 Bug。
 
 验收：仓库已初始化且 manifest ready。
 

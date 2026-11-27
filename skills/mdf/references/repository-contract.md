@@ -121,7 +121,7 @@ MDF 不自动迁移或删除顶层项目项。`PROJECT.md` 必须记录仅含例
 ## 文档结构
 
 MDF 生成或管理的全部 Markdown 遵守 `references/doc-structure.md` 的结构规则与
-ASD-STE100 写作约定。CLI `fact-audit` 对结构硬限制报 `prose.*` finding。
+ASD-STE100 写作约定。CLI `check` 与 `fact-audit` 对结构硬限制报 `prose.*` finding。
 
 ## 根文档职责
 

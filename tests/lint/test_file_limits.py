@@ -106,3 +106,12 @@ def test_package_limits():
     from mdf_core.inspection.code_size import package_size_findings
     failures = package_size_findings(REPO_ROOT, checked_files())
     assert not failures, "\n".join(f"{item.path}: {item.message}" for item in failures)
+
+
+def test_lint_document_style_checks_short_pages():
+    for rel, style, expected in (
+        ("docs/system/interfaces/api.md", "invalid", "doc_style.invalid"),
+        ("docs/system/overview.md", "reference", "doc_style.disallowed_role"),
+    ):
+        _, _, findings = lint_document_style(rel, f"---\ndoc_style: {style}\n---\n# 短页\n", 500)
+        assert [finding.code for finding in findings] == [expected]

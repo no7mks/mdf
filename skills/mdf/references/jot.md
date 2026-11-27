@@ -127,7 +127,7 @@
 1. github-flow 的独立 Jot 先按 [项目记录](common.md#项目记录) 准备 trunk，再调用 `make-jot-id`。
 2. 从原文压缩一句短标题（不另写生成器）。
 3. 在 `docs/JOTS.md` 末尾追加完整 marker 条目，保留原始含义和细节。
-4. 再运行 `basic validation`。github-flow 的独立 Jot 校验通过后按项目记录流程提交。
+4. 再运行 `check --profile objects`。github-flow 的独立 Jot 校验通过后按项目记录流程提交。
 
 验收：新增条目和 diff。
 
@@ -224,7 +224,7 @@
 
 - Proposal：`make-id --type proposal --repo "$REPO_ROOT" --slug <slug>`。
 - Bug：`make-id --type bug --repo "$REPO_ROOT" --slug <slug>`。
-- Proposal 写为 `draft`，Bug 写为 `open`，运行写入校验（`basic validation`）。
+- Proposal 写为 `draft`，Bug 写为 `open`，运行写入校验（`check --profile objects`）。
 
 验收：写入根、Jot 核对结果、新对象与写入校验。
 
@@ -238,8 +238,8 @@
 
 不重写对象，不改状态：Proposal 保持 `draft`，Bug 保持 `open`。
 
-1. 在步骤 7 已写入的 draft/open 上运行复验（`basic validation`）。
-2. 复验通过后删除选中 Jot marker，再运行删 Jot 后校验（`basic validation`）。
+1. 在步骤 7 已写入的 draft/open 上运行复验（`check --profile objects`）。
+2. 复验通过后删除选中 Jot marker，再运行删 Jot 后校验（`check --profile objects`）。
 
 复验失败时尚未改动 Jot，保留对象与原 Jot 并停止。
 

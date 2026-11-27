@@ -207,7 +207,8 @@ def test_bug_create_checks_ready_without_blocking_stale_docs():
     assert rows(text)[0][3] == "运行 `check --profile entry`，核对已初始化"
     assert rows(text)[0][6] == "未就绪则停"
     assert "不将 `normal_workflows_allowed: true` 作为前置条件" in text
-    assert "evidence.stale" in text
+    assert "entry 不检查 freshness" in text
+    assert "`evidence.stale` 等 findings 报告后继续" not in text
     assert "其他 findings 报告后停止" not in text
 
 def test_fact_update_checks_ready_before_writes_without_blocking_stale_facts():
