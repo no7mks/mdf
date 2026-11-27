@@ -25,6 +25,10 @@ for _key in ("GIT_AUTHOR", "GIT_COMMITTER"):
     os.environ.setdefault(f"{_key}_NAME", "MDF Test")
     os.environ.setdefault(f"{_key}_EMAIL", "mdf@example.invalid")
 
+# 临时仓库不触发后台 auto maintenance，避免它与文件快照断言竞态。
+os.environ.update(GIT_CONFIG_COUNT="2", GIT_CONFIG_KEY_0="gc.auto", GIT_CONFIG_VALUE_0="0",
+                  GIT_CONFIG_KEY_1="maintenance.auto", GIT_CONFIG_VALUE_1="false")
+
 
 def skill_dir(name: str) -> Path:
     """Return a skill directory's absolute path for functional tests."""

@@ -169,3 +169,8 @@ def test_literal_marker_in_continuation_does_not_reset_prose_budget():
     section = "- outer\n\n  continuation starts\n      - literal marker\n" + "  普通续段。\n" * 110
     body = "".join(f"## 节 {i}\n\n" + section for i in range(4))
     assert "reference.prose_heavy" in codes("---\ndoc_style: reference\n---\n" + body)[1]
+
+
+def test_list_continuation_without_blank_line_counts_as_prose():
+    body = "".join(f"## 节 {i}\n- item\n" + "  散文。\n" * 120 for i in range(4))
+    assert "reference.prose_heavy" in codes("---\ndoc_style: reference\n---\n" + body)[1]

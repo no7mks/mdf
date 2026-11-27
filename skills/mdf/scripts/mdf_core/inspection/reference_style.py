@@ -147,22 +147,13 @@ def classify_lines(body):
 
 
 def _prose_lines(rows):
-    """列表续段保留 list 分类，空行后的普通文字仍计入散文预算。"""
-    continuation = False
+    """列表项内的普通文字续行（含紧跟项首的缩进行）计入散文预算，代码与表格不计。"""
     total = 0
     for kind, line, _, new_item in rows:
-        if kind == "blank":
-            continuation = True
-        elif kind == "list":
-            if new_item:
-                continuation = False
-            elif continuation and not line.lstrip().startswith("|") and not HEADING.match(line.lstrip()):
-                total += 1
-        elif kind == "prose":
+        if kind == "prose":
             total += 1
-            continuation = False
-        elif kind not in {"code", "comment"}:
-            continuation = False
+        elif kind == "list" and not new_item and not line.lstrip().startswith("|") and not HEADING.match(line.lstrip()):
+            total += 1
     return total
 
 
