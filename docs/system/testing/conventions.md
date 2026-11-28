@@ -93,6 +93,7 @@
 | init | 是 | init_repo、commands_misc、prepare-git、bootstrap |
 | integrate | 否 | integrate、integrate_http、integrate_store |
 | deploy | 否 | 项目本体 upgrade、detach |
+| reconcile | 是 | 历史补账、外部 evidence、双 flow 通道与发布顺序；见 [专项目标](reconcile.md) |
 
 ### 复用已有报告
 

@@ -483,7 +483,8 @@ def command_finish_gitflow(args) -> None:
             version = details["version"] or getattr(args, "version", None) or source_version(repo, source)
             ref = f"refs/tags/v{version}"
     settings = configured_delivery(repo, source, ref=ref)
-    pm_pr = details["kind"] == "pm" and is_github_flow(repo) and settings["mode"] == "pr"
+    from mdf_core.workspace.reconcile_channel import is_reconcile
+    pm_pr = details["kind"] == "pm" and (is_github_flow(repo) or is_reconcile(source)) and settings["mode"] == "pr"
     if not details["supported"] and not pm_pr:
         raise MDFError("finish requires a Gitflow delivery branch",
                        code="unsupported_branch")

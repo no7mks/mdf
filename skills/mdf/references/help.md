@@ -192,7 +192,7 @@ $mdf clarify 要不要把缓存放到 Redis
   `tree`、`prp tree`、`clarify`
 - 交付：`next`、`deliver`、`start`、`adhoc`、`design`、`write-tests`、`implement`、`converge`、`lint`；
   `fix`、`bug close`、`verify`、`code-review`、`squash`、`fact update`、`fact audit`；
-  `catch-up`、`consolidate`、`merge`、`publish`、`sync-changelog`、`incremental-integration`、`pr`、`close-out`
+  `catch-up`、`consolidate`、`reconcile`、`merge`、`publish`、`sync-changelog`、`incremental-integration`、`pr`、`close-out`
 - 维护：`check`、`archive`、`fact audit`、`prettify`、`upgrade`；
   `to`、`dev-pr`、`trunk-pr`、`sync`、`integrate`、`help`
 - `$mdf bootstrap`
@@ -365,6 +365,8 @@ $mdf clarify 要不要把缓存放到 Redis
 
 - `$mdf consolidate`
   - 收敛交付文档、对象状态和版本材料，完成适用的归档与提交。
+- `$mdf reconcile [--version <semver>] [--tag <tag>] [--commit <sha>] [--support <major.minor>] [--record-only] [--yolo]`
+  - 无账本发布接管或历史补账，保持原验证与发布顺序；见 [Reconcile](reconcile.md)。
 - `$mdf merge`
   - local 模式与 github-flow support hotfix 先合回 target 并增量验收，再本地合入。
 

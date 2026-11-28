@@ -172,6 +172,10 @@ evidence:
 
 ## 版本根 Change
 
+混合流程版本可声明 `record_mode: ledgerless | post_hoc`；省略时为 standard。
+ledgerless 必须声明 release_line；post_hoc 另需 40 位 release_commit，可选 release_tag。
+这些字段只用于版本根，来源核验与状态转换边界见 [Reconcile](reconcile.md)。
+
 `changes/<version>/CHANGE.md` 包含：
 
 - 字段：

@@ -123,6 +123,11 @@ def require_sync_diff(repo, base, head, version):
         data = json.loads(identity.stdout)
     except ValueError:
         data = {}
+    if identity.returncode:
+        from mdf_core.reconciliation.context import metadata
+        meta, _ = metadata(git(repo, "show", f"{published}:changes/{version}/CHANGE.md").stdout)
+        if meta.get("record_mode") == "ledgerless":
+            data = {"branch": meta.get("source_branch"), "base_branch": meta.get("release_line"), "version": meta.get("version")}
     if (not isinstance(data, dict) or not str(data.get("branch", "")).startswith("hotfix/")
             or not str(data.get("base_branch", "")).startswith("support/") or data.get("version") != version):
         raise MDFError("发布记录 PR 必须来源于 support hotfix", code="pm_paths_forbidden", details={"paths": []})

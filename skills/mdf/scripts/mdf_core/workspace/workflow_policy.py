@@ -172,6 +172,9 @@ def ci_branches(repo: Path) -> list[str]:
 def target_for(repo, source, *, data=None, ref=None):
     """由 workflow 与交付种类推导固定目标；support hotfix 使用冻结的维护线。"""
     from mdf_core.workspace.gitutil import branch_details
+    from mdf_core.workspace.reconcile_channel import is_reconcile
+    if is_reconcile(source):
+        return trunk_branch(repo)
     kind = branch_details(source)["kind"]
     if is_github_flow(repo):
         if kind == "hotfix":
@@ -179,6 +182,11 @@ def target_for(repo, source, *, data=None, ref=None):
                 from mdf_core.lifecycle.hotfix_version import delivery_record
                 record = delivery_record(repo, source, ref=ref or f"refs/heads/{source}")
                 data = record[1] if record else {}
+                if not record:
+                    from mdf_core.reconciliation.context import external_record
+                    external = external_record(repo, source, ref or f"refs/heads/{source}")
+                    if external:
+                        return external["release_line"]
             return data.get("base_branch") or trunk_branch(repo)
         return trunk_branch(repo)
     return trunk_branch(repo) if kind in {"release", "hotfix"} else "develop"

@@ -81,6 +81,7 @@ MDF 只发布一个 Skill，由用户通过宿主手动调用：Codex 使用 `$m
 | `$mdf pr` | PR mode：创建/更新 PR，等待 CI/review 并修复，merged 且关联 CI 收尾通过后完成 Goal |
 | `$mdf catch-up` | 同步远端同名工作分支并增量验收 |
 | `$mdf consolidate` | 收敛交付文档、对象状态和版本材料 |
+| `$mdf reconcile` | 接管无账本发布分支或补齐外部历史发布记录，见 [契约](skills/mdf/references/reconcile.md) |
 | `$mdf merge` | 合回 target、增量验收并本地合入，适用范围见 [Merge](skills/mdf/references/merge.md) |
 | `$mdf sync-changelog` | 将 support patch 的发布记录通过 pm PR 汇入 trunk，等待合并并清理 |
 | `$mdf publish` | 给固定发布 commit 创建带本版说明的 annotated tag 并推送 |

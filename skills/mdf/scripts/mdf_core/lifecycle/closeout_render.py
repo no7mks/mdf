@@ -36,6 +36,13 @@ def aggregate_release_changes(
     set[str],
     dict[str, list[str]],
 ]:
+    return aggregate_change_metadata(
+        read_frontmatter(repo / "changes" / "unreleased" / slug / "CHANGE.md")[0] for slug in sorted(slugs)
+    )
+
+
+def aggregate_change_metadata(records):
+    """聚合已读取的 Change，当前工作区与历史快照共用渲染规则。"""
     notes = {category: [] for category in CHANGELOG_CATEGORIES}
     breaking = False
     proposals: set[str] = set()
@@ -44,9 +51,7 @@ def aggregate_release_changes(
     deferred: set[str] = set()
     adrs: set[str] = set()
     evidence_sources: list[dict[str, Any]] = []
-    for slug in sorted(slugs):
-        change = repo / "changes" / "unreleased" / slug / "CHANGE.md"
-        metadata, _ = read_frontmatter(change)
+    for metadata in records:
         proposals.update(metadata.get("proposals", []))
         fixed.update(metadata.get("fixed", []))
         closed.update(metadata.get("closed", []))

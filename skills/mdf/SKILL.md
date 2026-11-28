@@ -79,6 +79,7 @@ python3 -B "<已替换副本>/scripts/mdf_launcher.py" complete-upgrade \
                  ├──── fact audit ────────────────────────────────────────→ references/fact-audit.md
                  ├──── catch-up ──────────────────────────────────────────→ references/catch-up.md
                  ├──── consolidate ───────────────────────────────────────→ references/consolidate.md
+                 ├──── reconcile ─────────────────────────────────────────→ references/reconcile.md
                  ├──── merge ─────────────────────────────────────────────→ references/merge.md
                  ├──── sync-changelog ────────────────────────────────────→ references/sync-changelog.md
                  ├──── publish ───────────────────────────────────────────→ references/publish.md
@@ -170,6 +171,7 @@ python3 -B "<已替换副本>/scripts/mdf_launcher.py" complete-upgrade \
   - 已有 adhoc 可由 next 单步续办或 deliver 持续推进。
 - `$mdf catch-up` 同步远端同名工作分支并增量验收。
 - `$mdf consolidate` 收敛交付文档、对象状态与版本材料。
+- `$mdf reconcile` 执行 `references/reconcile.md`，接管无账本发布或补齐历史发布记录。
 - `$mdf merge` 执行 non-PR 的 target 合回、增量验收和实际合入。
 - `$mdf sync-changelog` 执行 `references/sync-changelog.md`，同步 support patch 发布记录，经 pm PR 合入 trunk。
 - `$mdf publish` 执行 `references/publish.md`，在 github-flow release 的 incremental-integration 前创建并推送 final tag。

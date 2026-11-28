@@ -111,6 +111,7 @@ python3 skills/mdf/scripts/mdf.py <command> [options]
 | `workflow` | 空闲态切换分支模型/trunk、渲染 CI 分支 | [仓库写入命令](mdf-cli-write.md) |
 | `sync` | 三大 trunk 预览确认后同步 | [仓库写入命令](mdf-cli-write.md) |
 | `catch-up` | 同步远端同名分支并增量验收 | [仓库写入命令](mdf-cli-write.md) |
+| `reconcile` | 无账本发布接管与历史补账 | [Reconcile CLI](mdf-cli-reconcile.md) |
 | `consolidate` | 收敛交付文档、对象和版本材料 | [仓库写入命令](mdf-cli-write.md) |
 | `merge` | local target 集成、增量验收与实际合入 | [仓库写入命令](mdf-cli-write.md) |
 | `sync-changelog` | 准备或核验 support patch 的记录同步 PR | [仓库写入命令](mdf-cli-write.md) |

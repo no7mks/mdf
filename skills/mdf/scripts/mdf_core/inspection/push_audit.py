@@ -60,6 +60,22 @@ def _support_merge_start(repo, branch, commit, parents):
     base, head = parents
     if not ancestor(repo, base, head) or paths(repo, head, commit):
         return None
+    from mdf_core.reconciliation.context import metadata
+    for path in paths(repo, base, head):
+        parts = path.split("/")
+        if len(parts) != 3 or parts[0] != "changes" or parts[2] != "CHANGE.md" or stable_semver(parts[1]) is None:
+            continue
+        try:
+            data, _ = metadata(git(repo, "show", f"{head}:{path}").stdout)
+            if (data.get("record_mode") == "ledgerless" and data.get("change_kind") == "hotfix"
+                    and data.get("release_line") == branch and data.get("source_branch", "").startswith("hotfix/")):
+                previous = data.get("previous_version")
+                start = sha(repo, f"refs/tags/v{previous}")
+                if ancestor(repo, start, base):
+                    expected_tag_message(repo, parts[1], commit)
+                    return start
+        except (MDFError, TypeError, ValueError):
+            continue
     for path in paths(repo, base, head):
         parts = path.split("/")
         if len(parts) != 3 or parts[0] != "changes" or parts[2] != "delivery.json":
@@ -96,7 +112,8 @@ def classify(repo, commit, branch, evidence, source_prefix, *, trunk, github):
         if github and _support_merge_start(repo, branch, commit, parents):
             return "pass", "local_support_merge", changed
         if pull := _platform_merge(commit, branch, parents[1], evidence):
-            if github and str(pull["source"]).startswith("pm/"):
+            from mdf_core.workspace.reconcile_channel import is_reconcile
+            if (github and str(pull["source"]).startswith("pm/")) or is_reconcile(pull["source"]):
                 if branch != trunk:
                     return "violation", "invalid_pm_target", changed
                 try:

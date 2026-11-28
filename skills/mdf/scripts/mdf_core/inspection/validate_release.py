@@ -111,6 +111,23 @@ def published_support_previous(repo: Path, version: str) -> str | None:
     from mdf_core.workspace.merge_policy import git, ancestor
     from mdf_core.lifecycle.closeout_render import require_tag_content
     from mdf_core.foundation.yamlutil import frontmatter_span, parse_yaml
+    root = repo / "changes" / version / "CHANGE.md"
+    if root.is_file():
+        meta, _ = read_frontmatter(root)
+        if meta.get("record_mode") == "post_hoc":
+            from mdf_core.inspection.validate_reconcile import historical_head
+            historical_head(repo, meta)
+            return meta.get("previous_version")
+        if meta.get("record_mode") == "ledgerless":
+            if git(repo, "rev-parse", "--verify", f"refs/tags/v{version}", check=False).returncode:
+                return None
+            head = require_tag_content(repo, version)["head"]
+            text = git(repo, "show", f"{head}:changes/{version}/CHANGE.md").stdout
+            start, end, _ = frontmatter_span(text)
+            frozen = parse_yaml(text[start:end])
+            if frozen.get("release_line") != meta.get("release_line"):
+                raise MDFError("发布线与 tag 记录不符", code="invalid_release_history")
+            return frozen.get("previous_version")
     if git(repo, "rev-parse", "--verify", f"refs/tags/v{version}", check=False).returncode:
         return None
     head = require_tag_content(repo, version)["head"]
@@ -181,6 +198,14 @@ def validate_release_history(
             except (ValueError, OSError):
                 continue
             if isinstance(data, dict) and str(data.get("base_branch", "")).startswith("support/"):
+                support_versions.add(directory.name)
+        elif not identity.exists():
+            change = directory / "CHANGE.md"
+            try:
+                meta, _ = read_frontmatter(change)
+            except (MDFError, OSError):
+                continue
+            if meta.get("record_mode") in {"ledgerless", "post_hoc"} and str(meta.get("release_line", "")).startswith("support/"):
                 support_versions.add(directory.name)
     known_versions = {
         version

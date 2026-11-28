@@ -503,6 +503,8 @@ def build_parser() -> argparse.ArgumentParser:
     integrate.add_argument("--wait", type=float)
     integrate.add_argument("--bind", default="127.0.0.1:8765")
     integrate.set_defaults(func=command_integrate)
+    from mdf_core.reconciliation.commands import register as register_reconcile
+    register_reconcile(subparsers)
     return parser
 
 

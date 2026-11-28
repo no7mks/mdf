@@ -113,6 +113,11 @@ hermetic UT 或 PT；原慢用例保留。
   - 有系统或工具自带日志/报告时读那份，不另 tee。
   - 其他命令用 Core `run` 代跑。
 
+## Reconcile、ledgerless 与 post_hoc
+
+reconcile 是混合流程发布入口。ledgerless 接管无交付账本的合规发布分支；post_hoc 按固定历史来源补账。
+两者保留原 workflow 与验收门槛，不补造历史交付账本。执行契约见 [Reconcile](skills/mdf/references/reconcile.md)。
+
 ## Clear commit
 
 Git common dir 的 `mdf/clear-commits.json` 保存 `verify_smoke`、`verify_release`、

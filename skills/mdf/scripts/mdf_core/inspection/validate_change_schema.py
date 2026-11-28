@@ -30,6 +30,8 @@ def validate_change_file(
         add_finding(findings, "change.frontmatter", str(exc), rel)
         return
     change_kind = metadata.get("change_kind")
+    from mdf_core.inspection.validate_reconcile import validate_record_mode
+    validate_record_mode(repo, metadata, root, rel, findings)
     if change_kind not in CHANGE_KINDS:
         add_finding(
             findings,
@@ -45,6 +47,8 @@ def validate_change_file(
             "CHANGE requires source_branch",
             rel,
         )
+    elif root and metadata.get("record_mode") == "post_hoc" and source_branch == metadata.get("release_line"):
+        pass
     elif not root and source_branch == _integration_source(repo):
         if change_kind not in {"feature", "bugfix", "fix"}:
             add_finding(

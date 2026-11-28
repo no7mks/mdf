@@ -37,13 +37,14 @@ def inspect(repo, branch=None, *, refresh=True):
         from mdf_core.workspace.changelog_sync import sync_version
         from mdf_core.workspace.workflow_policy import is_github_flow, trunk_branch
         from mdf_core.workspace.merge_policy import configured_delivery
-        if not is_github_flow(repo) or configured_delivery(repo, branch)['mode'] != 'pr':
+        from mdf_core.workspace.reconcile_channel import is_reconcile
+        if (not is_github_flow(repo) and not is_reconcile(branch)) or configured_delivery(repo, branch)['mode'] != 'pr':
             raise MDFError('pm 分支仅用于 github-flow 的 PR mode', code='invalid_closeout')
         if branch.startswith('pm/rework/'):
             source = rework_source(repo, branch)
             if source is None:
                 raise MDFError('需要已登记的 pm 临时 worktree', code='invalid_worktree')
-        elif branch in worktree_map(repo) and not sync_version(branch):
+        elif branch in worktree_map(repo) and not sync_version(branch) and not is_reconcile(branch):
             raise MDFError('pm squash 须在临时 worktree 执行', code='invalid_worktree')
         require_pm_diff(repo, f'refs/remotes/origin/{trunk_branch(repo)}', head, source)
     refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags').stdout.splitlines()

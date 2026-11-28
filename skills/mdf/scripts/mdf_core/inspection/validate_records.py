@@ -83,12 +83,21 @@ def _trunk_bug_ids(repo: Path, path: Path, metadata: dict) -> set[str]:
     version = metadata.get("version")
     source = metadata.get("source_branch")
     if (not isinstance(version, str) or path != repo / "changes" / version / "CHANGE.md"
-            or not isinstance(source, str) or not source.startswith("hotfix/") or not is_github_flow(repo)):
+            or not isinstance(source, str) or not is_github_flow(repo)):
+        return set()
+    if not source.startswith("hotfix/") and not (
+            metadata.get("record_mode") == "post_hoc" and source == metadata.get("release_line") and source.startswith("support/")):
         return set()
     try:
         identity = read_json(path.parent / "delivery.json")
     except (MDFError, OSError):
-        return set()
+        if (path.parent / "delivery.json").exists() or metadata.get("record_mode") not in {"ledgerless", "post_hoc"}:
+            return set()
+        line = metadata.get("release_line", "")
+        if not isinstance(line, str):
+            return set()
+        identity = {"branch": source, "version": version, "base_branch": line,
+                    "support": {"branch": line, "major_minor": line.removeprefix("support/")}}
     support = identity.get("support")
     base = identity.get("base_branch")
     if (identity.get("branch") != source or identity.get("version") != version

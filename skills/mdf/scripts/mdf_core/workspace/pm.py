@@ -22,6 +22,10 @@ def require_pm_paths(changed):
 
 
 def require_pm_diff(repo, target, head, source=""):
+    from mdf_core.workspace.reconcile_channel import is_reconcile, require_history
+    if is_reconcile(source):
+        require_history(repo, target, head)
+        return
     from mdf_core.workspace.changelog_sync import sync_version, require_sync_diff
     if version := sync_version(source):
         require_sync_diff(repo, git(repo, "merge-base", target, head).stdout.strip(), head, version)
@@ -33,6 +37,11 @@ def require_pm_diff(repo, target, head, source=""):
 
 
 def require_pm_merge(repo, first_parent, head, merged, source=""):
+    from mdf_core.workspace.reconcile_channel import is_reconcile, require_diff
+    if is_reconcile(source):
+        require_pm_diff(repo, first_parent, head, source)
+        require_diff(repo, first_parent, merged)
+        return
     from mdf_core.workspace.changelog_sync import sync_version, require_sync_diff
     if version := sync_version(source):
         require_pm_diff(repo, first_parent, head, source)

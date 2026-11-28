@@ -4,9 +4,9 @@ from mdf_core.execution.verification import FIXED_INPUTS, LOCKFILES, SUITES
 from mdf_core.foundation.paths import load_manifest
 
 
-def input_patterns(repo, config=None):
+def input_patterns(repo, config=None, *, include_fixed=True):
     config = config or load_modules(repo)
-    patterns = set(FIXED_INPUTS) | {"AGENTS.md"}
+    patterns = (set(FIXED_INPUTS) if include_fixed else set()) | {"AGENTS.md"}
     patterns.update(value for value in (load_manifest(repo).get("rules") or {}).values() if isinstance(value, str))
     for module in config.modules.values():
         patterns.update((*module.sourceset, *module.extra_inputs))

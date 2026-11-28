@@ -13,6 +13,7 @@
 | `documents` | Proposal、Bug、HTML 工作材料及对象操作 | `proposals`、`prp_split`、`html_documents` |
 | `inspection` | 仓库、事实、evidence、体积与结构检查 | `check --profile entry`、`audit`、`code_size` |
 | `lifecycle` | 交付身份、roster、阶段、版本收口与发布 | `delivery_state`、`roster`、`closeout_stage` |
+| `reconciliation` | 混合流程发布来源、历史快照、外部证据与发布接入 | `context`、`history`、`records`、`finish` |
 | `execution` | module 验证配置、命令执行与测试报告 | `modules`、`module_verify`、`verify_run`、`reports` |
 | `workspace` | Git、worktree、初始化、同步、hook 与仓外切换 | `gitflow`、`gitutil`、`squash`、`init_repo`、`detach` |
 | `integrations` | 跨工作区联调通道 | `integrate` |

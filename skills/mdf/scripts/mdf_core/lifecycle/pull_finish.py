@@ -311,9 +311,11 @@ def _finish(repo, source, settings, *, phase, number):
         raise MDFError("pm PR 须使用原 source ref", code="unsupported_branch")
     from mdf_core.workspace.changelog_sync import sync_version
     sync_pm = pm and sync_version(source)
+    from mdf_core.workspace.reconcile_channel import is_reconcile
+    reconcile_pm = pm and is_reconcile(source)
     if sync_pm and phase == "pr" and local_head(repo, source):
         ensure_clean(worktree_map(repo).get(source) or repo)
-    if pm and not sync_pm:
+    if pm and not sync_pm and not reconcile_pm:
         if repo != primary_worktree(repo) or current_branch(repo) != trunk or source in worktree_map(repo):
             raise MDFError("pm 的 PR 与 close-out 须在主 trunk worktree 执行", code="not_on_trunk")
         if local_head(repo, rework_branch(source)) is not None:
@@ -381,6 +383,12 @@ def _finish(repo, source, settings, *, phase, number):
                     state["release_head"] = require_published_source(repo, details["version"], state["release_head"], source=source)
             ready = publish(repo, state, details["version"], source_cleaned=remote_head is None and local is None)
         if ready:
+            if reconcile_pm and not github:
+                from mdf_core.workspace.gitflow import merge_preserving_checkout
+                work = worktree_map(repo).get("develop") or primary_worktree(repo)
+                ensure_clean(work)
+                if not ancestor(repo, merged, "refs/heads/develop"):
+                    merge_preserving_checkout(work, merged, "develop")
             cleanup_remote(repo, source, state["head"])
             cleanup(repo, state)
             status = "completed"

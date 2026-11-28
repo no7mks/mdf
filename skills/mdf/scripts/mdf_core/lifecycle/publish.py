@@ -27,6 +27,13 @@ def support_merge_record(repo, source, version=None):
         if record.get("source") != source or not isinstance(record.get("head"), str) or not isinstance(record.get("target"), str):
             continue
         identity = delivery_record(repo, source, ref=record["head"])
+        if not identity:
+            from mdf_core.reconciliation.context import external_record
+            external = external_record(repo, source, record["head"])
+            if (external and external.get("version") == path.stem
+                    and external.get("release_line") == record["target"] and record["target"].startswith("support/")):
+                matches.append((path.stem, record))
+            continue
         if (identity and identity[1].get("version") == path.stem
                 and support_hotfix(repo, source, data=identity[1], target=record["target"])):
             matches.append((path.stem, record))
