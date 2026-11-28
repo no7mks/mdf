@@ -97,6 +97,12 @@ squash 按交付目标分析逻辑边界，默认合并同一目标的提交；�
   - 脚本在 Git common dir 的 `mdf/squash/` 保存当前 branch/head 的操作检查结果，不作为交付进度或验收 gate。
   - 新增提交后旧检查结果失效；CLI 返回 squash_required 时完成分析与执行，再重试原动作。
   - 多段执行后无需强行再压成一段；同一 HEAD 的已完成分析可复用，每次动作仍重新检查共享边界。
+- squash 自行修正 catch-up、consolidate 与 incremental-integration 的流程端点 SHA，不因历史整理要求重新验收。
+  - tree、段界和父链核验通过后，才将流程端点映射到等价的新 commit；每份状态保留旧、新 SHA 的映射记录。
+  - catch-up 到 consolidate 起点之间仅有无需验收的材料时，可由其已核验 tip 承接；否则保护原端点。
+  - 中断或已留下非祖先 pending base 时，使用原计划的 `--verify-only` 完成映射；重试幂等。
+  - pending 恢复须有原完成摘要、已勾的 catch-up/consolidate 和等价的 consolidate tip；否则保留 pending。
+  - 核验失败不更新验收状态；squash 后的真实内容变化及远端前进仍按原流程验收。
 - 审查窗未结束时先完成审查，不改写其端点；tree 不变无需仅因 hash 变化重跑测试。
   - squash 后重新固定后续增量审查左端点；不得继续使用已改写的旧 HEAD 作为新的 review 范围。
   - merge 远端主线后的补审补测仍按 PR 完整执行，不被 squash 替代。

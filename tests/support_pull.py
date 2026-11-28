@@ -90,10 +90,10 @@ def squash_pending(work):
     """平台测试先完成新增的提交前整理，再测试平台生命周期。"""
     from mdf_core.workspace.squash import check
     from squash_execute import execute
+    from support_delivery import seed_consolidation
+    seed_consolidation(work)
     plan = check(work)
     if not plan['noop']:
         plan.update(start_commit=plan['floor'], segments=[
             {'tip': plan['old_tip'], 'message': 'test: 整理交付准备'}])
         execute(work.resolve(), plan, False, [])
-    from support_delivery import seed_consolidation
-    seed_consolidation(work)

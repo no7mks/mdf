@@ -83,6 +83,8 @@ def inspect(repo, branch=None, *, refresh=True):
         protected.add(sha(repo, start.stdout.strip()))
     elif start.returncode != 1:
         raise MDFError('无法读取交付起点', code='squash_boundary_unknown')
+    from mdf_core.lifecycle.squash_state import protected_commits
+    protected.update(protected_commits(repo, branch, head))
     shared = set(git(repo, 'rev-list', *sorted(protected)).stdout.splitlines()) if protected else set()
     email = git(repo, 'var', 'GIT_COMMITTER_IDENT').stdout.split('<', 1)[1].split('>', 1)[0]
     commits = []

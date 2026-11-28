@@ -13,12 +13,9 @@ from mdf_core.workspace.gitutil import branch_details
 
 
 def execute(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
-    if plan["branch"].startswith("pm/rework/"):
-        from mdf_core.lifecycle.pull_finish import finish_lock
-
-        with finish_lock(repo):
-            return execute_plan(repo, plan, verify_only, trace)
-    return execute_plan(repo, plan, verify_only, trace)
+    from mdf_core.lifecycle.pull_finish import finish_lock
+    with finish_lock(repo):
+        return execute_plan(repo, plan, verify_only, trace)
 
 
 def execute_plan(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict:
@@ -48,7 +45,6 @@ def execute_plan(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict
     start = commit(plan["start_commit"])
     old_tip = commit(plan["old_tip"])
     branch = plan["branch"]
-    pm = branch.startswith("pm/rework/")
     details = branch_details(branch)
     require(git("branch", "--show-current") == branch
             and (branch == "planning"
@@ -58,25 +54,30 @@ def execute_plan(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict
             "当前分支须为计划中的交付、角色、pm 或 planning 分支")
 
     def verify() -> dict:
-        require(not git("diff", old_tip, "HEAD", "--"), "最终 tree 与旧 tip 不一致")
+        require(git("rev-parse", f"{old_tip}^{{tree}}") == git("rev-parse", "HEAD^{tree}"), "最终 tree 与旧 tip 不一致")
         git("merge-base", "--is-ancestor", start, "HEAD")
         require(not git("status", "--porcelain", "--untracked-files=no"),
                 "已跟踪工作区不干净")
         return {"head": git("rev-parse", "HEAD"), "old_tip": old_tip,
                 "tree_equal": True, "start_is_ancestor": True, "clean": True}
 
+    def verify_chain():
+        floor = commit(plan["floor"])
+        rebuilt = git("rev-list", "--first-parent", "--reverse", f"{floor}..HEAD").splitlines()
+        require(len(rebuilt) == len(plan["segments"]), "当前提交链与原 squash 计划不一致")
+        previous = floor
+        for segment, head in zip(plan["segments"], rebuilt):
+            require(git("show", "-s", "--format=%P", head) == previous, "当前提交链与原 squash 计划不一致")
+            require(git("rev-parse", f"{commit(segment['tip'])}^{{tree}}") == git("rev-parse", f"{head}^{{tree}}"), "当前提交树与原 squash 段界不一致")
+            previous = head
+        return rebuilt
+
     if verify_only:
         result = verify()
-        if pm:
-            floor = commit(plan["floor"])
-            rebuilt = git("rev-list", "--first-parent", "--reverse", f"{floor}..HEAD").splitlines()
-            require(len(rebuilt) == len(plan["segments"]), "当前提交链与原 squash 计划不一致")
-            previous = floor
-            for segment, head in zip(plan["segments"], rebuilt):
-                require(git("show", "-s", "--format=%P", head) == previous, "当前提交链与原 squash 计划不一致")
-                require(not git("diff", commit(segment["tip"]), head, "--"), "当前提交树与原 squash 段界不一致")
-                previous = head
-            squash.record_analysis(repo, branch, result["head"], reason="已按分析计划完成分段 squash", old_tip=old_tip)
+        rebuilt = verify_chain()
+        from mdf_core.lifecycle.squash_state import remap
+        remap(repo, branch, old_tip, rebuilt, [segment["tip"] for segment in plan["segments"]])
+        squash.record_analysis(repo, branch, result["head"], reason="已按分析计划完成分段 squash", old_tip=old_tip)
         return result
     require(git("rev-parse", "HEAD") == old_tip, "HEAD 已变化，须重新分析计划")
     require(not git("status", "--porcelain", "--untracked-files=no"),
@@ -133,6 +134,8 @@ def execute_plan(repo: Path, plan: dict, verify_only: bool, trace: list) -> dict
         git("commit", "-m", segment["message"])
         heads.append(git("rev-parse", "HEAD"))
     result = verify()
+    from mdf_core.lifecycle.squash_state import remap
+    remap(repo, branch, old_tip, verify_chain(), [segment["tip"] for segment in segments])
     squash.record_analysis(repo, branch, result["head"], reason="已按分析计划完成分段 squash", old_tip=old_tip)
     return {**result, "commits": heads}
 
