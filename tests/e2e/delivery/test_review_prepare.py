@@ -3,7 +3,7 @@ import pytest
 
 from mdf_test_support import *  # noqa: F403
 from support_delivery import commit
-from support_github_flow import error_of
+from support_github_flow import error_of, github_flow_repo
 from test_incremental_plan import started
 
 load_core_module()
@@ -194,6 +194,42 @@ def test_release_full_review_records_despite_overlapping_prior_clear_and_continu
     (release / "src/service.py").write_text("VALUE = 3\n")
     commit(release, "fix: release 改动 C")
     head_c = git(release, "rev-parse", "HEAD").stdout.strip()
+
+    full_res = record_result(python_exe, release, against=base_a, head=head_c)
+    assert full_res == {"recorded": True}
+    assert clear_commits.load(release, "code_review") == head_c
+
+    (release / "src/service.py").write_text("VALUE = 4\n")
+    commit(release, "fix: release 增量 D")
+    head_d = git(release, "rev-parse", "HEAD").stdout.strip()
+    incr_plan = prepare(python_exe, release)
+    assert incr_plan["left"] == head_c and incr_plan["head"] == head_d
+    incr_res = record_result(python_exe, release, against=head_c, head=head_d)
+    assert incr_res == {"recorded": True}
+    assert clear_commits.load(release, "code_review") == head_d
+
+
+def test_github_flow_main_release_full_review_records_and_continues_incrementally(python_exe, tmp_path):
+    repo = github_flow_repo(tmp_path, trunk="main", previous_release=True)
+    base_a = git(repo, "rev-parse", "v1.2.0^{commit}").stdout.strip()
+    feature = Path(payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "feature",
+                               "--proposal", PRP_ID, "--roster", "solo",
+                               "--objectives-file", str(write_work_objectives(tmp_path))))["worktree"])
+    (feature / "src/service.py").write_text("VALUE = 2\n")
+    commit(feature, "feat: 实现 B")
+    clear_b = git(feature, "rev-parse", "HEAD").stdout.strip()
+    assert record(python_exe, feature, prepare(python_exe, feature))
+    assert clear_commits.load(repo, "code_review") == clear_b
+
+    git(repo, "checkout", "main")
+    git(repo, "cherry-pick", clear_b)
+    release = Path(payload(mdf(python_exe, "start", "--repo", str(repo), "--kind", "release",
+                               "--version", "1.3.0",
+                               "--objectives-file", str(write_release_objectives(tmp_path))))["worktree"])
+    (release / "src/service.py").write_text("VALUE = 3\n")
+    commit(release, "fix: release 改动 C")
+    head_c = git(release, "rev-parse", "HEAD").stdout.strip()
+    assert prepare(python_exe, release, "--force")["left"] == base_a
 
     full_res = record_result(python_exe, release, against=base_a, head=head_c)
     assert full_res == {"recorded": True}
