@@ -23,6 +23,8 @@ python3 "$MDF_ROOT/scripts/mdf.py" catch-up --repo "$REPO_ROOT"
 - 无 origin 或远端同名分支时，以当前已验收内容继续。
 - 首轮 base 为同步前的本地 HEAD；未完成的同一轮一直保留 base。
 - 上轮完成后再同步，以 completed_head 为新 base。冲突、修复和本轮新增提交都纳入增量。
+- 同步前先校验基线与增量计划；计划无法建立时保留原完成记录。开始同步后若中断，保留 pending，续办后重新验收。
+- linked worktree 共享 Git common dir 中的本地记录；新 clone 不继承验收记录，不得从 Git 拓扑推导检查通过。
 - 按 plan 的 review、verify、fact 三路执行适用检查，复用 [incremental-integration](incremental-integration.md) 的补检方法。
 - 原 lint、code-review、verify、fact 已勾项保持 `[x]`。新增验收属于 catch-up，报告追加，验证写独立报告。
 - 采用 `catch-up-verification-report.json` 保存本轮验证结果；保留原 verification-report.json。

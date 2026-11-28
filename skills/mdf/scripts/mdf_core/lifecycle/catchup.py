@@ -105,6 +105,9 @@ def catchup(repo, *, complete=False, reviewed_head=None, summary=None):
         if remote and not ancestor(repo, remote, head):
             raise MDFError("远端同名工作分支 再次前进，重新执行 catch-up 并补检", code="catchup_required")
     else:
+        # 同步前先证明基线及计划有效；尚未改动现场的失败不得撤销已有验收。
+        # 同步后仍重建计划，且以下写入的 pending 保护保留到增量验收完成。
+        build_plan(repo, root, data, explicit_base=state["base"])
         if version:
             from mdf_core.lifecycle.release_publish import publication_record, publication_record_path
             publication = publication_record(repo, source, version)
