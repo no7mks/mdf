@@ -116,6 +116,14 @@ def command_review_prepare(args):
     emit({"ok": True, "operation": "review-prepare", "result": result})
 
 
+def _record_rejection_reason(repo, head):
+    if not git_is_clean(repo):
+        return "dirty_worktree"
+    if sha(repo, "HEAD") != head:
+        return "head_mismatch"
+    return "clear_changed"
+
+
 def command_review_record(args):
     """由完成语义审查的 owner 调用；只接受完整交付范围或完整 clear 增量。"""
     repo = repo_path(args.repo)
@@ -123,17 +131,43 @@ def command_review_record(args):
     data = delivery_of(repo)
     left, head = sha(repo, args.against), sha(repo, args.head)
     clear = clear_commits.load(repo, "code_review")
-    recorded = False
-    if data and git_is_clean(repo) and args.head == head == sha(repo, "HEAD"):
+    recorded, reason = False, None
+    if not data:
+        reason = "not_delivery"
+    elif not git_is_clean(repo):
+        reason = "dirty_worktree"
+    elif args.head != head or head != sha(repo, "HEAD"):
+        reason = "head_mismatch"
+    else:
         from mdf_core.reviewing.scope import source_modules
         config, _ = source_modules(repo, head)
         if args.failed:
-            if clear and not rule_changes(repo, clear, head, False) and not review_changes(repo, clear, head, config)[0]:
-                clear_commits.invalidate(repo, "code_review", head, expected=clear)
+            if not clear:
+                reason = "no_clear_commit"
+            elif rule_changes(repo, clear, head, False):
+                reason = "rules_changed"
+            elif review_changes(repo, clear, head, config)[0]:
+                reason = "scope_changed"
+            elif clear_commits.invalidate(repo, "code_review", head, expected=clear):
+                reason = "invalidated"
+            else:
+                reason = _record_rejection_reason(repo, head)
         else:
-            normal = left if left == clear else left_endpoint(repo, None, data, args.initial_base)
-            remaining, _ = review_changes(repo, clear or normal, head, config)
-            baseline_delta = clear_commits.changed_paths(repo, left, clear) if clear and left != clear else set()
-            if left in {clear, normal} and not baseline_delta.intersection(remaining):
+            if clear and left == clear and not rule_changes(repo, clear, head, False):
+                allowed = True
+            else:
+                normal = left_endpoint(repo, None, data, args.initial_base)
+                if left == normal:
+                    allowed = True
+                elif clear and left == clear:
+                    allowed, reason = False, "rules_changed"
+                else:
+                    allowed, reason = False, "invalid_against"
+            if allowed:
                 recorded = clear_commits.record(repo, "code_review", head, expected=clear)
-    emit({"ok": True, "operation": "review-record", "result": {"recorded": recorded}})
+                if not recorded:
+                    reason = _record_rejection_reason(repo, head)
+    result = {"recorded": recorded}
+    if reason is not None:
+        result["reason"] = reason
+    emit({"ok": True, "operation": "review-record", "result": result})

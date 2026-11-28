@@ -46,7 +46,7 @@
 | review-context | --repo --source --head --policy-ref；可选 --review-base --previous-report | result 为固定上下文，缺身份或基线失败，材料缺项写 incomplete |
 | review-report-check | --context-file --report-file | 通过返回 result.valid 和规范化 report；坏格式或不完整契约非零 |
 | review-prepare | --repo；可选 --against --initial-base --force | 左端点、净增量、体积、project rule 和 `skip_review` |
-| review-record | --repo --against --head；可选 --initial-base --failed | 完整审查通过后记录当前 clean HEAD；--failed 使同内容旧记录失效 |
+| review-record | --repo --against --head；可选 --initial-base --failed | 完整审查通过后记录当前 clean HEAD 并返回 `recorded`（拒绝时附 `reason`）；--failed 使同内容旧记录失效 |
 
 - audit-push 从 `before` 读取 workflow。gitflow 接受 trunk 与 develop；github-flow 接受 trunk 与 `support/*`。
   - `support/*` 合入 trunk 为 `support_merge_forbidden`。默认离线，显式 collect-evidence 才访问平台。
@@ -70,7 +70,8 @@
 - `net_increment` 是实际审查范围；`--force` 使用正常左端点。dirty 仍读取 clear commit，
   输出暂存、未暂存和未跟踪改动的审查范围，此时 `skip_review` 为 false。
 - `size.reviewers` 按 numstat 新增与删除之和向上取整，每 1000 行一人；跳过时人数为 0。
-- review-record 检查实际审查范围是否覆盖全部增量。独立指定的局部范围不能推进 clear commit。
+- review-record 接受合法交付基线的完整审查或规则未变时的完整 clear 增量；不合法 `--against`、
+  规则变更后的旧 clear、dirty、HEAD 不一致或并发 clear 更新均返回 `recorded: false` 及 `reason`。
 
 ## 接入与运行证据
 

@@ -469,9 +469,9 @@ CLI 只提供确定性 context；前缀 `python3 -B "$MDF_ROOT/scripts/mdf.py"`�
    左端点 tip、完整或缩写 SHA）。本条仅约束审查正文；父 PR 返工备注单列保留恢复所需 SHA。
 4. 进行中带 tip 的段落不得留在终稿；分报告已合并后不再作为核对对象。
 5. 提交终稿；有账本时将 `objectives.md` 的 code-review 项改为 `[x]` 并提交。
-   - 完整审查并提交后调用 `review-record --repo <repo> --against <本轮左端点> --head <已审并通过的最终 HEAD>`。
-     首次 release 另传 `--initial-base <已确认基线>`。跳过、只读或 dirty 轮保持原 clear commit。
-   - clean 轮有阻断项时，以本轮固定 HEAD 调用同一命令并加 `--failed`，使同内容的旧 clear 失效。
+   - 完整审查并提交后调用 `review-record --repo <repo> --against <本轮左端点> --head <已审并通过的最终 HEAD>`；首次 release 另传 `--initial-base <已确认基线>`。
+   - 必须核验 `result.recorded` 为 `true`，不得仅凭退出码 0 或 `ok: true` 视作完成；为 `false` 时按 `reason` 诊断报告，不误记完成，也不得删改 clear 状态绕过。
+   - 跳过、只读或 dirty 轮保持原 clear commit；clean 轮有阻断项时，以本轮固定 HEAD 传 `--failed` 使同内容旧 clear 失效。
    - 只清理本轮审查草稿；不得删除父 PR 返工备注，完成后按其返回位置交还调用方。
 6. ❌ 报告未齐或仍在修复窗时不得洗稿、不得勾选。
 
