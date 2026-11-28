@@ -173,6 +173,9 @@
 - smoke 与 release 各自从 `clear-commits.json` 读取通过节点。clean 且相关内容相同时，
   命中项返回 `clear_commit`，不再执行该 suite。dirty 或 `--force` 时执行。
   clean 下强制重跑同内容时，旧记录失效，实跑通过后重新记录。
+  - 文档仅在不命中任何 module 的 sourceset、tests、extra_inputs、固定输入、规则或 lockfile 时复用。
+    module 或该 suite 声明 external_state 时不复用；未知实现路径变化仍实跑。
+  - branch 的 lint、build、quick 分别实跑，不借用慢 suite 的通过记录；fact 与 consolidate 独立检查。
   - 入口声明与产物规则见 [modules](../../../skills/mdf/references/modules.md)。
 - `--report-file <路径>`：smart 成败结果仅写入指定文件，替代上述默认写入位置；用于 incremental-integration 保留基线报告。
   - 相对路径以 repo 为根；必须留在仓库内且不含符号链接，执行验证前检查路径。

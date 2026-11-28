@@ -262,19 +262,18 @@ def _run_groups(repo, groups) -> list[dict[str, Any]]:
 
 
 def _suite_clear(repo, suite, head, clean, force):
+    from mdf_core.execution.verification_inputs import document_path, input_patterns, is_input
+
     key = f"verify_{suite}"
     base = clear_commits.load(repo, key)
-    # 除交付记录外，保守看全部 tracked 输入，包含测试定义、lockfile 和配置。
+    # 只豁免未声明为任何验证输入的文档；未知实现路径仍然失效。
     config = load_modules(repo)
     external = any(module.external_state or module.suite(suite).external_state
                    for module in config.modules.values())
     if base and not external and clean:
         changes = clear_commits.changed_paths(repo, base, head)
-        declared = [pattern.removeprefix("./") for module in config.modules.values()
-                    for pattern in (*module.sourceset, *module.extra_inputs, *module.suite(suite).tests,
-                                    *module.suite(suite).extra_inputs)]
-        if all(path.startswith("changes/") and not any(match(path, pattern) for pattern in declared)
-               for path in changes):
+        declared = input_patterns(repo, config)
+        if all(document_path(path) and not is_input(path, declared) for path in changes):
             if not force:
                 return base, True
             # 强制重跑后只接受本轮实跑结果，包括需要稍后收录的 playbook。
