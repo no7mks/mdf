@@ -179,7 +179,7 @@ def consolidate(repo, args):
         reopen_attempt(repo, source, start_head)
         raise MDFError("出现本次 consolidate 之外的改动，保留现场", code="unrelated_staged_changes", details={"paths": foreign})
     head = commit_materials(repo, source, start_head, changed)
-    write_json(record_path(repo, source), {"head": head, "version": version, "incremental": args.incremental})
+    write_json(record_path(repo, source), {"head": head, "start_head": start_head, "version": version, "incremental": args.incremental})
     if not args.incremental:
         from mdf_core.lifecycle.target_integration import state_path
         integration_path = state_path(repo, source)
