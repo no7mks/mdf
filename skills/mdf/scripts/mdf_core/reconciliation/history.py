@@ -88,6 +88,41 @@ def children(repo, release):
     return result
 
 
+def previously_archived(repo, release, slug, files):
+    """既有归档和其发布快照必须同时证明同一批字节及权限。"""
+    from mdf_core.foundation.textutil import stable_semver
+    from mdf_core.foundation.yamlutil import read_frontmatter
+    from mdf_core.workspace.merge_policy import ancestor, sha
+    from mdf_core.inspection.validate_reconcile import historical_head
+    for directory in (repo / "changes").iterdir():
+        version = stable_semver(directory.name)
+        root, archive = directory / "CHANGE.md", directory / slug
+        if (version is None or version >= stable_semver(release["version"]) or not root.is_file() or not archive.is_dir()):
+            continue
+        meta, _ = read_frontmatter(root)
+        anchor = (historical_head(repo, meta) if meta.get("record_mode") == "post_hoc"
+                  else sha(repo, f"refs/tags/v{directory.name}"))
+        if not ancestor(repo, anchor, release["base"]):
+            continue
+        actual = {p.relative_to(archive).as_posix(): read_snapshot(p) for p in archive.rglob("*") if p.is_file()}
+        original = children(repo, {**release, "version": directory.name, "release_commit": anchor}).get(slug)
+        if actual == files == original:
+            return True
+    return False
+
+
+def historical_children(repo, release):
+    snapshots = children(repo, release)
+    if not release.get("base"):
+        return snapshots
+    prior = children(repo, {**release, "version": release["previous_version"], "release_commit": release["base"]})
+    for slug in snapshots.keys() & prior.keys():
+        if snapshots[slug] != prior[slug] or not previously_archived(repo, release, slug, prior[slug]):
+            raise MDFError("同一 child 跨版本归属尚不明确，先核对已有发布记录", code="ambiguous_release", details={"slug": slug})
+        del snapshots[slug]
+    return snapshots
+
+
 def subtract(current, archived):
     now, body = metadata(current)
     old, old_body = metadata(archived)

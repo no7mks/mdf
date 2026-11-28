@@ -1,10 +1,51 @@
 """历史对象归属只读核对；不回滚已演进的当前对象。"""
 from pathlib import Path
+import re
 
 from mdf_core.foundation.errors import MDFError
 from mdf_core.foundation.yamlutil import read_frontmatter
 from mdf_core.reconciliation.context import metadata
-from mdf_core.workspace.merge_policy import git
+from mdf_core.workspace.merge_policy import ancestor, git, sha
+
+
+def proposal_at(repo, ref, identifier):
+    from mdf_core.foundation.constants import OBJECT_FILE_RE
+    found = []
+    for path in git(repo, "ls-tree", "-r", "--name-only", ref, "--", "docs/proposals").stdout.splitlines():
+        match = OBJECT_FILE_RE.fullmatch(Path(path).name)
+        if match and match.group(1) == identifier:
+            meta, _ = metadata(git(repo, "show", f"{ref}:{path}").stdout)
+            if meta.get("id") == identifier and meta.get("type") == "proposal":
+                found.append((meta, match.group(2)))
+    if len(found) != 1:
+        raise MDFError("指定快照缺少唯一的真实 PRP", code="invalid_reconciliation", details={"id": identifier, "ref": ref})
+    return found[0]
+
+
+def require_supplied_source(repo, release, change, meta):
+    source, head = meta["source_branch"], change.get("source_head")
+    candidate = release.get("release_commit") or release["head"]
+    owned = change["commits"]
+    if (not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{40}", str(head))
+            or head not in owned or sha(repo, head) != head or not ancestor(repo, head, candidate)):
+        raise MDFError("真实来源需要区间内的固定 source_head", code="invalid_reconciliation")
+    source_known = any(not git(repo, "rev-parse", "--verify", ref, check=False).returncode and ancestor(repo, head, ref)
+                       for ref in (f"refs/heads/{source}", f"refs/remotes/origin/{source}"))
+    merges = {c for c in owned if (parents := git(repo, "show", "-s", "--format=%P", c).stdout.split())
+              and len(parents) == 2 and parents[1] == head}
+    if not source_known and not merges:
+        raise MDFError("source_head 缺少分支或实际 merge 来源证明", code="invalid_reconciliation")
+    if any(not ancestor(repo, c, head) and c not in merges for c in owned):
+        raise MDFError("changes 包含不属于该 source 的 commit", code="invalid_reconciliation")
+    proposals = meta["proposals"]
+    if not proposals:
+        return
+    if not isinstance(proposals, list) or len(proposals) != 1 or meta["change_kind"] != "feature":
+        raise MDFError("feature 只绑定一个已核实 PRP", code="invalid_reconciliation")
+    for ref in (head, candidate):
+        proposal, slug = proposal_at(repo, ref, proposals[0])
+        if slug != change["slug"] or proposal.get("status") not in {"ready", "implemented", "released"}:
+            raise MDFError("历史 PRP 与 feature 的归属或状态不符", code="invalid_reconciliation")
 
 
 def require_historical_objects(repo, release, records):

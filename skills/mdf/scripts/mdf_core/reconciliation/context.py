@@ -171,6 +171,9 @@ def inspect(repo, args):
                 "kind": details["kind"] if publishing else "hotfix" if line.startswith("support/") else "release"}
         if release_tag:
             data["release_tag"] = release_tag
+            data["release_tag_oid"] = git(repo, "rev-parse", f"refs/tags/{release_tag}").stdout.strip()
+        if previous_tag:
+            data["previous_tag_oid"] = git(repo, "rev-parse", f"refs/tags/{previous_tag}").stdout.strip()
         historical_head(repo, data)
         existing = repo / "changes" / value / "CHANGE.md"
         if existing.is_file():

@@ -289,8 +289,8 @@ def submit(repo, forge, source, target, pull, *, pm, fixed_head):
     return pull
 
 
-def retained_owner(repo, source, head):
-    work = sibling_worktree(repo, source)
+def retained_owner(repo, source, head, *, work=None):
+    work = work or sibling_worktree(repo, source)
     listing = git(repo, "worktree", "list", "--porcelain", "-z").stdout
     for entry in listing.split("\0\0"):
         fields = entry.split("\0")
@@ -299,7 +299,7 @@ def retained_owner(repo, source, head):
     return None
 
 
-def _finish(repo, source, settings, *, phase, number):
+def _finish(repo, source, settings, *, phase, number, before_cleanup=None):
     details = branch_details(source)
     if details["kind"] == "adhoc":
         from mdf_core.lifecycle.adhoc_context import require_source
@@ -389,6 +389,8 @@ def _finish(repo, source, settings, *, phase, number):
                 ensure_clean(work)
                 if not ancestor(repo, merged, "refs/heads/develop"):
                     merge_preserving_checkout(work, merged, "develop")
+            if before_cleanup is not None:
+                before_cleanup(repo, state)
             cleanup_remote(repo, source, state["head"])
             cleanup(repo, state)
             status = "completed"

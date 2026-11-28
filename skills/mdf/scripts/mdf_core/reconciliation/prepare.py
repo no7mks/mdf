@@ -5,7 +5,7 @@ from mdf_core.foundation.errors import MDFError
 from mdf_core.lifecycle.delivery_state import write_json, read_json
 from mdf_core.reconciliation.context import inspect, state_path
 from mdf_core.workspace.gitutil import add_linked_worktree, ensure_clean, sibling_worktree, worktree_map
-from mdf_core.workspace.merge_policy import git, local_head, sha
+from mdf_core.workspace.merge_policy import ancestor, git, local_head, sha
 from mdf_core.workspace.workflow_policy import trunk_branch
 
 
@@ -46,10 +46,12 @@ def prepare(repo, args):
     path = state_path(work, source)
     previous = read_json(path) if path.is_file() else None
     plan.update(source=source, worktree=str(work), target=trunk_branch(repo), base_head=sha(work, "HEAD"))
-    if previous:
-        identity = ("record_mode", "release_line", "version")
+    if previous and not previous.get("completed"):
+        identity = ("record_mode", "release_line", "version", "releases")
         if any(previous.get(key) != plan.get(key) for key in identity):
             raise MDFError("既有 reconcile 操作身份不同，保留现场", code="reconcile_state_changed")
+        if not ancestor(work, previous["base_head"], "HEAD"):
+            raise MDFError("在途补账工作区丢失原基线", code="reconcile_state_changed")
         return previous
     write_json(path, plan)
     return plan

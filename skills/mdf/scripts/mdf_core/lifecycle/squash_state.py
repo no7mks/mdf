@@ -18,11 +18,14 @@ def covered_by_consolidation(repo, base, consolidated):
     if not head or not start or not ancestor(repo, base, start) or not ancestor(repo, start, head):
         return False
     rules = rule_paths(repo) if (repo / ".mdf/manifest.yaml").is_file() else CONTRACTS
+    from mdf_core.execution.verification_inputs import input_patterns, is_input
+    declared = input_patterns(repo) if (repo / ".mdf/modules.yaml").is_file() else set()
     rows = git(repo, "rev-list", "--parents", f"{base}..{start}").stdout.splitlines()
     for row in rows:
         commit, *parents = row.split()
         changed = commit_paths(repo, commit)
-        if len(parents) != 1 or config_paths(changed) or any(classify(p) != "material" or p in rules for p in changed):
+        if (len(parents) != 1 or config_paths(changed)
+                or any(classify(p) != "material" or p in rules or is_input(p, declared) for p in changed)):
             return False
     return True
 
@@ -43,6 +46,11 @@ def protected_commits(repo, branch, head):
             value = state.get(key)
             if value and value != head and not (path == catchup and covered and covered_by_consolidation(repo, value, consolidated)):
                 protected.add(value)
+    from mdf_core.reconciliation.context import state_path
+    record = state_path(repo, branch)
+    state = read_json(record) if record.is_file() else {}
+    if state.get("record_mode") == "ledgerless" and not state.get("completed") and state.get("record_head"):
+        protected.add(state["record_head"])
     return protected
 
 

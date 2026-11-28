@@ -42,7 +42,10 @@ def merge_local(repo, source, target):
 def clean_worktree(repo, state):
     from mdf_core.lifecycle.pull_finish import retained_owner
     source = state["source"]
-    owner = worktree_map(repo).get(source) or retained_owner(repo, source, state["head"])
+    expected = Path(state["worktree"]) if state.get("worktree") else None
+    owner = worktree_map(repo).get(source) or retained_owner(repo, source, state["head"], work=expected)
+    if owner is None and expected and expected.exists() and expected != primary_worktree(repo):
+        raise MDFError("原临时 worktree 的身份已变化，保留现场", code="reconcile_cleanup_required")
     if owner and owner != primary_worktree(repo):
         ensure_clean(owner)
         ignored = git(owner, "ls-files", "--others", "--ignored", "--exclude-standard", "-z").stdout.split("\0")
@@ -55,6 +58,16 @@ def clean_worktree(repo, state):
         git(primary_worktree(repo), "worktree", "remove", str(owner))
 
 
+def cleanup_state(repo, state):
+    if state["remote"]:
+        require_remote_merge(repo, state["target"], state["merge_commit"])
+    elif not ancestor(repo, state["merge_commit"], state["target"]):
+        raise MDFError("本地目标不再包含已合入提交", code="reconcile_state_changed")
+    if state["remote"]:
+        cleanup_remote(repo, state["source"], state["head"])
+    clean_worktree(repo, state)
+
+
 def finish_cleanup(repo, plan):
     path = state_path(repo, plan["source"])
     state = plan["cleanup"]
@@ -62,16 +75,10 @@ def finish_cleanup(repo, plan):
     if plan["record_mode"] == "ledgerless" and plan["release_line"].startswith("support/"):
         from mdf_core.lifecycle.publish import merge_record_path
         support_record = merge_record_path(repo, plan["source"], plan["version"])
-    if state["remote"]:
-        require_remote_merge(repo, state["target"], state["merge_commit"])
-    elif not ancestor(repo, state["merge_commit"], state["target"]):
-        raise MDFError("本地目标不再包含已合入提交", code="reconcile_state_changed")
     if plan["record_mode"] == "ledgerless":
         if published_head(repo, plan["version"], expected_oid=plan["tag_oid"]) != plan["release_head"]:
             raise MDFError("发布记录与 final tag 不符", code="tag_conflict")
-    if state["remote"]:
-        cleanup_remote(repo, state["source"], state["head"])
-    clean_worktree(repo, state)
+    cleanup_state(repo, state)
     if support_record:
         write_json(support_record, {**read_json(support_record), "closed": True})
     write_json(path, {**plan, "completed": True})
@@ -80,9 +87,16 @@ def finish_cleanup(repo, plan):
             "tag": f"v{plan['version']}" if plan.get("version") else None}
 
 
-def start_cleanup(repo, plan, state):
-    plan = {**plan, "cleanup": state}
+def save_cleanup(repo, plan, state, *, key="cleanup"):
+    owner = state.get("retained_worktree") or worktree_map(repo).get(state["source"])
+    state = {**state, "worktree": str(owner) if owner else state.get("worktree")}
+    plan = {**plan, key: state}
     write_json(state_path(repo, plan["source"]), plan)
+    return plan
+
+
+def start_cleanup(repo, plan, state):
+    plan = save_cleanup(repo, plan, state)
     return finish_cleanup(repo, plan)
 
 
@@ -99,6 +113,9 @@ def finish_records(repo, plan, args):
     required = {r["version"] for r in plan["releases"]}
     if set(plan.get("recorded_versions", [])) != required:
         raise MDFError("先逐版完成 apply", code="reconciliation_required")
+    from mdf_core.reconciliation.validation import require_record
+    for version in sorted(required):
+        require_record(repo, plan, version)
     proof = read_json(Path(args.evidence_file)) if args.evidence_file else None
     require_evidence(repo, proof, sha(repo, "HEAD"), {"fact", "lint"})
     require_history(repo, plan["base_head"], "HEAD")
@@ -110,9 +127,10 @@ def finish_records(repo, plan, args):
         from mdf_core.lifecycle import pull_finish
         forge = pull_finish.Forge(repo, pull_finish.origin(repo, plan["settings"]["provider"]))
         require_ci(repo, forge, source, result["pull_request"])
-        result = captured(_finish, repo, source, plan["settings"], phase="close-out", number=result["pull_request"]["id"])
-        return start_cleanup(repo, plan, {"source": source, "head": result["pull_request"]["head"],
-                             "target": target, "merge_commit": result["merge_commit"], "remote": True})
+        def journal(at, state):
+            save_cleanup(at, plan, {**state, "remote": True})
+        captured(_finish, repo, source, plan["settings"], phase="close-out", number=result["pull_request"]["id"], before_cleanup=journal)
+        return finish_cleanup(repo, read_json(state_path(repo, source)))
     if source == "planning":
         from mdf_core.workspace.planning import command_planning_land
         from types import SimpleNamespace
@@ -125,7 +143,8 @@ def finish_records(repo, plan, args):
 def publish_candidate(repo, plan, state, head):
     version, source = plan["version"], plan["source"]
     from mdf_core.lifecycle.support_line import recheck_before_publish
-    recheck_before_publish(repo, source, version, target=plan["release_line"], head=head)
+    if not state.get("published"):
+        recheck_before_publish(repo, source, version, target=plan["release_line"], head=head)
     remote = remote_source_head(repo, source)
     if remote and not ancestor(repo, remote, head):
         raise MDFError("远端同名分支领先，先同步并补验", code="catchup_required")
@@ -174,6 +193,9 @@ def integrate_target(repo, plan, head):
 
 def finish_release(repo, plan, args):
     source, version, target = plan["source"], plan["version"], plan["release_line"]
+    from mdf_core.reconciliation.context import require_no_ledger
+    from mdf_core.reconciliation.validation import require_record
+    require_no_ledger(repo, source, version)
     head = sha(repo, "HEAD")
     if plan.get("merge_commit"):
         from mdf_core.lifecycle.publish import remote_contains_merge
@@ -184,12 +206,17 @@ def finish_release(repo, plan, args):
     proof = read_json(Path(args.evidence_file)) if args.evidence_file else None
     suite = "release" if plan["kind"] == "release" else "smoke"
     require_evidence(repo, proof, head, {"lint", "build", "quick", suite, "code-review", "fact"})
-    meta, _ = read_frontmatter(repo / "changes" / version / "CHANGE.md")
-    require_object_outcomes(repo, meta)
     if version not in plan.get("recorded_versions", []):
         raise MDFError("先 apply 记录本版成果", code="reconciliation_required")
-    state = {key: plan[key] for key in ("release_head", "published", "tag_oid", "merge_commit") if key in plan}
     early_publish = plan["workflow"] == "github-flow" and plan["kind"] == "release"
+    if early_publish and not plan.get("published") and plan.get("release_head") and head != plan["release_head"]:
+        raise MDFError("未发布的固定候选已与当前 source 不同，保留现场重新核对", code="release_head_changed")
+    if not plan.get("published") and head != plan.get("record_head"):
+        raise MDFError("候选已有新增提交；先重新 apply 对账，再补齐验收证据", code="reconciliation_required")
+    require_record(repo, plan, version)
+    meta, _ = read_frontmatter(repo / "changes" / version / "CHANGE.md")
+    require_object_outcomes(repo, meta)
+    state = {key: plan[key] for key in ("release_head", "published", "tag_oid", "merge_commit") if key in plan}
     support = target.startswith("support/")
     for branch in (target, *(["develop"] if plan["workflow"] == "gitflow" else [])):
         if work := worktree_map(repo).get(branch):
@@ -248,6 +275,11 @@ def finish_release(repo, plan, args):
     if support and plan["settings"]["mode"] == "pr":
         from mdf_core.workspace.changelog_sync import prepare as prepare_sync, trunk_policy, require_synced, complete as complete_sync
         record = {"merge_commit": merged}
+        if plan.get("sync_cleanup"):
+            cleanup_state(repo, plan["sync_cleanup"])
+            complete_sync(repo, version, record)
+            plan = {k: v for k, v in plan.items() if k != "sync_cleanup"}
+            write_json(state_path(repo), {**plan, **state})
         try:
             require_synced(repo, version, merged)
         except MDFError as exc:
@@ -262,12 +294,14 @@ def finish_release(repo, plan, args):
                 return {**result, "next_intent": "pr-watch"}
             forge = pull_finish.Forge(repo, pull_finish.origin(repo, settings["provider"]))
             require_ci(repo, forge, sync["source"], result["pull_request"])
-            closed = captured(pull_finish._finish, work, sync["source"], settings, phase="close-out", number=None)
-            if closed.get("completed") and work.exists():
-                if git(work, "ls-files", "--others", "--ignored", "--exclude-standard").stdout:
-                    raise MDFError("同步工作区有需保留的 ignored 文件", code="dirty_worktree")
-                git(primary_worktree(repo), "worktree", "remove", str(work))
+            def journal(at, sync_state):
+                save_cleanup(at, {**plan, **state}, {**sync_state, "remote": True}, key="sync_cleanup")
+            captured(pull_finish._finish, work, sync["source"], settings, phase="close-out", number=None, before_cleanup=journal)
+            pending = read_json(state_path(repo))
+            cleanup_state(repo, pending["sync_cleanup"])
             complete_sync(repo, version, record)
+            plan = {k: v for k, v in pending.items() if k != "sync_cleanup"}
+            write_json(state_path(repo), plan)
     if plan["workflow"] == "gitflow" and not ancestor(repo, merged, "develop"):
         merge_local(repo, merged, "develop")
     result = start_cleanup(repo, {**plan, **state}, {
@@ -282,6 +316,10 @@ def finish(repo, args):
     plan = read_json(path)
     if plan.get("completed"):
         return {"completed": True, "already_completed": True, "source": plan["source"]}
+    if args.record_only:
+        return {"recorded": bool(plan.get("recorded_versions")), "completed": False, "record_only": True}
+    if not args.yolo:
+        return {"completed": False, "state": "awaiting_publication_confirmation", "next_intent": "reconcile finish --yolo"}
     if plan.get("cleanup"):
         return finish_cleanup(repo, plan)
     from mdf_core.workspace.workflow_policy import is_github_flow
@@ -290,10 +328,6 @@ def finish(repo, args):
     if (plan["source"] != current_branch(repo) or plan["workflow"] != workflow
             or plan["settings"] != configured(repo)):
         raise MDFError("reconcile 的工作分支或 workflow 已变化", code="reconcile_state_changed")
-    if args.record_only:
-        return {"recorded": bool(plan.get("recorded_versions")), "completed": False, "record_only": True}
-    if not args.yolo:
-        return {"completed": False, "state": "awaiting_publication_confirmation", "next_intent": "reconcile finish --yolo"}
     result = finish_records(repo, plan, args) if plan["record_mode"] == "post_hoc" else finish_release(repo, plan, args)
     if result.get("completed"):
         write_json(path, {**read_json(path), "completed": True})

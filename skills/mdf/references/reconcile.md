@@ -92,6 +92,10 @@ record-file 的字段如下。历史版本的 commit 是固定 release_commit，
 | trunk_fixes | support hotfix 的原 Trunk-First 处置记录 |
 
 changes 的 commits 与 excluded_commits 必须完整且不重复覆盖固定区间。
+已核实来源的 changes 可声明 change_kind、source_branch、source_head；Core 核对真实分支或 merge 与区间归属。
+feature 可绑定一个在 source_head 与候选快照中均存在且 slug 相符的 PRP，保留对象状态，不补造历史对象。
+已有快照覆盖的 commit 可列入 excluded_commits，并逐项说明所属 child；不能省略未说明的实现增量。
+finish 前再次核对记录 tree、CHANGELOG 章节及历史 tag 对象。未发布候选新增提交后必须重新 apply。
 release_notes 沿用 Keep a Changelog 类别，SemVer 按原规则校验。
 
 evidence-file 与 fact 使用同一结构：
@@ -119,4 +123,6 @@ evidence-file 与 fact 使用同一结构：
   发布后的 github-flow release 保留原 release_head 与 tag，不移动 tag。
 - 返回 pr-watch 时沿用 [PR](pr.md) 的 CI/review 等待与修复规则；通过后再次执行 reconcile finish。
 - squash 使用原分析及执行入口；不能用 squash 隐藏补账通道中的代码提交。
+- 在途 ledgerless 的 record_head 是 squash floor；其后的未记录尾段仍可整理，不改写固定候选。
+- cleanup 中断仍遵守 record-only 与确认边界；PR 删除 source 前保存 journal，恢复后继续原清理阶段。
 - final tag 始终使用原 annotated tag 校验；post_hoc 可记录外部 lightweight tag，但不得重写远端 tag。
