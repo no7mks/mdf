@@ -22,6 +22,22 @@ def proposal_at(repo, ref, identifier):
     return found[0]
 
 
+def supplied_pull(repo, change, source, head, candidate):
+    identity = change.get("pull_request")
+    if identity is None:
+        return None
+    if (not isinstance(identity, dict) or set(identity) != {"provider", "number"}
+            or identity["provider"] not in {"github", "gitlab"}
+            or type(identity["number"]) is not int or identity["number"] <= 0):
+        raise MDFError("pull_request 需要 provider 和正整数 number", code="invalid_reconciliation")
+    from mdf_core.integrations import forge
+    pull = forge.Forge(repo, forge.origin(repo, identity["provider"])).get(identity["number"])
+    if (pull["state"] != "merged" or pull["source"] != source or pull["head"] != head
+            or pull["merge_commit"] not in change["commits"] or not ancestor(repo, pull["merge_commit"], candidate)):
+        raise MDFError("平台 PR 的来源、状态或 SHA 与区间不一致", code="invalid_reconciliation")
+    return pull
+
+
 def require_supplied_source(repo, release, change, meta):
     source, head = meta["source_branch"], change.get("source_head")
     candidate = release.get("release_commit") or release["head"]
@@ -33,8 +49,11 @@ def require_supplied_source(repo, release, change, meta):
                        for ref in (f"refs/heads/{source}", f"refs/remotes/origin/{source}"))
     merges = {c for c in owned if (parents := git(repo, "show", "-s", "--format=%P", c).stdout.split())
               and len(parents) == 2 and parents[1] == head}
-    if not source_known and not merges:
-        raise MDFError("source_head 缺少分支或实际 merge 来源证明", code="invalid_reconciliation")
+    pull = supplied_pull(repo, change, source, head, candidate)
+    if not source_known and pull is None:
+        raise MDFError("声明的分支缺少同名 ref 或已核实 PR 来源证明", code="invalid_reconciliation")
+    if pull is not None:
+        meta["evidence"]["artifacts"].append(pull["url"])
     if any(not ancestor(repo, c, head) and c not in merges for c in owned):
         raise MDFError("changes 包含不属于该 source 的 commit", code="invalid_reconciliation")
     proposals = meta["proposals"]

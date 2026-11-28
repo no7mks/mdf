@@ -92,9 +92,13 @@ record-file 的字段如下。历史版本的 commit 是固定 release_commit，
 | trunk_fixes | support hotfix 的原 Trunk-First 处置记录 |
 
 changes 的 commits 与 excluded_commits 必须完整且不重复覆盖固定区间。
-已核实来源的 changes 可声明 change_kind、source_branch、source_head；Core 核对真实分支或 merge 与区间归属。
+已核实来源的 changes 可声明 change_kind、source_branch、source_head；Core 核对同名 ref 与区间归属。
+分支已删除时提供 pull_request（provider 为 github/gitlab，number 为正整数），Core 向 forge 核实已合并 PR 的来源和 SHA。
+merge parent 仅证明提交关系，不能单独证明分支名称。
+
 feature 可绑定一个在 source_head 与候选快照中均存在且 slug 相符的 PRP，保留对象状态，不补造历史对象。
 已有快照覆盖的 commit 可列入 excluded_commits，并逐项说明所属 child；不能省略未说明的实现增量。
+
 finish 前再次核对记录 tree、CHANGELOG 章节及历史 tag 对象。未发布候选新增提交后必须重新 apply。
 release_notes 沿用 Keep a Changelog 类别，SemVer 按原规则校验。
 
